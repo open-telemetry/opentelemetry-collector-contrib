@@ -6,7 +6,7 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -45,22 +45,21 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	var toBody toBodyFunc = func(token []byte) any {
-		return string(token)
+		return textutils.UnsafeBytesAsString(token)
 	}
-	if decode.IsNop(c.Config.Encoding) {
+	if textutils.IsNop(c.Config.Encoding) {
 		toBody = func(token []byte) any {
-			copied := make([]byte, len(token))
-			copy(copied, token)
-			return copied
+			return token
 		}
 	}
 
 	input := &Input{
-		InputOperator: inputOperator,
-		toBody:        toBody,
+		InputOperator:           inputOperator,
+		toBody:                  toBody,
+		includeFileRecordNumber: c.IncludeFileRecordNumber,
 	}
 
-	input.fileConsumer, err = c.Config.Build(set, input.emit)
+	input.fileConsumer, err = c.Config.Build(set, input.emitBatch)
 	if err != nil {
 		return nil, err
 	}

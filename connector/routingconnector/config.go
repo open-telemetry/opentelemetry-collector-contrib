@@ -22,9 +22,6 @@ var (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	// MatchOnce determines whether the connector matches multiple statements.
-	// Unused. Deprecated in v0.116.0. Will be removed in v0.120.0.
-	MatchOnce *bool `mapstructure:"match_once"`
 	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL
 	// condition.
 	// Valid values are `ignore` and `propagate`.

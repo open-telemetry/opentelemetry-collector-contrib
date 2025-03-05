@@ -45,7 +45,7 @@ func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -57,7 +57,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		tlsConfig(),
 		consumertest.NewNop(),
 	)
@@ -72,7 +72,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&cfg,
 		consumertest.NewNop(),
 	)
@@ -92,7 +92,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
