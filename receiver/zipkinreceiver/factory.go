@@ -17,7 +17,8 @@ import (
 // This file implements factory for Zipkin receiver.
 
 const (
-	defaultHTTPEndpoint = "localhost:9411"
+	defaultHTTPEndpoint  = "localhost:9411"
+	deprecationConfigMsg = "the inline setting of http server parameters has been deprecated, please use protocols::http parameter instead."
 )
 
 // NewFactory creates a new Zipkin receiver factory
@@ -32,8 +33,10 @@ func NewFactory() receiver.Factory {
 // createDefaultConfig creates the default configuration for Zipkin receiver.
 func createDefaultConfig() component.Config {
 	return &Config{
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: defaultHTTPEndpoint,
+		Protocols: ProtocolTypes{
+			HTTP: confighttp.ServerConfig{
+				Endpoint: defaultHTTPEndpoint,
+			},
 		},
 		ParseStringTags: false,
 	}
@@ -47,5 +50,8 @@ func createTracesReceiver(
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
 	rCfg := cfg.(*Config)
+	if isServerConfigDefined(rCfg.ServerConfig) {
+		set.Logger.Warn(deprecationConfigMsg)
+	}
 	return newReceiver(rCfg, nextConsumer, set)
 }
