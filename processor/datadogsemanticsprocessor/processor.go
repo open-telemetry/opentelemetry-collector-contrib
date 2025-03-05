@@ -77,7 +77,7 @@ func (tp *tracesProcessor) processTraces(_ context.Context, td ptrace.Traces) (o
 	return td, err
 }
 
-// XXX import this from datadog-agent pending https://github.com/DataDog/datadog-agent/pull/33753
+// TODO import this from datadog-agent pending https://github.com/DataDog/datadog-agent/pull/33753
 // Status2Error...
 func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap map[string]string) int32 {
 	if status.Code() != ptrace.StatusCodeError {
