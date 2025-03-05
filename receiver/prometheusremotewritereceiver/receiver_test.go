@@ -135,6 +135,61 @@ func TestTranslateV2(t *testing.T) {
 		expectedStats   remote.WriteResponseStats
 	}{
 		{
+			name: "counter metric test",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "http_requests_total",
+					"job", "web-service",
+					"instance", "server-001",
+					"method", "GET",
+					"status", "200",
+					"otel_scope_name", "test-scope",
+					"otel_scope_version", "v1",
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_COUNTER},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14},
+						Samples: []writev2.Sample{
+							{Value: 100, Timestamp: 1613000000000},
+							{Value: 150, Timestamp: 1613001000000},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm := expected.ResourceMetrics().AppendEmpty()
+				rm.Resource().Attributes().PutStr("service.name", "web-service")
+				rm.Resource().Attributes().PutStr("service.instance.id", "server-001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("test-scope")
+				sm.Scope().SetVersion("v1")
+
+				metric := sm.Metrics().AppendEmpty()
+				metric.SetName("http_requests_total")
+				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+				metric.Sum().SetIsMonotonic(true)
+
+				dp1 := metric.Sum().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1613000000000 * 1e6))
+				dp1.SetDoubleValue(100.0)
+				dp1.Attributes().PutStr("method", "GET")
+				dp1.Attributes().PutStr("status", "200")
+
+				dp2 := metric.Sum().DataPoints().AppendEmpty()
+				dp2.SetTimestamp(pcommon.Timestamp(1613001000000 * 1e6))
+				dp2.SetDoubleValue(150.0)
+				dp2.Attributes().PutStr("method", "GET")
+				dp2.Attributes().PutStr("status", "200")
+
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		{
 			name: "duplicated scope name and version",
 			request: &writev2.Request{
 				Symbols: []string{
