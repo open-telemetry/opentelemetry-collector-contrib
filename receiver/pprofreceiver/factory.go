@@ -31,9 +31,19 @@ func createDefaultConfig() component.Config {
 
 func createProfilesReceiver(
 	_ context.Context,
-	params receiver.Settings,
-	rConf component.Config,
-	consumer xconsumer.Profiles,
+	_ receiver.Settings,
+	_ component.Config,
+	_ xconsumer.Profiles,
 ) (xreceiver.Profiles, error) {
-	return nil, errors.New("not implemented")
+	return &rcvr{}, errors.New("not implemented")
+}
+
+type rcvr struct{}
+
+func (p rcvr) Start(_ context.Context, _ component.Host) error {
+	return nil
+}
+
+func (p rcvr) Shutdown(_ context.Context) error {
+	return nil
 }
