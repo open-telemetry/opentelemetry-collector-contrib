@@ -340,6 +340,54 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.repl_commands_per_sec
+
+The number of replicated commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.repl_deletes_per_sec
+
+The number of replicated deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.repl_getmores_per_sec
+
+The number of replicated getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
+### mongodb.repl_inserts_per_sec
+
+The number of replicated insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
+
+### mongodb.repl_queries_per_sec
+
+The number of replicated queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_updates_per_sec
+
+The number of replicated updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
 ### mongodb.uptime
 
 The amount of time that the server has been running.

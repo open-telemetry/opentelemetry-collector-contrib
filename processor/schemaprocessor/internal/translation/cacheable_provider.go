@@ -13,18 +13,27 @@ import (
 )
 
 // CacheableProvider is a provider that caches the result of another provider.
+// If the provider returns an error, the CacheableProvider will retry the call till limit
+// If the provider returns an error multiple times in a row, the CacheableProvider will rate limit the calls.
 type CacheableProvider struct {
-	provider  Provider
-	cache     *cache.Cache
-	mu        sync.Mutex
-	cooldown  time.Duration
+	provider Provider
+	cache    *cache.Cache
+	mu       sync.Mutex
+	// cooldown is the time to wait before retrying a failed call.
+	cooldown time.Duration
+	// callcount tracks the number of failed calls in a row.
 	callcount int
-	limit     int
-	lastErr   error
+	// limit is the number of failed calls to allow before setting the cooldown period.
+	limit int
+	// lastErr is the last error returned by the provider
+	lastErr error
+	// resetTime is the time when the rate limit will be reset
 	resetTime time.Time
 }
 
 // NewCacheableProvider creates a new CacheableProvider.
+// The cooldown parameter is the time to wait before retrying a failed call.
+// The limit parameter is the number of failed calls to allow before setting the cooldown period.
 func NewCacheableProvider(provider Provider, cooldown time.Duration, limit int) Provider {
 	return &CacheableProvider{
 		provider: provider,

@@ -23,7 +23,7 @@ type Manager interface {
 	// otherwise it will return an error.
 	RequestTranslation(ctx context.Context, schemaURL string) (Translation, error)
 
-	// AddProvider will add a provider to the manager
+	// AddProvider will add a provider to the Manager
 	AddProvider(p Provider)
 }
 
@@ -70,24 +70,20 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Translation, error) {
-	if len(m.providers) == 0 {
-		m.log.Warn("No providers available")
-		return &nopTranslation{}, nil
-	}
 	family, version, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
 		m.log.Error("No valid schema url was provided",
-			zap.String("schema-url", schemaURL),
+			zap.String("schema-url", schemaURL), zap.Error(err),
 		)
 		return nil, err
 	}
 
 	targetTranslation, match := m.match[family]
 	if !match {
-		m.log.Warn("Not a known targetTranslation, providing Nop Translation",
+		m.log.Warn("Not a known target translation",
 			zap.String("schema-url", schemaURL),
 		)
-		return nil, err
+		return nil, fmt.Errorf("not a known targetTranslation: %s", family)
 	}
 
 	m.rw.RLock()
@@ -130,8 +126,12 @@ func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Tra
 	return nil, fmt.Errorf("failed to retrieve translation for %s", schemaURL)
 }
 
-// AddProvider will add a provider to the manager
+// AddProvider will add a provider to the Manager
 func (m *manager) AddProvider(p Provider) {
+	if p == nil {
+		m.log.Error("Nil provider provided, not adding to manager")
+		return
+	}
 	if _, ok := p.(*CacheableProvider); !ok {
 		p = NewCacheableProvider(p, 5*time.Minute, 5)
 	}
