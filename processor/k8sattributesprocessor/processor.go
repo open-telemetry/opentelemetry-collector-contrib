@@ -247,6 +247,15 @@ func (kp *kubernetesprocessor) addContainerAttributes(attrs pcommon.Map, pod *ku
 	if containerSpec.ImageTag != "" {
 		setResourceAttribute(attrs, conventions.AttributeContainerImageTag, containerSpec.ImageTag)
 	}
+	if containerSpec.ServiceInstanceID != "" {
+		setResourceAttribute(attrs, conventions.AttributeServiceInstanceID, containerSpec.ServiceInstanceID)
+	}
+	if containerSpec.ServiceVersion != "" {
+		setResourceAttribute(attrs, conventions.AttributeServiceVersion, containerSpec.ServiceVersion)
+	}
+	if containerSpec.ServiceName != "" {
+		setResourceAttribute(attrs, conventions.AttributeServiceName, kube.OperatorServiceName(containerSpec.ServiceName, pod.ServiceNames))
+	}
 	// attempt to get container ID from restart count
 	runID := -1
 	runIDAttr, ok := attrs.Get(conventions.AttributeK8SContainerRestartCount)
