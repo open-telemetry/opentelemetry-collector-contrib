@@ -459,7 +459,7 @@ func Test_ProcessTraces_TraceContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where name == "operationA"`,
+			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("json_test", "pass")
 			},
@@ -759,7 +759,7 @@ func Test_ProcessTraces_InferredTraceContext(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(span.attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where span.name == "operationA"`,
+			statement: `merge_maps(span.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where span.name == "operationA"`,
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("json_test", "pass")
 			},
