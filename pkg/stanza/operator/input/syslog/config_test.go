@@ -5,6 +5,7 @@ package syslog
 
 import (
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"go.opentelemetry.io/collector/config/configtls"
@@ -37,8 +38,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.TCP.ListenAddress = "10.0.0.1:9000"
 					cfg.TCP.AddAttributes = true
 					cfg.TCP.Encoding = "utf-16"
-					cfg.TCP.SplitConfig.LineStartPattern = "ABC"
-					cfg.TCP.SplitConfig.LineEndPattern = ""
+					cfg.TCP.SplitConfig.LineStartPattern = regexp.MustCompile("ABC")
 					cfg.TCP.TLS = &configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "foo",
@@ -62,8 +62,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.UDP.ListenAddress = "10.0.0.1:9000"
 					cfg.UDP.AddAttributes = true
 					cfg.UDP.Encoding = "utf-16"
-					cfg.UDP.SplitConfig.LineStartPattern = "ABC"
-					cfg.UDP.SplitConfig.LineEndPattern = ""
+					cfg.UDP.SplitConfig.LineStartPattern = regexp.MustCompile("ABC")
+					cfg.UDP.SplitConfig.LineEndPattern = nil
 					return cfg
 				}(),
 			},
