@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.0.0-00010101000000-000000000000
-	github.com/open-telemetry/otel-arrow v0.33.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.121.0
+	github.com/open-telemetry/otel-arrow v0.34.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.27.0
 	go.opentelemetry.io/collector/component v1.27.0
@@ -32,9 +32,9 @@ require (
 	go.uber.org/mock v0.5.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	golang.org/x/net v0.35.0
+	golang.org/x/net v0.36.0
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f
-	google.golang.org/grpc v1.70.0
+	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.5
 )
 

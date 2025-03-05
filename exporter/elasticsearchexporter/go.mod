@@ -4,13 +4,13 @@ go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/elastic/go-docappender/v2 v2.6.0
+	github.com/elastic/go-docappender/v2 v2.6.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
 	github.com/lestrrat-go/strftime v1.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.121.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/gjson v1.18.0
 	go.opentelemetry.io/collector/client v1.27.0
@@ -103,8 +103,8 @@ require (
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
-	google.golang.org/grpc v1.70.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+	google.golang.org/grpc v1.71.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect

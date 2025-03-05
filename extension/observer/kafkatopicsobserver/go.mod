@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/obser
 go 1.23.0
 
 require (
-	github.com/IBM/sarama v1.45.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.120.1
+	github.com/IBM/sarama v1.45.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.121.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componenttest v0.121.0
@@ -76,7 +76,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.34.0 // indirect
+	golang.org/x/net v0.35.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250207221924-e9438ea467c6 // indirect
