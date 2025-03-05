@@ -51,7 +51,10 @@ func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
 			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Logs)
 		}
 		// cast with ok to avoid panics.
-		lm, _ := encoding.(plog.Marshaler)
+		lm, ok := encoding.(plog.Marshaler)
+		if !ok {
+			return nil, fmt.Errorf("encoding %q does not support logs", *config.Encodings.Logs)
+		}
 		marshaller.logsMarshaler = lm
 	}
 
@@ -61,7 +64,10 @@ func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
 			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Metrics)
 		}
 		// cast with ok to avoid panics.
-		mm, _ := encoding.(pmetric.Marshaler)
+		mm, ok := encoding.(pmetric.Marshaler)
+		if !ok {
+			return nil, fmt.Errorf("encoding %q does not support metrics", *config.Encodings.Metrics)
+		}
 		marshaller.metricsMarshaler = mm
 	}
 
@@ -71,7 +77,10 @@ func newMarshaller(config *Config, host component.Host) (*marshaller, error) {
 			return nil, fmt.Errorf("unknown encoding %q", config.Encodings.Traces)
 		}
 		// cast with ok to avoid panics.
-		tm, _ := encoding.(ptrace.Marshaler)
+		tm, ok := encoding.(ptrace.Marshaler)
+		if !ok {
+			return nil, fmt.Errorf("encoding %q does not support traces", *config.Encodings.Traces)
+		}
 		marshaller.tracesMarshaler = tm
 	}
 
@@ -82,31 +91,19 @@ func (m *marshaller) marshalTraces(td ptrace.Traces) ([]byte, error) {
 	if m.tracesMarshaler == nil {
 		return nil, errors.New("traces are not supported by encoding")
 	}
-	buf, err := m.tracesMarshaler.MarshalTraces(td)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return m.tracesMarshaler.MarshalTraces(td)
 }
 
 func (m *marshaller) marshalMetrics(md pmetric.Metrics) ([]byte, error) {
 	if m.metricsMarshaler == nil {
 		return nil, errors.New("metrics are not supported by encoding")
 	}
-	buf, err := m.metricsMarshaler.MarshalMetrics(md)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return m.metricsMarshaler.MarshalMetrics(md)
 }
 
 func (m *marshaller) marshalLogs(ld plog.Logs) ([]byte, error) {
 	if m.logsMarshaler == nil {
 		return nil, errors.New("logs are not supported by encoding")
 	}
-	buf, err := m.logsMarshaler.MarshalLogs(ld)
-	if err != nil {
-		return nil, err
-	}
-	return buf, nil
+	return m.logsMarshaler.MarshalLogs(ld)
 }

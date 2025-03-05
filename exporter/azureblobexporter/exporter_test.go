@@ -61,7 +61,7 @@ func TestNewExporter(t *testing.T) {
 	assert.NoError(t, te.start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestExporterConsumeMetrics(t *testing.T) {
+func TestExporterConsumeTelemetry(t *testing.T) {
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

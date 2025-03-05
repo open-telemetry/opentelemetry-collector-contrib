@@ -168,7 +168,8 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, data []byte, signal
 		return fmt.Errorf("failed to upload traces data: %w", err)
 	}
 
-	e.logger.Debug("Successfully exported traces to Azure Blob Storage",
+	e.logger.Debug("Successfully exported data to Azure Blob Storage",
+		zap.String("signal", signal.String()),
 		zap.String("account", e.client.URL()),
 		zap.String("container", e.config.Container.Traces),
 		zap.String("blob", blobName),

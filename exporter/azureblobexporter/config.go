@@ -69,7 +69,7 @@ type Config struct {
 	Container *Container      `mapstructure:"container"`
 	Auth      *Authentication `mapstructure:"auth"`
 
-	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05_{{.SerialNum}}.json"
+	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
 
 	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
