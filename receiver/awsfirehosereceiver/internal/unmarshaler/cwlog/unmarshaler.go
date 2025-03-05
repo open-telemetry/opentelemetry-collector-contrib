@@ -13,10 +13,13 @@ import (
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/klauspost/compress/gzip"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -30,15 +33,16 @@ var errInvalidRecords = errors.New("record format invalid")
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
-	logger   *zap.Logger
-	gzipPool sync.Pool
+	logger    *zap.Logger
+	buildInfo component.BuildInfo
+	gzipPool  sync.Pool
 }
 
 var _ plog.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger: logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger: logger, buildInfo: buildInfo}
 }
 
 // UnmarshalLogs deserializes the given record as CloudWatch Logs events
@@ -49,10 +53,6 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	var err error
 	r, ok := u.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		u.logger.Error(fmt.Sprintf("Expected *gzip.Reader, got %T", r))
-		// Fall through and create a new *gzip.Reader (r == nil)
-	}
-	if r == nil {
 		r, err = gzip.NewReader(bytes.NewReader(compressedRecord))
 	} else {
 		err = r.Reset(bytes.NewReader(compressedRecord))
@@ -120,10 +120,19 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	for resourceKey, logRecords := range byResource {
 		rl := logs.ResourceLogs().AppendEmpty()
 		resourceAttrs := rl.Resource().Attributes()
+		resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 		resourceAttrs.PutStr(conventions.AttributeCloudAccountID, resourceKey.owner)
+		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames).AppendEmpty().SetStr(resourceKey.logGroup)
+		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames).AppendEmpty().SetStr(resourceKey.logStream)
+		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogGroupNames` instead
 		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, resourceKey.logGroup)
+		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogStreamNames` instead
 		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, resourceKey.logStream)
-		logRecords.MoveAndAppendTo(rl.ScopeLogs().AppendEmpty().LogRecords())
+
+		sl := rl.ScopeLogs().AppendEmpty()
+		sl.Scope().SetName(metadata.ScopeName)
+		sl.Scope().SetVersion(u.buildInfo.Version)
+		logRecords.MoveAndAppendTo(sl.LogRecords())
 	}
 	return logs, nil
 }

@@ -1,0 +1,41 @@
+type: windowsservice
+
+status:
+  class: receiver
+  stability:
+    development: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [pjanotti, shalper2]
+  unsupported_platforms: [darwin, linux]
+
+attributes:
+  name:
+    description: The name of the windows Service being reported.
+    type: string
+  startup_mode:
+    description: Startup mode of Windows Service
+    enum: [boot_start, system_start, auto_start, demand_start, disabled]
+    type: string
+  
+metrics:
+  windows.service.status:
+    enabled: true
+    description: Gauge value containing service status as an integer value.
+    extended_documentation: >
+      Gauge values map to service status as follows:
+      0 - Failed to retrieve service status,
+      1 - Stopped,
+      2 - Start Pending,
+      3 - Stop Pending,
+      4 - Service Running,
+      5 - Continue Pending,
+      6 - Pause Pending,
+      7 - Service Paused
+    unit: '{status}'
+    gauge:
+      value_type: int
+    attributes: [name, startup_mode]
+
+tests:
+  config:

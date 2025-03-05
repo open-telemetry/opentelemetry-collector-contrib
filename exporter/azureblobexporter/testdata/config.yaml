@@ -1,0 +1,59 @@
+azureblob/sp:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "service_principal"
+    tenant_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    client_secret: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/smi:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  format: "proto"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/umi:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "user_managed_identity"
+    client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/conn-string:
+  # for connection string auth, no need to specify url, because it's already included in connection string
+  auth:
+    type: "connection_string"
+    connection_string: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net"
+  container:
+    metrics: "test"
+    logs: "test"
+    traces: "test"
+azureblob/err1:
+  auth:
+    type: "system_managed_identity"
+azureblob/err2:
+  auth:
+    type: "connection_string"
+azureblob/err3:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "service_principal"
+    client_id: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d"
+    client_secret: "<client secret>"
+azureblob/err4:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "user_managed_identity"
+azureblob/err5:
+  url: "https://fakeaccount.blob.core.windows.net/"
+  auth:
+    type: "system_managed_identity"
+  format: "custom"
