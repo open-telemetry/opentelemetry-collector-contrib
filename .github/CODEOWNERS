@@ -198,7 +198,7 @@ processor/resourcedetectionprocessor/                            @open-telemetry
 processor/resourcedetectionprocessor/internal/dynatrace/         @open-telemetry/collector-contrib-approvers @bacherfl @evan-bradley
 processor/resourceprocessor/                                     @open-telemetry/collector-contrib-approvers @dmitryax
 processor/routingprocessor/                                      @open-telemetry/collector-contrib-approvers @jpkrohling
-processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96
+processor/schemaprocessor/                                       @open-telemetry/collector-contrib-approvers @MovieStoreGuy @ankitpatel96 @dineshg13
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @echlebek @amdprophet
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @jpkrohling @portertech
