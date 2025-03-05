@@ -99,6 +99,11 @@ Top query collection enabled:
 
 Details about the metrics produced by this receiver can be found in [documentation.md](./documentation.md)
 
+
+## Logs 
+
+Details about the logs produced by this receiver can be found in [logs-documentation.md](./logs-documentation.md)
+
 ## Known issues
 SQL Server docker users may run into an issue that the collector fails to parse certificate from server due to `x509: negative serial number`. That's because we adopted Go `1.23` starting from contrib `v0.121.0`:
 > Before Go 1.23, ParseCertificate accepted certificates with negative serial numbers.
