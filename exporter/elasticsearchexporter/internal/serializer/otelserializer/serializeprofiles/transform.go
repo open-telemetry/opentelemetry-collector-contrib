@@ -389,23 +389,10 @@ func stackTraceID(frames []StackFrame) (string, error) {
 }
 
 func getLocations(profile pprofile.Profile, sample pprofile.Sample) []pprofile.Location {
-	if sample.LocationsLength() > 0 {
-		locations := make([]pprofile.Location, 0, sample.LocationsLength())
-
-		for i := int(sample.LocationsStartIndex()); i < int(sample.LocationsLength()); i++ {
-			if i < profile.LocationTable().Len() {
-				locations = append(locations, profile.LocationTable().At(i))
-			}
-		}
-		return locations
-	}
-
 	locations := make([]pprofile.Location, 0, sample.LocationsLength())
-	lastIndex := int(sample.LocationsStartIndex() + sample.LocationsLength())
+	lastIndex := min(int(sample.LocationsStartIndex()+sample.LocationsLength()), profile.LocationTable().Len())
 	for i := int(sample.LocationsStartIndex()); i < lastIndex; i++ {
-		if i < profile.LocationTable().Len() {
-			locations = append(locations, profile.LocationTable().At(i))
-		}
+		locations = append(locations, profile.LocationTable().At(i))
 	}
 	return locations
 }
