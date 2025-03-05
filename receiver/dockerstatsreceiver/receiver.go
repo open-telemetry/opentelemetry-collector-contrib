@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"os"
 	"strconv"
 	"strings"
 	"sync"
@@ -14,6 +15,7 @@ import (
 	"github.com/docker/docker/api/types"
 	dtypes "github.com/docker/docker/api/types"
 	ctypes "github.com/docker/docker/api/types/container"
+	"github.com/docker/docker/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -45,6 +47,9 @@ type metricsReceiver struct {
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
+	// Resolve the Docker endpoint during receiver initialization
+	config.Endpoint = config.resolveDockerEndpoint()
+
 	return &metricsReceiver{
 		config:   config,
 		settings: set,
@@ -52,9 +57,20 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
+func (c *Config) resolveDockerEndpoint() string {
+	if c.Endpoint != "" {
+		return c.Endpoint
+	}
+	return os.Getenv("DOCKER_HOST")
+}
+
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+	var opts []client.Opt
+	if r.config.Config.Endpoint == "" {
+		opts = append(opts, client.WithHostFromEnv())
+	}
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, opts...)
 	if err != nil {
 		return err
 	}
@@ -62,7 +78,6 @@ func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	if err = r.client.LoadContainerList(ctx); err != nil {
 		return err
 	}
-
 	cctx, cancel := context.WithCancel(ctx)
 	r.cancel = cancel
 
