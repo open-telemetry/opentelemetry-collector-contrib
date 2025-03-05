@@ -9,8 +9,9 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 // Type is the value users can use to configure the true reset point adjuster.
@@ -25,15 +26,15 @@ const Type = "true_reset_point"
 // and provides AdjustMetric, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type Adjuster struct {
-	jobsMap *JobsMap
-	set     component.TelemetrySettings
+	startTimeCache *StartTimeCache
+	set            component.TelemetrySettings
 }
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
 func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adjuster {
 	return &Adjuster{
-		jobsMap: NewJobsMap(gcInterval),
-		set:     set,
+		startTimeCache: NewStartTimeCache(gcInterval),
+		set:            set,
 	}
 }
 
@@ -42,10 +43,8 @@ func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adj
 func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		// TODO(#38286): Produce a hash of all resource attributes, rather than just job + instance.
-		job, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
-		instance, _ := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-		tsm := a.jobsMap.get(job.Str(), instance.Str())
+		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
+		tsm := a.startTimeCache.get(attrHash)
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 		// nothing else can modify the data used for adjustment.
