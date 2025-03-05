@@ -1,0 +1,8 @@
+type: checkapi
+
+status:
+  stability:
+    development: []
+  class: cmd
+  codeowners:
+    active: [atoulme]
