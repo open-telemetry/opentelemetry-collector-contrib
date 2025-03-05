@@ -64,6 +64,33 @@ func TestValidate(t *testing.T) {
 			},
 			expectedSuccess: true,
 		},
+		{
+			desc: "config with invalid MaxQuerySampleCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsConfig: LogsConfig{
+					TopQueryCollection: TopQueryCollection{
+						MaxQuerySampleCount: 100000,
+					},
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with invalid TopQueryCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				LogsConfig: LogsConfig{
+					TopQueryCollection: TopQueryCollection{
+						MaxQuerySampleCount: 100,
+						TopQueryCount:       200000,
+					},
+				},
+			},
+			expectedSuccess: false,
+		},
 	}
 
 	for _, tc := range testCases {
@@ -122,6 +149,10 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
+		expected.EnableTopQueryCollection = true
+		expected.LookbackTime = 60
+		expected.TopQueryCount = 200
+		expected.LogsConfig.TopQueryCollection.MaxQuerySampleCount = 1000
 
 		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
