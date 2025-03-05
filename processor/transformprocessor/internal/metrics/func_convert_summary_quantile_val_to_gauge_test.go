@@ -26,7 +26,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeMetric := metrics.AppendEmpty()
 				gaugeMetric.SetDescription(summaryMetric.Description())
-				gaugeMetric.SetName(summaryMetric.Name())
+				gaugeMetric.SetName(summaryMetric.Name() + ".quantiles")
 				gaugeMetric.SetUnit(summaryMetric.Unit())
 				gauge := gaugeMetric.SetEmptyGauge()
 
@@ -58,7 +58,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 
 				gaugeMetric := metrics.AppendEmpty()
 				gaugeMetric.SetDescription(summaryMetric.Description())
-				gaugeMetric.SetName(summaryMetric.Name())
+				gaugeMetric.SetName(summaryMetric.Name() + ".quantiles")
 				gaugeMetric.SetUnit(summaryMetric.Unit())
 				gauge := gaugeMetric.SetEmptyGauge()
 
@@ -94,7 +94,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			actualMetric := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetric.AppendEmpty())
 
-			evaluate, err := convertSummaryQuantileValToGauge(tt.key)
+			evaluate, err := convertSummaryQuantileValToGauge(tt.key, ottl.Optional[string]{})
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
