@@ -47,7 +47,7 @@ type Config struct {
 	// the collector cannot be granted cluster-wide permissions.
 	Namespace string `mapstructure:"namespace"`
 
-	K8sLeaderElector component.ID `mapstructure:"leader_elector"`
+	K8sLeaderElector component.ID `mapstructure:"k8s_leader_elector"`
 }
 
 func (cfg *Config) Validate() error {

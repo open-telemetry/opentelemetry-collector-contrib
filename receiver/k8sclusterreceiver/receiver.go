@@ -6,6 +6,7 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -105,7 +106,8 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
-	if kr.config.K8sLeaderElector.Name() != "" {
+	kr.settings.Logger.Info(fmt.Sprintf("config: %+v\n", kr.config.K8sLeaderElector.Type()))
+	if kr.config.K8sLeaderElector.Type().String() != "" {
 		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election!!")
 		extList := host.GetExtensions()
 		if extList == nil {
@@ -121,6 +123,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 		if !ok {
 			return nil
 		}
+		kr.settings.Logger.Info("Setting callback functions")
 
 		leaderElectorExt.SetCallBackFuncs(
 			func(ctx context.Context) {
