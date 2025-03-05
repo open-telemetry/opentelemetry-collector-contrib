@@ -240,6 +240,7 @@ receiver/couchdbreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
+receiver/faroreceiver
 receiver/filestatsreceiver
 receiver/flinkmetricsreceiver
 receiver/fluentforwardreceiver
