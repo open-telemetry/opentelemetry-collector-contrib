@@ -1,0 +1,15 @@
+file_format: 1.0.0
+
+schema_url: https://example.com/testdata/schema_sections/metrics_rename_metrics/1.1.0
+
+versions:
+  1.1.0:
+    metrics:
+      changes:
+        - rename_metrics:
+            testMetric1: testMetricUno
+            testMetric2: testMetricTwo
+        - rename_metrics:
+            testMetricUno: testMetricOne
+  #  this has to be here
+  1.0.0:
