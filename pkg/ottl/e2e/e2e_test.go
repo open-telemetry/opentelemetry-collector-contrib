@@ -144,6 +144,10 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.things.1.name", "bar")
 				m.PutInt("test.things.1.value", 5)
 
+				m.PutStr("test.map_slice.0.foo1", "bar1")
+				m.PutStr("test.map_slice.0.foo2", "bar2")
+				m.PutStr("test.map_slice.1.total.string", "barbar1")
+
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
@@ -1555,20 +1559,17 @@ func constructLogTransformContextEditors() ottllog.TransformContext {
 	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
 	logRecord.Attributes().PutStr("flags", "A|B|C")
 	logRecord.Attributes().PutStr("total.string", "123456789")
-<<<<<<< HEAD
 	mm := logRecord.Attributes().PutEmptyMap("conflict")
 	mm1 := mm.PutEmptyMap("conflict1")
 	mm1.PutStr("conflict2", "pass")
 	mmm := logRecord.Attributes().PutEmptyMap("conflict.conflict1")
 	mmm.PutStr("conflict2", "nopass")
-=======
 	slice := logRecord.Attributes().PutEmptySlice("map_slice")
 	ms := slice.AppendEmpty().SetEmptyMap()
 	ms.PutStr("foo1", "bar1")
 	ms.PutStr("foo2", "bar2")
 	ms2 := slice.AppendEmpty().SetEmptyMap()
 	ms2.PutStr("total.string", "barbar1")
->>>>>>> 6014094f8d (add e2e tests)
 	m := logRecord.Attributes().PutEmptyMap("foo")
 	m.PutStr("bar", "pass")
 	m.PutStr("flags", "pass")
