@@ -147,7 +147,7 @@ func (v *vcenterMetricScraper) recordClusterStats(
 }
 
 // recordClusterVSANMetrics records vSAN metrics for a vSphere Cluster
-func (v *vcenterMetricScraper) recordClusterVSANMetrics(vSANMetrics *VSANMetricResults) {
+func (v *vcenterMetricScraper) recordClusterVSANMetrics(vSANMetrics *vSANMetricResults) {
 	for _, metric := range vSANMetrics.MetricDetails {
 		for i, value := range metric.Values {
 			timestamp := metric.Timestamps[i]
@@ -223,7 +223,7 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 }
 
 // recordHostVSANMetrics records vSAN metrics for a vSphere host
-func (v *vcenterMetricScraper) recordHostVSANMetrics(vSANMetrics *VSANMetricResults) {
+func (v *vcenterMetricScraper) recordHostVSANMetrics(vSANMetrics *vSANMetricResults) {
 	for _, metric := range vSANMetrics.MetricDetails {
 		for i, value := range metric.Values {
 			timestamp := metric.Timestamps[i]
@@ -497,7 +497,7 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 }
 
 // recordVMVSANMetrics records vSAN metrics for a vSphere Virtual Machine
-func (v *vcenterMetricScraper) recordVMVSANMetrics(vSANMetrics *VSANMetricResults) {
+func (v *vcenterMetricScraper) recordVMVSANMetrics(vSANMetrics *vSANMetricResults) {
 	for _, metric := range vSANMetrics.MetricDetails {
 		for i, value := range metric.Values {
 			timestamp := metric.Timestamps[i]
