@@ -10,8 +10,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	encoder "go.opentelemetry.io/otel/schema/v1.0"
-	"go.opentelemetry.io/otel/schema/v1.0/ast"
+	encoder "go.opentelemetry.io/otel/schema/v1.1"
+	ast11 "go.opentelemetry.io/otel/schema/v1.1/ast"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -63,7 +63,7 @@ var (
 	_ Translation    = (*translator)(nil)
 )
 
-func (t *translator) loadTranslation(content *ast.Schema) error {
+func (t *translator) loadTranslation(content *ast11.Schema) error {
 	var errs error
 	t.log.Debug("Updating translation")
 	for v, def := range content.Versions {
@@ -89,7 +89,7 @@ func (t *translator) loadTranslation(content *ast.Schema) error {
 	return errs
 }
 
-func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast.Schema) (*translator, error) {
+func newTranslatorFromSchema(log *zap.Logger, targetSchemaURL string, schemaFileSchema *ast11.Schema) (*translator, error) {
 	_, target, err := GetFamilyAndVersion(targetSchemaURL)
 	if err != nil {
 		return nil, err
@@ -139,6 +139,7 @@ func (t *translator) SupportedVersion(v *Version) bool {
 }
 
 func (t *translator) ApplyAllResourceChanges(resource alias.Resource, inSchemaURL string) error {
+	t.log.Debug("Applying all resource changes")
 	_, ver, err := GetFamilyAndVersion(inSchemaURL)
 	if err != nil {
 		return err
