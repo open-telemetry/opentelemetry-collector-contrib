@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: db.system.type
+          value:
+            stringValue: microsoft.sql_server
     scopeLogs:
       - logRecords:
           - attributes:
@@ -104,4 +108,6 @@ resourceLogs:
                   stringValue: Unknown
             body:
               stringValue: sample
-        scope: {}
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+          version: v0.0.1
