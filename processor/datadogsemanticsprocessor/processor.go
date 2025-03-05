@@ -5,7 +5,9 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"strings"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
@@ -14,22 +16,26 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-func insertAttrIfMissing(sattr pcommon.Map, key string, value any) {
+func insertAttrIfMissing(sattr pcommon.Map, key string, value any) (err error) {
 	if _, ok := sattr.Get(key); !ok {
 		switch v := value.(type) {
 		case string:
 			sattr.PutStr(key, v)
 		case int64:
 			sattr.PutInt(key, v)
+		default:
+			err = errors.New("unsupported value type")
 		}
 	}
+	return
 }
 
-func (tp *tracesProcessor) processTraces(_ context.Context, td ptrace.Traces) (output ptrace.Traces, err error) {
+func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) (output ptrace.Traces, err error) {
 	rspans := td.ResourceSpans()
 	for i := 0; i < rspans.Len(); i++ {
 		rspan := rspans.At(i)
 		otelres := rspan.Resource()
+		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
 			libspans := rspan.ScopeSpans().At(j)
 			for k := 0; k < libspans.Spans().Len(); k++ {
@@ -39,11 +45,17 @@ func (tp *tracesProcessor) processTraces(_ context.Context, td ptrace.Traces) (o
 					sattr.RemoveIf(func(k string, _ pcommon.Value) bool {
 						return strings.HasPrefix(k, "datadog.")
 					})
+					if ddHostname, ok := rattr.Get("datadog.host.name"); ok && ddHostname.AsString() == "" {
+						rattr.Remove("datadog.host.name")
+					}
 				}
 				insertAttrIfMissing(sattr, "datadog.service", traceutil.GetOTelService(otelres, true))
 				insertAttrIfMissing(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan))
 				insertAttrIfMissing(sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres))
 				insertAttrIfMissing(sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres))
+				if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet); ok && src.Kind == source.HostnameKind {
+					insertAttrIfMissing(otelres.Attributes(), "datadog.host.name", src.Identifier)
+				}
 
 				spanKind := otelspan.Kind()
 				insertAttrIfMissing(sattr, "datadog.span.kind", traceutil.OTelSpanKindName(spanKind))
@@ -120,6 +132,7 @@ func status2Error(status ptrace.Status, events ptrace.SpanEventSlice, metaMap ma
 	return 1
 }
 
+// TODO remove once Status2Error is imported from datadog-agent
 func getFirstFromMap(m map[string]string, keys ...string) (string, string) {
 	for _, key := range keys {
 		if val := m[key]; val != "" {

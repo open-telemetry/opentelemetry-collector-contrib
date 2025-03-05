@@ -125,6 +125,7 @@ func TestBasicTranslation(t *testing.T) {
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
 						"service.version":             "v2",
+						"host.name":                   "test-host-name",
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
@@ -142,6 +143,7 @@ func TestBasicTranslation(t *testing.T) {
 			},
 			fn: func(out *ptrace.Traces) {
 				rs := out.ResourceSpans().At(0)
+				res := rs.Resource()
 				span := rs.ScopeSpans().At(0).Spans().At(0)
 				ddservice, _ := span.Attributes().Get("datadog.service")
 				require.Equal(t, "test-service", ddservice.AsString())
@@ -167,6 +169,9 @@ func TestBasicTranslation(t *testing.T) {
 				require.False(t, ok)
 				_, ok = span.Attributes().Get("datadog.error.stack")
 				require.False(t, ok)
+
+				ddHost, _ := res.Attributes().Get("datadog.host.name")
+				require.Equal(t, "test-host-name", ddHost.AsString())
 			},
 		},
 		{
@@ -180,6 +185,8 @@ func TestBasicTranslation(t *testing.T) {
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
+						"host.name":                   "resource-host-name",
+						"datadog.host.name":           "",
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
@@ -206,6 +213,7 @@ func TestBasicTranslation(t *testing.T) {
 								"datadog.resource":              "specified-resource",
 								"datadog.name":                  "specified-operation",
 								"datadog.type":                  "specified-type",
+								"datadog.host.name":             "specified-hostname",
 								"datadog.span.kind":             "specified-span-kind",
 								"datadog.env":                   "specified-env",
 								"datadog.version":               "specified-version",
@@ -244,6 +252,9 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "overridden-type", ddErrorType.AsString())
 				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
 				require.Equal(t, "overridden-stack", ddErrorStack.AsString())
+
+				ddHost, _ := rs.Resource().Attributes().Get("datadog.host.name")
+				require.Equal(t, "resource-host-name", ddHost.AsString())
 			},
 		},
 		{
@@ -257,6 +268,8 @@ func TestBasicTranslation(t *testing.T) {
 						"service.name":                "test-service",
 						"resource.name":               "test-resource",
 						"deployment.environment.name": "spanenv2",
+						"host.name":                   "resource-host-name",
+						"datadog.host.name":           "",
 					},
 					Spans: []*testutil.OTLPSpan{
 						{
@@ -321,6 +334,9 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "specified-error-type", ddErrorType.AsString())
 				ddErrorStack, _ := span.Attributes().Get("datadog.error.stack")
 				require.Equal(t, "specified-error-stack", ddErrorStack.AsString())
+
+				ddHost, _ := rs.Resource().Attributes().Get("datadog.host.name")
+				require.Equal(t, "", ddHost.AsString())
 			},
 		},
 	}

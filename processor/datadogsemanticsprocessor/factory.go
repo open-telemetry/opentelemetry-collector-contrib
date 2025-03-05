@@ -5,6 +5,8 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
+	"go.opentelemetry.io/collector/component/componenttest"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -27,12 +29,18 @@ func NewFactory() processor.Factory {
 
 type tracesProcessor struct {
 	overrideIncomingDatadogFields bool
+	attrsTranslator               *attributes.Translator
 }
 
-func newTracesProcessor(cfg *Config) *tracesProcessor {
+func newTracesProcessor(cfg *Config) (*tracesProcessor, error) {
+	attrsTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+	if err != nil {
+		return nil, err
+	}
 	return &tracesProcessor{
 		overrideIncomingDatadogFields: cfg.OverrideIncomingDatadogFields,
-	}
+		attrsTranslator:               attrsTranslator,
+	}, nil
 }
 
 func createDefaultConfig() component.Config {
@@ -48,7 +56,10 @@ func createTracesProcessor(
 	next consumer.Traces,
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	tp := newTracesProcessor(oCfg)
+	tp, err := newTracesProcessor(oCfg)
+	if err != nil {
+		return nil, err
+	}
 	return processorhelper.NewTraces(
 		ctx,
 		set,
