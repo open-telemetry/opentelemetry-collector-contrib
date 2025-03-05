@@ -1454,7 +1454,11 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.OwnMetricsConnSettings != nil || msg.OwnTracesConnSettings != nil || msg.OwnLogsConnSettings != nil {
-		configChanged = s.processOwnTelemetryConnSettingsMessage(ctx, &protobufs.ConnectionSettingsOffers{OwnMetrics: msg.OwnMetricsConnSettings, OwnTraces: msg.OwnTracesConnSettings}) || configChanged
+		configChanged = s.processOwnTelemetryConnSettingsMessage(ctx, &protobufs.ConnectionSettingsOffers{
+			OwnMetrics: msg.OwnMetricsConnSettings,
+			OwnTraces:  msg.OwnTracesConnSettings,
+			OwnLogs:    msg.OwnLogsConnSettings,
+		}) || configChanged
 	}
 
 	// Update the agent config if any messages have touched the config
