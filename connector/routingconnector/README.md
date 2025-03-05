@@ -49,6 +49,8 @@ The following settings are available:
 - [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
 - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
 - [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
+- [ToLowerCase](../../pkg/ottl/ottlfuncs/README.md#ToLowerCase)
+- [ToUpperCase](../../pkg/ottl/ottlfuncs/README.md#ToUpperCase)
 
 ## Additional Settings
 
