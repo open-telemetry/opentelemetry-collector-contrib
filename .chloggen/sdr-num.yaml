@@ -7,9 +7,7 @@ change_type: enhancement
 component: redactionprocessor
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note:
-  Fix redaction processor not redacting numeric and other attributes by using AsString() to redact the value as if it 
-  were read as a string. This allows for redaction of numeric attributes albeit at the cost of changing their type.
+note: The new `redact_all_types` option redacts all field types after casting them to string.
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36684]
 
