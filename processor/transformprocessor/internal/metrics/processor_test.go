@@ -255,7 +255,7 @@ func Test_ProcessMetrics_MetricContext(t *testing.T) {
 
 				gaugeMetric := td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
 				gaugeMetric.SetDescription(summaryMetric.Description())
-				gaugeMetric.SetName(summaryMetric.Name())
+				gaugeMetric.SetName(summaryMetric.Name() + ".quantiles")
 				gaugeMetric.SetUnit(summaryMetric.Unit())
 
 				gauge := gaugeMetric.SetEmptyGauge()
