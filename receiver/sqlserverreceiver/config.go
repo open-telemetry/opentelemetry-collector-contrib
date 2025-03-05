@@ -12,8 +12,15 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
+type QuerySample struct {
+	EnableQuerySample bool `mapstructure:"enabled"`
+	// MaxCachedQuerySample is the maximum number of query samples that will be cached.
+	// Only query that is not in the cache will be reported as sample.
+	MaxCachedQuerySample uint `mapstructure:"max_cached_query_sample"`
+}
+
 type LogsConfig struct {
-	EnableQuerySample bool `mapstructure:"enable_query_sample"`
+	QuerySample `mapstructure:"query_sample"`
 }
 
 // Config defines configuration for a sqlserver receiver.
@@ -24,8 +31,6 @@ type Config struct {
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
-
-	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
 
 	// The following options currently do nothing. Functionality will be added in a future PR.
 	Password configopaque.String `mapstructure:"password"`
@@ -40,7 +45,7 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if cfg.MaxQuerySampleCount > 10000 {
+	if cfg.MaxCachedQuerySample > 10000 {
 		return errors.New("`max_query_sample_count` must be between 0 and 10000")
 	}
 

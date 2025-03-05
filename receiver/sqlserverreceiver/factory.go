@@ -48,9 +48,11 @@ func createDefaultConfig() component.Config {
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		LogsConfig: LogsConfig{
-			EnableQuerySample: false,
+			QuerySample{
+				EnableQuerySample:    false,
+				MaxCachedQuerySample: 1000,
+			},
 		},
-		MaxQuerySampleCount: 1000,
 	}
 }
 
@@ -166,7 +168,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		var err error
 
 		if query == getSQLServerQuerySamplesQuery() {
-			cache, err = lru.New[string, int64](int(cfg.MaxQuerySampleCount * 10))
+			cache, err = lru.New[string, int64](int(cfg.MaxCachedQuerySample * 10))
 			if err != nil {
 				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
 				continue

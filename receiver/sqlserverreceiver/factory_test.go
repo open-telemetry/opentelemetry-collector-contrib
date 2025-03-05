@@ -41,10 +41,12 @@ func TestCreateMetrics(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					LogsConfig: LogsConfig{
-						EnableQuerySample: false,
+						QuerySample: QuerySample{
+							EnableQuerySample:    false,
+							MaxCachedQuerySample: 1000,
+						},
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-					MaxQuerySampleCount:  1000,
 				}
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())
 			},
