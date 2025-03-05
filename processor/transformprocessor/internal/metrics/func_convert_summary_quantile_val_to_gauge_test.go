@@ -81,6 +81,39 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			},
 		},
 		{
+			name:   "convert_summary_quantile_val_to_gauge custom attribute key and suffix",
+			input:  getTestSummaryMetric(),
+			key:    ottl.NewTestingOptional[string]("custom_quantile"),
+			suffix: ottl.NewTestingOptional[string](".custom_suffix"),
+			want: func(metrics pmetric.MetricSlice) {
+				summaryMetric := getTestSummaryMetric()
+				summaryMetric.CopyTo(metrics.AppendEmpty())
+
+				gaugeMetric := metrics.AppendEmpty()
+				gaugeMetric.SetDescription(summaryMetric.Description())
+				gaugeMetric.SetName(summaryMetric.Name() + ".custom_suffix")
+				gaugeMetric.SetUnit(summaryMetric.Unit())
+				gauge := gaugeMetric.SetEmptyGauge()
+
+				attrs := getTestAttributes()
+
+				gaugeDp := gauge.DataPoints().AppendEmpty()
+				attrs.CopyTo(gaugeDp.Attributes())
+				gaugeDp.Attributes().PutStr("custom_quantile", "0.99")
+				gaugeDp.SetDoubleValue(1)
+
+				gaugeDp1 := gauge.DataPoints().AppendEmpty()
+				attrs.CopyTo(gaugeDp1.Attributes())
+				gaugeDp1.Attributes().PutStr("custom_quantile", "0.95")
+				gaugeDp1.SetDoubleValue(2)
+
+				gaugeDp2 := gauge.DataPoints().AppendEmpty()
+				attrs.CopyTo(gaugeDp2.Attributes())
+				gaugeDp2.Attributes().PutStr("custom_quantile", "0.50")
+				gaugeDp2.SetDoubleValue(3)
+			},
+		},
+		{
 			name:  "convert_summary_quantile_val_to_gauge (no op)",
 			input: getTestGaugeMetric(),
 			want: func(metrics pmetric.MetricSlice) {
@@ -94,7 +127,7 @@ func Test_ConvertSummaryQuantileValToGauge(t *testing.T) {
 			actualMetric := pmetric.NewMetricSlice()
 			tt.input.CopyTo(actualMetric.AppendEmpty())
 
-			evaluate, err := convertSummaryQuantileValToGauge(tt.key, ottl.Optional[string]{})
+			evaluate, err := convertSummaryQuantileValToGauge(tt.key, tt.suffix)
 			assert.NoError(t, err)
 
 			_, err = evaluate(nil, ottlmetric.NewTransformContext(tt.input, actualMetric, pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics()))
