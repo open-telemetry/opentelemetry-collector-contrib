@@ -1,3 +1,4 @@
+cmd/checkapi
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common
@@ -297,6 +298,7 @@ receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
 receiver/systemdreceiver
+receiver/tcpcheckreceiver
 receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
