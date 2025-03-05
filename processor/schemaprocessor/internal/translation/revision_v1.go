@@ -30,7 +30,6 @@ type RevisionV1 struct {
 // Since VersionDef uses custom types for various definitions, it isn't possible
 // to cast those values into the primitives so each has to be processed together.
 // Generics would be handy here.
-// todo(ankit) investigate using generics
 func NewRevision(ver *Version, def ast11.VersionDef) *RevisionV1 {
 	return &RevisionV1{
 		ver:        ver,
