@@ -63,7 +63,6 @@ body:
       - exporter/loadbalancing
       - exporter/logicmonitor
       - exporter/logzio
-      - exporter/loki
       - exporter/mezmo
       - exporter/opencensus
       - exporter/opensearch
