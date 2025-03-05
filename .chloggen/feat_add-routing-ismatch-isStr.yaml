@@ -7,7 +7,7 @@ change_type: enhancement
 component: routingconnector
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds `IsString` and `IsMap` to supported functions in routing connector.
+note: Adds Standard Converter functions to routing connector.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38282]
