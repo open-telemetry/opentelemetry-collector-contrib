@@ -89,6 +89,61 @@ func TestNewExporter(t *testing.T) {
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
 }
 
+func TestNewExporter_Serializer(t *testing.T) {
+	require.NoError(t, enableMetricExportSerializer())
+	defer require.NoError(t, enableNativeMetricExport())
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: HistogramConfig{
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
+	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	var err error
+	params.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
+}
+
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
@@ -947,6 +1002,9 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 	return &Config{
 		HostMetadata: HostMetadataConfig{
 			Tags: hostTags,
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{

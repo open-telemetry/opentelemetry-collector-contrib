@@ -1,3 +1,4 @@
+cmd/checkapi
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common

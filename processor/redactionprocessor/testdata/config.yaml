@@ -30,6 +30,10 @@ redaction:
   # blocked span attributes. Values that match are not masked.
   allowed_values:
     - ".+@mycompany.com"
+  # hash_function defines the function for hashing the values instead of
+  # masking them with a fixed string. By default, no hash function is used
+  # and masking with a fixed string is performed.
+  hash_function: md5
   # Summary controls the verbosity level of the diagnostic attributes that
   # the processor adds to the spans when it redacts or masks other
   # attributes. In some contexts a list of redacted attributes leaks
