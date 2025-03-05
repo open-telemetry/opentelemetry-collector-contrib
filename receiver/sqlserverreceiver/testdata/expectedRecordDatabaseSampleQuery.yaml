@@ -7,103 +7,103 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: db.db_name
+              - key: sqlserver.db_name
                 value:
                   stringValue: master
-              - key: db.client_address
+              - key: sqlserver.client_address
                 value:
                   stringValue: "172.19.0.1"
-              - key: db.client_port
+              - key: sqlserver.client_port
                 value:
                   intValue: 59286
-              - key: db.query_start
+              - key: sqlserver.query_start
                 value:
                   stringValue: 2025-02-12T16:37:54.843+08:00
-              - key: db.session_id
+              - key: sqlserver.session_id
                 value:
                   intValue: 60
-              - key: db.session_status
+              - key: sqlserver.session_status
                 value:
                   stringValue: running
-              - key: db.request_status
+              - key: sqlserver.request_status
                 value:
                   stringValue: running
-              - key: db.host_name
+              - key: sqlserver.host_name
                 value:
                   stringValue: DESKTOP-GHAEGRD
-              - key: db.command
+              - key: sqlserver.command
                 value:
                   stringValue: SELECT
-              - key: db.statement_text
+              - key: db.query.text
                 value:
                   stringValue: "SELECT DB_NAME ( r.database_id ), ISNULL ( c.client_net_address, ? ), ISNULL ( c.client_tcp_port, ? ), CONVERT ( NVARCHAR, TODATETIMEOFFSET ( r.start_time, DATEPART ( TZOFFSET, SYSDATETIMEOFFSET ( ) ) ), ? ), s.session_id, s.STATUS, r.STATUS, ISNULL ( s.host_name, ? ), r.command, SUBSTRING ( o.TEXT, ( r.statement_start_offset / ? ) + ? ( ( CASE r.statement_end_offset WHEN - ? THEN DATALENGTH ( o.TEXT ) ELSE r.statement_end_offset END - r.statement_start_offset ) / ? ) + ? ), r.blocking_session_id, ISNULL ( r.wait_type, ? ), r.wait_time, r.wait_resource, r.open_transaction_count, r.transaction_id, r.percent_complete, r.estimated_completion_time, r.cpu_time, r.total_elapsed_time, r.reads, r.writes, r.logical_reads, r.transaction_isolation_level, r.LOCK_TIMEOUT, r.DEADLOCK_PRIORITY, r.row_count, r.query_hash, r.query_plan_hash, ISNULL ( r.context_info, CONVERT ( VARBINARY, ? ) ), s.login_name FROM sys.dm_exec_requests r INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id INNER JOIN sys.dm_exec_connections c ON s.session_id = c.session_id CROSS APPLY sys.dm_exec_sql_text ( r.plan_handle )"
-              - key: db.blocking_session_id
+              - key: sqlserver.blocking_session_id
                 value:
                   intValue: 0
-              - key: db.wait_type
+              - key: sqlserver.wait_type
                 value:
                   stringValue: ""
-              - key: db.wait_time
+              - key: sqlserver.wait_time
                 value:
                   intValue: 0
-              - key: db.wait_resource
+              - key: sqlserver.wait_resource
                 value:
                   stringValue: ""
-              - key: db.open_transaction_count
+              - key: sqlserver.open_transaction_count
                 value:
                   intValue: 0
-              - key: db.transaction_id
+              - key: sqlserver.transaction_id
                 value:
                   intValue: 11089
-              - key: db.percent_complete
+              - key: sqlserver.percent_complete
                 value:
                   doubleValue: 0
-              - key: db.estimated_completion_time
+              - key: sqlserver.estimated_completion_time
                 value:
                   doubleValue: 0
-              - key: db.cpu_time
+              - key: sqlserver.cpu_time
                 value:
                   intValue: 6
-              - key: db.total_elapsed_time
+              - key: sqlserver.total_elapsed_time
                 value:
                   intValue: 6
-              - key: db.reads
+              - key: sqlserver.reads
                 value:
                   intValue: 0
-              - key: db.writes
+              - key: sqlserver.writes
                 value:
                   intValue: 0
-              - key: db.logical_reads
+              - key: sqlserver.logical_reads
                 value:
                   intValue: 38
-              - key: db.transaction_isolation_level
+              - key: sqlserver.transaction_isolation_level
                 value:
                   intValue: 2
-              - key: db.lock_timeout
+              - key: sqlserver.lock_timeout
                 value:
                   intValue: -1
-              - key: db.deadlock_priority
+              - key: sqlserver.deadlock_priority
                 value:
                   intValue: 0
-              - key: db.row_count
+              - key: sqlserver.row_count
                 value:
                   intValue: 1
-              - key: db.query_hash
+              - key: sqlserver.query_hash
                 value:
                   stringValue: "307837304133423133304231303438443444"
-              - key: db.query_plan_hash
+              - key: sqlserver.query_plan_hash
                 value:
                   stringValue: "307831343032313046363442373838434239"
-              - key: db.context_info
+              - key: sqlserver.context_info
                 value:
                   stringValue: ""
-              - key: db.username
+              - key: sqlserver.username
                 value:
                   stringValue: sa
-              - key: db.wait_code
+              - key: sqlserver.wait_code
                 value:
                   intValue: 0
-              - key: db.wait_category
+              - key: sqlserver.wait_category
                 value:
                   stringValue: Unknown
             body:

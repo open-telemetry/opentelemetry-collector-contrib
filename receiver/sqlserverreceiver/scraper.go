@@ -494,7 +494,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
-	const dbPrefix = "db."
+	const dbPrefix = "sqlserver."
 	// Constants are the column names of the database status
 	const DBName = "db_name"
 	const clientAddress = "client_address"
@@ -656,7 +656,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			record.Attributes().PutStr(dbPrefix+requestStatus, row[requestStatus])
 			record.Attributes().PutStr(dbPrefix+hostname, row[hostname])
 			record.Attributes().PutStr(dbPrefix+command, row[command])
-			record.Attributes().PutStr(dbPrefix+statementText, obfuscatedStatement)
+			// Following Opentelemetry Semantic Convention for this naming.
+			record.Attributes().PutStr("db.query.text", obfuscatedStatement)
 			record.Attributes().PutInt(dbPrefix+blockingSessionID, int64(blockingSessionIDNumber))
 			record.Attributes().PutStr(dbPrefix+waitType, row[waitType])
 			record.Attributes().PutInt(dbPrefix+waitTime, int64(waitTimeVal))
