@@ -151,6 +151,6 @@ func TestShutdown(t *testing.T) {
 		// Get address already in use here
 		require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-		ext.Shutdown(context.Background())
+		require.NoError(t, ext.Shutdown(context.Background()))
 	})
 }
