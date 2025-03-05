@@ -18,8 +18,8 @@ const (
 
 type MergeMapsArguments[K any] struct {
 	Target   ottl.PMapGetter[K]
-	Strategy string
 	Source   ottl.Optional[ottl.PMapGetter[K]]
+	Strategy ottl.Optional[string]
 	Sources  ottl.Optional[ottl.PMapSliceGetter[K]]
 }
 
@@ -44,8 +44,12 @@ func createMergeMapsFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 //	insert: Insert the value from `source` into `target` where the key does not already exist.
 //	update: Update the entry in `target` with the value from `source` where the key does exist
 //	upsert: Performs insert or update. Insert the value from `source` into `target` where the key does not already exist and update the entry in `target` with the value from `source` where the key does exist.
-func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapGetter[K]], strategy string, sources ottl.Optional[ottl.PMapSliceGetter[K]]) (ottl.ExprFunc[K], error) {
-	if strategy != INSERT && strategy != UPDATE && strategy != UPSERT {
+func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapGetter[K]], strategy ottl.Optional[string], sources ottl.Optional[ottl.PMapSliceGetter[K]]) (ottl.ExprFunc[K], error) {
+	mergeStrategy := "upsert"
+	if !strategy.IsEmpty() {
+		mergeStrategy = strategy.Get()
+	}
+	if mergeStrategy != INSERT && mergeStrategy != UPDATE && mergeStrategy != UPSERT {
 		return nil, fmt.Errorf("invalid value for strategy, %v, must be 'insert', 'update' or 'upsert'", strategy)
 	}
 
@@ -65,7 +69,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 				return nil, err
 			}
 
-			if err := merge(strategy, &valueMap, &targetMap); err != nil {
+			if err := merge(mergeStrategy, &valueMap, &targetMap); err != nil {
 				return nil, err
 			}
 		}
@@ -127,7 +131,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 			}
 
 			for _, val := range valueMapSlice {
-				if err := merge(strategy, &val, &targetMap); err != nil {
+				if err := merge(mergeStrategy, &val, &targetMap); err != nil {
 					return nil, err
 				}
 >>>>>>> 78269a3ddd (support mapSlice in separate optional parameter)

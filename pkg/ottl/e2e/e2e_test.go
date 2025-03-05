@@ -222,7 +222,7 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "insert", attributes["foo"])`,
+			statement: `merge_maps(attributes, attributes["foo"], "insert")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("slice")
@@ -233,13 +233,13 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "update", attributes["foo"])`,
+			statement: `merge_maps(attributes, attributes["foo"], "update")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("flags", "pass")
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "upsert", attributes["foo"])`,
+			statement: `merge_maps(attributes, attributes["foo"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
 				tCtx.GetLogRecord().Attributes().PutStr("flags", "pass")
@@ -260,7 +260,7 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "insert", attributes["foo"], attributes["map_slice"])`,
+			statement: `merge_maps(attributes, attributes["foo"], "insert", attributes["map_slice"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
 				tCtx.GetLogRecord().Attributes().PutStr("foo1", "bar1")
@@ -273,14 +273,14 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "update", attributes["foo"], attributes["map_slice"])`,
+			statement: `merge_maps(attributes, attributes["foo"], "update", attributes["map_slice"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("flags", "pass")
 				tCtx.GetLogRecord().Attributes().PutStr("total.string", "barbar1")
 			},
 		},
 		{
-			statement: `merge_maps(attributes, "upsert", attributes["foo"], attributes["map_slice"])`,
+			statement: `merge_maps(attributes, attributes["foo"], "upsert", attributes["map_slice"])`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("bar", "pass")
 				tCtx.GetLogRecord().Attributes().PutStr("foo1", "bar1")
@@ -291,6 +291,13 @@ func Test_e2e_editors(t *testing.T) {
 				v := s.AppendEmpty()
 				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("nested")
 				m2.PutStr("test", "pass")
+			},
+		},
+		{
+			statement: `merge_maps(attributes, strategy="insert", sources=attributes["map_slice"])`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("foo1", "bar1")
+				tCtx.GetLogRecord().Attributes().PutStr("foo2", "bar2")
 			},
 		},
 		{
@@ -1338,7 +1345,7 @@ func Test_e2e_ottl_features(t *testing.T) {
 		},
 		{
 			name:      "composing functions",
-			statement: `merge_maps(attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where body == "operationA"`,
+			statement: `merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where body == "operationA"`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("json_test", "pass")
 			},

@@ -949,7 +949,7 @@ func Test_ProcessMetrics_DataPointContext(t *testing.T) {
 			},
 		},
 		{
-			statements: []string{`merge_maps(attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where metric.name == "operationA"`},
+			statements: []string{`merge_maps(attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("json_test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("json_test", "pass")
@@ -1392,7 +1392,7 @@ func Test_ProcessMetrics_InferredDataPointContext(t *testing.T) {
 			},
 		},
 		{
-			statements: []string{`merge_maps(datapoint.attributes, "insert", ParseJSON("{\"json_test\":\"pass\"}")) where metric.name == "operationA"`},
+			statements: []string{`merge_maps(datapoint.attributes, ParseJSON("{\"json_test\":\"pass\"}"), "insert") where metric.name == "operationA"`},
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("json_test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("json_test", "pass")
