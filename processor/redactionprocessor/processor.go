@@ -223,6 +223,10 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		}
 
 		strVal := value.Str()
+		if s.config.RedactAllTypes {
+			strVal = value.AsString()
+		}
+    
 		// Allow any values matching the allowed list regex
 		for _, compiledRE := range s.allowRegexList {
 			if match := compiledRE.MatchString(strVal); match {
