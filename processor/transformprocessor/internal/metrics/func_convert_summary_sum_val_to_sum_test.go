@@ -20,6 +20,7 @@ type summaryTestCase struct {
 	temporality  string
 	monotonicity bool
 	key          ottl.Optional[string]
+	suffix       ottl.Optional[string]
 	want         func(pmetric.MetricSlice)
 }
 
