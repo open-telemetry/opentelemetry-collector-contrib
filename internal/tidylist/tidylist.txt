@@ -1,4 +1,4 @@
-cmd/githubgen
+cmd/checkapi
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common
@@ -13,7 +13,6 @@ internal/coreinternal
 pkg/ottl
 internal/filter
 connector/countconnector
-internal/aws/ecsutil
 internal/k8sconfig
 internal/metadataproviders
 pkg/resourcetotelemetry
@@ -22,6 +21,7 @@ processor/k8sattributesprocessor
 pkg/core/xidutils
 pkg/sampling
 processor/probabilisticsamplerprocessor
+internal/aws/ecsutil
 processor/resourcedetectionprocessor
 internal/pdatautil
 processor/transformprocessor
@@ -67,6 +67,7 @@ exporter/awskinesisexporter
 exporter/awss3exporter
 internal/aws/xray
 exporter/awsxrayexporter
+exporter/azureblobexporter
 exporter/azuredataexplorerexporter
 exporter/azuremonitorexporter
 exporter/bmchelixexporter
@@ -149,6 +150,7 @@ extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
+extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
 pkg/translator/skywalking
@@ -171,6 +173,7 @@ extension/observer/ecsobserver
 extension/observer/ecstaskobserver
 extension/observer/hostobserver
 extension/observer/k8sobserver
+extension/observer/kafkatopicsobserver
 extension/oidcauthextension
 extension/opampcustommessages
 extension/opampextension
@@ -237,6 +240,7 @@ receiver/couchdbreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
+receiver/faroreceiver
 receiver/filestatsreceiver
 receiver/flinkmetricsreceiver
 receiver/fluentforwardreceiver
@@ -274,6 +278,7 @@ receiver/osqueryreceiver
 receiver/otlpjsonfilereceiver
 receiver/podmanreceiver
 receiver/postgresqlreceiver
+receiver/pprofreceiver
 receiver/prometheusremotewritereceiver
 receiver/pulsarreceiver
 receiver/purefareceiver
@@ -295,6 +300,7 @@ receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
 receiver/systemdreceiver
+receiver/tcpcheckreceiver
 receiver/tcplogreceiver
 receiver/tlscheckreceiver
 receiver/udplogreceiver
@@ -303,5 +309,6 @@ receiver/wavefrontreceiver
 receiver/webhookeventreceiver
 receiver/windowseventlogreceiver
 receiver/windowsperfcountersreceiver
+receiver/windowsservicereceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver

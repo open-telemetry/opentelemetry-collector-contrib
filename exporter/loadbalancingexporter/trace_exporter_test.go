@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 func TestNewTracesExporter(t *testing.T) {
@@ -46,7 +48,7 @@ func TestNewTracesExporter(t *testing.T) {
 	} {
 		t.Run(tt.desc, func(t *testing.T) {
 			// test
-			_, err := newTracesExporter(exportertest.NewNopSettings(), tt.config)
+			_, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), tt.config)
 
 			// verify
 			require.Equal(t, tt.err, err)
@@ -63,7 +65,7 @@ func TestTracesExporterStart(t *testing.T) {
 		{
 			"ok",
 			func() *traceExporterImp {
-				p, _ := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
+				p, _ := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 				return p
 			}(),
 			nil,
@@ -103,7 +105,7 @@ func TestTracesExporterStart(t *testing.T) {
 }
 
 func TestTracesExporterShutdown(t *testing.T) {
-	p, err := newTracesExporter(exportertest.NewNopSettings(), simpleConfig())
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), simpleConfig())
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -419,7 +421,6 @@ func TestNoTracesInBatch(t *testing.T) {
 }
 
 func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
-	t.Skip("Flaky Test - See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/13331")
 	ts, tb := getTelemetryAssets(t)
 
 	// this test is based on the discussion in the following issue for this exporter:
@@ -453,10 +454,6 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	}
 	res.resolver = &mockDNSResolver{
 		onLookupIPAddr: func(context.Context, string) ([]net.IPAddr, error) {
-			defer func() {
-				counter.Add(1)
-			}()
-
 			if counter.Load() <= 2 {
 				return resolve[counter.Load()], nil
 			}
@@ -469,7 +466,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 			return resolve[2], nil
 		},
 	}
-	res.resInterval = 10 * time.Millisecond
+	res.resInterval = 100 * time.Millisecond
 
 	cfg := &Config{
 		Resolver: ResolverSettings{
@@ -494,11 +491,13 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	counter2 := &atomic.Int64{}
 	id1 := "127.0.0.1:4317"
 	id2 := "127.0.0.2:4317"
+	unreachableCh := make(chan struct{})
 	defaultExporters := map[string]*wrappedExporter{
 		id1: newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
 			counter1.Add(1)
+			counter.Add(1)
 			// simulate an unreachable backend
-			time.Sleep(10 * time.Second)
+			<-unreachableCh
 			return nil
 		}), id1),
 		id2: newWrappedExporter(newMockTracesExporter(func(_ context.Context, _ ptrace.Traces) error {
@@ -524,6 +523,7 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	})
 
 	ctx, cancel := context.WithCancel(context.Background())
+	var waitWG sync.WaitGroup
 	// keep consuming traces every 2ms
 	consumeCh := make(chan struct{})
 	go func(ctx context.Context) {
@@ -534,22 +534,22 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 				consumeCh <- struct{}{}
 				return
 			case <-ticker.C:
+				waitWG.Add(1)
 				go func() {
 					assert.NoError(t, p.ConsumeTraces(ctx, randomTraces()))
+					waitWG.Done()
 				}()
 			}
 		}
 	}(ctx)
 
 	// give limited but enough time to rolling updates. otherwise this test
-	// will still pass due to the 10 secs of sleep that is used to simulate
+	// will still pass due to the unreacheableCh that is used to simulate
 	// unreachable backends.
-	go func() {
-		time.Sleep(1 * time.Second)
-		resolverCh <- struct{}{}
-	}()
-
-	<-resolverCh
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		require.Positive(tt, counter1.Load())
+		require.Positive(tt, counter2.Load())
+	}, 1*time.Second, 100*time.Millisecond)
 	cancel()
 	<-consumeCh
 
@@ -557,8 +557,9 @@ func TestRollingUpdatesWhenConsumeTraces(t *testing.T) {
 	mu.Lock()
 	require.Equal(t, []string{"127.0.0.2"}, lastResolved)
 	mu.Unlock()
-	require.Positive(t, counter1.Load())
-	require.Positive(t, counter2.Load())
+
+	close(unreachableCh)
+	waitWG.Wait()
 }
 
 func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
@@ -583,7 +584,7 @@ func benchConsumeTraces(b *testing.B, endpointsCount int, tracesCount int) {
 	require.NotNil(b, lb)
 	require.NoError(b, err)
 
-	p, err := newTracesExporter(exportertest.NewNopSettings(), config)
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), config)
 	require.NotNil(b, p)
 	require.NoError(b, err)
 

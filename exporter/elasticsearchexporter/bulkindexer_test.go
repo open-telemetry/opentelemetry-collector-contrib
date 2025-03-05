@@ -13,9 +13,11 @@ import (
 	"testing"
 	"time"
 
+	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -97,66 +99,16 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			}})
 			require.NoError(t, err)
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config)
+			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config, false)
 			require.NoError(t, err)
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
-		})
-	}
-}
-
-func TestAsyncBulkIndexer_requireDataStream(t *testing.T) {
-	tests := []struct {
-		name                  string
-		config                Config
-		wantRequireDataStream bool
-	}{
-		{
-			name: "ecs",
-			config: Config{
-				NumWorkers: 1,
-				Mapping:    MappingsSettings{Mode: MappingECS.String()},
-				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
-			},
-			wantRequireDataStream: false,
-		},
-		{
-			name: "otel",
-			config: Config{
-				NumWorkers: 1,
-				Mapping:    MappingsSettings{Mode: MappingOTel.String()},
-				Flush:      FlushSettings{Interval: time.Hour, Bytes: 1e+8},
-			},
-			wantRequireDataStream: true,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
-			requireDataStreamCh := make(chan bool, 1)
-			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
-				RoundTripFunc: func(r *http.Request) (*http.Response, error) {
-					if r.URL.Path == "/_bulk" {
-						requireDataStreamCh <- r.URL.Query().Get("require_data_stream") == "true"
-					}
-					return &http.Response{
-						Header: http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
-						Body:   io.NopCloser(strings.NewReader(successResp)),
-					}, nil
-				},
-			}})
-			require.NoError(t, err)
-
-			runBulkIndexerOnce(t, &tt.config, client)
-
-			assert.Equal(t, tt.wantRequireDataStream, <-requireDataStreamCh)
 		})
 	}
 }
@@ -222,14 +174,14 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			require.NoError(t, err)
 			core, observed := observer.New(zap.NewAtomicLevelAt(zapcore.DebugLevel))
 
-			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg)
+			bulkIndexer, err := newAsyncBulkIndexer(zap.New(core), client, &cfg, false)
 			require.NoError(t, err)
 			defer bulkIndexer.Close(context.Background())
 
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
@@ -260,6 +212,14 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
+			},
+		},
+		{
+			name: "compression gzip - level 5",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompressionParams{Level: 5}},
 				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
@@ -303,12 +263,12 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 }
 
 func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
-	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config)
+	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config, false)
 	require.NoError(t, err)
 	session, err := bulkIndexer.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
@@ -331,11 +291,11 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	}})
 	require.NoError(t, err)
 
-	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg)
+	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg, false)
 	session, err := bi.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
 	assert.NoError(t, bi.Close(context.Background()))
 }

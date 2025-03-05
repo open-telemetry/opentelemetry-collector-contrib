@@ -29,8 +29,8 @@ func TestLoadConfig(t *testing.T) {
 	egressCfg.Headers = map[string]configopaque.String{
 		"otel_http_forwarder": "dev",
 	}
-	egressCfg.MaxIdleConns = &maxIdleConns
-	egressCfg.IdleConnTimeout = &idleConnTimeout
+	egressCfg.MaxIdleConns = maxIdleConns
+	egressCfg.IdleConnTimeout = idleConnTimeout
 	egressCfg.Timeout = 5 * time.Second
 
 	tests := []struct {

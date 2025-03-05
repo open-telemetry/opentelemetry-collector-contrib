@@ -25,7 +25,7 @@ The extension requires read and write access to a Redis cluster.
 
 ## Example
 
-```
+```yaml
 extensions:
   redis_storage:
   redis_storage/all_settings:
@@ -40,7 +40,6 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
