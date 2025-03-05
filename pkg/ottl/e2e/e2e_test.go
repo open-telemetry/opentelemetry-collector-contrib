@@ -144,6 +144,10 @@ func Test_e2e_editors(t *testing.T) {
 				m.PutStr("test.things.1.name", "bar")
 				m.PutInt("test.things.1.value", 5)
 
+				m.PutStr("test.map_slice.0.foo1", "bar1")
+				m.PutStr("test.map_slice.0.foo2", "bar2")
+				m.PutStr("test.map_slice.1.total.string", "barbar1")
+
 				m.CopyTo(tCtx.GetLogRecord().Attributes())
 			},
 		},
