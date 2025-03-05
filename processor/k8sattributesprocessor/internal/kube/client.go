@@ -86,6 +86,16 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
+type InformersFactoryList struct {
+	newInformer            InformerProvider
+	newNamespaceInformer   InformerProviderNamespace
+	newReplicaSetInformer  InformerProviderWorkload
+	newDeploymentInformer  InformerProviderWorkload
+	newStatefulSetInformer InformerProviderWorkload
+	newDaemonSetInformer   InformerProviderWorkload
+	newJobInformer         InformerProviderWorkload
+}
+
 // New initializes a new k8s Client.
 func New(
 	set component.TelemetrySettings,
@@ -95,9 +105,7 @@ func New(
 	associations []Association,
 	exclude Excludes,
 	newClientSet APIClientsetProvider,
-	newInformer InformerProvider,
-	newNamespaceInformer InformerProviderNamespace,
-	newReplicaSetInformer InformerProviderReplicaSet,
+	informersFactory InformersFactoryList,
 	waitForMetadata bool,
 	waitForMetadataTimeout time.Duration,
 ) (Client, error) {
@@ -143,26 +151,26 @@ func New(
 		zap.String("labelSelector", labelSelector.String()),
 		zap.String("fieldSelector", fieldSelector.String()),
 	)
-	if newInformer == nil {
-		newInformer = newSharedInformer
+	if informersFactory.newInformer == nil {
+		informersFactory.newInformer = newSharedInformer
 	}
 
-	if newNamespaceInformer == nil {
+	if informersFactory.newNamespaceInformer == nil {
 		switch {
 		case c.extractNamespaceLabelsAnnotations():
 			// if rules to extract metadata from namespace is configured use namespace shared informer containing
 			// all namespaces including kube-system which contains cluster uid information (kube-system-uid)
-			newNamespaceInformer = newNamespaceSharedInformer
+			informersFactory.newNamespaceInformer = newNamespaceSharedInformer
 		case rules.ClusterUID:
 			// use kube-system shared informer to only watch kube-system namespace
 			// reducing overhead of watching all the namespaces
-			newNamespaceInformer = newKubeSystemSharedInformer
+			informersFactory.newNamespaceInformer = newKubeSystemSharedInformer
 		default:
-			newNamespaceInformer = NewNoOpInformer
+			informersFactory.newNamespaceInformer = NewNoOpInformer
 		}
 	}
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
+	c.informer = informersFactory.newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector)
 	err = c.informer.SetTransform(
 		func(object any) (any, error) {
 			originalPod, success := object.(*api_v1.Pod)
@@ -177,13 +185,13 @@ func New(
 		return nil, err
 	}
 
-	c.namespaceInformer = newNamespaceInformer(c.kc)
+	c.namespaceInformer = informersFactory.newNamespaceInformer(c.kc)
 
 	if rules.DeploymentName || rules.DeploymentUID {
-		if newReplicaSetInformer == nil {
-			newReplicaSetInformer = newReplicaSetSharedInformer
+		if informersFactory.newReplicaSetInformer == nil {
+			informersFactory.newReplicaSetInformer = newReplicaSetSharedInformer
 		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace)
+		c.replicasetInformer = informersFactory.newReplicaSetInformer(c.kc, c.Filters.Namespace)
 		err = c.replicasetInformer.SetTransform(
 			func(object any) (any, error) {
 				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
@@ -478,14 +486,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			if enableRFC3339Timestamp.IsEnabled() {
-				if rfc3339ts, err := ts.MarshalText(); err != nil {
-					c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
-				} else {
-					tags[tagStartTime] = string(rfc3339ts)
-				}
+			if rfc3339ts, err := ts.MarshalText(); err != nil {
+				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
 			} else {
-				tags[tagStartTime] = ts.String()
+				tags[tagStartTime] = string(rfc3339ts)
 			}
 		}
 	}
