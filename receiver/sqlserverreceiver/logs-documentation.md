@@ -1,3 +1,5 @@
+# Top-Query Collection Exported Logs Attributes
+
 | Attributes               | Description                                                                                                                                                                                                                                                                                                        | Type   |   |   |   |   |   |   |   |
 |--------------------------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|--------|---|---|---|---|---|---|---|
 | db.total_elapsed_time    | Total elapsed time, reported in microseconds (but only accurate to milliseconds), for completed executions of this plan.<br>                                                                                                                                                                                       | int    |   |   |   |   |   |   |   |
