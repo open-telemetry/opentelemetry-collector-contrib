@@ -221,5 +221,5 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	}
 
 	// Verify we found all expected endpoints
-	assert.Equal(t, 0, len(expectedMetrics), "All expected endpoints should have been found")
+	assert.Empty(t, expectedMetrics, "All expected endpoints should have been found")
 }

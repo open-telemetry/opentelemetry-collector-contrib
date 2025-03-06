@@ -8,10 +8,9 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-
-	"github.com/stretchr/testify/require"
 )
 
 func TestValidate(t *testing.T) {
