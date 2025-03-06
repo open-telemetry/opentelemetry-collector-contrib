@@ -13,6 +13,6 @@ type formatOpenTelemetry10Unmarshaler struct{}
 
 var _ pmetric.Unmarshaler = (*formatOpenTelemetry10Unmarshaler)(nil)
 
-func (f formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
+func (f formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(_ []byte) (pmetric.Metrics, error) {
 	return pmetric.Metrics{}, fmt.Errorf("UnmarshalMetrics unimplemented for format %q", formatOpenTelemetry10)
 }
