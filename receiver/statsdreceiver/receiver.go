@@ -92,7 +92,7 @@ func buildTransportServer(config Config) (transport.Server, error) {
 	case transport.TCP, transport.TCP4, transport.TCP6:
 		return transport.NewTCPServer(trans, config.NetAddr.Endpoint)
 	case transport.UDS:
-		return transport.NewUDSServer(trans, config.NetAddr.Endpoint)
+		return transport.NewUDSServer(trans, config.NetAddr.Endpoint, config.SocketPermissions)
 	}
 
 	return nil, fmt.Errorf("unsupported transport %q", string(config.NetAddr.Transport))
