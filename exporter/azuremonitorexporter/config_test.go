@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 10,
 					StorageID:    &disk,
 				},
+				ShutdownTimeout: 2 * time.Second,
 			},
 		},
 	}

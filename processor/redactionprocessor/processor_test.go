@@ -271,6 +271,92 @@ func TestRedactSummaryDebug(t *testing.T) {
 	}
 }
 
+func TestRedactSummaryDebugHashMD5(t *testing.T) {
+	testConfig := TestConfig{
+		config: &Config{
+			AllowedKeys:        []string{"id", "group", "name", "group.id", "member (id)", "token_some", "api_key_some", "email"},
+			BlockedValues:      []string{"4[0-9]{12}(?:[0-9]{3})?"},
+			HashFunction:       MD5,
+			IgnoredKeys:        []string{"safe_attribute"},
+			BlockedKeyPatterns: []string{".*token.*", ".*api_key.*"},
+			Summary:            "debug",
+		},
+		allowed: map[string]pcommon.Value{
+			"id":          pcommon.NewValueInt(5),
+			"group.id":    pcommon.NewValueStr("some.valid.id"),
+			"member (id)": pcommon.NewValueStr("some other valid id"),
+		},
+		masked: map[string]pcommon.Value{
+			"name": pcommon.NewValueStr("placeholder 4111111111111111"),
+		},
+		ignored: map[string]pcommon.Value{
+			"safe_attribute": pcommon.NewValueStr("harmless 4111111111111112"),
+		},
+		redacted: map[string]pcommon.Value{
+			"credit_card": pcommon.NewValueStr("4111111111111111"),
+		},
+		blockedKeys: map[string]pcommon.Value{
+			"token_some":   pcommon.NewValueStr("tokenize"),
+			"api_key_some": pcommon.NewValueStr("apinize"),
+		},
+		allowedValues: map[string]pcommon.Value{
+			"email": pcommon.NewValueStr("user@mycompany.com"),
+		},
+	}
+
+	outTraces := runTest(t, testConfig)
+	outLogs := runLogsTest(t, testConfig)
+	outMetricsGauge := runMetricsTest(t, testConfig, pmetric.MetricTypeGauge)
+	outMetricsSum := runMetricsTest(t, testConfig, pmetric.MetricTypeSum)
+	outMetricsHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeHistogram)
+	outMetricsExponentialHistogram := runMetricsTest(t, testConfig, pmetric.MetricTypeExponentialHistogram)
+	outMetricsSummary := runMetricsTest(t, testConfig, pmetric.MetricTypeSummary)
+
+	attrs := []pcommon.Map{
+		outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes(),
+		outLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes(),
+		outMetricsGauge.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Gauge().DataPoints().At(0).Attributes(),
+		outMetricsSum.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes(),
+		outMetricsHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Histogram().DataPoints().At(0).Attributes(),
+		outMetricsExponentialHistogram.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).ExponentialHistogram().DataPoints().At(0).Attributes(),
+		outMetricsSummary.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Summary().DataPoints().At(0).Attributes(),
+	}
+
+	for _, attr := range attrs {
+		deleted := make([]string, 0, len(testConfig.redacted))
+		for k := range testConfig.redacted {
+			_, ok := attr.Get(k)
+			assert.False(t, ok)
+			deleted = append(deleted, k)
+		}
+		maskedKeys, ok := attr.Get(redactedKeys)
+		assert.True(t, ok)
+		sort.Strings(deleted)
+		assert.Equal(t, strings.Join(deleted, ","), maskedKeys.Str())
+		maskedKeyCount, ok := attr.Get(redactedKeyCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(len(deleted)), maskedKeyCount.Int())
+
+		ignoredKeyCount, ok := attr.Get(ignoredKeyCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(len(testConfig.ignored)), ignoredKeyCount.Int())
+
+		blockedKeys := []string{"api_key_some", "name", "token_some"}
+		maskedValues, ok := attr.Get(maskedValues)
+		assert.True(t, ok)
+		assert.Equal(t, strings.Join(blockedKeys, ","), maskedValues.Str())
+		maskedValueCount, ok := attr.Get(maskedValueCount)
+		assert.True(t, ok)
+		assert.Equal(t, int64(3), maskedValueCount.Int())
+		value, _ := attr.Get("name")
+		assert.Equal(t, "placeholder 5910f4ea0062a0e29afd3dccc741e3ce", value.Str())
+		value, _ = attr.Get("api_key_some")
+		assert.Equal(t, "93a699237950bde9eb9d25c7ead025f3", value.Str())
+		value, _ = attr.Get("token_some")
+		assert.Equal(t, "77e9ef3680c5518785ef0121d3884c3d", value.Str())
+	}
+}
+
 // TestRedactSummaryInfo validates that the processor writes a verbose summary
 // of any attributes it deleted to the new redaction.redacted.count span
 // attribute (but not to redaction.redacted.keys) when set to the info level
@@ -565,6 +651,45 @@ func TestProcessAttrsAppliedTwice(t *testing.T) {
 	val, found = attrs.Get(maskedValueCount)
 	assert.True(t, found)
 	assert.Equal(t, int64(2), val.Int())
+}
+
+func TestSpanEventRedacted(t *testing.T) {
+	inBatch := ptrace.NewTraces()
+	rs := inBatch.ResourceSpans().AppendEmpty()
+	ils := rs.ScopeSpans().AppendEmpty()
+
+	library := ils.Scope()
+	library.SetName("first-library")
+	span := ils.Spans().AppendEmpty()
+	span.SetName("first-batch-first-span")
+	span.SetTraceID([16]byte{1, 2, 3, 4})
+
+	event := span.Events().AppendEmpty()
+	event.SetName("event-one")
+
+	event.Attributes().PutStr("password", "xyzxyz")
+	event.Attributes().PutStr("username", "foobar")
+
+	config := &Config{
+		AllowAllKeys:  true,
+		BlockedValues: []string{"xyzxyz"},
+		Summary:       "debug",
+	}
+	processor, err := newRedaction(context.TODO(), config, zaptest.NewLogger(t))
+	require.NoError(t, err)
+
+	outTraces, err := processor.processTraces(context.TODO(), inBatch)
+	require.NoError(t, err)
+
+	attr := outTraces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes()
+
+	val, ok := attr.Get("password")
+	require.True(t, ok)
+	assert.Equal(t, "****", val.Str())
+
+	val, ok = attr.Get("username")
+	require.True(t, ok)
+	require.Equal(t, "foobar", val.Str())
 }
 
 // runTest transforms the test input data and passes it through the processor

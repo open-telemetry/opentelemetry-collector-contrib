@@ -19,6 +19,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -26,16 +27,25 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
+
+func build[T any, O any](t *testing.T, f func(...O) (T, error), opts ...O) T {
+	t.Helper()
+	v, err := f(opts...)
+	require.NoError(t, err)
+	return v
+}
 
 func TestExporterLogs(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
@@ -1932,6 +1942,147 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
+func TestExporter_MappingModeMetadata(t *testing.T) {
+	otelContext := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
+	})
+	ecsContext := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
+	})
+	noneContext := client.NewContext(context.Background(), client.Info{
+		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
+	})
+
+	logs := plog.NewLogs()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	resourceLog.Resource().Attributes().PutStr("k", "v")
+	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopeLog.LogRecords().AppendEmpty()
+	logs.MarkReadOnly()
+
+	metrics := pmetric.NewMetrics()
+	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+	resourceMetrics.Resource().Attributes().PutStr("k", "v")
+	metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+	metric.SetName("metric.foo")
+	metric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(123)
+	metrics.MarkReadOnly()
+
+	traces := ptrace.NewTraces()
+	resourceSpans := traces.ResourceSpans().AppendEmpty()
+	resourceSpans.Resource().Attributes().PutStr("k", "v")
+	resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+	traces.MarkReadOnly()
+
+	setAllowedMappingModes := func(cfg *Config) {
+		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
+	}
+
+	checkOTelResource := func(t *testing.T, doc []byte, _ string) {
+		t.Helper()
+		assert.JSONEq(t, `{"k":"v"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
+	}
+	checkECSResource := func(t *testing.T, doc []byte, signal string) {
+		t.Helper()
+		if signal == "traces" {
+			// ecs mode schema for spans is currently very different
+			// to logs and metrics
+			assert.Equal(t, "v", gjson.GetBytes(doc, "Resource.k").Str)
+		} else {
+			assert.Equal(t, "v", gjson.GetBytes(doc, "k").Str)
+		}
+	}
+
+	testcases := []struct {
+		name      string
+		ctx       context.Context
+		check     func(_ *testing.T, doc []byte, signal string)
+		expectErr string
+	}{{
+		name:  "otel",
+		ctx:   otelContext,
+		check: checkOTelResource,
+	}, {
+		name:  "ecs",
+		ctx:   ecsContext,
+		check: checkECSResource,
+	}, {
+		name:      "bodymap",
+		ctx:       noneContext,
+		expectErr: `unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+	}}
+
+	t.Run("logs", func(t *testing.T) {
+		for _, tc := range testcases {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes)
+				err := exporter.ConsumeLogs(tc.ctx, logs)
+				if tc.expectErr != "" {
+					require.EqualError(t, err, tc.expectErr)
+					return
+				}
+				require.NoError(t, err)
+				items := rec.WaitItems(1)
+				tc.check(t, items[0].Document, "logs")
+			})
+		}
+	})
+	t.Run("metrics", func(t *testing.T) {
+		for _, tc := range testcases {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes)
+				err := exporter.ConsumeMetrics(tc.ctx, metrics)
+				if tc.expectErr != "" {
+					require.EqualError(t, err, tc.expectErr)
+					return
+				}
+				require.NoError(t, err)
+				items := rec.WaitItems(1)
+				tc.check(t, items[0].Document, "metrics")
+			})
+		}
+	})
+	t.Run("profiles", func(t *testing.T) {
+		// Profiles are only supported by otel mode, so just verify that
+		// the metadata is picked up and an invalid mode is rejected.
+		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
+		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
+		assert.EqualError(t, err,
+			`unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		)
+	})
+	t.Run("traces", func(t *testing.T) {
+		for _, tc := range testcases {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes)
+				err := exporter.ConsumeTraces(tc.ctx, traces)
+				if tc.expectErr != "" {
+					require.EqualError(t, err, tc.expectErr)
+					return
+				}
+				require.NoError(t, err)
+				items := rec.WaitItems(1)
+				tc.check(t, items[0].Document, "traces")
+			})
+		}
+	})
+}
+
 // TestExporterAuth verifies that the Elasticsearch exporter supports
 // confighttp.ClientConfig.Auth.
 func TestExporterAuth(t *testing.T) {
@@ -1942,15 +2093,17 @@ func TestExporterAuth(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
-					select {
-					case done <- struct{}{}:
-					default:
-					}
-					return nil, errors.New("nope")
+			testauthID: build(t, extensionauth.NewClient,
+				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
+					return roundTripperFunc(func(*http.Request) (*http.Response, error) {
+						select {
+						case done <- struct{}{}:
+						default:
+						}
+						return nil, errors.New("nope")
+					}), nil
 				}),
-			},
+			),
 		},
 	})
 	require.NoError(t, err)
@@ -1976,12 +2129,14 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-					requests = append(requests, req)
-					return nil, errors.New("nope")
+			testauthID: build(t, extensionauth.NewClient,
+				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
+					return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+						requests = append(requests, req)
+						return nil, errors.New("nope")
+					}), nil
 				}),
-			},
+			),
 		},
 	})
 	require.NoError(t, err)
@@ -2011,6 +2166,24 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
 	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
+	require.NoError(t, err)
+
+	err = exp.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err)
+	t.Cleanup(func() {
+		require.NoError(t, exp.Shutdown(context.Background()))
+	})
+	return exp
+}
+
+func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xexporter.Profiles {
+	f := NewFactory().(xexporter.Factory)
+	cfg := withDefaultConfig(append([]func(*Config){func(cfg *Config) {
+		cfg.Endpoints = []string{url}
+		cfg.NumWorkers = 1
+		cfg.Flush.Interval = 10 * time.Millisecond
+	}}, fns...)...)
+	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
 	err = exp.Start(context.Background(), componenttest.NewNopHost())

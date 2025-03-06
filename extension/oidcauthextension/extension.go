@@ -20,7 +20,7 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
 
@@ -45,7 +45,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
+func newExtension(cfg *Config, logger *zap.Logger) (extensionauth.Server, error) {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
@@ -54,10 +54,10 @@ func newExtension(cfg *Config, logger *zap.Logger) auth.Server {
 		cfg:    cfg,
 		logger: logger,
 	}
-	return auth.NewServer(
-		auth.WithServerStart(oe.start),
-		auth.WithServerAuthenticate(oe.authenticate),
-		auth.WithServerShutdown(oe.shutdown),
+	return extensionauth.NewServer(
+		extensionauth.WithServerStart(oe.start),
+		extensionauth.WithServerAuthenticate(oe.authenticate),
+		extensionauth.WithServerShutdown(oe.shutdown),
 	)
 }
 

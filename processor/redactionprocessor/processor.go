@@ -3,9 +3,14 @@
 
 package redactionprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor"
 
+//nolint:gosec
 import (
 	"context"
+	"crypto/md5"
+	"crypto/sha1"
+	"encoding/hex"
 	"fmt"
+	"hash"
 	"regexp"
 	"sort"
 	"strings"
@@ -15,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
+	"golang.org/x/crypto/sha3"
 )
 
 const attrValuesSeparator = ","
@@ -30,6 +36,8 @@ type redaction struct {
 	allowRegexList map[string]*regexp.Regexp
 	// Attribute keys blocked in a span
 	blockKeyRegexList map[string]*regexp.Regexp
+	// Hash function to hash blocked values
+	hashFunction HashFunction
 	// Redaction processor configuration
 	config *Config
 	// Logger
@@ -63,6 +71,7 @@ func newRedaction(ctx context.Context, config *Config, logger *zap.Logger) (*red
 		blockRegexList:    blockRegexList,
 		allowRegexList:    allowRegexList,
 		blockKeyRegexList: blockKeysRegexList,
+		hashFunction:      config.HashFunction,
 		config:            config,
 		logger:            logger,
 	}, nil
@@ -110,7 +119,16 @@ func (s *redaction) processResourceSpan(ctx context.Context, rs ptrace.ResourceS
 
 			// Attributes can also be part of span
 			s.processAttrs(ctx, spanAttrs)
+
+			// Attributes can also be part of span events
+			s.processSpanEvents(ctx, span.Events())
 		}
+	}
+}
+
+func (s *redaction) processSpanEvents(ctx context.Context, events ptrace.SpanEventSlice) {
+	for i := 0; i < events.Len(); i++ {
+		s.processAttrs(ctx, events.At(i).Attributes())
 	}
 }
 
@@ -217,7 +235,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		for _, compiledRE := range s.blockKeyRegexList {
 			if match := compiledRE.MatchString(k); match {
 				toBlock = append(toBlock, k)
-				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
 				value.SetStr(maskedValue)
 				return true
 			}
@@ -226,13 +244,13 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		// Mask any blocked values for the other attributes
 		var matched bool
 		for _, compiledRE := range s.blockRegexList {
-			if match := compiledRE.MatchString(strVal); match {
+			if compiledRE.MatchString(strVal) {
 				if !matched {
 					matched = true
 					toBlock = append(toBlock, k)
 				}
 
-				maskedValue := compiledRE.ReplaceAllString(strVal, "****")
+				maskedValue := s.maskValue(strVal, compiledRE)
 				value.SetStr(maskedValue)
 				strVal = maskedValue
 			}
@@ -249,6 +267,28 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	s.addMetaAttrs(toBlock, attributes, maskedValues, maskedValueCount)
 	s.addMetaAttrs(allowed, attributes, allowedValues, allowedValueCount)
 	s.addMetaAttrs(ignoring, attributes, "", ignoredKeyCount)
+}
+
+//nolint:gosec
+func (s *redaction) maskValue(val string, regex *regexp.Regexp) string {
+	hashFunc := func(match string) string {
+		switch s.hashFunction {
+		case SHA1:
+			return hashString(match, sha1.New())
+		case SHA3:
+			return hashString(match, sha3.New256())
+		case MD5:
+			return hashString(match, md5.New())
+		default:
+			return "****"
+		}
+	}
+	return regex.ReplaceAllStringFunc(val, hashFunc)
+}
+
+func hashString(input string, hasher hash.Hash) string {
+	hasher.Write([]byte(input))
+	return hex.EncodeToString(hasher.Sum(nil))
 }
 
 // addMetaAttrs adds diagnostic information about redacted or masked attribute keys

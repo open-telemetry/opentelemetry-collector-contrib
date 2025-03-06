@@ -168,6 +168,9 @@ func (f *taskFetcher) getDiscoverableTasks(ctx context.Context) ([]*ecs.Task, er
 		descRes, err := svc.DescribeTasksWithContext(ctx, &ecs.DescribeTasksInput{
 			Cluster: cluster,
 			Tasks:   listRes.TaskArns,
+			Include: []*string{
+				aws.String("TAGS"),
+			},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("ecs.DescribeTasks failed: %w", err)

@@ -14,6 +14,7 @@ import (
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
 	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -102,7 +103,7 @@ func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, ackFunc 
 	}
 
 	for {
-		_, err = reader.Read()
+		err = reader.Read(pkg.ReadOptions{})
 		if err != nil {
 			m.logger.Error("Error reading from connection", zap.Error(err))
 			return err
