@@ -7,9 +7,10 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
-	"fmt"
 	"strings"
 	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
 
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/component"
@@ -24,6 +25,13 @@ const (
 	dimensionInstanceID                    = "InstanceId"
 	namespaceDelimiter                     = "/"
 )
+
+type formatJSONUnmarshaler struct {
+	buildInfo component.BuildInfo
+	logger    *zap.Logger
+}
+
+var _ pmetric.Unmarshaler = (*formatJSONUnmarshaler)(nil)
 
 // The cloudwatchMetric is the format for the CloudWatch metric stream records.
 //
@@ -70,56 +78,6 @@ type cloudwatchMetricValue struct {
 	Count float64 `json:"count"`
 }
 
-// cwMetricStreamUnmarshaler is the unmarshaller
-// for a cloudwatch metric stream
-type cwMetricStreamUnmarshaler struct {
-	format    string
-	scope     string
-	buildInfo component.BuildInfo
-	logger    *zap.Logger
-}
-
-var _ pmetric.Unmarshaler = (*cwMetricStreamUnmarshaler)(nil)
-
-// newUnmarshaler creates a new cwMetricStreamUnmarshaler
-func newUnmarshaler(
-	format string,
-	scope string,
-	buildInfo component.BuildInfo,
-	logger *zap.Logger,
-) (*cwMetricStreamUnmarshaler, error) {
-	switch format {
-	case "":
-		return nil, fmt.Errorf("format unspecified, expected one of %q", supportedFormats)
-	case formatJSON, formatOpenTelemetry10:
-	default:
-		return nil, fmt.Errorf("unsupported format %q, expected one of %q", format, supportedFormats)
-	}
-	return &cwMetricStreamUnmarshaler{
-		format:    format,
-		scope:     scope,
-		buildInfo: buildInfo,
-		logger:    logger,
-	}, nil
-}
-
-// UnmarshalMetrics according to the format
-func (c *cwMetricStreamUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
-	switch c.format {
-	case formatJSON:
-		return c.unmarshalJSONMetrics(buf)
-	case formatOpenTelemetry10:
-		return c.unmarshalOTLPMetrics(buf)
-	default:
-		return pmetric.Metrics{}, fmt.Errorf("unsupported format %q, expected one of %q", c.format, supportedFormats)
-	}
-}
-
-func (c *cwMetricStreamUnmarshaler) unmarshalOTLPMetrics(record []byte) (pmetric.Metrics, error) {
-	// TODO
-	return pmetric.Metrics{}, errors.New(`UnmarshalMetrics unimplemented for format "opentelemetry1.0"`)
-}
-
 // resourceKey stores the metric attributes
 // that make a cloudwatchMetric unique to
 // a resource
@@ -138,7 +96,7 @@ type metricKey struct {
 	unit string
 }
 
-func (c *cwMetricStreamUnmarshaler) unmarshalJSONMetrics(record []byte) (pmetric.Metrics, error) {
+func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	byResource := make(map[resourceKey]map[metricKey]pmetric.Metric)
 
 	// Multiple metrics in each record separated by newline character
@@ -178,7 +136,7 @@ func (c *cwMetricStreamUnmarshaler) unmarshalJSONMetrics(record []byte) (pmetric
 }
 
 // isMetricValid validates that the cloudwatch metric has been unmarshalled correctly
-func (c *cwMetricStreamUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool, error) {
+func (c *formatJSONUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool, error) {
 	if metric.MetricName == "" {
 		return false, errors.New("cloudwatch metric is missing metric name field")
 	}
@@ -197,7 +155,7 @@ func (c *cwMetricStreamUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool
 // addMetricToResource adds a new cloudwatchMetric to the
 // resource it belongs to according to resourceKey. It then
 // sets the data point for the cloudwatchMetric.
-func (c *cwMetricStreamUnmarshaler) addMetricToResource(
+func (c *formatJSONUnmarshaler) addMetricToResource(
 	byResource map[resourceKey]map[metricKey]pmetric.Metric,
 	cwMetric cloudwatchMetric,
 ) {
@@ -241,7 +199,7 @@ func (c *cwMetricStreamUnmarshaler) addMetricToResource(
 
 // createMetrics creates pmetric.Metrics based on
 // on the extracted metrics of each resource
-func (c *cwMetricStreamUnmarshaler) createMetrics(
+func (c *formatJSONUnmarshaler) createMetrics(
 	byResource map[resourceKey]map[metricKey]pmetric.Metric,
 ) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
@@ -249,7 +207,7 @@ func (c *cwMetricStreamUnmarshaler) createMetrics(
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		setResourceAttributes(rKey, rm.Resource())
 		scopeMetrics := rm.ScopeMetrics().AppendEmpty()
-		scopeMetrics.Scope().SetName(c.scope)
+		scopeMetrics.Scope().SetName(metadata.ScopeName)
 		scopeMetrics.Scope().SetVersion(c.buildInfo.Version)
 		for _, metric := range metricsMap {
 			metric.MoveTo(scopeMetrics.Metrics().AppendEmpty())

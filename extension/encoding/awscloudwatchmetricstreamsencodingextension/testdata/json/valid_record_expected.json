@@ -44,7 +44,7 @@
             "scopeMetrics":[
                 {
                     "scope":{
-                        "name":"test"
+                        "name":"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension"
                     },
                     "metrics":[
                         {

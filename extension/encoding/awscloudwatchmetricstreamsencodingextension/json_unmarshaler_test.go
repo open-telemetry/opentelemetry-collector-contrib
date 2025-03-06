@@ -43,9 +43,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		},
 	}
 
-	unmarshalerCW, err := newUnmarshaler(formatJSON, "test", component.BuildInfo{}, zap.NewNop())
-	require.NoError(t, err)
-
+	unmarshalerCW := &formatJSONUnmarshaler{component.BuildInfo{}, zap.NewNop()}
 	unmarshallerJSONMetric := pmetric.JSONUnmarshaler{}
 
 	for name, test := range tests {
@@ -74,7 +72,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			record = bytes.ReplaceAll(record, []byte("\n"), []byte(""))
 			record = bytes.ReplaceAll(record, []byte("#"), []byte("\n"))
 
-			metrics, err := unmarshalerCW.unmarshalJSONMetrics(record)
+			metrics, err := unmarshalerCW.UnmarshalMetrics(record)
 			if test.expectedErr != nil {
 				require.Equal(t, test.expectedErr, err)
 				return
