@@ -185,7 +185,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	deployment := getDeployment(pod, resource.Attributes())
+	deployment := getDeploymentName(pod, resource.Attributes())
 	if deployment != "" {
 		attrsToAdd := kp.getAttributesForPodsDeployment(deployment)
 		for key, val := range attrsToAdd {
