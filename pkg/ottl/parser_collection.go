@@ -139,32 +139,25 @@ type (
 	//
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ParserCollectionContextOption[K, R any] func(*ParserCollectionContextParser[R], *Parser[K])
-	// ParseConditionsWithContext parses the given conditions into type [R] using the specified context's OTTL parser.
+
+	// parserCollectionContextParserFunc is the internal generic type that parses the given []string
+	// returned from a getter G into type [R] using the specified context's OTTL parser.
 	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
 	// If the condition's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
 	// so it rewrites the conditions prepending the missing paths contexts.
-	//
-	// Experimental: *NOTE* this API is subject to change or removal in the future.
-	ParseConditionsWithContext[R any] func(collection *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error)
-	// ParseStatementsWithContext parses the given statements into type [R] using the specified context's OTTL parser.
-	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
-	// If the statement's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
-	// so it rewrites the statements prepending the missing paths contexts.
-	//
-	// Experimental: *NOTE* this API is subject to change or removal in the future.
-	ParseStatementsWithContext[R any] func(collection *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error)
+	parserCollectionContextParserFunc[R any, G any] func(collection *ParserCollection[R], context string, getter G, prependPathsContext bool) (R, error)
 	// ParserCollectionContextParser is a struct that holds the converters for parsing statements and conditions
 	// into a common representation of type [R].
 	//
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ParserCollectionContextParser[R any] struct {
-		parseStatements ParseStatementsWithContext[R]
-		parseConditions ParseConditionsWithContext[R]
+		parseStatements parserCollectionContextParserFunc[R, StatementsGetter]
+		parseConditions parserCollectionContextParserFunc[R, ConditionsGetter]
 	}
 )
 
 // createConditionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
-func createConditionsParserWithConverter[K any, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) ParseConditionsWithContext[R] {
+func createConditionsParserWithConverter[K any, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, ConditionsGetter] {
 	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
 		var err error
 		var parsingConditions []string
@@ -201,7 +194,7 @@ func createConditionsParserWithConverter[K any, R any](converter ParsedCondition
 }
 
 // createStatementsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
-func createStatementsParserWithConverter[K any, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) ParseStatementsWithContext[R] {
+func createStatementsParserWithConverter[K any, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) parserCollectionContextParserFunc[R, StatementsGetter] {
 	return func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 		var err error
 		var parsingStatements []string

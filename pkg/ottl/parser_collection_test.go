@@ -96,7 +96,7 @@ func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {
 	assert.NotNil(t, pw)
 	_, parseErr := pc.ParseStatementsWithContext("testContext", mockGetter{[]string{`set(testContext.attributes["foo"], "foo")`}}, true)
 	assert.Error(t, parseErr)
-	assert.Contains(t, parseErr.Error(), "no statements converter")
+	assert.Contains(t, parseErr.Error(), "no configured converter for statements")
 }
 
 func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
@@ -174,8 +174,8 @@ func Test_EnableParserCollectionModifiedLogging_True(t *testing.T) {
 	require.Len(t, logEntries, 1)
 	logEntry := logEntries[0]
 	require.Equal(t, zap.InfoLevel, logEntry.Level)
-	require.Contains(t, logEntry.Message, "one or more statements were modified")
-	logEntryStatements := logEntry.ContextMap()["statements"]
+	require.Contains(t, logEntry.Message, "one or more paths were modified")
+	logEntryStatements := logEntry.ContextMap()["values"]
 	require.NotNil(t, logEntryStatements)
 
 	for i, originalStatement := range originalStatements {
