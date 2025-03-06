@@ -15,9 +15,7 @@ issues: [37791]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: |
-  - if otel_scope_name or otel_scope_name is missing, use collector’s version and description according to the otel spec.
-  - makes sure every metric has a complete instrumentation scope as required.
+subtext: if otel_scope_name or otel_scope_name is missing, use collector’s version and description according to the otel spec.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
