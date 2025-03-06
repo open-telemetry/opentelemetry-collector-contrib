@@ -1,9 +1,0 @@
-change_type: bug_fix
-
-component: awscontainerinsightreceiver
-
-note: Fix race condition in shutdown of AWS Container Insight receiver
-
-issues: [37695]
-
-change_logs: [user]

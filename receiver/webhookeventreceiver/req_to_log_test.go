@@ -15,6 +15,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func TestReqToLog(t *testing.T) {
@@ -114,8 +116,8 @@ func TestReqToLog(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopSettings())
-			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings())
+			reqLog, reqLen := reqToLog(test.sc, test.query, defaultConfig, receivertest.NewNopSettings(metadata.Type))
+			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings(metadata.Type))
 		})
 	}
 }

@@ -54,7 +54,7 @@ func TestMakeHeadersFunc(t *testing.T) {
 			},
 		}, host)
 
-		require.EqualError(t, err, `auth extension "bearerauth" is not an auth.Client`)
+		require.EqualError(t, err, `auth extension "bearerauth" is not an extensionauth.Client`)
 		require.Nil(t, headersFunc)
 	})
 
