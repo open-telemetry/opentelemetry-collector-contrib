@@ -240,6 +240,7 @@ func TestTranslateV2(t *testing.T) {
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				// Since we don't define the labels otel_scope_name and otel_scope_version, the default values coming from the receiver settings will be used.
 				sm1.Scope().SetName("OpenTelemetry Collector")
 				sm1.Scope().SetVersion("latest")
 				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
