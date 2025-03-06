@@ -300,9 +300,6 @@ for-integration-target: $(INTEGRATION_MODS)
 .PHONY: for-cgo-target
 for-cgo-target: $(CGO_MODS)
 
-.PHONY: for-generated-target
-for-generated-target: $(GENERATED_MODS)
-
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -438,6 +435,17 @@ define updatehelper
 	done
 endef
 
+MODULES="internal/buildscripts/modules"
+.PHONY: update-core-modules
+update-core-modules:
+	BETA_LINE=$$(grep -n '  beta:' $(CORE_VERSIONS) | cut -d : -f 1); \
+	(\
+		echo -e '#!/bin/bash\n\nbeta_modules=('; \
+		tail -n +$$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')\n\nstable_modules=('; \
+		head -n $$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')' \
+	) > $(MODULES);
 
 .PHONY: update-otel
 update-otel:$(MULTIMOD)
@@ -451,6 +459,8 @@ update-otel:$(MULTIMOD)
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) update-core-modules
+	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate

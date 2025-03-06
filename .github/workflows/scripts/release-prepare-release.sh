@@ -4,6 +4,13 @@
 # SPDX-License-Identifier: Apache-2.0
 
 PATTERN="^[0-9]+\.[0-9]+\.[0-9]+.*"
+
+if ! [[ ${CANDIDATE_STABLE} =~ $PATTERN ]]
+then
+    echo "CANDIDATE_STABLE should follow a semver format and not be led by a v"
+    exit 1
+fi
+
 if ! [[ ${CURRENT_BETA} =~ $PATTERN ]]
 then
     echo "CURRENT_BETA should follow a semver format and not be led by a v"
@@ -19,12 +26,14 @@ fi
 # Expand CURRENT_BETA to escape . character by using [.]
 CURRENT_BETA_ESCAPED=${CURRENT_BETA//./[.]}
 
-make chlog-update VERSION="v${CANDIDATE_BETA}"
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
-
 BRANCH="prepare-release-prs/${CANDIDATE_BETA}"
 git checkout -b "${BRANCH}"
+
+make update-otel OTEL_VERSION="v$CANDIDATE_BETA" OTEL_STABLE_VERSION="v$CANDIDATE_STABLE"
+
+make chlog-update VERSION="v${CANDIDATE_BETA}"
 git add --all
 git commit -m "changelog update ${CANDIDATE_BETA}"
 
@@ -48,18 +57,9 @@ make multimod-prerelease
 git add .
 git commit -m "make multimod-prerelease changes ${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
 
-make multimod-sync
-git add .
-git commit -m "make multimod-sync changes ${CANDIDATE_BETA}" || (echo "no multimod changes to commit")
-
-make gotidy
-
 pushd cmd/otelcontribcol
 go mod tidy
 popd
-
-git add .
-git commit -m "make gotidy changes ${CANDIDATE_BETA}" || (echo "no gotidy changes to commit")
 make otelcontribcol
 
 git push --set-upstream origin "${BRANCH}"
