@@ -28,7 +28,15 @@ const (
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
 	MetadataFromNamespace = "namespace"
 	// MetadataFromNode is used to specify to extract metadata/labels/annotations from node
-	MetadataFromNode       = "node"
+	MetadataFromNode = "node"
+	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
+	MetadataFromDeployment = "deployment"
+	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
+	MetadataFromStatefulSet = "statefulset"
+	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
+	MetadataFromDaemonSet = "daemonset"
+	// MetadataFromJob is used to specify to extract metadata/labels/annotations from job
+	MetadataFromJob        = "job"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -91,12 +99,16 @@ type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
+	GetDeployment(string) (*Deployment, bool)
+	// GetStatefulSet(string) (*StatefulSet, bool)
+	// GetDaemonSet(string) (*DaemonSet, bool)
+	// GetJob(string) (*Job, bool)
 	Start() error
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, bool, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -306,6 +318,12 @@ func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string
 	}
 }
 
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromDeployment {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
 func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.KeyRegex != nil {
 		for k, v := range metadata {
@@ -367,8 +385,27 @@ type AssociationSource struct {
 
 // Deployment represents a kubernetes deployment.
 type Deployment struct {
-	Name string
-	UID  string
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// StatefulSet represents a kubernetes statefulset.
+type StatefulSet struct {
+	Name       string
+	Attributes map[string]string
+}
+
+// DaemonSet represents a kubernetes daemonset.
+type DaemonSet struct {
+	Name       string
+	Attributes map[string]string
+}
+
+// Job represents a kubernetes job.
+type Job struct {
+	Name       string
+	Attributes map[string]string
 }
 
 // ReplicaSet represents a kubernetes replicaset.
