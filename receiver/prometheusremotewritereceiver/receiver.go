@@ -234,16 +234,7 @@ func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.Resource
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	scopeName := prw.settings.BuildInfo.Description
-	scopeVersion := prw.settings.BuildInfo.Version
-
-	if sName := ls.Get("otel_scope_name"); sName != "" {
-		scopeName = sName
-	}
-
-	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
-		scopeVersion = sVersion
-	}
+	scopeName, scopeVersion := prw.extractScopeInfo(ls)
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.
@@ -292,4 +283,20 @@ func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts
 			attributes.PutStr(l.Name, l.Value)
 		}
 	}
+}
+
+// extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
+// it will use the default values from the settings.
+func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (string, string) {
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
+
+	if sName := ls.Get("otel_scope_name"); sName != "" {
+		scopeName = sName
+	}
+
+	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
+		scopeVersion = sVersion
+	}
+	return scopeName, scopeVersion
 }
