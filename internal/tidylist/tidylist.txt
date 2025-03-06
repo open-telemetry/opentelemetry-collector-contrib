@@ -1,3 +1,4 @@
+cmd/checkapi
 cmd/opampsupervisor
 cmd/telemetrygen
 internal/common
@@ -68,6 +69,7 @@ internal/aws/xray
 exporter/awsxrayexporter
 exporter/azureblobexporter
 exporter/azuredataexplorerexporter
+internal/sharedcomponent
 exporter/azuremonitorexporter
 exporter/bmchelixexporter
 exporter/carbonexporter
@@ -79,7 +81,6 @@ exporter/datasetexporter
 exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
-internal/sharedcomponent
 pkg/translator/opencensus
 receiver/opencensusreceiver
 exporter/opencensusexporter
@@ -149,6 +150,7 @@ extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
+extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -239,6 +241,7 @@ receiver/couchdbreceiver
 receiver/elasticsearchreceiver
 receiver/envoyalsreceiver
 receiver/expvarreceiver
+receiver/faroreceiver
 receiver/filestatsreceiver
 receiver/flinkmetricsreceiver
 receiver/fluentforwardreceiver
@@ -276,6 +279,7 @@ receiver/osqueryreceiver
 receiver/otlpjsonfilereceiver
 receiver/podmanreceiver
 receiver/postgresqlreceiver
+receiver/pprofreceiver
 receiver/prometheusremotewritereceiver
 receiver/pulsarreceiver
 receiver/purefareceiver

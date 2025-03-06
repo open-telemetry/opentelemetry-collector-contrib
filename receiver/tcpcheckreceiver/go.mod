@@ -5,7 +5,7 @@ go 1.23.0
 toolchain go1.23.6
 
 require (
-	github.com/google/go-cmp v0.6.0
+	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.121.0
 	github.com/stretchr/testify v1.10.0
@@ -16,7 +16,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
 	go.opentelemetry.io/collector/extension v1.27.0
-	go.opentelemetry.io/collector/extension/auth/authtest v0.120.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/receiver v0.121.0
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.0
@@ -48,7 +48,6 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
-	go.opentelemetry.io/collector/extension/auth v0.120.1-0.20250224010654-18e18b21da7a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.0 // indirect
