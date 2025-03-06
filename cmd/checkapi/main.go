@@ -23,6 +23,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
 )
 
+const (
+	unkeyedFieldsLimit = 6
+)
+
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for modules")
 	configPath := flag.String("config", "cmd/checkapi/config.yaml", "configuration file")
@@ -291,6 +295,9 @@ func checkComponentFactoryFunction(newFactoryFn *function, folder string, compon
 
 func checkStructDisallowUnkeyedLiteral(s *apistruct, folder string) error {
 	if !unicode.IsUpper(rune(s.Name[0])) {
+		return nil
+	}
+	if len(s.Fields) > unkeyedFieldsLimit {
 		return nil
 	}
 	for _, f := range s.Fields {
