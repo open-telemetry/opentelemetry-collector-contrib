@@ -105,21 +105,22 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
+	// if extension is defined start with k8s leader elector
 	if kr.config.K8sLeaderElector.Type().String() != "" {
 		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election")
 		extList := host.GetExtensions()
 		if extList == nil {
-			return errors.New("no extensions found")
+			return errors.New("extension list is empty")
 		}
 
 		ext := extList[component.ID(kr.config.K8sLeaderElector)]
 		if ext == nil {
-			return errors.New("extension not found")
+			return errors.New("extension k8s leader elector not found")
 		}
 
 		leaderElectorExt, ok := ext.(k8sleaderelector.LeaderElection)
 		if !ok {
-			return errors.New("referenced extension is not a k8s leader election")
+			return errors.New("referenced extension is not k8s leader elector")
 		}
 
 		leaderElectorExt.SetCallBackFuncs(
@@ -144,7 +145,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 }
 
 func (kr *kubernetesReceiver) stopReceiver() error {
-	kr.settings.Logger.Info("Stopping the receiver!!")
+	kr.settings.Logger.Info("Stopping the receiver")
 	if kr.cancel == nil {
 		return nil
 	}
