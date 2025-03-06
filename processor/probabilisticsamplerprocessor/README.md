@@ -60,7 +60,7 @@ instead of using the parent-based approach (e.g., using the
 `TraceIDRatioBased` sampler for a non-root span), incompleteness may
 result, and when spans and log records are independently sampled in a
 processor, as by this component, the same potential for completeness
-arises.  The consistency guarantee helps minimimize this issue.
+arises.  The consistency guarantee helps minimize this issue.
 
 Consistent probability samplers can be safely used with a mixture of
 probabilities and preserve sub-trace completeness, provided that child
@@ -129,9 +129,8 @@ attribute (only logs).  The hashed value, presumed to be random, is
 compared against a threshold value that corresponds with the sampling
 percentage.
 
-This mode requires configuring the `hash_seed` field.  This mode is
-enabled when the `hash_seed` field is not zero, or when log records
-are sampled with `attribute_source` is set to `record`.
+This mode is selected by default. The seed value will be 0 if the
+`hash_seed` is not configured.
 
 In order for hashing to be consistent, all collectors for a given tier
 (e.g. behind the same load balancer) must have the same
@@ -142,8 +141,6 @@ requirements.
 This mode uses 14 bits of information in its sampling decision; the
 default `sampling_precision`, which is 4 hexadecimal digits, exactly
 encodes this information.
-
-This mode is selected by default.
 
 #### Hash seed: Use-cases
 
@@ -158,7 +155,7 @@ implies collecting log records from an expected value of 10 pods.
 OpenTelemetry specifies a consistent sampling mechanism using 56 bits
 of randomness, which may be obtained from the Trace ID according to
 the W3C Trace Context Level 2 specification.  Randomness can also be
-explicly encoding in the OpenTelemetry `tracestate` field, where it is
+explicitly encoding in the OpenTelemetry `tracestate` field, where it is
 known as the R-value.
 
 This mode is named because it reduces the number of items transmitted
@@ -183,7 +180,7 @@ for every 4 items input.
 
 ### Equalizing
 
-This mode uses the same randomness mechanism as the propotional
+This mode uses the same randomness mechanism as the proportional
 sampling mode, in this case considering how much each item was already
 sampled by preceding samplers.  This mode can be used to lower
 sampling probability to a minimum value across a whole pipeline, 
@@ -241,7 +238,7 @@ tracestate: ot=th:0;rv:9b8233f7e3a151
 This component, using either proportional or equalizing modes, could
 apply 50% sampling the Span.  This span with randomness value
 `9b8233f7e3a151` is consistently sampled at 50% because the threshold,
-when zero padded (i.e., `80000000000000`), is less than the randomess
+when zero padded (i.e., `80000000000000`), is less than the randomness
 value.  The resulting span will have the following tracestate:
 
 ```
@@ -304,7 +301,7 @@ false, in which case erroneous data will pass through the processor.
 
 The following configuration options can be modified:
 
-- `mode` (string, optional): One of "proportional", "equalizing", or "hash_seed"; the default is "proportional" unless either `hash_seed` is configured or `attribute_source` is set to `record`.
+- `mode` (string, optional): One of "proportional", "equalizing", or "hash_seed"; the default is "hash_seed".
 - `sampling_percentage` (32-bit floating point, required): Percentage at which items are sampled; >= 100 samples all items, 0 rejects all items.
 - `hash_seed` (32-bit unsigned integer, optional, default = 0): An integer used to compute the hash algorithm. Note that all collectors for a given tier (e.g. behind the same load balancer) should have the same hash_seed.
 - `fail_closed` (boolean, optional, default = true): Whether to reject items with sampling-related errors.
@@ -314,7 +311,7 @@ The following configuration options can be modified:
 
 - `attribute_source` (string, optional, default = "traceID"): defines where to look for the attribute in from_attribute. The allowed values are `traceID` or `record`.
 - `from_attribute` (string, optional, default = ""): The name of a log record attribute used for sampling purposes, such as a unique log record ID. The value of the attribute is only used if the trace ID is absent or if `attribute_source` is set to `record`.
-- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. 0 means to never sample the log record, and >= 100 means to always sample the log record.
+- `sampling_priority` (string, optional, default = ""): The name of a log record attribute used to set a different sampling priority from the `sampling_percentage` setting. The record attribute value's should be between 0 and 100, while 0 means to never sample the log record, and >= 100 means to always sample the log record.
 
 Examples:
 

@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -45,7 +45,7 @@ func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	traceReceiver, err := factory.CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		nil,
 	)
@@ -57,7 +57,7 @@ func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		tlsConfig(),
 		consumertest.NewNop(),
 	)
@@ -72,7 +72,7 @@ func TestFactoryInvalidExtraMetadataLabels(t *testing.T) {
 	}
 	metricsReceiver, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&cfg,
 		consumertest.NewNop(),
 	)
@@ -92,7 +92,7 @@ func TestFactoryBadAuthType(t *testing.T) {
 	}
 	_, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)

@@ -27,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
@@ -60,12 +61,12 @@ type esDataReceiver struct {
 
 type dataReceiverOption func(*esDataReceiver)
 
-func newElasticsearchDataReceiver(t testing.TB, opts ...dataReceiverOption) *esDataReceiver {
+func newElasticsearchDataReceiver(tb testing.TB, opts ...dataReceiverOption) *esDataReceiver {
 	r := &esDataReceiver{
 		DataReceiverBase:  testbed.DataReceiverBase{},
-		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		endpoint:          fmt.Sprintf("http://%s:%d", testbed.DefaultHost, testutil.GetAvailablePort(tb)),
 		decodeBulkRequest: true,
-		t:                 t,
+		t:                 tb,
 	}
 	for _, opt := range opts {
 		opt(r)
@@ -87,7 +88,7 @@ func withBatcherEnabled(enabled bool) dataReceiverOption {
 
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
-		component.MustNewType("mockelasticsearch"),
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
@@ -101,7 +102,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 	cfg.ServerConfig.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	// Use an actual logger to log errors.
 	set.Logger = zap.Must(zap.NewDevelopment())
 	logsReceiver, err := factory.CreateLogs(context.Background(), set, cfg, lc)
@@ -148,6 +149,8 @@ func (es *esDataReceiver) GenConfigYAMLStr() string {
       enabled: false
     sending_queue:
       enabled: true
+    mapping:
+      mode: otel
     retry:
       enabled: true
       initial_interval: 100ms

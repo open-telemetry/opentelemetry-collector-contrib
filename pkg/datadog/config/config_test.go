@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 )
 
@@ -166,10 +167,10 @@ func TestValidate(t *testing.T) {
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
 					Timeout:             10 * time.Second,
-					IdleConnTimeout:     &idleConnTimeout,
-					MaxIdleConns:        &maxIdleConn,
-					MaxIdleConnsPerHost: &maxIdleConnPerHost,
-					MaxConnsPerHost:     &maxConnPerHost,
+					IdleConnTimeout:     idleConnTimeout,
+					MaxIdleConns:        maxIdleConn,
+					MaxIdleConnsPerHost: maxIdleConnPerHost,
+					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
 					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
 				},
@@ -223,10 +224,10 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.ReadBufferSize = 100
 	cfgWithHTTPConfigs.WriteBufferSize = 200
 	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
 	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil
@@ -440,7 +441,10 @@ func TestCreateDefaultConfig(t *testing.T) {
 				Endpoint: "https://trace.agent.datadoghq.com",
 			},
 			TracesConfig: TracesConfig{
-				IgnoreResources: []string{},
+				IgnoreResources:        []string{},
+				PeerServiceAggregation: true,
+				PeerTagsAggregation:    true,
+				ComputeStatsBySpanKind: true,
 			},
 		},
 		Logs: LogsConfig{
@@ -510,7 +514,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -571,6 +578,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 						SpanNameAsResourceName: true,
 						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 					TraceBuffer: 10,
 				},
@@ -630,7 +640,10 @@ func TestLoadConfig(t *testing.T) {
 							"old_name3": "new_name3",
 							"old_name4": "new_name4",
 						},
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
+						ComputeStatsBySpanKind: true,
 					},
 				},
 				Logs: LogsConfig{
@@ -684,7 +697,10 @@ func TestLoadConfig(t *testing.T) {
 						Endpoint: "https://trace.agent.datadoghq.com",
 					},
 					TracesConfig: TracesConfig{
-						IgnoreResources: []string{},
+						IgnoreResources:        []string{},
+						ComputeStatsBySpanKind: true,
+						PeerServiceAggregation: true,
+						PeerTagsAggregation:    true,
 					},
 				},
 				Logs: LogsConfig{
@@ -713,7 +729,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

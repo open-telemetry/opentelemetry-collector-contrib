@@ -11,9 +11,9 @@ import (
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -69,9 +69,9 @@ func TestValidate(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			if tc.expectedSuccess {
-				require.NoError(t, component.ValidateConfig(tc.cfg))
+				require.NoError(t, xconfmap.Validate(tc.cfg))
 			} else {
-				require.Error(t, component.ValidateConfig(tc.cfg))
+				require.Error(t, xconfmap.Validate(tc.cfg))
 			}
 		})
 	}
@@ -88,7 +88,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
-		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.NoError(t, xconfmap.Validate(cfg))
 		assert.Equal(t, factory.CreateDefaultConfig(), cfg)
 	})
 
@@ -112,6 +112,12 @@ func TestLoadConfig(t *testing.T) {
 				SqlserverComputerName: metadata.ResourceAttributeConfig{
 					Enabled: true,
 				},
+				ServerAddress: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
+				ServerPort: metadata.ResourceAttributeConfig{
+					Enabled: true,
+				},
 			},
 		}
 		expected.ComputerName = "CustomServer"
@@ -121,7 +127,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
-		assert.NoError(t, component.ValidateConfig(cfg))
+		assert.NoError(t, xconfmap.Validate(cfg))
 		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}

@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"sync"
 	"time"
@@ -19,30 +20,18 @@ import (
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/clientutil"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metrics/sketches"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/scrub"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
-
-var metricRemappingDisableddFeatureGate = featuregate.GlobalRegistry().MustRegister(
-	"exporter.datadogexporter.metricremappingdisabled",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("When enabled the Datadog Exporter remaps OpenTelemetry semantic conventions to Datadog semantic conventions. This feature gate is only for internal use."),
-	featuregate.WithRegisterReferenceURL("https://docs.datadoghq.com/opentelemetry/schema_semantics/metrics_mapping/"),
-)
-
-// isMetricRemappingDisabled returns true if the datadogexporter should generate Datadog-compliant metrics from OpenTelemetry metrics
-func isMetricRemappingDisabled() bool {
-	return metricRemappingDisableddFeatureGate.IsEnabled()
-}
 
 type metricsExporter struct {
 	params           exporter.Settings
@@ -60,6 +49,8 @@ type metricsExporter struct {
 	// getPushTime returns a Unix time in nanoseconds, representing the time pushing metrics.
 	// It will be overwritten in tests.
 	getPushTime func() uint64
+
+	gatewayUsage *attributes.GatewayUsage
 }
 
 func newMetricsExporter(
@@ -72,11 +63,12 @@ func newMetricsExporter(
 	sourceProvider source.Provider,
 	metadataReporter *inframetadata.Reporter,
 	statsOut chan []byte,
+	gatewayUsage *attributes.GatewayUsage,
 ) (*metricsExporter, error) {
 	options := cfg.Metrics.ToTranslatorOpts()
 	options = append(options, otlpmetrics.WithFallbackSourceProvider(sourceProvider))
 	options = append(options, otlpmetrics.WithStatsOut(statsOut))
-	if isMetricRemappingDisabled() {
+	if pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled() {
 		params.TelemetrySettings.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
 	} else {
 		options = append(options, otlpmetrics.WithRemapping())
@@ -100,6 +92,7 @@ func newMetricsExporter(
 		sourceProvider:   sourceProvider,
 		getPushTime:      func() uint64 { return uint64(time.Now().UTC().UnixNano()) },
 		metadataReporter: metadataReporter,
+		gatewayUsage:     gatewayUsage,
 	}
 	errchan := make(chan error)
 	if isMetricExportV2Enabled() {
@@ -154,6 +147,13 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 	}
 	defer resp.Body.Close()
 
+	// We must read the full response body from the http request to ensure that connections can be
+	// properly re-used. https://pkg.go.dev/net/http#Client.Do
+	_, err = io.Copy(io.Discard, resp.Body)
+	if err != nil {
+		return clientutil.WrapError(fmt.Errorf("failed to read response body from sketches HTTP request: %w", err), resp)
+	}
+
 	if resp.StatusCode >= 400 {
 		return clientutil.WrapError(fmt.Errorf("error when sending payload to %s: %s", sketches.SketchSeriesEndpoint, resp.Status), resp)
 	}
@@ -184,11 +184,11 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	}
 	var consumer otlpmetrics.Consumer
 	if isMetricExportV2Enabled() {
-		consumer = metrics.NewConsumer()
+		consumer = metrics.NewConsumer(exp.gatewayUsage)
 	} else {
 		consumer = metrics.NewZorkianConsumer()
 	}
-	metadata, err := exp.tr.MapMetrics(ctx, md, consumer)
+	metadata, err := exp.tr.MapMetrics(ctx, md, consumer, exp.gatewayUsage)
 	if err != nil {
 		return fmt.Errorf("failed to map metrics: %w", err)
 	}

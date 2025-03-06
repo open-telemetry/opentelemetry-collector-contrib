@@ -120,13 +120,6 @@ func stringSlicesEqual(expected, actual []string) bool {
 	return true
 }
 
-func min(i, j int) int {
-	if i < j {
-		return i
-	}
-	return j
-}
-
 type dimensionality [][]string
 
 func (d dimensionality) Len() int {

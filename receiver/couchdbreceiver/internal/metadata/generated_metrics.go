@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeHTTPMethod specifies the a value http.method attribute.
+// AttributeHTTPMethod specifies the value http.method attribute.
 type AttributeHTTPMethod int
 
 const (
@@ -58,7 +58,7 @@ var MapAttributeHTTPMethod = map[string]AttributeHTTPMethod{
 	"PUT":     AttributeHTTPMethodPUT,
 }
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -84,7 +84,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"reads":  AttributeOperationReads,
 }
 
-// AttributeView specifies the a value view attribute.
+// AttributeView specifies the value view attribute.
 type AttributeView int
 
 const (
@@ -561,7 +561,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                          mbc,
@@ -651,7 +650,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/couchdbreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricCouchdbAverageRequestTime.emit(ils.Metrics())

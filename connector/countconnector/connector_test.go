@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -250,7 +251,7 @@ func TestTracesToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateTracesToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -288,7 +289,7 @@ func TestTracesToMetrics(t *testing.T) {
 //   - (no attributes)
 //
 // - The size metrics have the following sets of types:
-//   - int gauge, double gauge, int sum, double sum, historgram, summary
+//   - int gauge, double gauge, int sum, double sum, histogram, summary
 //
 // - The four data points on each metric have the following sets of attributes:
 //   - datapoint.required: foo, datapoint.optional: bar
@@ -492,7 +493,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateMetricsToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -664,7 +665,7 @@ func TestLogsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)

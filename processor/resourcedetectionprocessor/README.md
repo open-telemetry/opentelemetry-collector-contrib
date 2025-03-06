@@ -19,6 +19,17 @@ The resource detection processor can be used to detect resource information from
 in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource), and append or
 override the resource value in telemetry data with this information.
 
+> **Note**
+>
+> If a configured resource detector fails in some way, the error it returns to the processor will be logged, and the collector will continue to run. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
+>
+> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently disabled by default (alpha stage).
+>
+>  Example of how to enable it:
+> ```shell-session
+> $ otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
+> ```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -248,6 +259,31 @@ If you are using a proxy server on your EC2 instance, it's important that you ex
 
 If the instance is part of AWS ParallelCluster and the detector is failing to connect to the metadata server, check the iptable and make sure the chain `PARALLELCLUSTER_IMDS` contains a rule that allows OTEL user to access `169.254.169.254/32`
 
+In some cases, you might need to change the behavior of the AWS metadata client from the [standard retryer](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html)
+
+By default, the client retries 3 times with a max backoff delay of 20s.
+
+We offer a limited set of options to override those defaults specifically, such that you can set the client to retry 10 times, for up to 5 minutes, for example:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      max_attempts: 10
+      max_backoff: 5m
+```
+
+The EC2 detector will report an error in logs if the EC2 metadata endpoint is unavailable. You can configure the detector to instead fail with this flag:
+
+```yaml
+processors:
+  resourcedetection/ec2:
+    detectors: ["ec2"]
+    ec2:
+      fail_on_missing_metadata: true
+```
+
 ### Amazon ECS
 
 Queries the [Task Metadata Endpoint](https://docs.aws.amazon.com/AmazonECS/latest/developerguide/task-metadata-endpoint.html) (TMDE) to record information about the current ECS Task. Only TMDE V4 and V3 are supported.
@@ -410,7 +446,7 @@ If accurate parsing cannot be performed, the infrastructure resource group value
 
 ### Consul
 
-Queries a [consul agent](https://www.consul.io/docs/agent) and reads its' [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
+Queries a [consul agent](https://www.consul.io/docs/agent) and reads its [configuration endpoint](https://www.consul.io/api-docs/agent#read-configuration) to retrieve related resource attributes:
 
 The list of the populated resource attributes can be found at [Consul Detector Resource Attributes](./internal/consul/documentation.md).
 
@@ -425,6 +461,47 @@ processors:
     timeout: 2s
     override: false
 ```
+
+### Kubeadm Metadata
+
+Queries the K8S API server to retrieve kubeadm resource attributes:
+
+The list of the populated resource attributes can be found at [kubeadm Detector Resource Attributes](./internal/kubeadm/documentation.md).
+
+The following permissions are required:
+```yaml
+kind: Role
+metadata:
+  name: otel-collector
+  namespace: kube-system
+rules:
+  - apiGroups: [""]
+    resources: ["configmaps"]
+    resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+metadata:
+  name: otel-collector-rolebinding
+  namespace: kube-system
+subjects:
+- kind: ServiceAccount
+  name: default
+  namespace: default
+roleRef:
+  kind: Role
+  name: otel-collector
+  apiGroup: rbac.authorization.k8s.io
+```
+
+| Name | Type | Required | Default         | Docs                                                                                                                                                                                                                                   |
+| ---- | ---- |----------|-----------------|----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| auth_type | string | No       | `serviceAccount` | How to authenticate to the K8s API server.  This can be one of `none` (for no auth), `serviceAccount` (to use the standard service account token provided to the agent pod), or `kubeConfig` to use credentials from `~/.kube/config`. |
 
 ### K8S Node Metadata
 
@@ -481,11 +558,11 @@ and add this to your workload:
                 fieldPath: spec.nodeName
 ```
 
-### Openshift
+### OpenShift
 
 Queries the OpenShift and Kubernetes API to retrieve related resource attributes.
 
-The list of the populated resource attributes can be found at [Openshift Detector Resource Attributes](./internal/openshift/documentation.md).
+The list of the populated resource attributes can be found at [OpenShift Detector Resource Attributes](./internal/openshift/documentation.md).
 
 The following permissions are required:
 ```yaml
@@ -520,10 +597,37 @@ processors:
 
 See: [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 
+### Dynatrace
+
+Loads resource information from the `dt_host_metadata.properties` file which is located in
+the `/var/lib/dynatrace/enrichment` (on *nix systems) or `%ProgramData%\dynatrace\enrichment` (on Windows) directories.
+If present in the file, the following attributes will be added:
+
+- `dt.entity.host`
+- `host.name`
+
+The Dynatrace detector does not require any additional configuration, other than being added to the list of detectors.
+
+Example:
+
+```yaml
+processors:
+  resourcedetection/dynatrace:
+    override: false
+    detectors: [dynatrace]
+```
+
+It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
+existing resource attributes.
+If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+other sources to the collector, then these describe the monitored entity in the best way.
+Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
+or the collector's host instead, which might be inaccurate.
+
 ## Configuration
 
 ```yaml
-# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift"
+# a list of resource detectors to run, valid options are: "env", "system", "gcp", "ec2", "ecs", "elastic_beanstalk", "eks", "lambda", "azure", "heroku", "openshift", "dynatrace"
 detectors: [ <string> ]
 # determines if existing resource attributes should be overridden or preserved, defaults to true
 override: <bool>
@@ -588,5 +692,5 @@ Note that if multiple detectors are inserting the same attribute name, the first
 * ecs
 * ec2
 
-The full list of settings exposed for this extension are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this extension are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

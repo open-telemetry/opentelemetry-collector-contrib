@@ -4,7 +4,6 @@
 package alertmanagerexporter
 
 import (
-	"net/http"
 	"path/filepath"
 	"testing"
 	"time"
@@ -18,13 +17,13 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 )
 
 func TestLoadConfig(t *testing.T) {
-	defaultTransport := http.DefaultTransport.(*http.Transport)
 	t.Parallel()
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
@@ -63,26 +62,24 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 2,
 					QueueSize:    10,
 				},
-				ClientConfig: confighttp.ClientConfig{
-					Headers: map[string]configopaque.String{
+				ClientConfig: func() confighttp.ClientConfig {
+					client := confighttp.NewDefaultClientConfig()
+					client.Headers = map[string]configopaque.String{
 						"can you have a . here?": "F0000000-0000-0000-0000-000000000000",
 						"header1":                "234",
 						"another":                "somevalue",
-					},
-					Endpoint: "a.new.alertmanager.target:9093",
-					TLSSetting: configtls.ClientConfig{
+					}
+					client.Endpoint = "a.new.alertmanager.target:9093"
+					client.TLSSetting = configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile: "/var/lib/mycert.pem",
 						},
-					},
-					ReadBufferSize:      0,
-					WriteBufferSize:     524288,
-					Timeout:             time.Second * 10,
-					MaxIdleConns:        &defaultTransport.MaxIdleConns,
-					MaxIdleConnsPerHost: &defaultTransport.MaxIdleConnsPerHost,
-					MaxConnsPerHost:     &defaultTransport.MaxConnsPerHost,
-					IdleConnTimeout:     &defaultTransport.IdleConnTimeout,
-				},
+					}
+					client.ReadBufferSize = 0
+					client.WriteBufferSize = 524288
+					client.Timeout = time.Second * 10
+					return client
+				}(),
 			},
 		},
 	}
@@ -96,7 +93,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

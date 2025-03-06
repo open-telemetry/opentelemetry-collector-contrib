@@ -217,6 +217,7 @@ func (v *vcenterMetricScraper) recordHostSystemStats(
 
 	cpuCapacity := float64(int32(h.NumCpuCores) * h.CpuMhz)
 	v.mb.RecordVcenterHostCPUCapacityDataPoint(ts, int64(cpuCapacity))
+	v.mb.RecordVcenterHostMemoryCapacityDataPoint(ts, float64(h.MemorySize>>20))
 	cpuUtilization := 100 * float64(z.OverallCpuUsage) / cpuCapacity
 	v.mb.RecordVcenterHostCPUUtilizationDataPoint(ts, cpuUtilization)
 }
@@ -276,6 +277,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 	balloonedMem := vm.Summary.QuickStats.BalloonedMemory
 	swappedMem := vm.Summary.QuickStats.SwappedMemory
 	swappedSSDMem := vm.Summary.QuickStats.SsdSwappedMemory
+	grantedMem := vm.Summary.QuickStats.GrantedMemory
 
 	if totalMemory := vm.Summary.Config.MemorySizeMB; totalMemory > 0 && memUsage > 0 {
 		memoryUtilization := float64(memUsage) / float64(totalMemory) * 100
@@ -286,6 +288,7 @@ func (v *vcenterMetricScraper) recordVMStats(
 	v.mb.RecordVcenterVMMemoryBalloonedDataPoint(ts, int64(balloonedMem))
 	v.mb.RecordVcenterVMMemorySwappedDataPoint(ts, int64(swappedMem))
 	v.mb.RecordVcenterVMMemorySwappedSsdDataPoint(ts, swappedSSDMem)
+	v.mb.RecordVcenterVMMemoryGrantedDataPoint(ts, int64(grantedMem))
 
 	cpuUsage := vm.Summary.QuickStats.OverallCpuUsage
 	if cpuUsage == 0 {
@@ -403,6 +406,11 @@ var vmPerfMetricList = []string{
 	"net.bytesRx.average",
 	"net.bytesTx.average",
 	"net.usage.average",
+	"net.broadcastRx.summation",
+	"net.broadcastTx.summation",
+	"net.multicastRx.summation",
+	"net.multicastTx.summation",
+
 	// disk metrics
 	"disk.totalWriteLatency.average",
 	"disk.totalReadLatency.average",
@@ -411,6 +419,11 @@ var vmPerfMetricList = []string{
 	"virtualDisk.totalReadLatency.average",
 	"virtualDisk.read.average",
 	"virtualDisk.write.average",
+
+	// cpu metrics
+	"cpu.idle.summation",
+	"cpu.wait.summation",
+	"cpu.ready.summation",
 }
 
 // recordVMPerformanceMetrics records performance metrics for a vSphere Virtual Machine
@@ -457,6 +470,27 @@ func (v *vcenterMetricScraper) recordVMPerformanceMetrics(entityMetric *performa
 			case "net.droppedRx.summation":
 				rxRate := float64(nestedValue) / 20
 				v.mb.RecordVcenterVMNetworkPacketDropRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.multicastRx.summation":
+				rxRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.multicastTx.summation":
+				txRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkMulticastPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
+			case "cpu.idle.summation":
+				idleTime := float64(nestedValue) / float64(si.Interval) * 10
+				v.mb.RecordVcenterVMCPUTimeDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), idleTime, metadata.AttributeCPUStateIdle, val.Instance)
+			case "cpu.wait.summation":
+				waitTime := float64(nestedValue) / float64(si.Interval) * 10
+				v.mb.RecordVcenterVMCPUTimeDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), waitTime, metadata.AttributeCPUStateWait, val.Instance)
+			case "cpu.ready.summation":
+				readyTime := float64(nestedValue) / float64(si.Interval) * 10
+				v.mb.RecordVcenterVMCPUTimeDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), readyTime, metadata.AttributeCPUStateReady, val.Instance)
+			case "net.broadcastRx.summation":
+				rxRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), rxRate, metadata.AttributeThroughputDirectionReceived, val.Instance)
+			case "net.broadcastTx.summation":
+				txRate := float64(nestedValue) / 20
+				v.mb.RecordVcenterVMNetworkBroadcastPacketRateDataPoint(pcommon.NewTimestampFromTime(si.Timestamp), txRate, metadata.AttributeThroughputDirectionTransmitted, val.Instance)
 			}
 		}
 	}

@@ -35,6 +35,9 @@ type Config struct {
 	// maximum size in bytes of time series batch sent to remote storage
 	MaxBatchSizeBytes int `mapstructure:"max_batch_size_bytes"`
 
+	// maximum amount of parallel requests to do when handling large batch request
+	MaxBatchRequestParallelism *int `mapstructure:"max_batch_request_parallelism"`
+
 	// ResourceToTelemetrySettings is the option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
@@ -87,6 +90,10 @@ var _ component.Config = (*Config)(nil)
 
 // Validate checks if the exporter configuration is valid
 func (cfg *Config) Validate() error {
+	if cfg.MaxBatchRequestParallelism != nil && *cfg.MaxBatchRequestParallelism < 1 {
+		return fmt.Errorf("max_batch_request_parallelism can't be set to below 1")
+	}
+
 	if cfg.RemoteWriteQueue.QueueSize < 0 {
 		return fmt.Errorf("remote write queue size can't be negative")
 	}

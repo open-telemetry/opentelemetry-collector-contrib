@@ -67,9 +67,10 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 }
 
 func TestSyslogComplementaryRFC3164(t *testing.T) {
+	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38238")
 	expectedData := []expectedDataType{
 		{
-			message:        "<34>Oct 11 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8",
+			message:        "<34>Oct 11 2023 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8",
 			timestamp:      1697062455000000000,
 			severityNumber: 18,
 			severityText:   "crit",
@@ -82,7 +83,7 @@ func TestSyslogComplementaryRFC3164(t *testing.T) {
 			},
 		},
 		{
-			message:        "<19>Oct 11 22:14:15 - -",
+			message:        "<19>Oct 11 2023 22:14:15 - -",
 			timestamp:      1697062455000000000,
 			severityNumber: 17,
 			severityText:   "err",

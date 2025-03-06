@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
@@ -50,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = &hundred
-	clientConfig.MaxIdleConnsPerHost = &hundred
-	clientConfig.IdleConnTimeout = &idleConnTimeout
+	clientConfig.MaxIdleConns = hundred
+	clientConfig.MaxIdleConnsPerHost = hundred
+	clientConfig.IdleConnTimeout = idleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -95,12 +96,17 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      true,
 					FlushTimeout: time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 1,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 1,
+						MaxSize: 10,
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10,
-					},
+				},
+				OtelAttrsToHec: splunk.HecToOtelAttrs{
+					Source:     "mysource",
+					SourceType: "mysourcetype",
+					Index:      "myindex",
+					Host:       "myhost",
 				},
 				HecToOtelAttrs: splunk.HecToOtelAttrs{
 					Source:     "mysource",
@@ -140,7 +146,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -230,13 +236,13 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Token = "foo"
 				return cfg
 			}(),
-			wantErr: "queue size must be positive",
+			wantErr: "sending_queue: `queue_size` must be positive",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			err := component.ValidateConfig(tt.cfg)
+			err := xconfmap.Validate(tt.cfg)
 			if tt.wantErr == "" {
 				require.NoError(t, err)
 			} else {

@@ -4,7 +4,9 @@
 package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"time"
+
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
@@ -37,6 +39,11 @@ type Config struct {
 
 	// Authentication data
 	Authentication kafka.Authentication `mapstructure:"auth"`
+
+	// Cluster metadata refresh frequency
+	// Configures the refresh frequency to update cached cluster metadata
+	// Defaults to 10 minutes from Sarama library
+	RefreshFrequency time.Duration `mapstructure:"refresh_frequency"`
 
 	// Scrapers defines which metric data points to be captured from kafka
 	Scrapers []string `mapstructure:"scrapers"`

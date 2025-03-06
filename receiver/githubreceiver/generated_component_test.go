@@ -15,8 +15,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
+var typ = component.MustNewType("github")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "github", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -27,14 +29,21 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		name     string
 		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
+		name     string
 	}{
 
 		{
 			name: "metrics",
 			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
 				return factory.CreateMetrics(ctx, set, cfg, consumertest.NewNop())
+			},
+		},
+
+		{
+			name: "traces",
+			createFn: func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error) {
+				return factory.CreateTraces(ctx, set, cfg, consumertest.NewNop())
 			},
 		},
 	}
@@ -48,19 +57,19 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
+			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))

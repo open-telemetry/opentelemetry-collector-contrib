@@ -56,6 +56,7 @@ type BaseOTLPDataReceiver struct {
 	retry           string
 	sendingQueue    string
 	timeout         string
+	batcher         string
 }
 
 func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
@@ -69,7 +70,7 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		cfg.GRPC = nil
 	}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	if bor.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}
@@ -104,6 +105,11 @@ func (bor *BaseOTLPDataReceiver) WithTimeout(timeout string) *BaseOTLPDataReceiv
 	return bor
 }
 
+func (bor *BaseOTLPDataReceiver) WithBatcher(batcher string) *BaseOTLPDataReceiver {
+	bor.batcher = batcher
+	return bor
+}
+
 func (bor *BaseOTLPDataReceiver) Stop() error {
 	// we reuse the receiver across signals. Shutting down the log receiver shuts down the metrics and traces receiver.
 	return bor.logReceiver.Shutdown(context.Background())
@@ -125,8 +131,9 @@ func (bor *BaseOTLPDataReceiver) GenConfigYAMLStr() string {
     %s
     %s
     %s
+    %s
     tls:
-      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue, bor.timeout)
+      insecure: true`, bor.exporterType, addr, bor.retry, bor.sendingQueue, bor.timeout, bor.batcher)
 	comp := "none"
 	if bor.compression != "" {
 		comp = bor.compression

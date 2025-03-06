@@ -109,7 +109,7 @@ func TestOTLPMetricsJsonMarshaling(t *testing.T) {
 			m := sm.Metrics().AppendEmpty()
 			m.SetEmptyGauge()
 			m.Gauge().DataPoints().AppendEmpty().SetStartTimestamp(pcommon.NewTimestampFromTime(time.Unix(1, 0)))
-			m.Gauge().DataPoints().At(0).Attributes().PutStr("gauage_attribute", "attr")
+			m.Gauge().DataPoints().At(0).Attributes().PutStr("gauge_attribute", "attr")
 			m.Gauge().DataPoints().At(0).SetDoubleValue(1.0)
 
 			r1 := pcommon.NewResource()

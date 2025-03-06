@@ -26,10 +26,16 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
 	return &Config{
+		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Partition: "minute",
+			Region:            "us-east-1",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}
@@ -39,19 +45,31 @@ func createLogsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Logs, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	cfg, err := checkAndCastConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	s3Exporter := newS3Exporter(cfg, "logs", params)
 
 	return exporterhelper.NewLogs(ctx, params,
 		config,
 		s3Exporter.ConsumeLogs,
-		exporterhelper.WithStart(s3Exporter.start))
+		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+	)
 }
 
 func createMetricsExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Metrics, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	cfg, err := checkAndCastConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	s3Exporter := newS3Exporter(cfg, "metrics", params)
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, fmt.Errorf("metrics are not supported by sumo_ic output format")
@@ -60,14 +78,21 @@ func createMetricsExporter(ctx context.Context,
 	return exporterhelper.NewMetrics(ctx, params,
 		config,
 		s3Exporter.ConsumeMetrics,
-		exporterhelper.WithStart(s3Exporter.start))
+		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+	)
 }
 
 func createTracesExporter(ctx context.Context,
 	params exporter.Settings,
 	config component.Config,
 ) (exporter.Traces, error) {
-	s3Exporter := newS3Exporter(config.(*Config), params)
+	cfg, err := checkAndCastConfig(config)
+	if err != nil {
+		return nil, err
+	}
+
+	s3Exporter := newS3Exporter(cfg, "traces", params)
 
 	if config.(*Config).MarshalerName == SumoIC {
 		return nil, fmt.Errorf("traces are not supported by sumo_ic output format")
@@ -77,5 +102,16 @@ func createTracesExporter(ctx context.Context,
 		params,
 		config,
 		s3Exporter.ConsumeTraces,
-		exporterhelper.WithStart(s3Exporter.start))
+		exporterhelper.WithStart(s3Exporter.start),
+		exporterhelper.WithQueue(cfg.QueueSettings),
+	)
+}
+
+// checkAndCastConfig checks the configuration type and casts it to the S3 exporter Config struct.
+func checkAndCastConfig(c component.Config) (*Config, error) {
+	cfg, ok := c.(*Config)
+	if !ok {
+		return nil, fmt.Errorf("config structure is not of type *awss3exporter.Config")
+	}
+	return cfg, nil
 }

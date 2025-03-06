@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/vcenterreceiver/internal/metadata"
 )
@@ -50,7 +50,7 @@ func TestConfigValidation(t *testing.T) {
 			expectedErr: errors.New("url scheme must be http or https"),
 		},
 		{
-			desc: "unparseable URL",
+			desc: "unparsable URL",
 			cfg: Config{
 				Endpoint:         "h" + string(rune(0x7f)),
 				ClientConfig:     configtls.ClientConfig{},

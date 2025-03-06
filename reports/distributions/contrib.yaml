@@ -12,7 +12,9 @@ components:
         - roundrobin
         - routing
         - servicegraph
+        - signaltometrics
         - spanmetrics
+        - sum
     exporter:
         - alibabacloud_logservice
         - awscloudwatchlogs
@@ -22,12 +24,14 @@ components:
         - awsxray
         - azuredataexplorer
         - azuremonitor
+        - bmchelix
         - carbon
         - cassandra
         - clickhouse
         - coralogix
         - datadog
         - dataset
+        - doris
         - elasticsearch
         - file
         - googlecloud
@@ -52,6 +56,7 @@ components:
         - sentry
         - signalfx
         - splunk_hec
+        - stef
         - sumologic
         - syslog
         - tencentcloud_logservice
@@ -78,6 +83,7 @@ components:
         - oidc
         - opamp
         - pprof
+        - redis_storage
         - sigv4auth
     processor:
         - attributes
@@ -88,6 +94,7 @@ components:
         - geoip
         - groupbyattrs
         - groupbytrace
+        - interval
         - k8sattributes
         - logdedup
         - metricsgeneration
@@ -102,6 +109,10 @@ components:
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - aes
+        - s3
+        - secretsmanager
     receiver:
         - active_directory_ds
         - aerospike
@@ -126,6 +137,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
         - filelog
         - filestats
@@ -133,6 +145,7 @@ components:
         - fluentforward
         - github
         - googlecloudmonitoring
+        - googlecloudpubsub
         - googlecloudspanner
         - haproxy
         - hostmetrics
@@ -148,14 +161,17 @@ components:
         - kafka
         - kafkametrics
         - kubeletstats
+        - libhoney
         - loki
         - memcached
         - mongodb
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
+        - ntp
         - opencensus
         - oracledb
         - otelarrow
@@ -178,11 +194,13 @@ components:
         - snowflake
         - solace
         - splunk_hec
+        - splunkenterprise
         - sqlquery
         - sqlserver
         - sshcheck
         - statsd
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -191,5 +209,18 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
+        - zookeeper
+    scraper:
+        - cpu
+        - disk
+        - filesystem
+        - load
+        - memory
+        - network
+        - paging
+        - process
+        - processes
+        - system
         - zookeeper

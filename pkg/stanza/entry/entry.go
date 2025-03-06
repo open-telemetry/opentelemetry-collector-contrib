@@ -136,11 +136,11 @@ func (entry *Entry) readToStringMap(field FieldInterface, dest *map[string]strin
 	case map[string]any:
 		newDest := make(map[string]string)
 		for k, v := range m {
-			if vStr, ok := v.(string); ok {
-				newDest[k] = vStr
-			} else {
+			vStr, ok := v.(string)
+			if !ok {
 				return fmt.Errorf("can not cast map members '%s' of type '%s' to string", k, v)
 			}
+			newDest[k] = vStr
 		}
 		*dest = newDest
 	case map[any]any:

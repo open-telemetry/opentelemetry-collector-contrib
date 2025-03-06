@@ -69,7 +69,7 @@ type taskFetcherOptions struct {
 func newTaskFetcherFromConfig(cfg Config, logger *zap.Logger) (*taskFetcher, error) {
 	svcNameFilter, err := serviceConfigsToFilter(cfg.Services)
 	if err != nil {
-		return nil, fmt.Errorf("init serivce name filter failed: %w", err)
+		return nil, fmt.Errorf("init service name filter failed: %w", err)
 	}
 	return newTaskFetcher(taskFetcherOptions{
 		Logger:            logger,
@@ -168,6 +168,9 @@ func (f *taskFetcher) getDiscoverableTasks(ctx context.Context) ([]*ecs.Task, er
 		descRes, err := svc.DescribeTasksWithContext(ctx, &ecs.DescribeTasksInput{
 			Cluster: cluster,
 			Tasks:   listRes.TaskArns,
+			Include: []*string{
+				aws.String("TAGS"),
+			},
 		})
 		if err != nil {
 			return nil, fmt.Errorf("ecs.DescribeTasks failed: %w", err)
@@ -260,7 +263,7 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 
 	// DescribeContainerInstance size limit is 100, do it in batch.
 	for i := 0; i < len(instanceList); i += describeContainerInstanceLimit {
-		end := minInt(i+describeContainerInstanceLimit, len(instanceList))
+		end := min(i+describeContainerInstanceLimit, len(instanceList))
 		if err := f.describeContainerInstances(ctx, instanceList[i:end], ciToEC2); err != nil {
 			return fmt.Errorf("describe container instanced failed offset=%d: %w", i, err)
 		}
@@ -275,7 +278,7 @@ func (f *taskFetcher) attachContainerInstance(ctx context.Context, tasks []*task
 		containerInstance := aws.StringValue(t.Task.ContainerInstanceArn)
 		ec2Info, ok := ciToEC2[containerInstance]
 		if !ok {
-			return fmt.Errorf("container instance ec2 info not found containerInstnace=%q", containerInstance)
+			return fmt.Errorf("container instance ec2 info not found containerInstance=%q", containerInstance)
 		}
 		t.EC2 = ec2Info
 	}
@@ -341,7 +344,7 @@ type serviceNameFilter func(name string) bool
 func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error) {
 	svc := f.ecs
 	cluster := aws.String(f.cluster)
-	// List and filter out services we need to desribe.
+	// List and filter out services we need to describe.
 	listReq := ecs.ListServicesInput{Cluster: cluster}
 	var servicesToDescribe []*string
 	for {
@@ -365,7 +368,7 @@ func (f *taskFetcher) getAllServices(ctx context.Context) ([]*ecs.Service, error
 	// DescribeServices size limit is 10 so we need to do paging on client side.
 	var services []*ecs.Service
 	for i := 0; i < len(servicesToDescribe); i += describeServiceLimit {
-		end := minInt(i+describeServiceLimit, len(servicesToDescribe))
+		end := min(i+describeServiceLimit, len(servicesToDescribe))
 		desc := &ecs.DescribeServicesInput{
 			Cluster:  cluster,
 			Services: servicesToDescribe[i:end],
@@ -396,7 +399,7 @@ func (f *taskFetcher) attachService(tasks []*taskAnnotated, services []*ecs.Serv
 
 	// Attach service to task
 	for _, t := range tasks {
-		// taskAnnotated is created using RunTask i.e. not manged by a service.
+		// taskAnnotated is created using RunTask i.e. not managed by a service.
 		if t.Task.StartedBy == nil {
 			continue
 		}
@@ -424,12 +427,3 @@ func sortStringPointers(ps []*string) {
 		ps[i] = aws.String(ss[i])
 	}
 }
-
-func minInt(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
-}
-
-// Util End

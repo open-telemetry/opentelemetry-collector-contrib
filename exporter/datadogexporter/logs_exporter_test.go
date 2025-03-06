@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -230,12 +231,9 @@ func TestLogsExporter(t *testing.T) {
 						Endpoint: server.URL,
 					},
 				},
-				HostMetadata: HostMetadataConfig{
-					ReporterPeriod: 30 * time.Minute,
-				},
 			}
 
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)
@@ -598,11 +596,8 @@ func TestLogsAgentExporter(t *testing.T) {
 					CompressionLevel: 6,
 					BatchWait:        1,
 				},
-				HostMetadata: HostMetadataConfig{
-					ReporterPeriod: 30 * time.Minute,
-				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)

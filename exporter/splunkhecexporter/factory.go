@@ -67,9 +67,9 @@ func createDefaultConfig() component.Config {
 
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultHTTPTimeout
-	clientConfig.IdleConnTimeout = &defaultIdleConnTimeout
-	clientConfig.MaxIdleConnsPerHost = &defaultMaxConns
-	clientConfig.MaxIdleConns = &defaultMaxConns
+	clientConfig.IdleConnTimeout = defaultIdleConnTimeout
+	clientConfig.MaxIdleConnsPerHost = defaultMaxConns
+	clientConfig.MaxIdleConns = defaultMaxConns
 	clientConfig.HTTP2ReadIdleTimeout = defaultHTTP2ReadIdleTimeout
 	clientConfig.HTTP2PingTimeout = defaultHTTP2PingTimeout
 
@@ -86,6 +86,12 @@ func createDefaultConfig() component.Config {
 		MaxContentLengthMetrics: defaultContentLengthMetricsLimit,
 		MaxContentLengthTraces:  defaultContentLengthTracesLimit,
 		MaxEventSize:            defaultMaxEventSize,
+		OtelAttrsToHec: splunk.HecToOtelAttrs{
+			Source:     splunk.DefaultSourceLabel,
+			SourceType: splunk.DefaultSourceTypeLabel,
+			Index:      splunk.DefaultIndexLabel,
+			Host:       conventions.AttributeHostName,
+		},
 		HecToOtelAttrs: splunk.HecToOtelAttrs{
 			Source:     splunk.DefaultSourceLabel,
 			SourceType: splunk.DefaultSourceTypeLabel,

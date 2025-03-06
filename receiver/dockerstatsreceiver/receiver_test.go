@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -130,7 +130,7 @@ func TestNewReceiver(t *testing.T) {
 			DockerAPIVersion: defaultDockerAPIVersion,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, mr)
 }
 
@@ -145,7 +145,7 @@ func TestErrorsInStart(t *testing.T) {
 			DockerAPIVersion: defaultDockerAPIVersion,
 		},
 	}
-	recv := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, recv)
 
 	cfg.Endpoint = "..not/a/valid/endpoint"
@@ -302,7 +302,7 @@ func TestScrapeV2(t *testing.T) {
 			defer mockDockerEngine.Close()
 
 			receiver := newMetricsReceiver(
-				receivertest.NewNopSettings(), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
+				receivertest.NewNopSettings(metadata.Type), tc.cfgBuilder.withEndpoint(mockDockerEngine.URL).build())
 			err := receiver.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)
 			defer func() { require.NoError(t, receiver.shutdown(context.Background())) }()
@@ -334,7 +334,7 @@ func TestRecordBaseMetrics(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
 		ContainerUptime: metricEnabled,
 	}
-	r := newMetricsReceiver(receivertest.NewNopSettings(), cfg)
+	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
 	now := time.Now()
 	started := now.Add(-2 * time.Second).Format(time.RFC3339)
 

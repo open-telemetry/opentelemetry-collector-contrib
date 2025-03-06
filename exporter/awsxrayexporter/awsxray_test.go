@@ -19,9 +19,10 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
@@ -70,7 +71,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	registry := telemetry.NewRegistry()
 	sink := telemetrytest.NewSenderSink()
 	// preload the sender that the exporter will use
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	sender, loaded := registry.LoadOrStore(set.ID, sink)
 	require.False(t, loaded)
 	require.NotNil(t, sender)
@@ -105,21 +106,21 @@ func BenchmarkForTracesExporter(b *testing.B) {
 	}
 }
 
-func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
-	t.Helper()
+func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	tb.Helper()
 	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(), mconn, registry)
+	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(metadata.Type), mconn, registry)
 	if err != nil {
 		panic(err)
 	}
 	return traceExporter
 }
 
-func generateConfig(t testing.TB) *Config {
-	t.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
-	t.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
-	t.Setenv("AWS_DEFAULT_REGION", "us-east-1")
-	t.Setenv("AWS_REGION", "us-east-1")
+func generateConfig(tb testing.TB) *Config {
+	tb.Setenv("AWS_ACCESS_KEY_ID", "AKIASSWVJUY4PZXXXXXX")
+	tb.Setenv("AWS_SECRET_ACCESS_KEY", "XYrudg2H87u+ADAAq19Wqx3D41a09RsTXXXXXXXX")
+	tb.Setenv("AWS_DEFAULT_REGION", "us-east-1")
+	tb.Setenv("AWS_REGION", "us-east-1")
 	factory := NewFactory()
 	exporterConfig := factory.CreateDefaultConfig().(*Config)
 	exporterConfig.Region = "us-east-1"
@@ -172,22 +173,22 @@ func constructW3CFormatTraceSpanData(ispans ptrace.ScopeSpans) {
 func constructResource() pcommon.Resource {
 	resource := pcommon.NewResource()
 	attrs := resource.Attributes()
-	attrs.PutStr(conventions.AttributeServiceName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeContainerName, "signup_aggregator")
-	attrs.PutStr(conventions.AttributeContainerImageName, "otel/signupaggregator")
-	attrs.PutStr(conventions.AttributeContainerImageTag, "v1")
-	attrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-	attrs.PutStr(conventions.AttributeCloudAccountID, "999999998")
-	attrs.PutStr(conventions.AttributeCloudRegion, "us-west-2")
-	attrs.PutStr(conventions.AttributeCloudAvailabilityZone, "us-west-1b")
+	attrs.PutStr(conventionsv112.AttributeServiceName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerName, "signup_aggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageName, "otel/signupaggregator")
+	attrs.PutStr(conventionsv112.AttributeContainerImageTag, "v1")
+	attrs.PutStr(conventionsv112.AttributeCloudProvider, conventionsv112.AttributeCloudProviderAWS)
+	attrs.PutStr(conventionsv112.AttributeCloudAccountID, "999999998")
+	attrs.PutStr(conventionsv112.AttributeCloudRegion, "us-west-2")
+	attrs.PutStr(conventionsv112.AttributeCloudAvailabilityZone, "us-west-1b")
 	return resource
 }
 
 func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
+	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)
@@ -212,10 +213,10 @@ func constructHTTPClientSpan(traceID pcommon.TraceID) ptrace.Span {
 
 func constructHTTPServerSpan(traceID pcommon.TraceID) ptrace.Span {
 	attributes := make(map[string]any)
-	attributes[conventions.AttributeHTTPMethod] = http.MethodGet
-	attributes[conventions.AttributeHTTPURL] = "https://api.example.com/users/junit"
-	attributes[conventions.AttributeHTTPClientIP] = "192.168.15.32"
-	attributes[conventions.AttributeHTTPStatusCode] = 200
+	attributes[conventionsv112.AttributeHTTPMethod] = http.MethodGet
+	attributes[conventionsv112.AttributeHTTPURL] = "https://api.example.com/users/junit"
+	attributes[conventionsv112.AttributeHTTPClientIP] = "192.168.15.32"
+	attributes[conventionsv112.AttributeHTTPStatusCode] = 200
 	endTime := time.Now().Round(time.Second)
 	startTime := endTime.Add(-90 * time.Second)
 	spanAttributes := constructSpanAttributes(attributes)

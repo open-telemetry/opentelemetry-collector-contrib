@@ -137,11 +137,11 @@ func (rs *redisScraper) recordCommonMetrics(ts pcommon.Timestamp, inf info) {
 // recordKeyspaceMetrics records metrics from 'keyspace' Redis info key-value pairs,
 // e.g. "db0: keys=1,expires=2,avg_ttl=3".
 func (rs *redisScraper) recordKeyspaceMetrics(ts pcommon.Timestamp, inf info) {
-	for db := 0; db < redisMaxDbs; db++ {
+	for db := range redisMaxDbs {
 		key := "db" + strconv.Itoa(db)
 		str, ok := inf[key]
 		if !ok {
-			break
+			continue
 		}
 		keyspace, parsingError := parseKeyspaceString(db, str)
 		if parsingError != nil {
@@ -195,7 +195,7 @@ func (rs *redisScraper) recordCmdMetrics(ts pcommon.Timestamp, inf info) {
 	}
 }
 
-// recordCmdStatsMetrics records metrics for a particlar Redis command.
+// recordCmdStatsMetrics records metrics for a particular Redis command.
 // Only 'calls' and 'usec' are recorded at the moment.
 // 'cmd' is the Redis command, 'val' is the values string (e.g. "calls=1685,usec=6032,usec_per_call=3.58,rejected_calls=0,failed_calls=0").
 func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val string) {

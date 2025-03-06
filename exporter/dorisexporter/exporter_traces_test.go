@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	"go.uber.org/zap"
 )
 
 func TestPushTraceData(t *testing.T) {
@@ -29,7 +30,7 @@ func TestPushTraceData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newTracesExporter(nil, config, componenttest.NewNopTelemetrySettings())
+	exporter := newTracesExporter(zap.NewNop(), config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 

@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestDefaultClientCreation(t *testing.T) {
@@ -45,7 +47,7 @@ func TestClientReadDB(t *testing.T) {
 
 	client := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettings().Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 
 	ctx := context.Background()
@@ -218,7 +220,7 @@ func TestMetricQueries(t *testing.T) {
 		{
 			desc:    "FetchSessionMetrics",
 			query:   sessionMetricsQuery,
-			columns: []string{"username", "disctinct_id"},
+			columns: []string{"username", "distinct_id"},
 			params:  []driver.Value{"t", 3.0},
 			expect: sessionMetric{
 				userName: sql.NullString{
@@ -256,8 +258,7 @@ func TestMetricQueries(t *testing.T) {
 		},
 	}
 
-	for i := range tests {
-		test := tests[i]
+	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 			if err != nil {
@@ -270,7 +271,7 @@ func TestMetricQueries(t *testing.T) {
 
 			client := snowflakeClient{
 				client: db,
-				logger: receivertest.NewNopSettings().Logger,
+				logger: receivertest.NewNopSettings(metadata.Type).Logger,
 			}
 			ctx := context.Background()
 

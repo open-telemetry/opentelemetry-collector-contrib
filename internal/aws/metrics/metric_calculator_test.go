@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"math/rand"
+	"math/rand/v2"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -269,16 +269,13 @@ func TestSweep(t *testing.T) {
 	}()
 
 	for i := 1; i <= 2; i++ {
-		sweepTime := <-sweepEvent
-		tickTime := time.Since(start) + mwe.ttl*time.Duration(i)
+		<-sweepEvent
+		clockTime := time.Since(start)
 		require.False(t, closed.Load())
-		assert.LessOrEqual(t, mwe.ttl, tickTime)
-		assert.LessOrEqual(t, time.Since(sweepTime), mwe.ttl)
+		assert.LessOrEqual(t, mwe.ttl*time.Duration(i), clockTime)
 	}
 	require.NoError(t, mwe.Shutdown())
-	for range sweepEvent { // nolint
+	for range sweepEvent { //nolint:revive
 	}
-	if !closed.Load() {
-		t.Errorf("Sweeper did not terminate.")
-	}
+	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

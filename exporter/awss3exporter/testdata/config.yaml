@@ -3,11 +3,16 @@ receivers:
 
 exporters:
   awss3:
+    sending_queue:
+      enabled: true
+      num_consumers: 23
+      queue_size: 42
+
     s3uploader:
         region: 'us-east-1'
         s3_bucket: 'foo'
         s3_prefix: 'bar'
-        s3_partition: 'minute'
+        s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
         endpoint: "http://endpoint.com"
 
 processors:

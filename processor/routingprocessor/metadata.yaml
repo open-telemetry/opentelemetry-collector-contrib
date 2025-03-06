@@ -3,7 +3,17 @@ type: routing
 status:
   class: processor
   stability:
-    beta: [traces, metrics, logs]
+    deprecated: [traces, metrics, logs]
+  deprecation:
+    metrics:
+      date: "2024-12-05"
+      migration: Use routing connector (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36616)
+    logs:
+      date: "2024-12-05"
+      migration: Use routing connector (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36616)
+    traces:
+      date: "2024-12-05"
+      migration: Use routing connector (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36616)
   distributions: [contrib]
   codeowners:
     active: [jpkrohling]

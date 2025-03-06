@@ -20,13 +20,13 @@ concurrency:
 jobs:
   setup-environment:
     timeout-minutes: 30
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -45,24 +45,13 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make install-tools
   check-collector-module-version:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - run: make genotelcontribcol
       - name: Check Collector Module Version
         run: ./.github/workflows/scripts/check-collector-module-version.sh
-  check-codeowners:
-    runs-on: ubuntu-latest
-    needs: [setup-environment]
-    steps:
-      - uses: actions/checkout@v4
-      - name: Check Code Owner Existence
-        run: ./.github/workflows/scripts/check-codeowners.sh check_code_owner_existence
-      - name: Check Component Existence
-        run: ./.github/workflows/scripts/check-codeowners.sh check_component_existence
-      - name: Validate Allowlist entries
-        run: ./.github/workflows/scripts/check-codeowners.sh check_entries_in_allowlist
   lint-matrix:
     strategy:
       fail-fast: false
@@ -86,15 +75,14 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -121,7 +109,7 @@ jobs:
         run: GOOS=${{ matrix.goos }} GOARCH=amd64 make -j2 golint GROUP=${{ matrix.group }}
   lint:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, lint-matrix]
     steps:
       - name: Print result
@@ -155,8 +143,7 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     steps:
       - name: Checkout Repo
@@ -164,7 +151,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -182,13 +169,13 @@ jobs:
       - name: Run `govulncheck`
         run: make -j2 gogovulncheck GROUP=${{ matrix.group }}
   checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -221,6 +208,10 @@ jobs:
         run: |
           make crosslink
           git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+      - name: tidylist
+        run: |
+          make tidylist
+          git diff --exit-code || (echo 'Tidylist is out of date, please run "make tidylist" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
           make gotidy
@@ -229,14 +220,9 @@ jobs:
         run: |
           make gendistributions
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
-      - name: Gen CODEOWNERS
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
-        run: |
-          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
       - name: CodeGen
         run: |
-          make -j2 generate
+          make generate
           if [[ -n $(git status -s) ]]; then
             echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
             exit 1
@@ -251,8 +237,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.23.0", "1.22.8"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-latest]
+        go-version: ["~1.24", "~1.23"] # 1.20 is interpreted as 1.2 without quotes
+        runner: [ubuntu-24.04]
         group:
           - receiver-0
           - receiver-1
@@ -269,7 +255,6 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
           - other
     runs-on: ${{ matrix.runner }}
     needs: [setup-environment]
@@ -301,19 +286,34 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '1.22' ) != true
+        id: tests
+        if: github.ref != 'refs/heads/main' # Runs on every PR and both go versions
         run: make gotest GROUP=${{ matrix.group }}
-      - name: Run Unit Tests With Coverage
-        if: startsWith( matrix.go-version, '1.22' ) # only run coverage on one version
-        run: make gotest-with-cover GROUP=${{ matrix.group }}
+      - name: Run Unit Tests With JUnit and Coverage
+        id: tests-with-junit
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only run junit/coverage on one version and only on main
+        continue-on-error: true # Allow uploading artifacts even if the test fails
+        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@v4
-        if: startsWith( matrix.go-version, '1.22' ) # only upload artifact for one version
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
+      - uses: actions/upload-artifact@v4
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
+        with:
+          name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
+          path: internal/tools/testresults/
+          retention-days: 4
+      - name: Fail workflow if tests fails
+        if: steps.tests-with-junit.outcome == 'failure' || steps.tests.outcome == 'failure'
+        run: |
+          echo "Tests failed. Failing workflow."
+          exit 1
+          
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, unittest-matrix]
     steps:
       - name: Print result
@@ -328,7 +328,7 @@ jobs:
             false
           fi
   coverage:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [unittest]
     steps:
       - uses: actions/checkout@v4
@@ -337,7 +337,7 @@ jobs:
           merge-multiple: true
           pattern: coverage-artifacts-*
       - name: Upload coverage report
-        uses: codecov/codecov-action@015f24e6818733317a2da2edd6290ab26238649a # 5.0.7
+        uses: codecov/codecov-action@0565863a31f2c772f9f0395002a31e3f06189574 # 5.4.0
         env:
           CODECOV_TOKEN: ${{ secrets.CODECOV_TOKEN }}
 
@@ -361,14 +361,13 @@ jobs:
           - internal
           - pkg
           - cmd-0
-          - cmd-1
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -385,7 +384,7 @@ jobs:
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment, integration-tests-matrix]
     steps:
       - name: Print result
@@ -401,13 +400,13 @@ jobs:
           fi
 
   correctness-traces:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -428,13 +427,13 @@ jobs:
       - name: Correctness
         run: make -C testbed run-correctness-traces-tests
   correctness-metrics:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -456,7 +455,7 @@ jobs:
         run: make -C testbed run-correctness-metrics-tests
 
   build-examples:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
       - uses: actions/checkout@v4
@@ -465,7 +464,7 @@ jobs:
         run: make build-examples
 
   cross-compile:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [setup-environment]
     strategy:
       fail-fast: false
@@ -506,7 +505,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -535,7 +534,7 @@ jobs:
           path: ./bin/*
 
   publish-check:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     steps:
       - uses: actions/checkout@v4
@@ -549,14 +548,14 @@ jobs:
         id: check
         run: ./.github/workflows/scripts/verify-dist-files-exist.sh
   publish-dev:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.6"
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -612,7 +611,7 @@ jobs:
           docker push otel/opentelemetry-collector-contrib-dev:$GITHUB_SHA
           docker push otel/opentelemetry-collector-contrib-dev:latest
   publish-stable:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
@@ -630,7 +629,7 @@ jobs:
     # This job updates the "next release" milestone
     # to the latest released version and creates a new milestone
     # named "next release" in its place
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     needs: [publish-stable]
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:

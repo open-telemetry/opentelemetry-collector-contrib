@@ -14,37 +14,116 @@
 
 > :construction: This extension is in alpha. Configuration and functionality are subject to change.
 
-The Database Storage extension can persist state to a relational database. 
+The Database Storage extension can persist state to a relational database.
 
 The extension requires read and write access to a database table.
 
-`driver`: the name of the database driver to use. By default, the storage client supports "sqlite3" and "pgx".
+`driver`: the name of the database driver to use. By default, the storage client supports "sqlite" and "pgx".
 
 Implementors can add additional driver support by importing SQL drivers into the program.
 See [Golang database/sql package documentation](https://pkg.go.dev/database/sql) for more information.
 
 `datasource`: the url of the database, in the format accepted by the driver.
 
+ >**NOTE:** If you are using legacy driver `sqlite3` and have additional driver parameters in `datasource` - please follow [migration guide](#migration-guide-from-sqlite3-to-sqlite-driver-options) to update your configuration.
+`db_storage` component has compatibility convertor in place, but it's better to review and update used driver parameters.
 
-```
+```yaml
 extensions:
   db_storage:
-    driver: "sqlite3"
-    datasource: "foo.db?_busy_timeout=10000&_journal=WAL&_sync=NORMAL"
+    driver: "sqlite"
+    datasource: "file:///path/to/foo.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
 
 service:
   extensions: [db_storage]
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
   nop:
-processors:
-  nop:
 exporters:
   nop:
 ```
+
+## SQLite Driver
+
+### SQLite Example Datasource
+
+```yaml
+extensions:
+  db_storage:
+    driver: "sqlite"
+    datasource: "file:///path/to/foo.db?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)"
+```
+
+### SQLite Driver Options
+
+[SQLite Driver](https://pkg.go.dev/modernc.org/sqlite) supports few additional [options](https://pkg.go.dev/modernc.org/sqlite#Driver.Open) that can be used in `datasource` definition as a query parameters
+
+There are few useful options that you might take into consideration:
+
+* `_pragma=busy_timeout(10000)` - sets the busy timeout to 10000 milliseconds (10 seconds).
+By design, SQLite allows only [one writer at a time](https://www.sqlite.org/isolation.html), so if another writer is trying to get access to database it would be blocked an return an error. But if `busy_timeout` is set, new writer will wait up for provided timeout for access and only then return an error. Might be useful in, for example, K8s environments were SQLite file is stored in attached PVC or on Host and can be potentially accessed by multiple instances during deployment.
+* `_pragma=journal_mode(WAL)` - sets journal mode to [WAL](https://sqlite.org/wal.html) (Write-Ahead Log).
+Default SQLite journal mode is [rollback journal](https://sqlite.org/lockingv3.html#rollback) ("DELETE" value) which means that all changes goes directly to main database file and when data is written - all readers are blocked, and vice versa - when data is read, all writers are blocked.
+To avoid such performance bottleneck - is possible to use WAL journal mode, when all data is written to special journal first, not blocking any readers as well as readers don't block writers. This mode can help to improve performance in case of usage SQLite as Persistent Queue storage which intensively read/write data to storage. NOTE: The journal mode is actually persisted to database and cannot be changed without database re-creation!
+* `_pragma=synchronous(NORMAL)` - sets synchronous flag to [NORMAL](https://www.sqlite.org/pragma.html#pragma_synchronous). This flag configures how often database stores changes on file system. There few things that should be considered while choosing `synchronous` mode:
+  * `journal_mode(DELETE)` (default mode) with `synchronous(NORMAL)` have a chance of database corruption during unexpected shutdown. Consider using `synchronous(FULL)` but be aware of performance degradation
+  * `journal_mode(WAL)` with `synchronous(NORMAL)` is safe from corruption, but doesn't guarantee data durability, i.e. last transaction before unexpected shutdown might be rolled back. If durability is a concern - consider using `synchronous(FULL)` with `journal_mode(WAL)`
+
+For more available options you take a look on [SQLite List Of PRAGMAs](https://www.sqlite.org/pragma.html#toc). Each PRAGMA option could be passed to driver in form of query params: `_pragma=<PRAGMA_NAME>(<PRAGMA_VALUE>)
+
+### Migration Guide From `sqlite3` to `sqlite` Driver Options
+
+Driver `sqlite3` options could be converted to `sqlite` driver options using provided table
+> **NOTE:** Not all options from driver `sqlite3` are supported in `sqlite` driver and will produce a warning in log if they will be left in `datasource`
+
+| `sqlite3` option                                   | `sqlite` option                             |
+| -------------------------------------------------- | ------------------------------------------- |
+| `mode=<value>`                                     | `mode=<value>`                              |
+| `_auto_vacuum=<value>`, `_vacuum=<value>`          | `_pragma=auto_vacuum(<value>)`              |
+| `_busy_timeout=<value>`, `_timeout=<value>`        | `_pragma=busy_timeout(<value>)`             |
+| `_case_sensitive_like=<value>`, `_cslike=<value>`  | `_pragma=case_sensitive_like(<value>)`      |
+| `_defer_foreign_keys=<value>`, `_defer_fk=<value>` | `_pragma=defer_foreign_keys(<value>)`       |
+| `_foreign_keys=<value>`, `_fk=<value>`             | `_pragma=foreign_keys(<value>)`             |
+| `_ignore_check_constraints=<value>`                | `_pragma=ignore_check_constraints(<value>)` |
+| `_journal_mode=<value>`, `_journal=<value>`        | `_pragma=journal_mode(<value>)`             |
+| `_locking_mode=<value>`, `_locking=<value>`        | `_pragma=locking_mode(<value>)`             |
+| `_query_only=<value>`                              | `_pragma=query_only(<value>)`               |
+| `_recursive_triggers=<value>`, `_rt=<value>`       | `_pragma=recursive_triggers(<value>)`       |
+| `_secure_delete=<value>`                           | `_pragma=secure_delete(<value>)`            |
+| `_synchronous=<value>`, `_sync=<value>`            | `_pragma=synchronous(<value>)`              |
+| `_txlock=<value>`                                  | `_txlock=<value>`                           |
+| `_cache_size=<value>`                              | `_pragma=cache_size(<value>)`               |
+| `_writable_schema=<value>`                         | `_pragma=writable_schema(<value>)`          |
+
+## PostgreSQL Driver
+
+### PostgreSQL Example Datasource
+
+PostgreSQL Driver supports both URL and key/value datasource format
+
+#### URL Format
+
+```yaml
+extensions:
+  db_storage:
+    driver: "pgx"
+    datasource: "postgres://otel:otel_password@localhost:5432/otlp?sslmode=disable"
+```
+
+#### Key/Value Format
+
+```yaml
+extensions:
+  db_storage:
+    driver: "pgx"
+    datasource: "host=127.0.0.1 port=5432 user=otel password=otel_password database=otlp sslmode=disable"
+```
+
+### PostgreSQL Driver Options
+
+[PostgreSQL Driver](https://github.com/jackc/pgx) supports additional [options](https://pkg.go.dev/github.com/jackc/pgx/v5@v5.7.2/pgconn#ParseConfig), both driver-specific and [PostgreSQL libpq native](https://www.postgresql.org/docs/current/libpq-connect.html#LIBPQ-CONNSTRING)

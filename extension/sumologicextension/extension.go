@@ -15,6 +15,8 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
+	"runtime"
 	"strings"
 	"sync"
 	"time"
@@ -26,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	grpccredentials "google.golang.org/grpc/credentials"
@@ -104,7 +106,7 @@ func init() {
 var errGRPCNotSupported = fmt.Errorf("gRPC is not supported by sumologicextension")
 
 // SumologicExtension implements ClientAuthenticator
-var _ auth.Client = (*SumologicExtension)(nil)
+var _ extensionauth.Client = (*SumologicExtension)(nil)
 
 func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
 	if conf.Credentials.InstallationToken == "" {
@@ -577,7 +579,7 @@ func (se *SumologicExtension) heartbeatLoop() {
 		cancel()
 	}()
 
-	se.logger.Info("Heartbeat loop initialized. Starting to send hearbeat requests")
+	se.logger.Info("Heartbeat loop initialized. Starting to send heartbeat requests")
 	timer := time.NewTimer(se.conf.HeartBeatInterval)
 	for {
 		select {
@@ -728,7 +730,7 @@ var sumoAppProcesses = map[string]string{
 	"sqlservr":              "mssql",     // linux SQL Server process
 }
 
-func filteredProcessList() ([]string, error) {
+func (se *SumologicExtension) filteredProcessList() ([]string, error) {
 	var pl []string
 
 	processes, err := process.Processes()
@@ -739,6 +741,15 @@ func filteredProcessList() ([]string, error) {
 	for _, v := range processes {
 		e, err := v.Name()
 		if err != nil {
+			if runtime.GOOS == "windows" {
+				// On Windows, if we can't get a process name, it is likely a zombie process, assume that and skip them.
+				se.logger.Warn(
+					"Failed to get executable name, it is likely a zombie process, skipping it",
+					zap.Int32("pid", v.Pid),
+					zap.Error(err))
+				continue
+			}
+
 			return nil, fmt.Errorf("Error getting executable name: %w", err)
 		}
 		e = strings.ToLower(e)
@@ -773,12 +784,12 @@ func filteredProcessList() ([]string, error) {
 	return pl, nil
 }
 
-func discoverTags() (map[string]any, error) {
+func (se *SumologicExtension) discoverTags() (map[string]any, error) {
 	t := map[string]any{
 		"sumo.disco.enabled": "true",
 	}
 
-	pl, err := filteredProcessList()
+	pl, err := se.filteredProcessList()
 	if err != nil {
 		return t, err
 	}
@@ -814,7 +825,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 	td := map[string]any{}
 
 	if se.conf.DiscoverCollectorTags {
-		td, err = discoverTags()
+		td, err = se.discoverTags()
 		if err != nil {
 			return err
 		}
@@ -833,7 +844,7 @@ func (se *SumologicExtension) updateMetadataWithHTTPClient(ctx context.Context, 
 			Environment: se.conf.CollectorEnvironment,
 		},
 		CollectorDetails: api.OpenMetadataCollectorDetails{
-			RunningVersion: se.buildVersion,
+			RunningVersion: cleanupBuildVersion(se.buildVersion),
 		},
 		NetworkDetails: api.OpenMetadataNetworkDetails{
 			HostIPAddress: ip,
@@ -1015,11 +1026,11 @@ func (se *SumologicExtension) addStickySessionCookie(req *http.Request) {
 	if !se.conf.StickySessionEnabled {
 		return
 	}
-	currectCookieValue := se.StickySessionCookie()
-	if currectCookieValue != "" {
+	currentCookieValue := se.StickySessionCookie()
+	if currentCookieValue != "" {
 		cookie := &http.Cookie{
 			Name:  stickySessionKey,
-			Value: currectCookieValue,
+			Value: currentCookieValue,
 		}
 		req.AddCookie(cookie)
 	}
@@ -1092,4 +1103,28 @@ func getHostname(logger *zap.Logger) (string, error) {
 	logger.Debug("failed to get fqdn", zap.Error(err))
 
 	return os.Hostname()
+}
+
+// cleanupBuildVersion adds a leading 'v' and removes the tailing build hash to make sure the
+// backend understand the build number. Note that only version strings with the following format will be
+// cleaned up. All other version formats will remain the same.
+// Cleaned up format: 0.108.0-sumo-2-4d57200692d5c5c39effad4ae3b29fef79209113
+func cleanupBuildVersion(version string) string {
+	pattern := "^v?([0-9]+\\.[0-9]+\\.[0-9]+-sumo-[0-9]+)(-[0-9a-f]{40}){0,1}(-fips){0,1}$"
+	re := regexp.MustCompile(pattern)
+
+	matches := re.FindAllStringSubmatch(version, 1)
+	if len(matches) != 1 {
+		return version
+	}
+	subMatches := matches[0]
+	if len(subMatches) > 1 {
+		ver := subMatches[1]
+		if len(subMatches) == 4 {
+			ver += subMatches[3]
+		}
+		return "v" + ver
+	}
+
+	return version
 }

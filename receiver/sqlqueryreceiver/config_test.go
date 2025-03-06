@@ -12,7 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
@@ -160,10 +161,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.ErrorContains(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.ErrorContains(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -185,7 +186,7 @@ func TestConfig_Validate_Multierr(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	err = component.ValidateConfig(cfg)
+	err = xconfmap.Validate(cfg)
 
 	assert.ErrorContains(t, err, "invalid metric config with metric_name 'my.metric'")
 	assert.ErrorContains(t, err, "metric config has unsupported value_type: 'xint'")
