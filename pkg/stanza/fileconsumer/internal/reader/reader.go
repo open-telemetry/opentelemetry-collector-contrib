@@ -85,9 +85,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 			}
 			return
-		} else {
-			r.reader = gzipReader
 		}
+		r.reader = gzipReader
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
 		// we need to set the offset to the end of the file.
 		defer func() {
