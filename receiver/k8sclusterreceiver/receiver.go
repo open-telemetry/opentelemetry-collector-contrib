@@ -6,7 +6,6 @@ package k8sclusterreceiver // import "github.com/open-telemetry/opentelemetry-co
 import (
 	"context"
 	"errors"
-	"fmt"
 	"time"
 
 	"go.uber.org/zap"
@@ -106,9 +105,8 @@ func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.
 func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
 	ctx, kr.cancel = context.WithCancel(ctx)
 
-	kr.settings.Logger.Info(fmt.Sprintf("config: %+v\n", kr.config.K8sLeaderElector.Type()))
 	if kr.config.K8sLeaderElector.Type().String() != "" {
-		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election!!")
+		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election")
 		extList := host.GetExtensions()
 		if extList == nil {
 			return errors.New("no extensions found")
@@ -121,9 +119,8 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 
 		leaderElectorExt, ok := ext.(k8sleaderelector.LeaderElection)
 		if !ok {
-			return nil
+			return errors.New("referenced extension is not a k8s leader election")
 		}
-		kr.settings.Logger.Info("Setting callback functions")
 
 		leaderElectorExt.SetCallBackFuncs(
 			func(ctx context.Context) {
@@ -137,7 +134,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			},
 		)
 	} else {
-		kr.settings.Logger.Info("Starting k8sClusterReceiver without leader election!!")
+		kr.settings.Logger.Info("Starting k8sClusterReceiver without leader election")
 		if err := kr.startReceiver(ctx, host); err != nil {
 			return err
 		}
@@ -156,10 +153,9 @@ func (kr *kubernetesReceiver) stopReceiver() error {
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
-	//if kr.cancel == nil {
-	//	return nil
-	//}
-	//kr.cancel()
+	if err := kr.stopReceiver(); err != nil {
+		kr.settings.Logger.Error("Failed to stop receiver", zap.Error(err))
+	}
 	return nil
 }
 
