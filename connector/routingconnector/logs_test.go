@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/plogutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
 func TestLogsRegisterConsumersForValidRoute(t *testing.T) {
@@ -434,8 +436,11 @@ func TestLogsConnectorDetailed(t *testing.T) {
 	isLogX := `body == "logX"`
 	isLogY := `body == "logY"`
 
+	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
 	isBodyString := `IsString(body) == true`
+	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsString")
 	isBodyMap := `IsMap(body) == true`
+	require.Contains(t, common.Functions[ottllog.TransformContext](), "IsMap")
 
 	isScopeCFromLowerContext := `instrumentation_scope.name == "scopeC"`
 	isScopeDFromLowerContext := `instrumentation_scope.name == "scopeD"`
@@ -850,7 +855,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plog.Logs{},
 		},
 		{
-			name: "log/with_is_string_condition",
+			name: "log/with_converter_function_is_string",
 			cfg: testConfig(
 				withRoute("log", isBodyString, idSink0),
 				withDefault(idSinkD),
@@ -860,7 +865,7 @@ func TestLogsConnectorDetailed(t *testing.T) {
 			expectSinkD: plog.Logs{},
 		},
 		{
-			name: "log/with_is_map_condition",
+			name: "log/with_converter_function_is_map",
 			cfg: testConfig(
 				withRoute("log", isBodyMap, idSink0),
 				withDefault(idSinkD),
