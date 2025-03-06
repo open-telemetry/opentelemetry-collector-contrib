@@ -21,6 +21,10 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+const (
+	unkeyedFieldsLimit = 6
+)
+
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for modules")
 	allowlistFilePath := flag.String("allowlist", "cmd/checkapi/allowlist.txt", "path to a file containing an allowlist of paths to ignore")
@@ -280,6 +284,9 @@ func checkComponentFactoryFunction(newFactoryFn *function, folder string, compon
 
 func checkStructDisallowUnkeyedLiteral(s *apistruct, folder string) error {
 	if !unicode.IsUpper(rune(s.Name[0])) {
+		return nil
+	}
+	if len(s.Fields) > unkeyedFieldsLimit {
 		return nil
 	}
 	for _, f := range s.Fields {
