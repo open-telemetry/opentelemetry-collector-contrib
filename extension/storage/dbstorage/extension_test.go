@@ -181,7 +181,7 @@ func newSqliteTestExtension(dbPath string) (storage.Extension, error) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = driverSQLite
-	cfg.DataSource = fmt.Sprintf("%s?_busy_timeout=10000&_journal=WAL&_sync=NORMAL", dbPath)
+	cfg.DataSource = fmt.Sprintf("%s?_pragma=busy_timeout(10000)&_pragma=journal_mode(WAL)&_pragma=synchronous(NORMAL)", dbPath)
 
 	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	if err != nil {
@@ -228,7 +228,7 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.DriverName = driverPostgreSQL
-	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
+	cfg.DataSource = fmt.Sprintf("host=%s port=%s user=%s password=%s database=%s sslmode=disable", "127.0.0.1", port.Port(), "root", "passwd", "db")
 
 	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	if err != nil {
