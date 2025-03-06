@@ -8,15 +8,13 @@ import (
 	"errors"
 	"fmt"
 
-	"go.opentelemetry.io/collector/extension"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream"
 )
 
 var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -25,7 +23,7 @@ type encodingExtension struct {
 	unmarshaller pmetric.Unmarshaler
 }
 
-func newExtension(cfg *Config, settings *extension.Settings) (*encodingExtension, error) {
+func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
 	case formatJSON, formatOpenTelemetry10:
 	default:
