@@ -47,8 +47,8 @@ func (v *KeyValue) Set(s string) error {
 		return nil
 	}
 	if intVal, err := strconv.Atoi(val); err == nil {
-	    (*v)[kv[0]] = intVal
-	    return nil
+		(*v)[kv[0]] = intVal
+		return nil
 	}
 	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
 		return errDoubleQuotesOTLPAttributes
