@@ -83,7 +83,6 @@ Query sample enabled:
         password: securepassword
         server: 0.0.0.0
         port: 1433
-        max_sample_query_count: 1000
         logs:
           enable_query_sample: true
 ```

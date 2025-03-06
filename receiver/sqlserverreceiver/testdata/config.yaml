@@ -17,4 +17,3 @@ sqlserver/named:
   logs:
     query_sample:
       enabled: true
-      max_cached_query_sample: 1450

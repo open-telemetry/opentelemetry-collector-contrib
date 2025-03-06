@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -49,8 +48,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		LogsConfig: LogsConfig{
 			QuerySample{
-				EnableQuerySample:    false,
-				MaxCachedQuerySample: 1000,
+				EnableQuerySample: false,
 			},
 		},
 	}
@@ -165,14 +163,9 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("logs-query-%d: %s", i, query))
 
 		var cache *lru.Cache[string, int64]
-		var err error
 
 		if query == getSQLServerQuerySamplesQuery() {
-			cache, err = lru.New[string, int64](int(cfg.MaxCachedQuerySample * 10))
-			if err != nil {
-				params.Logger.Error("Failed to create LRU cache, skipping the current scraper", zap.Error(err))
-				continue
-			}
+			cache = newCache(1)
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,

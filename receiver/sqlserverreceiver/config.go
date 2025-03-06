@@ -14,9 +14,6 @@ import (
 
 type QuerySample struct {
 	EnableQuerySample bool `mapstructure:"enabled"`
-	// MaxCachedQuerySample is the maximum number of query samples that will be cached.
-	// Only query that is not in the cache will be reported as sample.
-	MaxCachedQuerySample uint `mapstructure:"max_cached_query_sample"`
 }
 
 type LogsConfig struct {
@@ -43,10 +40,6 @@ func (cfg *Config) Validate() error {
 	err := cfg.validateInstanceAndComputerName()
 	if err != nil {
 		return err
-	}
-
-	if cfg.MaxCachedQuerySample > 10000 {
-		return errors.New("`max_query_sample_count` must be between 0 and 10000")
 	}
 
 	if !directDBConnectionEnabled(cfg) {
