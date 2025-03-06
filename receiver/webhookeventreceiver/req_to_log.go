@@ -17,20 +17,24 @@ import (
 
 func reqToLog(sc *bufio.Scanner,
 	query url.Values,
-	_ *Config,
+	cfg *Config,
 	settings receiver.Settings,
 ) (plog.Logs, int) {
-	// we simply dont split the data passed into scan (i.e. scan the whole thing)
-	// the downside to this approach is that only 1 log per request can be handled.
-	// NOTE: logs will contain these newline characters which could have formatting
-	// consequences downstream.
-	split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
-		if !atEOF {
-			return 0, nil, nil
+	if cfg.SplitLogsAtNewLine {
+		sc.Split(bufio.ScanLines)
+	} else {
+		// we simply dont split the data passed into scan (i.e. scan the whole thing)
+		// the downside to this approach is that only 1 log per request can be handled.
+		// NOTE: logs will contain these newline characters which could have formatting
+		// consequences downstream.
+		split := func(data []byte, atEOF bool) (advance int, token []byte, err error) {
+			if !atEOF {
+				return 0, nil, nil
+			}
+			return 0, data, bufio.ErrFinalToken
 		}
-		return 0, data, bufio.ErrFinalToken
+		sc.Split(split)
 	}
-	sc.Split(split)
 
 	log := plog.NewLogs()
 	resourceLog := log.ResourceLogs().AppendEmpty()

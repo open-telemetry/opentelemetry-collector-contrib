@@ -1,0 +1,13 @@
+type: awscloudwatchmetricstreams_encoding
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [axw]
+
+tests:
+  config:
+    format: opentelemetry1.0

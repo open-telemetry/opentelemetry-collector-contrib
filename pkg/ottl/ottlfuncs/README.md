@@ -126,11 +126,12 @@ Examples:
 
 ### flatten
 
-`flatten(target, Optional[prefix], Optional[depth])`
+`flatten(target, Optional[prefix], Optional[depth], Optional[resolveConflicts])`
 
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
-`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
+
 
 For example, the following map
 
@@ -199,6 +200,46 @@ the result would be
 
 A `depth` of `0` means that no flattening will occur.
 
+If `resolveConflicts` is set to `true`, conflicts within the map will be resolved
+
+```json
+{
+  "address": {
+    "street": {
+      "number": "first",
+    },
+    "house": "1234",
+  },
+  "address.street": {
+    "number": ["second", "third"],
+  },
+  "address.street.number": "fourth",
+  "occupants": [
+    "user 1",
+    "user 2",
+  ],
+}
+```
+
+the result would be
+
+```json
+{
+  "address.street.number":   "first",
+  "address.house":           "1234",
+  "address.street.number.0": "second",
+  "address.street.number.1": "third",
+  "occupants":               "user 1",
+  "occupants.0":             "user 2",
+  "address.street.number.2": "fourth",
+}
+
+```
+
+**Note:**
+Please note that when the `resolveConflicts` parameter is set to `true`, the flattening of arrays is managed differently.
+With conflict resolution enabled, arrays and any potentially conflicting keys are handled in a standardized manner. Specifically, a `.<number>` suffix is added to the first conflicting key, with the `number` incrementing for each additional conflict.
+
 Examples:
 
 - `flatten(resource.attributes)`
@@ -208,6 +249,9 @@ Examples:
 
 
 - `flatten(log.body, depth=2)`
+
+
+- `flatten(body, resolveConflicts=true)`
 
 
 ### keep_keys
@@ -466,6 +510,7 @@ Available Converters:
 - [String](#string)
 - [Substring](#substring)
 - [Time](#time)
+- [ToCamelCase](#tocamelcase)
 - [ToKeyValueString](#tokeyvaluestring)
 - [ToLowerCase](#tolowercase)
 - [ToSnakeCase](#tosnakecase)
@@ -479,6 +524,7 @@ Available Converters:
 - [UnixSeconds](#unixseconds)
 - [UserAgent](#useragent)
 - [UUID](#UUID)
+- [Weekday](#weekday)
 - [Year](#year)
 
 ### Base64Decode (Deprecated)
@@ -2021,6 +2067,18 @@ Examples:
 - `Time("mercoledì set 4 2024", "%A %h %e %Y", "", "it")`
 - `Time("Febrero 25 lunes, 2002, 02:03:04 p.m.", "%B %d %A, %Y, %r", "America/New_York", "es-ES")`
 
+### ToCamelCase
+
+`ToCamelCase(target)`
+
+The `ToCamelCase` Converter converts the `target` string into camel case (e.g. `my_metric_name` to `MyMetricName`).
+
+`target` is a string.
+
+Examples:
+
+- `ToCamelCase(metric.name)`
+
 ### ToKeyValueString
 
 `ToKeyValueString(target, Optional[delimiter], Optional[pair_delimiter], Optional[sort_output])`
@@ -2263,6 +2321,22 @@ results in
 `UUID()`
 
 The `UUID` function generates a v4 uuid string.
+
+### Weekday
+
+`Weekday(value)`
+
+The `Weekday` Converter returns the day of the week component from the specified time using the Go stdlib [`time.Weekday` function](https://pkg.go.dev/time#Time.Weekday).
+
+`value` is a `time.Time`. If `value` is another type, an error is returned.
+
+The returned type is `int64`.
+
+The returned range is 0-6 (Sun-Sat)
+
+Examples:
+
+- `Weekday(Now())`
 
 ### Year
 

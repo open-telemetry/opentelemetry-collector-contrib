@@ -4,9 +4,9 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"runtime"
 	"strings"
@@ -16,7 +16,9 @@ import (
 
 	"github.com/elastic/go-docappender/v2"
 	"github.com/elastic/go-elasticsearch/v8/esapi"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
 )
 
@@ -56,7 +58,7 @@ type bulkIndexerSession interface {
 const defaultMaxRetries = 2
 
 func newBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) (bulkIndexer, error) {
-	if config.Batcher.Enabled != nil {
+	if config.Batcher.enabledSet {
 		return newSyncBulkIndexer(logger, client, config, requireDataStream), nil
 	}
 	return newAsyncBulkIndexer(logger, client, config, requireDataStream)
@@ -72,7 +74,7 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 	}
 	var compressionLevel int
 	if config.Compression == configcompression.TypeGzip {
-		compressionLevel = gzip.BestSpeed
+		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
 		Client:                client,
@@ -362,4 +364,144 @@ func getErrorHint(index, errorType string) string {
 		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
 	}
 	return ""
+}
+
+type bulkIndexers struct {
+	// wg tracks active sessions
+	wg sync.WaitGroup
+
+	// NOTE(axw) when we get rid of the async bulk indexer there would be
+	// no reason for having one per mode or for different document types.
+	// Instead, the caller can create separate sessions as needed, and we
+	// can either have one for required_data_stream=true and one for false,
+	// or callers can set this per document.
+
+	modes                [NumMappingModes]bulkIndexer
+	profilingEvents      bulkIndexer // For profiling-events-*
+	profilingStackTraces bulkIndexer // For profiling-stacktraces
+	profilingStackFrames bulkIndexer // For profiling-stackframes
+	profilingExecutables bulkIndexer // For profiling-executables
+}
+
+func (b *bulkIndexers) start(
+	ctx context.Context,
+	cfg *Config,
+	set exporter.Settings,
+	host component.Host,
+	allowedMappingModes map[string]MappingMode,
+) error {
+	userAgent := fmt.Sprintf(
+		"%s/%s (%s/%s)",
+		set.BuildInfo.Description,
+		set.BuildInfo.Version,
+		runtime.GOOS,
+		runtime.GOARCH,
+	)
+
+	esClient, err := newElasticsearchClient(ctx, cfg, host, set.TelemetrySettings, userAgent)
+	if err != nil {
+		return err
+	}
+
+	for _, mode := range allowedMappingModes {
+		var bi bulkIndexer
+		bi, err = newBulkIndexer(set.TelemetrySettings.Logger, esClient, cfg, mode == MappingOTel)
+		if err != nil {
+			return err
+		}
+		b.modes[mode] = &wgTrackingBulkIndexer{bulkIndexer: bi, wg: &b.wg}
+	}
+
+	profilingEvents, err := newBulkIndexer(set.Logger, esClient, cfg, true)
+	if err != nil {
+		return err
+	}
+	b.profilingEvents = &wgTrackingBulkIndexer{bulkIndexer: profilingEvents, wg: &b.wg}
+
+	profilingStackTraces, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	if err != nil {
+		return err
+	}
+	b.profilingStackTraces = &wgTrackingBulkIndexer{bulkIndexer: profilingStackTraces, wg: &b.wg}
+
+	profilingStackFrames, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	if err != nil {
+		return err
+	}
+	b.profilingStackFrames = &wgTrackingBulkIndexer{bulkIndexer: profilingStackFrames, wg: &b.wg}
+
+	profilingExecutables, err := newBulkIndexer(set.Logger, esClient, cfg, false)
+	if err != nil {
+		return err
+	}
+	b.profilingExecutables = &wgTrackingBulkIndexer{bulkIndexer: profilingExecutables, wg: &b.wg}
+	return nil
+}
+
+func (b *bulkIndexers) shutdown(ctx context.Context) error {
+	for _, bi := range b.modes {
+		if bi == nil {
+			continue
+		}
+		if err := bi.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if b.profilingEvents != nil {
+		if err := b.profilingEvents.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if b.profilingStackTraces != nil {
+		if err := b.profilingStackTraces.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if b.profilingStackFrames != nil {
+		if err := b.profilingStackFrames.Close(ctx); err != nil {
+			return err
+		}
+	}
+	if b.profilingExecutables != nil {
+		if err := b.profilingExecutables.Close(ctx); err != nil {
+			return err
+		}
+	}
+
+	doneCh := make(chan struct{})
+	go func() {
+		b.wg.Wait()
+		close(doneCh)
+	}()
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case <-doneCh:
+	}
+	return nil
+}
+
+type wgTrackingBulkIndexer struct {
+	bulkIndexer
+	wg *sync.WaitGroup
+}
+
+func (w *wgTrackingBulkIndexer) StartSession(ctx context.Context) (bulkIndexerSession, error) {
+	w.wg.Add(1)
+	session, err := w.bulkIndexer.StartSession(ctx)
+	if err != nil {
+		w.wg.Done()
+		return nil, err
+	}
+	return &wgTrackingBulkIndexerSession{bulkIndexerSession: session, wg: w.wg}, nil
+}
+
+type wgTrackingBulkIndexerSession struct {
+	bulkIndexerSession
+	wg *sync.WaitGroup
+}
+
+func (w *wgTrackingBulkIndexerSession) End() {
+	defer w.wg.Done()
+	w.bulkIndexerSession.End()
 }
