@@ -22,6 +22,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver/internal/metadata"
 )
 
 type wantedBody struct {
@@ -58,7 +59,7 @@ func TestNewReceiver(t *testing.T) {
 	logger := zap.NewNop()
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings())
+			_, err := newCollectdReceiver(logger, tt.args.config, "", tt.args.nextConsumer, receivertest.NewNopSettings(metadata.Type))
 			require.ErrorIs(t, err, tt.wantErr)
 		})
 	}
@@ -145,7 +146,7 @@ func TestCollectDServer(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
 	logger := zap.NewNop()
-	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings())
+	cdr, err := newCollectdReceiver(logger, config, defaultAttrsPrefix, sink, receivertest.NewNopSettings(metadata.Type))
 	if err != nil {
 		t.Fatalf("Failed to create receiver: %v", err)
 	}
@@ -193,7 +194,7 @@ func TestCollectDServer(t *testing.T) {
 func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	var dataPoint pmetric.NumberDataPoint
 	testMetrics := pmetric.NewMetrics()
-	scopeMemtrics := testMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
+	scopeMetrics := testMetrics.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty()
 	testMetric := pmetric.NewMetric()
 	testMetric.SetName(wantedRequestBody.Name)
 	sum := testMetric.SetEmptySum()
@@ -206,7 +207,7 @@ func createWantedMetrics(wantedRequestBody wantedBody) pmetric.Metrics {
 	}
 	attributes.CopyTo(dataPoint.Attributes())
 	dataPoint.SetDoubleValue(wantedRequestBody.Value)
-	newMetric := scopeMemtrics.Metrics().AppendEmpty()
+	newMetric := scopeMetrics.Metrics().AppendEmpty()
 	testMetric.MoveTo(newMetric)
 	return testMetrics
 }

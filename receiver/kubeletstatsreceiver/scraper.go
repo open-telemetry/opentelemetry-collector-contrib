@@ -32,7 +32,7 @@ type scraperOptions struct {
 	k8sAPIClient          kubernetes.Interface
 }
 
-type kubletScraper struct {
+type kubeletScraper struct {
 	statsProvider         *kubelet.StatsProvider
 	metadataProvider      *kubelet.MetadataProvider
 	logger                *zap.Logger
@@ -50,14 +50,14 @@ type kubletScraper struct {
 	nodeLimits *kubelet.NodeCapacity
 }
 
-func newKubletScraper(
+func newKubeletScraper(
 	restClient kubelet.RestClient,
 	set receiver.Settings,
 	rOptions *scraperOptions,
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
 ) (scraper.Metrics, error) {
-	ks := &kubletScraper{
+	ks := &kubeletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
 		metadataProvider:      kubelet.NewMetadataProvider(restClient),
 		logger:                set.Logger,
@@ -97,7 +97,7 @@ func newKubletScraper(
 	)
 }
 
-func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	summary, err := r.statsProvider.StatsSummary()
 	if err != nil {
 		r.logger.Error("call to /stats/summary endpoint failed", zap.Error(err))
@@ -129,7 +129,7 @@ func (r *kubletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return md, nil
 }
 
-func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
+func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 	return func(rb *metadata.ResourceBuilder, volCacheID, volumeClaim, namespace string) error {
 		if r.k8sAPIClient == nil {
 			return nil
@@ -160,13 +160,13 @@ func (r *kubletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBuil
 	}
 }
 
-func (r *kubletScraper) node() kubelet.NodeCapacity {
+func (r *kubeletScraper) node() kubelet.NodeCapacity {
 	r.m.RLock()
 	defer r.m.RUnlock()
 	return *r.nodeLimits
 }
 
-func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
+func (r *kubeletScraper) start(_ context.Context, _ component.Host) error {
 	if r.nodeInformer != nil {
 		_, err := r.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    r.handleNodeAdd,
@@ -180,7 +180,7 @@ func (r *kubletScraper) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (r *kubletScraper) shutdown(_ context.Context) error {
+func (r *kubeletScraper) shutdown(_ context.Context) error {
 	r.logger.Debug("executing close")
 	if r.stopCh != nil {
 		close(r.stopCh)
@@ -188,7 +188,7 @@ func (r *kubletScraper) shutdown(_ context.Context) error {
 	return nil
 }
 
-func (r *kubletScraper) handleNodeAdd(obj any) {
+func (r *kubeletScraper) handleNodeAdd(obj any) {
 	if node, ok := obj.(*v1.Node); ok {
 		r.addOrUpdateNode(node)
 	} else {
@@ -196,7 +196,7 @@ func (r *kubletScraper) handleNodeAdd(obj any) {
 	}
 }
 
-func (r *kubletScraper) handleNodeUpdate(_, newNode any) {
+func (r *kubeletScraper) handleNodeUpdate(_, newNode any) {
 	if node, ok := newNode.(*v1.Node); ok {
 		r.addOrUpdateNode(node)
 	} else {
@@ -204,7 +204,7 @@ func (r *kubletScraper) handleNodeUpdate(_, newNode any) {
 	}
 }
 
-func (r *kubletScraper) addOrUpdateNode(node *v1.Node) {
+func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 	r.m.Lock()
 	defer r.m.Unlock()
 

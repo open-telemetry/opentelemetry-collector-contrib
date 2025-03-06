@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension/internal/metadata"
 )
@@ -38,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				Password:   "passwd",
 				DB:         1,
 				Expiration: 3 * time.Hour,
+				Prefix:     "test_",
 			},
 		},
 	}
@@ -51,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(&cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

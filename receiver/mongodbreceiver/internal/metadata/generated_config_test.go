@@ -61,6 +61,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationTime:          MetricConfig{Enabled: true},
 					MongodbPageFaults:             MetricConfig{Enabled: true},
 					MongodbQueriesRate:            MetricConfig{Enabled: true},
+					MongodbReplCommandsPerSec:     MetricConfig{Enabled: true},
+					MongodbReplDeletesPerSec:      MetricConfig{Enabled: true},
+					MongodbReplGetmoresPerSec:     MetricConfig{Enabled: true},
+					MongodbReplInsertsPerSec:      MetricConfig{Enabled: true},
+					MongodbReplQueriesPerSec:      MetricConfig{Enabled: true},
+					MongodbReplUpdatesPerSec:      MetricConfig{Enabled: true},
 					MongodbSessionCount:           MetricConfig{Enabled: true},
 					MongodbStorageSize:            MetricConfig{Enabled: true},
 					MongodbUpdatesRate:            MetricConfig{Enabled: true},
@@ -114,6 +120,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					MongodbOperationTime:          MetricConfig{Enabled: false},
 					MongodbPageFaults:             MetricConfig{Enabled: false},
 					MongodbQueriesRate:            MetricConfig{Enabled: false},
+					MongodbReplCommandsPerSec:     MetricConfig{Enabled: false},
+					MongodbReplDeletesPerSec:      MetricConfig{Enabled: false},
+					MongodbReplGetmoresPerSec:     MetricConfig{Enabled: false},
+					MongodbReplInsertsPerSec:      MetricConfig{Enabled: false},
+					MongodbReplQueriesPerSec:      MetricConfig{Enabled: false},
+					MongodbReplUpdatesPerSec:      MetricConfig{Enabled: false},
 					MongodbSessionCount:           MetricConfig{Enabled: false},
 					MongodbStorageSize:            MetricConfig{Enabled: false},
 					MongodbUpdatesRate:            MetricConfig{Enabled: false},
@@ -131,8 +143,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
@@ -176,8 +189,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }

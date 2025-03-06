@@ -135,12 +135,13 @@ func validateSASLConfig(c *kafka.SASLConfig) error {
 		return nil
 	}
 
-	if c.Username == "" {
-		return fmt.Errorf("auth.sasl.username is required")
-	}
-
-	if c.Password == "" {
-		return fmt.Errorf("auth.sasl.password is required")
+	if c.Mechanism != "AWS_MSK_IAM" && c.Mechanism != "AWS_MSK_IAM_OAUTHBEARER" {
+		if c.Username == "" {
+			return fmt.Errorf("auth.sasl.username is required")
+		}
+		if c.Password == "" {
+			return fmt.Errorf("auth.sasl.password is required")
+		}
 	}
 
 	switch c.Mechanism {

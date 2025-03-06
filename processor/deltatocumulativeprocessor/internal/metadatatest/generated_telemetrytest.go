@@ -3,7 +3,6 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,52 +14,16 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	componenttest.Telemetry
-}
-
-func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-
-func (tt *Telemetry) NewSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings(processortest.NopType)
 	set.ID = component.NewID(component.MustNewType("deltatocumulative"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetricFromResource(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
-	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
-}
-
-func AssertEqualDeltatocumulativeDatapointsDropped(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualDeltatocumulativeDatapoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.datapoints.dropped",
-		Description: "number of datapoints dropped due to given 'reason'",
-		Unit:        "{datapoint}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.datapoints.dropped")
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualDeltatocumulativeDatapointsLinear(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.datapoints.linear",
+		Name:        "otelcol_deltatocumulative_datapoints",
 		Description: "total number of datapoints processed. may have 'error' attribute, if processing failed",
 		Unit:        "{datapoint}",
 		Data: metricdata.Sum[int64]{
@@ -69,84 +32,42 @@ func AssertEqualDeltatocumulativeDatapointsLinear(t *testing.T, tt componenttest
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.datapoints.linear")
+	got, err := tt.GetMetric("otelcol_deltatocumulative_datapoints")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualDeltatocumulativeDatapointsProcessed(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualDeltatocumulativeStreamsLimit(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.datapoints.processed",
-		Description: "number of datapoints processed",
-		Unit:        "{datapoint}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.datapoints.processed")
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualDeltatocumulativeGapsLength(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.gaps.length",
-		Description: "total duration where data was expected but not received",
-		Unit:        "s",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.gaps.length")
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualDeltatocumulativeStreamsEvicted(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.streams.evicted",
-		Description: "number of streams evicted",
-		Unit:        "{stream}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: true,
-			DataPoints:  dps,
-		},
-	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.streams.evicted")
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualDeltatocumulativeStreamsLimit(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.streams.limit",
+		Name:        "otelcol_deltatocumulative_streams_limit",
 		Description: "upper limit of tracked streams",
 		Unit:        "{stream}",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.streams.limit")
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_limit")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualDeltatocumulativeStreamsMaxStale(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualDeltatocumulativeStreamsMaxStale(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.streams.max_stale",
+		Name:        "otelcol_deltatocumulative_streams_max_stale",
 		Description: "duration after which streams inactive streams are dropped",
 		Unit:        "s",
 		Data: metricdata.Gauge[int64]{
 			DataPoints: dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.streams.max_stale")
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_max_stale")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func AssertEqualDeltatocumulativeStreamsTracked(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+func AssertEqualDeltatocumulativeStreamsTracked(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
 	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.streams.tracked",
+		Name:        "otelcol_deltatocumulative_streams_tracked",
 		Description: "number of streams tracked",
 		Unit:        "{dps}",
 		Data: metricdata.Sum[int64]{
@@ -155,48 +76,7 @@ func AssertEqualDeltatocumulativeStreamsTracked(t *testing.T, tt componenttest.T
 			DataPoints:  dps,
 		},
 	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.streams.tracked")
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_tracked")
+	require.NoError(t, err)
 	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func AssertEqualDeltatocumulativeStreamsTrackedLinear(t *testing.T, tt componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
-	want := metricdata.Metrics{
-		Name:        "otelcol_deltatocumulative.streams.tracked.linear",
-		Description: "number of streams tracked",
-		Unit:        "{dps}",
-		Data: metricdata.Sum[int64]{
-			Temporality: metricdata.CumulativeTemporality,
-			IsMonotonic: false,
-			DataPoints:  dps,
-		},
-	}
-	got := getMetric(t, tt, "otelcol_deltatocumulative.streams.tracked.linear")
-	metricdatatest.AssertEqual(t, want, got, opts...)
-}
-
-func getMetric(t *testing.T, tt componenttest.Telemetry, name string) metricdata.Metrics {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	return getMetricFromResource(name, md)
-}
-
-func getMetricFromResource(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
-	}
-
-	return metricdata.Metrics{}
-}
-
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
-	}
-
-	return metricsCount
 }

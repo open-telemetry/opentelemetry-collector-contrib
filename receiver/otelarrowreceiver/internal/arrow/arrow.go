@@ -19,7 +19,7 @@ import (
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -71,7 +71,7 @@ type Receiver struct {
 	tracer       trace.Tracer
 	obsrecv      *receiverhelper.ObsReport
 	gsettings    configgrpc.ServerConfig
-	authServer   auth.Server
+	authServer   extensionauth.Server
 	newConsumer  func() arrowRecord.ConsumerAPI
 	netReporter  netstats.Interface
 	boundedQueue admission2.Queue
@@ -89,7 +89,7 @@ func New(
 	set receiver.Settings,
 	obsrecv *receiverhelper.ObsReport,
 	gsettings configgrpc.ServerConfig,
-	authServer auth.Server,
+	authServer extensionauth.Server,
 	newConsumer func() arrowRecord.ConsumerAPI,
 	bq admission2.Queue,
 	netReporter netstats.Interface,
@@ -136,7 +136,7 @@ type headerReceiver struct {
 	tmpHdrs map[string][]string
 }
 
-func newHeaderReceiver(streamCtx context.Context, as auth.Server, includeMetadata bool) *headerReceiver {
+func newHeaderReceiver(streamCtx context.Context, as extensionauth.Server, includeMetadata bool) *headerReceiver {
 	hr := &headerReceiver{
 		includeMetadata: includeMetadata,
 		hasAuthServer:   as != nil,
@@ -354,7 +354,7 @@ func (r *Receiver) anyStream(serverStream anyStreamServer, method string) (retEr
 	pendingCh := make(chan batchResp, runtime.NumCPU())
 
 	// wg is used to ensure this thread returns after both
-	// sender and recevier threads return.
+	// sender and receiver threads return.
 	var sendWG sync.WaitGroup
 	var recvWG sync.WaitGroup
 	sendWG.Add(1)
@@ -524,7 +524,7 @@ func (id *inFlightData) anyDone(ctx context.Context) {
 // data.
 //
 // This handles constructing an inFlightData object, which itself
-// tracks everything that needs to be used by instrumention when the
+// tracks everything that needs to be used by instrumentation when the
 // batch finishes.
 func (r *receiverStream) recvOne(streamCtx context.Context, serverStream anyStreamServer, hrcv *headerReceiver, pendingCh chan<- batchResp, method string, ac arrowRecord.ConsumerAPI) (retErr error) {
 	// Receive a batch corresponding with one ptrace.Traces, pmetric.Metrics,
