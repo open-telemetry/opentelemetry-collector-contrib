@@ -99,7 +99,7 @@ func (p *Profile) Transform(psp pprofile.ScopeProfiles) pprofile.Profile {
 	addString(pp, "")
 
 	// If valueTypes are not set, set them to the default value.
-	var defaultValueType = ValueType{Typ: "samples", Unit: "count", AggregationTemporality: pprofile.AggregationTemporalityDelta}
+	defaultValueType := ValueType{Typ: "samples", Unit: "count", AggregationTemporality: pprofile.AggregationTemporalityDelta}
 	if p.PeriodType.Typ == "" && p.PeriodType.Unit == "" && p.PeriodType.AggregationTemporality == 0 {
 		p.PeriodType = defaultValueType
 	}
