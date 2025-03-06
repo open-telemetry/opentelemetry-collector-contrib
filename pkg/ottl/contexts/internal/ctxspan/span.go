@@ -421,16 +421,7 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetSpan().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetSpan().Attributes())
-			}
-			if m, ok := val.(map[string]any); ok {
-				err := tCtx.GetSpan().Attributes().FromRaw(m)
-				if err != nil {
-					return err
-				}
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetSpan().Attributes(), val)
 		},
 	}
 }
