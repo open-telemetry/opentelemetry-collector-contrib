@@ -52,7 +52,7 @@ func Test_Luhn(t *testing.T) {
 
 	for _, tt := range noErrorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := luhnFunc[any](&ottl.StandardStringLikeGetter[any]{
+			exprFunc := luhnCheckFunc[any](&ottl.StandardStringLikeGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},
@@ -96,7 +96,7 @@ func Test_Luhn(t *testing.T) {
 	}
 	for _, tt := range errorTests {
 		t.Run(tt.name, func(t *testing.T) {
-			exprFunc := luhnFunc[any](&ottl.StandardStringLikeGetter[any]{
+			exprFunc := luhnCheckFunc[any](&ottl.StandardStringLikeGetter[any]{
 				Getter: func(context.Context, any) (any, error) {
 					return tt.value, nil
 				},

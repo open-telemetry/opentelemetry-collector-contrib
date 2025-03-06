@@ -62,7 +62,7 @@ func converters[K any]() []ottl.Factory[K] {
 		NewIsStringFactory[K](),
 		NewLenFactory[K](),
 		NewLogFactory[K](),
-		NewLuhnFactory[K](),
+		NewLuhnCheckFactory[K](),
 		NewMD5Factory[K](),
 		NewMicrosecondsFactory[K](),
 		NewMillisecondsFactory[K](),
