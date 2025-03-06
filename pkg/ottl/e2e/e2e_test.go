@@ -1278,6 +1278,81 @@ func Test_e2e_ottl_features(t *testing.T) {
 	}
 }
 
+func Test_e2e_ottl_statement_sequence(t *testing.T) {
+	tests := []struct {
+		name       string
+		statements []string
+		want       func(tCtx ottllog.TransformContext)
+	}{
+		{
+			name: "delete key of map literal",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`delete_key(attributes["test"], "foo")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+			},
+		},
+		{
+			name: "delete matching keys of map literal",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`delete_matching_keys(attributes["test"], ".*oo")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+			},
+		},
+		{
+			name: "keep matching keys of map literal",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`keep_matching_keys(attributes["test"], ".*ist")`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("test", "hello")
+			},
+		},
+		{
+			name: "flatten map literal",
+			statements: []string{
+				`set(attributes["test"], {"foo":"bar", "list":[{"test":"hello"}]})`,
+				`flatten(attributes["test"])`,
+			},
+			want: func(tCtx ottllog.TransformContext) {
+				m := tCtx.GetLogRecord().Attributes().PutEmptyMap("test")
+				m.PutStr("foo", "bar")
+				m.PutStr("list.0.test", "hello")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+
+			tCtx := constructLogTransformContext()
+
+			for _, statement := range tt.statements {
+				logStatements, err := parseStatementWithAndWithoutPathContext(statement)
+				assert.NoError(t, err)
+
+				for _, s := range logStatements {
+					_, _, _ = s.Execute(context.Background(), tCtx)
+				}
+			}
+
+			exTCtx := constructLogTransformContext()
+			tt.want(exTCtx)
+
+			assert.NoError(t, plogtest.CompareResourceLogs(newResourceLogs(exTCtx), newResourceLogs(tCtx)))
+		})
+	}
+}
+
 func Test_e2e_ottl_value_expressions(t *testing.T) {
 	tests := []struct {
 		name      string
