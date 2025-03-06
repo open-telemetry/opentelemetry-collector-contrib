@@ -186,6 +186,15 @@ func Test_e2e_editors(t *testing.T) {
 			},
 		},
 		{
+			statement: `merge_maps(attributes, {"map_literal": {"list": [{"foo":"bar"}, "test"]}}, "upsert")`,
+			want: func(tCtx ottllog.TransformContext) {
+				mapAttr := tCtx.GetLogRecord().Attributes().PutEmptyMap("map_literal")
+				l := mapAttr.PutEmptySlice("list")
+				l.AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+				l.AppendEmpty().SetStr("test")
+			},
+		},
+		{
 			statement: `replace_all_matches(attributes, "*/*", "test")`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("http.path", "test")
@@ -1106,6 +1115,24 @@ func Test_e2e_converters(t *testing.T) {
 				arr := tCtx.GetLogRecord().Attributes().PutEmptySlice("arr")
 				arr.AppendEmpty().SetEmptyMap().PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
 				arr.AppendEmpty().SetEmptyMap().PutStr("bar", "baz")
+			},
+		},
+		{
+			statement: `set(attributes["test"], IsList([{"list":[{"foo":"bar"}]}, {"bar":"baz"}]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], IsMap({"list":[{"foo":"bar"}]}))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Len([{"list":[{"foo":"bar"}]}, {"bar":"baz"}]))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutInt("test", 2)
 			},
 		},
 	}
