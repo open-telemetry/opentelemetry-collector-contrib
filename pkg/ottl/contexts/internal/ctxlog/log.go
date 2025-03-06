@@ -225,6 +225,12 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 			if attrs, ok := val.(pcommon.Map); ok {
 				attrs.CopyTo(tCtx.GetLogRecord().Attributes())
 			}
+			if m, ok := val.(map[string]any); ok {
+				err := tCtx.GetLogRecord().Attributes().FromRaw(m)
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		},
 	}

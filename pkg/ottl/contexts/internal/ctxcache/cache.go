@@ -30,6 +30,12 @@ func accessCache[K any](cacheGetter func(K) pcommon.Map) ottl.StandardGetSetter[
 			if m, ok := val.(pcommon.Map); ok {
 				m.CopyTo(cacheGetter(tCtx))
 			}
+			if m, ok := val.(map[string]any); ok {
+				err := cacheGetter(tCtx).FromRaw(m)
+				if err != nil {
+					return err
+				}
+			}
 			return nil
 		},
 	}

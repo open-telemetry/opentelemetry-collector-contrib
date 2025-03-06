@@ -107,17 +107,41 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 				if attrs, ok := val.(pcommon.Map); ok {
 					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes())
 				}
+				if m, ok := val.(map[string]any); ok {
+					err := tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes().FromRaw(m)
+					if err != nil {
+						return err
+					}
+				}
 			case pmetric.HistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
 					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes())
+				}
+				if m, ok := val.(map[string]any); ok {
+					err := tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes().FromRaw(m)
+					if err != nil {
+						return err
+					}
 				}
 			case pmetric.ExponentialHistogramDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
 					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes())
 				}
+				if m, ok := val.(map[string]any); ok {
+					err := tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes().FromRaw(m)
+					if err != nil {
+						return err
+					}
+				}
 			case pmetric.SummaryDataPoint:
 				if attrs, ok := val.(pcommon.Map); ok {
 					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes())
+				}
+				if m, ok := val.(map[string]any); ok {
+					err := tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes().FromRaw(m)
+					if err != nil {
+						return err
+					}
 				}
 			}
 			return nil
