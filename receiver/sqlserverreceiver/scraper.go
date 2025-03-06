@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
-	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -37,7 +36,6 @@ type sqlServerScraperHelper struct {
 	config             *Config
 	sqlQuery           string
 	instanceName       string
-	scrapeCfg          scraperhelper.ControllerConfig
 	clientProviderFunc sqlquery.ClientProviderFunc
 	dbProviderFunc     sqlquery.DbProviderFunc
 	logger             *zap.Logger
@@ -530,12 +528,11 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const username = "username"
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
-		if errors.Is(err, sqlquery.ErrNullValueWarning) {
-			// TODO: ignore this for now.
-			s.logger.Warn("problems encountered getting log rows", zap.Error(err))
-		} else {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
 		}
+		// TODO: ignore this for now.
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
 	var errs []error
@@ -694,9 +691,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.Attributes().PutInt("client.port", int64(clientPortNumber))
 
 		record.Body().SetStr("sample")
-
 	}
-
 	return logs, errors.Join(errs...)
 }
 
