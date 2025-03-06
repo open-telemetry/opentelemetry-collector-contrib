@@ -111,5 +111,6 @@ func converters[K any]() []ottl.Factory[K] {
 		NewYearFactory[K](),
 		NewHexFactory[K](),
 		NewSliceToMapFactory[K](),
+		NewParseSeverityFactory[K](),
 	}
 }
