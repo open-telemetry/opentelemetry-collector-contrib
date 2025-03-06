@@ -21,6 +21,8 @@ func Functions[K any]() map[string]ottl.Factory[K] {
 		ottlfuncs.NewIsMatchFactory[K](),
 		ottlfuncs.NewDeleteKeyFactory[K](),
 		ottlfuncs.NewDeleteMatchingKeysFactory[K](),
+		ottlfuncs.NewToLowerCaseFactory[K](),
+		ottlfuncs.NewToUpperCaseFactory[K](),
 		// noop function, it is required since the parsing of conditions is not implemented yet,
 		////github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
 		ottl.NewFactory("route", nil, createRouteFunction[K]),
