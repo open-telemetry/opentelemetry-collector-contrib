@@ -8,7 +8,9 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"compress/gzip"
 	"context"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -82,7 +84,8 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode: "none",
+			Mode:         "none",
+			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
