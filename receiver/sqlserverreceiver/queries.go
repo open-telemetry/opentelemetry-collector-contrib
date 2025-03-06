@@ -4,8 +4,10 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
+	"bytes"
 	_ "embed"
 	"fmt"
+	"html/template"
 	"strings"
 )
 
@@ -338,9 +340,20 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 	return fmt.Sprintf(sqlServerProperties, "")
 }
 
-//go:embed templates/sqlServerQuerySample.tmpl
-var sqlServerQuerySamples string
+//go:embed templates/sqlServerQuerySampleWithTop.tmpl
+var sqlServerQuerySamplesWithTop string
 
-func getSQLServerQuerySamplesQuery() string {
-	return sqlServerQuerySamples
+//go:embed templates/sqlServerQuerySampleWithoutTop.tmpl
+var sqlServerQuerySamplesWithoutTop string
+
+func getSQLServerQuerySamplesQuery(maxResultPerQuery uint64) string {
+	buf := bytes.Buffer{}
+
+	tmpl := template.Must(template.New("sqlServerQuerySample").Option("missingkey=error").Parse(sqlServerQuerySamplesWithTop))
+	if err := tmpl.Execute(&buf, map[string]any{
+		"Limit": maxResultPerQuery,
+	}); err != nil {
+		return sqlServerQuerySamplesWithoutTop
+	}
+	return buf.String()
 }

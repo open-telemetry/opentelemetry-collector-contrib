@@ -176,9 +176,9 @@ func TestScrapeInvalidQuery(t *testing.T) {
 var _ sqlquery.DbClient = (*mockClient)(nil)
 
 type mockClient struct {
-	SQL                 string
-	instanceName        string
-	maxQuerySampleCount uint
+	SQL               string
+	instanceName      string
+	maxResultPerQuery uint64
 }
 
 type mockInvalidClient struct {
@@ -211,7 +211,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQuerySamplesQuery(mc.maxResultPerQuery):
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -228,7 +228,7 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 	var err error
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery():
+	case getSQLServerQuerySamplesQuery(mc.maxResultPerQuery):
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -259,21 +259,15 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	assert.NotNil(t, scraper.cache)
 
 	scraper.client = mockClient{
-		instanceName:        scraper.instanceName,
-		SQL:                 scraper.sqlQuery,
-		maxQuerySampleCount: 10000,
+		instanceName:      scraper.instanceName,
+		SQL:               scraper.sqlQuery,
+		maxResultPerQuery: 100,
 	}
 
 	actualLogs, err := scraper.ScrapeLogs(context.Background())
-
-	aaa, _ := json.Marshal(actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw())
-	println("aaa\n" + string(aaa))
-
 	assert.NoError(t, err)
-	expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", "expectedRecordDatabaseSampleQuery.yaml"))
 
-	eee, _ := json.Marshal(expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw())
-	println("eee\n" + string(eee))
+	expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", "expectedRecordDatabaseSampleQuery.yaml"))
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 
 	assert.NoError(t, errs)
@@ -299,9 +293,9 @@ func TestRecordInvalidDatabaseSampleQuery(t *testing.T) {
 
 	scraper.client = mockInvalidClient{
 		mockClient{
-			instanceName:        scraper.instanceName,
-			SQL:                 scraper.sqlQuery,
-			maxQuerySampleCount: 10000,
+			instanceName:      scraper.instanceName,
+			SQL:               scraper.sqlQuery,
+			maxResultPerQuery: 100,
 		},
 	}
 

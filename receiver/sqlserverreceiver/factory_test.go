@@ -42,6 +42,7 @@ func TestCreateMetrics(t *testing.T) {
 					},
 					QuerySample: QuerySample{
 						EnableQuerySample: false,
+						MaxResultPerQuery: 100,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}

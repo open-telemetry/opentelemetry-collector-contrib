@@ -48,6 +48,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 		QuerySample: QuerySample{
 			EnableQuerySample: false,
+			MaxResultPerQuery: 100,
 		},
 	}
 }
@@ -82,7 +83,7 @@ func setupLogQueries(cfg *Config) []string {
 	var queries []string
 
 	if cfg.EnableQuerySample {
-		queries = append(queries, getSQLServerQuerySamplesQuery())
+		queries = append(queries, getSQLServerQuerySamplesQuery(cfg.MaxResultPerQuery))
 	}
 	return queries
 }
@@ -162,7 +163,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		var cache *lru.Cache[string, int64]
 
-		if query == getSQLServerQuerySamplesQuery() {
+		if query == getSQLServerQuerySamplesQuery(cfg.MaxResultPerQuery) {
 			cache = newCache(1)
 		}
 

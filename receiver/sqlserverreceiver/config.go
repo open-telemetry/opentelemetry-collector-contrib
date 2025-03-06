@@ -13,7 +13,8 @@ import (
 )
 
 type QuerySample struct {
-	EnableQuerySample bool `mapstructure:"enabled"`
+	EnableQuerySample bool   `mapstructure:"enabled"`
+	MaxResultPerQuery uint64 `mapstructure:"max_result_per_query"`
 }
 
 // Config defines configuration for a sqlserver receiver.
