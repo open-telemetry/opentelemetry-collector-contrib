@@ -5,7 +5,13 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
+	"go.opentelemetry.io/collector/extension"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -16,21 +22,28 @@ import (
 var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
 
 type encodingExtension struct {
-	pmetric.Unmarshaler
+	unmarshaller pmetric.Unmarshaler
 }
 
-func newExtension(cfg *Config) (*encodingExtension, error) {
+func newExtension(cfg *Config, settings *extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
-	case formatJSON:
-		return &encodingExtension{Unmarshaler: formatJSONUnmarshaler{}}, nil
-	case formatOpenTelemetry10:
-		return &encodingExtension{Unmarshaler: formatOpenTelemetry10Unmarshaler{}}, nil
+	case formatJSON, formatOpenTelemetry10:
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
 		// format.
 		return nil, fmt.Errorf("unimplemented format %q", cfg.Format)
 	}
+	unmarshaller, err := cloudwatchmetricstream.NewUnmarshaler(
+		cfg.Format,
+		metadata.Type.String(),
+		settings.BuildInfo,
+		settings.Logger,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return &encodingExtension{unmarshaller: unmarshaller}, nil
 }
 
 func (*encodingExtension) Start(_ context.Context, _ component.Host) error {
@@ -41,16 +54,9 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-type formatJSONUnmarshaler struct{}
-
-func (formatJSONUnmarshaler) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
-	// TODO implement
-	return pmetric.Metrics{}, fmt.Errorf("UnmarshalMetrics unimplemented for format %q", formatJSON)
-}
-
-type formatOpenTelemetry10Unmarshaler struct{}
-
-func (formatOpenTelemetry10Unmarshaler) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
-	// TODO implement
-	return pmetric.Metrics{}, fmt.Errorf("UnmarshalMetrics unimplemented for format %q", formatOpenTelemetry10)
+func (e *encodingExtension) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
+	if e.unmarshaller == nil {
+		return pmetric.Metrics{}, errors.New("no unmarshaler defined")
+	}
+	return e.unmarshaller.UnmarshalMetrics(buf)
 }

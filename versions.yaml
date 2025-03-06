@@ -165,6 +165,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
