@@ -28,9 +28,9 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for systemd metrics.
 type MetricsConfig struct {
-	SystemdFailedJobs      MetricConfig `mapstructure:"systemd.failed_jobs"`
-	SystemdInstalledJobs   MetricConfig `mapstructure:"systemd.installed_jobs"`
 	SystemdJobs            MetricConfig `mapstructure:"systemd.jobs"`
+	SystemdJobsFailed      MetricConfig `mapstructure:"systemd.jobs.failed"`
+	SystemdJobsTotal       MetricConfig `mapstructure:"systemd.jobs.total"`
 	SystemdSystemState     MetricConfig `mapstructure:"systemd.system_state"`
 	SystemdUnitActiveState MetricConfig `mapstructure:"systemd.unit.active_state"`
 	SystemdUnitErrno       MetricConfig `mapstructure:"systemd.unit.errno"`
@@ -42,13 +42,13 @@ type MetricsConfig struct {
 
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
-		SystemdFailedJobs: MetricConfig{
-			Enabled: true,
-		},
-		SystemdInstalledJobs: MetricConfig{
-			Enabled: true,
-		},
 		SystemdJobs: MetricConfig{
+			Enabled: true,
+		},
+		SystemdJobsFailed: MetricConfig{
+			Enabled: true,
+		},
+		SystemdJobsTotal: MetricConfig{
 			Enabled: true,
 		},
 		SystemdSystemState: MetricConfig{

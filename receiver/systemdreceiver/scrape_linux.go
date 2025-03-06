@@ -49,8 +49,8 @@ func (s *systemdReceiver) scrapeJobs(now pcommon.Timestamp) []error {
 	var errs []error
 	for prop, recordFunc := range map[string]func(pcommon.Timestamp, int64){
 		"NJobs":          s.mb.RecordSystemdJobsDataPoint,
-		"NInstalledJobs": s.mb.RecordSystemdInstalledJobsDataPoint,
-		"NFailedJobs":    s.mb.RecordSystemdFailedJobsDataPoint,
+		"NInstalledJobs": s.mb.RecordSystemdJobsTotalDataPoint,
+		"NFailedJobs":    s.mb.RecordSystemdJobsFailedDataPoint,
 	} {
 		propVal, err := s.client.GetManagerProperty(prop)
 		if err != nil {

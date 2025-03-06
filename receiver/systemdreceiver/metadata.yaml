@@ -4,7 +4,7 @@ status:
   class: receiver
   stability:
     development: [metrics]
-  distributions: [contrib]
+  distributions: []
   codeowners:
     active: [Hemansh31, atoulme]
   unsupported_platforms: [darwin, windows]
@@ -85,9 +85,11 @@ attributes:
   architecture:
     description: The detected CPU architecture
     type: string
+    enabled: false
   virtualization:
     description: Short ID string describing the virtualization technology the system runs in.
     type: string
+    enabled: false
 
 metrics:
   systemd.system_state:
@@ -107,7 +109,7 @@ metrics:
     gauge:
       value_type: int
     unit: "{jobs}"
-  systemd.installed_jobs:
+  systemd.jobs.total:
     description: How many jobs have ever been queued in total
     enabled: true
     sum:
@@ -115,7 +117,7 @@ metrics:
       monotonic: true
       value_type: int
     unit: "{jobs}"
-  systemd.failed_jobs:
+  systemd.jobs.failed:
     description: How many jobs have ever failed in total
     enabled: true
     sum:
@@ -158,7 +160,7 @@ metrics:
       - active_state
       - sub_state
   systemd.unit.restarts:
-    description: Amount of time the unit was restarted this boot
+    description: Number of times the unit was restarted this boot
     enabled: true
     sum:
       aggregation_temporality: cumulative

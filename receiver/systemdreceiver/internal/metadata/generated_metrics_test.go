@@ -70,15 +70,15 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSystemdFailedJobsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordSystemdInstalledJobsDataPoint(ts, 1)
-
-			defaultMetricsCount++
-			allMetricsCount++
 			mb.RecordSystemdJobsDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdJobsFailedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordSystemdJobsTotalDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -129,9 +129,21 @@ func TestMetricsBuilder(t *testing.T) {
 			validatedMetrics := make(map[string]bool)
 			for i := 0; i < ms.Len(); i++ {
 				switch ms.At(i).Name() {
-				case "systemd.failed_jobs":
-					assert.False(t, validatedMetrics["systemd.failed_jobs"], "Found a duplicate in the metrics slice: systemd.failed_jobs")
-					validatedMetrics["systemd.failed_jobs"] = true
+				case "systemd.jobs":
+					assert.False(t, validatedMetrics["systemd.jobs"], "Found a duplicate in the metrics slice: systemd.jobs")
+					validatedMetrics["systemd.jobs"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "How many jobs are currently queued", ms.At(i).Description())
+					assert.Equal(t, "{jobs}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "systemd.jobs.failed":
+					assert.False(t, validatedMetrics["systemd.jobs.failed"], "Found a duplicate in the metrics slice: systemd.jobs.failed")
+					validatedMetrics["systemd.jobs.failed"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "How many jobs have ever failed in total", ms.At(i).Description())
@@ -143,9 +155,9 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "systemd.installed_jobs":
-					assert.False(t, validatedMetrics["systemd.installed_jobs"], "Found a duplicate in the metrics slice: systemd.installed_jobs")
-					validatedMetrics["systemd.installed_jobs"] = true
+				case "systemd.jobs.total":
+					assert.False(t, validatedMetrics["systemd.jobs.total"], "Found a duplicate in the metrics slice: systemd.jobs.total")
+					validatedMetrics["systemd.jobs.total"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "How many jobs have ever been queued in total", ms.At(i).Description())
@@ -153,18 +165,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "systemd.jobs":
-					assert.False(t, validatedMetrics["systemd.jobs"], "Found a duplicate in the metrics slice: systemd.jobs")
-					validatedMetrics["systemd.jobs"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "How many jobs are currently queued", ms.At(i).Description())
-					assert.Equal(t, "{jobs}", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -240,7 +240,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["systemd.unit.restarts"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Amount of time the unit was restarted this boot", ms.At(i).Description())
+					assert.Equal(t, "Number of times the unit was restarted this boot", ms.At(i).Description())
 					assert.Equal(t, "{restarts}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())

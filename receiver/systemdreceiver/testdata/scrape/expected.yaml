@@ -44,7 +44,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: How many jobs have ever been queued in total
-            name: systemd.installed_jobs
+            name: systemd.jobs.total
             sum:
               aggregationTemporality: 2
               dataPoints:
@@ -60,7 +60,7 @@ resourceMetrics:
     scopeMetrics:
       - metrics:
           - description: How many jobs have ever failed in total
-            name: systemd.failed_jobs
+            name: systemd.jobs.failed
             sum:
               aggregationTemporality: 2
               dataPoints:

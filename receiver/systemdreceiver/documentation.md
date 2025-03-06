@@ -12,22 +12,6 @@ metrics:
     enabled: false
 ```
 
-### systemd.failed_jobs
-
-How many jobs have ever failed in total
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {jobs} | Sum | Int | Cumulative | true |
-
-### systemd.installed_jobs
-
-How many jobs have ever been queued in total
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {jobs} | Sum | Int | Cumulative | true |
-
 ### systemd.jobs
 
 How many jobs are currently queued
@@ -35,6 +19,22 @@ How many jobs are currently queued
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {jobs} | Gauge | Int |
+
+### systemd.jobs.failed
+
+How many jobs have ever failed in total
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {jobs} | Sum | Int | Cumulative | true |
+
+### systemd.jobs.total
+
+How many jobs have ever been queued in total
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {jobs} | Sum | Int | Cumulative | true |
 
 ### systemd.system_state
 
@@ -63,7 +63,7 @@ The errno (exit code) of the last error/exit
 
 ### systemd.unit.restarts
 
-Amount of time the unit was restarted this boot
+Number of times the unit was restarted this boot
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

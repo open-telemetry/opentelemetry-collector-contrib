@@ -25,9 +25,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdFailedJobs:      MetricConfig{Enabled: true},
-					SystemdInstalledJobs:   MetricConfig{Enabled: true},
 					SystemdJobs:            MetricConfig{Enabled: true},
+					SystemdJobsFailed:      MetricConfig{Enabled: true},
+					SystemdJobsTotal:       MetricConfig{Enabled: true},
 					SystemdSystemState:     MetricConfig{Enabled: true},
 					SystemdUnitActiveState: MetricConfig{Enabled: true},
 					SystemdUnitErrno:       MetricConfig{Enabled: true},
@@ -45,9 +45,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemdFailedJobs:      MetricConfig{Enabled: false},
-					SystemdInstalledJobs:   MetricConfig{Enabled: false},
 					SystemdJobs:            MetricConfig{Enabled: false},
+					SystemdJobsFailed:      MetricConfig{Enabled: false},
+					SystemdJobsTotal:       MetricConfig{Enabled: false},
 					SystemdSystemState:     MetricConfig{Enabled: false},
 					SystemdUnitActiveState: MetricConfig{Enabled: false},
 					SystemdUnitErrno:       MetricConfig{Enabled: false},

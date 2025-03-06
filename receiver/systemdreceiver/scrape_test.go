@@ -74,6 +74,10 @@ func Test_scraper_scrape(t *testing.T) {
 
 	require.NoError(t, err)
 	expectedFile := filepath.Join("testdata", "scrape", "expected.yaml")
+
+	// Uncomment to regenerate expected_metrics files
+	// golden.WriteMetrics(t, expectedFile, m)
+
 	expectedMetrics, err := golden.ReadMetrics(expectedFile)
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, m, pmetrictest.IgnoreStartTimestamp(),

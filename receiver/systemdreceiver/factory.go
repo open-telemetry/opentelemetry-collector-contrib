@@ -50,7 +50,7 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&config.ControllerConfig,
 		settings,
 		consumer,
