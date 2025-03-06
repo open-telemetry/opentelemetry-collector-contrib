@@ -15,6 +15,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver/internal/metadata"
 )
 
 //nolint:revive
@@ -61,8 +63,10 @@ func TestScrape_ValidCertificate(t *testing.T) {
 		Targets: []*confignet.TCPAddrConfig{
 			{Endpoint: "example.com:443"},
 		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	settings := receivertest.NewNopSettings()
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
 	metrics, err := s.scrape(context.Background())
@@ -88,8 +92,10 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 		Targets: []*confignet.TCPAddrConfig{
 			{Endpoint: "expired.com:443"},
 		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	settings := receivertest.NewNopSettings()
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateExpired)
 
 	metrics, err := s.scrape(context.Background())
@@ -119,8 +125,10 @@ func TestScrape_NotYetValidCertificate(t *testing.T) {
 		Targets: []*confignet.TCPAddrConfig{
 			{Endpoint: "expired.com:443"},
 		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
-	settings := receivertest.NewNopSettings()
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateNotYetValid)
 
 	metrics, err := s.scrape(context.Background())

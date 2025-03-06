@@ -10,7 +10,6 @@ import (
 	"sync"
 	"time"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -23,8 +22,7 @@ var errMissingTargets = errors.New(`No targets specified`)
 
 type scraper struct {
 	cfg                *Config
-	settings           component.TelemetrySettings
-	mbs                make(map[string]*metadata.MetricsBuilder)
+	settings           receiver.Settings
 	getConnectionState func(endpoint string) (tls.ConnectionState, error)
 }
 
@@ -37,7 +35,7 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	return conn.ConnectionState(), nil
 }
 
-func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, mb *metadata.MetricsBuilder, wg *sync.WaitGroup, mux *sync.Mutex) {
+func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
 
 	state, err := s.getConnectionState(endpoint)
@@ -63,6 +61,7 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, mb *
 	mux.Lock()
 	defer mux.Unlock()
 
+	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 	rb := mb.NewResourceBuilder()
 	rb.SetTlscheckEndpoint(endpoint)
 	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
@@ -81,19 +80,18 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	metrics := pmetric.NewMetrics()
 
-	mbs := make([]*metadata.MetricsBuilder, len(s.cfg.Targets))
-	for i, target := range s.cfg.Targets {
-		go s.scrapeEndpoint(target.Endpoint, metrics, mbs[i], &wg, &mux)
+	for _, target := range s.cfg.Targets {
+		go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux)
 	}
 
 	wg.Wait()
-	return mb.Emit(metadata.WithResource(rb.Emit())), nil
+	return metrics, nil
 }
 
 func newScraper(cfg *Config, settings receiver.Settings, getConnectionState func(endpoint string) (tls.ConnectionState, error)) *scraper {
 	return &scraper{
 		cfg:                cfg,
-		settings:           settings.TelemetrySettings,
+		settings:           settings,
 		getConnectionState: getConnectionState,
 	}
 }
