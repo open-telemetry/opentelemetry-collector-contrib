@@ -124,7 +124,7 @@ func TestLoadConfig(t *testing.T) {
 		expected.InstanceName = "CustomInstance"
 		expected.QuerySample = QuerySample{
 			EnableQuerySample: true,
-			MaxResultPerQuery: 100,
+			MaxResultPerQuery: 1450,
 		}
 
 		sub, err := cm.Sub("sqlserver/named")

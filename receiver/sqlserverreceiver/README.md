@@ -39,8 +39,7 @@ Windows-specific options:
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
 
 Query sample related options (only useful when query sample is enabled)
-- `max_query_sample_count`: it is mainly used to configure the cache size for the reported samples. 
-It would report the sample only if the query (identified by queryHash and queryPlanHash) is not in the cache
+- `max_result_per_query`: use this to limit rows returned by the sampling query. The default value is 100.
 
 Example:
 
@@ -84,7 +83,8 @@ Query sample enabled:
         server: 0.0.0.0
         port: 1433
         query_sample:
-          enable_query_sample: true
+          enabled: true
+          max_result_per_query: 1450
 ```
 ```
 ```
