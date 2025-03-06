@@ -268,11 +268,11 @@ func TestTranslateV2(t *testing.T) {
 			expectedStats: remote.WriteResponseStats{},
 		},
 		{
-			name: "TODO",
+			name: "separate timeseries - same labels - should be same datapointslice",
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
-					"__name__", "teste", // 1, 2
+					"__name__", "test_metric", // 1, 2
 					"job", "service-x/test", // 3, 4
 					"instance", "107cn001", // 5, 6
 					"otel_scope_name", "scope1", // 7, 8
@@ -280,22 +280,21 @@ func TestTranslateV2(t *testing.T) {
 					"d", "e", // 11, 12
 					"foo", "bar", // 13, 14
 					"f", "g", // 15, 16
-					"seconds", "help text about seconds", // 17, 18
-					"milliseconds", "help text about milliseconds", // 19, 20
+					"seconds", "milliseconds", // 17, 18
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17, HelpRef: 18},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17, HelpRef: 18},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
 					},
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 19, HelpRef: 20},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14},
 						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
 					},
@@ -306,7 +305,8 @@ func TestTranslateV2(t *testing.T) {
 				rm1 := expected.ResourceMetrics().AppendEmpty()
 				rmAttributes1 := rm1.Resource().Attributes()
 				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "teste")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
 				sm1.Scope().SetName("scope1")
@@ -318,7 +318,6 @@ func TestTranslateV2(t *testing.T) {
 				// Or maybe here: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#metric-metadata
 				metrics1.SetName("TODO")
 				metrics1.SetUnit("seconds")
-				metrics1.SetDescription("help text about seconds")
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp1.SetDoubleValue(1.0)
@@ -332,7 +331,6 @@ func TestTranslateV2(t *testing.T) {
 				metrics2 := sm1.Metrics().AppendEmpty()
 				metrics2.SetName("TODO")
 				metrics2.SetUnit("milliseconds")
-				metrics2.SetDescription("help text about milliseconds")
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(3.0)
