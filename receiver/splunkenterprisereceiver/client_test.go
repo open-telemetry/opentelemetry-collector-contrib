@@ -17,8 +17,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 // mockHost allows us to create a test host with a no op extension that can be used to satisfy the SDK without having to parse from an
@@ -30,6 +30,13 @@ type mockHost struct {
 
 func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return m.extensions
+}
+
+func newAuthClient(t *testing.T, opts ...extensionauth.ClientOption) extensionauth.Client {
+	t.Helper()
+	client, err := extensionauth.NewClient(opts...)
+	require.NoError(t, err)
+	return client
 }
 
 func TestClientCreation(t *testing.T) {
@@ -47,7 +54,7 @@ func TestClientCreation(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): newAuthClient(t),
 		},
 	}
 	// create a client from an example config
@@ -76,7 +83,7 @@ func TestClientCreateRequest(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): newAuthClient(t),
 		},
 	}
 	// create a client from an example config
@@ -157,7 +164,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): newAuthClient(t),
 		},
 	}
 	// create a client from an example config

@@ -19,6 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor/internal/metadata"
 )
 
 func TestNewTraces(t *testing.T) {
@@ -27,7 +28,7 @@ func TestNewTraces(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"foo"}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), cfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 }
@@ -103,11 +104,10 @@ func TestSpanProcessor_NilEmptyData(t *testing.T) {
 	}
 	oCfg.Rename.FromAttributes = []string{"key"}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
-	for i := range testCases {
-		tt := testCases[i]
+	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
 			assert.NoError(t, tp.ConsumeTraces(context.Background(), tt.input))
 			assert.NoError(t, ptracetest.CompareTraces(tt.output, tt.input))
@@ -207,7 +207,7 @@ func TestSpanProcessor_Values(t *testing.T) {
 	oCfg := cfg.(*Config)
 	oCfg.Rename.FromAttributes = []string{"key1"}
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -283,7 +283,7 @@ func TestSpanProcessor_MissingKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 	for _, tc := range testCases {
@@ -300,7 +300,7 @@ func TestSpanProcessor_Separator(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -328,7 +328,7 @@ func TestSpanProcessor_NoSeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2"}
 	oCfg.Rename.Separator = ""
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -357,7 +357,7 @@ func TestSpanProcessor_SeparatorMultipleKeys(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1", "key2", "key3", "key4"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -391,7 +391,7 @@ func TestSpanProcessor_NilName(t *testing.T) {
 	oCfg.Rename.FromAttributes = []string{"key1"}
 	oCfg.Rename.Separator = "::"
 
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -510,7 +510,7 @@ func TestSpanProcessor_ToAttributes(t *testing.T) {
 		oCfg.Rename.ToAttributes.Rules = tc.rules
 		oCfg.Rename.ToAttributes.BreakAfterMatch = tc.breakAfterMatch
 		oCfg.Rename.ToAttributes.KeepOriginalName = tc.keepOriginalName
-		tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+		tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 		require.NoError(t, err)
 		require.NotNil(t, tp)
 
@@ -577,7 +577,7 @@ func TestSpanProcessor_skipSpan(t *testing.T) {
 	oCfg.Rename.ToAttributes = &ToAttributes{
 		Rules: []string{`(?P<operation_website>.*?)$`},
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -605,7 +605,7 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 		Code:        "Error",
 		Description: "Set custom error message",
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 
@@ -633,7 +633,7 @@ func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {
 			{Key: "http.status_code", Value: 400},
 		},
 	}
-	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(), oCfg, consumertest.NewNop())
+	tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), oCfg, consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, tp)
 

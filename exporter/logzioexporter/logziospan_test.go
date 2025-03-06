@@ -9,7 +9,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/stretchr/testify/require"
 )
 
@@ -30,21 +30,4 @@ func TestTransformToLogzioSpanBytes(tester *testing.T) {
 	if _, ok := m["JaegerTag"]; !ok {
 		tester.Error("error converting span to logzioSpan, JaegerTag is not found")
 	}
-}
-
-func TestTransformToDbModelSpan(tester *testing.T) {
-	inStr, err := os.ReadFile("./testdata/span.json")
-	require.NoError(tester, err, "error opening sample span file")
-	var span model.Span
-	err = json.Unmarshal(inStr, &span)
-	if err != nil {
-		fmt.Println("json.Unmarshal")
-	}
-	newSpan, err := transformToLogzioSpanBytes(&span)
-	require.NoError(tester, err)
-	var testLogzioSpan logzioSpan
-	err = json.Unmarshal(newSpan, &testLogzioSpan)
-	require.NoError(tester, err)
-	dbModelSpan := testLogzioSpan.transformToDbModelSpan()
-	require.Len(tester, dbModelSpan.References, 3, "Error converting logzio span to dbmodel span")
 }

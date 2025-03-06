@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCheckpoint specifies the a value checkpoint attribute.
+// AttributeCheckpoint specifies the value checkpoint attribute.
 type AttributeCheckpoint int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeCheckpoint = map[string]AttributeCheckpoint{
 	"failed":    AttributeCheckpointFailed,
 }
 
-// AttributeGarbageCollectorName specifies the a value garbage_collector_name attribute.
+// AttributeGarbageCollectorName specifies the value garbage_collector_name attribute.
 type AttributeGarbageCollectorName int
 
 const (
@@ -74,7 +74,7 @@ var MapAttributeGarbageCollectorName = map[string]AttributeGarbageCollectorName{
 	"G1_Old_Generation":   AttributeGarbageCollectorNameG1OldGeneration,
 }
 
-// AttributeRecord specifies the a value record attribute.
+// AttributeRecord specifies the value record attribute.
 type AttributeRecord int
 
 const (
@@ -1650,7 +1650,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                  mbc,
@@ -1791,7 +1790,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFlinkJobCheckpointCount.emit(ils.Metrics())

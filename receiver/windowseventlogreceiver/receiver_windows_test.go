@@ -64,7 +64,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := newFactoryAdapter().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -100,7 +100,7 @@ func BenchmarkReadWindowsEventLogger(b *testing.B) {
 				// Set up the receiver and sink.
 				ctx := context.Background()
 				factory := newFactoryAdapter()
-				createSettings := receivertest.NewNopSettings()
+				createSettings := receivertest.NewNopSettings(metadata.Type)
 				cfg := createTestConfig()
 				cfg.InputConfig.StartAt = "beginning"
 				cfg.InputConfig.MaxReads = tt.count
@@ -130,7 +130,7 @@ func TestReadWindowsEventLogger(t *testing.T) {
 
 	ctx := context.Background()
 	factory := newFactoryAdapter()
-	createSettings := receivertest.NewNopSettings()
+	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	sink := new(consumertest.LogsSink)
 
@@ -183,7 +183,7 @@ func TestReadWindowsEventLoggerRaw(t *testing.T) {
 
 	ctx := context.Background()
 	factory := newFactoryAdapter()
-	createSettings := receivertest.NewNopSettings()
+	createSettings := receivertest.NewNopSettings(metadata.Type)
 	cfg := createTestConfig()
 	cfg.InputConfig.Raw = true
 	sink := new(consumertest.LogsSink)
@@ -248,7 +248,7 @@ func TestExcludeProvider(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			ctx := context.Background()
 			factory := newFactoryAdapter()
-			createSettings := receivertest.NewNopSettings()
+			createSettings := receivertest.NewNopSettings(metadata.Type)
 			cfg := createTestConfig()
 			cfg.InputConfig.Raw = tt.raw
 			cfg.InputConfig.ExcludeProviders = []string{excludedSrc}

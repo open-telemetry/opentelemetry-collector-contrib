@@ -10,7 +10,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"k8s.io/client-go/kubernetes"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -110,7 +110,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 		return err
 	}
 
-	// custom unmarhalling is required to get []kubelet.MetricGroup, the default
+	// custom unmarshalling is required to get []kubelet.MetricGroup, the default
 	// unmarshaller does not correctly overwrite slices.
 	if !componentParser.IsSet(metricGroupsConfig) {
 		cfg.MetricGroupsToCollect = defaultMetricGroups

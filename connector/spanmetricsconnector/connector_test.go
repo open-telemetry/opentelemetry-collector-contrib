@@ -623,7 +623,7 @@ func TestStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	createParams := connectortest.NewNopSettings()
+	createParams := connectortest.NewNopSettings(factory.Type())
 	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -877,9 +877,6 @@ func TestConsumeTraces(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		// Since parallelism is enabled in these tests, to avoid flaky behavior,
-		// instantiate a copy of the test case for t.Run's closure to use.
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			// Prepare
 
@@ -1070,7 +1067,6 @@ func TestExcludeDimensionsConsumeTraces(t *testing.T) {
 
 	excludeDimensions := []string{"span.kind", "span.name", "totallyWrongNameDoesNotAffectAnything"}
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.dsc, func(t *testing.T) {
 			// Set feature gate value
 			previousValue := legacyMetricNamesFeatureGate.IsEnabled()
@@ -1876,6 +1872,6 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 }
 
 func (c alwaysIncreasingClock) Now() time.Time {
-	c.Clock.(clockwork.FakeClock).Advance(time.Millisecond)
+	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
 }

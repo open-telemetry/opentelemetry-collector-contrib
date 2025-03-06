@@ -19,21 +19,24 @@ This exporter targets to support proto/json format.
 
 The following exporter configuration parameters are supported.
 
-| Name                  | Description                                                                                                                                | Default     |
-|:----------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|
-| `region`              | AWS region.                                                                                                                                | "us-east-1" |
-| `s3_bucket`           | S3 bucket                                                                                                                                  |             |
-| `s3_prefix`           | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
-| `s3_partition`        | time granularity of S3 key: hour or minute                                                                                                 | "minute"    |
-| `role_arn`            | the Role ARN to be assumed                                                                                                                 |             |
-| `file_prefix`         | file prefix defined by user                                                                                                                |             |
-| `marshaler`           | marshaler used to produce output data                                                                                                      | `otlp_json` |
-| `encoding`            | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
+| Name                      | Description                                                                                                                                | Default     |
+|:--------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|
+| `region`                  | AWS region.                                                                                                                                | "us-east-1" |
+| `s3_bucket`               | S3 bucket                                                                                                                                  |             |
+| `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
+| `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification. | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
+| `role_arn`                | the Role ARN to be assumed                                                                                                                 |             |
+| `file_prefix`             | file prefix defined by user                                                                                                                |             |
+| `marshaler`               | marshaler used to produce output data                                                                                                      | `otlp_json` |
+| `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
 | `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |             |
-| `endpoint`            | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                                       |             |
-| `s3_force_path_style` | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
-| `disable_ssl`         | set this to `true` to disable SSL when sending requests                                                                                    | false       |
-| `compression`         | should the file be compressed                                                                                                              | none        |
+| `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                   |             |
+| `storage_class`           | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)                                          | STANDARD    |
+| `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                 | private     |
+| `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
+| `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false       |
+| `compression`             | should the file be compressed                                                                                                              | none        |
+| `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled    |
 
 ### Marshaler
 
@@ -56,7 +59,7 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
 - `none` (default): No compression will be applied
 - `gzip`: Files will be compressed with gzip. **This does not support `sumo_ic`marshaler.**
 
-# Example Configuration
+# Example Configurations
 
 Following example configuration defines to store output in 'eu-central' region and bucket named 'databucket'.
 
@@ -64,16 +67,42 @@ Following example configuration defines to store output in 'eu-central' region a
 exporters:
   awss3:
     s3uploader:
-        region: 'eu-central-1'
-        s3_bucket: 'databucket'
-        s3_prefix: 'metric'
-        s3_partition: 'minute'
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_prefix: 'metric'
+
+    # Optional (disabled by default)
+    sending_queue:
+      enabled: true
+      num_consumers: 10
+      queue_size: 100
 ```
 
 Logs and traces will be stored inside 'databucket' in the following path format.
 
 ```console
-metric/year=XXXX/month=XX/day=XX/hour=XX/minute=XX
+metric/year=YYYY/month=MM/day=DD/hour=HH/minute=mm
+```
+
+## Partition Formatting
+
+By setting the `s3_partition_format` option, users can specify the file path for their logs.
+See the [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) reference for more formatting options.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_prefix: 'metric'
+      s3_partition_format: '%Y/%m/%d/%H/%M'
+```
+
+In this case, logs and traces would be stored in the following path format.
+
+```console
+metric/YYYY/MM/DD/HH/mm
 ```
 
 ## AWS Credential Configuration

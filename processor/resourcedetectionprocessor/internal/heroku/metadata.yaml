@@ -32,6 +32,6 @@ resource_attributes:
     enabled: true
     type: string
   service.version:
-    description: Heroku relese version set as service.version.
+    description: Heroku release version set as service.version.
     enabled: true
     type: string

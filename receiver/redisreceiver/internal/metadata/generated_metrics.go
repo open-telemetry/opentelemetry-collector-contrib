@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributePercentile specifies the a value percentile attribute.
+// AttributePercentile specifies the value percentile attribute.
 type AttributePercentile int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributePercentile = map[string]AttributePercentile{
 	"p99.9": AttributePercentileP999,
 }
 
-// AttributeRole specifies the a value role attribute.
+// AttributeRole specifies the value role attribute.
 type AttributeRole int
 
 const (
@@ -68,7 +68,7 @@ var MapAttributeRole = map[string]AttributeRole{
 	"primary": AttributeRolePrimary,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -1942,7 +1942,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                       mbc,
@@ -2071,7 +2070,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricRedisClientsBlocked.emit(ils.Metrics())

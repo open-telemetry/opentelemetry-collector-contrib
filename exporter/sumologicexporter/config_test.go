@@ -9,8 +9,8 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 )
 
 func TestInitExporterInvalidConfiguration(t *testing.T) {
@@ -67,9 +67,8 @@ func TestInitExporterInvalidConfiguration(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
-			err := component.ValidateConfig(tc.cfg)
+			err := xconfmap.Validate(tc.cfg)
 
 			if tc.expectedError != nil {
 				assert.EqualError(t, err, tc.expectedError.Error())
@@ -108,7 +107,6 @@ func TestConfigInvalidTimeout(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			err := tc.cfg.Validate()
 

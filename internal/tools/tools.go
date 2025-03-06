@@ -22,6 +22,7 @@ import (
 	_ "go.opentelemetry.io/build-tools/checkfile"
 	_ "go.opentelemetry.io/build-tools/chloggen"
 	_ "go.opentelemetry.io/build-tools/crosslink"
+	_ "go.opentelemetry.io/build-tools/githubgen"
 	_ "go.opentelemetry.io/build-tools/issuegenerator"
 	_ "go.opentelemetry.io/build-tools/multimod"
 	_ "go.opentelemetry.io/collector/cmd/builder"
@@ -30,4 +31,6 @@ import (
 	_ "golang.org/x/vuln/cmd/govulncheck"
 	_ "gotest.tools/gotestsum"
 	_ "mvdan.cc/gofumpt"
+
+	_ "github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi"
 )

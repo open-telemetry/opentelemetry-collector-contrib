@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -127,7 +127,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 		return err
 	}
 
-	var authServer auth.Server
+	var authServer extensionauth.Server
 	if r.cfg.GRPC.Auth != nil {
 		authServer, err = r.cfg.GRPC.Auth.GetServerAuthenticator(ctx, host.GetExtensions())
 		if err != nil {
@@ -142,7 +142,7 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
 		}
 		if r.settings.TelemetrySettings.MeterProvider != nil {
-			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider, r.settings.TelemetrySettings.MetricsLevel))
+			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider))
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)

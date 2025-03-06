@@ -294,7 +294,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	}
 
 	rm = metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("service.name", "demo 2")
+	// Removed service.name from second metric to test both with/without ServiceName cases
 	rm.Resource().Attributes().PutStr("Resource Attributes 2", "value2")
 	rm.Resource().SetDroppedAttributesCount(20)
 	rm.SetSchemaUrl("Resource SchemaUrl 2")
@@ -518,7 +518,6 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-// nolint:unparam // not need to check this func
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
 	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)

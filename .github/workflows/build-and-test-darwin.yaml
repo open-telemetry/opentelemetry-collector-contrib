@@ -23,13 +23,17 @@ concurrency:
 jobs:
   darwin-build-unittest-binary:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Darwin') || github.event_name == 'push' || github.event_name == 'merge_group') }}
-    runs-on: macos-14
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ macos-14, macos-15 ]
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 120
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "~1.22.5"
+          go-version: "~1.23.6"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -53,6 +57,7 @@ jobs:
       - name: Zip test binaries
         run: zip -r testbinaries.zip  . --include \*builtunitetest.test
       - uses: actions/upload-artifact@v4
+        if: ${{ matrix.os == 'macos-14' }}
         with:
           name: testbinaries
           path: ./testbinaries.zip
@@ -63,14 +68,14 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [macos-12, macos-13]
+        os: [macos-13]
     timeout-minutes: 30
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "~1.22.5"
+          go-version: "~1.23.6"
           cache: false
       - name: Install Tools
         if: steps.go-cache.outputs.cache-hit != 'true'

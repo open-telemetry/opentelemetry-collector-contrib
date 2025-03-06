@@ -45,7 +45,7 @@ func NewAppendable(
 	if !useStartTimeMetric {
 		metricAdjuster = NewInitialPointAdjuster(set.Logger, gcInterval, useCreatedMetric)
 	} else {
-		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex)
+		metricAdjuster = NewStartTimeMetricAdjuster(set.Logger, startTimeMetricRegex, gcInterval)
 	}
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverID: set.ID, Transport: transport, ReceiverCreateSettings: set})

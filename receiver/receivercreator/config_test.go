@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/otelcol"
 	"go.opentelemetry.io/collector/otelcol/otelcoltest"
@@ -90,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"one": "two"},
 						rule:               portRule,
-						signals:            receiverSignals{true, true, true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true},
 					},
 					"nop/1": {
 						receiverConfig: receiverConfig{
@@ -103,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 						Rule:               `type == "port"`,
 						ResourceAttributes: map[string]any{"two": "three"},
 						rule:               portRule,
-						signals:            receiverSignals{true, true, true},
+						signals:            receiverSignals{metrics: true, logs: true, traces: true},
 					},
 				},
 				WatchObservers: []component.ID{
@@ -133,7 +134,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -147,8 +148,6 @@ func TestInvalidResourceAttributeEndpointType(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-resource-attributes.yaml"), factories)
 	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": resource attributes for unsupported endpoint type \"not.a.real.type\"")
 	require.Nil(t, cfg)
@@ -162,8 +161,6 @@ func TestInvalidReceiverResourceAttributeValueType(t *testing.T) {
 
 	factory := NewFactory()
 	factories.Receivers[metadata.Type] = factory
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	cfg, err := otelcoltest.LoadConfigAndValidate(filepath.Join("testdata", "invalid-receiver-resource-attributes.yaml"), factories)
 	require.ErrorContains(t, err, "error reading configuration for \"receiver_creator\": unsupported `resource_attributes` \"one\" value <nil> in examplereceiver/1")
 	require.Nil(t, cfg)
@@ -295,6 +292,43 @@ func (*nopWithoutEndpointFactory) CreateTraces(
 ) (rcvr.Traces, error) {
 	return &nopWithoutEndpointReceiver{
 		Traces:   nextConsumer,
+		Settings: rcs,
+		cfg:      cfg,
+	}, nil
+}
+
+type nopWithFilelogConfig struct {
+	Include         []string `mapstructure:"include"`
+	IncludeFileName bool     `mapstructure:"include_file_name"`
+	IncludeFilePath bool     `mapstructure:"include_file_path"`
+	Operators       []any    `mapstructure:"operators"`
+}
+
+type nopWithFilelogFactory struct {
+	rcvr.Factory
+}
+
+type nopWithFilelogReceiver struct {
+	mockComponent
+	consumer.Logs
+	consumer.Metrics
+	consumer.Traces
+	rcvr.Settings
+	cfg component.Config
+}
+
+func (*nopWithFilelogFactory) CreateDefaultConfig() component.Config {
+	return &nopWithFilelogConfig{}
+}
+
+func (*nopWithFilelogFactory) CreateLogs(
+	_ context.Context,
+	rcs rcvr.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Logs,
+) (rcvr.Logs, error) {
+	return &nopWithEndpointReceiver{
+		Logs:     nextConsumer,
 		Settings: rcs,
 		cfg:      cfg,
 	}, nil

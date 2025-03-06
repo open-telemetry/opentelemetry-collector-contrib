@@ -34,7 +34,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = refreshInterval
 		sdCfg.ResultFile = output
-		cs := extensiontest.NewNopSettings()
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)
 		return ext
@@ -59,7 +59,7 @@ func TestExtensionStartStop(t *testing.T) {
 		sdCfg := cfg.(*Config)
 		sdCfg.RefreshInterval = 100 * time.Millisecond
 		sdCfg.ResultFile = "testdata/ut_ext_critical_error.actual.yaml"
-		cs := extensiontest.NewNopSettings()
+		cs := extensiontest.NewNopSettings(extensiontest.NopType)
 		statusEventChan := make(chan *componentstatus.Event)
 		ext, err := createExtensionWithFetcher(cs, sdCfg, f)
 		require.NoError(t, err)

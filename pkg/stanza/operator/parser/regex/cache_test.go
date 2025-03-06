@@ -191,18 +191,18 @@ func TestNewStartedAtomicLimiter(t *testing.T) {
 
 // Start a limiter with a max of 3 and ensure throttling begins
 func TestLimiter(t *testing.T) {
-	max := uint64(3)
+	const maxVal = uint64(3)
 
-	l := newStartedAtomicLimiter(max, 120)
+	l := newStartedAtomicLimiter(maxVal, 120)
 	require.NotNil(t, l)
-	require.Equal(t, max, l.max)
+	require.Equal(t, maxVal, l.max)
 	defer l.stop()
 
 	require.False(t, l.throttled(), "new limiter should not be throttling")
 	require.Equal(t, uint64(0), l.currentCount())
 
 	var i uint64
-	for i = 1; i < max; i++ {
+	for i = 1; i < maxVal; i++ {
 		l.increment()
 		require.Equal(t, i, l.currentCount())
 		require.False(t, l.throttled())
@@ -213,15 +213,15 @@ func TestLimiter(t *testing.T) {
 }
 
 func TestThrottledLimiter(t *testing.T) {
-	max := uint64(3)
+	const maxVal = uint64(3)
 
 	// Limiter with a count higher than the max, which will force
 	// it to be throttled by default. Also note that the init method
 	// has not been called yet, so the reset go routine is not running
 	count := &atomic.Uint64{}
-	count.Add(max + 1)
+	count.Add(maxVal + 1)
 	l := atomicLimiter{
-		max:      max,
+		max:      maxVal,
 		count:    count,
 		interval: 1,
 		done:     make(chan struct{}),

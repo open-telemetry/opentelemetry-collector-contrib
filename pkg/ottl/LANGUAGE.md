@@ -118,22 +118,24 @@ Values are passed as function parameters or are used in a Boolean Expression. Va
 
 ### Paths
 
-A Path Value is a reference to a telemetry field.  Paths are made up of lowercase identifiers, dots (`.`), and square brackets combined with a string key (`["key"]`) or int key (`[0]`).  **The interpretation of a Path is NOT implemented by OTTL.**  Instead, the user must provide a `PathExpressionParser` that OTTL can use to interpret paths.  As a result, how the Path parts are used is up to the user.  However, it is recommended that the parts be used like so:
+A Path Value is a reference to a telemetry field. Paths are composed of lowercase identifiers, dots (`.`), and square brackets containing either a string key (`["key"]`), an integer key (`[0]`), or an expression that might be a [Converter](#converters) or another Path.
+**The interpretation of a Path is NOT implemented by OTTL**. Instead, users must provide a `PathExpressionParser` that OTTL can use to interpret paths.
+As a result, the usage of Path segments is determined by the user. However, it is recommended to use them as follows:
 
 - Identifiers are used to map to a telemetry field.
-- Dots (`.`) are used to separate nested fields.
+- Dots (`.`) are used to separate nested fields, please note that the first path segment is interpreted by OTTL as the context identifier.
 - Square brackets and keys (`["key"]`) are used to access values within maps.
 
 When accessing a map's value, if the given key does not exist, `nil` will be returned.
 This can be used to check for the presence of a key within a map within a [Boolean Expression](#boolean-expressions).
 
 Example Paths
-- `name`
-- `value_double`
+- `metric.name`
+- `span.value_double`
 - `resource.name`
 - `resource.attributes["key"]`
-- `attributes["nested"]["values"]`
-- `cache["slice"][1]`
+- `log.attributes["nested"]["values"]`
+- `datapoint.cache["slice"][1]`
 
 #### Contexts
 

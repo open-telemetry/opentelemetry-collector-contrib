@@ -1210,7 +1210,7 @@ func TestTranslateDataPoints(t *testing.T) {
 						},
 						{
 							Key:   "dim2",
-							Value: "val2-aleternate",
+							Value: "val2-alternate",
 						},
 					},
 				},
@@ -1280,7 +1280,7 @@ func TestTranslateDataPoints(t *testing.T) {
 					Dimensions: []*sfxpb.Dimension{
 						{
 							Key:   "dim2",
-							Value: "val2-aleternate",
+							Value: "val2-alternate",
 						},
 					},
 				},
