@@ -437,6 +437,12 @@ func (kp *kubernetesprocessor) addAdditionalResourceUuid(ctx context.Context, re
 		additionalResourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dpName, "deployment")
 		if additionalResourceUuid != "" {
 			resource.Attributes().PutStr("k8s.deployment.resourceUUID", additionalResourceUuid)
+			if rsName, found := resource.Attributes().Get("k8s.replicaset.name"); found {
+				additionalResourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, rsName, "replicaset")
+				if additionalResourceUuid != "" {
+					resource.Attributes().PutStr("k8s.replicaset.resourceUUID", additionalResourceUuid)
+				}
+			}
 			return
 		}
 	}
