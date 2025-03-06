@@ -41,13 +41,11 @@ func TestFactory(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					LogsConfig: LogsConfig{
-						TopQueryCollection: TopQueryCollection{
-							EnableTopQueryCollection: false,
-							LookbackTime:             uint(2 * 10),
-							MaxQuerySampleCount:      1000,
-							TopQueryCount:            200,
-						},
+					TopQueryCollection: TopQueryCollection{
+						EnableTopQueryCollection: false,
+						LookbackTime:             uint(2 * 10),
+						MaxQuerySampleCount:      1000,
+						TopQueryCount:            200,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}

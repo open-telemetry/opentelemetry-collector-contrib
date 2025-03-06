@@ -87,12 +87,11 @@ Top query collection enabled:
         password: securepassword
         server: 0.0.0.0
         port: 1433
-        logs:
-          top_query_collection:
-            enabled: true
-            lookback_time: 60
-            max_query_sample_count: 1000
-            top_query_count: 200
+        top_query_collection:
+          enabled: true
+          lookback_time: 60
+          max_query_sample_count: 1000
+          top_query_count: 200
           
 ```
 ## Metrics
