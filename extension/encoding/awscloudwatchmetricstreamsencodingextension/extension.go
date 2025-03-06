@@ -14,7 +14,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream"
 )
 
 var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -32,7 +31,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		// format.
 		return nil, fmt.Errorf("unimplemented format %q", cfg.Format)
 	}
-	unmarshaller, err := cloudwatchmetricstream.NewUnmarshaler(
+	unmarshaller, err := newUnmarshaler(
 		cfg.Format,
 		metadata.Type.String(),
 		settings.BuildInfo,

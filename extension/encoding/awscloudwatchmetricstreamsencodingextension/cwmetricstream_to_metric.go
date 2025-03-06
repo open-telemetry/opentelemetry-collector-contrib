@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cloudwatchmetricstream // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/cloudwatchmetricstream"
+package awscloudwatchmetricstreamsencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension"
 
 import (
 	"bufio"
@@ -20,17 +20,10 @@ import (
 )
 
 const (
-	formatJSON            = "json"
-	formatOpenTelemetry10 = "opentelemetry1.0"
-
-	TypeStr = "cwmetrics"
-
 	attributeAWSCloudWatchMetricStreamName = "aws.cloudwatch.metric_stream_name"
 	dimensionInstanceID                    = "InstanceId"
 	namespaceDelimiter                     = "/"
 )
-
-var supportedFormats = []string{formatOpenTelemetry10, formatJSON}
 
 // The cloudwatchMetric is the format for the CloudWatch metric stream records.
 //
@@ -77,35 +70,32 @@ type cloudwatchMetricValue struct {
 	Count float64 `json:"count"`
 }
 
-// CWMetricStreamUnmarshaler is the unmarshaller
+// cwMetricStreamUnmarshaler is the unmarshaller
 // for a cloudwatch metric stream
-type CWMetricStreamUnmarshaler struct {
+type cwMetricStreamUnmarshaler struct {
 	format    string
 	scope     string
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
 }
 
-var _ pmetric.Unmarshaler = (*CWMetricStreamUnmarshaler)(nil)
+var _ pmetric.Unmarshaler = (*cwMetricStreamUnmarshaler)(nil)
 
-// NewUnmarshaler creates a new CWMetricStreamUnmarshaler
-func NewUnmarshaler(
+// newUnmarshaler creates a new cwMetricStreamUnmarshaler
+func newUnmarshaler(
 	format string,
 	scope string,
 	buildInfo component.BuildInfo,
 	logger *zap.Logger,
-) (*CWMetricStreamUnmarshaler, error) {
+) (*cwMetricStreamUnmarshaler, error) {
 	switch format {
 	case "":
 		return nil, fmt.Errorf("format unspecified, expected one of %q", supportedFormats)
-	case formatJSON:
-	case formatOpenTelemetry10:
-		// TODO
-		return nil, fmt.Errorf("format %s still needs to be implemented", formatOpenTelemetry10)
+	case formatJSON, formatOpenTelemetry10:
 	default:
 		return nil, fmt.Errorf("unsupported format %q, expected one of %q", format, supportedFormats)
 	}
-	return &CWMetricStreamUnmarshaler{
+	return &cwMetricStreamUnmarshaler{
 		format:    format,
 		scope:     scope,
 		buildInfo: buildInfo,
@@ -114,16 +104,20 @@ func NewUnmarshaler(
 }
 
 // UnmarshalMetrics according to the format
-func (c *CWMetricStreamUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
+func (c *cwMetricStreamUnmarshaler) UnmarshalMetrics(buf []byte) (pmetric.Metrics, error) {
 	switch c.format {
 	case formatJSON:
 		return c.unmarshalJSONMetrics(buf)
 	case formatOpenTelemetry10:
-		// TODO
-		return pmetric.Metrics{}, fmt.Errorf("format %s still needs to be implemented", formatOpenTelemetry10)
+		return c.unmarshalOTLPMetrics(buf)
 	default:
 		return pmetric.Metrics{}, fmt.Errorf("unsupported format %q, expected one of %q", c.format, supportedFormats)
 	}
+}
+
+func (c *cwMetricStreamUnmarshaler) unmarshalOTLPMetrics(record []byte) (pmetric.Metrics, error) {
+	// TODO
+	return pmetric.Metrics{}, errors.New(`UnmarshalMetrics unimplemented for format "opentelemetry1.0"`)
 }
 
 // resourceKey stores the metric attributes
@@ -144,7 +138,7 @@ type metricKey struct {
 	unit string
 }
 
-func (c *CWMetricStreamUnmarshaler) unmarshalJSONMetrics(record []byte) (pmetric.Metrics, error) {
+func (c *cwMetricStreamUnmarshaler) unmarshalJSONMetrics(record []byte) (pmetric.Metrics, error) {
 	byResource := make(map[resourceKey]map[metricKey]pmetric.Metric)
 
 	// Multiple metrics in each record separated by newline character
@@ -184,7 +178,7 @@ func (c *CWMetricStreamUnmarshaler) unmarshalJSONMetrics(record []byte) (pmetric
 }
 
 // isMetricValid validates that the cloudwatch metric has been unmarshalled correctly
-func (c *CWMetricStreamUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool, error) {
+func (c *cwMetricStreamUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool, error) {
 	if metric.MetricName == "" {
 		return false, errors.New("cloudwatch metric is missing metric name field")
 	}
@@ -203,7 +197,7 @@ func (c *CWMetricStreamUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool
 // addMetricToResource adds a new cloudwatchMetric to the
 // resource it belongs to according to resourceKey. It then
 // sets the data point for the cloudwatchMetric.
-func (c *CWMetricStreamUnmarshaler) addMetricToResource(
+func (c *cwMetricStreamUnmarshaler) addMetricToResource(
 	byResource map[resourceKey]map[metricKey]pmetric.Metric,
 	cwMetric cloudwatchMetric,
 ) {
@@ -247,7 +241,7 @@ func (c *CWMetricStreamUnmarshaler) addMetricToResource(
 
 // createMetrics creates pmetric.Metrics based on
 // on the extracted metrics of each resource
-func (c *CWMetricStreamUnmarshaler) createMetrics(
+func (c *cwMetricStreamUnmarshaler) createMetrics(
 	byResource map[resourceKey]map[metricKey]pmetric.Metric,
 ) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package cloudwatchmetricstream
+package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"bytes"
@@ -43,7 +43,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		},
 	}
 
-	unmarshalerCW, err := NewUnmarshaler(formatJSON, "test", component.BuildInfo{}, zap.NewNop())
+	unmarshalerCW, err := newUnmarshaler(formatJSON, "test", component.BuildInfo{}, zap.NewNop())
 	require.NoError(t, err)
 
 	unmarshallerJSONMetric := pmetric.JSONUnmarshaler{}
