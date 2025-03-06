@@ -22,7 +22,7 @@ The extension uses k8s.io/client-go/tools/leaderelection to perform leader elect
 ```yaml
 receivers:
   my_awesome_receiver:
-    leader_elector: k8s_leader_elector
+    k8s_leader_elector: k8s_leader_elector
 extensions:
   k8s_leader_elector:
     auth_type: kubeConfig
