@@ -204,14 +204,15 @@ func (p *Parser[K]) ParseCondition(condition string) (*Condition[K], error) {
 	}, nil
 }
 
-func (p *Parser[K]) prependContextToPaths(context string, ottl string, pathsForOttlFunc func(ottl string) ([]path, error)) (string, error) {
+func (p *Parser[K]) prependContextToPaths(context string, ottl string, ottlPathsGetter func(ottl string) ([]path, error)) (string, error) {
 	if _, ok := p.pathContextNames[context]; !ok {
-		return ottl, fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
+		return "", fmt.Errorf(`unknown context "%s" for parser %T, valid options are: %s`, context, p, p.buildPathContextNamesText(""))
 	}
-	paths, err := pathsForOttlFunc(ottl)
+	paths, err := ottlPathsGetter(ottl)
 	if err != nil {
 		return "", err
-	} else if len(paths) == 0 {
+	}
+	if len(paths) == 0 {
 		return ottl, nil
 	}
 

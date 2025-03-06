@@ -22,7 +22,7 @@ type StatementsGetter interface {
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewStatementsGetter(statements []string) StatementsGetter {
-	return defaultGetter(statements)
+	return defaultStatementsConditionsGetter(statements)
 }
 
 // ConditionsGetter represents a set of conditions to be parsed.
@@ -37,16 +37,16 @@ type ConditionsGetter interface {
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewConditionsGetter(statements []string) ConditionsGetter {
-	return defaultGetter(statements)
+	return defaultStatementsConditionsGetter(statements)
 }
 
-type defaultGetter []string
+type defaultStatementsConditionsGetter []string
 
-func (d defaultGetter) GetStatements() []string {
+func (d defaultStatementsConditionsGetter) GetStatements() []string {
 	return d
 }
 
-func (d defaultGetter) GetConditions() []string {
+func (d defaultStatementsConditionsGetter) GetConditions() []string {
 	return d
 }
 
@@ -56,12 +56,11 @@ func (d defaultGetter) GetConditions() []string {
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 type ParserCollection[R any] struct {
-	contextParsers            map[string]*ParserCollectionConverter[R]
+	contextParsers            map[string]*ParserCollectionContextParser[R]
 	contextInferrer           contextInferrer
 	contextInferrerCandidates map[string]*priorityContextInferrerCandidate
 	candidatesLowerContexts   map[string][]string
-	modifiedStatementLogging  bool
-	modifiedConditionLogging  bool
+	modifiedLogging           bool
 	Settings                  component.TelemetrySettings
 	ErrorMode                 ErrorMode
 }
@@ -81,7 +80,7 @@ func NewParserCollection[R any](
 	contextInferrerCandidates := map[string]*priorityContextInferrerCandidate{}
 	pc := &ParserCollection[R]{
 		Settings:                  settings,
-		contextParsers:            map[string]*ParserCollectionConverter[R]{},
+		contextParsers:            map[string]*ParserCollectionContextParser[R]{},
 		contextInferrer:           newPriorityContextInferrer(settings, contextInferrerCandidates),
 		contextInferrerCandidates: contextInferrerCandidates,
 		candidatesLowerContexts:   map[string][]string{},
@@ -97,25 +96,25 @@ func NewParserCollection[R any](
 	return pc, nil
 }
 
-// ParsedStatementConverter is a function that converts the parsed ottl.Statement[K] into
+// ParsedStatementsConverter is a function that converts the parsed ottl.Statement[K] into
 // a common representation to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
 // so it can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
 // functions.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-type ParsedStatementConverter[K any, R any] func(collection *ParserCollection[R], statements StatementsGetter, parsedStatements []*Statement[K]) (R, error)
+type ParsedStatementsConverter[K any, R any] func(collection *ParserCollection[R], statements StatementsGetter, parsedStatements []*Statement[K]) (R, error)
 
-// ParsedConditionConverter is a function that converts the parsed ottl.Condition[K] into
+// ParsedConditionsConverter is a function that converts the parsed ottl.Condition[K] into
 // a common representation to all parser collection contexts passed through WithParserCollectionContext.
 // Given each parser has its own transform context type, they must agree on a common type [R]
 // so it can be returned by the ParserCollection.ParseStatements and ParserCollection.ParseStatementsWithContext
 // functions.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-type ParsedConditionConverter[K any, R any] func(collection *ParserCollection[R], conditions ConditionsGetter, parsedConditions []*Condition[K]) (R, error)
+type ParsedConditionsConverter[K any, R any] func(collection *ParserCollection[R], conditions ConditionsGetter, parsedConditions []*Condition[K]) (R, error)
 
-func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
+func newNopParsedStatementsConverter[K any]() ParsedStatementsConverter[K, any] {
 	return func(
 		_ *ParserCollection[any],
 		_ StatementsGetter,
@@ -125,7 +124,7 @@ func newNopParsedStatementConverter[K any]() ParsedStatementConverter[K, any] {
 	}
 }
 
-func newNopParsedConditionConverter[K any]() ParsedConditionConverter[K, any] {
+func newNopParsedConditionsConverter[K any]() ParsedConditionsConverter[K, any] {
 	return func(
 		_ *ParserCollection[any],
 		_ ConditionsGetter,
@@ -139,7 +138,7 @@ type (
 	// ParserCollectionContextOption is a configurable ParserCollectionContext option.
 	//
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
-	ParserCollectionContextOption[K, R any] func(*ParserCollectionConverter[R], *Parser[K])
+	ParserCollectionContextOption[K, R any] func(*ParserCollectionContextParser[R], *Parser[K])
 	// ParseConditionsWithContext parses the given conditions into type [R] using the specified context's OTTL parser.
 	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
 	// If the condition's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
@@ -154,56 +153,98 @@ type (
 	//
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
 	ParseStatementsWithContext[R any] func(collection *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error)
-	// ParserCollectionConverter is a struct that holds the converters for parsing statements and conditions
+	// ParserCollectionContextParser is a struct that holds the converters for parsing statements and conditions
 	// into a common representation of type [R].
 	//
 	// Experimental: *NOTE* this API is subject to change or removal in the future.
-	ParserCollectionConverter[R any] struct {
-		statementsConverter ParseStatementsWithContext[R]
-		conditionsConverter ParseConditionsWithContext[R]
+	ParserCollectionContextParser[R any] struct {
+		parseStatements ParseStatementsWithContext[R]
+		parseConditions ParseConditionsWithContext[R]
 	}
 )
+
+// createConditionsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+func createConditionsParserWithConverter[K any, R any](converter ParsedConditionsConverter[K, R], parser *Parser[K]) ParseConditionsWithContext[R] {
+	return func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
+		var err error
+		var parsingConditions []string
+		if prependPathsContext {
+			originalConditions := conditions.GetConditions()
+			parsingConditions = make([]string, 0, len(originalConditions))
+			for _, cond := range originalConditions {
+				prependedCondition, prependErr := parser.prependContextToConditionPaths(context, cond)
+				if prependErr != nil {
+					err = prependErr
+					break
+				}
+				parsingConditions = append(parsingConditions, prependedCondition)
+			}
+			if err != nil {
+				return *new(R), err
+			}
+			if pc.modifiedLogging {
+				pc.logModifications(originalConditions, parsingConditions)
+			}
+		} else {
+			parsingConditions = conditions.GetConditions()
+		}
+		parsedConditions, err := parser.ParseConditions(parsingConditions)
+		if err != nil {
+			return *new(R), err
+		}
+		return converter(
+			pc,
+			conditions,
+			parsedConditions,
+		)
+	}
+}
+
+// createStatementsParserWithConverter is a method to create the necessary parser wrapper and shadowing the K type.
+func createStatementsParserWithConverter[K any, R any](converter ParsedStatementsConverter[K, R], parser *Parser[K]) ParseStatementsWithContext[R] {
+	return func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
+		var err error
+		var parsingStatements []string
+		if prependPathsContext {
+			originalStatements := statements.GetStatements()
+			parsingStatements = make([]string, 0, len(originalStatements))
+			for _, cond := range originalStatements {
+				prependedStatement, prependErr := parser.prependContextToStatementPaths(context, cond)
+				if prependErr != nil {
+					err = prependErr
+					break
+				}
+				parsingStatements = append(parsingStatements, prependedStatement)
+			}
+			if err != nil {
+				return *new(R), err
+			}
+			if pc.modifiedLogging {
+				pc.logModifications(originalStatements, parsingStatements)
+			}
+		} else {
+			parsingStatements = statements.GetStatements()
+		}
+		parsedStatements, err := parser.ParseStatements(parsingStatements)
+		if err != nil {
+			return *new(R), err
+		}
+		return converter(
+			pc,
+			statements,
+			parsedStatements,
+		)
+	}
+}
 
 // WithConditionConverter sets the condition converter for the given context.
 // The provided converter function will be used to convert parsed OTTL conditions into a common representation of type R.
 // The context's OTTL parser will parse the conditions, and the converter function will transform the parsed conditions into the desired representation.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, R]) ParserCollectionContextOption[K, R] {
-	return func(pcp *ParserCollectionConverter[R], parser *Parser[K]) {
-		pcp.conditionsConverter = func(pc *ParserCollection[R], context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
-			var err error
-			var parsingConditions []string
-			if prependPathsContext {
-				originalConditions := conditions.GetConditions()
-				parsingConditions = make([]string, 0, len(originalConditions))
-				for _, cond := range originalConditions {
-					prependedCondition, prependErr := parser.prependContextToConditionPaths(context, cond)
-					if prependErr != nil {
-						err = prependErr
-						break
-					}
-					parsingConditions = append(parsingConditions, prependedCondition)
-				}
-				if err != nil {
-					return *new(R), err
-				}
-				if pc.modifiedConditionLogging {
-					pc.logModifications(originalConditions, parsingConditions)
-				}
-			} else {
-				parsingConditions = conditions.GetConditions()
-			}
-			parsedConditions, err := parser.ParseConditions(parsingConditions)
-			if err != nil {
-				return *new(R), err
-			}
-			return converter(
-				pc,
-				conditions,
-				parsedConditions,
-			)
-		}
+func WithConditionConverter[K any, R any](converter ParsedConditionsConverter[K, R]) ParserCollectionContextOption[K, R] {
+	return func(pcp *ParserCollectionContextParser[R], parser *Parser[K]) {
+		pcp.parseConditions = createConditionsParserWithConverter(converter, parser)
 	}
 }
 
@@ -212,41 +253,9 @@ func WithConditionConverter[K any, R any](converter ParsedConditionConverter[K, 
 // The context's OTTL parser will parse the statements, and the converter function will transform the parsed statements into the desired representation.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func WithStatementConverter[K any, R any](converter ParsedStatementConverter[K, R]) ParserCollectionContextOption[K, R] {
-	return func(pcp *ParserCollectionConverter[R], parser *Parser[K]) {
-		pcp.statementsConverter = func(pc *ParserCollection[R], context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
-			var err error
-			var parsingStatements []string
-			if prependPathsContext {
-				originalStatements := statements.GetStatements()
-				parsingStatements = make([]string, 0, len(originalStatements))
-				for _, cond := range originalStatements {
-					prependedStatement, prependErr := parser.prependContextToStatementPaths(context, cond)
-					if prependErr != nil {
-						err = prependErr
-						break
-					}
-					parsingStatements = append(parsingStatements, prependedStatement)
-				}
-				if err != nil {
-					return *new(R), err
-				}
-				if pc.modifiedStatementLogging {
-					pc.logModifications(originalStatements, parsingStatements)
-				}
-			} else {
-				parsingStatements = statements.GetStatements()
-			}
-			parsedStatements, err := parser.ParseStatements(parsingStatements)
-			if err != nil {
-				return *new(R), err
-			}
-			return converter(
-				pc,
-				statements,
-				parsedStatements,
-			)
-		}
+func WithStatementConverter[K any, R any](converter ParsedStatementsConverter[K, R]) ParserCollectionContextOption[K, R] {
+	return func(pcp *ParserCollectionContextParser[R], parser *Parser[K]) {
+		pcp.parseStatements = createStatementsParserWithConverter(converter, parser)
 	}
 }
 
@@ -264,7 +273,7 @@ func WithParserCollectionContext[K any, R any](
 		if _, ok := parser.pathContextNames[context]; !ok {
 			return fmt.Errorf(`context "%s" must be a valid "%T" path context name`, context, parser)
 		}
-		pcp := &ParserCollectionConverter[R]{}
+		pcp := &ParserCollectionContextParser[R]{}
 		for _, o := range opts {
 			o(pcp, parser)
 		}
@@ -296,7 +305,7 @@ func (pc *ParserCollection[R]) getLowerContexts(context string) []string {
 }
 
 // WithParserCollectionErrorMode has no effect on the ParserCollection, but might be used
-// by the ParsedStatementConverter functions to handle/create StatementSequence.
+// by the ParsedStatementsConverter functions to handle/create StatementSequence.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionOption[R] {
@@ -306,20 +315,20 @@ func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionO
 	}
 }
 
-// EnableParserCollectionModifiedStatementLogging controls the statements modification logs.
-// When enabled, it logs any statements modifications performed by the parsing operations,
+// EnableParserCollectionModifiedLogging controls the modification logs.
+// When enabled, it logs any modifications performed by the parsing operations,
 // instructing users to rewrite the statements accordingly.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func EnableParserCollectionModifiedStatementLogging[R any](enabled bool) ParserCollectionOption[R] {
+func EnableParserCollectionModifiedLogging[R any](enabled bool) ParserCollectionOption[R] {
 	return func(tp *ParserCollection[R]) error {
-		tp.modifiedStatementLogging = enabled
+		tp.modifiedLogging = enabled
 		return nil
 	}
 }
 
 // ParseStatements parses the given statements into [R] using the configured context's ottl.Parser
-// and subsequently calling the ParsedStatementConverter function.
+// and subsequently calling the ParsedStatementsConverter function.
 // The statement's context is automatically inferred from the [Path.Context] values, choosing the
 // highest priority context found.
 // If no contexts are present in the statements, or if the inferred value is not supported by
@@ -347,7 +356,7 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 }
 
 // ParseStatementsWithContext parses the given statements into [R] using the configured
-// context's ottl.Parser and subsequently calling the ParsedStatementConverter function.
+// context's ottl.Parser and subsequently calling the ParsedStatementsConverter function.
 // Unlike ParseStatements, it uses the provided context and does not infer it
 // automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
@@ -360,11 +369,12 @@ func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, 
 func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statements StatementsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
-		return *new(R), fmt.Errorf(`unknown context "%s" for stataments: %v`, context, statements.GetStatements())
-	} else if contextParser.statementsConverter == nil {
-		return *new(R), fmt.Errorf("no statements converter has been set")
+		return *new(R), fmt.Errorf(`unknown context "%s" for statements: %v`, context, statements.GetStatements())
 	}
-	return contextParser.statementsConverter(
+	if contextParser.parseStatements == nil {
+		return *new(R), fmt.Errorf(`context "%s" has no configured converter for statements: %v`, context, statements.GetStatements())
+	}
+	return contextParser.parseStatements(
 		pc,
 		context,
 		statements,
@@ -372,20 +382,8 @@ func (pc *ParserCollection[R]) ParseStatementsWithContext(context string, statem
 	)
 }
 
-// EnableParserCollectionModifiedConditionLogging controls the conditions modification logs.
-// When enabled, it logs any conditions modifications performed by the parsing operations,
-// instructing users to rewrite the conditions accordingly.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-func EnableParserCollectionModifiedConditionLogging[R any](enabled bool) ParserCollectionOption[R] {
-	return func(tp *ParserCollection[R]) error {
-		tp.modifiedConditionLogging = enabled
-		return nil
-	}
-}
-
 // ParseConditions parses the given conditions into [R] using the configured context's ottl.Parser
-// and subsequently calling the ParsedConditionConverter function.
+// and subsequently calling the ParsedConditionsConverter function.
 // The condition's context is automatically inferred from the [Path.Context] values, choosing the
 // highest priority context found.
 // If no contexts are present in the conditions, or if the inferred value is not supported by
@@ -413,7 +411,7 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 }
 
 // ParseConditionsWithContext parses the given conditions into [R] using the configured
-// context's ottl.Parser and subsequently calling the ParsedConditionConverter function.
+// context's ottl.Parser and subsequently calling the ParsedConditionsConverter function.
 // Unlike ParseConditions, it uses the provided context and does not infer it
 // automatically. The context value must be supported by the [ParserCollection],
 // otherwise an error is returned.
@@ -426,12 +424,13 @@ func (pc *ParserCollection[R]) ParseConditions(conditions ConditionsGetter) (R, 
 func (pc *ParserCollection[R]) ParseConditionsWithContext(context string, conditions ConditionsGetter, prependPathsContext bool) (R, error) {
 	contextParser, ok := pc.contextParsers[context]
 	if !ok {
-		return *new(R), fmt.Errorf(`unknown context "%s" for stataments: %v`, context, conditions.GetConditions())
-	} else if contextParser.conditionsConverter == nil {
-		return *new(R), fmt.Errorf("no conditions converter has been set")
+		return *new(R), fmt.Errorf(`unknown context "%s" for conditions: %v`, context, conditions.GetConditions())
+	}
+	if contextParser.parseConditions == nil {
+		return *new(R), fmt.Errorf(`context "%s" has no configured converter for conditions: %v`, context, conditions.GetConditions())
 	}
 
-	return contextParser.conditionsConverter(
+	return contextParser.parseConditions(
 		pc,
 		context,
 		conditions,
@@ -452,7 +451,7 @@ func (pc *ParserCollection[R]) logModifications(originalStatements, modifiedStat
 		}
 	}
 	if len(fields) > 0 {
-		pc.Settings.Logger.Info("one or more statements were modified to include their paths context, please rewrite them accordingly", zap.Dict("statements", fields...))
+		pc.Settings.Logger.Info("one or more paths were modified to include their context prefix, please rewrite them accordingly", zap.Dict("values", fields...))
 	}
 }
 
