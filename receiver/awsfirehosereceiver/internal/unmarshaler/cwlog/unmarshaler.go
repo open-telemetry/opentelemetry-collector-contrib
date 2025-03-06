@@ -53,10 +53,6 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	var err error
 	r, ok := u.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		u.logger.Error(fmt.Sprintf("Expected *gzip.Reader, got %T", r))
-		// Fall through and create a new *gzip.Reader (r == nil)
-	}
-	if r == nil {
 		r, err = gzip.NewReader(bytes.NewReader(compressedRecord))
 	} else {
 		err = r.Reset(bytes.NewReader(compressedRecord))

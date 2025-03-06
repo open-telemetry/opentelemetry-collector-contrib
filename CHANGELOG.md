@@ -174,7 +174,8 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
   There are a number of breaking changes in Prometheus 3.0. Learn more about those changes and migration guide on https://prometheus.io/docs/prometheus/latest/migration/.
   As a result of [adding support for UTF-8 names](https://prometheus.io/docs/prometheus/latest/migration/#utf-8-names),
   the metrics and labels containing UTF-8 characters are no longer escaped. Consequently, the dots (.) in internal
-  collector metrics and resource attributes scraped by Prometheus are no longer replaced with underscores (_).
+  collector metrics and resource attributes scraped by Prometheus are no longer replaced with underscores (_) unless you follow the migration guide
+  and set `metric_name_validation_scheme` to `legacy` in the Prometheus receiver config.
     - The `service_name`, `service_instance_id`, and `service_version` resource attributes are now scraped as 
       `service.name`, `service.instance.id`, and `service.version`, respectively.
     - The following metrics containing dots reported by several components are no longer escaped:
@@ -194,6 +195,32 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
         - `deltatocumulative_gaps_length` -> `deltatocumulative.gaps.length`
       - `googlecloudpubsub` receiver:
         - `receiver_googlecloudpubsub_stream_restarts` -> `receiver.googlecloudpubsub.stream_restarts`
+      - `datadog` exporter and `datadog` connector:
+        - `otelcol_datadog_trace_agent_stats_writer_bytes` -> `datadog.trace_agent.stats_writer.bytes`
+        - `otelcol_datadog_trace_agent_stats_writer_connection_fill` -> `datadog.trace_agent.stats_writer.connection_fill`
+        - `otelcol_datadog_trace_agent_stats_writer_dropped` -> `datadog.trace_agent.stats_writer.dropped`
+        - `otelcol_datadog_trace_agent_stats_writer_dropped_bytes` -> `datadog.trace_agent.stats_writer.dropped_bytes`
+        - `otelcol_datadog_trace_agent_stats_writer_encode_ms` -> `datadog.trace_agent.stats_writer.encode_ms`
+        - `otelcol_datadog_trace_agent_stats_writer_errors` -> `datadog.trace_agent.stats_writer.errors`
+        - `otelcol_datadog_trace_agent_stats_writer_queue_fill` -> `datadog.trace_agent.stats_writer.queue_fill`
+        - `otelcol_datadog_trace_agent_stats_writer_retries` -> `datadog.trace_agent.stats_writer.retries`
+        - `otelcol_datadog_trace_agent_stats_writer_splits` -> `datadog.trace_agent.stats_writer.splits`
+        - `otelcol_datadog_trace_agent_stats_writer_stats_buckets` -> `datadog.trace_agent.stats_writer.stats_buckets`
+        - `otelcol_datadog_trace_agent_trace_writer_bytes` -> `datadog.trace_agent.trace_writer.bytes`
+        - `otelcol_datadog_trace_agent_trace_writer_bytes_uncompressed` -> `datadog.trace_agent.trace_writer.bytes_uncompressed`
+        - `otelcol_datadog_trace_agent_trace_writer_compress_ms` -> `datadog.trace_agent.trace_writer.compress_ms`
+        - `otelcol_datadog_trace_agent_trace_writer_connection_fill` -> `datadog.trace_agent.trace_writer.connection_fill`
+        - `otelcol_datadog_trace_agent_trace_writer_dropped` -> `datadog.trace_agent.trace_writer.dropped`
+        - `otelcol_datadog_trace_agent_trace_writer_dropped_bytes` -> `datadog.trace_agent.trace_writer.dropped_bytes`
+        - `otelcol_datadog_trace_agent_trace_writer_encode_ms` -> `datadog.trace_agent.trace_writer.encode_ms`
+        - `otelcol_datadog_trace_agent_trace_writer_errors` -> `datadog.trace_agent.trace_writer.errors`
+        - `otelcol_datadog_trace_agent_trace_writer_events` -> `datadog.trace_agent.trace_writer.events`
+        - `otelcol_datadog_trace_agent_trace_writer_flush_duration` -> `datadog.trace_agent.trace_writer.flush_duration`
+        - `otelcol_datadog_trace_agent_trace_writer_payloads` -> `datadog.trace_agent.trace_writer.payloads`
+        - `otelcol_datadog_trace_agent_trace_writer_queue_fill` -> `datadog.trace_agent.trace_writer.queue_fill`
+        - `otelcol_datadog_trace_agent_trace_writer_retries` -> `datadog.trace_agent.trace_writer.retries`
+        - `otelcol_datadog_trace_agent_trace_writer_spans` -> `datadog.trace_agent.trace_writer.spans`
+        - `otelcol_datadog_trace_agent_trace_writer_traces` -> `datadog.trace_agent.trace_writer.traces`
 
 - `all`: Added support for go1.24, bumped minimum version to 1.23 (#37875)
 - `elasticsearchexporter`: Use go-elasticsearch/v8, require minimum version of ES 7.17.x or 8.x (#32454)
