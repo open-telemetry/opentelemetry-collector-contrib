@@ -81,8 +81,7 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 		if err != nil {
 			var timeErr *time.ParseError
 			if errors.As(err, &timeErr) {
-				toCTimeError(timeErr, format)
-				return nil, timeErr
+				return nil, toCTimeError(*timeErr, format)
 			}
 			return nil, err
 		}
@@ -90,13 +89,23 @@ func Time[K any](inputTime ottl.StringGetter[K], format string, location ottl.Op
 	}, nil
 }
 
-func toCTimeError(parseError *time.ParseError, format string) {
+type ctimeError struct {
+	timeErr time.ParseError
+}
+
+func (e ctimeError) Error() string {
+	return e.timeErr.Error()
+}
+
+func toCTimeError(parseError time.ParseError, format string) error {
+	res := &ctimeError{timeErr: parseError}
 	// set the layout to the originally provided ctime format
-	parseError.Layout = format
+	res.timeErr.Layout = format
 	layoutElem, err := getCtimeSymbol(parseError.LayoutElem, format)
 	if err == nil {
-		parseError.LayoutElem = layoutElem
+		res.timeErr.LayoutElem = layoutElem
 	}
+	return res
 }
 
 var nativeToCtimeSubstitutes = map[string][]string{
@@ -144,7 +153,7 @@ var nativeToCtimeSubstitutes = map[string][]string{
 func getCtimeSymbol(directive, format string) (string, error) {
 	if subst, ok := nativeToCtimeSubstitutes[directive]; ok {
 		if len(subst) == 1 {
-			return subst[1], nil
+			return subst[0], nil
 		}
 
 		// some symbols can map to multiple ctime directives, such as "Jan" either maps to "%b" or %h"

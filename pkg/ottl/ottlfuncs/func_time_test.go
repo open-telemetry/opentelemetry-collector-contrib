@@ -257,9 +257,8 @@ func Test_TimeError(t *testing.T) {
 					return "11/11/11", nil
 				},
 			},
-			format: "%Y/%m/%d",
-			// TODO also check for layout element
-			expectedError: `parsing time "11/11/11" as "%Y/%m/%d`,
+			format:        "%Y/%m/%d",
+			expectedError: `parsing time "11/11/11" as "%Y/%m/%d": cannot parse "11/11/11" as "%Y"`,
 		},
 		{
 			name: "invalid RFC3339 with no time",
