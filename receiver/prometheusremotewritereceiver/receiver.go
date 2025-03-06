@@ -234,10 +234,16 @@ func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.Resource
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	scopeName := ls.Get("otel_scope_name")
-	scopeVersion := ls.Get("otel_scope_version")
-	// TODO: If the scope version or scope name is empty, get the information from the collector build tags.
-	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
+
+	if sName := ls.Get("otel_scope_name"); sName != "" {
+		scopeName = sName
+	}
+
+	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
+		scopeVersion = sVersion
+	}
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.

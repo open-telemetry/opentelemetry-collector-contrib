@@ -240,6 +240,8 @@ func TestTranslateV2(t *testing.T) {
 				rmAttributes1.PutStr("service.instance.id", "107cn001")
 
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName("OpenTelemetry Collector")
+				sm1.Scope().SetVersion("latest")
 				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp1.SetDoubleValue(1.0)
@@ -257,7 +259,10 @@ func TestTranslateV2(t *testing.T) {
 				rmAttributes2.PutStr("service.name", "foo")
 				rmAttributes2.PutStr("service.instance.id", "bar")
 
-				dp3 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				sm2 := rm2.ScopeMetrics().AppendEmpty()
+				sm2.Scope().SetName("OpenTelemetry Collector")
+				sm2.Scope().SetVersion("latest")
+				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(2.0)
 				dp3.Attributes().PutStr("d", "e")
