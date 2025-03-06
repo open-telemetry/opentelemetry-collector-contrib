@@ -266,8 +266,14 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 
 	actualLogs, err := scraper.ScrapeLogs(context.Background())
 
+	aaa, _ := json.Marshal(actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw())
+	println("aaa\n" + string(aaa))
+
 	assert.NoError(t, err)
 	expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", "expectedRecordDatabaseSampleQuery.yaml"))
+
+	eee, _ := json.Marshal(expectedLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().AsRaw())
+	println("eee\n" + string(eee))
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
 
 	assert.NoError(t, errs)

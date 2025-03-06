@@ -644,9 +644,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
-		record.Attributes().PutStr(dbPrefix+DBName, row[DBName])
-		record.Attributes().PutStr(dbPrefix+clientAddress, row[clientAddress])
-		record.Attributes().PutInt(dbPrefix+clientPort, int64(clientPortNumber))
+		record.Attributes().PutStr("db.namespace", row[DBName])
+		record.Attributes().PutStr("network.peer.address", row[clientAddress])
+		record.Attributes().PutInt("network.peer.port", int64(clientPortNumber))
 		record.Attributes().PutStr(dbPrefix+queryStart, row[queryStart])
 		record.Attributes().PutInt(dbPrefix+sessionID, int64(sessionIDNumber))
 		record.Attributes().PutStr(dbPrefix+sessionStatus, row[sessionStatus])
@@ -681,6 +681,18 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		waitCode, waitCategory := getWaitCategory(row[waitType])
 		record.Attributes().PutInt(dbPrefix+"wait_code", int64(waitCode))
 		record.Attributes().PutStr(dbPrefix+"wait_category", waitCategory)
+
+		// client.address: use host_name if it has value, if not, use client_net_address.
+		// this value may not be accurate if
+		// - there is proxy in the middle of sql client and sql server. Or
+		// - host_name value is empty or not accurate.
+		if row[hostname] != "" {
+			record.Attributes().PutStr("client.address", row[hostname])
+		} else {
+			record.Attributes().PutStr("client.address", row[clientAddress])
+		}
+		record.Attributes().PutInt("client.port", int64(clientPortNumber))
+
 		record.Body().SetStr("sample")
 
 	}
