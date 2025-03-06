@@ -194,18 +194,18 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	// Check each resource metric
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
-		
+
 		// Get the endpoint resource attribute
 		endpoint, exists := rm.Resource().Attributes().Get("tlscheck.endpoint")
 		require.True(t, exists, "Resource should have tlscheck.endpoint attribute")
-		
+
 		endpointStr := endpoint.AsString()
 		expected, ok := expectedMetrics[endpointStr]
 		require.True(t, ok, "Unexpected endpoint found: %s", endpointStr)
-		
+
 		// Remove the endpoint from expected metrics as we've found it
 		delete(expectedMetrics, endpointStr)
-		
+
 		// Verify we have the expected metrics for this endpoint
 		ilms := rm.ScopeMetrics().At(0)
 		metric := ilms.Metrics().At(0)
