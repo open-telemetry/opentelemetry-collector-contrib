@@ -6,10 +6,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
 
 // test unmarshalling of values into config struct
