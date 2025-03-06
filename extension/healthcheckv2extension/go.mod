@@ -3,8 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/healt
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status v0.121.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componentstatus v0.121.0
@@ -21,7 +21,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/grpc v1.70.0
+	google.golang.org/grpc v1.71.0
 )
 
 require (

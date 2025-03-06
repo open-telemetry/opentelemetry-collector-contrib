@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/docker/go-connections v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.121.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
 	go.opentelemetry.io/collector/component v1.27.0
@@ -18,6 +18,7 @@ require (
 	go.opentelemetry.io/collector/extension/extensiontest v0.121.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
+	golang.org/x/sync v0.11.0
 )
 
 require (
