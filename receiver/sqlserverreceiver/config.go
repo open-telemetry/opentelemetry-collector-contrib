@@ -16,15 +16,11 @@ type QuerySample struct {
 	EnableQuerySample bool `mapstructure:"enabled"`
 }
 
-type LogsConfig struct {
-	QuerySample `mapstructure:"query_sample"`
-}
-
 // Config defines configuration for a sqlserver receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	LogsConfig                     `mapstructure:"logs"`
+	QuerySample                    `mapstructure:"query_sample"`
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`

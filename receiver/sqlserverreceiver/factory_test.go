@@ -40,10 +40,8 @@ func TestCreateMetrics(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					LogsConfig: LogsConfig{
-						QuerySample: QuerySample{
-							EnableQuerySample: false,
-						},
+					QuerySample: QuerySample{
+						EnableQuerySample: false,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}

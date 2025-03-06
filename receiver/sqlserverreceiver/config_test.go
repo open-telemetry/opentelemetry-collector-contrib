@@ -122,10 +122,8 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
-		expected.LogsConfig = LogsConfig{
-			QuerySample{
-				EnableQuerySample: true,
-			},
+		expected.QuerySample = QuerySample{
+			EnableQuerySample: true,
 		}
 
 		sub, err := cm.Sub("sqlserver/named")

@@ -46,10 +46,8 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		LogsConfig: LogsConfig{
-			QuerySample{
-				EnableQuerySample: false,
-			},
+		QuerySample: QuerySample{
+			EnableQuerySample: false,
 		},
 	}
 }
