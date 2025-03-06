@@ -7,7 +7,6 @@ import (
 	"context"
 	"fmt"
 	"strings"
-	"sync"
 	"time"
 
 	dtypes "github.com/docker/docker/api/types"
@@ -15,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
@@ -36,9 +36,8 @@ type dockerObserver struct {
 	*observer.EndpointsWatcher
 	logger  *zap.Logger
 	config  *Config
-	cancel  func()
-	once    *sync.Once
-	ctx     context.Context
+	cancel  context.CancelFunc
+	wg      errgroup.Group
 	dClient *docker.Client
 }
 
@@ -46,7 +45,6 @@ type dockerObserver struct {
 func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error) {
 	d := &dockerObserver{
 		logger: logger, config: config,
-		once: &sync.Once{},
 		cancel: func() {
 			// Safe value provided on initialisation
 		},
@@ -59,7 +57,6 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 	dCtx, cancel := context.WithCancel(context.Background())
 	d.cancel = cancel
-	d.ctx = dCtx
 
 	// Create new Docker client
 	dConfig := docker.NewConfig(d.config.Endpoint, d.config.Timeout, d.config.ExcludedImages, d.config.DockerAPIVersion)
@@ -74,31 +71,28 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 		return err
 	}
 
-	d.once.Do(
-		func() {
-			go func() {
-				cacheRefreshTicker := time.NewTicker(d.config.CacheSyncInterval)
-				defer cacheRefreshTicker.Stop()
+	d.wg.Go(func() error {
+		cacheRefreshTicker := time.NewTicker(d.config.CacheSyncInterval)
+		defer cacheRefreshTicker.Stop()
 
-				clientCtx, clientCancel := context.WithCancel(d.ctx)
-
-				go d.dClient.ContainerEventLoop(clientCtx)
-
-				for {
-					select {
-					case <-d.ctx.Done():
-						clientCancel()
-						return
-					case <-cacheRefreshTicker.C:
-						err = d.dClient.LoadContainerList(clientCtx)
-						if err != nil {
-							d.logger.Error("Could not sync container cache", zap.Error(err))
-						}
-					}
+		for done := false; !done; {
+			select {
+			case <-dCtx.Done():
+				done = true
+			case <-cacheRefreshTicker.C:
+				err = d.dClient.LoadContainerList(dCtx)
+				if err != nil {
+					d.logger.Error("Could not sync container cache", zap.Error(err))
 				}
-			}()
-		},
-	)
+			}
+		}
+		return nil
+	})
+
+	d.wg.Go(func() error {
+		d.dClient.ContainerEventLoop(dCtx)
+		return nil
+	})
 
 	return nil
 }
@@ -106,7 +100,7 @@ func (d *dockerObserver) Start(ctx context.Context, _ component.Host) error {
 func (d *dockerObserver) Shutdown(_ context.Context) error {
 	d.StopListAndWatch()
 	d.cancel()
-	return nil
+	return d.wg.Wait()
 }
 
 func (d *dockerObserver) ListEndpoints() []observer.Endpoint {
