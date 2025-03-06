@@ -94,8 +94,9 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      false,
 					FlushTimeout: 200 * time.Millisecond,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 8192,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 8192,
 					},
 				},
 			},
@@ -158,8 +159,9 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      true,
 					FlushTimeout: 3 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 8888,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 8888,
 					},
 				},
 			},
@@ -340,11 +342,11 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.AppName = "test-app"
 	cfg.BatcherConfig.Enabled = true
 	cfg.BatcherConfig.FlushTimeout = 1 * time.Second
-	cfg.BatcherConfig.MinSizeItems = 100
+	cfg.BatcherConfig.MinSize = 100
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateTraces(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
@@ -352,7 +354,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 
 	// Test metrics exporter
 	t.Run("metrics_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)
@@ -360,7 +362,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 
 	// Test logs exporter
 	t.Run("logs_with_batcher", func(t *testing.T) {
-		set := exportertest.NewNopSettingsWithType(metadata.Type)
+		set := exportertest.NewNopSettings(metadata.Type)
 		exp, err := factory.CreateLogs(context.Background(), set, cfg)
 		require.NoError(t, err)
 		require.NotNil(t, exp)

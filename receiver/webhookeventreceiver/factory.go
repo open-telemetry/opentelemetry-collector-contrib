@@ -38,10 +38,11 @@ func NewFactory() receiver.Factory {
 // Default configuration for the generic webhook receiver
 func createDefaultConfig() component.Config {
 	return &Config{
-		Path:         defaultPath,
-		HealthPath:   defaultHealthPath,
-		ReadTimeout:  defaultReadTimeout,
-		WriteTimeout: defaultWriteTimeout,
+		Path:               defaultPath,
+		HealthPath:         defaultHealthPath,
+		ReadTimeout:        defaultReadTimeout,
+		WriteTimeout:       defaultWriteTimeout,
+		SplitLogsAtNewLine: false,
 	}
 }
 

@@ -23,6 +23,8 @@ type Config struct {
 	HandleJSONPayloadAs HandleAs `mapstructure:"handle_json_payload_as"`
 	// Controls how the proto payload of the [LogEntry]  is parsed into the body.
 	HandleProtoPayloadAs HandleAs `mapstructure:"handle_proto_payload_as"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (config *Config) Validate() error {

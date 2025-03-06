@@ -24,7 +24,7 @@ var errMissingTargets = errors.New(`No targets specified`)
 type scraper struct {
 	cfg                *Config
 	settings           component.TelemetrySettings
-	mb                 *metadata.MetricsBuilder
+	mbs                make(map[string]*metadata.MetricsBuilder)
 	getConnectionState func(endpoint string) (tls.ConnectionState, error)
 }
 
@@ -37,7 +37,7 @@ func getConnectionState(endpoint string) (tls.ConnectionState, error) {
 	return conn.ConnectionState(), nil
 }
 
-func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.Mutex) {
+func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, mb *metadata.MetricsBuilder, wg *sync.WaitGroup, mux *sync.Mutex) {
 	defer wg.Done()
 
 	state, err := s.getConnectionState(endpoint)
@@ -62,7 +62,12 @@ func (s *scraper) scrapeEndpoint(endpoint string, wg *sync.WaitGroup, mux *sync.
 
 	mux.Lock()
 	defer mux.Unlock()
-	s.mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
+
+	rb := mb.NewResourceBuilder()
+	rb.SetTlscheckEndpoint(endpoint)
+	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
+	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
+	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 }
 
 func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
@@ -74,21 +79,21 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	wg.Add(len(s.cfg.Targets))
 	var mux sync.Mutex
 
-	for _, target := range s.cfg.Targets {
-		go s.scrapeEndpoint(target.Endpoint, &wg, &mux)
+	metrics := pmetric.NewMetrics()
+
+	mbs := make([]*metadata.MetricsBuilder, len(s.cfg.Targets))
+	for i, target := range s.cfg.Targets {
+		go s.scrapeEndpoint(target.Endpoint, metrics, mbs[i], &wg, &mux)
 	}
 
 	wg.Wait()
-	rb := s.mb.NewResourceBuilder()
-	rb.SetTlscheckEndpoint(target.Endpoint)
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
+	return mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 
 func newScraper(cfg *Config, settings receiver.Settings, getConnectionState func(endpoint string) (tls.ConnectionState, error)) *scraper {
 	return &scraper{
 		cfg:                cfg,
 		settings:           settings.TelemetrySettings,
-		mb:                 metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
 		getConnectionState: getConnectionState,
 	}
 }

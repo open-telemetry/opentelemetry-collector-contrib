@@ -104,15 +104,19 @@ see the [Scraping README][ghsread].
 
 ## Traces - Getting Started
 
-Workflow tracing support is actively being added to the GitHub receiver.
-This is accomplished through the processing of GitHub Actions webhook
-events for workflows and jobs. The [`workflow_job`][wjob] and
+Workflow tracing support is accomplished through the processing of GitHub
+Actions webhook events for workflows and jobs. The [`workflow_job`][wjob] and
 [`workflow_run`][wrun] event payloads are then constructed into `trace`
 telemetry.
 
 Each GitHub Action workflow or job, along with its steps, are converted
 into trace spans, allowing the observation of workflow execution times,
-success, and failure rates.
+success, and failure rates. Each Trace and Span ID is deterministic. This
+enables the underlying actions to emit telemetry from any command running in any
+step. This can be achieved by using tools like the [run-with-telemetry
+action][run] and [otel-cli][otcli]. The key is generating IDs in the same way
+that this GitHub receiver does. The [trace_event_handling.go][tr] file contains
+the `new*ID` functions that generate deterministic IDs.
 
 ### Receiver Configuration
 
@@ -179,8 +183,6 @@ To configure a GitHub App, you will need to create a new GitHub App within your
 organization. Refer to the general [GitHub App documentation][ghapp] for how to
 create a GitHub App. During the subscription phase, subscribe to `workflow_run` and `workflow_job` events.
 
-> NOTE: Only `workflow_run` events are supported in created traces at this time.
-
 [wjob]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_job
 [wrun]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
 [valid]: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
@@ -190,3 +192,6 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [doracap]: https://dora.dev/capabilities/
 [dorafour]: https://dora.dev/guides/dora-metrics-four-keys/
 [ghapp]: https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app
+[run]: https://github.com/krzko/run-with-telemetry
+[otcli]: https://github.com/equinix-labs/otel-cli
+[tr]: ./trace_event_handling.go
