@@ -11,15 +11,15 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
+
+	"go.opentelemetry.io/collector/component/componenttest"
 )
 
 func TestSetupTelemetry(t *testing.T) {
-	testTel := SetupTelemetry()
-	tb, err := metadata.NewTelemetryBuilder(
-		testTel.NewTelemetrySettings(),
-	)
+	testTel := componenttest.NewTelemetry()
+	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
-	require.NotNil(t, tb)
+	defer tb.Shutdown()
 	tb.ProcessorTailSamplingCountSpansSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingCountTracesSampled.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingEarlyReleasesFromCacheDecision.Add(context.Background(), 1)
@@ -32,146 +32,42 @@ func TestSetupTelemetry(t *testing.T) {
 	tb.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTraceRemovalAge.Record(context.Background(), 1)
 	tb.ProcessorTailSamplingSamplingTracesOnMemory.Record(context.Background(), 1)
+	AssertEqualProcessorTailSamplingCountSpansSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingCountTracesSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingEarlyReleasesFromCacheDecision(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingGlobalCountTracesSampled(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingNewTraceIDReceived(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingDecisionLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingDecisionTimerLatency(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingLateSpanAge(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingPolicyEvaluationError(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingTraceDroppedTooEarly(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingTraceRemovalAge(t, testTel,
+		[]metricdata.HistogramDataPoint[int64]{{}}, metricdatatest.IgnoreValue(),
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualProcessorTailSamplingSamplingTracesOnMemory(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 
-	testTel.AssertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_processor_tail_sampling_count_spans_sampled",
-			Description: "Count of spans that were sampled or not per sampling policy",
-			Unit:        "{spans}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_count_traces_sampled",
-			Description: "Count of traces that were sampled or not per sampling policy",
-			Unit:        "{traces}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_early_releases_from_cache_decision",
-			Description: "Number of spans that were able to be immediately released due to a decision cache hit.",
-			Unit:        "{spans}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_global_count_traces_sampled",
-			Description: "Global count of traces that were sampled or not by at least one policy",
-			Unit:        "{traces}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_new_trace_id_received",
-			Description: "Counts the arrival of new traces",
-			Unit:        "{traces}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_decision_latency",
-			Description: "Latency (in microseconds) of a given sampling policy",
-			Unit:        "µs",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_decision_timer_latency",
-			Description: "Latency (in microseconds) of each run of the sampling decision timer",
-			Unit:        "µs",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_late_span_age",
-			Description: "Time (in seconds) from the sampling decision was taken and the arrival of a late span",
-			Unit:        "s",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_policy_evaluation_error",
-			Description: "Count of sampling policy evaluation errors",
-			Unit:        "{errors}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_trace_dropped_too_early",
-			Description: "Count of traces that needed to be dropped before the configured wait time",
-			Unit:        "{traces}",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_trace_removal_age",
-			Description: "Time (in seconds) from arrival of a new trace until its removal from memory",
-			Unit:        "s",
-			Data: metricdata.Histogram[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				DataPoints: []metricdata.HistogramDataPoint[int64]{
-					{},
-				},
-			},
-		},
-		{
-			Name:        "otelcol_processor_tail_sampling_sampling_traces_on_memory",
-			Description: "Tracks the number of traces current on memory",
-			Unit:        "{traces}",
-			Data: metricdata.Gauge[int64]{
-				DataPoints: []metricdata.DataPoint[int64]{
-					{},
-				},
-			},
-		},
-	}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreValue())
 	require.NoError(t, testTel.Shutdown(context.Background()))
 }

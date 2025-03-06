@@ -21,91 +21,100 @@ import (
 
 const mysqlPort = "3306"
 
-func TestIntegrationWithoutTLS(t *testing.T) {
-	scraperinttest.NewIntegrationTest(
-		NewFactory(),
-		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				Image:        "mysql:8.0.33",
-				ExposedPorts: []string{mysqlPort},
-				WaitingFor: wait.ForListeningPort(mysqlPort).
-					WithStartupTimeout(2 * time.Minute),
-				Env: map[string]string{
-					"MYSQL_ROOT_PASSWORD": "otel",
-					"MYSQL_DATABASE":      "otel",
-					"MYSQL_USER":          "otel",
-					"MYSQL_PASSWORD":      "otel",
-				},
-				Files: []testcontainers.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "integration", "init.sh"),
-						ContainerFilePath: "/docker-entrypoint-initdb.d/init.sh",
-						FileMode:          700,
-					},
-				},
-			}),
-		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
-				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
-				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
-				rCfg.Username = "otel"
-				rCfg.Password = "otel"
-				// disable TLS connection
-				rCfg.TLS.Insecure = true
-			}),
-		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-		),
-	).Run(t)
+type MySQLTestConfig struct {
+	name         string
+	containerCmd []string
+	tlsEnabled   bool
+	insecureSkip bool
+	imageVersion string
+	expectedFile string
 }
 
-func TestIntegrationWithTLS(t *testing.T) {
-	scraperinttest.NewIntegrationTest(
-		NewFactory(),
-		scraperinttest.WithContainerRequest(
-			testcontainers.ContainerRequest{
-				Image: "mysql:8.0.33",
-				// enable auto TLS certs AND require TLS connections only !
-				Cmd:          []string{"--auto_generate_certs=ON", "--require_secure_transport=ON"},
-				ExposedPorts: []string{mysqlPort},
-				WaitingFor: wait.ForListeningPort(mysqlPort).
-					WithStartupTimeout(2 * time.Minute),
-				Env: map[string]string{
-					"MYSQL_ROOT_PASSWORD": "otel",
-					"MYSQL_DATABASE":      "otel",
-					"MYSQL_USER":          "otel",
-					"MYSQL_PASSWORD":      "otel",
-				},
-				Files: []testcontainers.ContainerFile{
-					{
-						HostFilePath:      filepath.Join("testdata", "integration", "init.sh"),
-						ContainerFilePath: "/docker-entrypoint-initdb.d/init.sh",
-						FileMode:          700,
-					},
-				},
-			}),
-		scraperinttest.WithCustomConfig(
-			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
-				rCfg := cfg.(*Config)
-				rCfg.CollectionInterval = time.Second
-				rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
-				rCfg.Username = "otel"
-				rCfg.Password = "otel"
-				// mysql container is using self-signed certs
-				// InsecureSkipVerify will enable TLS but not verify the certificate.
-				rCfg.TLS.InsecureSkipVerify = true
-			}),
-		scraperinttest.WithCompareOptions(
-			pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
-			pmetrictest.IgnoreMetricValues(),
-			pmetrictest.IgnoreMetricDataPointsOrder(),
-			pmetrictest.IgnoreStartTimestamp(),
-			pmetrictest.IgnoreTimestamp(),
-		),
-	).Run(t)
+func TestIntegration(t *testing.T) {
+	testCases := []MySQLTestConfig{
+		{
+			name:         "MySql-8.0.33-WithoutTLS",
+			containerCmd: nil,
+			tlsEnabled:   false,
+			insecureSkip: false,
+			imageVersion: "mysql:8.0.33",
+			expectedFile: "expected-mysql.yaml",
+		},
+		{
+			name:         "MySql-8.0.33-WithTLS",
+			containerCmd: []string{"--auto_generate_certs=ON", "--require_secure_transport=ON"},
+			tlsEnabled:   true,
+			insecureSkip: true,
+			imageVersion: "mysql:8.0.33",
+			expectedFile: "expected-mysql.yaml",
+		},
+		{
+			name:         "MariaDB-11.6.2",
+			containerCmd: nil,
+			tlsEnabled:   false,
+			insecureSkip: false,
+			imageVersion: "mariadb:11.6.2-ubi9",
+			expectedFile: "expected-mariadb.yaml",
+		},
+		{
+			name:         "MariaDB-10.11.11",
+			containerCmd: nil,
+			tlsEnabled:   false,
+			insecureSkip: false,
+			imageVersion: "mariadb:10.11.11-ubi9",
+			expectedFile: "expected-mariadb.yaml",
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			scraperinttest.NewIntegrationTest(
+				NewFactory(),
+				scraperinttest.WithContainerRequest(
+					testcontainers.ContainerRequest{
+						Image:        tc.imageVersion,
+						Cmd:          tc.containerCmd,
+						ExposedPorts: []string{mysqlPort},
+						WaitingFor: wait.ForListeningPort(mysqlPort).
+							WithStartupTimeout(2 * time.Minute),
+						Env: map[string]string{
+							"MYSQL_ROOT_PASSWORD": "otel",
+							"MYSQL_DATABASE":      "otel",
+							"MYSQL_USER":          "otel",
+							"MYSQL_PASSWORD":      "otel",
+						},
+						Files: []testcontainers.ContainerFile{
+							{
+								HostFilePath:      filepath.Join("testdata", "integration", "init.sh"),
+								ContainerFilePath: "/docker-entrypoint-initdb.d/init.sh",
+								FileMode:          700,
+							},
+						},
+					}),
+				scraperinttest.WithCustomConfig(
+					func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+						rCfg := cfg.(*Config)
+						rCfg.CollectionInterval = time.Second
+						rCfg.Endpoint = net.JoinHostPort(ci.Host(t), ci.MappedPort(t, mysqlPort))
+						rCfg.Username = "otel"
+						rCfg.Password = "otel"
+						if tc.tlsEnabled {
+							rCfg.TLS.InsecureSkipVerify = tc.insecureSkip
+						} else {
+							rCfg.TLS.Insecure = true
+						}
+					}),
+				scraperinttest.WithExpectedFile(
+					filepath.Join("testdata", "integration", tc.expectedFile),
+				),
+				scraperinttest.WithCompareOptions(
+					pmetrictest.IgnoreResourceAttributeValue("mysql.instance.endpoint"),
+					pmetrictest.IgnoreMetricValues(),
+					pmetrictest.IgnoreMetricDataPointsOrder(),
+					pmetrictest.IgnoreStartTimestamp(),
+					pmetrictest.IgnoreTimestamp(),
+				),
+			).Run(t)
+		})
+	}
 }

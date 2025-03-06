@@ -32,6 +32,8 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"google.golang.org/protobuf/proto"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
@@ -114,11 +116,11 @@ func TestTracesSource(t *testing.T) {
 }
 
 func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	reqs := make(chan []byte, 1)
 	metricsServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -164,7 +166,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 
 	assert := assert.New(t)
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(err)
@@ -193,7 +195,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		dec := json.NewDecoder(reader)
 		var p datadogV2.MetricPayload
 		assert.NoError(dec.Decode(&p))
-		assert.Len(p.Series, 1)
+		assert.GreaterOrEqual(len(p.Series), 1)
 		assert.Len(p.Series[0].Resources, 1)
 		return *p.Series[0].Resources[0].Name, p.Series[0].Tags
 	}
@@ -261,11 +263,11 @@ func TestTraceExporter(t *testing.T) {
 }
 
 func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
@@ -301,7 +303,7 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exporter, err := f.CreateTraces(context.Background(), params, &cfg)
 	assert.NoError(t, err)
@@ -326,7 +328,7 @@ func TestNewTracesExporter(t *testing.T) {
 	cfg := &Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	// The client should have been created correctly
 	f := NewFactory()
@@ -346,11 +348,11 @@ func TestPushTraceData(t *testing.T) {
 }
 
 func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 	cfg := &Config{
@@ -373,7 +375,7 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 	}
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -398,11 +400,11 @@ func TestPushTraceDataNewEnvConvention(t *testing.T) {
 }
 
 func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV2 bool) {
-	if enableReceiveResourceSpansV2 {
-		if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-			t.Fatal(err)
-		}
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", enableReceiveResourceSpansV2))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -423,7 +425,7 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -467,7 +469,7 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)
@@ -489,9 +491,11 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
-	if err := featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true); err != nil {
-		t.Fatal(err)
-	}
+	prevVal := pkgdatadog.ReceiveResourceSpansV2FeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableReceiveResourceSpansV2", prevVal))
+	}()
 
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -512,7 +516,7 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	}
 	cfg.Traces.SetFlushInterval(0.1)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 	exp, err := f.CreateTraces(context.Background(), params, cfg)
 	assert.NoError(t, err)

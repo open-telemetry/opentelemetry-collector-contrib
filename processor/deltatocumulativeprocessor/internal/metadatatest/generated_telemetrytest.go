@@ -3,7 +3,6 @@
 package metadatatest
 
 import (
-	"context"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -15,50 +14,69 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 )
 
-type Telemetry struct {
-	componenttest.Telemetry
-}
-
-func SetupTelemetry(opts ...componenttest.TelemetryOption) Telemetry {
-	return Telemetry{Telemetry: componenttest.NewTelemetry(opts...)}
-}
-func (tt *Telemetry) NewSettings() processor.Settings {
-	set := processortest.NewNopSettings()
+func NewSettings(tt *componenttest.Telemetry) processor.Settings {
+	set := processortest.NewNopSettings(processortest.NopType)
 	set.ID = component.NewID(component.MustNewType("deltatocumulative"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set
 }
 
-func (tt *Telemetry) AssertMetrics(t *testing.T, expected []metricdata.Metrics, opts ...metricdatatest.Option) {
-	var md metricdata.ResourceMetrics
-	require.NoError(t, tt.Reader.Collect(context.Background(), &md))
-	// ensure all required metrics are present
-	for _, want := range expected {
-		got := getMetric(want.Name, md)
-		metricdatatest.AssertEqual(t, want, got, opts...)
+func AssertEqualDeltatocumulativeDatapoints(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_deltatocumulative_datapoints",
+		Description: "total number of datapoints processed. may have 'error' attribute, if processing failed",
+		Unit:        "{datapoint}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: true,
+			DataPoints:  dps,
+		},
 	}
-
-	// ensure no additional metrics are emitted
-	require.Equal(t, len(expected), lenMetrics(md))
+	got, err := tt.GetMetric("otelcol_deltatocumulative_datapoints")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func getMetric(name string, got metricdata.ResourceMetrics) metricdata.Metrics {
-	for _, sm := range got.ScopeMetrics {
-		for _, m := range sm.Metrics {
-			if m.Name == name {
-				return m
-			}
-		}
+func AssertEqualDeltatocumulativeStreamsLimit(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_deltatocumulative_streams_limit",
+		Description: "upper limit of tracked streams",
+		Unit:        "{stream}",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
 	}
-
-	return metricdata.Metrics{}
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_limit")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }
 
-func lenMetrics(got metricdata.ResourceMetrics) int {
-	metricsCount := 0
-	for _, sm := range got.ScopeMetrics {
-		metricsCount += len(sm.Metrics)
+func AssertEqualDeltatocumulativeStreamsMaxStale(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_deltatocumulative_streams_max_stale",
+		Description: "duration after which streams inactive streams are dropped",
+		Unit:        "s",
+		Data: metricdata.Gauge[int64]{
+			DataPoints: dps,
+		},
 	}
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_max_stale")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
+}
 
-	return metricsCount
+func AssertEqualDeltatocumulativeStreamsTracked(t *testing.T, tt *componenttest.Telemetry, dps []metricdata.DataPoint[int64], opts ...metricdatatest.Option) {
+	want := metricdata.Metrics{
+		Name:        "otelcol_deltatocumulative_streams_tracked",
+		Description: "number of streams tracked",
+		Unit:        "{dps}",
+		Data: metricdata.Sum[int64]{
+			Temporality: metricdata.CumulativeTemporality,
+			IsMonotonic: false,
+			DataPoints:  dps,
+		},
+	}
+	got, err := tt.GetMetric("otelcol_deltatocumulative_streams_tracked")
+	require.NoError(t, err)
+	metricdatatest.AssertEqual(t, want, got, opts...)
 }

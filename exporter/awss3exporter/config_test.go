@@ -40,9 +40,11 @@ func TestLoadConfig(t *testing.T) {
 		Encoding:              &encoding,
 		EncodingFileExtension: "baz",
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "foo",
-			S3Partition: "minute",
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -72,12 +74,80 @@ func TestConfig(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "foo",
-			S3Prefix:    "bar",
-			S3Partition: "minute",
-			Endpoint:    "http://endpoint.com",
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
+		MarshalerName: "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3StorageClass(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD_IA",
+			ACL:               "private",
+		},
+		QueueSettings: queueCfg,
+		MarshalerName: "otlp_json",
+	}, e,
+	)
+}
+
+func TestConfigS3ACL(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "config-s3_storage_class.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+
+	assert.Equal(t, &Config{
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD_IA",
+			ACL:               "private",
+		},
+		QueueSettings: queueCfg,
 		MarshalerName: "otlp_json",
 	}, e,
 	)
@@ -103,13 +173,15 @@ func TestConfigForS3CompatibleSystems(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:           "us-east-1",
-			S3Bucket:         "foo",
-			S3Prefix:         "bar",
-			S3Partition:      "minute",
-			Endpoint:         "alternative-s3-system.example.com",
-			S3ForcePathStyle: true,
-			DisableSSL:       true,
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "alternative-s3-system.example.com",
+			S3ForcePathStyle:  true,
+			DisableSSL:        true,
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -217,9 +289,11 @@ func TestMarshallerName(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "foo",
-			S3Partition: "minute",
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "sumo_ic",
 	}, e,
@@ -230,9 +304,11 @@ func TestMarshallerName(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "bar",
-			S3Partition: "minute",
+			Region:            "us-east-1",
+			S3Bucket:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,
@@ -259,10 +335,12 @@ func TestCompressionName(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "foo",
-			S3Partition: "minute",
-			Compression: "gzip",
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Compression:       "gzip",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_json",
 	}, e,
@@ -273,10 +351,12 @@ func TestCompressionName(t *testing.T) {
 	assert.Equal(t, &Config{
 		QueueSettings: queueCfg,
 		S3Uploader: S3UploaderConfig{
-			Region:      "us-east-1",
-			S3Bucket:    "bar",
-			S3Partition: "minute",
-			Compression: "none",
+			Region:            "us-east-1",
+			S3Bucket:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Compression:       "none",
+			StorageClass:      "STANDARD",
+			ACL:               "private",
 		},
 		MarshalerName: "otlp_proto",
 	}, e,

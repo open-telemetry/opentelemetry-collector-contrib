@@ -13,10 +13,10 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap/zaptest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/parser/regex"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
@@ -198,7 +198,7 @@ func TestHeaderFingerprintIncluded(t *testing.T) {
 	regexConf := regex.NewConfig()
 	regexConf.Regex = "^#(?P<header>.*)"
 
-	enc, err := decode.LookupEncoding("utf-8")
+	enc, err := textutils.LookupEncoding("utf-8")
 	require.NoError(t, err)
 
 	set := componenttest.NewNopTelemetrySettings()
