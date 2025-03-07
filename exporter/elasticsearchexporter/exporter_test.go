@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -39,6 +39,13 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
+
+func build[T any, O any](t *testing.T, f func(...O) (T, error), opts ...O) T {
+	t.Helper()
+	v, err := f(opts...)
+	require.NoError(t, err)
+	return v
+}
 
 func TestExporterLogs(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
@@ -2086,15 +2093,17 @@ func TestExporterAuth(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
-					select {
-					case done <- struct{}{}:
-					default:
-					}
-					return nil, errors.New("nope")
+			testauthID: build(t, extensionauth.NewClient,
+				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
+					return roundTripperFunc(func(*http.Request) (*http.Response, error) {
+						select {
+						case done <- struct{}{}:
+						default:
+						}
+						return nil, errors.New("nope")
+					}), nil
 				}),
-			},
+			),
 		},
 	})
 	require.NoError(t, err)
@@ -2120,12 +2129,14 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &authtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-					requests = append(requests, req)
-					return nil, errors.New("nope")
+			testauthID: build(t, extensionauth.NewClient,
+				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
+					return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
+						requests = append(requests, req)
+						return nil, errors.New("nope")
+					}), nil
 				}),
-			},
+			),
 		},
 	})
 	require.NoError(t, err)

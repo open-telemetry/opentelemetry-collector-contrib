@@ -31,7 +31,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -270,7 +270,7 @@ type testAuthExtension struct {
 	prc credentials.PerRPCCredentials
 }
 
-func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) auth.Client {
+func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) extensionauth.Client {
 	ctrl := gomock.NewController(t)
 	prc := grpcmock.NewMockPerRPCCredentials(ctrl)
 	prc.EXPECT().RequireTransportSecurity().AnyTimes().Return(false)

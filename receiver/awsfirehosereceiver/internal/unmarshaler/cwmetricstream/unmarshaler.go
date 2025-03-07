@@ -11,10 +11,13 @@ import (
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -33,13 +36,15 @@ var errInvalidRecords = errors.New("record format invalid")
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
 type Unmarshaler struct {
 	logger *zap.Logger
+
+	buildInfo component.BuildInfo
 }
 
 var _ pmetric.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger, buildInfo}
 }
 
 // UnmarshalMetrics deserializes the record in CloudWatch Metric Stream JSON
@@ -122,6 +127,8 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		setResourceAttributes(resourceKey, rm.Resource())
 		scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+		scopeMetrics.Scope().SetName(metadata.ScopeName)
+		scopeMetrics.Scope().SetVersion(u.buildInfo.Version)
 		for _, metric := range metricsMap {
 			metric.MoveTo(scopeMetrics.Metrics().AppendEmpty())
 		}
