@@ -41,6 +41,7 @@ General purpose:
 - [move](./move.md)
 - [noop](./noop.md)
 - [recombine](./recombine.md)
+- [regex_replace](./regex_replace.md)
 - [remove](./remove.md)
 - [retain](./retain.md)
 - [router](./router.md)
