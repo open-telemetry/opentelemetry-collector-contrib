@@ -179,13 +179,10 @@ See below for a description of each mapping mode.
 
 The default and recommended "OTel-native" mapping mode.
 
-
 Requires Elasticsearch 8.12 or above[^1], works best with Elasticsearch 8.16 or above[^2].
 
 [^1]: as it uses the undocumented `require_data_stream` bulk API parameter supported from Elasticsearch 8.12
 [^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
-
-Works best with `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` enabled.
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
@@ -196,9 +193,10 @@ and `data_stream.namespace`. Instead of serializing these values under the `*att
 they are put at the root of the document, to conform with the conventions of the data stream naming
 scheme that maps these as `constant_keyword` fields.
 
-`data_stream.dataset` will always be appended with `.otel`. It is recommended to use with
-`*_dynamic_index::enabled: true` (e.g. `logs_dynamic_index::enabled`) to route documents to data stream
-`${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
+It is recommended to enable `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` (e.g. `logs_dynamic_index::enabled: true`),
+such that `data_stream.dataset` will always be appended with `.otel`
+and match the index templates from [otel-data plugin](https://github.com/elastic/elasticsearch/tree/main/x-pack/plugin/otel-data)
+in Elasticsearch 8.16+.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
 `logs` if `traces_dynamic_index::enabled` is `true`.
