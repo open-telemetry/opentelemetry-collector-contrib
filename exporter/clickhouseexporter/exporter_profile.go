@@ -423,7 +423,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 	// language=ClickHouse SQL
 	createSamplesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_samples %s (
+CREATE TABLE IF NOT EXISTS %s %s (
 	ProfileId String CODEC(ZSTD(1)),
 	TraceId String CODEC(ZSTD(1)),
 	SpanId String CODEC(ZSTD(1)),
@@ -449,7 +449,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 
 	// language=ClickHouse SQL
 	createFramesTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_frames %s (
+CREATE TABLE IF NOT EXISTS %s %s (
 	ProfileId String CODEC(ZSTD(1)),
 	LocationIndex Int32 CODEC(Delta, ZSTD(1)),
 	MappingIndex Int32 CODEC(Delta, ZSTD(1)),
@@ -508,7 +508,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// language=ClickHouse SQL
-	insertSamplesSQLTemplate = `INSERT INTO %s_samples (
+	insertSamplesSQLTemplate = `INSERT INTO %s (
                         ProfileId,
                         TraceId,
                         SpanId,
@@ -524,7 +524,7 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// language=ClickHouse SQL
-	insertFramesSQLTemplate = `INSERT INTO %s_frames (
+	insertFramesSQLTemplate = `INSERT INTO %s (
                         ProfileId,
                         LocationIndex,
                         MappingIndex,

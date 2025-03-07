@@ -236,7 +236,7 @@ func (cfg *Config) buildMetricTableNames() {
 
 func (c *Config) buildProfileTableNames() {
 	// Set default profiles table name if not specified
-	if c.ProfilesTables.Profiles == "" {
+	if len(c.ProfilesTables.Profiles) == 0 {
 		c.ProfilesTables.Profiles = defaultProfilesTableName
 	}
 	
@@ -244,12 +244,12 @@ func (c *Config) buildProfileTableNames() {
 	baseTableName := c.ProfilesTables.Profiles
 	
 	// Set default samples table name if not specified
-	if c.ProfilesTables.Samples == "" {
+	if len(c.ProfilesTables.Samples) == 0 {
 		c.ProfilesTables.Samples = baseTableName + "_samples"
 	}
 	
 	// Set default frames table name if not specified
-	if c.ProfilesTables.Frames == "" {
+	if len(c.ProfilesTables.Frames) == 0 {
 		c.ProfilesTables.Frames = baseTableName + "_frames"
 	}
 }
