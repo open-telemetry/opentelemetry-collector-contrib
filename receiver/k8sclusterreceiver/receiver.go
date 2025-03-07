@@ -8,17 +8,15 @@ import (
 	"errors"
 	"time"
 
-	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -113,7 +111,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			return errors.New("extension list is empty")
 		}
 
-		ext := extList[component.ID(kr.config.K8sLeaderElector)]
+		ext := extList[kr.config.K8sLeaderElector]
 		if ext == nil {
 			return errors.New("extension k8s leader elector not found")
 		}
@@ -129,9 +127,7 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 					kr.settings.Logger.Error("Failed to start receiver", zap.Error(err))
 				}
 			}, func() {
-				if err := kr.stopReceiver(); err != nil {
-					kr.settings.Logger.Error("Failed to stop receiver", zap.Error(err))
-				}
+				kr.stopReceiver()
 			},
 		)
 	} else {
@@ -144,19 +140,15 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	return nil
 }
 
-func (kr *kubernetesReceiver) stopReceiver() error {
+func (kr *kubernetesReceiver) stopReceiver() {
 	kr.settings.Logger.Info("Stopping the receiver")
-	if kr.cancel == nil {
-		return nil
+	if kr.cancel != nil {
+		kr.cancel()
 	}
-	kr.cancel()
-	return nil
 }
 
 func (kr *kubernetesReceiver) Shutdown(context.Context) error {
-	if err := kr.stopReceiver(); err != nil {
-		kr.settings.Logger.Error("Failed to stop receiver", zap.Error(err))
-	}
+	kr.stopReceiver()
 	return nil
 }
 
