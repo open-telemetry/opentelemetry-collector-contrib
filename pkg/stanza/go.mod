@@ -28,6 +28,7 @@ require (
 	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250307164521-7c787571daa5
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307164521-7c787571daa5
 	go.opentelemetry.io/collector/receiver v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250307145831-dc9250a6c150
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.1-0.20250307145831-dc9250a6c150
 	go.opentelemetry.io/otel/metric v1.34.0
 	go.opentelemetry.io/otel/sdk/metric v1.34.0

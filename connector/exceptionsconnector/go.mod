@@ -32,6 +32,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
@@ -45,6 +46,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.121.1-0.20250307145831-dc9250a6c150 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.1-0.20250307164521-7c787571daa5 // indirect

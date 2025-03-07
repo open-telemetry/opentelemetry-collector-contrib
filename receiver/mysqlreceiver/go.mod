@@ -34,6 +34,8 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250306210537-36eaf6a917b5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.19.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.0.0 // indirect

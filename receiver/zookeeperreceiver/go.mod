@@ -40,6 +40,7 @@ require (
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -75,10 +76,12 @@ require (
 	go.opentelemetry.io/collector/config/confignet v1.27.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/filter v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307164521-7c787571daa5 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250306210537-36eaf6a917b5 // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/scraper v0.121.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
