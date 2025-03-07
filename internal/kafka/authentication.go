@@ -68,10 +68,12 @@ type KerberosConfig struct {
 	ServiceName     string `mapstructure:"service_name"`
 	Realm           string `mapstructure:"realm"`
 	UseKeyTab       bool   `mapstructure:"use_keytab"`
+	UseCCache       bool   `mapstructure:"use_ccache"`
 	Username        string `mapstructure:"username"`
 	Password        string `mapstructure:"password" json:"-"`
 	ConfigPath      string `mapstructure:"config_file"`
 	KeyTabPath      string `mapstructure:"keytab_file"`
+	CCachePath      string `mapstructure:"ccache_file"`
 	DisablePAFXFAST bool   `mapstructure:"disable_fast_negotiation"`
 }
 
@@ -169,6 +171,9 @@ func configureKerberos(config KerberosConfig, saramaConfig *sarama.Config) {
 	if config.UseKeyTab {
 		saramaConfig.Net.SASL.GSSAPI.KeyTabPath = config.KeyTabPath
 		saramaConfig.Net.SASL.GSSAPI.AuthType = sarama.KRB5_KEYTAB_AUTH
+	} else if config.UseCCache {
+		saramaConfig.Net.SASL.GSSAPI.CCachePath = config.CCachePath
+		saramaConfig.Net.SASL.GSSAPI.AuthType = sarama.KRB5_CCACHE_AUTH
 	} else {
 		saramaConfig.Net.SASL.GSSAPI.AuthType = sarama.KRB5_USER_AUTH
 		saramaConfig.Net.SASL.GSSAPI.Password = config.Password
