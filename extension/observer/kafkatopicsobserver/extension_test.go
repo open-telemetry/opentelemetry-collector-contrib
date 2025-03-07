@@ -4,14 +4,17 @@
 package kafkatopicsobserver
 
 import (
+	"cmp"
 	"context"
+	"slices"
 	"testing"
-	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
@@ -35,27 +38,31 @@ func (m *MockClusterAdmin) Close() error {
 func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	mockAdmin := &MockClusterAdmin{}
+	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{"abc": {}, "def": {}}, nil)
+	mockAdmin.On("Close").Return(nil).Once()
 	// Override the createKafkaClusterAdmin function to return the mock admin
 	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
 	createKafkaClusterAdmin = func(_ context.Context, _ Config) (sarama.ClusterAdmin, error) {
 		return mockAdmin, nil
 	}
+	defer func() {
+		createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	}()
 
 	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config))
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	obvs, ok := ext.(*kafkaTopicsObserver)
-	require.True(t, ok)
-	kEndpoints := obvs.ListEndpoints()
+	err = ext.Start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 
-	want := []observer.Endpoint{}
-	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
-	require.Equal(t, want, kEndpoints)
+	err = ext.Shutdown(context.Background())
+	assert.NoError(t, err)
 }
 
 func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	mockAdmin := &MockClusterAdmin{}
+
 	// During first check new topics matching the regex are detected
 	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
 		"topic1": {},
@@ -73,7 +80,7 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{
 		"topic1": {},
 		"topics": {},
-	}, nil).Once()
+	}, nil)
 	mockAdmin.On("Close").Return(nil).Once()
 
 	// Override the createKafkaClusterAdmin function to return the mock admin
@@ -81,48 +88,79 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	createKafkaClusterAdmin = func(_ context.Context, _ Config) (sarama.ClusterAdmin, error) {
 		return mockAdmin, nil
 	}
+	defer func() {
+		createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+	}()
 
 	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
 	ext, err := newObserver(zap.NewNop(), extAllSettings)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
-	obvs := ext.(*kafkaTopicsObserver)
-	err = obvs.Start(context.Background(), nil)
+	err = ext.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
-	time.Sleep(6 * time.Second)
+	defer func() {
+		err := ext.Shutdown(context.Background())
+		assert.NoError(t, err)
+	}()
 
-	kEndpoints := obvs.ListEndpoints()
-	want := []observer.Endpoint{
-		{
+	ops := make(channelNotifier, 1) // buffer for the initial op
+	ext.(*kafkaTopicsObserver).ListAndWatch(ops)
+
+	assert.Equal(t, notifyOp{
+		op: "add",
+		endpoints: []observer.Endpoint{{
 			ID:      "topic1",
 			Target:  "topic1",
 			Details: &observer.KafkaTopic{},
-		},
-		{
+		}, {
 			ID:      "topic2",
 			Target:  "topic2",
 			Details: &observer.KafkaTopic{},
-		},
-	}
-	require.ElementsMatch(t, want, kEndpoints)
+		}},
+	}, <-ops)
 
-	time.Sleep(5 * time.Second)
-	kEndpoints = obvs.ListEndpoints()
-	require.ElementsMatch(t, want, kEndpoints)
-
-	time.Sleep(5 * time.Second)
-	kEndpoints = obvs.ListEndpoints()
-	want = []observer.Endpoint{
-		{
-			ID:      "topic1",
-			Target:  "topic1",
+	assert.Equal(t, notifyOp{
+		op: "remove",
+		endpoints: []observer.Endpoint{{
+			ID:      "topic2",
+			Target:  "topic2",
 			Details: &observer.KafkaTopic{},
-		},
-	}
-	require.ElementsMatch(t, want, kEndpoints)
+		}},
+	}, <-ops)
+}
 
-	err = obvs.Shutdown(context.Background())
-	require.NoError(t, err)
-	createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
+type channelNotifier chan notifyOp
+
+func (ch channelNotifier) ID() observer.NotifyID {
+	return "channel-notifier"
+}
+
+func (ch channelNotifier) OnAdd(added []observer.Endpoint) {
+	ch.addOp("add", added)
+}
+
+func (ch channelNotifier) OnRemove(removed []observer.Endpoint) {
+	ch.addOp("remove", removed)
+}
+
+func (ch channelNotifier) OnChange(changed []observer.Endpoint) {
+	ch.addOp("remove", changed)
+}
+
+func (ch channelNotifier) addOp(op string, endpoints []observer.Endpoint) {
+	ch <- notifyOp{
+		op: op,
+		endpoints: slices.SortedFunc(
+			slices.Values(endpoints),
+			func(a, b observer.Endpoint) int {
+				return cmp.Compare(a.ID, b.ID)
+			},
+		),
+	}
+}
+
+type notifyOp struct {
+	op        string // add, remove, change
+	endpoints []observer.Endpoint
 }
