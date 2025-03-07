@@ -158,7 +158,7 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (default=none): The default mapping mode. Valid modes are:
+  - `mode` (default=otel): The default mapping mode. Valid modes are:
     - `none`
     - `ecs`
     - `otel`
@@ -178,6 +178,7 @@ See below for a description of each mapping mode.
 #### OTel mapping mode
 
 Requires Elasticsearch 8.12 or above.
+Works best with `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` enabled.
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
