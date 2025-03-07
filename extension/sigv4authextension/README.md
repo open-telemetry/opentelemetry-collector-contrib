@@ -23,11 +23,21 @@ The configuration fields are as follows:
   * `sts_region`: The AWS region where STS is used to assumed the configured role
     * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
 * `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
+* `assume_role_with_web_identity`: **Optional**. Specifies the configuration needed to assume a role with web identity
+  * `arn`: The Amazon Resource Name (ARN) of a role to assume - this must have a trust policy to allow it to be assumed
+  * `token_file`: The path to the file containing the JWT token to be excahanged
+  * `sts_region`: The AWS region where STS is used to assumed the configured role
+    * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
+* `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
     * Note that an attempt will be made to obtain a valid region from the endpoint of the service you are exporting to
     * [List of AWS regions](https://docs.aws.amazon.com/AmazonRDS/latest/UserGuide/Concepts.RegionsAndAvailabilityZones.html)
 * `service`: **Optional**. The AWS service for AWS Sigv4
     * Note for supported services an attempt will be made to obtain a valid service from the endpoint of the service you are exporting to. Supported services include - workspaces, es, logs and traces.
 
+
+## Assume Role
+
+Example:
 
 ```yaml
 extensions:
@@ -59,3 +69,41 @@ service:
 ## Notes
 
 * The collector must have valid AWS credentials as used by the [AWS SDK for Go](https://aws.github.io/aws-sdk-go-v2/docs/configuring-sdk/#specifying-credentials)
+
+
+## Assume Role with Web Identity
+
+Configuring `assume_role_with_web_identity` will cause the sigv4auth extension to exchange the token in the specified `token_file` for AWS credentials. This is especially useful for authenticating from on-prem systems other cloud providers via OIDC to publish telemetry to an AWS destination (e.g. Amazon Managed Prometheus).
+
+### Prerequisites:
+
+To utilize Assume Role with Web Identity with the sigv4 extension, an AWS IAM role must be setup to be able to be assumed via OIDC. Once established, a configuration like below can be used to assume that role and interact with AWS services. In kubernetes, the service account token is typically stored in `/var/run/secrets/kubernetes.io/serviceaccount/token`. Before implementing, ensure that the audience is included in the AWS OIDC provider, and the claims match any conditions in the IAM role trust policy.
+
+### Example Configuration:
+
+```yaml
+extensions:
+  sigv4auth:
+    assume_role_with_web_identity:
+      arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
+      token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+
+receivers:
+  hostmetrics:
+    scrapers:
+      memory:
+
+exporters:
+  prometheusremotewrite:
+    endpoint: "https://aps-workspaces.us-west-2.amazonaws.com/workspaces/ws-XXX/api/v1/remote_write"
+    auth:
+      authenticator: sigv4auth
+
+service:
+  extensions: [sigv4auth]
+  pipelines:
+    metrics:
+      receivers: [hostmetrics]
+      processors: []
+      exporters: [prometheusremotewrite]
+```
