@@ -10,10 +10,9 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -41,11 +40,11 @@ type logsReceiver struct {
 	doneChan            chan bool
 }
 
-const maxLogGroupsPerDiscovery = int64(50)
+const maxLogGroupsPerDiscovery = int32(50)
 
 type client interface {
-	DescribeLogGroupsWithContext(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...request.Option) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
-	FilterLogEventsWithContext(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...request.Option) (*cloudwatchlogs.FilterLogEventsOutput, error)
+	DescribeLogGroups(ctx context.Context, input *cloudwatchlogs.DescribeLogGroupsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.DescribeLogGroupsOutput, error)
+	FilterLogEvents(ctx context.Context, input *cloudwatchlogs.FilterLogEventsInput, opts ...func(options *cloudwatchlogs.Options)) (*cloudwatchlogs.FilterLogEventsOutput, error)
 }
 
 type streamNames struct {
@@ -58,10 +57,10 @@ func (sn *streamNames) request(limit int, nextToken string, st, et *time.Time) *
 		LogGroupName: &sn.group,
 		StartTime:    aws.Int64(st.UnixMilli()),
 		EndTime:      aws.Int64(et.UnixMilli()),
-		Limit:        aws.Int64(int64(limit)),
+		Limit:        aws.Int32(int32(limit)),
 	}
 	if len(sn.names) > 0 {
-		base.LogStreamNames = sn.names
+		base.LogStreamNames = aws.ToStringSlice(sn.names)
 	}
 	if nextToken != "" {
 		base.NextToken = aws.String(nextToken)
@@ -83,7 +82,7 @@ func (sp *streamPrefix) request(limit int, nextToken string, st, et *time.Time) 
 		LogGroupName:        &sp.group,
 		StartTime:           aws.Int64(st.UnixMilli()),
 		EndTime:             aws.Int64(et.UnixMilli()),
-		Limit:               aws.Int64(int64(limit)),
+		Limit:               aws.Int32(int32(limit)),
 		LogStreamNamePrefix: sp.prefix,
 	}
 	if nextToken != "" {
@@ -208,7 +207,7 @@ func (l *logsReceiver) pollForLogs(ctx context.Context, pc groupRequest, startTi
 			}
 		default:
 			input := pc.request(l.maxEventsPerRequest, *nextToken, &startTime, &endTime)
-			resp, err := l.client.FilterLogEventsWithContext(ctx, input)
+			resp, err := l.client.FilterLogEvents(ctx, input)
 			if err != nil {
 				l.logger.Error("unable to retrieve logs from cloudwatch", zap.String("log group", pc.groupName()), zap.Error(err))
 				break
@@ -302,7 +301,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 		}
 
 		req := &cloudwatchlogs.DescribeLogGroupsInput{
-			Limit: aws.Int64(maxLogGroupsPerDiscovery),
+			Limit: aws.Int32(maxLogGroupsPerDiscovery),
 		}
 
 		if len(*nextToken) > 0 {
@@ -313,7 +312,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			req.LogGroupNamePrefix = &auto.Prefix
 		}
 
-		dlgResults, err := l.client.DescribeLogGroupsWithContext(ctx, req)
+		dlgResults, err := l.client.DescribeLogGroups(ctx, req)
 		if err != nil {
 			return groups, fmt.Errorf("unable to list log groups: %w", err)
 		}
@@ -327,7 +326,7 @@ func (l *logsReceiver) discoverGroups(ctx context.Context, auto *AutodiscoverCon
 			}
 
 			numGroups++
-			l.logger.Debug("discovered log group", zap.String("log group", lg.GoString()))
+
 			// default behavior is to collect all if not stream filtered
 			if len(auto.Streams.Names) == 0 && len(auto.Streams.Prefixes) == 0 {
 				groups = append(groups, &streamNames{group: *lg.LogGroupName})
@@ -351,17 +350,20 @@ func (l *logsReceiver) ensureSession() error {
 	if l.client != nil {
 		return nil
 	}
-	awsConfig := aws.NewConfig().WithRegion(l.region)
-	options := session.Options{
-		Config: *awsConfig,
+
+	cfgOptions := []func(*config.LoadOptions) error{
+		config.WithRegion(l.region),
 	}
+
 	if l.imdsEndpoint != "" {
-		options.EC2IMDSEndpoint = l.imdsEndpoint
+		cfgOptions = append(cfgOptions, config.WithEC2IMDSEndpoint(l.imdsEndpoint))
 	}
+
 	if l.profile != "" {
-		options.Profile = l.profile
+		cfgOptions = append(cfgOptions, config.WithSharedConfigProfile(l.profile))
 	}
-	s, err := session.NewSessionWithOptions(options)
-	l.client = cloudwatchlogs.New(s)
+
+	cfg, err := config.LoadDefaultConfig(context.Background(), cfgOptions...)
+	l.client = cloudwatchlogs.NewFromConfig(cfg)
 	return err
 }

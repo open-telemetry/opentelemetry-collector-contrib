@@ -15,7 +15,7 @@ import (
 )
 
 var (
-	errFormatOTLPAttributes       = fmt.Errorf("value should be of the format key=\"value\"")
+	errFormatOTLPAttributes       = fmt.Errorf("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
 	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
 )
 
@@ -44,6 +44,10 @@ func (v *KeyValue) Set(s string) error {
 	}
 	if val == "false" {
 		(*v)[kv[0]] = false
+		return nil
+	}
+	if intVal, err := strconv.Atoi(val); err == nil {
+		(*v)[kv[0]] = intVal
 		return nil
 	}
 	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
@@ -113,6 +117,8 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.String(k, v))
 			case bool:
 				attributes = append(attributes, attribute.Bool(k, v))
+			case int:
+				attributes = append(attributes, attribute.Int(k, v))
 			}
 		}
 	}
@@ -129,6 +135,8 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.String(k, v))
 			case bool:
 				attributes = append(attributes, attribute.Bool(k, v))
+			case int:
+				attributes = append(attributes, attribute.Int(k, v))
 			}
 		}
 	}
@@ -170,15 +178,13 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\". "+
-		"You can use key=true or key=false. to set boolean attribute."+
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
+		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
 
-	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format key=\"value\". "+
-		"You can use key=true or key=false. to set boolean attribute."+
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
+		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
 
 	// TLS CA configuration
 	fs.StringVar(&c.CaFile, "ca-cert", c.CaFile, "Trusted Certificate Authority to verify server certificate")

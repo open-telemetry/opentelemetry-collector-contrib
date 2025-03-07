@@ -11,7 +11,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/customottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -27,8 +26,8 @@ type MetricKey struct {
 
 type ExplicitHistogram[K any] struct {
 	Buckets []float64
-	Count   *ottl.Statement[K]
-	Value   *ottl.Statement[K]
+	Count   *ottl.ValueExpression[K]
+	Value   *ottl.ValueExpression[K]
 }
 
 func (h *ExplicitHistogram[K]) fromConfig(
@@ -42,12 +41,12 @@ func (h *ExplicitHistogram[K]) fromConfig(
 	var err error
 	h.Buckets = mi.Buckets
 	if mi.Count != "" {
-		h.Count, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Count))
+		h.Count, err = parser.ParseValueExpression(mi.Count)
 		if err != nil {
-			return fmt.Errorf("failed to parse count statement for explicit histogram: %w", err)
+			return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	h.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
 		return fmt.Errorf("failed to parse value statement for explicit histogram: %w", err)
 	}
@@ -56,8 +55,8 @@ func (h *ExplicitHistogram[K]) fromConfig(
 
 type ExponentialHistogram[K any] struct {
 	MaxSize int32
-	Count   *ottl.Statement[K]
-	Value   *ottl.Statement[K]
+	Count   *ottl.ValueExpression[K]
+	Value   *ottl.ValueExpression[K]
 }
 
 func (h *ExponentialHistogram[K]) fromConfig(
@@ -71,20 +70,20 @@ func (h *ExponentialHistogram[K]) fromConfig(
 	var err error
 	h.MaxSize = mi.MaxSize
 	if mi.Count != "" {
-		h.Count, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Count))
+		h.Count, err = parser.ParseValueExpression(mi.Count)
 		if err != nil {
-			return fmt.Errorf("failed to parse count statement for exponential histogram: %w", err)
+			return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	h.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
-		return fmt.Errorf("failed to parse value statement for exponential histogram: %w", err)
+		return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
 	}
 	return nil
 }
 
 type Sum[K any] struct {
-	Value *ottl.Statement[K]
+	Value *ottl.ValueExpression[K]
 }
 
 func (s *Sum[K]) fromConfig(
@@ -96,9 +95,9 @@ func (s *Sum[K]) fromConfig(
 	}
 
 	var err error
-	s.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	s.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
-		return fmt.Errorf("failed to parse value statement for sum: %w", err)
+		return fmt.Errorf("failed to parse value OTTL expression for sum: %w", err)
 	}
 	return nil
 }

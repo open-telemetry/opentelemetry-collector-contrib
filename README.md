@@ -89,10 +89,11 @@ Emeritus Triagers:
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
-- [Antoine Toulme](https://github.com/atoulme), Splunk
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
-- [David Ashpole](https://github.com/dashpole), Google
+- [David Ashpole](https://github.com/dashpole), Google (on leave)
+- [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
 - [Matt Wear](https://github.com/mwear), Lightstep
 - [Sam DeHaan](https://github.com/dehaansa), Grafana Labs
 - [Ziqi Zhao](https://github.com/fatsheep9146), Alibaba
@@ -108,6 +109,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 - [Alex Boten](https://github.com/codeboten), Honeycomb
 - [Andrzej Stencel](https://github.com/andrzej-stencel), Elastic
+- [Antoine Toulme](https://github.com/atoulme), Splunk
 - [Bogdan Drutu](https://github.com/bogdandrutu), Snowflake
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
@@ -123,6 +125,10 @@ Emeritus Maintainers
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
+
+### No Over-Representation
+
+A community member cannot be promoted to be a Collector contrib maintainer if, after their promotion, the resulting maintainers group has more than one-fourth (25%) of the members affiliated with the same employer. Job changes and similar events might result in over-representation, and no new maintainers from the same company can be promoted until representation is balanced again. In the event of confusion or concern, the OpenTelemetry Collector SIG will defer to the CNCF definition of "same employer".
 
 ## PRs and Reviews
 

@@ -127,13 +127,8 @@ func (c *Config) Validate() error {
 		return fmt.Errorf("hostname field is invalid: %w", err)
 	}
 
-	if string(c.API.Key) == "" {
-		return ErrUnsetAPIKey
-	}
-
-	invalidAPIKeyChars := NonHexRegex.FindAllString(string(c.API.Key), -1)
-	if len(invalidAPIKeyChars) > 0 {
-		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	if err := StaticAPIKeyCheck(string(c.API.Key)); err != nil {
+		return err
 	}
 
 	if err := c.Traces.Validate(); err != nil {
@@ -149,6 +144,19 @@ func (c *Config) Validate() error {
 		return errors.New("reporter_period must be 5 minutes or higher")
 	}
 
+	return nil
+}
+
+// StaticAPIKey Check checks if api::key is either empty or contains invalid (non-hex) characters
+// It does not validate online; this is handled on startup.
+func StaticAPIKeyCheck(key string) error {
+	if key == "" {
+		return ErrUnsetAPIKey
+	}
+	invalidAPIKeyChars := NonHexRegex.FindAllString(key, -1)
+	if len(invalidAPIKeyChars) > 0 {
+		return fmt.Errorf("%w: invalid characters: %s", ErrAPIKeyFormat, strings.Join(invalidAPIKeyChars, ", "))
+	}
 	return nil
 }
 

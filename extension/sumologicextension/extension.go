@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
 	grpccredentials "google.golang.org/grpc/credentials"
@@ -106,7 +106,7 @@ func init() {
 var errGRPCNotSupported = fmt.Errorf("gRPC is not supported by sumologicextension")
 
 // SumologicExtension implements ClientAuthenticator
-var _ auth.Client = (*SumologicExtension)(nil)
+var _ extensionauth.Client = (*SumologicExtension)(nil)
 
 func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
 	if conf.Credentials.InstallationToken == "" {

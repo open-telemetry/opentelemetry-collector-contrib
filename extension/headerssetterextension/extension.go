@@ -9,7 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
@@ -22,7 +22,7 @@ type Header struct {
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, error) {
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
@@ -63,18 +63,18 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 		headers = append(headers, Header{action: a, source: s})
 	}
 
-	return auth.NewClient(
-		auth.WithClientRoundTripper(
+	return extensionauth.NewClient(
+		extensionauth.WithClientRoundTripper(
 			func(base http.RoundTripper) (http.RoundTripper, error) {
 				return &headersRoundTripper{
 					base:    base,
 					headers: headers,
 				}, nil
 			}),
-		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
+		extensionauth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
 			return &headersPerRPC{headers: headers}, nil
 		}),
-	), nil
+	)
 }
 
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets

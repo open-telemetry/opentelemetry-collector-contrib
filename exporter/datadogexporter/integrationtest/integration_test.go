@@ -6,6 +6,7 @@ package integrationtest // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
@@ -562,7 +564,32 @@ func TestIntegrationHostMetrics_WithRemapping(t *testing.T) {
 		"otel.system.cpu.load_average.5m":  {},
 		"otel.system.memory.usage":         {},
 	}
-	testIntegrationHostMetrics(t, expectedMetrics)
+	testIntegrationHostMetrics(t, expectedMetrics, false)
+}
+
+func TestIntegrationHostMetrics_WithRemappingSerializer(t *testing.T) {
+	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	}()
+
+	expectedMetrics := map[string]struct{}{
+		// DD conventions
+		"system.load.15":    {},
+		"system.load.5":     {},
+		"system.mem.total":  {},
+		"system.mem.usable": {},
+
+		// OTel conventions with otel. prefix
+		"otel.system.cpu.load_average.15m": {},
+		"otel.system.cpu.load_average.5m":  {},
+		"otel.system.memory.usage":         {},
+	}
+	testIntegrationHostMetrics(t, expectedMetrics, true)
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping(t *testing.T) {
@@ -578,10 +605,10 @@ func TestIntegrationHostMetrics_WithoutRemapping(t *testing.T) {
 		"system.cpu.load_average.5m":  {},
 		"system.memory.usage":         {},
 	}
-	testIntegrationHostMetrics(t, expectedMetrics)
+	testIntegrationHostMetrics(t, expectedMetrics, false)
 }
 
-func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{}) {
+func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{}, useSerializer bool) {
 	// 1. Set up mock Datadog server
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte, 100)}
 	server := testutil.DatadogServerMock(seriesRec.HandlerFunc)
@@ -604,17 +631,66 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 	for len(metricMap) < len(expectedMetrics) {
 		select {
 		case metricsBytes := <-seriesRec.ReqChan:
-			var metrics seriesSlice
-			gz := getGzipReader(t, metricsBytes)
-			dec := json.NewDecoder(gz)
-			assert.NoError(t, dec.Decode(&metrics))
-			for _, s := range metrics.Series {
-				if _, ok := expectedMetrics[s.Metric]; ok {
-					metricMap[s.Metric] = s
-				}
+			if useSerializer {
+				var err error
+				metricMap, err = seriesFromSerializer(metricsBytes, expectedMetrics)
+				require.NoError(t, err)
+			} else {
+				var err error
+				metricMap, err = seriesFromAPIClient(t, metricsBytes, expectedMetrics)
+				require.NoError(t, err)
 			}
 		case <-time.After(60 * time.Second):
 			t.Fail()
 		}
 	}
+}
+
+func seriesFromSerializer(metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
+	zr, err := zlib.NewReader(bytes.NewReader(metricsBytes))
+	if err != nil {
+		return nil, err
+	}
+	pl := new(gogen.MetricPayload)
+	b, err := io.ReadAll(zr)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = pl.Unmarshal(b); err != nil {
+		return nil, err
+	}
+	metricMap := make(map[string]series)
+	for _, s := range pl.GetSeries() {
+		if _, ok := expectedMetrics[s.GetMetric()]; ok {
+			points := make([]point, len(s.GetPoints()))
+			for i, p := range s.GetPoints() {
+				points[i] = point{
+					Timestamp: int(p.GetTimestamp()),
+					Value:     p.GetValue(),
+				}
+			}
+			metricMap[s.GetMetric()] = series{
+				Metric: s.GetMetric(),
+				Points: points,
+			}
+		}
+	}
+	return metricMap, nil
+}
+
+func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
+	var metrics seriesSlice
+	gz := getGzipReader(t, metricsBytes)
+	dec := json.NewDecoder(gz)
+	if err := dec.Decode(&metrics); err != nil {
+		return nil, err
+	}
+	metricMap := make(map[string]series)
+	for _, s := range metrics.Series {
+		if _, ok := expectedMetrics[s.Metric]; ok {
+			metricMap[s.Metric] = s
+		}
+	}
+	return metricMap, nil
 }

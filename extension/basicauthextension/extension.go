@@ -16,7 +16,7 @@ import (
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	creds "google.golang.org/grpc/credentials"
 )
 
@@ -33,17 +33,17 @@ type basicAuth struct {
 	matchFunc  func(username, password string) bool
 }
 
-func newClientAuthExtension(cfg *Config) auth.Client {
+func newClientAuthExtension(cfg *Config) (extensionauth.Client, error) {
 	ba := basicAuth{
 		clientAuth: cfg.ClientAuth,
 	}
-	return auth.NewClient(
-		auth.WithClientRoundTripper(ba.roundTripper),
-		auth.WithClientPerRPCCredentials(ba.perRPCCredentials),
+	return extensionauth.NewClient(
+		extensionauth.WithClientRoundTripper(ba.roundTripper),
+		extensionauth.WithClientPerRPCCredentials(ba.perRPCCredentials),
 	)
 }
 
-func newServerAuthExtension(cfg *Config) (auth.Server, error) {
+func newServerAuthExtension(cfg *Config) (extensionauth.Server, error) {
 	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
 		return nil, errNoCredentialSource
 	}
@@ -51,10 +51,10 @@ func newServerAuthExtension(cfg *Config) (auth.Server, error) {
 	ba := basicAuth{
 		htpasswd: cfg.Htpasswd,
 	}
-	return auth.NewServer(
-		auth.WithServerStart(ba.serverStart),
-		auth.WithServerAuthenticate(ba.authenticate),
-	), nil
+	return extensionauth.NewServer(
+		extensionauth.WithServerStart(ba.serverStart),
+		extensionauth.WithServerAuthenticate(ba.authenticate),
+	)
 }
 
 func (ba *basicAuth) serverStart(_ context.Context, _ component.Host) error {

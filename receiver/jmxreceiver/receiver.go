@@ -165,7 +165,12 @@ func (jmx *jmxMetricReceiver) buildOTLPReceiver() (receiver.Metrics, error) {
 	config.GRPC.NetAddr = confignet.AddrConfig{Endpoint: endpoint, Transport: confignet.TransportTypeTCP}
 	config.HTTP = nil
 
-	return factory.CreateMetrics(context.Background(), jmx.params, config, jmx.nextConsumer)
+	params := receiver.Settings{
+		ID:                component.NewIDWithName(factory.Type(), jmx.params.ID.String()),
+		TelemetrySettings: jmx.params.TelemetrySettings,
+		BuildInfo:         jmx.params.BuildInfo,
+	}
+	return factory.CreateMetrics(context.Background(), params, config, jmx.nextConsumer)
 }
 
 func (jmx *jmxMetricReceiver) buildJMXMetricGathererConfig() (string, error) {

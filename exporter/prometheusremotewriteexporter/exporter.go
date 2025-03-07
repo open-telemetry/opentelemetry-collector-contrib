@@ -38,11 +38,21 @@ import (
 type prwTelemetry interface {
 	recordTranslationFailure(ctx context.Context)
 	recordTranslatedTimeSeries(ctx context.Context, numTS int)
+	recordRemoteWriteSentBatch(ctx context.Context)
+	setNumberConsumer(ctx context.Context, n int64)
 }
 
 type prwTelemetryOtel struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 	otelAttrs        []attribute.KeyValue
+}
+
+func (p *prwTelemetryOtel) setNumberConsumer(ctx context.Context, n int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteConsumers.Add(ctx, n, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordRemoteWriteSentBatch(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteSentBatches.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
@@ -117,7 +127,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, errors.New("invalid endpoint")
 	}
 
-	prwTelemetry, err := newPRWTelemetry(set)
+	telemetry, err := newPRWTelemetry(set)
 	if err != nil {
 		return nil, err
 	}
@@ -131,6 +141,9 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	if cfg.MaxBatchRequestParallelism != nil {
 		concurrency = *cfg.MaxBatchRequestParallelism
 	}
+
+	// Set the desired number of consumers as a metric for the exporter.
+	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
 	prwe := &prwExporter{
 		endpointURL:       endpointURL,
@@ -151,7 +164,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes:   cfg.AddMetricSuffixes,
 			SendMetadata:        cfg.SendMetadata,
 		},
-		telemetry:      prwTelemetry,
+		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
 	}
 
@@ -350,6 +363,7 @@ func (prwe *prwExporter) execute(ctx context.Context, writeReq *prompb.WriteRequ
 		req.Header.Set("User-Agent", prwe.userAgentHeader)
 
 		resp, err := prwe.client.Do(req)
+		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
 			return err
 		}

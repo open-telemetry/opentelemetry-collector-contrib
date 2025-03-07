@@ -5,6 +5,7 @@ package router // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
@@ -34,29 +35,51 @@ func (t *Transformer) CanProcess() bool {
 	return true
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, t.Process(ctx, entries[i]))
+	}
+	return errors.Join(errs...)
+}
+
 // Process will route incoming entries based on matching expressions
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+	if entry == nil {
+		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+	}
+
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
+
+	logFields := []zap.Field{
+		zap.Any("entry.timestamp", entry.Timestamp),
+	}
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
 
 	for _, route := range t.routes {
 		matches, err := vm.Run(route.Expression, env)
 		if err != nil {
-			t.Logger().Warn("Running expression returned an error", zap.Error(err))
+			logFields = append(logFields, zap.Any("error", err))
+			t.Logger().Warn("Running expression returned an error", logFields...)
 			continue
 		}
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
 			if err = route.Attribute(entry); err != nil {
-				t.Logger().Error("Failed to label entry", zap.Error(err))
+				logFields = append(logFields, zap.Any("error", err))
+				t.Logger().Error("Failed to label entry", logFields...)
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
 				err = output.Process(ctx, entry)
+				logFields = append(logFields, zap.Any("error", err))
 				if err != nil {
-					t.Logger().Error("Failed to process entry", zap.Error(err))
+					t.Logger().Error("Failed to process entry", logFields...)
 				}
 			}
 			break

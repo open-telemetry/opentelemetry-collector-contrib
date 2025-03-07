@@ -276,7 +276,7 @@ func TestAddMissingExporters(t *testing.T) {
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
 		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), &oCfg)
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(exporterFactory.Type()), &oCfg)
 	}
 
 	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)

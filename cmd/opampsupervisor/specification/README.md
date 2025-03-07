@@ -102,6 +102,10 @@ capabilities:
   # the Server.
   reports_own_logs: # true if unspecified
   
+  # The Collector will report own traces to the destination specified by
+  # the Server.
+  reports_own_traces: # true if unspecified
+  
   # The Collector will accept connections settings for exporters
   # from the Server.
   accepts_other_connection_settings: # false if unspecified
@@ -138,9 +142,10 @@ agent:
   # Optional user name to drop the privileges to when running the
   # Collector process.
   run_as: myuser
-  # Path to optional local Collector config file to be merged with the
+  # Path to optional local Collector config files to be merged with the
   # config provided by the OpAMP server.
-  config_file: /etc/otelcol/config.yaml
+  config_files: 
+    - /etc/otelcol/config.yaml
   # Optional directories that are allowed to be read/written by the
   # Collector.
   # If unspecified then NO access to the filesystem is allowed.
@@ -169,6 +174,36 @@ agent:
   opamp_server_port: 
 
 ```
+
+**Note:**
+
+Please be aware that when using the `.agent.config_files` parameter,
+the configuration files specified are applied after the configuration from the OpAMP server.
+After the configuration files, arguments present in `.agent.args` are passed to the executable binary.
+The environmanet variables specified in `.agent.env` are set in the collector process environment.
+
+The following configuration:
+
+```yaml
+agent:
+  executable: ./otel-binary
+  config_files: 
+    - './custom-config.yaml'
+    - './another-custom-config.yaml'
+  args:
+    - '--feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient'
+  env:
+    HOME: '/dev/home'
+    GO_HOME: '~/go'
+```
+
+results to the following startup parameters for the collector process:
+
+```shell
+./otel-binary --config opamp-config.yaml --config custom-config.yaml --config another-custom-config.yaml --feature-gates exporter.datadogexporter.UseLogsAgentExporter,exporter.datadogexporter.metricexportnativeclient
+```
+
+In case of conflicting values in the configuration files, the latest applied value takes precedence.
 
 ### Operation When OpAMP Server is Unavailable
 
@@ -462,7 +497,7 @@ extensions:
 The extension uses an OpAMP connection to the Supervisor when used with
 the Supervisor model.
 
-The extensions' configuration cannot be overridden by the remote
+The extension's configuration cannot be overridden by the remote
 configuration.
 
 The same extension can be used to connect directly to the OpAMP Server,
