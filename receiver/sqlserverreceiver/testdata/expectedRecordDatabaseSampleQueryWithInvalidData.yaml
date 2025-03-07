@@ -63,7 +63,7 @@ resourceLogs:
                   doubleValue: 0
               - key: sqlserver.estimated_completion_time
                 value:
-                  doubleValue: 0
+                  intValue: 0
               - key: sqlserver.cpu_time
                 value:
                   intValue: 0

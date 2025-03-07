@@ -584,7 +584,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing percent complete. original value: %s, err: %s", row[percentComplete], err))
 		}
-		estimatedCompletionTimeVal, err := strconv.ParseFloat(row[estimatedCompletionTime], 32)
+		estimatedCompletionTimeVal, err := strconv.Atoi(row[estimatedCompletionTime])
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing estimated completion time number. original value: %s, err: %s", row[estimatedCompletionTime], err))
 		}
@@ -658,7 +658,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.Attributes().PutInt(dbPrefix+openTransactionCount, int64(openTransactionCountVal))
 		record.Attributes().PutInt(dbPrefix+transactionID, int64(transactionIDVal))
 		record.Attributes().PutDouble(dbPrefix+percentComplete, percentCompleteVal)
-		record.Attributes().PutDouble(dbPrefix+estimatedCompletionTime, estimatedCompletionTimeVal)
+		record.Attributes().PutInt(dbPrefix+estimatedCompletionTime, int64(estimatedCompletionTimeVal))
 		record.Attributes().PutInt(dbPrefix+cpuTime, int64(cpuTimeVal))
 		record.Attributes().PutInt(dbPrefix+totalElapsedTime, int64(totalElapsedTimeVal))
 		record.Attributes().PutInt(dbPrefix+reads, int64(readsVal))
