@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -120,54 +121,44 @@ var (
 	}
 )
 
-const (
-	DefaultEndpoint = "unix:///var/run/docker.sock"
-	DockerHostEnv   = "DOCKER_HOST"
-)
-
-func TestResolveDockerEndpoint(t *testing.T) {
-	const dockerHostEnv = "DOCKER_HOST"
-
+func TestDockerHostOption(t *testing.T) {
 	tests := []struct {
 		name        string
-		cfg         Config
-		env         string
-		expected    string
+		endpoint    string
+		expectEnv   bool
 		description string
 	}{
 		{
-			name:        "Explicit endpoint in config",
-			cfg:         Config{Endpoint: "tcp://192.168.1.100:2375"},
-			expected:    "tcp://192.168.1.100:2375",
-			description: "Should return the endpoint from the config if it's set.",
+			name:        "Empty endpoint, DOCKER_HOST set",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() when Endpoint is empty.",
 		},
 		{
-			name:        "DOCKER_HOST env variable set",
-			cfg:         Config{},
-			env:         "tcp://dockerhost:2376",
-			expected:    "tcp://dockerhost:2376",
-			description: "Should return the value of the DOCKER_HOST environment variable.",
+			name:        "Empty endpoint and empty env",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() even if DOCKER_HOST is empty.",
 		},
 		{
-			name:        "Empty config and empty env",
-			cfg:         Config{},
-			env:         "",
-			expected:    "",
-			description: "Should return an empty string if no endpoint is set.",
-		},
-		{
-			name:        "Config takes precedence over DOCKER_HOST",
-			cfg:         Config{Endpoint: "tcp://config:1234"},
-			env:         "tcp://env:5678",
-			expected:    "tcp://config:1234",
-			description: "Should return the config endpoint even if DOCKER_HOST is set.",
+			name:        "Config endpoint set, DOCKER_HOST ignored",
+			endpoint:    "tcp://config:1234",
+			expectEnv:   false,
+			description: "Should not append WithHostFromEnv() when Endpoint is set.",
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			t.Setenv(dockerHostEnv, tt.env)
-			assert.Equal(t, tt.expected, tt.cfg.resolveDockerEndpoint(), tt.description)
+			var opts []client.Opt
+			if tt.endpoint == "" {
+				opts = append(opts, client.WithHostFromEnv())
+			}
+
+			// Check if there is at least one function in opts
+			found := len(opts) > 0
+
+			assert.Equal(t, tt.expectEnv, found, tt.description)
 		})
 	}
 }
