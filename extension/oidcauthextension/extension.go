@@ -47,7 +47,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (extensionauth.Server, error) {
+func newExtension(cfg *Config, logger *zap.Logger) extensionauth.Server {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
@@ -55,7 +55,7 @@ func newExtension(cfg *Config, logger *zap.Logger) (extensionauth.Server, error)
 	return &oidcExtension{
 		cfg:    cfg,
 		logger: logger,
-	}, nil
+	}
 }
 
 func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
