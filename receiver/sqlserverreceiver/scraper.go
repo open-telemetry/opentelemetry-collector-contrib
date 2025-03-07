@@ -612,21 +612,15 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		if err != nil {
 			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing transaction isolation level. original value: %s, err: %s", row[transactionIsolationLevel], err))
 		}
-		// todo: check case sensitive?
-		lockTimeoutVal := 0
-		if row[lockTimeout] != "" {
-			lockTimeoutVal, err = strconv.Atoi(row[lockTimeout])
-			if err != nil {
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing lock timeout. original value: %s, err: %s", row[lockTimeout], err))
-			}
+
+		lockTimeoutVal, err := strconv.Atoi(row[lockTimeout])
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing lock timeout. original value: %s, err: %s", row[lockTimeout], err))
 		}
 
-		deadlockPriorityVal := 0
-		if row[deadlockPriority] != "" {
-			deadlockPriorityVal, err = strconv.Atoi(row[deadlockPriority])
-			if err != nil {
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing deadlock priority. original value: %s, err: %s", row[deadlockPriority], err))
-			}
+		deadlockPriorityVal, err := strconv.Atoi(row[deadlockPriority])
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing deadlock priority. original value: %s, err: %s", row[deadlockPriority], err))
 		}
 
 		rowCountVal, err := strconv.Atoi(row[rowCount])
