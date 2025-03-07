@@ -346,7 +346,7 @@ func TestAzureScraperScrape(t *testing.T) {
 
 	cfgLimitedMertics := createDefaultConfig().(*Config)
 	cfgLimitedMertics.MaximumNumberOfMetricsInACall = 2
-	cfgLimitedMertics.Metrics = map[string]map[string][]string{
+	cfgLimitedMertics.Metrics = NestedListAlias{
 		"namespace1": {
 			"metric1": {"*"},
 			"metric3": {"total"},
@@ -768,24 +768,24 @@ func TestGetMetricAggregations(t *testing.T) {
 	testMetricName := "MetricName"
 	tests := []struct {
 		name    string
-		filters map[string]map[string][]string
+		filters NestedListAlias
 		want    []string
 	}{
 		{
 			"should return all aggregations when metrics filter empty",
-			map[string]map[string][]string{},
+			NestedListAlias{},
 			aggregations,
 		},
 		{
 			"should return all aggregations when namespace not in filters",
-			map[string]map[string][]string{
+			NestedListAlias{
 				"another.namespace": nil,
 			},
 			aggregations,
 		},
 		{
 			"should return all aggregations when metric in filters",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {},
 				},
@@ -794,7 +794,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should return all aggregations ignoring metric name case",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					strings.ToLower(testMetricName): {},
 				},
@@ -803,7 +803,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should return all aggregations when asterisk in filters",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {filterAllAggregations},
 				},
@@ -812,7 +812,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should be empty when metric not in filters",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					"not_this_metric": {},
 				},
@@ -821,7 +821,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should return one aggregations",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {aggregations[0]},
 				},
@@ -830,7 +830,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should return one aggregations ignoring aggregation case",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {strings.ToLower(aggregations[0])},
 				},
@@ -839,7 +839,7 @@ func TestGetMetricAggregations(t *testing.T) {
 		},
 		{
 			"should return many aggregations",
-			map[string]map[string][]string{
+			NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {aggregations[0], aggregations[2]},
 				},

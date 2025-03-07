@@ -452,7 +452,7 @@ func getResourceMetricsValuesRequestOptions(
 	metrics []string,
 	dimensionsStr string,
 	timeGrain string,
-	aggregations string,
+	aggregationsStr string,
 	start int,
 	end int,
 	top int32,
@@ -461,7 +461,7 @@ func getResourceMetricsValuesRequestOptions(
 		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(aggregations),
+		Aggregation: to.Ptr(aggregationsStr),
 		Top:         to.Ptr(top),
 		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
@@ -503,7 +503,7 @@ func (s *azureScraper) processTimeseriesData(
 	}
 }
 
-func getMetricAggregations(metricNamespace, metricName string, filters map[string]map[string][]string) []string {
+func getMetricAggregations(metricNamespace, metricName string, filters NestedListAlias) []string {
 	// default behavior when no metric filters specified: pass all metrics with all aggregations
 	if len(filters) == 0 {
 		return aggregations
