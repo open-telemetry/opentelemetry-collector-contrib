@@ -9,9 +9,8 @@ status:
       date: "2024-07-09"
       migration: Use OTLP exporter (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33916)
   distributions:
-  - contrib
   codeowners:
-    active: [gramidt, mar4uk]
+    active: [gramidt, mar4uk, dehaansa, ArthurSens]
 
 tests:
   expect_consumer_error: true
