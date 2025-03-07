@@ -5,72 +5,152 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"bytes"
-	"errors"
+	"encoding/json"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
+
+func TestValidateMetric(t *testing.T) {
+	t.Parallel()
+
+	tests := map[string]struct {
+		metric      cloudwatchMetric
+		expectedErr error
+	}{
+		"ValidMetric": {
+			metric: cloudwatchMetric{
+				Namespace: "test/namespace",
+				Unit:      "Seconds",
+				Value: cloudwatchMetricValue{
+					isSet: true,
+				},
+				MetricName: "test",
+			},
+		},
+		"MissingMetricName": {
+			metric: cloudwatchMetric{
+				Namespace: "test/namespace",
+				Unit:      "Seconds",
+				Value: cloudwatchMetricValue{
+					isSet: true,
+				},
+			},
+			expectedErr: errNoMetricName,
+		},
+		"MissingMetricNamespace": {
+			metric: cloudwatchMetric{
+				Unit: "Seconds",
+				Value: cloudwatchMetricValue{
+					isSet: true,
+				},
+				MetricName: "test",
+			},
+			expectedErr: errNoMetricNamespace,
+		},
+		"MissingMetricUnit": {
+			metric: cloudwatchMetric{
+				Namespace: "test/namespace",
+				Value: cloudwatchMetricValue{
+					isSet: true,
+				},
+				MetricName: "test",
+			},
+			expectedErr: errNoMetricUnit,
+		},
+		"MissingMetricValue": {
+			metric: cloudwatchMetric{
+				Namespace: "test/namespace",
+				Unit:      "Seconds",
+				Value: cloudwatchMetricValue{
+					isSet: false,
+				},
+				MetricName: "test",
+			},
+			expectedErr: errNoMetricValue,
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			err := validateMetric(test.metric)
+			require.Equal(t, test.expectedErr, err)
+		})
+	}
+}
+
+// joinMetricsFromFile reads the metrics inside the files,
+// and joins them in the format a record expects it to be:
+// each metric is expected to be in 1 line, and every new
+// line marks a new metric
+func joinMetricsFromFile(t *testing.T, dir string, files []string) []byte {
+	if len(files) == 0 {
+		t.Fatalf("joinMetricsFromFile requires at least one file")
+	}
+	var buffer bytes.Buffer
+	for _, file := range files {
+		// get the metric from the files
+		data, err := os.ReadFile(filepath.Join(dir, file))
+		require.NoError(t, err)
+
+		// remove all insignificant spaces,
+		// including new lines
+		var compacted bytes.Buffer
+		err = json.Compact(&compacted, data)
+		require.NoError(t, err)
+
+		// append the metric and add new line
+		// to mark the end of this metric
+		buffer.Write(compacted.Bytes())
+		buffer.WriteByte('\n')
+	}
+	return buffer.Bytes()
+}
 
 func TestUnmarshalJSONMetrics(t *testing.T) {
 	t.Parallel()
 
 	filesDirectory := "testdata/json"
 	tests := map[string]struct {
-		metricFilename         string
+		files                  []string
 		metricExpectedFilename string
 		expectedErr            error
 	}{
-		"ValidRecordSingleMetric": {
+		"valid_record_single_metric": {
 			// test a record with a single metric
-			metricFilename:         "valid_record.json",
-			metricExpectedFilename: "valid_record_expected.json",
+			files:                  []string{"valid_metric.json"},
+			metricExpectedFilename: "valid_record_single_metric_expected.yaml",
 		},
-		"InvalidRecord": {
+		"invalid_record": {
 			// test a record with one invalid metric
-			metricFilename: "invalid_record.json",
-			expectedErr:    errors.New("0 metrics were extracted from the record"),
+			files:       []string{"invalid_metric.json"},
+			expectedErr: errEmptyRecord,
 		},
-		"ValidRecordSomeInvalidMetrics": {
+		"valid_record_multiple_metrics": {
 			// test a record with multiple
 			// metrics: some invalid, some
 			// valid
-			metricFilename:         "multiple_metrics.json",
-			metricExpectedFilename: "multiple_metrics_expected.json",
+			files: []string{
+				"valid_metric.json",
+				"invalid_metric.json",
+				"valid_metric.json",
+				"invalid_metric.json",
+			},
+			metricExpectedFilename: "valid_record_multiple_metrics_expected.yaml",
 		},
 	}
 
 	unmarshalerCW := &formatJSONUnmarshaler{component.BuildInfo{}, zap.NewNop()}
-	unmarshallerJSONMetric := pmetric.JSONUnmarshaler{}
-
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			data, err := os.ReadFile(filesDirectory + "/" + test.metricFilename)
-			require.NoError(t, err)
-
-			// a new line represents a new record, so we parse the file
-			// content to remove all new lines within each record, and
-			// leave only the ones that separate each of them
-			// Example input:
-			// [
-			//     {
-			//         "name": "a"
-			//     },
-			//     {
-			//         "name": "b"
-			//     }
-			// ]
-			// Example output:
-			// {name: "a"}
-			// {name: "b"}
-			record := bytes.ReplaceAll(data, []byte("]"), []byte(""))
-			record = bytes.ReplaceAll(record, []byte("["), []byte(""))
-			record = bytes.ReplaceAll(record, []byte("\n    },"), []byte("}#\n"))
-			record = bytes.ReplaceAll(record, []byte("\n"), []byte(""))
-			record = bytes.ReplaceAll(record, []byte("#"), []byte("\n"))
+			record := joinMetricsFromFile(t, filesDirectory, test.files)
 
 			metrics, err := unmarshalerCW.UnmarshalMetrics(record)
 			if test.expectedErr != nil {
@@ -78,15 +158,10 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 				return
 			}
 
+			expectedMetrics, err := golden.ReadMetrics(filepath.Join(filesDirectory, test.metricExpectedFilename))
 			require.NoError(t, err)
 
-			content, err := os.ReadFile(filesDirectory + "/" + test.metricExpectedFilename)
-			require.NoError(t, err)
-
-			expected, err := unmarshallerJSONMetric.UnmarshalMetrics(content)
-			require.NoError(t, err)
-
-			require.Equal(t, expected, metrics)
+			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
 		})
 	}
 }

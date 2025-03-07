@@ -26,6 +26,14 @@ const (
 	namespaceDelimiter                     = "/"
 )
 
+var (
+	errNoMetricName      = errors.New("cloudwatch metric is missing metric name field")
+	errNoMetricNamespace = errors.New("cloudwatch metric is missing namespace field")
+	errNoMetricUnit      = errors.New("cloudwatch metric is missing unit field")
+	errNoMetricValue     = errors.New("cloudwatch metric is missing value")
+	errEmptyRecord       = errors.New("0 metrics were extracted from the record")
+)
+
 type formatJSONUnmarshaler struct {
 	buildInfo component.BuildInfo
 	logger    *zap.Logger
@@ -78,6 +86,34 @@ type cloudwatchMetricValue struct {
 	Count float64 `json:"count"`
 }
 
+// validateMetric validates that the cloudwatch metric has been unmarshalled correctly
+func validateMetric(metric cloudwatchMetric) error {
+	if metric.MetricName == "" {
+		return errNoMetricName
+	}
+	if metric.Namespace == "" {
+		return errNoMetricNamespace
+	}
+	if metric.Unit == "" {
+		return errNoMetricUnit
+	}
+	if !metric.Value.isSet {
+		return errNoMetricValue
+	}
+	return nil
+}
+
+// UnmarshalJSON unmarshalls the data to a cloudwatchMetricValue,
+// and sets isSet to true upon a successful execution
+func (v *cloudwatchMetricValue) UnmarshalJSON(data []byte) error {
+	type valueType cloudwatchMetricValue
+	if err := jsoniter.ConfigFastest.Unmarshal(data, (*valueType)(v)); err != nil {
+		return err
+	}
+	v.isSet = true
+	return nil
+}
+
 // resourceKey stores the metric attributes
 // that make a cloudwatchMetric unique to
 // a resource
@@ -111,7 +147,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 			)
 			continue
 		}
-		if isValid, err := c.isMetricValid(cwMetric); !isValid {
+		if err := validateMetric(cwMetric); err != nil {
 			c.logger.Error(
 				"Invalid metric",
 				zap.Int("datum_index", datumIndex),
@@ -129,27 +165,10 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	}
 
 	if len(byResource) == 0 {
-		return pmetric.Metrics{}, errors.New("0 metrics were extracted from the record")
+		return pmetric.Metrics{}, errEmptyRecord
 	}
 
 	return c.createMetrics(byResource), nil
-}
-
-// isMetricValid validates that the cloudwatch metric has been unmarshalled correctly
-func (c *formatJSONUnmarshaler) isMetricValid(metric cloudwatchMetric) (bool, error) {
-	if metric.MetricName == "" {
-		return false, errors.New("cloudwatch metric is missing metric name field")
-	}
-	if metric.Namespace == "" {
-		return false, errors.New("cloudwatch metric is missing namespace field")
-	}
-	if metric.Unit == "" {
-		return false, errors.New("cloudwatch metric is missing unit field")
-	}
-	if !metric.Value.isSet {
-		return false, errors.New("cloudwatch metric is missing value")
-	}
-	return true, nil
 }
 
 // addMetricToResource adds a new cloudwatchMetric to the
@@ -252,15 +271,4 @@ func setDataPointAttributes(metric cloudwatchMetric, dp pmetric.SummaryDataPoint
 			attrs.PutStr(k, v)
 		}
 	}
-}
-
-// UnmarshalJSON unmarshalls the data to a cloudwatchMetricValue,
-// and sets isSet to true upon a successful execution
-func (v *cloudwatchMetricValue) UnmarshalJSON(data []byte) error {
-	type valueType cloudwatchMetricValue
-	if err := jsoniter.ConfigFastest.Unmarshal(data, (*valueType)(v)); err != nil {
-		return err
-	}
-	v.isSet = true
-	return nil
 }
