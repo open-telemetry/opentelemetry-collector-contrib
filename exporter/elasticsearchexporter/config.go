@@ -285,6 +285,27 @@ func (cfg *Config) Validate() error {
 		return errors.New("retry::max_retries should be non-negative")
 	}
 
+	if cfg.LogsIndex != "" && cfg.LogsDynamicIndex.Enabled {
+		return errors.New("must not specify both logs_index and logs_dynamic_index")
+	}
+	if cfg.LogsDynamicIndex.Enabled && cfg.LogsDynamicIndexLegacy.Enabled {
+		return errors.New("must not specify both logs_dynamic_index and logs_dynamic_index_legacy")
+	}
+
+	if cfg.MetricsIndex != "" && cfg.MetricsDynamicIndex.Enabled {
+		return errors.New("must not specify both metrics_index and metrics_dynamic_index")
+	}
+	if cfg.MetricsDynamicIndex.Enabled && cfg.MetricsDynamicIndexLegacy.Enabled {
+		return errors.New("must not specify both metrics_dynamic_index and metrics_dynamic_index_legacy")
+	}
+
+	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
+		return errors.New("must not specify both traces_index and traces_dynamic_index")
+	}
+	if cfg.TracesDynamicIndex.Enabled && cfg.TracesDynamicIndexLegacy.Enabled {
+		return errors.New("must not specify both traces_dynamic_index and traces_dynamic_index_legacy")
+	}
+
 	return nil
 }
 
