@@ -1977,6 +1977,7 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
+		cfg.Mapping.Mode = "otel"
 	}
 
 	checkOTelResource := func(t *testing.T, doc []byte, _ string) {
@@ -2120,9 +2121,11 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		batcherCfg := exporterbatcher.NewDefaultConfig()
+		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     exporterbatcher.Config{Enabled: false},
+			Config:     batcherCfg,
 			enabledSet: true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
