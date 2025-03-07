@@ -23,6 +23,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	rcvr "go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/errorutil"
@@ -30,25 +31,35 @@ import (
 )
 
 type logsReceiver struct {
-	logger            *zap.Logger
-	cfg               *LogsConfig
-	server            *http.Server
-	consumer          consumer.Logs
-	wg                *sync.WaitGroup
-	id                component.ID // ID of the receiver component
-	telemetrySettings component.TelemetrySettings
+	logger   *zap.Logger
+	cfg      *LogsConfig
+	server   *http.Server
+	consumer consumer.Logs
+	wg       *sync.WaitGroup
+	id       component.ID // ID of the receiver component
+	obsrecv  *receiverhelper.ObsReport
 }
 
 const secretHeaderName = "X-CF-Secret"
 
 func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
+
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+		ReceiverID:             params.ID,
+		Transport:              "http",
+		ReceiverCreateSettings: params,
+	})
+	if err != nil {
+		return nil, err
+	}
+
 	recv := &logsReceiver{
-		cfg:               &cfg.Logs,
-		consumer:          consumer,
-		logger:            params.Logger,
-		wg:                &sync.WaitGroup{},
-		telemetrySettings: params.TelemetrySettings,
-		id:                params.ID,
+		cfg:      &cfg.Logs,
+		consumer: consumer,
+		logger:   params.Logger,
+		wg:       &sync.WaitGroup{},
+		obsrecv:  obsrecv,
+		id:       params.ID,
 	}
 
 	recv.server = &http.Server{
