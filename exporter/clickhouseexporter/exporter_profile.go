@@ -86,7 +86,7 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 
 				for k := 0; k < scopeProfiles.Profiles().Len(); k++ {
 					profile := scopeProfiles.Profiles().At(k)
-					profileID := profileIDToHexString(profile.ProfileID())
+					profileID := profile.ProfileID().String()
 					timeNanos := profile.Time().AsTime().UnixNano()
 					durationNanos := profile.Duration().AsTime().UnixNano()
 					stringTable := profile.StringTable()
@@ -312,10 +312,6 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 	e.logger.Debug("insert profiles", zap.Int("records", pd.SampleCount()),
 		zap.String("cost", duration.String()))
 	return err
-}
-
-func profileIDToHexString(id pprofile.ProfileID) string {
-	return fmt.Sprintf("%x", id)
 }
 
 func getString(stringTable pcommon.StringSlice, index int) string {
