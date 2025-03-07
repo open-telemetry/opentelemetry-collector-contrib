@@ -85,10 +85,7 @@ func accessSpanEventAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetSpanEvent().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetSpanEvent().Attributes())
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetSpanEvent().Attributes(), val)
 		},
 	}
 }
