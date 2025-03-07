@@ -45,18 +45,18 @@ require (
 	github.com/klauspost/compress v1.18.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/rs/cors v1.11.1 // indirect
-	go.opentelemetry.io/collector/client v1.27.0 // indirect
-	go.opentelemetry.io/collector/component v1.27.0
+	go.opentelemetry.io/collector/client v1.27.1-0.20250307164521-7c787571daa5 // indirect
+	go.opentelemetry.io/collector/component v1.27.1-0.20250307164521-7c787571daa5
 	go.opentelemetry.io/collector/component/componenttest v0.121.0
 	go.opentelemetry.io/collector/config/configauth v0.121.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.27.0 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.27.0 // indirect
-	go.opentelemetry.io/collector/config/configtls v1.27.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.27.0
-	go.opentelemetry.io/collector/consumer v1.27.0
+	go.opentelemetry.io/collector/config/configcompression v1.27.1-0.20250307164521-7c787571daa5 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.27.1-0.20250307164521-7c787571daa5 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.27.1-0.20250306230606-8cf42f3cf789 // indirect
+	go.opentelemetry.io/collector/confmap v1.27.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307145831-dc9250a6c150
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
-	go.opentelemetry.io/collector/extension v1.27.0 // indirect
-	go.opentelemetry.io/collector/pdata v1.27.0 // indirect
+	go.opentelemetry.io/collector/extension v1.27.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/receiver v0.121.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
