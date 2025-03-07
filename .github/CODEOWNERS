@@ -68,7 +68,7 @@ exporter/kafkaexporter/                                          @open-telemetry
 exporter/loadbalancingexporter/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                         @open-telemetry/collector-contrib-approvers @yotamloe
-exporter/lokiexporter/                                           @open-telemetry/collector-contrib-approvers @gramidt @mar4uk
+exporter/lokiexporter/                                           @open-telemetry/collector-contrib-approvers @gramidt @mar4uk @dehaansa @ArthurSens
 exporter/mezmoexporter/                                          @open-telemetry/collector-contrib-approvers @dashpole @billmeyer @gjanco
 exporter/opencensusexporter/                                     @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/otelarrowexporter/                                      @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
