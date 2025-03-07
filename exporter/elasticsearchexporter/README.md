@@ -177,6 +177,8 @@ See below for a description of each mapping mode.
 
 #### OTel mapping mode
 
+The default and recommended "OTel-native" mapping mode.
+
 Requires Elasticsearch 8.12 or above.
 Works best with `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` enabled.
 
