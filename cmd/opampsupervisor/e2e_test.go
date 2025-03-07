@@ -2009,11 +2009,11 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	agentVersion := "0.110.0"
-	agentName := fmt.Sprintf("otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
-	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s", agentName)
-	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.sig", agentName)
-	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.pem", agentName)
+	agentVersion := "0.121.0"
+	agentName := fmt.Sprintf("otelcol-contrib_0.121.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s", agentName)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s.sig", agentName)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s.pem", agentName)
 
 	agentHash := getHTTPBodyHash(t, agentURL)
 	cert := getHTTPBodyContents(t, agentCertURL)
@@ -2048,8 +2048,6 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	require.Equal(t, &protobufs.PackageStatuses{
 		Packages: map[string]*protobufs.PackageStatus{
 			"": {
-				// TODO: Should initital version be filled in?
-				// What about the hash?
 				Name:                 "",
 				AgentHasVersion:      "",
 				AgentHasHash:         nil,

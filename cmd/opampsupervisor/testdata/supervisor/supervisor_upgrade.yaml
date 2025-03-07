@@ -10,7 +10,7 @@ capabilities:
   accepts_remote_config: true
   reports_remote_config: true
   accepts_restart_command: true
-  accepts_package_available: true
+  accepts_packages: true
   reports_package_statuses: true
 
 storage:
