@@ -125,7 +125,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		OracledbPhysicalWrites: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		OracledbPhysicalWritesDirect: MetricConfig{
 			Enabled: false,

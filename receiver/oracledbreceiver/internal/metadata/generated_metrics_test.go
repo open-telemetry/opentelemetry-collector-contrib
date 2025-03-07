@@ -143,7 +143,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1")
 

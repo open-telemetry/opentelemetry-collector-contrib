@@ -132,14 +132,6 @@ Number of physical reads
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {reads} | Sum | Int | Cumulative | true |
 
-### oracledb.physical_writes
-
-Number of physical writes
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {writes} | Sum | Int | Cumulative | true |
-
 ### oracledb.processes.limit
 
 Maximum limit of active processes, -1 if unlimited.
@@ -288,6 +280,14 @@ Number of write requests for application activity
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {requests} | Sum | Int | Cumulative | true |
+
+### oracledb.physical_writes
+
+Number of physical writes
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | true |
 
 ### oracledb.physical_writes_direct
 
