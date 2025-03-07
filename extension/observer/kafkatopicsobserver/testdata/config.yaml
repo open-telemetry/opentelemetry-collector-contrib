@@ -4,8 +4,6 @@ kafkatopics_observer/all_settings:
   topic_regex: "^topic[0-9]$"
   topics_sync_interval: 5s
   resolve_canonical_bootstrap_servers_only: false
-  session_timeout: 30s
-  heartbeat_interval: 20s
   auth:
     plain_text:
       username: fooUser
