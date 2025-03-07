@@ -107,8 +107,6 @@ go.opentelemetry.io/collector/service v0.121.1-0.20250307145831-dc9250a6c150 h1:
 go.opentelemetry.io/collector/service v0.121.1-0.20250307145831-dc9250a6c150/go.mod h1:11gOFq0NSt7AmkEr5s8R7RjSj2UdJWDlWW8E+Ar1XJk=
 go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 h1:ojdSRDvjrnm30beHOmwsSvLpoRF40MlwNCA+Oo93kXU=
 go.opentelemetry.io/contrib/bridges/otelzap v0.10.0/go.mod h1:oTTm4g7NEtHSV2i/0FeVdPaPgUIZPfQkFbq0vbzqnv0=
-go.opentelemetry.io/contrib/config v0.14.0 h1:QAG8uHNp5ZiCkpT7XggSmg5AyW1sA0LgypMoXgBB1+4=
-go.opentelemetry.io/contrib/config v0.14.0/go.mod h1:77rDmFPqBae5jtQ2C78RuDTHz4P27C8LzoN0MZyumYQ=
 go.opentelemetry.io/contrib/otelconf v0.15.0 h1:BLNiIUsrNcqhSKpsa6CnhE6LdrpY1A8X0szMVsu99eo=
 go.opentelemetry.io/contrib/otelconf v0.15.0/go.mod h1:OPH1seO5z9dp1P26gnLtoM9ht7JDvh3Ws6XRHuXqImY=
 go.opentelemetry.io/contrib/propagators/b3 v1.35.0 h1:DpwKW04LkdFRFCIgM3sqwTJA/QREHMeMHYPWP1WeaPQ=
