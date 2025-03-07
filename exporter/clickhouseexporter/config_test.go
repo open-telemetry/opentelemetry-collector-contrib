@@ -75,6 +75,11 @@ func TestLoadConfig(t *testing.T) {
 					Histogram:            internal.MetricTypeConfig{Name: "otel_metrics_custom_histogram"},
 					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 				},
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "otel_profiles",
+					Samples:  "otel_profiles_samples",
+					Frames:   "otel_profiles_frames",
+				},
 				ConnectionParams: map[string]string{},
 				QueueSettings: exporterhelper.QueueConfig{
 					Enabled:      true,
@@ -641,3 +646,125 @@ func TestClusterString(t *testing.T) {
 		})
 	}
 }
+
+func TestBuildProfileTableNames(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want Config
+	}{
+		{
+			name: "nothing set",
+			cfg:  Config{},
+			want: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "otel_profiles",
+					Samples:  "otel_profiles_samples",
+					Frames:   "otel_profiles_frames",
+				},
+			},
+		},
+		{
+			name: "only profiles table name set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+				},
+			},
+			want: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+					Samples:  "custom_profiles_samples",
+					Frames:   "custom_profiles_frames",
+				},
+			},
+		},
+		{
+			name: "all table names set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+					Samples:  "custom_samples",
+					Frames:   "custom_frames",
+				},
+			},
+			want: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+					Samples:  "custom_samples",
+					Frames:   "custom_frames",
+				},
+			},
+		},
+		{
+			name: "partial table names set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+					Samples:  "custom_samples",
+				},
+			},
+			want: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+					Samples:  "custom_samples",
+					Frames:   "custom_profiles_frames",
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.cfg.buildProfileTableNames()
+			require.Equal(t, tt.want, tt.cfg)
+		})
+	}
+}
+
+func TestAreProfileTableNamesSet(t *testing.T) {
+	tests := []struct {
+		name string
+		cfg  Config
+		want bool
+	}{
+		{
+			name: "nothing set",
+			cfg:  Config{},
+			want: false,
+		},
+		{
+			name: "profiles table set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Profiles: "custom_profiles",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "samples table set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Samples: "custom_samples",
+				},
+			},
+			want: true,
+		},
+		{
+			name: "frames table set",
+			cfg: Config{
+				ProfilesTables: ProfilesTablesConfig{
+					Frames: "custom_frames",
+				},
+			},
+			want: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.cfg.areProfileTableNamesSet()
+			require.Equal(t, tt.want, result)
+		})
+	}
+}
+

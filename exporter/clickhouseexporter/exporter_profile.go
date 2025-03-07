@@ -11,6 +11,7 @@ import (
 	"time"
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
+	"github.com/ClickHouse/clickhouse-go/v2/lib/column"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -21,14 +22,12 @@ import (
 )
 
 type profilesExporter struct {
-	client            *sql.DB
-	insertProfileSQL  string
-	insertSampleSQL   string
-	insertLocationSQL string
-	insertFunctionSQL string
-	insertMappingSQL  string
-	logger            *zap.Logger
-	cfg               *Config
+	client           *sql.DB
+	insertProfileSQL string
+	insertSampleSQL  string
+	insertFrameSQL   string
+	logger           *zap.Logger
+	cfg              *Config
 }
 
 func newProfilesExporter(logger *zap.Logger, cfg *Config) (*profilesExporter, error) {
@@ -38,14 +37,12 @@ func newProfilesExporter(logger *zap.Logger, cfg *Config) (*profilesExporter, er
 	}
 
 	return &profilesExporter{
-		client:            client,
-		insertProfileSQL:  renderInsertProfilesSQL(cfg),
-		insertSampleSQL:   renderInsertSamplesSQL(cfg),
-		insertLocationSQL: renderInsertLocationsSQL(cfg),
-		insertFunctionSQL: renderInsertFunctionsSQL(cfg),
-		insertMappingSQL:  renderInsertMappingsSQL(cfg),
-		logger:            logger,
-		cfg:               cfg,
+		client:           client,
+		insertProfileSQL: renderInsertProfilesSQL(cfg),
+		insertSampleSQL:  renderInsertSamplesSQL(cfg),
+		insertFrameSQL:   renderInsertFramesSQL(cfg),
+		logger:           logger,
+		cfg:              cfg,
 	}, nil
 }
 
@@ -72,45 +69,8 @@ func (e *profilesExporter) shutdown(_ context.Context) error {
 func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Profiles) error {
 	start := time.Now()
 	err := doWithTx(ctx, e.client, func(tx *sql.Tx) error {
-		profileStmt, err := tx.PrepareContext(ctx, e.insertProfileSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext for profiles: %w", err)
-		}
-		defer func() {
-			_ = profileStmt.Close()
-		}()
-
-		sampleStmt, err := tx.PrepareContext(ctx, e.insertSampleSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext for samples: %w", err)
-		}
-		defer func() {
-			_ = sampleStmt.Close()
-		}()
-
-		locationStmt, err := tx.PrepareContext(ctx, e.insertLocationSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext for locations: %w", err)
-		}
-		defer func() {
-			_ = locationStmt.Close()
-		}()
-
-		functionStmt, err := tx.PrepareContext(ctx, e.insertFunctionSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext for functions: %w", err)
-		}
-		defer func() {
-			_ = functionStmt.Close()
-		}()
-
-		mappingStmt, err := tx.PrepareContext(ctx, e.insertMappingSQL)
-		if err != nil {
-			return fmt.Errorf("PrepareContext for mappings: %w", err)
-		}
-		defer func() {
-			_ = mappingStmt.Close()
-		}()
+		// Instead of using prepared statements for each table, use simple ExecContext
+		// This avoids protocol issues that can happen with prepared statements in some ClickHouse versions
 
 		for i := 0; i < pd.ResourceProfiles().Len(); i++ {
 			resourceProfiles := pd.ResourceProfiles().At(i)
@@ -138,7 +98,6 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 
 					periodTypeAggregationTemporality = int32(profile.PeriodType().AggregationTemporality())
 
-
 					defaultSampleType := getString(stringTable, int(profile.DefaultSampleTypeStrindex()))
 
 					// Get comments
@@ -156,7 +115,7 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 					}
 
 					// Insert profile record
-					_, err = profileStmt.ExecContext(ctx,
+					_, err := tx.ExecContext(ctx, e.insertProfileSQL,
 						time.Unix(0, timeNanos),
 						profileID,
 						serviceName,
@@ -216,7 +175,7 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 							values = append(values, sample.Value().At(v))
 						}
 
-						_, err = sampleStmt.ExecContext(ctx,
+						_, err = tx.ExecContext(ctx, e.insertSampleSQL,
 							profileID,
 							traceID,
 							spanID,
@@ -235,77 +194,113 @@ func (e *profilesExporter) pushProfileData(ctx context.Context, pd pprofile.Prof
 						}
 					}
 
-					// Process locations
+					// Process frames (combines locations, functions, and mappings)
 					for l := 0; l < profile.LocationTable().Len(); l++ {
 						location := profile.LocationTable().At(l)
 						mappingIndex := location.MappingIndex()
 						address := location.Address()
 						locationAttr := internal.AttributesToMap(convertLocationAttributesToMap(profile, location))
 
-						_, err = locationStmt.ExecContext(ctx,
-							profileID,
-							l,
-							mappingIndex,
-							address,
-							location.IsFolded(),
-							locationAttr,
-						)
-						if err != nil {
-							return fmt.Errorf("ExecContext for location: %w", err)
+						// Get mapping information if available
+						var mappingMemoryStart, mappingMemoryLimit, mappingFileOffset uint64
+						var mappingFilename string
+						var mappingHasFunctions, mappingHasFilenames, mappingHasLineNumbers, mappingHasInlineFrames bool
+						var mappingAttr column.IterableOrderedMap
+
+						if mappingIndex >= 0 && int(mappingIndex) < profile.MappingTable().Len() {
+							mapping := profile.MappingTable().At(int(mappingIndex))
+							mappingMemoryStart = mapping.MemoryStart()
+							mappingMemoryLimit = mapping.MemoryLimit()
+							mappingFileOffset = mapping.FileOffset()
+							mappingFilename = getString(stringTable, int(mapping.FilenameStrindex()))
+							mappingHasFunctions = mapping.HasFunctions()
+							mappingHasFilenames = mapping.HasFilenames()
+							mappingHasLineNumbers = mapping.HasLineNumbers()
+							mappingHasInlineFrames = mapping.HasInlineFrames()
+							mappingAttr = internal.AttributesToMap(convertMappingAttributesToMap(profile, mapping))
 						}
 
-						// Process lines for each location
+						// If location has no lines, create one row with empty function info
+						if location.Line().Len() == 0 {
+							_, err := tx.ExecContext(ctx, e.insertFrameSQL,
+								profileID,
+								l, // locationIndex
+								mappingIndex,
+								address,
+								location.IsFolded(),
+								locationAttr,
+								-1, // lineIndex
+								-1, // functionIndex
+								"", // functionName
+								"", // systemName
+								"", // filename
+								-1, // startLine
+								-1, // line
+								-1, // column
+								mappingMemoryStart,
+								mappingMemoryLimit,
+								mappingFileOffset,
+								mappingFilename,
+								mappingHasFunctions,
+								mappingHasFilenames,
+								mappingHasLineNumbers,
+								mappingHasInlineFrames,
+								mappingAttr,
+							)
+							if err != nil {
+								return fmt.Errorf("ExecContext for frame: %w", err)
+							}
+							continue
+						}
+
+						// Process each line for this location
 						for lineIdx := 0; lineIdx < location.Line().Len(); lineIdx++ {
 							line := location.Line().At(lineIdx)
 							functionIndex := line.FunctionIndex()
 
+							// Default values for function info
+							functionName := ""
+							systemName := ""
+							filename := ""
+							var startLine int64 = -1
+
+							// Get function info if available
 							if functionIndex >= 0 && functionIndex < int32(profile.FunctionTable().Len()) {
 								function := profile.FunctionTable().At(int(functionIndex))
-								functionName := getString(stringTable, int(function.NameStrindex()))
-								systemName := getString(stringTable, int(function.SystemNameStrindex()))
-								filename := getString(stringTable, int(function.FilenameStrindex()))
-								startLine := function.StartLine()
-
-								_, err = functionStmt.ExecContext(ctx,
-									profileID,
-									l,
-									lineIdx,
-									functionIndex,
-									functionName,
-									systemName,
-									filename,
-									startLine,
-									line.Line(),
-									line.Column(),
-								)
-								if err != nil {
-									return fmt.Errorf("ExecContext for function: %w", err)
-								}
+								functionName = getString(stringTable, int(function.NameStrindex()))
+								systemName = getString(stringTable, int(function.SystemNameStrindex()))
+								filename = getString(stringTable, int(function.FilenameStrindex()))
+								startLine = function.StartLine()
 							}
-						}
-					}
 
-					// Process mappings
-					for m := 0; m < profile.MappingTable().Len(); m++ {
-						mapping := profile.MappingTable().At(m)
-						filename := getString(stringTable, int(mapping.FilenameStrindex()))
-						mappingAttr := internal.AttributesToMap(convertMappingAttributesToMap(profile, mapping))
-
-						_, err = mappingStmt.ExecContext(ctx,
-							profileID,
-							m,
-							mapping.MemoryStart(),
-							mapping.MemoryLimit(),
-							mapping.FileOffset(),
-							filename,
-							mapping.HasFunctions(),
-							mapping.HasFilenames(),
-							mapping.HasLineNumbers(),
-							mapping.HasInlineFrames(),
-							mappingAttr,
-						)
-						if err != nil {
-							return fmt.Errorf("ExecContext for mapping: %w", err)
+							_, err := tx.ExecContext(ctx, e.insertFrameSQL,
+								profileID,
+								l, // locationIndex
+								mappingIndex,
+								address,
+								location.IsFolded(),
+								locationAttr,
+								lineIdx,
+								functionIndex,
+								functionName,
+								systemName,
+								filename,
+								startLine,
+								line.Line(),
+								line.Column(),
+								mappingMemoryStart,
+								mappingMemoryLimit,
+								mappingFileOffset,
+								mappingFilename,
+								mappingHasFunctions,
+								mappingHasFilenames,
+								mappingHasLineNumbers,
+								mappingHasInlineFrames,
+								mappingAttr,
+							)
+							if err != nil {
+								return fmt.Errorf("ExecContext for frame: %w", err)
+							}
 						}
 					}
 				}
@@ -457,26 +452,14 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
 
 	// language=ClickHouse SQL
-	createLocationsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_locations %s (
+	createFramesTableSQL = `
+CREATE TABLE IF NOT EXISTS %s_frames %s (
 	ProfileId String CODEC(ZSTD(1)),
 	LocationIndex Int32 CODEC(Delta, ZSTD(1)),
 	MappingIndex Int32 CODEC(Delta, ZSTD(1)),
 	Address UInt64 CODEC(Delta, ZSTD(1)),
 	IsFolded UInt8 CODEC(ZSTD(1)),
-	Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-	INDEX idx_profile_id ProfileId TYPE bloom_filter(0.001) GRANULARITY 1
-) ENGINE = %s
-ORDER BY (ProfileId, LocationIndex)
-%s
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
-`
-
-	// language=ClickHouse SQL
-	createFunctionsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_functions %s (
-	ProfileId String CODEC(ZSTD(1)),
-	LocationIndex Int32 CODEC(Delta, ZSTD(1)),
+	LocationAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
 	LineIndex Int32 CODEC(Delta, ZSTD(1)),
 	FunctionIndex Int32 CODEC(Delta, ZSTD(1)),
 	FunctionName String CODEC(ZSTD(1)),
@@ -485,33 +468,21 @@ CREATE TABLE IF NOT EXISTS %s_functions %s (
 	StartLine Int64 CODEC(Delta, ZSTD(1)),
 	Line Int64 CODEC(Delta, ZSTD(1)),
 	Column Int64 CODEC(Delta, ZSTD(1)),
+	MappingMemoryStart UInt64 CODEC(Delta, ZSTD(1)),
+	MappingMemoryLimit UInt64 CODEC(Delta, ZSTD(1)),
+	MappingFileOffset UInt64 CODEC(Delta, ZSTD(1)),
+	MappingFilename String CODEC(ZSTD(1)),
+	MappingHasFunctions UInt8 CODEC(ZSTD(1)),
+	MappingHasFilenames UInt8 CODEC(ZSTD(1)),
+	MappingHasLineNumbers UInt8 CODEC(ZSTD(1)),
+	MappingHasInlineFrames UInt8 CODEC(ZSTD(1)),
+	MappingAttributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
 	INDEX idx_profile_id ProfileId TYPE bloom_filter(0.001) GRANULARITY 1,
 	INDEX idx_function_name FunctionName TYPE bloom_filter(0.01) GRANULARITY 1,
-	INDEX idx_file_name Filename TYPE bloom_filter(0.01) GRANULARITY 1
+	INDEX idx_file_name Filename TYPE bloom_filter(0.01) GRANULARITY 1,
+	INDEX idx_mapping_filename MappingFilename TYPE bloom_filter(0.01) GRANULARITY 1
 ) ENGINE = %s
 ORDER BY (ProfileId, LocationIndex, LineIndex)
-%s
-SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
-`
-
-	// language=ClickHouse SQL
-	createMappingsTableSQL = `
-CREATE TABLE IF NOT EXISTS %s_mappings %s (
-	ProfileId String CODEC(ZSTD(1)),
-	MappingIndex Int32 CODEC(Delta, ZSTD(1)),
-	MemoryStart UInt64 CODEC(Delta, ZSTD(1)),
-	MemoryLimit UInt64 CODEC(Delta, ZSTD(1)),
-	FileOffset UInt64 CODEC(Delta, ZSTD(1)),
-	Filename String CODEC(ZSTD(1)),
-	HasFunctions UInt8 CODEC(ZSTD(1)),
-	HasFilenames UInt8 CODEC(ZSTD(1)),
-	HasLineNumbers UInt8 CODEC(ZSTD(1)),
-	HasInlineFrames UInt8 CODEC(ZSTD(1)),
-	Attributes Map(LowCardinality(String), String) CODEC(ZSTD(1)),
-	INDEX idx_profile_id ProfileId TYPE bloom_filter(0.001) GRANULARITY 1,
-	INDEX idx_file_name Filename TYPE bloom_filter(0.01) GRANULARITY 1
-) ENGINE = %s
-ORDER BY (ProfileId, MappingIndex)
 %s
 SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
 `
@@ -557,19 +528,13 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 
 	// language=ClickHouse SQL
-	insertLocationsSQLTemplate = `INSERT INTO %s_locations (
+	insertFramesSQLTemplate = `INSERT INTO %s_frames (
                         ProfileId,
                         LocationIndex,
                         MappingIndex,
                         Address,
                         IsFolded,
-                        Attributes
-                        ) VALUES (?, ?, ?, ?, ?, ?)`
-
-	// language=ClickHouse SQL
-	insertFunctionsSQLTemplate = `INSERT INTO %s_functions (
-                        ProfileId,
-                        LocationIndex,
+                        LocationAttributes,
                         LineIndex,
                         FunctionIndex,
                         FunctionName,
@@ -577,23 +542,17 @@ SETTINGS index_granularity=8192, ttl_only_drop_parts = 1;
                         Filename,
                         StartLine,
                         Line,
-                        Column
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
-
-	// language=ClickHouse SQL
-	insertMappingsSQLTemplate = `INSERT INTO %s_mappings (
-                        ProfileId,
-                        MappingIndex,
-                        MemoryStart,
-                        MemoryLimit,
-                        FileOffset,
-                        Filename,
-                        HasFunctions,
-                        HasFilenames,
-                        HasLineNumbers,
-                        HasInlineFrames,
-                        Attributes
-                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+                        Column,
+                        MappingMemoryStart,
+                        MappingMemoryLimit,
+                        MappingFileOffset,
+                        MappingFilename,
+                        MappingHasFunctions,
+                        MappingHasFilenames,
+                        MappingHasLineNumbers,
+                        MappingHasInlineFrames,
+                        MappingAttributes
+                        ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 )
 
 func createProfileTables(ctx context.Context, cfg *Config, db *sql.DB) error {
@@ -605,16 +564,8 @@ func createProfileTables(ctx context.Context, cfg *Config, db *sql.DB) error {
 		return fmt.Errorf("exec create samples table sql: %w", err)
 	}
 
-	if _, err := db.ExecContext(ctx, renderCreateLocationsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create locations table sql: %w", err)
-	}
-
-	if _, err := db.ExecContext(ctx, renderCreateFunctionsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create functions table sql: %w", err)
-	}
-
-	if _, err := db.ExecContext(ctx, renderCreateMappingsTableSQL(cfg)); err != nil {
-		return fmt.Errorf("exec create mappings table sql: %w", err)
+	if _, err := db.ExecContext(ctx, renderCreateFramesTableSQL(cfg)); err != nil {
+		return fmt.Errorf("exec create frames table sql: %w", err)
 	}
 
 	return nil
@@ -628,16 +579,8 @@ func renderInsertSamplesSQL(cfg *Config) string {
 	return fmt.Sprintf(strings.ReplaceAll(insertSamplesSQLTemplate, "'", "`"), cfg.ProfilesTables.Samples)
 }
 
-func renderInsertLocationsSQL(cfg *Config) string {
-	return fmt.Sprintf(strings.ReplaceAll(insertLocationsSQLTemplate, "'", "`"), cfg.ProfilesTables.Locations)
-}
-
-func renderInsertFunctionsSQL(cfg *Config) string {
-	return fmt.Sprintf(strings.ReplaceAll(insertFunctionsSQLTemplate, "'", "`"), cfg.ProfilesTables.Functions)
-}
-
-func renderInsertMappingsSQL(cfg *Config) string {
-	return fmt.Sprintf(strings.ReplaceAll(insertMappingsSQLTemplate, "'", "`"), cfg.ProfilesTables.Mappings)
+func renderInsertFramesSQL(cfg *Config) string {
+	return fmt.Sprintf(strings.ReplaceAll(insertFramesSQLTemplate, "'", "`"), cfg.ProfilesTables.Frames)
 }
 
 func renderCreateProfilesTableSQL(cfg *Config) string {
@@ -650,17 +593,7 @@ func renderCreateSamplesTableSQL(cfg *Config) string {
 	return fmt.Sprintf(createSamplesTableSQL, cfg.ProfilesTables.Samples, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
-func renderCreateLocationsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "")
-	return fmt.Sprintf(createLocationsTableSQL, cfg.ProfilesTables.Locations, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
-}
-
-func renderCreateFunctionsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "")
-	return fmt.Sprintf(createFunctionsTableSQL, cfg.ProfilesTables.Functions, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
-}
-
-func renderCreateMappingsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "")
-	return fmt.Sprintf(createMappingsTableSQL, cfg.ProfilesTables.Mappings, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
+func renderCreateFramesTableSQL(cfg *Config) string {
+	// For frames table, don't add TTL as it has no timestamp column
+	return fmt.Sprintf(createFramesTableSQL, cfg.ProfilesTables.Frames, cfg.clusterString(), cfg.tableEngineString(), "")
 }

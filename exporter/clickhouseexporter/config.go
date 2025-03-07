@@ -86,12 +86,8 @@ type ProfilesTablesConfig struct {
 	Profiles string `mapstructure:"profiles"`
 	// Samples is the table name for profile samples data. default is `otel_profiles_samples`.
 	Samples string `mapstructure:"samples"`
-	// Locations is the table name for profile locations data. default is `otel_profiles_locations`.
-	Locations string `mapstructure:"locations"`
-	// Functions is the table name for profile functions data. default is `otel_profiles_functions`.
-	Functions string `mapstructure:"functions"`
-	// Mappings is the table name for profile mappings data. default is `otel_profiles_mappings`.
-	Mappings string `mapstructure:"mappings"`
+	// Frames is the table name for profile frames data (merged locations, functions, mappings). default is `otel_profiles_frames`.
+	Frames string `mapstructure:"frames"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -238,25 +234,30 @@ func (cfg *Config) buildMetricTableNames() {
 	}
 }
 
-// buildProfileTableNames sets defaults for profile table names if not set
-func (cfg *Config) buildProfileTableNames() {
-	tableName := defaultProfilesTableName
+func (c *Config) buildProfileTableNames() {
+	// Set default profiles table name if not specified
+	if c.ProfilesTables.Profiles == "" {
+		c.ProfilesTables.Profiles = defaultProfilesTableName
+	}
+	
+	// Base name for derived tables should be the configured profiles table name
+	baseTableName := c.ProfilesTables.Profiles
+	
+	// Set default samples table name if not specified
+	if c.ProfilesTables.Samples == "" {
+		c.ProfilesTables.Samples = baseTableName + "_samples"
+	}
+	
+	// Set default frames table name if not specified
+	if c.ProfilesTables.Frames == "" {
+		c.ProfilesTables.Frames = baseTableName + "_frames"
+	}
+}
 
-	if len(cfg.ProfilesTables.Profiles) == 0 {
-		cfg.ProfilesTables.Profiles = tableName
-	}
-	if len(cfg.ProfilesTables.Samples) == 0 {
-		cfg.ProfilesTables.Samples = tableName + "_samples"
-	}
-	if len(cfg.ProfilesTables.Locations) == 0 {
-		cfg.ProfilesTables.Locations = tableName + "_locations"
-	}
-	if len(cfg.ProfilesTables.Functions) == 0 {
-		cfg.ProfilesTables.Functions = tableName + "_functions"
-	}
-	if len(cfg.ProfilesTables.Mappings) == 0 {
-		cfg.ProfilesTables.Mappings = tableName + "_mappings"
-	}
+func (c *Config) areProfileTableNamesSet() bool {
+	return c.ProfilesTables.Profiles != "" ||
+		c.ProfilesTables.Samples != "" ||
+		c.ProfilesTables.Frames != ""
 }
 
 

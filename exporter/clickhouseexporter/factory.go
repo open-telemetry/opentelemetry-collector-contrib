@@ -54,11 +54,9 @@ func createDefaultConfig() component.Config {
 			ExponentialHistogram: internal.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
 		},
 		ProfilesTables: ProfilesTablesConfig{
-			Profiles:  defaultProfilesTableName,
-			Samples:   defaultProfilesTableName + "_samples",
-			Locations: defaultProfilesTableName + "_locations",
-			Functions: defaultProfilesTableName + "_functions",
-			Mappings:  defaultProfilesTableName + "_mappings",
+			Profiles: defaultProfilesTableName,
+			Samples:  defaultProfilesTableName + "_samples",
+			Frames:   defaultProfilesTableName + "_frames",
 		},
 	}
 }

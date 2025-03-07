@@ -41,26 +41,20 @@ func TestProfilesTableEngineConfig(t *testing.T) {
 func TestRenderProfilesSQLTemplates(t *testing.T) {
 	cfg := &Config{
 		ProfilesTables: ProfilesTablesConfig{
-			Profiles:  "custom_profiles",
-			Samples:   "custom_samples",
-			Locations: "custom_locations",
-			Functions: "custom_functions",
-			Mappings:  "custom_mappings",
+			Profiles: "custom_profiles",
+			Samples:  "custom_samples",
+			Frames:   "custom_frames",
 		},
 	}
 
 	// Test rendering SQL templates with custom table names
 	assert.Contains(t, renderInsertProfilesSQL(cfg), "custom_profiles")
 	assert.Contains(t, renderInsertSamplesSQL(cfg), "custom_samples")
-	assert.Contains(t, renderInsertLocationsSQL(cfg), "custom_locations")
-	assert.Contains(t, renderInsertFunctionsSQL(cfg), "custom_functions")
-	assert.Contains(t, renderInsertMappingsSQL(cfg), "custom_mappings")
+	assert.Contains(t, renderInsertFramesSQL(cfg), "custom_frames")
 
 	assert.Contains(t, renderCreateProfilesTableSQL(cfg), "custom_profiles")
 	assert.Contains(t, renderCreateSamplesTableSQL(cfg), "custom_samples")
-	assert.Contains(t, renderCreateLocationsTableSQL(cfg), "custom_locations")
-	assert.Contains(t, renderCreateFunctionsTableSQL(cfg), "custom_functions")
-	assert.Contains(t, renderCreateMappingsTableSQL(cfg), "custom_mappings")
+	assert.Contains(t, renderCreateFramesTableSQL(cfg), "custom_frames")
 }
 
 // TestExporter_pushProfileData tests pushing profile data to ClickHouse.
@@ -76,8 +70,8 @@ func TestExporter_pushProfileData(t *testing.T) {
 		exporter := newTestProfilesExporter(t, defaultEndpoint)
 		mustPushProfileData(t, exporter, createTestProfilesData(1))
 
-		// We expect 5 insert operations for a full profile (one for each table)
-		require.Equal(t, int32(5), items.Load())
+		// We expect 3 insert operations for a full profile (one for each table)
+		require.Equal(t, int32(3), items.Load())
 	})
 
 	t.Run("push failure", func(t *testing.T) {
@@ -91,48 +85,6 @@ func TestExporter_pushProfileData(t *testing.T) {
 		err := exporter.pushProfileData(context.TODO(), createTestProfilesData(2))
 		require.Error(t, err)
 	})
-}
-
-// TestBuildProfileTableNames tests table name generation.
-func TestBuildProfileTableNames(t *testing.T) {
-	// Test default table names
-	cfg := Config{}
-	cfg.buildProfileTableNames()
-	assert.Equal(t, defaultProfilesTableName, cfg.ProfilesTables.Profiles)
-	assert.Equal(t, defaultProfilesTableName+"_samples", cfg.ProfilesTables.Samples)
-	assert.Equal(t, defaultProfilesTableName+"_locations", cfg.ProfilesTables.Locations)
-	assert.Equal(t, defaultProfilesTableName+"_functions", cfg.ProfilesTables.Functions)
-	assert.Equal(t, defaultProfilesTableName+"_mappings", cfg.ProfilesTables.Mappings)
-
-	// Test custom table names
-	cfg = Config{
-		ProfilesTables: ProfilesTablesConfig{
-			Profiles:  "custom_profiles",
-			Samples:   "custom_samples",
-			Locations: "custom_locations",
-			Functions: "custom_functions",
-			Mappings:  "custom_mappings",
-		},
-	}
-	cfg.buildProfileTableNames()
-	assert.Equal(t, "custom_profiles", cfg.ProfilesTables.Profiles)
-	assert.Equal(t, "custom_samples", cfg.ProfilesTables.Samples)
-	assert.Equal(t, "custom_locations", cfg.ProfilesTables.Locations)
-	assert.Equal(t, "custom_functions", cfg.ProfilesTables.Functions)
-	assert.Equal(t, "custom_mappings", cfg.ProfilesTables.Mappings)
-
-	// Test partial custom table names
-	cfg = Config{
-		ProfilesTables: ProfilesTablesConfig{
-			Profiles: "custom_profiles",
-		},
-	}
-	cfg.buildProfileTableNames()
-	assert.Equal(t, "custom_profiles", cfg.ProfilesTables.Profiles)
-	assert.Equal(t, defaultProfilesTableName+"_samples", cfg.ProfilesTables.Samples)
-	assert.Equal(t, defaultProfilesTableName+"_locations", cfg.ProfilesTables.Locations)
-	assert.Equal(t, defaultProfilesTableName+"_functions", cfg.ProfilesTables.Functions)
-	assert.Equal(t, defaultProfilesTableName+"_mappings", cfg.ProfilesTables.Mappings)
 }
 
 // Test helpers
@@ -178,20 +130,20 @@ func createTestProfilesData(count int) pprofile.Profiles {
 
 		// Add strings to the string table - use Append to add new elements
 		stringTable := profile.StringTable()
-		stringTable.Append("cpu")        // Index 0
+		stringTable.Append("cpu")         // Index 0
 		stringTable.Append("nanoseconds") // Index 1
-		stringTable.Append("samples")    // Index 2
-		stringTable.Append("count")      // Index 3
+		stringTable.Append("samples")     // Index 2
+		stringTable.Append("count")       // Index 3
 
 		// Set period type
 		periodType := profile.PeriodType()
-		periodType.SetTypeStrindex(0)  // "cpu" index
-		periodType.SetUnitStrindex(1)  // "nanoseconds" index
+		periodType.SetTypeStrindex(0) // "cpu" index
+		periodType.SetUnitStrindex(1) // "nanoseconds" index
 
 		// Add sample type
 		sampleType := profile.SampleType().AppendEmpty()
-		sampleType.SetTypeStrindex(2)  // "samples" index
-		sampleType.SetUnitStrindex(3)  // "count" index
+		sampleType.SetTypeStrindex(2) // "samples" index
+		sampleType.SetUnitStrindex(3) // "count" index
 
 		// Set profile ID
 		id := [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, byte(i)}
@@ -208,7 +160,7 @@ func createTestProfilesData(count int) pprofile.Profiles {
 
 		// Add a sample
 		sample := profile.Sample().AppendEmpty()
-		
+
 		// Add values to sample - use Append
 		sample.Value().Append(int64(42))
 
@@ -235,13 +187,13 @@ func createTestProfilesData(count int) pprofile.Profiles {
 		// Add a function
 		function := profile.FunctionTable().AppendEmpty()
 		function.SetNameStrindex(0)       // "cpu" index
-		function.SetSystemNameStrindex(0)  // "cpu" index
+		function.SetSystemNameStrindex(0) // "cpu" index
 		function.SetFilenameStrindex(0)   // "cpu" index
 		function.SetStartLine(1)
 
 		// Add a mapping
 		mapping := profile.MappingTable().AppendEmpty()
-		mapping.SetFilenameStrindex(0)  // "cpu" index
+		mapping.SetFilenameStrindex(0) // "cpu" index
 		mapping.SetMemoryStart(0x1000)
 		mapping.SetMemoryLimit(0x2000)
 	}
