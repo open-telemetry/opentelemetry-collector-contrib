@@ -43,6 +43,22 @@ func TestKeyValueSet(t *testing.T) {
 			flag:     "key=false",
 			expected: KeyValue(map[string]any{"key": false}),
 		},
+		{
+			flag:     "key=123",
+			expected: KeyValue(map[string]any{"key": 123}),
+		},
+		{
+			flag:     "key=-456",
+			expected: KeyValue(map[string]any{"key": -456}),
+		},
+		{
+			flag:     "key=0",
+			expected: KeyValue(map[string]any{"key": 0}),
+		},
+		{
+			flag: "key=12.34",
+			err:  errDoubleQuotesOTLPAttributes,
+		},
 	}
 
 	for _, tt := range tests {
