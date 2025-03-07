@@ -193,13 +193,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addCounterDatapoints(rm, ls, ts)
+			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addGaugeDatapoints(rm, ls, ts)
+			prw.addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			addSummaryDatapoints(rm, ls, ts)
+			prw.addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			addHistogramDatapoints(rm, ls, ts)
+			prw.addHistogramDatapoints(rm, ls, ts)
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
 		}
@@ -225,19 +225,16 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
 	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	scopeName := ls.Get("otel_scope_name")
-	scopeVersion := ls.Get("otel_scope_version")
-	// TODO: If the scope version or scope name is empty, get the information from the collector build tags.
-	// More: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#:~:text=Metrics%20which%20do%20not%20have%20an%20otel_scope_name%20or%20otel_scope_version%20label%20MUST%20be%20assigned%20an%20instrumentation%20scope%20identifying%20the%20entity%20performing%20the%20translation%20from%20Prometheus%20to%20OpenTelemetry%20(e.g.%20the%20collector%E2%80%99s%20prometheus%20receiver)
+	scopeName, scopeVersion := prw.extractScopeInfo(ls)
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.
@@ -257,11 +254,11 @@ func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2
 	addDatapoints(m.DataPoints(), ls, ts)
 }
 
-func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
@@ -286,4 +283,20 @@ func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts
 			attributes.PutStr(l.Name, l.Value)
 		}
 	}
+}
+
+// extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
+// it will use the default values from the settings.
+func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (string, string) {
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
+
+	if sName := ls.Get("otel_scope_name"); sName != "" {
+		scopeName = sName
+	}
+
+	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
+		scopeVersion = sVersion
+	}
+	return scopeName, scopeVersion
 }

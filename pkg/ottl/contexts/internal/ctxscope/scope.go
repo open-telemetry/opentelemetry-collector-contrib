@@ -6,8 +6,6 @@ package ctxscope // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
@@ -46,10 +44,7 @@ func accessInstrumentationScopeAttributes[K Context]() ottl.StandardGetSetter[K]
 			return tCtx.GetInstrumentationScope().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetInstrumentationScope().Attributes())
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetInstrumentationScope().Attributes(), val)
 		},
 	}
 }

@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
-	github.com/google/cadvisor v0.51.1-0.20250126012415-5b649021c2da
+	github.com/google/cadvisor v0.52.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.121.0
@@ -43,7 +43,7 @@ require (
 	github.com/containerd/ttrpc v1.2.6 // indirect
 	github.com/containerd/typeurl/v2 v2.2.2 // indirect
 	github.com/coreos/go-systemd/v22 v22.5.0 // indirect
-	github.com/cyphar/filepath-securejoin v0.3.5 // indirect
+	github.com/cyphar/filepath-securejoin v0.4.1 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/docker v27.3.1+incompatible // indirect
@@ -84,15 +84,16 @@ require (
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/moby/docker-image-spec v1.3.1 // indirect
-	github.com/moby/sys/mountinfo v0.7.1 // indirect
+	github.com/moby/sys/mountinfo v0.7.2 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.121.0 // indirect
+	github.com/opencontainers/cgroups v0.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
-	github.com/opencontainers/image-spec v1.1.0 // indirect
-	github.com/opencontainers/runc v1.2.4 // indirect
+	github.com/opencontainers/image-spec v1.1.1 // indirect
+	github.com/opencontainers/runc v1.2.5 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
@@ -132,7 +133,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.34.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
+	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/oauth2 v0.24.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/term v0.29.0 // indirect

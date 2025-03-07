@@ -1544,7 +1544,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	}, 3*time.Second, 250*time.Millisecond)
 }
 
-type LogEntry struct {
+type logEntry struct {
 	Level  string `json:"level"`
 	Logger string `json:"logger"`
 }
@@ -1611,7 +1611,7 @@ func TestSupervisorLogging(t *testing.T) {
 	seenCollectorLog := false
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		var log LogEntry
+		var log logEntry
 		err := json.Unmarshal(line, &log)
 		require.NoError(t, err)
 

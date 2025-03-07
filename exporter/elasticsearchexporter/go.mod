@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/elastic/go-docappender/v2 v2.6.0
+	github.com/elastic/go-docappender/v2 v2.6.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
@@ -27,7 +27,7 @@ require (
 	go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper v0.121.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.121.0
 	go.opentelemetry.io/collector/exporter/xexporter v0.121.0
-	go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.0
 	go.opentelemetry.io/collector/semconv v0.121.0
@@ -84,7 +84,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.0 // indirect
 	go.opentelemetry.io/collector/extension v1.27.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v0.121.0 // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.121.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.0 // indirect
@@ -103,8 +102,8 @@ require (
 	golang.org/x/sync v0.11.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250102185135-69823020774d // indirect
-	google.golang.org/grpc v1.70.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+	google.golang.org/grpc v1.71.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	howett.net/plist v1.0.1 // indirect
