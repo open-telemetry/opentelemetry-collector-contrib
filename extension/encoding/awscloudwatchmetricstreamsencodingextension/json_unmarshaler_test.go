@@ -25,7 +25,7 @@ func TestValidateMetric(t *testing.T) {
 		metric      cloudwatchMetric
 		expectedErr error
 	}{
-		"ValidMetric": {
+		"valid_metric": {
 			metric: cloudwatchMetric{
 				Namespace: "test/namespace",
 				Unit:      "Seconds",
@@ -35,7 +35,7 @@ func TestValidateMetric(t *testing.T) {
 				MetricName: "test",
 			},
 		},
-		"MissingMetricName": {
+		"no_metric_name": {
 			metric: cloudwatchMetric{
 				Namespace: "test/namespace",
 				Unit:      "Seconds",
@@ -45,7 +45,7 @@ func TestValidateMetric(t *testing.T) {
 			},
 			expectedErr: errNoMetricName,
 		},
-		"MissingMetricNamespace": {
+		"no_metric_namespace": {
 			metric: cloudwatchMetric{
 				Unit: "Seconds",
 				Value: cloudwatchMetricValue{
@@ -55,7 +55,7 @@ func TestValidateMetric(t *testing.T) {
 			},
 			expectedErr: errNoMetricNamespace,
 		},
-		"MissingMetricUnit": {
+		"no_metric_unit": {
 			metric: cloudwatchMetric{
 				Namespace: "test/namespace",
 				Value: cloudwatchMetricValue{
@@ -65,7 +65,7 @@ func TestValidateMetric(t *testing.T) {
 			},
 			expectedErr: errNoMetricUnit,
 		},
-		"MissingMetricValue": {
+		"no_metric_value": {
 			metric: cloudwatchMetric{
 				Namespace: "test/namespace",
 				Unit:      "Seconds",
