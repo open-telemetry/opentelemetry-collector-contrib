@@ -273,6 +273,78 @@ func TestTranslateV2(t *testing.T) {
 			}(),
 			expectedStats: remote.WriteResponseStats{},
 		},
+		{
+			name: "separate timeseries - same labels - should be same datapointslice",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"d", "e", // 11, 12
+					"foo", "bar", // 13, 14
+					"f", "g", // 15, 16
+					"seconds", "milliseconds", // 17, 18
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14},
+						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes1 := rm1.Resource().Attributes()
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
+
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName("scope1")
+				sm1.Scope().SetVersion("v1")
+
+				metrics1 := sm1.Metrics().AppendEmpty()
+				// Not sure where the metrics name are defined or coming from.
+				// I think that the reference to this metrics metadata can be found here: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#metric-metadata
+				// Or maybe here: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#metric-metadata
+				metrics1.SetName("TODO")
+				metrics1.SetUnit("seconds")
+				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp1.SetDoubleValue(1.0)
+				dp1.Attributes().PutStr("d", "e")
+
+				dp2 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp2.SetDoubleValue(2.0)
+				dp2.Attributes().PutStr("d", "e")
+
+				metrics2 := sm1.Metrics().AppendEmpty()
+				metrics2.SetName("TODO")
+				metrics2.SetUnit("milliseconds")
+				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
+				dp3.SetDoubleValue(3.0)
+				dp3.Attributes().PutStr("foo", "bar")
+
+				return expected
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
