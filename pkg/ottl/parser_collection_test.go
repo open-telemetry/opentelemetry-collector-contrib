@@ -84,7 +84,7 @@ func Test_WithParserCollectionContext(t *testing.T) {
 	assert.NotNil(t, pw)
 }
 
-func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {
+func Test_ParseStatements_NoStatementConverter(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"testContext"}))
 	option := WithParserCollectionContext[any, any]("testContext", ps)
 
@@ -97,6 +97,21 @@ func Test_WithParserCollectionContextNoStatementConverter(t *testing.T) {
 	_, parseErr := pc.ParseStatementsWithContext("testContext", mockGetter{[]string{`set(testContext.attributes["foo"], "foo")`}}, true)
 	assert.Error(t, parseErr)
 	assert.Contains(t, parseErr.Error(), "no configured converter for statements")
+}
+
+func Test_ParseStatements_NoConditionConverter(t *testing.T) {
+	ps := mockParser(t, WithPathContextNames[any]([]string{"testContext"}))
+	option := WithParserCollectionContext[any, any]("testContext", ps)
+
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(), option)
+	require.NoError(t, err)
+
+	pw, exists := pc.contextParsers["testContext"]
+	assert.True(t, exists)
+	assert.NotNil(t, pw)
+	_, parseErr := pc.ParseConditionsWithContext("testContext", mockGetter{[]string{`foo.attributes["bar"] == "foo"`}}, true)
+	assert.Error(t, parseErr)
+	assert.Contains(t, parseErr.Error(), "no configured converter for conditions")
 }
 
 func Test_WithParserCollectionContext_UnsupportedContext(t *testing.T) {
@@ -149,7 +164,7 @@ func Test_WithParserCollectionErrorMode(t *testing.T) {
 	require.Equal(t, PropagateError, pc.ErrorMode)
 }
 
-func Test_EnableParserCollectionModifiedLogging_True(t *testing.T) {
+func Test_EnableParserCollectionModifiedPathsLogging_True(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	core, observedLogs := observer.New(zap.InfoLevel)
 	telemetrySettings := componenttest.NewNopTelemetrySettings()
@@ -158,7 +173,7 @@ func Test_EnableParserCollectionModifiedLogging_True(t *testing.T) {
 	pc, err := NewParserCollection(
 		telemetrySettings,
 		WithParserCollectionContext("dummy", ps, WithStatementConverter(newNopParsedStatementsConverter[any]())),
-		EnableParserCollectionModifiedLogging[any](true),
+		EnableParserCollectionModifiedPathsLogging[any](true),
 	)
 	require.NoError(t, err)
 
@@ -188,7 +203,7 @@ func Test_EnableParserCollectionModifiedLogging_True(t *testing.T) {
 	}
 }
 
-func Test_EnableParserCollectionModifiedLogging_False(t *testing.T) {
+func Test_EnableParserCollectionModifiedPathsLogging_False(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"dummy"}))
 	core, observedLogs := observer.New(zap.InfoLevel)
 	telemetrySettings := componenttest.NewNopTelemetrySettings()
@@ -197,7 +212,7 @@ func Test_EnableParserCollectionModifiedLogging_False(t *testing.T) {
 	pc, err := NewParserCollection(
 		telemetrySettings,
 		WithParserCollectionContext("dummy", ps, WithStatementConverter(newNopParsedStatementsConverter[any]())),
-		EnableParserCollectionModifiedLogging[any](false),
+		EnableParserCollectionModifiedPathsLogging[any](false),
 	)
 	require.NoError(t, err)
 

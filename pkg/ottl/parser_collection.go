@@ -143,8 +143,8 @@ type (
 	// parserCollectionContextParserFunc is the internal generic type that parses the given []string
 	// returned from a getter G into type [R] using the specified context's OTTL parser.
 	// The provided context must be supported by the ParserCollection, otherwise an error is returned.
-	// If the condition's Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
-	// so it rewrites the conditions prepending the missing paths contexts.
+	// If the OTTL Path does not provide their Path.Context value, the prependPathsContext argument should be set to true,
+	// so it rewrites the OTTL prepending the missing paths contexts.
 	parserCollectionContextParserFunc[R any, G any] func(collection *ParserCollection[R], context string, getter G, prependPathsContext bool) (R, error)
 	// ParserCollectionContextParser is a struct that holds the converters for parsing statements and conditions
 	// into a common representation of type [R].
@@ -308,12 +308,12 @@ func WithParserCollectionErrorMode[R any](errorMode ErrorMode) ParserCollectionO
 	}
 }
 
-// EnableParserCollectionModifiedLogging controls the modification logs.
+// EnableParserCollectionModifiedPathsLogging controls the modification logs.
 // When enabled, it logs any modifications performed by the parsing operations,
 // instructing users to rewrite the statements accordingly.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func EnableParserCollectionModifiedLogging[R any](enabled bool) ParserCollectionOption[R] {
+func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserCollectionOption[R] {
 	return func(tp *ParserCollection[R]) error {
 		tp.modifiedLogging = enabled
 		return nil
