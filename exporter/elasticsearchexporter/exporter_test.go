@@ -67,15 +67,16 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
 			actual := string(docs[0].Document)
-			assert.Equal(t, expected, actual)
+			assert.JSONEq(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
+			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			// record attrs
@@ -234,6 +235,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
+			cfg.LogsDynamicIndex.Enabled = false
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
 		})
@@ -256,6 +258,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
+			cfg.LogsDynamicIndex.Enabled = false
 			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
@@ -394,6 +397,7 @@ func TestExporterLogs(t *testing.T) {
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogstashFormat.Enabled = true
 			cfg.LogsIndex = "not-used-index"
+			cfg.LogsDynamicIndex.Enabled = false
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(nil, nil, nil))
 
@@ -927,7 +931,6 @@ func TestExporterMetrics(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributes(
@@ -1546,7 +1549,6 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 
@@ -1768,7 +1770,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogstashFormat.Enabled = true
-			cfg.TracesIndex = "not-used-index"
 			defaultCfg = *cfg
 		})
 
@@ -2125,9 +2126,11 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		batcherCfg := exporterbatcher.NewDefaultConfig()
+		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     exporterbatcher.Config{Enabled: false},
+			Config:     batcherCfg,
 			enabledSet: true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
