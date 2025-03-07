@@ -22,7 +22,7 @@ import (
 )
 
 func BenchmarkReadSingleStaticFileWithBatchingLogEmitter(b *testing.B) {
-	featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", false)
+	require.NoError(b, featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", false))
 	for n := range 6 {
 		numLines := int(math.Pow(10, float64(n)))
 		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
@@ -32,7 +32,7 @@ func BenchmarkReadSingleStaticFileWithBatchingLogEmitter(b *testing.B) {
 }
 
 func BenchmarkReadSingleStaticFileWithSynchronousLogEmitter(b *testing.B) {
-	featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", true)
+	require.NoError(b, featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", true))
 	for n := range 6 {
 		numLines := int(math.Pow(10, float64(n)))
 		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
