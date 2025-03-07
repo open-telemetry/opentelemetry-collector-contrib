@@ -90,9 +90,10 @@ capabilities:
   reports_effective_config: # true if unspecified
 
   # The Supervisor can accept Collector executable package updates.
-  # If enabled the Supervisor will also report package status to the
-  # Server.
   accepts_packages: # false if unspecified
+
+  # The Supervisor can report the status of Collector package updates.
+  reports_package_statuses: # false if unspecified
 
   # The Collector will report own metrics to the destination specified by
   # the Server.

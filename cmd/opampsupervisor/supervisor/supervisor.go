@@ -350,7 +350,7 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("get opamp server port: %w", err)
 	}
 
-	if s.config.Capabilities.AcceptsPackageAvailable || s.config.Capabilities.ReportsPackageStatuses {
+	if s.config.Capabilities.AcceptsPackages || s.config.Capabilities.ReportsPackageStatuses {
 		s.packageManager, err = newPackageManager(
 			s.config.Agent.Executable,
 			s.config.Storage.Directory,
@@ -847,7 +847,7 @@ func (s *Supervisor) setAgentDescription(ad *protobufs.AgentDescription) {
 	if s.opampClient != nil {
 		err := s.opampClient.SetAgentDescription(ad)
 		if err != nil {
-			s.logger.Error("Failed to set agent description.", zap.Error(err))
+			s.telemetrySettings.Logger.Error("Failed to set agent description.", zap.Error(err))
 		}
 	}
 }
@@ -1544,7 +1544,7 @@ func (s *Supervisor) runAgentProcess() {
 		case stopRequest := <-s.agentStopChan:
 			err := s.commander.Stop(context.Background())
 			if err != nil {
-				s.logger.Error("Could not stop agent process", zap.Error(err))
+				s.telemetrySettings.Logger.Error("Could not stop agent process", zap.Error(err))
 			}
 
 			close(stopRequest.processStopped)
@@ -1553,7 +1553,7 @@ func (s *Supervisor) runAgentProcess() {
 			case <-stopRequest.start:
 				err := s.commander.Start(context.Background())
 				if err != nil {
-					s.logger.Error("Could not start agent process", zap.Error(err))
+					s.telemetrySettings.Logger.Error("Could not start agent process", zap.Error(err))
 				}
 			case <-s.doneChan:
 			}
@@ -1704,13 +1704,9 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 	}
 
 	if msg.PackagesAvailable != nil {
-		s.processPackagesAvailableMessage(ctx, msg.PackagesAvailable)
-	}
-
-	if msg.PackagesAvailable != nil {
 		err := msg.PackageSyncer.Sync(context.Background())
 		if err != nil {
-			s.logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
+			s.telemetrySettings.Logger.Error("Failed to sync PackagesAvailable message", zap.Error(err))
 		}
 	}
 
