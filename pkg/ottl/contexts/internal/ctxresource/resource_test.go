@@ -55,6 +55,17 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refResource.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(resource pcommon.Resource) {
+				_ = resource.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
