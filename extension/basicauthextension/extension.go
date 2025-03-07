@@ -27,8 +27,8 @@ var (
 	errInvalidFormat       = errors.New("invalid authorization format")
 )
 
-func newClientAuthExtension(cfg *Config) (extensionauth.Client, error) {
-	return &basicAuthClient{clientAuth: cfg.ClientAuth}, nil
+func newClientAuthExtension(cfg *Config) extensionauth.Client {
+	return &basicAuthClient{clientAuth: cfg.ClientAuth}
 }
 
 func newServerAuthExtension(cfg *Config) (extensionauth.Server, error) {
@@ -211,7 +211,7 @@ type basicAuthClient struct {
 }
 
 // Start implements extensionauth.Client.
-func (b *basicAuthClient) Start(context.Context, component.Host) error {
+func (ba *basicAuthClient) Start(context.Context, component.Host) error {
 	return nil
 }
 
@@ -237,6 +237,6 @@ func (ba *basicAuthClient) PerRPCCredentials() (creds.PerRPCCredentials, error) 
 	}, nil
 }
 
-func (b *basicAuthClient) Shutdown(context.Context) error {
+func (ba *basicAuthClient) Shutdown(context.Context) error {
 	return nil
 }
