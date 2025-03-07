@@ -78,7 +78,7 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
-				DynamicPipeline: DynamicPipelineSettings{
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -156,7 +156,7 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
-				DynamicPipeline: DynamicPipelineSettings{
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -234,7 +234,7 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
-				DynamicPipeline: DynamicPipelineSettings{
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",

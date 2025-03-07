@@ -830,7 +830,7 @@ func TestExporterLogs(t *testing.T) {
 		}
 	})
 
-	t.Run("publish logs with per event pipeline", func(t *testing.T) {
+	t.Run("publish with dynamic pipeline", func(t *testing.T) {
 		t.Parallel()
 		examplePipeline := "abc123"
 		tableTests := []struct {
@@ -888,7 +888,7 @@ func TestExporterLogs(t *testing.T) {
 
 					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 						cfg.Mapping.Mode = "otel"
-						cfg.DynamicPipeline.Enabled = true
+						cfg.LogsDynamicPipeline.Enabled = true
 						cfgFn(cfg)
 					})
 					logs := newLogsWithAttributes(
@@ -1017,80 +1017,6 @@ func TestExporterMetrics(t *testing.T) {
 		mustSendMetrics(t, exporter, metrics)
 
 		rec.WaitItems(1)
-	})
-
-	t.Run("publish with dynamic pipeline", func(t *testing.T) {
-		t.Parallel()
-		examplePipeline := "abc123"
-		tableTests := []struct {
-			name             string
-			expectedPipeline string // "" means the pipeline will not be set
-			recordAttrs      map[string]any
-		}{
-			{
-				name:             "missing document pipeline attribute should not set pipeline",
-				expectedPipeline: "",
-			},
-			{
-				name:             "empty document pipeline attribute should not set pipeline",
-				expectedPipeline: "",
-				recordAttrs: map[string]any{
-					elasticsearch.DocumentPipelineAttributeName: "",
-				},
-			},
-			{
-				name:             "record attributes",
-				expectedPipeline: examplePipeline,
-				recordAttrs: map[string]any{
-					elasticsearch.DocumentPipelineAttributeName: examplePipeline,
-				},
-			},
-		}
-
-		cfgs := map[string]func(*Config){
-			"async": func(cfg *Config) {
-				cfg.Batcher.Enabled = false
-			},
-			"sync": func(cfg *Config) {
-				cfg.Batcher.Enabled = true
-				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
-			},
-		}
-		for _, tt := range tableTests {
-			for cfgName, cfgFn := range cfgs {
-				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
-					t.Parallel()
-					rec := newBulkRecorder()
-					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-						rec.Record(docs)
-						if tt.expectedPipeline == "" {
-							assert.NotContainsf(t, string(docs[0].Action), "pipeline", "%s: expected pipeline to not be set", tt.name)
-						} else {
-							assert.Equalf(t, tt.expectedPipeline, actionJSONToPipeline(t, docs[0].Action), "%s: expected pipeline to be set in action: %s", tt.name, docs[0].Action)
-						}
-						return itemsAllOK(docs)
-					})
-
-					exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-						cfg.MetricsIndex = "metrics.index"
-						cfg.Mapping.Mode = "ecs"
-						cfg.DynamicPipeline.Enabled = true
-						cfgFn(cfg)
-					})
-					metrics := newMetricsWithAttributes(
-						map[string]any{
-							elasticsearch.DocumentPipelineAttributeName: tt.expectedPipeline,
-						},
-						nil,
-						nil,
-					)
-					metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
-					mustSendMetrics(t, exporter, metrics)
-
-					rec.WaitItems(1)
-				})
-			}
-		}
 	})
 
 	t.Run("publish histogram", func(t *testing.T) {
@@ -1898,79 +1824,6 @@ func TestExporterTraces(t *testing.T) {
 		))
 
 		rec.WaitItems(1)
-	})
-
-	t.Run("publish with dynamic pipeline", func(t *testing.T) {
-		t.Parallel()
-		examplePipeline := "abc123"
-		tableTests := []struct {
-			name             string
-			expectedPipeline string // "" means the pipeline will not be set
-			recordAttrs      map[string]any
-		}{
-			{
-				name:             "missing document pipeline attribute should not set pipeline",
-				expectedPipeline: "",
-			},
-			{
-				name:             "empty document pipeline attribute should not set pipeline",
-				expectedPipeline: "",
-				recordAttrs: map[string]any{
-					elasticsearch.DocumentPipelineAttributeName: "",
-				},
-			},
-			{
-				name:             "record attributes",
-				expectedPipeline: examplePipeline,
-				recordAttrs: map[string]any{
-					elasticsearch.DocumentPipelineAttributeName: examplePipeline,
-				},
-			},
-		}
-
-		cfgs := map[string]func(*Config){
-			"async": func(cfg *Config) {
-				cfg.Batcher.Enabled = false
-			},
-			"sync": func(cfg *Config) {
-				cfg.Batcher.Enabled = true
-				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
-			},
-		}
-		for _, tt := range tableTests {
-			for cfgName, cfgFn := range cfgs {
-				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
-					t.Parallel()
-					rec := newBulkRecorder()
-					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-						rec.Record(docs)
-						if tt.expectedPipeline == "" {
-							assert.NotContainsf(t, string(docs[0].Action), "pipeline", "%s: expected pipeline to not be set", tt.name)
-						} else {
-							assert.Equalf(t, tt.expectedPipeline, actionJSONToPipeline(t, docs[0].Action), "%s: expected pipeline to be set in action: %s", tt.name, docs[0].Action)
-						}
-						return itemsAllOK(docs)
-					})
-
-					exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-						cfg.TracesIndex = "traces.index"
-						cfg.Mapping.Mode = "otel"
-						cfg.DynamicPipeline.Enabled = true
-						cfgFn(cfg)
-					})
-					traces := newTracesWithAttributes(
-						map[string]any{
-							elasticsearch.DocumentPipelineAttributeName: tt.expectedPipeline,
-						},
-						nil,
-						nil,
-					)
-					mustSendTraces(t, exporter, traces)
-
-					rec.WaitItems(1)
-				})
-			}
-		}
 	})
 
 	t.Run("publish with logstash format index", func(t *testing.T) {

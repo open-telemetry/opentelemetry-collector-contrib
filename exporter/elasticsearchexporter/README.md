@@ -271,8 +271,8 @@ Documents may be optionally passed through an [Elasticsearch Ingest pipeline] pr
 This can be configured through the following settings:
 
 - `pipeline` (optional): ID of an [Elasticsearch Ingest pipeline] used for processing documents published by the exporter.
-- `dynamic_pipeline` (optional): Dynamically determines the ingest pipeline to be used in Elasticsearch based on attributes.
-  - `enabled`(default=false): Enable/Disable dynamic pipeline. If `elasticsearch.document_pipeline` attribute exists and is not an empty string, it will be used as the Elasticsearch ingest pipeline. This currently applies to logs, metrics and traces. The attribute `elasticsearch.document_pipeline` is removed from the final document when the `otel` mapping mode is used.
+- `logs_dynamic_pipeline` (optional): Dynamically determines the ingest pipeline to be used in Elasticsearch based on attributes in the log signal.
+  - `enabled`(default=false): Enable/Disable dynamic pipeline. If `elasticsearch.document_pipeline` attribute exists and is not an empty string, it will be used as the Elasticsearch ingest pipeline. This currently only applies to the log signal. The attribute `elasticsearch.document_pipeline` is removed from the final document when the `otel` mapping mode is used.
 
 ### Elasticsearch bulk indexing
 
