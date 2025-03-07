@@ -179,7 +179,12 @@ See below for a description of each mapping mode.
 
 The default and recommended "OTel-native" mapping mode.
 
-Requires Elasticsearch 8.12 or above.
+
+Requires Elasticsearch 8.12 or above[^1], works best with Elasticsearch 8.16 or above[^2].
+
+[^1]: as it uses the undocumented `require_data_stream` bulk API parameter supported from Elasticsearch 8.12
+[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
+
 Works best with `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` enabled.
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
