@@ -43,7 +43,6 @@ type logsReceiver struct {
 const secretHeaderName = "X-CF-Secret"
 
 func newLogsReceiver(params rcvr.Settings, cfg *Config, consumer consumer.Logs) (*logsReceiver, error) {
-
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             params.ID,
 		Transport:              "http",
