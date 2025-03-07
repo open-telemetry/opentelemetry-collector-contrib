@@ -99,7 +99,7 @@ func Test_ParseStatements_NoStatementConverter(t *testing.T) {
 	assert.Contains(t, parseErr.Error(), "no configured converter for statements")
 }
 
-func Test_ParseStatements_NoConditionConverter(t *testing.T) {
+func Test_ParseConditions_NoConditionConverter(t *testing.T) {
 	ps := mockParser(t, WithPathContextNames[any]([]string{"testContext"}))
 	option := WithParserCollectionContext[any, any]("testContext", ps)
 
