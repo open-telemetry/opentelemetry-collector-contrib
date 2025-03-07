@@ -12,11 +12,11 @@ require (
 	go.opentelemetry.io/collector/confmap v1.27.1-0.20250307164521-7c787571daa5
 	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250307164521-7c787571daa5
 	go.opentelemetry.io/collector/connector v0.121.1-0.20250307145831-dc9250a6c150
-	go.opentelemetry.io/collector/connector/connectortest v0.121.1-0.20250307164521-7c787571daa5
-	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307145831-dc9250a6c150
-	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/connector/connectortest v0.121.1-0.20250307145831-dc9250a6c150
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250307145831-dc9250a6c150
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307164521-7c787571daa5
-	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307145831-dc9250a6c150
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.71.0
@@ -57,11 +57,11 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/connector/xconnector v0.121.1-0.20250307145831-dc9250a6c150 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
-	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250307164521-7c787571daa5 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.121.1-0.20250307145831-dc9250a6c150 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307164521-7c787571daa5 // indirect
-	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.1-0.20250307164521-7c787571daa5 // indirect
-	go.opentelemetry.io/collector/semconv v0.121.1-0.20250307164521-7c787571daa5 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/pipeline/xpipeline v0.121.1-0.20250307145831-dc9250a6c150 // indirect
+	go.opentelemetry.io/collector/semconv v0.121.1-0.20250307145831-dc9250a6c150 // indirect
 	go.opentelemetry.io/otel v1.34.0 // indirect
 	go.opentelemetry.io/otel/metric v1.34.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
