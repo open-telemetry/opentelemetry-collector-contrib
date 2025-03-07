@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
@@ -20,6 +21,35 @@ import (
 type Header struct {
 	action action.Action
 	source source.Source
+}
+
+var _ extensionauth.Client = (*headerSetterExtension)(nil)
+
+type headerSetterExtension struct {
+	headers []Header
+}
+
+// PerRPCCredentials implements extensionauth.Client.
+func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &headersPerRPC{headers: h.headers}, nil
+}
+
+// RoundTripper implements extensionauth.Client.
+func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &headersRoundTripper{
+		base:    base,
+		headers: h.headers,
+	}, nil
+}
+
+// Shutdown implements extensionauth.Client.
+func (h *headerSetterExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+// Start implements extensionauth.Client.
+func (h *headerSetterExtension) Start(context.Context, component.Host) error {
+	return nil
 }
 
 func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.Client, error) {
@@ -63,18 +93,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.C
 		headers = append(headers, Header{action: a, source: s})
 	}
 
-	return extensionauth.NewClient(
-		extensionauth.WithClientRoundTripper(
-			func(base http.RoundTripper) (http.RoundTripper, error) {
-				return &headersRoundTripper{
-					base:    base,
-					headers: headers,
-				}, nil
-			}),
-		extensionauth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
-			return &headersPerRPC{headers: headers}, nil
-		}),
-	)
+	return &headerSetterExtension{headers: headers}, nil
 }
 
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets
