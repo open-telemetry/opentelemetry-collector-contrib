@@ -14,12 +14,13 @@ import (
 	"net/url"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func TestReqToLog(t *testing.T) {
@@ -264,9 +265,12 @@ func TestReqToLog(t *testing.T) {
 			// receiver will fail to create if endpoint is empty
 			testConfig.ServerConfig.Endpoint = "localhost:8080"
 			receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), *testConfig, consumertest.NewNop())
-			require.Nil(t, err)
+			require.NoError(t, err)
 			eventReceiver := receiver.(*eventReceiver)
-			defer eventReceiver.Shutdown(context.Background())
+			defer func() {
+				err := eventReceiver.Shutdown(context.Background())
+				require.NoError(t, err)
+			}()
 
 			reqLog, reqLen := eventReceiver.reqToLog(test.sc, test.headers, test.query)
 			test.tt(t, reqLog, reqLen, receivertest.NewNopSettings(metadata.Type))
