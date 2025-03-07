@@ -63,6 +63,8 @@ type Config struct {
 	AsyncInsert bool `mapstructure:"async_insert"`
 	// MetricsTables defines the table names for metric types.
 	MetricsTables MetricTablesConfig `mapstructure:"metrics_tables"`
+	// ProfilesTables defines the table names for profile data.
+	ProfilesTables ProfilesTablesConfig `mapstructure:"profiles_tables"`
 }
 
 type MetricTablesConfig struct {
@@ -76,6 +78,20 @@ type MetricTablesConfig struct {
 	Histogram internal.MetricTypeConfig `mapstructure:"histogram"`
 	// ExponentialHistogram is the table name for exponential histogram metric type. default is `otel_metrics_exponential_histogram`.
 	ExponentialHistogram internal.MetricTypeConfig `mapstructure:"exponential_histogram"`
+}
+
+// ProfilesTablesConfig defines the table names for profile data types
+type ProfilesTablesConfig struct {
+	// Profiles is the table name for main profile data. default is `otel_profiles`.
+	Profiles string `mapstructure:"profiles"`
+	// Samples is the table name for profile samples data. default is `otel_profiles_samples`.
+	Samples string `mapstructure:"samples"`
+	// Locations is the table name for profile locations data. default is `otel_profiles_locations`.
+	Locations string `mapstructure:"locations"`
+	// Functions is the table name for profile functions data. default is `otel_profiles_functions`.
+	Functions string `mapstructure:"functions"`
+	// Mappings is the table name for profile mappings data. default is `otel_profiles_mappings`.
+	Mappings string `mapstructure:"mappings"`
 }
 
 // TableEngine defines the ENGINE string value when creating the table.
@@ -93,6 +109,7 @@ const (
 	defaultSummarySuffix      = "_summary"
 	defaultHistogramSuffix    = "_histogram"
 	defaultExpHistogramSuffix = "_exponential_histogram"
+	defaultProfilesTableName  = "otel_profiles"
 )
 
 var (
@@ -111,6 +128,7 @@ func (cfg *Config) Validate() (err error) {
 	}
 
 	cfg.buildMetricTableNames()
+	cfg.buildProfileTableNames()
 
 	// Validate DSN with clickhouse driver.
 	// Last chance to catch invalid config.
@@ -219,6 +237,28 @@ func (cfg *Config) buildMetricTableNames() {
 		cfg.MetricsTables.ExponentialHistogram.Name = tableName + defaultExpHistogramSuffix
 	}
 }
+
+// buildProfileTableNames sets defaults for profile table names if not set
+func (cfg *Config) buildProfileTableNames() {
+	tableName := defaultProfilesTableName
+
+	if len(cfg.ProfilesTables.Profiles) == 0 {
+		cfg.ProfilesTables.Profiles = tableName
+	}
+	if len(cfg.ProfilesTables.Samples) == 0 {
+		cfg.ProfilesTables.Samples = tableName + "_samples"
+	}
+	if len(cfg.ProfilesTables.Locations) == 0 {
+		cfg.ProfilesTables.Locations = tableName + "_locations"
+	}
+	if len(cfg.ProfilesTables.Functions) == 0 {
+		cfg.ProfilesTables.Functions = tableName + "_functions"
+	}
+	if len(cfg.ProfilesTables.Mappings) == 0 {
+		cfg.ProfilesTables.Mappings = tableName + "_mappings"
+	}
+}
+
 
 func (cfg *Config) areMetricTableNamesSet() bool {
 	return len(cfg.MetricsTables.Gauge.Name) != 0 ||

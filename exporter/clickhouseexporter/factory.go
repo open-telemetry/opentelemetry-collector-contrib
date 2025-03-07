@@ -10,23 +10,25 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
+	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 )
 
 // NewFactory creates a factory for ClickHouse exporter.
 func NewFactory() exporter.Factory {
-	return exporter.NewFactory(
+	return xexporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
-		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithLogs(createLogsExporter, metadata.LogsStability),
+		xexporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		xexporter.WithMetrics(createMetricExporter, metadata.MetricsStability),
+		xexporter.WithProfiles(createProfilesExporter, metadata.ProfilesStability),
 	)
 }
 
@@ -50,6 +52,13 @@ func createDefaultConfig() component.Config {
 			Summary:              internal.MetricTypeConfig{Name: defaultMetricTableName + defaultSummarySuffix},
 			Histogram:            internal.MetricTypeConfig{Name: defaultMetricTableName + defaultHistogramSuffix},
 			ExponentialHistogram: internal.MetricTypeConfig{Name: defaultMetricTableName + defaultExpHistogramSuffix},
+		},
+		ProfilesTables: ProfilesTablesConfig{
+			Profiles:  defaultProfilesTableName,
+			Samples:   defaultProfilesTableName + "_samples",
+			Locations: defaultProfilesTableName + "_locations",
+			Functions: defaultProfilesTableName + "_functions",
+			Mappings:  defaultProfilesTableName + "_mappings",
 		},
 	}
 }
@@ -125,6 +134,31 @@ func createMetricExporter(
 		set,
 		cfg,
 		exporter.pushMetricsData,
+		exporterhelper.WithStart(exporter.start),
+		exporterhelper.WithShutdown(exporter.shutdown),
+		exporterhelper.WithTimeout(c.TimeoutSettings),
+		exporterhelper.WithQueue(c.QueueSettings),
+		exporterhelper.WithRetry(c.BackOffConfig),
+	)
+}
+
+func createProfilesExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	cfg component.Config,
+) (xexporter.Profiles, error) {
+	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
+	exporter, err := newProfilesExporter(set.Logger, c)
+	if err != nil {
+		return nil, fmt.Errorf("cannot configure clickhouse profiles exporter: %w", err)
+	}
+
+	return xexporterhelper.NewProfilesExporter(
+		ctx,
+		set,
+		cfg,
+		exporter.pushProfileData,
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
 		exporterhelper.WithTimeout(c.TimeoutSettings),
