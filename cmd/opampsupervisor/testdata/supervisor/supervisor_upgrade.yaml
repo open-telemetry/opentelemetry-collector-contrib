@@ -14,7 +14,7 @@ capabilities:
   reports_package_statuses: true
 
 storage:
-  directory: "{{.storage_dir}}"
+  directory: '{{.storage_dir}}'
 
 agent:
-  executable: "{{.agent_path}}"
+  executable: '{{.agent_path}}'
