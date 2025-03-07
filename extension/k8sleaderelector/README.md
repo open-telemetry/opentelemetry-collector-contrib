@@ -16,7 +16,7 @@ This extension enables OpenTelemetry components to run in HA mode across a Kuber
 ## How It Works
 
 The extension uses k8s.io/client-go/tools/leaderelection to perform leader election. The component that owns the lease becomes the leader and runs the function defined in onStartedLeading. If the leader loses the lease, it runs the function defined in onStoppedLeading, stops its operation, and waits to acquire the lease again.
-> When the pod is deleted then the lease object is still left in the cluster. This needs to be deleted manually.
+
 ## Configuration
 
 ```yaml
