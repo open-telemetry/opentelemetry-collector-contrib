@@ -1,0 +1,68 @@
+{
+  "resourceLogs": [
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "asdf",
+            "value": {
+              "stringValue": "1"
+            }
+          }
+        ]
+      },
+      "scopeLogs": [
+        {
+          "logRecords": [
+            {
+              "attributes": [
+                {
+                  "key": "kubernetes.cluster.name",
+                  "value": {
+                    "stringValue": "sancia"
+                  }
+                },
+                {
+                  "key": "docker.image.name",
+                  "value": {
+                    "stringValue": "flooentd"
+                  }
+                }
+              ]
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
+        },
+        {
+          "logRecords": [
+            {
+              "attributes": [
+                {
+                  "key": "don't",
+                  "value": {
+                    "stringValue": "change"
+                  }
+                }
+              ]
+            }
+          ],
+          "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
+        }
+      ],
+      "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
+    },
+    {
+      "resource": {
+        "attributes": [
+          {
+            "key": "kubernetes.cluster.name",
+            "value": {
+              "stringValue": "tevanne"
+            }
+          }
+        ]
+      },
+      "schemaUrl": "https://example.com/testdata/schema_sections/all/1.0.0"
+    }
+  ]
+}

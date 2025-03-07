@@ -4,6 +4,7 @@
 package translation
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/google/go-cmp/cmp"
@@ -110,7 +111,8 @@ func TestTranslationIteratorExact(t *testing.T) {
 			tn, err := newTranslator(zaptest.NewLogger(t), tc.target, LoadTranslationVersion(t, TranslationVersion190))
 			require.NoError(t, err, "Must have no error when creating translator")
 
-			_, inVersion, err := GetFamilyAndVersion(tc.income)
+			familty, inVersion, err := GetFamilyAndVersion(tc.income)
+			fmt.Printf("family: %s, version: %v\n", familty, inVersion)
 			require.NoError(t, err, "Must not error when parsing inVersion from schemaURL")
 
 			it, status := tn.iterator(inVersion)
