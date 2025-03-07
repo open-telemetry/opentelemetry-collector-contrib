@@ -34,9 +34,6 @@ resourceLogs:
               - key: sqlserver.request_status
                 value:
                   stringValue: running
-              - key: sqlserver.host_name
-                value:
-                  stringValue: DESKTOP-GHAEGRD
               - key: sqlserver.command
                 value:
                   stringValue: SELECT

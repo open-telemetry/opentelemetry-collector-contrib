@@ -648,7 +648,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.Attributes().PutInt(dbPrefix+sessionID, int64(sessionIDNumber))
 		record.Attributes().PutStr(dbPrefix+sessionStatus, row[sessionStatus])
 		record.Attributes().PutStr(dbPrefix+requestStatus, row[requestStatus])
-		record.Attributes().PutStr(dbPrefix+hostname, row[hostname])
 		record.Attributes().PutStr(dbPrefix+command, row[command])
 		// Following Opentelemetry Semantic Convention for this naming.
 		record.Attributes().PutStr("db.query.text", obfuscatedStatement)
