@@ -24,6 +24,8 @@ func (ts *AttributeSource) Get(ctx context.Context) (string, error) {
 	switch a := attr.(type) {
 	case string:
 		return a, nil
+	case nil:
+		return "", nil
 	default:
 		b, err := json.Marshal(attr)
 		if err != nil {
