@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
 func TestValidConfig(t *testing.T) {
@@ -24,7 +23,7 @@ func TestValidConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	r, err := createMetricsReceiver(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
@@ -35,17 +34,10 @@ func TestCreateMetrics(t *testing.T) {
 func TestCreateLogsReceiver(t *testing.T) {
 	r, err := createLogsReceiver(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		createDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	require.NotNil(t, r)
-}
-
-func TestValidateRecordType(t *testing.T) {
-	require.NoError(t, validateRecordType(defaultMetricsRecordType))
-	require.NoError(t, validateRecordType(defaultLogsRecordType))
-	require.NoError(t, validateRecordType(otlpmetricstream.TypeStr))
-	require.Error(t, validateRecordType("nop"))
 }

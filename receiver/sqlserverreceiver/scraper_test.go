@@ -43,6 +43,25 @@ func enableAllScraperMetrics(cfg *Config) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
 
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTableCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverReplicaDataRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseExecutionErrors.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFullScanRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSearchRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockTimeoutRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLoginRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLogoutRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageLookupRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionDelay.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryUsage.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {
@@ -63,7 +82,7 @@ func TestEmptyScrape(t *testing.T) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled = false
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = false
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.Empty(t, scrapers)
 }
 
@@ -80,7 +99,7 @@ func TestSuccessfulScrape(t *testing.T) {
 
 	enableAllScraperMetrics(cfg)
 
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotEmpty(t, scrapers)
 
 	for _, scraper := range scrapers {
@@ -131,7 +150,7 @@ func TestScrapeInvalidQuery(t *testing.T) {
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg)
-	scrapers := setupSQLServerScrapers(receivertest.NewNopSettingsWithType(metadata.Type), cfg)
+	scrapers := setupSQLServerScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
 
 	for _, scraper := range scrapers {

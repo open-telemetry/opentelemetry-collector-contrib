@@ -30,7 +30,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := createTracesReceiver(context.Background(), set, cfg, nil)
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -83,7 +83,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tr, err := createTracesReceiver(ctx, set, tt.cfg, consumertest.NewNop())
@@ -147,7 +147,7 @@ func TestCreateMetrics(t *testing.T) {
 			},
 		},
 	}
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tc, err := createMetricsReceiver(context.Background(), set, tt.cfg, consumertest.NewNop())

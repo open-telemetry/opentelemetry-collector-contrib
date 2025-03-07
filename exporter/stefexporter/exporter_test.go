@@ -14,9 +14,11 @@ import (
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
 	"github.com/splunk/stef/go/otel/oteltef"
+	"github.com/splunk/stef/go/pkg"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter"
@@ -101,7 +103,7 @@ func (m *mockMetricDestServer) onStream(grpcReader stefgrpc.GrpcReader, ackFunc 
 	}
 
 	for {
-		_, err = reader.Read()
+		err = reader.Read(pkg.ReadOptions{})
 		if err != nil {
 			m.logger.Error("Error reading from connection", zap.Error(err))
 			return err
@@ -139,16 +141,14 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.ClientConfig = configgrpc.ClientConfig{
-		Endpoint: mockSrv.endpoint,
-		// Use insecure mode for tests so that we don't bother with certificates.
-		TLSSetting: configtls.ClientConfig{Insecure: true},
-	}
+	cfg.ClientConfig.Endpoint = mockSrv.endpoint
+	// Use insecure mode for tests so that we don't bother with certificates.
+	cfg.TLSSetting.Insecure = true
 
 	// Make retries quick. We will be testing failure modes and don't want test to take too long.
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -166,27 +166,43 @@ func runTest(
 }
 
 func TestExport(t *testing.T) {
-	runTest(
-		t,
-		nil,
-		func(cfg *Config, mockSrv *mockMetricDestServer, exp exporter.Metrics) {
-			// Send some metrics. Make sure the count of batches exceeds the number of consumers
-			// so that we can hit the case where exporter begins to forcedly flush encoded data.
-			pointCount := int64(0)
-			for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
-				md := testdata.GenerateMetrics(1)
-				pointCount += int64(md.DataPointCount())
-				err := exp.ConsumeMetrics(context.Background(), md)
-				require.NoError(t, err)
-			}
+	compressions := []string{"", "zstd"}
+	for _, compression := range compressions {
+		t.Run(
+			compression, func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Compression = configcompression.Type(compression)
 
-			// Wait for data to be received.
-			assert.Eventually(
-				t, func() bool { return mockSrv.recordsReceived.Load() == pointCount },
-				5*time.Second, 5*time.Millisecond,
-			)
-		},
-	)
+				runTest(
+					t,
+					cfg,
+					func(
+						cfg *Config, mockSrv *mockMetricDestServer, exp exporter.Metrics,
+					) {
+						// Send some metrics. Make sure the count of batches
+						// exceeds the number of consumers so that we can hit
+						// the case where exporter begins to forcedly flush
+						// encoded data.
+						pointCount := int64(0)
+						for i := 0; i < 2*cfg.QueueConfig.NumConsumers; i++ {
+							md := testdata.GenerateMetrics(1)
+							pointCount += int64(md.DataPointCount())
+							err := exp.ConsumeMetrics(context.Background(), md)
+							require.NoError(t, err)
+						}
+
+						// Wait for data to be received.
+						assert.Eventually(
+							t,
+							func() bool { return mockSrv.recordsReceived.Load() == pointCount },
+							5*time.Second, 5*time.Millisecond,
+						)
+					},
+				)
+			},
+		)
+	}
 }
 
 func TestReconnect(t *testing.T) {
@@ -299,7 +315,7 @@ func TestStartServerAfterClient(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -355,7 +371,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
@@ -409,7 +425,7 @@ func TestCancelAfterExport(t *testing.T) {
 		TLSSetting: configtls.ClientConfig{Insecure: true},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(exportertest.NopType)
 	set.TelemetrySettings.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
