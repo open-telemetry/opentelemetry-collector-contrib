@@ -130,8 +130,6 @@ func (k *kafkaTopicsObserver) Shutdown(_ context.Context) error {
 
 var createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
 	saramaConfig := sarama.NewConfig()
-	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
-	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
 
 	var err error
 	if config.ResolveCanonicalBootstrapServersOnly {
