@@ -332,7 +332,8 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogsDynamicIndex.Enabled = false
+			cfg.LogsDynamicIndexLegacy.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
@@ -417,7 +418,8 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
+			cfg.LogsDynamicIndex.Enabled = false
+			cfg.LogsDynamicIndexLegacy.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(
@@ -892,6 +894,8 @@ func TestExporterMetrics(t *testing.T) {
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 			cfg.MetricsIndex = "metrics.index"
+			cfg.MetricsDynamicIndex.Enabled = false
+			cfg.MetricsDynamicIndexLegacy.Enabled = true
 			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributes(
@@ -1703,7 +1707,8 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
+			cfg.TracesDynamicIndex.Enabled = false
+			cfg.TracesDynamicIndexLegacy.Enabled = true
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
@@ -1791,7 +1796,8 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
+			cfg.TracesDynamicIndex.Enabled = false
+			cfg.TracesDynamicIndexLegacy.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 

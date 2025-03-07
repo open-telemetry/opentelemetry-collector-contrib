@@ -41,19 +41,19 @@ type Config struct {
 	NumWorkers int `mapstructure:"num_workers"`
 
 	// This setting is required when logging pipelines used.
-	LogsIndex string `mapstructure:"logs_index"`
-	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
-	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
+	LogsIndex              string                    `mapstructure:"logs_index"`
+	LogsDynamicIndex       DynamicIndexSetting       `mapstructure:"logs_dynamic_index"`
+	LogsDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"logs_dynamic_index_legacy"`
 
 	// This setting is required when the exporter is used in a metrics pipeline.
-	MetricsIndex string `mapstructure:"metrics_index"`
-	// fall back to pure MetricsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource attributes
-	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
+	MetricsIndex              string                    `mapstructure:"metrics_index"`
+	MetricsDynamicIndex       DynamicIndexSetting       `mapstructure:"metrics_dynamic_index"`
+	MetricsDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"metrics_dynamic_index_legacy"`
 
 	// This setting is required when traces pipelines used.
-	TracesIndex string `mapstructure:"traces_index"`
-	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
-	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
+	TracesIndex              string                    `mapstructure:"traces_index"`
+	TracesDynamicIndex       DynamicIndexSetting       `mapstructure:"traces_dynamic_index"`
+	TracesDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"traces_dynamic_index_legacy"`
 
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
@@ -118,6 +118,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIndexLegacySetting struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

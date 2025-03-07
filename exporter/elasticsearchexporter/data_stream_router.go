@@ -51,10 +51,14 @@ type documentRouter interface {
 	routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error)
 }
 
-func newDocumentRouter(mode MappingMode, dynamicIndex bool, defaultIndex string, cfg *Config) documentRouter {
+func newDocumentRouter(mode MappingMode, dynamicIndex, dynamicIndexLegacy bool, defaultIndex string, cfg *Config) documentRouter {
 	var router documentRouter
 	if dynamicIndex {
 		router = dynamicDocumentRouter{
+			mode: mode,
+		}
+	} else if dynamicIndexLegacy {
+		router = dynamicLegacyDocumentRouter{
 			index: elasticsearch.Index{Index: defaultIndex},
 			mode:  mode,
 		}
@@ -94,24 +98,53 @@ func (r staticDocumentRouter) route(_ pcommon.Resource, _ pcommon.Instrumentatio
 }
 
 type dynamicDocumentRouter struct {
+	mode MappingMode
+}
+
+func (r dynamicDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeLogs)
+}
+
+func (r dynamicDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeMetrics)
+}
+
+func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeTraces)
+}
+
+func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeLogs)
+}
+
+type dynamicLegacyDocumentRouter struct {
 	index elasticsearch.Index
 	mode  MappingMode
 }
 
-func (r dynamicDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs)
+func (r dynamicLegacyDocumentRouter) route(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) elasticsearch.Index {
+	prefix, prefixExists := getFromAttributes(indexPrefix, "", resource.Attributes(), scope.Attributes(), recordAttrs)
+	suffix, suffixExists := getFromAttributes(indexSuffix, "", resource.Attributes(), scope.Attributes(), recordAttrs)
+	if prefixExists || suffixExists {
+		return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, r.index.Index, suffix)}
+	}
+	return r.index
 }
 
-func (r dynamicDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeMetrics)
+func (r dynamicLegacyDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return r.route(resource, scope, recordAttrs), nil
 }
 
-func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeTraces)
+func (r dynamicLegacyDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return r.route(resource, scope, recordAttrs), nil
 }
 
-func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return routeRecord(resource, scope, recordAttrs, r.index.Index, r.mode, defaultDataStreamTypeLogs)
+func (r dynamicLegacyDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return r.route(resource, scope, recordAttrs), nil
+}
+
+func (r dynamicLegacyDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
+	return r.route(resource, scope, recordAttrs), nil
 }
 
 type logstashDocumentRouter struct {
@@ -150,7 +183,6 @@ func routeRecord(
 	resource pcommon.Resource,
 	scope pcommon.InstrumentationScope,
 	recordAttr pcommon.Map,
-	index string,
 	mode MappingMode,
 	defaultDSType string,
 ) (elasticsearch.Index, error) {
@@ -159,11 +191,10 @@ func routeRecord(
 
 	// Order:
 	// 1. read data_stream.* from attributes
-	// 2. read elasticsearch.index.* from attributes
-	// 3. receiver-based routing
-	// 4. use default hardcoded data_stream.*
-	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
-	namespace, namespaceExists := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
+	// 2. receiver-based routing
+	// 3. use default hardcoded data_stream.*
+	dataset, _ := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
+	namespace, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 
 	dsType := defaultDSType
 	// if mapping mode is bodymap, allow overriding data_stream.type
@@ -171,15 +202,6 @@ func routeRecord(
 		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
 		if dsType != "logs" && dsType != "metrics" {
 			return elasticsearch.Index{}, fmt.Errorf("data_stream.type cannot be other than logs or metrics")
-		}
-	}
-
-	dataStreamMode := datasetExists || namespaceExists
-	if !dataStreamMode {
-		prefix, prefixExists := getFromAttributes(indexPrefix, "", resourceAttr, scopeAttr, recordAttr)
-		suffix, suffixExists := getFromAttributes(indexSuffix, "", resourceAttr, scopeAttr, recordAttr)
-		if prefixExists || suffixExists {
-			return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, index, suffix)}, nil
 		}
 	}
 

@@ -31,6 +31,7 @@ type elasticsearchExporter struct {
 	config              *Config
 	index               string
 	dynamicIndex        bool
+	dynamicIndexLegacy  bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
@@ -43,6 +44,7 @@ func newExporter(
 	set exporter.Settings,
 	index string,
 	dynamicIndex bool,
+	dynamicIndexLegacy bool,
 ) *elasticsearchExporter {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
@@ -51,6 +53,7 @@ func newExporter(
 		config:              cfg,
 		index:               index,
 		dynamicIndex:        dynamicIndex,
+		dynamicIndexLegacy:  dynamicIndexLegacy,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
@@ -77,7 +80,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -176,7 +179,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -339,7 +342,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
