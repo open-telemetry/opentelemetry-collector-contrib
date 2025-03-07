@@ -70,10 +70,12 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	byResource := make(map[resourceKey]plog.LogRecordSlice)
 
 	// Multiple logs in each record separated by newline character
+	var anyErrors bool
 	scanner := bufio.NewScanner(r)
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
 		var log cWLog
 		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &log); err != nil {
+			anyErrors = true
 			u.logger.Error(
 				"Unable to unmarshal input",
 				zap.Error(err),
@@ -81,11 +83,27 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 			)
 			continue
 		}
-		if !isValid(log) {
-			u.logger.Error(
-				"Invalid log",
-				zap.Int("datum_index", datumIndex),
-			)
+
+		switch log.MessageType {
+		case "DATA_MESSAGE":
+			if !isValid(log) {
+				anyErrors = true
+				u.logger.Error("Invalid log", zap.Int("datum_index", datumIndex))
+				continue
+			}
+		case "CONTROL_MESSAGE":
+			for _, event := range log.LogEvents {
+				u.logger.Debug(
+					"Skipping CloudWatch control message event",
+					zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
+					zap.String("message", event.Message),
+				)
+			}
+			continue
+		default:
+			// Unknown/invalid message type.
+			anyErrors = true
+			u.logger.Error("Invalid message type", zap.String("message_type", log.MessageType))
 			continue
 		}
 
@@ -110,9 +128,14 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	}
 	if err := scanner.Err(); err != nil {
 		// Treat this as a non-fatal error, and handle the data below.
+		anyErrors = true
 		u.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
 	}
-	if len(byResource) == 0 {
+	if anyErrors && len(byResource) == 0 {
+		// Note that there is a valid scenario where there are no errors
+		// but also byResource is empty: when there are only control messages
+		// in the record. In this case we want to return an initialized but
+		// empty plog.Logs below.
 		return plog.Logs{}, errInvalidRecords
 	}
 
