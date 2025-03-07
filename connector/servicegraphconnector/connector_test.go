@@ -607,7 +607,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 		Dimensions:              extraDimensions,
 		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
 		Store:                   StoreConfig{MaxItems: 10},
-		MetricsFlushInterval:    ptr(time.Millisecond),
+		MetricsFlushInterval:    ptr(0 * time.Millisecond),
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
