@@ -194,12 +194,16 @@ func (l *logsReceiver) handleRequest(rw http.ResponseWriter, req *http.Request) 
 		return
 	}
 
-	if err := l.consumer.ConsumeLogs(req.Context(), l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)); err != nil {
+	pLogs := l.processLogs(pcommon.NewTimestampFromTime(time.Now()), logs)
+	obsCtx := l.obsrecv.StartLogsOp(req.Context())
+	if err := l.consumer.ConsumeLogs(obsCtx, pLogs); err != nil {
+		l.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pLogs.LogRecordCount(), err)
 		errorutil.HTTPError(rw, err)
 		l.logger.Error("Failed to consumer alert as log", zap.Error(err))
 		return
 	}
 
+	l.obsrecv.EndLogsOp(obsCtx, metadata.Type.String(), pLogs.LogRecordCount(), nil)
 	rw.WriteHeader(http.StatusOK)
 }
 
