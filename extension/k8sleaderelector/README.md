@@ -45,6 +45,11 @@ service:
 | **renew_deadline**  | The deadline for renewing the lease. It must be less than the lease duration. | 10s             |
 | **retry_period**    | The period for retrying the leader election.                                  | 2s              |
 
+### Delete the lease object
+```shell
+kubectl delete leases.coordination.k8s.io -n <namespace> <lease_name>
+```
+
 ### Suggested RBAC
 ```yaml
 apiVersion: rbac.authorization.k8s.io/v1
