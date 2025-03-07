@@ -74,7 +74,7 @@ the next operator in Stanza pipeline will split every batch into single entries.
 
 The planned schedule for this feature gate is the following:
 
-- Introduce as `Alpha` (disabled by default) in v0.121.0
+- Introduce as `Alpha` (disabled by default) in v0.122.0
 - Move to `Beta` (enabled by default) after transform operators support batching and after all receivers that are selected to support batching support it
 
 ### FAQ
