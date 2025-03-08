@@ -48,13 +48,20 @@ type AccessTokenPassthroughConfig struct {
 
 // Event represents a metric in Splunk HEC format
 type Event struct {
-	Time       float64        `json:"time,omitempty"`       // optional epoch time - set to zero if the event timestamp is missing or unknown (will be added at indexing time)
-	Host       string         `json:"host"`                 // hostname
-	Source     string         `json:"source,omitempty"`     // optional description of the source of the event; typically the app's name
-	SourceType string         `json:"sourcetype,omitempty"` // optional name of a Splunk parsing configuration; this is usually inferred by Splunk
-	Index      string         `json:"index,omitempty"`      // optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
-	Event      any            `json:"event"`                // type of event: set to "metric" or nil if the event represents a metric, or is the payload of the event.
-	Fields     map[string]any `json:"fields,omitempty"`     // dimensions and metric data
+	// type of event: set to "metric" or nil if the event represents a metric, or is the payload of the event.
+	Event any `json:"event"`
+	// dimensions and metric data
+	Fields map[string]any `json:"fields,omitempty"`
+	// hostname
+	Host string `json:"host"`
+	// optional description of the source of the event; typically the app's name
+	Source string `json:"source,omitempty"`
+	// optional name of a Splunk parsing configuration; this is usually inferred by Splunk
+	SourceType string `json:"sourcetype,omitempty"`
+	// optional name of the Splunk index to store the event in; not required if the token has a default index set in Splunk
+	Index string `json:"index,omitempty"`
+	// optional epoch time - set to zero if the event timestamp is missing or unknown (will be added at indexing time)
+	Time float64 `json:"time,omitempty"`
 }
 
 // IsMetric returns true if the Splunk event is a metric.
@@ -93,12 +100,12 @@ func (e *Event) GetMetricValues() map[string]any {
 func (e *Event) UnmarshalJSON(b []byte) error {
 	rawEvent := struct {
 		Time       any            `json:"time,omitempty"`
+		Event      any            `json:"event"`
+		Fields     map[string]any `json:"fields,omitempty"`
 		Host       string         `json:"host"`
 		Source     string         `json:"source,omitempty"`
 		SourceType string         `json:"sourcetype,omitempty"`
 		Index      string         `json:"index,omitempty"`
-		Event      any            `json:"event"`
-		Fields     map[string]any `json:"fields,omitempty"`
 	}{}
 	err := json.Unmarshal(b, &rawEvent)
 	if err != nil {
@@ -137,6 +144,16 @@ type HecToOtelAttrs struct {
 	Index string `mapstructure:"index"`
 	// Host indicates the mapping of the host field to a specific unified model attribute.
 	Host string `mapstructure:"host"`
+}
+
+func (h HecToOtelAttrs) Equal(o HecToOtelAttrs) bool {
+	if h.Host != o.Host ||
+		h.Source != o.Source ||
+		h.SourceType != o.SourceType ||
+		h.Index != o.Index {
+		return false
+	}
+	return true
 }
 
 type AckRequest struct {

@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver/internal/metadata"
 )
 
@@ -24,8 +23,8 @@ import (
 
 const (
 
-	// Default port to bind to.
-	defaultPort = 9943
+	// Default endpoint to bind to.
+	defaultEndpoint = "localhost:9943"
 )
 
 // NewFactory creates a factory for SignalFx receiver.
@@ -40,7 +39,7 @@ func NewFactory() receiver.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ServerConfig: confighttp.ServerConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
+			Endpoint: defaultEndpoint,
 		},
 	}
 }
@@ -71,6 +70,14 @@ func createMetricsReceiver(
 ) (receiver.Metrics, error) {
 	rCfg := cfg.(*Config)
 
+	if rCfg.AccessTokenPassthrough {
+		params.Logger.Warn(
+			"access_token_passthrough is deprecated. " +
+				"Please enable include_metadata in the receiver and add " +
+				"`metadata_keys: [X-Sf-Token]` to the batch processor",
+		)
+	}
+
 	receiverLock.Lock()
 	r := receivers[rCfg]
 	if r == nil {
@@ -96,6 +103,14 @@ func createLogsReceiver(
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	rCfg := cfg.(*Config)
+
+	if rCfg.AccessTokenPassthrough {
+		params.Logger.Warn(
+			"access_token_passthrough is deprecated. " +
+				"Please enable include_metadata in the receiver and add " +
+				"`metadata_keys: [X-Sf-Token]` to the batch processor",
+		)
+	}
 
 	receiverLock.Lock()
 	r := receivers[rCfg]

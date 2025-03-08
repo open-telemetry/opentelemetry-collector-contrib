@@ -9,12 +9,14 @@ import (
 	"fmt"
 	"net/url"
 	"os"
+	"slices"
 	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
@@ -38,14 +40,6 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// Index configures the index, index alias, or data stream name events should be indexed in.
-	//
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/indices.html
-	// https://www.elastic.co/guide/en/elasticsearch/reference/current/data-streams.html
-	//
-	// Deprecated: `index` is deprecated and replaced with `logs_index`.
-	Index string `mapstructure:"index"`
-
 	// This setting is required when logging pipelines used.
 	LogsIndex string `mapstructure:"logs_index"`
 	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
@@ -60,6 +54,9 @@ type Config struct {
 	TracesIndex string `mapstructure:"traces_index"`
 	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
+
+	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
+	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
@@ -93,16 +90,20 @@ type Config struct {
 // This is a slightly modified version of exporterbatcher.Config,
 // to enable tri-state Enabled: unset, false, true.
 type BatcherConfig struct {
-	// Enabled indicates whether to enqueue batches before sending
-	// to the exporter. If Enabled is specified (non-nil),
-	// then the exporter will not perform any buffering itself.
-	Enabled *bool `mapstructure:"enabled"`
+	exporterbatcher.Config `mapstructure:",squash"`
 
-	// FlushTimeout sets the time after which a batch will be sent regardless of its size.
-	FlushTimeout time.Duration `mapstructure:"flush_timeout"`
+	// enabledSet tracks whether Enabled has been specified.
+	// If enabledSet is false, the exporter will perform its
+	// own buffering.
+	enabledSet bool `mapstructure:"-"`
+}
 
-	exporterbatcher.MinSizeConfig `mapstructure:",squash"`
-	exporterbatcher.MaxSizeConfig `mapstructure:",squash"`
+func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+	c.enabledSet = conf.IsSet("enabled")
+	return nil
 }
 
 type TelemetrySettings struct {
@@ -117,6 +118,10 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicIDSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -188,20 +193,17 @@ type RetrySettings struct {
 }
 
 type MappingsSettings struct {
-	// Mode configures the field mappings.
+	// Mode configures the default document mapping mode.
+	//
+	// The mode may be overridden by the client metadata key
+	// X-Elastic-Mapping-Mode, if specified.
 	Mode string `mapstructure:"mode"`
 
-	// Dedup is non-operational, and will be removed in the future.
+	// AllowedModes controls the allowed document mapping modes
+	// specified through X-Elastic-Mapping-Mode client metadata.
 	//
-	// Deprecated: [v0.104.0] deduplication is always enabled, and cannot be
-	// disabled. Disabling deduplication is not meaningful, as Elasticsearch
-	// will always reject documents with duplicate JSON object keys.
-	Dedup *bool `mapstructure:"dedup,omitempty"`
-
-	// Deprecated: [v0.104.0] dedotting will always be applied for ECS mode
-	// in future, and never for other modes. Elasticsearch's "dot_expander"
-	// Ingest processor may be used as an alternative for non-ECS modes.
-	Dedot bool `mapstructure:"dedot"`
+	// If unspecified, all mapping modes are allowed.
+	AllowedModes []string `mapstructure:"allowed_modes"`
 }
 
 type MappingMode int
@@ -213,17 +215,15 @@ const (
 	MappingOTel
 	MappingRaw
 	MappingBodyMap
-)
 
-var (
-	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
-	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+	// NumMappingModes remain last, it is used for sizing arrays.
+	NumMappingModes
 )
 
 func (m MappingMode) String() string {
 	switch m {
 	case MappingNone:
-		return ""
+		return "none"
 	case MappingECS:
 		return "ecs"
 	case MappingOTel:
@@ -232,29 +232,14 @@ func (m MappingMode) String() string {
 		return "raw"
 	case MappingBodyMap:
 		return "bodymap"
-	default:
-		return ""
 	}
+	return ""
 }
 
-var mappingModes = func() map[string]MappingMode {
-	table := map[string]MappingMode{}
-	for _, m := range []MappingMode{
-		MappingNone,
-		MappingECS,
-		MappingOTel,
-		MappingRaw,
-		MappingBodyMap,
-	} {
-		table[strings.ToLower(m.String())] = m
-	}
-
-	// config aliases
-	table["no"] = MappingNone
-	table["none"] = MappingNone
-
-	return table
-}()
+var (
+	errConfigEndpointRequired = errors.New("exactly one of [endpoint, endpoints, cloudid] must be specified")
+	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+)
 
 const defaultElasticsearchEnvName = "ELASTICSEARCH_URL"
 
@@ -270,8 +255,16 @@ func (cfg *Config) Validate() error {
 		}
 	}
 
-	if _, ok := mappingModes[cfg.Mapping.Mode]; !ok {
-		return fmt.Errorf("unknown mapping mode %q", cfg.Mapping.Mode)
+	canonicalAllowedModes := make([]string, len(cfg.Mapping.AllowedModes))
+	for i, name := range cfg.Mapping.AllowedModes {
+		canonicalName := canonicalMappingModeName(name)
+		if _, ok := canonicalMappingModes[canonicalName]; !ok {
+			return fmt.Errorf("unknown allowed mapping mode name %q", name)
+		}
+		canonicalAllowedModes[i] = canonicalName
+	}
+	if !slices.Contains(canonicalAllowedModes, canonicalMappingModeName(cfg.Mapping.Mode)) {
+		return fmt.Errorf("invalid or disallowed default mapping mode %q", cfg.Mapping.Mode)
 	}
 
 	if cfg.Compression != "none" && cfg.Compression != configcompression.TypeGzip {
@@ -289,6 +282,34 @@ func (cfg *Config) Validate() error {
 	}
 
 	return nil
+}
+
+// allowedMappingModes returns a map from canonical mapping mode names to MappingModes.
+func (cfg *Config) allowedMappingModes() map[string]MappingMode {
+	modes := make(map[string]MappingMode)
+	for _, name := range cfg.Mapping.AllowedModes {
+		canonical := canonicalMappingModeName(name)
+		modes[canonical] = canonicalMappingModes[canonical]
+	}
+	return modes
+}
+
+var canonicalMappingModes = map[string]MappingMode{
+	MappingNone.String():    MappingNone,
+	MappingRaw.String():     MappingRaw,
+	MappingECS.String():     MappingECS,
+	MappingOTel.String():    MappingOTel,
+	MappingBodyMap.String(): MappingBodyMap,
+}
+
+func canonicalMappingModeName(name string) string {
+	lower := strings.ToLower(name)
+	switch lower {
+	case "", "no": // aliases for "none"
+		return "none"
+	default:
+		return lower
+	}
 }
 
 func (cfg *Config) endpoints() ([]string, error) {
@@ -363,20 +384,7 @@ func parseCloudID(input string) (*url.URL, error) {
 	return url.Parse(fmt.Sprintf("https://%s.%s", after, before))
 }
 
-// MappingMode returns the mapping.mode defined in the given cfg
-// object. This method must be called after cfg.Validate() has been
-// called without returning an error.
-func (cfg *Config) MappingMode() MappingMode {
-	return mappingModes[cfg.Mapping.Mode]
-}
-
 func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
-	if cfg.Mapping.Dedup != nil {
-		logger.Warn("dedup is deprecated, and is always enabled")
-	}
-	if cfg.Mapping.Dedot && cfg.MappingMode() != MappingECS || !cfg.Mapping.Dedot && cfg.MappingMode() == MappingECS {
-		logger.Warn("dedot has been deprecated: in the future, dedotting will always be performed in ECS mode only")
-	}
 	if cfg.Retry.MaxRequests != 0 {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior

@@ -25,8 +25,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 	"go.uber.org/zap/zaptest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/servicegraphconnector/internal/metadatatest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -36,7 +39,7 @@ func TestConnectorStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	procCreationParams := connectortest.NewNopSettings()
+	procCreationParams := connectortest.NewNopSettings(metadata.Type)
 	traceConnector, err := factory.CreateTracesToMetrics(context.Background(), procCreationParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -569,8 +572,8 @@ func TestValidateOwnTelemetry(t *testing.T) {
 	}
 
 	mockMetricsExporter := newMockMetricsExporter()
-	set := setupTestTelemetry()
-	p, err := newConnector(set.NewSettings().TelemetrySettings, cfg, mockMetricsExporter)
+	tel := componenttest.NewTelemetry()
+	p, err := newConnector(tel.NewTelemetrySettings(), cfg, mockMetricsExporter)
 	require.NoError(t, err)
 	assert.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -592,21 +595,10 @@ func TestValidateOwnTelemetry(t *testing.T) {
 
 	// Shutdown the connector
 	assert.NoError(t, p.Shutdown(context.Background()))
-	set.assertMetrics(t, []metricdata.Metrics{
-		{
-			Name:        "otelcol_connector_servicegraph_total_edges",
-			Description: "Total number of unique edges",
-			Unit:        "1",
-			Data: metricdata.Sum[int64]{
-				Temporality: metricdata.CumulativeTemporality,
-				IsMonotonic: true,
-				DataPoints: []metricdata.DataPoint[int64]{
-					{Value: 2},
-				},
-			},
-		},
-	})
-	require.NoError(t, set.Shutdown(context.Background()))
+	metadatatest.AssertEqualConnectorServicegraphTotalEdges(t, tel, []metricdata.DataPoint[int64]{
+		{Value: 2},
+	}, metricdatatest.IgnoreTimestamp())
+	require.NoError(t, tel.Shutdown(context.Background()))
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
@@ -615,6 +607,7 @@ func TestExtraDimensionsLabels(t *testing.T) {
 		Dimensions:              extraDimensions,
 		LatencyHistogramBuckets: []time.Duration{time.Duration(0.1 * float64(time.Second)), time.Duration(1 * float64(time.Second)), time.Duration(10 * float64(time.Second))},
 		Store:                   StoreConfig{MaxItems: 10},
+		MetricsFlushInterval:    ptr(0 * time.Millisecond),
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -645,10 +638,6 @@ func TestExtraDimensionsLabels(t *testing.T) {
 }
 
 func TestVirtualNodeServerLabels(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
-	}
-
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
@@ -656,7 +645,7 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      time.Millisecond,
+		MetricsFlushInterval:      ptr(time.Millisecond),
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -674,13 +663,15 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
+	// Wait for metrics to be generated with timeout
+	var metrics []pmetric.Metrics
 	assert.Eventually(t, func() bool {
-		return conn.store.Len() == 0
-	}, 100*time.Millisecond, 2*time.Millisecond)
-	require.NoError(t, conn.Shutdown(context.Background()))
+		metrics = conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+		return len(metrics) > 0
+	}, 5*time.Second, 10*time.Millisecond)
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
-	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+	require.NotEmpty(t, metrics, "no metrics generated within timeout")
+	require.NoError(t, conn.Shutdown(context.Background()))
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
@@ -693,10 +684,6 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 }
 
 func TestVirtualNodeClientLabels(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33836")
-	}
-
 	virtualNodeDimensions := []string{"peer.service", "db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:                virtualNodeDimensions,
@@ -704,7 +691,7 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 		Store:                     StoreConfig{MaxItems: 10},
 		VirtualNodePeerAttributes: virtualNodeDimensions,
 		VirtualNodeExtraLabel:     true,
-		MetricsFlushInterval:      time.Millisecond,
+		MetricsFlushInterval:      ptr(time.Millisecond),
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
@@ -722,13 +709,15 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	assert.NoError(t, conn.ConsumeTraces(context.Background(), td))
 
 	conn.store.Expire()
+	// Wait for metrics to be generated with timeout
+	var metrics []pmetric.Metrics
 	assert.Eventually(t, func() bool {
-		return conn.store.Len() == 0
-	}, 100*time.Millisecond, 2*time.Millisecond)
-	require.NoError(t, conn.Shutdown(context.Background()))
+		metrics = conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
+		return len(metrics) > 0
+	}, 5*time.Second, 10*time.Millisecond)
 
-	metrics := conn.metricsConsumer.(*mockMetricsExporter).GetMetrics()
-	require.GreaterOrEqual(t, len(metrics), 1) // Unreliable sleep-based check
+	require.NotEmpty(t, metrics, "no metrics generated within timeout")
+	require.NoError(t, conn.Shutdown(context.Background()))
 
 	expectedMetrics, err := golden.ReadMetrics(expected)
 	assert.NoError(t, err)
@@ -738,4 +727,9 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 		pmetrictest.IgnoreTimestamp(),
 	)
 	require.NoError(t, err)
+}
+
+// ptr returns a pointer to the given value.
+func ptr[T any](value T) *T {
+	return &value
 }

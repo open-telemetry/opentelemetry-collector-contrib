@@ -13,8 +13,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/exporter/exporterprofiles"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension"
 )
 
@@ -43,17 +44,17 @@ func TestEncoding(t *testing.T) {
 	ef := otlpencodingextension.NewFactory()
 	efCfg := ef.CreateDefaultConfig().(*otlpencodingextension.Config)
 	efCfg.Protocol = "otlp_json"
-	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(), efCfg)
+	ext, err := ef.Create(context.Background(), extensiontest.NewNopSettings(ef.Type()), efCfg)
 	require.NoError(t, err)
 	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
 
-	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	me, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	te, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+	le, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
-	pe, err := f.(exporterprofiles.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(), cfg)
+	pe, err := f.(xexporter.Factory).CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	host := hostWithEncoding{
 		map[component.ID]component.Component{id: ext},
@@ -94,14 +95,14 @@ func generateLogs() plog.Logs {
 }
 
 func generateProfiles() pprofile.Profiles {
-	proflies := pprofile.NewProfiles()
-	rp := proflies.ResourceProfiles().AppendEmpty()
+	profiles := pprofile.NewProfiles()
+	rp := profiles.ResourceProfiles().AppendEmpty()
 	rp.Resource().Attributes().PutStr("resource", "R1")
 	p := rp.ScopeProfiles().AppendEmpty().Profiles().AppendEmpty()
 	p.SetProfileID(pprofile.NewProfileIDEmpty())
 	p.SetStartTime(pcommon.NewTimestampFromTime(time.Now().Add(-1 * time.Second)))
 	p.SetDuration(pcommon.Timestamp(1 * time.Second / time.Nanosecond))
-	return proflies
+	return profiles
 }
 
 func generateMetrics() pmetric.Metrics {

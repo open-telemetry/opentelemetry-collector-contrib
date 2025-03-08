@@ -94,7 +94,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
@@ -105,11 +104,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.TlscheckURL.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["tlscheck.url"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckURL.MetricsInclude)
+	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.TlscheckURL.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["tlscheck.url"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckURL.MetricsExclude)
+	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -177,7 +176,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricTlscheckTimeLeft.emit(ils.Metrics())

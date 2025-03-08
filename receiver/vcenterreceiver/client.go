@@ -98,7 +98,7 @@ func (vc *vcenterClient) EnsureConnection(ctx context.Context) error {
 	return nil
 }
 
-// Disconnect will logout of the autenticated session
+// Disconnect will logout of the authenticated session
 func (vc *vcenterClient) Disconnect(ctx context.Context) error {
 	if vc.sessionManager != nil {
 		return vc.sessionManager.Logout(ctx)

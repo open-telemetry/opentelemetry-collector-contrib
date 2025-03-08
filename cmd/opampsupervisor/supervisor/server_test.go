@@ -28,7 +28,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnectingFunc: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnecting: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return true, 0
 			},
@@ -43,7 +43,7 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 	t.Run("do not accept connection", func(t *testing.T) {
 		onConnectingFuncCalled := false
 		fs := flattenedSettings{
-			onConnectingFunc: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
+			onConnecting: func(_ *http.Request) (shouldConnect bool, rejectStatusCode int) {
 				onConnectingFuncCalled = true
 				return false, 500
 			},
@@ -60,8 +60,9 @@ func Test_flattenedSettings_OnConnecting(t *testing.T) {
 func Test_flattenedSettings_OnMessage(t *testing.T) {
 	onMessageFuncCalled := false
 	fs := flattenedSettings{
-		onMessageFunc: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) {
+		onMessage: func(_ serverTypes.Connection, _ *protobufs.AgentToServer) *protobufs.ServerToAgent {
 			onMessageFuncCalled = true
+			return &protobufs.ServerToAgent{}
 		},
 	}
 
@@ -74,7 +75,7 @@ func Test_flattenedSettings_OnMessage(t *testing.T) {
 func Test_flattenedSettings_OnConnectionClose(t *testing.T) {
 	onConnectionCloseFuncCalled := false
 	fs := flattenedSettings{
-		onConnectionCloseFunc: func(_ serverTypes.Connection) {
+		onConnectionClose: func(_ serverTypes.Connection) {
 			onConnectionCloseFuncCalled = true
 		},
 	}

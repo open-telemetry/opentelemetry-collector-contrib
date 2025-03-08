@@ -11,8 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
 	"go.opentelemetry.io/collector/extension/extensiontest"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 )
 
 func TestExtensionIntegrity(t *testing.T) {
@@ -184,11 +184,77 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 	require.Equal(t, myBytes2, data)
 }
 
+func TestGetPrefix(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		prefix   string
+		ent      component.ID
+		kind     string
+		name     string
+		expected string
+	}{
+		{
+			prefix:   "test_",
+			ent:      newTestEntity("my_component"),
+			kind:     "receiver",
+			name:     "",
+			expected: "receiver_nop_my_component_test_",
+		},
+		{
+			prefix:   "",
+			ent:      newTestEntity("my_component"),
+			kind:     "receiver",
+			name:     "",
+			expected: "receiver_nop_my_component",
+		},
+		{
+			prefix:   "",
+			ent:      newTestEntity("my_component"),
+			kind:     "receiver",
+			name:     "rdsExt",
+			expected: "receiver_nop_my_component_rdsExt",
+		},
+		{
+			prefix:   "",
+			ent:      newTestEntity(""),
+			kind:     "receiver",
+			name:     "rdsExt",
+			expected: "receiver_nop__rdsExt",
+		},
+		{
+			prefix:   "",
+			ent:      newTestEntity(""),
+			kind:     "receiver",
+			name:     "",
+			expected: "receiver_nop_",
+		},
+		{
+			prefix:   "pref_",
+			ent:      newTestEntity("my_test_component"),
+			kind:     "receiver",
+			name:     "rdsExt",
+			expected: "receiver_nop_my_test_component_rdsExt_pref_",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.prefix, func(t *testing.T) {
+			cfg := &Config{
+				Prefix: tt.prefix,
+			}
+			rs := redisStorage{cfg: cfg}
+			got := rs.getPrefix(tt.ent, tt.kind, tt.name)
+			require.Equal(t, tt.expected, got)
+		})
+	}
+}
+
 func newTestExtension(t *testing.T) storage.Extension {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
-	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	extension, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 
 	se, ok := extension.(storage.Extension)

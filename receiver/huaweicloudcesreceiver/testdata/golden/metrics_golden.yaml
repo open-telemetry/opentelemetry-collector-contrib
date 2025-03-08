@@ -1,0 +1,79 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: huawei_cloud
+        - key: project.id
+          value:
+            stringValue: my-project
+        - key: region.id
+          value:
+            stringValue: us-east-2
+        - key: service.namespace
+          value:
+            stringValue: SYS.ECS
+    scopeMetrics:
+      - scope:
+          name: huawei_cloud_ces
+          version: v1
+        metrics:
+          - name: cpu_util
+            gauge:
+              dataPoints:
+                - asDouble: 10
+                  timeUnixNano: "1556625610000000000"
+                - asDouble: 20
+                  timeUnixNano: "1556625715000000000"                  
+            unit: "%"
+            metadata:
+              - key: instance_id
+                value:
+                  stringValue: faea5b75-e390-4e2b-8733-9226a9026070
+      - scope:
+          name: huawei_cloud_ces
+          version: v1                  
+        metrics:
+          - name: mem_util
+            gauge:
+              dataPoints:
+                - asDouble: 30
+                  timeUnixNano: "1556625610000000000"
+                - asDouble: 40
+                  timeUnixNano: "1556625715000000000"                  
+            unit: "%"
+            metadata:
+              - key: instance_id
+                value:
+                  stringValue: abcea5b75-e390-4e2b-8733-9226a9026070
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: huawei_cloud
+        - key: project.id
+          value:
+            stringValue: my-project
+        - key: region.id
+          value:
+            stringValue: us-east-2
+        - key: service.namespace
+          value:
+            stringValue: SYS.VPC            
+    scopeMetrics:
+      - scope:
+          name: huawei_cloud_ces
+          version: v1
+        metrics:
+          - name: upstream_bandwidth_usage
+            gauge:
+              dataPoints:
+                - asDouble: 50
+                  timeUnixNano: "1556625610000000000"
+                - asDouble: 60
+                  timeUnixNano: "1556625715000000000"                  
+            unit: "%"
+            metadata:
+              - key: publicip_id
+                value:
+                  stringValue: faea5b75-e390-4e2b-8733-9226a9026070

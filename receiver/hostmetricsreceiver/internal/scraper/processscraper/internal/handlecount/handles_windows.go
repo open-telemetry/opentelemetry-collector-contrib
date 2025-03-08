@@ -13,7 +13,7 @@ import (
 )
 
 func NewManager() Manager {
-	return &handleCountManager{queryer: wmiHandleCountQueryer{}}
+	return &handleCountManager{querier: wmiHandleCountQuerier{}}
 }
 
 var (
@@ -21,17 +21,17 @@ var (
 	ErrNoHandleCountForProcess = errors.New("no handle count for process")
 )
 
-type handleCountQueryer interface {
+type handleCountQuerier interface {
 	queryProcessHandleCounts() (map[int64]uint32, error)
 }
 
 type handleCountManager struct {
-	queryer      handleCountQueryer
+	querier      handleCountQuerier
 	handleCounts map[int64]uint32
 }
 
 func (m *handleCountManager) Refresh() error {
-	handleCounts, err := m.queryer.queryProcessHandleCounts()
+	handleCounts, err := m.querier.queryProcessHandleCounts()
 	if err != nil {
 		return err
 	}
@@ -50,7 +50,7 @@ func (m *handleCountManager) GetProcessHandleCount(pid int64) (uint32, error) {
 	return handleCount, nil
 }
 
-type wmiHandleCountQueryer struct{}
+type wmiHandleCountQuerier struct{}
 
 //revive:disable-next-line:var-naming
 type Win32_Process struct {
@@ -58,9 +58,9 @@ type Win32_Process struct {
 	HandleCount uint32
 }
 
-func (wmiHandleCountQueryer) queryProcessHandleCounts() (map[int64]uint32, error) {
+func (wmiHandleCountQuerier) queryProcessHandleCounts() (map[int64]uint32, error) {
 	handleCounts := []Win32_Process{}
-	// Creates query `get-wmiobject -query "select ProcessId, HandleCount from Win32_Process"`
+	// creates query `get-wmiobject -query "select ProcessId, HandleCount from Win32_Process"`
 	// based on reflection of Win32_Process type.
 	q := wmi.CreateQuery(&handleCounts, "")
 	err := wmi.Query(q, &handleCounts)

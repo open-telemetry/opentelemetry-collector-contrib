@@ -13,7 +13,7 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/klauspost/compress/zstd"
 	splunksapm "github.com/signalfx/sapm-proto/gen"
 	"github.com/stretchr/testify/assert"
@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 )
@@ -37,7 +38,7 @@ func TestCreateTraces(t *testing.T) {
 			AccessTokenPassthrough: true,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 
 	te, err := newSAPMTracesExporter(cfg, params)
 	assert.NoError(t, err)
@@ -196,7 +197,7 @@ func TestSAPMClientTokenUsageAndErrorMarshalling(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -232,7 +233,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 			accessTokenPassthrough: true,
 		},
 		{
-			name:                   "Token in config wihout passthrough",
+			name:                   "Token in config without passthrough",
 			inContext:              false,
 			accessTokenPassthrough: false,
 		},
@@ -264,7 +265,7 @@ func TestSAPMClientTokenAccess(t *testing.T) {
 					AccessTokenPassthrough: tt.accessTokenPassthrough,
 				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 
 			se, err := newSAPMExporter(cfg, params)
 			assert.NoError(t, err)
@@ -353,7 +354,6 @@ func TestCompression(t *testing.T) {
 		},
 	}
 	for _, tt := range tests {
-		tt := tt
 		t.Run(
 			tt.name, func(t *testing.T) {
 				tracesReceived := false
@@ -385,7 +385,7 @@ func TestCompression(t *testing.T) {
 					DisableCompression: tt.configDisableCompression,
 					Compression:        tt.configCompression,
 				}
-				params := exportertest.NewNopSettings()
+				params := exportertest.NewNopSettings(metadata.Type)
 
 				se, err := newSAPMExporter(cfg, params)
 				assert.NoError(t, err)

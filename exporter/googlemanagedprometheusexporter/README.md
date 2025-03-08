@@ -125,7 +125,7 @@ The Google Managed Prometheus exporter maps metrics to the
 [prometheus_target](https://cloud.google.com/monitoring/api/resources#tag_prometheus_target)
 monitored resource. The logic for mapping to monitored resources is designed to
 be used with the prometheus receiver, but can be used with other receivers as
-well. To avoid collisions (i.e. "duplicate timeseries enountered" errors), you
+well. To avoid collisions (i.e. "duplicate timeseries encountered" errors), you
 need to ensure the prometheus_target resource uniquely identifies the source of
 metrics. The exporter uses the following resource attributes to determine
 monitored resource:
@@ -202,13 +202,13 @@ processors:
 
 Error: `Value type for metric <metric name> conflicts with the existing value type`
 
-Google Managed Service for Promethueus (and Google Cloud Monitoring) have fixed
+Google Managed Service for Prometheus (and Google Cloud Monitoring) have fixed
 value types (INT and DOUBLE) for metrics. Once a metric has been written as an
 INT or DOUBLE, attempting to write the other type will fail with the error
 above. This commonly occurs when a metric's value type has changed, or when a
 mix of INT and DOUBLE for the same metric are being written to the same
 project. The recommended way to fix this is to convert all metrics to DOUBLE to
-prevent collisions using the `exporter.googlemanagedpromethues.intToDouble`
+prevent collisions using the `exporter.googlemanagedprometheus.intToDouble`
 feature gate, documented above.
 
 Once you enable the feature gate, you will likely see new errors indicating
@@ -220,11 +220,17 @@ written as a double going forward. The simplest way to do this is by using the
 "Try this method" tab in the API reference for
 [DeleteMetricDescriptor](https://cloud.google.com/monitoring/api/ref_v3/rest/v3/projects.metricDescriptors/delete).
 
+Alternatively, you can run this
+[Go program](https://github.com/GoogleCloudPlatform/prometheus-engine/blob/v0.13.0/examples/scripts/delete_metric_descriptors/delete_metric_descriptors.go)
+that accepts your project ID and a [RE2](https://github.com/google/re2/wiki/syntax) regular expression to match multiple metric descriptors and delete them
+simulataneously.\
+This is useful if the conflicting value type errors are across multiple descriptors, especially with similar names.
+
 ### Points Written Too Frequently
 
 Error: `One or more points were written more frequently than the maximum sampling period configured for the metric.`
 
-Google Managed Service for Promethueus (and Google Cloud Monitoring)
+Google Managed Service for Prometheus (and Google Cloud Monitoring)
 [limit](https://cloud.google.com/monitoring/quotas#custom_metrics_quotas) the
 rate at which points can be written to one point every 5 seconds. If you try to
 write points more frequently, you will encounter the error above. If you know
@@ -281,7 +287,7 @@ by applications in a way that uniquely identifies each instance.
 
 The next most common reason is (2), which means that the exporter's mapping
 logic from OpenTelemetry resource to Google Cloud's `prometheus_target`
-monitored resouce didn't preserve a resource attribute that was needed to
+monitored resource didn't preserve a resource attribute that was needed to
 distinguish timeseries. This can be mitigated by adding resource
 attributes as metric labels using `resource_filters` configuration in the
 exporter. The following example adds common identifying resource attributes.
@@ -317,5 +323,5 @@ exporters:
 ```
 
 That can help identify which metric sources are colliding, so you know which
-applications or metrics need additional attributes to ditinguish them from
+applications or metrics need additional attributes to distinguish them from
 one-another.

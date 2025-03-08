@@ -10,8 +10,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/processor/processorprofiles"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -28,7 +30,7 @@ func TestCreateProcessor(t *testing.T) {
 	kubeClientProvider = newFakeClient
 
 	cfg := factory.CreateDefaultConfig()
-	params := processortest.NewNopSettings()
+	params := processortest.NewNopSettings(metadata.Type)
 
 	tp, err := factory.CreateTraces(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, tp)
@@ -42,7 +44,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err := factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err := factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 
@@ -61,7 +63,7 @@ func TestCreateProcessor(t *testing.T) {
 	assert.NotNil(t, lp)
 	assert.NoError(t, err)
 
-	pp, err = factory.(processorprofiles.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
+	pp, err = factory.(xprocessor.Factory).CreateProfiles(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NotNil(t, pp)
 	assert.NoError(t, err)
 

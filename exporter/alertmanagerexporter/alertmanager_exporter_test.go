@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
@@ -77,7 +78,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 			require.NotNil(t, am)
 
@@ -109,7 +110,7 @@ func TestAlertManagerExporterExtractEvents(t *testing.T) {
 func TestAlertManagerExporterEventNameAttributes(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -150,7 +151,7 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SeverityAttribute = "foo"
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -195,7 +196,7 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
 
@@ -225,7 +226,7 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 
 	require.NotNil(t, am)
@@ -270,7 +271,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings())
+	lte, err := newTracesExporter(context.Background(), cfg, exportertest.NewNopSettings(metadata.Type))
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
@@ -278,7 +279,7 @@ func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 
 type (
 	MockServer struct {
-		mockserver            *httptest.Server // this means MockServer aggreagates 'httptest.Server', but can it's more like inheritance in C++
+		mockserver            *httptest.Server // this means MockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
 		fooCalledSuccessfully bool             // this is false by default
 	}
 )
@@ -317,7 +318,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	})
 
 	cfg.Endpoint = mock.mockserver.URL
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(context.Background(), componenttest.NewNopHost())
 
@@ -325,9 +326,7 @@ func TestAlertManagerPostAlert(t *testing.T) {
 
 	err = am.postAlert(context.Background(), alerts)
 	assert.NoError(t, err)
-	if mock.fooCalledSuccessfully == false {
-		t.Errorf("mock server wasn't called")
-	}
+	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
 }
 
 func TestClientConfig(t *testing.T) {
@@ -394,7 +393,7 @@ func TestClientConfig(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(metadata.Type)
 			am := newAlertManagerExporter(tt.config, set.TelemetrySettings)
 
 			exp, err := newTracesExporter(context.Background(), tt.config, set)

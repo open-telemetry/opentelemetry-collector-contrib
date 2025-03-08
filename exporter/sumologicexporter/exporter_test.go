@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -81,7 +83,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
@@ -234,7 +236,7 @@ func TestPartiallyFailed(t *testing.T) {
 	assert.Equal(t, logsExpected, partial.Data())
 }
 
-func TestInvalidHTTPCLient(t *testing.T) {
+func TestInvalidHTTPClient(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Endpoint = "test_endpoint"
 	clientConfig.TLSSetting = configtls.ClientConfig{
@@ -244,7 +246,7 @@ func TestInvalidHTTPCLient(t *testing.T) {
 	}
 	exp, err := initExporter(&Config{
 		ClientConfig: clientConfig,
-	}, exportertest.NewNopSettings())
+	}, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	assert.EqualError(t,
@@ -508,7 +510,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {

@@ -11,12 +11,13 @@ import (
 
 	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/snowflakereceiver/internal/metadata"
 )
 
 func TestScraper(t *testing.T) {
@@ -25,27 +26,27 @@ func TestScraper(t *testing.T) {
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	err := component.ValidateConfig(cfg)
+	err := xconfmap.Validate(cfg)
 	if err != nil {
-		t.Fatal("an error ocured when validating config", err)
+		t.Fatal("an error occurred when validating config", err)
 	}
 
 	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
 	if err != nil {
-		t.Fatal("an error ocured when opening mock db", err)
+		t.Fatal("an error occurred when opening mock db", err)
 	}
 	defer db.Close()
 
 	mockDB := mockDB{mock}
 	mockDB.initMockDB()
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 
 	// by default our scraper does not start with a client. the client we use must contain
 	// the mock database
 	scraperClient := snowflakeClient{
 		client: db,
-		logger: receivertest.NewNopSettings().Logger,
+		logger: receivertest.NewNopSettings(metadata.Type).Logger,
 	}
 	scraper.client = &scraperClient
 
@@ -67,9 +68,9 @@ func TestStart(t *testing.T) {
 	cfg.Username = "uname"
 	cfg.Password = "pwd"
 	cfg.Warehouse = "warehouse"
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
-	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(), cfg)
+	scraper := newSnowflakeMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	err := scraper.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err, "Problem starting scraper")
 	require.NoError(t, scraper.shutdown(context.Background()))
@@ -124,7 +125,7 @@ func (m *mockDB) initMockDB() {
 		},
 		{
 			query:   sessionMetricsQuery,
-			columns: []string{"username", "disctinct_id"},
+			columns: []string{"username", "distinct_id"},
 			params:  []driver.Value{"t", 3.0},
 		},
 		{

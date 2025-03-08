@@ -18,8 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 )
 
-// Config defines configuration for Elastic exporter.
+// Config defines configuration for clickhouse exporter.
 type Config struct {
+	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
+	collectorVersion string
+
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
@@ -146,6 +149,15 @@ func (cfg *Config) buildDSN() (string, error) {
 	} else if !queryParams.Has("compress") {
 		queryParams.Set("compress", cfg.Compress)
 	}
+
+	productInfo := queryParams.Get("client_info_product")
+	collectorProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersion)
+	if productInfo == "" {
+		productInfo = collectorProductInfo
+	} else {
+		productInfo = fmt.Sprintf("%s,%s", productInfo, collectorProductInfo)
+	}
+	queryParams.Set("client_info_product", productInfo)
 
 	// Use database from config if not specified in path, or if config is not default.
 	if dsnURL.Path == "" || cfg.Database != defaultDatabase {

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -38,7 +38,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"out": AttributeDirectionOut,
 }
 
-// AttributeExecutorTaskResult specifies the a value executor_task_result attribute.
+// AttributeExecutorTaskResult specifies the value executor_task_result attribute.
 type AttributeExecutorTaskResult int
 
 const (
@@ -64,7 +64,7 @@ var MapAttributeExecutorTaskResult = map[string]AttributeExecutorTaskResult{
 	"failed":    AttributeExecutorTaskResultFailed,
 }
 
-// AttributeGcType specifies the a value gc_type attribute.
+// AttributeGcType specifies the value gc_type attribute.
 type AttributeGcType int
 
 const (
@@ -90,7 +90,7 @@ var MapAttributeGcType = map[string]AttributeGcType{
 	"minor": AttributeGcTypeMinor,
 }
 
-// AttributeJobResult specifies the a value job_result attribute.
+// AttributeJobResult specifies the value job_result attribute.
 type AttributeJobResult int
 
 const (
@@ -120,7 +120,7 @@ var MapAttributeJobResult = map[string]AttributeJobResult{
 	"skipped":   AttributeJobResultSkipped,
 }
 
-// AttributeLocation specifies the a value location attribute.
+// AttributeLocation specifies the value location attribute.
 type AttributeLocation int
 
 const (
@@ -146,7 +146,7 @@ var MapAttributeLocation = map[string]AttributeLocation{
 	"off_heap": AttributeLocationOffHeap,
 }
 
-// AttributePoolMemoryType specifies the a value pool_memory_type attribute.
+// AttributePoolMemoryType specifies the value pool_memory_type attribute.
 type AttributePoolMemoryType int
 
 const (
@@ -172,7 +172,7 @@ var MapAttributePoolMemoryType = map[string]AttributePoolMemoryType{
 	"mapped": AttributePoolMemoryTypeMapped,
 }
 
-// AttributeSchedulerStatus specifies the a value scheduler_status attribute.
+// AttributeSchedulerStatus specifies the value scheduler_status attribute.
 type AttributeSchedulerStatus int
 
 const (
@@ -198,7 +198,7 @@ var MapAttributeSchedulerStatus = map[string]AttributeSchedulerStatus{
 	"running": AttributeSchedulerStatusRunning,
 }
 
-// AttributeSource specifies the a value source attribute.
+// AttributeSource specifies the value source attribute.
 type AttributeSource int
 
 const (
@@ -224,7 +224,7 @@ var MapAttributeSource = map[string]AttributeSource{
 	"remote": AttributeSourceRemote,
 }
 
-// AttributeStageTaskResult specifies the a value stage_task_result attribute.
+// AttributeStageTaskResult specifies the value stage_task_result attribute.
 type AttributeStageTaskResult int
 
 const (
@@ -254,7 +254,7 @@ var MapAttributeStageTaskResult = map[string]AttributeStageTaskResult{
 	"killed":    AttributeStageTaskResultKilled,
 }
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -3620,7 +3620,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                   mbc,
@@ -3795,7 +3794,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSparkDriverBlockManagerDiskUsage.emit(ils.Metrics())

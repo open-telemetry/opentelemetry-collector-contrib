@@ -6,7 +6,7 @@ status:
     beta: [traces]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling]
+    active: [jpkrohling, portertech]
 
 tests:
   config:
@@ -22,8 +22,8 @@ telemetry:
         bucket_boundaries: [1, 2, 5, 10, 25, 50, 75, 100, 150, 200, 300, 400, 500, 750, 1000, 2000, 3000, 4000, 5000, 10000, 20000, 30000, 50000]
 
     processor_tail_sampling_sampling_decision_timer_latency:
-      description: Latency (in microseconds) of each run of the sampling decision timer
-      unit: µs
+      description: Latency (in milliseconds) of each run of the sampling decision timer
+      unit: ms
       enabled: true
       histogram:
         value_type: int

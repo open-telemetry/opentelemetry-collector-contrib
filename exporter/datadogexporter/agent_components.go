@@ -4,24 +4,29 @@
 package datadogexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
 
 import (
+	"runtime"
 	"strings"
 
 	coreconfig "github.com/DataDog/datadog-agent/comp/core/config"
-	"github.com/DataDog/datadog-agent/comp/core/log"
+	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
+	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
 	"go.opentelemetry.io/collector/component"
+	"golang.org/x/net/http/httpproxy"
+
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
-func newLogComponent(set component.TelemetrySettings) log.Component {
-	zlog := &zaplogger{
-		logger: set.Logger,
+func newLogComponent(set component.TelemetrySettings) corelog.Component {
+	zlog := &pkgdatadog.Zaplogger{
+		Logger: set.Logger,
 	}
 	return zlog
 }
 
 func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig.Component {
-	pkgconfig := pkgconfigmodel.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
+	pkgconfig := viperconfig.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
 
 	// Set the API Key
 	pkgconfig.Set("api_key", string(cfg.API.Key), pkgconfigmodel.SourceFile)
@@ -46,6 +51,25 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig
 	pkgconfig.Set("logs_config.stop_grace_period", 30, pkgconfigmodel.SourceDefault)
 	pkgconfig.Set("logs_config.use_v2_api", true, pkgconfigmodel.SourceDefault)
 	pkgconfig.SetKnown("logs_config.dev_mode_no_ssl")
+	// add logs config pipelines config value, see https://github.com/DataDog/datadog-agent/pull/31190
+	logsPipelines := min(4, runtime.GOMAXPROCS(0))
+	pkgconfig.Set("logs_config.pipelines", logsPipelines, pkgconfigmodel.SourceDefault)
+	setProxyFromEnv(pkgconfig)
 
 	return pkgconfig
+}
+
+func setProxyFromEnv(config pkgconfigmodel.Config) {
+	proxyConfig := httpproxy.FromEnvironment()
+	config.Set("proxy.http", proxyConfig.HTTPProxy, pkgconfigmodel.SourceEnvVar)
+	config.Set("proxy.https", proxyConfig.HTTPSProxy, pkgconfigmodel.SourceEnvVar)
+
+	// If this is set to an empty []string, viper will have a type conflict when merging
+	// this config during secrets resolution. It unmarshals empty yaml lists to type
+	// []interface{}, which will then conflict with type []string and fail to merge.
+	var noProxy []any
+	for _, v := range strings.Split(proxyConfig.NoProxy, ",") {
+		noProxy = append(noProxy, v)
+	}
+	config.Set("proxy.no_proxy", noProxy, pkgconfigmodel.SourceEnvVar)
 }

@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"reflect"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -20,6 +21,7 @@ func Test_flatten(t *testing.T) {
 		prefix   ottl.Optional[string]
 		depth    ottl.Optional[int64]
 		expected map[string]any
+		conflict bool
 	}{
 		{
 			name: "simple",
@@ -83,6 +85,31 @@ func Test_flatten(t *testing.T) {
 				"address.house":  int64(1234),
 				"occupants.0":    "user 1",
 				"occupants.1":    "user 2",
+			},
+		},
+		{
+			name: "combination with mixed nested slices",
+			target: map[string]any{
+				"name": "test",
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"occupants": []any{
+					"user 1",
+					map[string]any{
+						"name": "user 2",
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"name":             "test",
+				"address.street":   "first",
+				"address.house":    int64(1234),
+				"occupants.0":      "user 1",
+				"occupants.1.name": "user 2",
 			},
 		},
 		{
@@ -177,6 +204,136 @@ func Test_flatten(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "simple - conflict on",
+			target: map[string]any{
+				"name": "test",
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"name": "test",
+			},
+			conflict: true,
+		},
+		{
+			name: "nested map - conflict on",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"address.street": "first",
+				"address.house":  int64(1234),
+			},
+			conflict: true,
+		},
+		{
+			name: "nested slice - conflict on",
+			target: map[string]any{
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"occupants":   "user 1",
+				"occupants.0": "user 2",
+			},
+			conflict: true,
+		},
+		{
+			name: "combination - conflict on",
+			target: map[string]any{
+				"name": "test",
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"name":           "test",
+				"address.street": "first",
+				"address.house":  int64(1234),
+				"occupants":      "user 1",
+				"occupants.0":    "user 2",
+			},
+			conflict: true,
+		},
+		{
+			name: "deep nesting - conflict on",
+			target: map[string]any{
+				"1": map[string]any{
+					"2": map[string]any{
+						"3": map[string]any{
+							"4": "5",
+						},
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"1.2.3.4": "5",
+			},
+			conflict: true,
+		},
+		{
+			name: "use prefix - conflict on",
+			target: map[string]any{
+				"name": "test",
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.NewTestingOptional[string]("app"),
+			depth:  ottl.Optional[int64]{},
+			expected: map[string]any{
+				"app.name":           "test",
+				"app.address.street": "first",
+				"app.address.house":  int64(1234),
+				"app.occupants":      "user 1",
+				"app.occupants.0":    "user 2",
+			},
+			conflict: true,
+		},
+		{
+			name: "max depth - conflict on",
+			target: map[string]any{
+				"0": map[string]any{
+					"1": map[string]any{
+						"2": map[string]any{
+							"3": "value",
+						},
+					},
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.NewTestingOptional[int64](2),
+			expected: map[string]any{
+				"0.1.2": map[string]any{
+					"3": "value",
+				},
+			},
+			conflict: true,
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -189,12 +346,165 @@ func Test_flatten(t *testing.T) {
 				},
 			}
 
-			exprFunc, err := flatten[any](target, tt.prefix, tt.depth)
+			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
 			assert.NoError(t, err)
 			_, err = exprFunc(nil, nil)
 			assert.NoError(t, err)
 
 			assert.Equal(t, tt.expected, m.AsRaw())
+		})
+	}
+}
+
+func Test_flatten_undeterministic(t *testing.T) {
+	tests := []struct {
+		name           string
+		target         map[string]any
+		prefix         ottl.Optional[string]
+		depth          ottl.Optional[int64]
+		expectedKeys   []string
+		expectedValues []any
+		conflict       bool
+	}{
+		{
+			name: "conflicting map - conflict on",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": map[string]any{
+						"house": int64(1234),
+					},
+				},
+				"address.street": map[string]any{
+					"house": int64(1235),
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expectedKeys: []string{
+				"address.street.house",
+				"address.street.house.0",
+			},
+			expectedValues: []any{
+				int64(1234),
+				int64(1235),
+			},
+			conflict: true,
+		},
+		{
+			name: "conflicting slice - conflict on",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": []any{"first"},
+					"house":  int64(1234),
+				},
+				"address.street": []any{"second"},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expectedKeys: []string{
+				"address.street",
+				"address.house",
+				"address.street.0",
+			},
+			expectedValues: []any{
+				int64(1234),
+				"second",
+				"first",
+			},
+			conflict: true,
+		},
+		{
+			name: "conflicting map with nested slice - conflict on",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": "first",
+					"house":  int64(1234),
+				},
+				"address.street": "second",
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expectedKeys: []string{
+				"address.street",
+				"address.house",
+				"address.street.0",
+				"occupants",
+				"occupants.0",
+			},
+			expectedValues: []any{
+				int64(1234),
+				"second",
+				"first",
+				"user 1",
+				"user 2",
+			},
+			conflict: true,
+		},
+		{
+			name: "conflicting map with nested slice in conflicting item - conflict on",
+			target: map[string]any{
+				"address": map[string]any{
+					"street": map[string]any{
+						"number": "first",
+					},
+					"house": int64(1234),
+				},
+				"address.street": map[string]any{
+					"number": []any{"second", "third"},
+				},
+				"address.street.number": "fourth",
+				"occupants": []any{
+					"user 1",
+					"user 2",
+				},
+			},
+			prefix: ottl.Optional[string]{},
+			depth:  ottl.Optional[int64]{},
+			expectedKeys: []string{
+				"address.street.number",
+				"address.house",
+				"address.street.number.0",
+				"address.street.number.1",
+				"occupants",
+				"occupants.0",
+				"address.street.number.2",
+			},
+			expectedValues: []any{
+				int64(1234),
+				"second",
+				"first",
+				"third",
+				"fourth",
+				"user 1",
+				"user 2",
+			},
+			conflict: true,
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := pcommon.NewMap()
+			err := m.FromRaw(tt.target)
+			assert.NoError(t, err)
+			target := ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return m, nil
+				},
+			}
+
+			exprFunc, err := flatten[any](target, tt.prefix, tt.depth, ottl.NewTestingOptional[bool](tt.conflict))
+			assert.NoError(t, err)
+			_, err = exprFunc(nil, nil)
+			assert.NoError(t, err)
+
+			keys, val := extractKeysAndValues(m.AsRaw())
+
+			assert.True(t, compareSlices(keys, tt.expectedKeys))
+			assert.True(t, compareSlices(val, tt.expectedValues))
 		})
 	}
 }
@@ -205,7 +515,7 @@ func Test_flatten_bad_target(t *testing.T) {
 			return 1, nil
 		},
 	}
-	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{})
+	exprFunc, err := flatten[any](target, ottl.Optional[string]{}, ottl.Optional[int64]{}, ottl.NewTestingOptional[bool](false))
 	assert.NoError(t, err)
 	_, err = exprFunc(nil, nil)
 	assert.Error(t, err)
@@ -233,8 +543,37 @@ func Test_flatten_bad_depth(t *testing.T) {
 					return pcommon.NewMap(), nil
 				},
 			}
-			_, err := flatten[any](target, ottl.Optional[string]{}, tt.depth)
+			_, err := flatten[any](target, ottl.Optional[string]{}, tt.depth, ottl.NewTestingOptional[bool](false))
 			assert.Error(t, err)
 		})
 	}
+}
+
+func extractKeysAndValues(m map[string]any) ([]string, []any) {
+	keys := make([]string, 0, len(m))
+	values := make([]any, 0, len(m))
+	for key, value := range m {
+		keys = append(keys, key)
+		values = append(values, value)
+	}
+	return keys, values
+}
+
+func compareSlices[K string | any](a, b []K) bool {
+	if len(a) != len(b) {
+		return false
+	}
+
+	aMap := make(map[any]int)
+	bMap := make(map[any]int)
+
+	for _, item := range a {
+		aMap[item]++
+	}
+
+	for _, item := range b {
+		bMap[item]++
+	}
+
+	return reflect.DeepEqual(aMap, bMap)
 }

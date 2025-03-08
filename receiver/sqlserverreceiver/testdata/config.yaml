@@ -10,3 +10,7 @@ sqlserver/named:
       enabled: true
     sqlserver.instance.name:
       enabled: true
+    server.port:
+      enabled: true
+    server.address:
+      enabled: true

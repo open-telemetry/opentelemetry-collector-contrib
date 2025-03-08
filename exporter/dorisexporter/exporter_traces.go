@@ -21,10 +21,20 @@ import (
 //go:embed sql/traces_ddl.sql
 var tracesDDL string
 
+//go:embed sql/traces_view.sql
+var tracesView string
+
+//go:embed sql/traces_graph_ddl.sql
+var tracesGraphDDL string
+
+//go:embed sql/traces_graph_job.sql
+var tracesGraphJob string
+
 // dTrace Trace to Doris
 type dTrace struct {
 	ServiceName        string         `json:"service_name"`
 	Timestamp          string         `json:"timestamp"`
+	ServiceInstanceID  string         `json:"service_instance_id"`
 	TraceID            string         `json:"trace_id"`
 	SpanID             string         `json:"span_id"`
 	TraceState         string         `json:"trace_state"`
@@ -64,7 +74,7 @@ type tracesExporter struct {
 
 func newTracesExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *tracesExporter {
 	return &tracesExporter{
-		commonExporter: newExporter(logger, cfg, set),
+		commonExporter: newExporter(logger, cfg, set, "TRACE"),
 	}
 }
 
@@ -75,24 +85,51 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.client = client
 
-	if !e.cfg.CreateSchema {
-		return nil
+	if e.cfg.CreateSchema {
+		conn, err := createDorisMySQLClient(e.cfg)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		err = createAndUseDatabase(ctx, conn, e.cfg)
+		if err != nil {
+			return err
+		}
+
+		ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
+		_, err = conn.ExecContext(ctx, ddl)
+		if err != nil {
+			return err
+		}
+
+		view := fmt.Sprintf(tracesView, e.cfg.Table.Traces, e.cfg.Table.Traces)
+		_, err = conn.ExecContext(ctx, view)
+		if err != nil {
+			e.logger.Warn("failed to create materialized view", zap.Error(err))
+		}
+
+		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
+		_, err = conn.ExecContext(ctx, ddl)
+		if err != nil {
+			return err
+		}
+
+		dropJob := e.formatDropTraceGraphJob()
+		_, err = conn.ExecContext(ctx, dropJob)
+		if err != nil {
+			e.logger.Warn("failed to drop job", zap.Error(err))
+		}
+
+		job := e.formatTraceGraphJob()
+		_, err = conn.ExecContext(ctx, job)
+		if err != nil {
+			e.logger.Warn("failed to create job", zap.Error(err))
+		}
 	}
 
-	conn, err := createDorisMySQLClient(e.cfg)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = createAndUseDatabase(ctx, conn, e.cfg)
-	if err != nil {
-		return err
-	}
-
-	ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
-	_, err = conn.ExecContext(ctx, ddl)
-	return err
+	go e.reporter.report()
+	return nil
 }
 
 func (e *tracesExporter) shutdown(_ context.Context) error {
@@ -103,6 +140,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
+	label := generateLabel(e.cfg, e.cfg.Table.Traces)
 	traces := make([]*dTrace, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -113,6 +151,11 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		v, ok := resourceAttributes.Get(semconv.AttributeServiceName)
 		if ok {
 			serviceName = v.AsString()
+		}
+		serviceInstance := ""
+		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			serviceInstance = v.AsString()
 		}
 
 		for j := 0; j < resourceSpan.ScopeSpans().Len(); j++ {
@@ -153,6 +196,7 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 				trace := &dTrace{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(span.StartTimestamp().AsTime()),
+					ServiceInstanceID:  serviceInstance,
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(span.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(span.SpanID()),
 					TraceState:         span.TraceState().AsRaw(),
@@ -176,16 +220,16 @@ func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) er
 		}
 	}
 
-	return e.pushTraceDataInternal(ctx, traces)
+	return e.pushTraceDataInternal(ctx, traces, label)
 }
 
-func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dTrace) error {
-	marshal, err := json.Marshal(traces)
+func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dTrace, label string) error {
+	marshal, err := toJSONLines(traces)
 	if err != nil {
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -207,9 +251,40 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 		return err
 	}
 
-	if !response.success() {
-		return fmt.Errorf("failed to push trace data: %s", response.Message)
+	if response.success() {
+		e.reporter.incrTotalRows(int64(len(traces)))
+		e.reporter.incrTotalBytes(int64(len(marshal)))
+
+		if response.duplication() {
+			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(traces)))
+		}
+
+		if e.cfg.LogResponse {
+			e.logger.Info("trace response:\n" + string(body))
+		} else {
+			e.logger.Debug("trace response:\n" + string(body))
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to push trace data, response:%s", string(body))
+}
+
+func (e *tracesExporter) formatDropTraceGraphJob() string {
+	return fmt.Sprintf(
+		"DROP JOB where jobName = '%s:%s_graph_job';",
+		e.cfg.Database,
+		e.cfg.Table.Traces,
+	)
+}
+
+func (e *tracesExporter) formatTraceGraphJob() string {
+	return fmt.Sprintf(
+		tracesGraphJob,
+		e.cfg.Database,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
+		e.cfg.Table.Traces,
+	)
 }

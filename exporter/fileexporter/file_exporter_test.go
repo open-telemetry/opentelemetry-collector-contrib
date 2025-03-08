@@ -612,8 +612,8 @@ func TestExportMessageAsBuffer(t *testing.T) {
 }
 
 // tempFileName provides a temporary file name for testing.
-func tempFileName(t testing.TB) string {
-	return filepath.Join(t.TempDir(), "fileexporter_test.tmp")
+func tempFileName(tb testing.TB) string {
+	return filepath.Join(tb.TempDir(), "fileexporter_test.tmp")
 }
 
 // errorWriter is an io.Writer that will return an error all ways
