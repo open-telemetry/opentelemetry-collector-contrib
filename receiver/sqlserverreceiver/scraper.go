@@ -555,7 +555,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
 	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("v0.0.1")
+	scopedLog.Scope().SetVersion("0.0.1")
 
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
