@@ -62,7 +62,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		client,
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
