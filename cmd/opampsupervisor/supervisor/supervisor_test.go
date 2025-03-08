@@ -1368,7 +1368,7 @@ service:
 		marshalledRemoteCfg, err := proto.Marshal(remoteCfg)
 		require.NoError(t, err)
 
-		ownMetricsCfg := &protobufs.ConnectionSettingsOffers{
+		ownTelemetryCfg := &protobufs.ConnectionSettingsOffers{
 			OwnMetrics: &protobufs.TelemetryConnectionSettings{
 				DestinationEndpoint: "localhost-metrics",
 			},
@@ -1380,11 +1380,11 @@ service:
 			},
 		}
 
-		marshalledOwnMetricsCfg, err := proto.Marshal(ownMetricsCfg)
+		marshalledOwnTelemetryCfg, err := proto.Marshal(ownTelemetryCfg)
 		require.NoError(t, err)
 
 		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvRemoteConfigFile), marshalledRemoteCfg, 0o600))
-		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnTelemetryConfigFile), marshalledOwnMetricsCfg, 0o600))
+		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnTelemetryConfigFile), marshalledOwnTelemetryCfg, 0o600))
 
 		s := Supervisor{
 			telemetrySettings: component.TelemetrySettings{

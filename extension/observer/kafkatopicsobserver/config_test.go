@@ -40,8 +40,6 @@ func TestLoadConfig(t *testing.T) {
 				TopicRegex:                           "^topic[0-9]$",
 				TopicsSyncInterval:                   5 * time.Second,
 				ResolveCanonicalBootstrapServersOnly: false,
-				SessionTimeout:                       30 * time.Second,
-				HeartbeatInterval:                    20 * time.Second,
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
 						Username: "fooUser",
@@ -70,15 +68,13 @@ func TestValidateConfig(t *testing.T) {
 		ProtocolVersion: "3.7.0",
 		TopicRegex:      "^test[0-9]$",
 	}
-	assert.Equal(t, "brokers list must be specified; topics_sync_interval must be greater than 0; session_timeout must be greater than 0; heartbeat_interval must be greater than 0", xconfmap.Validate(cfg).Error())
+	assert.Equal(t, "brokers list must be specified; topics_sync_interval must be greater than 0", xconfmap.Validate(cfg).Error())
 
 	cfg = &Config{
 		Brokers:            []string{"1.2.3.4:9092"},
 		ProtocolVersion:    "",
 		TopicRegex:         "^topic[0-9]$",
 		TopicsSyncInterval: 1 * time.Second,
-		SessionTimeout:     1 * time.Second,
-		HeartbeatInterval:  1 * time.Second,
 	}
 	assert.Equal(t, "protocol_version must be specified", xconfmap.Validate(cfg).Error())
 
@@ -87,8 +83,6 @@ func TestValidateConfig(t *testing.T) {
 		ProtocolVersion:    "3.7.0",
 		TopicRegex:         "",
 		TopicsSyncInterval: 1 * time.Second,
-		SessionTimeout:     1 * time.Second,
-		HeartbeatInterval:  1 * time.Second,
 	}
 	assert.Equal(t, "topic_regex must be specified", xconfmap.Validate(cfg).Error())
 
@@ -97,8 +91,6 @@ func TestValidateConfig(t *testing.T) {
 		ProtocolVersion:    "3.7.0",
 		TopicRegex:         "^topic[0-9]$",
 		TopicsSyncInterval: 0 * time.Second,
-		SessionTimeout:     1 * time.Second,
-		HeartbeatInterval:  1 * time.Second,
 	}
 	assert.Equal(t, "topics_sync_interval must be greater than 0", xconfmap.Validate(cfg).Error())
 
@@ -107,28 +99,6 @@ func TestValidateConfig(t *testing.T) {
 		ProtocolVersion:    "3.7.0",
 		TopicRegex:         "^topic[0-9]$",
 		TopicsSyncInterval: 1 * time.Second,
-		SessionTimeout:     0 * time.Second,
-		HeartbeatInterval:  1 * time.Second,
-	}
-	assert.Equal(t, "session_timeout must be greater than 0", xconfmap.Validate(cfg).Error())
-
-	cfg = &Config{
-		Brokers:            []string{"1.2.3.4:9092"},
-		ProtocolVersion:    "3.7.0",
-		TopicRegex:         "^topic[0-9]$",
-		TopicsSyncInterval: 1 * time.Second,
-		SessionTimeout:     1 * time.Second,
-		HeartbeatInterval:  0 * time.Second,
-	}
-	assert.Equal(t, "heartbeat_interval must be greater than 0", xconfmap.Validate(cfg).Error())
-
-	cfg = &Config{
-		Brokers:            []string{"1.2.3.4:9092"},
-		ProtocolVersion:    "3.7.0",
-		TopicRegex:         "^topic[0-9]$",
-		TopicsSyncInterval: 1 * time.Second,
-		SessionTimeout:     1 * time.Second,
-		HeartbeatInterval:  1 * time.Second,
 	}
 	assert.NoError(t, xconfmap.Validate(cfg))
 }
