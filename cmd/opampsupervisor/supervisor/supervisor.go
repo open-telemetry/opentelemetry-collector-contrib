@@ -38,9 +38,12 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
+	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/log"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
@@ -170,6 +173,7 @@ type Supervisor struct {
 	opampServerPort int
 
 	telemetrySettings component.TelemetrySettings
+	loggerProvider    log.LoggerProvider
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -189,11 +193,12 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, err
 	}
 
-	telemetrySettings, err := initTelemetrySettings(logger, cfg.Telemetry)
+	telemetrySettings, lp, err := initTelemetrySettings(logger, cfg.Telemetry)
 	if err != nil {
 		return nil, err
 	}
 	s.telemetrySettings = *telemetrySettings
+	s.loggerProvider = lp
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
@@ -209,7 +214,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	return s, nil
 }
 
-func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component.TelemetrySettings, error) {
+func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component.TelemetrySettings, log.LoggerProvider, error) {
 	readers := cfg.Metrics.Readers
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		readers = []telemetryconfig.MetricReader{}
@@ -252,6 +257,9 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component
 				TracerProvider: &telemetryconfig.TracerProvider{
 					Processors: cfg.Traces.Processors,
 				},
+				LoggerProvider: &telemetryconfig.LoggerProvider{
+					Processors: cfg.Logs.Processors,
+				},
 				Resource: &telemetryconfig.Resource{
 					SchemaUrl:  &sch,
 					Attributes: attrs,
@@ -260,7 +268,24 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component
 		),
 	)
 	if err != nil {
-		return nil, err
+		return nil, nil, err
+	}
+
+	var lp log.LoggerProvider
+	if len(cfg.Logs.Processors) > 0 {
+		lp = sdk.LoggerProvider()
+		logger = logger.WithOptions(zap.WrapCore(func(c zapcore.Core) zapcore.Core {
+			core, err := zapcore.NewIncreaseLevelCore(zapcore.NewTee(
+				c,
+				otelzap.NewCore("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor",
+					otelzap.WithLoggerProvider(lp),
+				),
+			), zap.NewAtomicLevelAt(cfg.Logs.Level))
+			if err != nil {
+				panic(err)
+			}
+			return core
+		}))
 	}
 
 	return &component.TelemetrySettings{
@@ -268,7 +293,7 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component
 		TracerProvider: sdk.TracerProvider(),
 		MeterProvider:  sdk.MeterProvider(),
 		Resource:       pcommonRes,
-	}, nil
+	}, lp, nil
 }
 
 func (s *Supervisor) Start() error {
@@ -1407,6 +1432,13 @@ func (s *Supervisor) shutdownTelemetry() error {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown tracer provider: %w", shutdownErr))
 		}
 	}
+
+	if prov, ok := s.loggerProvider.(shutdownable); ok {
+		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
+			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
+		}
+	}
+
 	return err
 }
 
