@@ -45,10 +45,6 @@ type Config struct {
 }
 
 func (c *Config) getRegexp() (*regexp.Regexp, error) {
-	if (c.RegexName == "") == (c.Regex == "") {
-		return nil, fmt.Errorf("either regex or regex_name must be set")
-	}
-
 	switch c.RegexName {
 	case "ansi_control_sequences":
 		return ansiCsiEscapeRegex, nil
@@ -64,6 +60,10 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	transformerOperator, err := c.TransformerConfig.Build(set)
 	if err != nil {
 		return nil, err
+	}
+
+	if (c.RegexName == "") == (c.Regex == "") {
+		return nil, fmt.Errorf("either regex or regex_name must be set")
 	}
 
 	regexp, err := c.getRegexp()
