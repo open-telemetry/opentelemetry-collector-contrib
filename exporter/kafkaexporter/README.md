@@ -17,13 +17,13 @@ Kafka exporter exports logs, metrics, and traces to Kafka. This exporter uses a 
 that blocks and does not batch messages, therefore it should be used with batch and queued retry
 processors for higher throughput and resiliency. Message payload encoding is configurable.
 
-The following settings are required:
-- `protocol_version` (no default): Kafka protocol version e.g. `2.0.0`.
+There are no required settings.
 
 The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers.
+- `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup.
-- `client_id` (default = "sarama"): The client ID to configure the Sarama Kafka client with. The client ID will be used for all produce requests.
+- `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with. The client ID will be used for all produce requests.
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the default kafka topic to export to. See [Destination Topic](#destination-topic) below for more details.
 - `topic_from_attribute` (default = ""): Specify the resource attribute whose value should be used as the message's topic. See [Destination Topic](#destination-topic) below for more details. 
 - `encoding` (default = otlp_proto): The encoding of the traces sent to kafka. All available encodings:
@@ -92,8 +92,8 @@ The following settings can be optionally configured:
     - `requests_per_second` is the average number of requests per seconds.
 - `producer`
   - `max_message_bytes` (default = 1000000) the maximum permitted size of a message in bytes
-  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#RequiredAcks
-  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://pkg.go.dev/github.com/IBM/sarama@v1.30.0#CompressionCodec
+  - `required_acks` (default = 1) controls when a message is regarded as transmitted.   https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#acks
+  - `compression` (default = 'none') the compression used when producing messages to kafka. The options are: `none`, `gzip`, `snappy`, `lz4`, and `zstd` https://docs.confluent.io/platform/current/installation/configuration/producer-configs.html#compression-type
   - `flush_max_messages` (default = 0) The maximum number of messages the producer will send in a single broker request.
 
 Example configuration:
@@ -103,7 +103,6 @@ exporters:
   kafka:
     brokers:
       - localhost:9092
-    protocol_version: 2.0.0
 ```
 
 ## Destination Topic

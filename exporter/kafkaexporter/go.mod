@@ -4,7 +4,6 @@ go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.45.1
-	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.121.0
@@ -49,6 +48,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.1 // indirect
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
+	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
 	github.com/cespare/xxhash/v2 v2.3.0 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
 	github.com/eapache/go-resiliency v1.7.0 // indirect
