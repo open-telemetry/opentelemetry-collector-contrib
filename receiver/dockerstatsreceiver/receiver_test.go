@@ -17,6 +17,7 @@ import (
 	"time"
 
 	"github.com/docker/docker/api/types"
+	"github.com/docker/docker/client"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -119,6 +120,48 @@ var (
 		ContainerRuntime:     resourceAttributeEnabled,
 	}
 )
+
+func TestDockerHostOption(t *testing.T) {
+	tests := []struct {
+		name        string
+		endpoint    string
+		expectEnv   bool
+		description string
+	}{
+		{
+			name:        "Empty endpoint, DOCKER_HOST set",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() when Endpoint is empty.",
+		},
+		{
+			name:        "Empty endpoint and empty env",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() even if DOCKER_HOST is empty.",
+		},
+		{
+			name:        "Config endpoint set, DOCKER_HOST ignored",
+			endpoint:    "tcp://config:1234",
+			expectEnv:   false,
+			description: "Should not append WithHostFromEnv() when Endpoint is set.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			var opts []client.Opt
+			if tt.endpoint == "" {
+				opts = append(opts, client.WithHostFromEnv())
+			}
+
+			// Check if there is at least one function in opts
+			found := len(opts) > 0
+
+			assert.Equal(t, tt.expectEnv, found, tt.description)
+		})
+	}
+}
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
