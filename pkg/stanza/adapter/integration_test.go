@@ -42,7 +42,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 	receiverID := component.MustNewID("test")
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
 		ReceiverID:             receiverID,
-		ReceiverCreateSettings: receivertest.NewNopSettings(),
+		ReceiverCreateSettings: receivertest.NewNopSettings(receiverID.Type()),
 	})
 	if err != nil {
 		return nil, err
@@ -56,7 +56,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		obsrecv:  obsrecv,
 	}
 
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 
 	rcv.emitter = emitter
 	return rcv, nil

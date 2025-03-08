@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor/internal/metadata"
 )
 
 func FuzzConsumeTraces(f *testing.F) {
@@ -21,7 +23,7 @@ func FuzzConsumeTraces(f *testing.F) {
 			return
 		}
 		sink := new(consumertest.TracesSink)
-		set := processortest.NewNopSettings()
+		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
 		tsp, err := newTracesProcessor(context.Background(), set, cfg, sink)
 		if err != nil {
@@ -40,7 +42,7 @@ func FuzzConsumeLogs(f *testing.F) {
 		}
 		nextConsumer := consumertest.NewNop()
 		cfg := &Config{}
-		lp, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(), nextConsumer, cfg)
+		lp, err := newLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 		if err != nil {
 			t.Fatal(err)
 		}

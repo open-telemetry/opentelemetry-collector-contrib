@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -73,7 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val")
 
 			rb := mb.NewResourceBuilder()
-			rb.SetTlscheckURL("tlscheck.url-val")
+			rb.SetTlscheckEndpoint("tlscheck.endpoint-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
