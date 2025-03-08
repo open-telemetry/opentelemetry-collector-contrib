@@ -29,7 +29,12 @@ const (
 	attributeAWSCloudWatchLogStreamName = "aws.cloudwatch.log_stream_name"
 )
 
-var errInvalidRecords = errors.New("record format invalid")
+var (
+	errInvalidRecords   = errors.New("record format invalid")
+	errMissingOwner     = errors.New("cloudwatch log record is missing owner field")
+	errMissingLogGroup  = errors.New("cloudwatch log record is missing logGroup field")
+	errMissingLogStream = errors.New("cloudwatch log record is missing logStream field")
+)
 
 // Unmarshaler for the CloudWatch Log JSON record format.
 type Unmarshaler struct {
@@ -73,8 +78,8 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	var anyErrors bool
 	scanner := bufio.NewScanner(r)
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
-		var log cWLog
-		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &log); err != nil {
+		log, control, err := parseLog(scanner.Bytes())
+		if err != nil {
 			anyErrors = true
 			u.logger.Error(
 				"Unable to unmarshal input",
@@ -83,27 +88,15 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 			)
 			continue
 		}
-
-		switch log.MessageType {
-		case "DATA_MESSAGE":
-			if !isValid(log) {
-				anyErrors = true
-				u.logger.Error("Invalid log", zap.Int("datum_index", datumIndex))
-				continue
-			}
-		case "CONTROL_MESSAGE":
+		if control {
 			for _, event := range log.LogEvents {
 				u.logger.Debug(
 					"Skipping CloudWatch control message event",
 					zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
 					zap.String("message", event.Message),
+					zap.Int("datum_index", datumIndex),
 				)
 			}
-			continue
-		default:
-			// Unknown/invalid message type.
-			anyErrors = true
-			u.logger.Error("Invalid message type", zap.String("message_type", log.MessageType))
 			continue
 		}
 
@@ -160,9 +153,27 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	return logs, nil
 }
 
-// isValid validates that the cWLog has been unmarshalled correctly.
-func isValid(log cWLog) bool {
-	return log.Owner != "" && log.LogGroup != "" && log.LogStream != ""
+func parseLog(data []byte) (log cWLog, control bool, _ error) {
+	if err := jsoniter.ConfigFastest.Unmarshal(data, &log); err != nil {
+		return cWLog{}, false, fmt.Errorf("error unmarshalling JSON: %w", err)
+	}
+	switch log.MessageType {
+	case "DATA_MESSAGE":
+		if log.Owner == "" {
+			return cWLog{}, false, errMissingOwner
+		}
+		if log.LogGroup == "" {
+			return cWLog{}, false, errMissingLogGroup
+		}
+		if log.LogStream == "" {
+			return cWLog{}, false, errMissingLogStream
+		}
+		return log, false, nil
+	case "CONTROL_MESSAGE":
+		return log, true, nil
+	default:
+		return cWLog{}, false, fmt.Errorf("invalid message type %q", log.MessageType)
+	}
 }
 
 // Type of the serialized messages.
