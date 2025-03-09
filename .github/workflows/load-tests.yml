@@ -1,6 +1,9 @@
 name: load-tests
 
 on:
+  push:
+    tags:
+      - "v[0-9]+.[0-9]+.[0-9]+*"
   workflow_dispatch:
   schedule:
     - cron: "27 0,12 * * *" # Run at 00:27 and 12:27 UTC every day.
