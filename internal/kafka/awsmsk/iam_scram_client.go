@@ -4,20 +4,17 @@
 package awsmsk // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 	"time"
-	"context"
 
 	"github.com/IBM/sarama"
-	// "github.com/aws/aws-sdk-go/aws/credentials"
-	// sign1 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/aws/aws-sdk-go-v2/aws"
-	// "github.com/aws/aws-sdk-go-v2/config"
-	credentials2 "github.com/aws/aws-sdk-go-v2/credentials"
 	sign "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
+	credentials2 "github.com/aws/aws-sdk-go-v2/credentials"
 	"go.uber.org/multierr"
 )
 
@@ -48,8 +45,7 @@ type IAMSASLClient struct {
 	Region      string
 	UserAgent   string
 
-	// signer1 *sign1.StreamSigner
-	signer *sign.StreamSigner
+	signer      *sign.StreamSigner
 	credentials aws.Credentials
 
 	state     int32
@@ -109,21 +105,6 @@ func (sc *IAMSASLClient) Begin(username, password, _ string) error {
 	}
 	sc.signer = sign.NewStreamSigner(sc.credentials, service, sc.Region, nil)
 
-	// TODO DELETE
-	// sc.signer1 = sign1.NewStreamSigner(
-	// 	sc.Region,
-	// 	service,
-	// 	nil,
-	// 	credentials.NewChainCredentials([]credentials.Provider{
-	// 		&credentials.EnvProvider{},
-	// 		&credentials.StaticProvider{
-	// 			Value: credentials.Value{
-	// 				AccessKeyID:     username,
-	// 				SecretAccessKey: password,
-	// 			},
-	// 		},
-	// 	}),
-	// )
 	sc.accessKey = username
 	sc.secretKey = password
 	sc.state = initMessage
@@ -178,11 +159,6 @@ func (sc *IAMSASLClient) getAuthPayload() ([]byte, error) {
 	ctx := context.Background()
 
 	headers := []byte("host:" + sc.MSKHostname)
-
-	// sig, err := sc.signer1.GetSignature(headers, nil, ts)
-	// if err != nil {
-	// 	return nil, err
-	// }
 
 	sig, err := sc.signer.GetSignature(ctx, headers, nil, ts)
 	if err != nil {
