@@ -14,7 +14,7 @@ import (
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-sdk-go-v2/aws"
 	sign "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
-	credentials2 "github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials"
 	"go.uber.org/multierr"
 )
 
@@ -97,7 +97,7 @@ func (sc *IAMSASLClient) Begin(username, password, _ string) error {
 	var err error
 	ctx := context.Background()
 
-	credentialsProvider := credentials2.NewStaticCredentialsProvider(username, password, "")
+	credentialsProvider := credentials.NewStaticCredentialsProvider(username, password, "")
 
 	sc.credentials, err = credentialsProvider.Retrieve(ctx)
 	if err != nil {
