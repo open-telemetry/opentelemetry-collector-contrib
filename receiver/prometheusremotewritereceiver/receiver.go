@@ -231,7 +231,9 @@ func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.Resourc
 }
 
 func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries, intraRequestCache map[uint64]pmetric.ResourceMetrics) {
-	// Create a unique hash based on metric name, unit ref, and help ref to identify metrics with same metadata
+	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
+	// In OTel name+type+unit is the unique identifier of a metric and we should not create
+	// a new metric if it already exists.
 	metricName := ls.Get(labels.MetricName)
 	unitRefStr := strconv.FormatUint(uint64(ts.Metadata.GetUnitRef()), 10)
 	helpRefStr := strconv.FormatUint(uint64(ts.Metadata.GetHelpRef()), 10)
@@ -242,46 +244,44 @@ func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.Resource
 		helpRefStr +
 		string([]byte{'\xff'}))
 
-	_, ok := intraRequestCache[hashedLabels]
+	cachedResourceMetric, ok := intraRequestCache[hashedLabels]
+	fmt.Printf("hash exists? %t\n", ok)
+	if !ok {
+		intraRequestCache[hashedLabels] = rm
+	}
 
 	scopeName, scopeVersion := prw.extractScopeInfo(ls)
 
-	// Check if we already have a scope with this name/version that contains our metric
+	// Check if the name and version present in the labels are already present in the ResourceMetrics.
+	// If it is not present, we should create a new ScopeMetrics.
+	// Otherwise, we should append to the existing ScopeMetrics.
 	fmt.Printf("Len scope metrics: %d\n", rm.ScopeMetrics().Len())
 	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
 		scope := rm.ScopeMetrics().At(i)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			// Look for existing metric with same metadata hash
-			metrics := scope.Metrics()
-			fmt.Printf("Len metrics: %d\n", metrics.Len())
-			for j := 0; j < metrics.Len(); j++ {
-				metric := metrics.At(j)
-				if ok {
-					// Found matching metric, add datapoints to it
-					addDatapoints(metric.Gauge().DataPoints(), ls, ts)
-					return
-				}
+			if ok {
+				// if the scope already exists and the metrics too, we should append the cached datapoints to the existing metric
+				fmt.Printf("Appending to existing metric\n")
+				fmt.Printf("index: %d\n", i)
+				fmt.Printf("cachedResourceMetric.ScopeMetrics().At(i).Metrics().Len(): %d\n", cachedResourceMetric.ScopeMetrics().At(i).Metrics().Len())
+				addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+				// addDatapoints(cachedResourceMetric.ScopeMetrics().At(i).Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+				return
+			} else {
+				fmt.Printf("Creating new metric\n")
+				// if the scope already exists and the metric does not, create a new empty metric and add the datapoints
+				addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+				return
 			}
-
-			// No matching metric found, create new one
-			m := metrics.AppendEmpty()
-
-			// m.SetName(metricName)
-			// TODO: Set unit based on UnitRef once we have the symbols mapping
-			addDatapoints(m.SetEmptyGauge().DataPoints(), ls, ts)
-			return
 		}
 	}
 
-	fmt.Printf("No matching scope found, create new scope and metric\n")
-	// No matching scope found, create new scope and metric
+	// if the scope was never created, this means that the metric was also never created. That is, we should create a new scope and a new metric.
 	scope := rm.ScopeMetrics().AppendEmpty()
 	scope.Scope().SetName(scopeName)
 	scope.Scope().SetVersion(scopeVersion)
-
 	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
-	// m.SetName(metricName)
-	// TODO: Set unit based on UnitRef once we have the symbols mapping
+	fmt.Printf("Creating new metric\n")
 	addDatapoints(m.DataPoints(), ls, ts)
 }
 
