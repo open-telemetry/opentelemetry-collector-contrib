@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -195,7 +196,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			prw.addGaugeDatapoints(rm, ls, ts)
+			prw.addGaugeDatapoints(rm, ls, ts, intraRequestCache)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			prw.addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
@@ -229,28 +230,58 @@ func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.Resourc
 	// TODO: Implement this function
 }
 
-func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
-	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
-	// In OTel name+type+unit is the unique identifier of a metric and we should not create
-	// a new metric if it already exists.
+func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries, intraRequestCache map[uint64]pmetric.ResourceMetrics) {
+	// Create a unique hash based on metric name, unit ref, and help ref to identify metrics with same metadata
+	metricName := ls.Get(labels.MetricName)
+	unitRefStr := strconv.FormatUint(uint64(ts.Metadata.GetUnitRef()), 10)
+	helpRefStr := strconv.FormatUint(uint64(ts.Metadata.GetHelpRef()), 10)
+	hashedLabels := xxhash.Sum64String(metricName +
+		string([]byte{'\xff'}) +
+		unitRefStr +
+		string([]byte{'\xff'}) +
+		helpRefStr +
+		string([]byte{'\xff'}))
+
+	_, ok := intraRequestCache[hashedLabels]
 
 	scopeName, scopeVersion := prw.extractScopeInfo(ls)
 
-	// Check if the name and version present in the labels are already present in the ResourceMetrics.
-	// If it is not present, we should create a new ScopeMetrics.
-	// Otherwise, we should append to the existing ScopeMetrics.
-	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-		scope := rm.ScopeMetrics().At(j)
+	// Check if we already have a scope with this name/version that contains our metric
+	fmt.Printf("Len scope metrics: %d\n", rm.ScopeMetrics().Len())
+	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+		scope := rm.ScopeMetrics().At(i)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+			// Look for existing metric with same metadata hash
+			metrics := scope.Metrics()
+			fmt.Printf("Len metrics: %d\n", metrics.Len())
+			for j := 0; j < metrics.Len(); j++ {
+				metric := metrics.At(j)
+				if ok {
+					// Found matching metric, add datapoints to it
+					addDatapoints(metric.Gauge().DataPoints(), ls, ts)
+					return
+				}
+			}
+
+			// No matching metric found, create new one
+			m := metrics.AppendEmpty()
+
+			// m.SetName(metricName)
+			// TODO: Set unit based on UnitRef once we have the symbols mapping
+			addDatapoints(m.SetEmptyGauge().DataPoints(), ls, ts)
 			return
 		}
 	}
 
+	fmt.Printf("No matching scope found, create new scope and metric\n")
+	// No matching scope found, create new scope and metric
 	scope := rm.ScopeMetrics().AppendEmpty()
 	scope.Scope().SetName(scopeName)
 	scope.Scope().SetVersion(scopeVersion)
+
 	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
+	// m.SetName(metricName)
+	// TODO: Set unit based on UnitRef once we have the symbols mapping
 	addDatapoints(m.DataPoints(), ls, ts)
 }
 
