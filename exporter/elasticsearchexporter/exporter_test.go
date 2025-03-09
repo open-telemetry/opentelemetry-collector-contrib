@@ -363,6 +363,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
@@ -1734,6 +1735,7 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
