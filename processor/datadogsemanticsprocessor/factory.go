@@ -6,7 +6,9 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 import (
 	"context"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+	nooptrace "go.opentelemetry.io/otel/trace/noop"
+	"go.uber.org/zap"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -32,8 +34,16 @@ type tracesProcessor struct {
 	attrsTranslator               *attributes.Translator
 }
 
-func newTracesProcessor(cfg *Config) (*tracesProcessor, error) {
-	attrsTranslator, err := attributes.NewTranslator(componenttest.NewNopTelemetrySettings())
+func newTracesProcessor(
+	set processor.Settings,
+	cfg *Config,
+) (*tracesProcessor, error) {
+	attrsTranslator, err := attributes.NewTranslator(component.TelemetrySettings{
+		Logger:         zap.NewNop(),
+		TracerProvider: nooptrace.NewTracerProvider(),
+		MeterProvider:  set.MeterProvider,
+		Resource:       pcommon.NewResource(),
+	})
 	if err != nil {
 		return nil, err
 	}
@@ -56,7 +66,7 @@ func createTracesProcessor(
 	next consumer.Traces,
 ) (processor.Traces, error) {
 	oCfg := cfg.(*Config)
-	tp, err := newTracesProcessor(oCfg)
+	tp, err := newTracesProcessor(set, oCfg)
 	if err != nil {
 		return nil, err
 	}
