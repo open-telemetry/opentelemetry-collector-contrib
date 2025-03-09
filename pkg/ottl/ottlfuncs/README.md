@@ -483,6 +483,7 @@ Available Converters:
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
+- [LuhnCheck](#luhncheck)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
@@ -1254,6 +1255,21 @@ Examples:
 
 
 - `Int(Log(span.attributes["duration_ms"])`
+
+### LuhnCheck
+
+`LuhnCheck(value)`
+
+The `Luhn` converter returns a `boolean` value that indicates whether the value is a valid identification number,
+such as a credit card number according to the [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm).
+
+The value must either be a `string` consisting of digits only, or an integer number. If it is neither, an error will be returned.
+
+Examples:
+
+- `LuhnCheck(span.attributes["credit_card_number"])`
+
+- `LuhnCheck("17893729974")`
 
 ### MD5
 
