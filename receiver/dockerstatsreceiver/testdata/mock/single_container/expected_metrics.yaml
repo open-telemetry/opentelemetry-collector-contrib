@@ -16,6 +16,16 @@ resourceMetrics:
         - key: container.image.name
           value:
             stringValue: ubuntu
+        - key: container.labels
+          value:
+            kvlistValue:
+              values:
+                - key: container.label
+                  value:
+                    stringValue: container-label
+                - key: container.label.2
+                  value:
+                    stringValue: container-label-2
         - key: container.name
           value:
             stringValue: bold_sinoussi
@@ -201,19 +211,20 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: '{operations}'
-          - description: 'Number of cores available to the container.'
+          - description: Number of cores available to the container.
             gauge:
               dataPoints:
-                - asInt: 8
-                  startTimeUnixNano: "1687762436124732000"
-                  timeUnixNano: "1687762436137493000"
+                - asInt: "8"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.logical.count
-            unit: "{cpus}"
+            unit: '{cpus}'
           - description: CPU shares set for the container.
             gauge:
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.shares
             unit: "1"
           - description: Number of periods with throttling active.
@@ -349,12 +360,12 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: ns
-          - description: 'Percent of CPU used by the container.'
+          - description: Percent of CPU used by the container.
             gauge:
               dataPoints:
                 - asDouble: 0.0002888012543185477
-                  startTimeUnixNano: "1687762436059456000"
-                  timeUnixNano: "1687762436071484000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
             name: container.cpu.utilization
             unit: "1"
           - description: The amount of anonymous memory that has been identified as active by the kernel.
@@ -393,16 +404,16 @@ resourceMetrics:
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             unit: By
-          - description: 'Number of times the memory limit was hit.'
+          - description: Number of times the memory limit was hit.
             name: container.memory.fails
             sum:
-              isMonotonic: true
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "4"
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            unit: "{fails}"
+              isMonotonic: true
+            unit: '{fails}'
           - description: The maximum amount of physical memory that can be used by the processes of this control group (Only available with cgroups v1).
             name: container.memory.hierarchical_memory_limit
             sum:
@@ -825,13 +836,14 @@ resourceMetrics:
               aggregationTemporality: 2
               dataPoints:
                 - asInt: "0"
-                  timeUnixNano: "1657771705535206000"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
               isMonotonic: true
-            unit: "{restarts}"
+            unit: '{restarts}'
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 3.06813858144158e+07
+                - asDouble: 8.332172456138211e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
