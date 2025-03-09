@@ -5,6 +5,7 @@ package udp
 
 import (
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
@@ -28,8 +29,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
 					cfg.Encoding = "utf-8"
-					cfg.SplitConfig.LineStartPattern = "ABC"
-					cfg.SplitConfig.LineEndPattern = ""
+					cfg.SplitConfig.LineStartPattern = regexp.MustCompile("ABC")
+					cfg.SplitConfig.LineEndPattern = nil
 					return cfg
 				}(),
 			},
@@ -41,8 +42,8 @@ func TestUnmarshal(t *testing.T) {
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
 					cfg.Encoding = "utf-8"
-					cfg.SplitConfig.LineStartPattern = "ABC"
-					cfg.SplitConfig.LineEndPattern = ""
+					cfg.SplitConfig.LineStartPattern = regexp.MustCompile("ABC")
+					cfg.SplitConfig.LineEndPattern = nil
 					cfg.AsyncConfig = &AsyncConfig{
 						Readers:        2,
 						Processors:     2,
