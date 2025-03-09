@@ -222,7 +222,7 @@ func TestRoundTripper(t *testing.T) {
 			}
 
 			assert.NotNil(t, oauth2Authenticator)
-			roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+			roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 			assert.NoError(t, err)
 
 			// test roundTripper is an OAuth RoundTripper
@@ -266,7 +266,7 @@ func TestOAuth2PerRPCCredentials(t *testing.T) {
 				return
 			}
 			assert.NoError(t, err)
-			perRPCCredentials, err := oauth2Authenticator.perRPCCredentials()
+			perRPCCredentials, err := oauth2Authenticator.PerRPCCredentials()
 			assert.NoError(t, err)
 			// test perRPCCredentials is an grpc OAuthTokenSource
 			_, ok := perRPCCredentials.(grpcOAuth.TokenSource)
@@ -294,7 +294,7 @@ func TestFailContactingOAuth(t *testing.T) {
 	require.NoError(t, err)
 
 	// Test for gRPC connections
-	credential, err := oauth2Authenticator.perRPCCredentials()
+	credential, err := oauth2Authenticator.PerRPCCredentials()
 	require.NoError(t, err)
 
 	_, err = credential.GetRequestMetadata(context.Background())
@@ -303,7 +303,7 @@ func TestFailContactingOAuth(t *testing.T) {
 
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 	baseRoundTripper := (http.RoundTripper)(transport)
-	roundTripper, err := oauth2Authenticator.roundTripper(baseRoundTripper)
+	roundTripper, err := oauth2Authenticator.RoundTripper(baseRoundTripper)
 	require.NoError(t, err)
 
 	client := &http.Client{
