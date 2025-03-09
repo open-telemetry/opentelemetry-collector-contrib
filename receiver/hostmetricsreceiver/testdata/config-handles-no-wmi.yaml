@@ -1,0 +1,6 @@
+scrapers:
+  process:
+    wmi_enabled: false
+    metrics:
+      process.handles:
+        enabled: true

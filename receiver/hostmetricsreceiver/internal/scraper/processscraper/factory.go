@@ -35,6 +35,7 @@ func NewFactory() scraper.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		WMIEnabled:           true,
 	}
 }
 
