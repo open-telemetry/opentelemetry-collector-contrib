@@ -18,27 +18,42 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.Settings{
+type dummySchemaProvider struct{}
+
+func (m *dummySchemaProvider) Retrieve(ctx context.Context, schemaURL string) (string, error) {
+	data := `
+file_format: 1.0.0
+schema_url: https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0
+versions:
+  1.1.0:`
+	return data, nil
+}
+
+func newTestSchemaProcessor(t *testing.T) *schemaProcessor {
+	cfg := &Config{
+		Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
+	}
+	trans, err := newSchemaProcessor(context.Background(), cfg, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
 	})
-	require.NoError(t, err, "Must not error when creating default transformer")
+	require.NoError(t, err, "Must not error when creating default schemaProcessor")
+	trans.manager.AddProvider(&dummySchemaProvider{})
 	return trans
 }
 
-func TestTransformerStart(t *testing.T) {
+func TestSchemaProcessorStart(t *testing.T) {
 	t.Parallel()
 
-	trans := newTestTransformer(t)
+	trans := newTestSchemaProcessor(t)
 	assert.NoError(t, trans.start(context.Background(), nil))
 }
 
-func TestTransformerProcessing(t *testing.T) {
+func TestSchemaProcessorProcessing(t *testing.T) {
 	t.Parallel()
 
-	trans := newTestTransformer(t)
+	trans := newTestSchemaProcessor(t)
 	t.Run("metrics", func(t *testing.T) {
 		in := pmetric.NewMetrics()
 		in.ResourceMetrics().AppendEmpty()
@@ -67,7 +82,7 @@ func TestTransformerProcessing(t *testing.T) {
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
 		out, err := trans.processTraces(context.Background(), in)
-		assert.NoError(t, err, "Must not error when processing metrics")
+		assert.NoError(t, err, "Must not error when processing traces")
 		assert.Equal(t, in, out, "Must return the same data (subject to change)")
 	})
 
