@@ -1,3 +1,5 @@
+github.com/cespare/xxhash/v2 v2.3.0 h1:UL815xU9SqsFlibzuggzjXhog7bL6oX9BbNZnL2UFvs=
+github.com/cespare/xxhash/v2 v2.3.0/go.mod h1:VGX0DQ3Q6kWi7AoAeZDth3/j3BFtOZR5XLFGgcrjCOs=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.1/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
 github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc h1:U9qPSI2PIWSS1VwoXQT9A3Wy9MM3WgvqSxFWenqJduM=
@@ -74,6 +76,8 @@ go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0 h1:85g
 go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0/go.mod h1:nFXOEpZx43ykMZJd87AHWIJKqDP+UMMKydIy59m5SEs=
 go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307194215-7d3e03e500b0 h1:6STf0CH2h922SOWNtWHx0b4M2EWRq4iuEXhXJ/iROYs=
 go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250307194215-7d3e03e500b0/go.mod h1:hmtWKCi7aeWs2BreLuB+ajHFSVZgDd3d9jra4ilwrBE=
+go.opentelemetry.io/collector/semconv v0.121.1-0.20250307194215-7d3e03e500b0 h1:K+a24AicCzO3gq8bxcwiTL4YIp7Nqgf/lXlw79FcOeQ=
+go.opentelemetry.io/collector/semconv v0.121.1-0.20250307194215-7d3e03e500b0/go.mod h1:te6VQ4zZJO5Lp8dM2XIhDxDiL45mwX0YAQQWRQ0Qr9U=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
 go.opentelemetry.io/otel v1.34.0/go.mod h1:OWFPOQ+h4G8xpyjgqo4SxJYdDQ/qmRH+wivy7zzx9oI=
 go.opentelemetry.io/otel/metric v1.34.0 h1:+eTR3U0MyfWjRDhmFMxe2SsW64QrZ84AOhvqS7Y+PoQ=
