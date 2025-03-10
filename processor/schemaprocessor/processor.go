@@ -6,7 +6,6 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"

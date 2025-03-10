@@ -24,14 +24,13 @@ type dummySchemaProvider struct {
 	transformations string
 }
 
-func (m *dummySchemaProvider) Retrieve(ctx context.Context, schemaURL string) (string, error) {
+func (m *dummySchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
 	data := fmt.Sprintf(`
 file_format: 1.1.0
 schema_url: http://opentelemetry.io/schemas/1.9.0
 versions:
   %s`, m.transformations)
 	data = strings.TrimSpace(data)
-	fmt.Printf("data: %s\n", data)
 	return data, nil
 }
 
