@@ -33,6 +33,9 @@ type TelemetryBuilder struct {
 	OtelsvcK8sNodeAdded         metric.Int64Counter
 	OtelsvcK8sNodeDeleted       metric.Int64Counter
 	OtelsvcK8sNodeUpdated       metric.Int64Counter
+	OtelsvcK8sDeploymentAdded   metric.Int64Counter
+	OtelsvcK8sDeploymentDeleted metric.Int64Counter
+	OtelsvcK8sDeploymentUpdated metric.Int64Counter
 	OtelsvcK8sPodAdded          metric.Int64Counter
 	OtelsvcK8sPodDeleted        metric.Int64Counter
 	OtelsvcK8sPodTableSize      metric.Int64Gauge
@@ -110,6 +113,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	builder.OtelsvcK8sNodeUpdated, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_node_updated",
 		metric.WithDescription("Number of node update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDeploymentAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_added",
+		metric.WithDescription("Number of deployment add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDeploymentDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_deleted",
+		metric.WithDescription("Number of deployment delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDeploymentUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_updated",
+		metric.WithDescription("Number of deployment update events received"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
