@@ -65,10 +65,10 @@ func createRouteTests(dsType string) []routeTestCase {
 			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
 		},
 		{
-			name: "otel with elasticsearch._index",
+			name: "otel with elasticsearch.index",
 			mode: MappingOTel,
 			recordAttrs: map[string]any{
-				"elasticsearch._index": "my-index",
+				"elasticsearch.index": "my-index",
 			},
 			want: elasticsearch.Index{
 				Index: "my-index",

@@ -155,7 +155,7 @@ func routeRecord(
 	scopeAttr := scope.Attributes()
 
 	// Order:
-	// 1. elasticsearch._index from attributes
+	// 1. elasticsearch.index from attributes
 	// 2. read data_stream.* from attributes
 	// 3. receiver-based routing
 	// 4. use default hardcoded data_stream.*

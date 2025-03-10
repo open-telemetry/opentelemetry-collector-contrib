@@ -120,7 +120,7 @@ Using the common `batcher` functionality provides several benefits over the defa
 
 Documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
 1. "Static mode": To `logs_index` (for log records), `metrics_index` (for data points) and `traces_index` (for spans and span events) if they are configured.
-2. "Index attribute mode": To index name in `elasticsearch._index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
+2. "Index attribute mode": To index name in `elasticsearch.index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
 3. "Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`, 
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans and span events, 
 with an exception in OTel mapping mode (`mapping::mode: otel`) where `data_stream.type` is `logs` for span events.

@@ -315,7 +315,7 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with elasticsearch._index", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
 
@@ -329,13 +329,13 @@ func TestExporterLogs(t *testing.T) {
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				"elasticsearch._index": index,
+				"elasticsearch.index": index,
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
@@ -392,7 +392,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(
 			map[string]any{
-				"elasticsearch._index": index,
+				"elasticsearch.index": index,
 			},
 			nil,
 			nil,
@@ -845,7 +845,7 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with elasticsearch._index", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		index := "someindex"
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -858,13 +858,13 @@ func TestExporterMetrics(t *testing.T) {
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				"elasticsearch._index": index,
+				"elasticsearch.index": index,
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 		)
 		mustSendMetrics(t, exporter, metrics)
@@ -1637,7 +1637,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with elasticsearch._index", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
 		eventIndex := "some-event-index"
@@ -1653,17 +1653,17 @@ func TestExporterTraces(t *testing.T) {
 
 		traces := newTracesWithAttributes(
 			map[string]any{
-				"elasticsearch._index": index,
+				"elasticsearch.index": index,
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 			map[string]any{
-				"elasticsearch._index": "ignored",
+				"elasticsearch.index": "ignored",
 			},
 		)
 		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
-		event.Attributes().PutStr("elasticsearch._index", eventIndex)
+		event.Attributes().PutStr("elasticsearch.index", eventIndex)
 		mustSendTraces(t, exporter, traces)
 
 		docs := rec.WaitItems(2)
@@ -1743,7 +1743,7 @@ func TestExporterTraces(t *testing.T) {
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				"elasticsearch._index": index,
+				"elasticsearch.index": index,
 			},
 			nil,
 			nil,
