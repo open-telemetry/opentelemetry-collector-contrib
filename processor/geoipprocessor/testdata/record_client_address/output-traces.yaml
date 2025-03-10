@@ -1,0 +1,70 @@
+resourceSpans:
+  - resource: {}
+    scopeSpans:
+      - scope: {}
+        spans:
+          - attributes:
+              - key: http.request.method
+                value:
+                  stringValue: POST
+              - key: url.full
+                value:
+                  stringValue: https://www.foo.bar/search?q=OpenTelemetry#SemConv
+              - key: http.response.status_code
+                value:
+                  intValue: "201"
+              - key: ip
+                value:
+                  stringValue: 1.2.2.1
+              - key: client.address
+                value:
+                  stringValue: 1.2.3.4
+              - key: geo.city_name
+                value:
+                  stringValue: Boxford
+              - key: geo.continent_code
+                value:
+                  stringValue: EU
+              - key: geo.continent_name
+                value:
+                  stringValue: Europe
+              - key: geo.country_iso_code
+                value:
+                  stringValue: GB
+              - key: geo.country_name
+                value:
+                  stringValue: United Kingdom
+              - key: geo.location.lat
+                value:
+                  doubleValue: 1234
+              - key: geo.location.lon
+                value:
+                  doubleValue: 5678
+              - key: geo.postal_code
+                value:
+                  stringValue: OX1
+              - key: geo.region_iso_code
+                value:
+                  stringValue: WBK
+              - key: geo.region_name
+                value:
+                  stringValue: West Berkshire
+              - key: geo.timezone
+                value:
+                  stringValue: Europe/London
+            events:
+              - attributes:
+                  - key: event.attr1
+                    value:
+                      stringValue: foo2
+                  - key: event.attr2
+                    value:
+                      stringValue: bar2
+                name: event2
+                timeUnixNano: "1581452773000000123"
+            name: span-elastic-http
+            parentSpanId: bcff497b5a47310f
+            spanId: ""
+            startTimeUnixNano: "1581452772000000321"
+            status: {}
+            traceId: ""
