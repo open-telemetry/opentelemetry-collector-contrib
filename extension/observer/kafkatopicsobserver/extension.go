@@ -50,7 +50,7 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 		cancelKafkaAdmin: cancel,
 		adminClient:      adminClient,
 	}
-	o.EndpointsWatcher = observer.NewEndpointsWatcher(
+	o.EndpointsWatcher = endpointswatcher.New(
 		&kafkaTopicsEndpointsLister{o: o, topicRegexp: topicRegexp},
 		config.TopicsSyncInterval,
 		logger,
