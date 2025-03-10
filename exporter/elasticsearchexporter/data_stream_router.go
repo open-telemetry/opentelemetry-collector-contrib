@@ -51,16 +51,11 @@ type documentRouter interface {
 	routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error)
 }
 
-func newDocumentRouter(mode MappingMode, dynamicIndex, dynamicIndexLegacy bool, defaultIndex string, cfg *Config) documentRouter {
+func newDocumentRouter(mode MappingMode, dynamicIndex bool, defaultIndex string, cfg *Config) documentRouter {
 	var router documentRouter
 	if dynamicIndex {
 		router = dynamicDocumentRouter{
 			mode: mode,
-		}
-	} else if dynamicIndexLegacy {
-		router = dynamicLegacyDocumentRouter{
-			index: elasticsearch.Index{Index: defaultIndex},
-			mode:  mode,
 		}
 	} else {
 		router = staticDocumentRouter{
@@ -115,36 +110,6 @@ func (r dynamicDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommo
 
 func (r dynamicDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
 	return routeRecord(resource, scope, recordAttrs, r.mode, defaultDataStreamTypeLogs)
-}
-
-type dynamicLegacyDocumentRouter struct {
-	index elasticsearch.Index
-	mode  MappingMode
-}
-
-func (r dynamicLegacyDocumentRouter) route(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) elasticsearch.Index {
-	prefix, prefixExists := getFromAttributes(indexPrefix, "", resource.Attributes(), scope.Attributes(), recordAttrs)
-	suffix, suffixExists := getFromAttributes(indexSuffix, "", resource.Attributes(), scope.Attributes(), recordAttrs)
-	if prefixExists || suffixExists {
-		return elasticsearch.Index{Index: fmt.Sprintf("%s%s%s", prefix, r.index.Index, suffix)}
-	}
-	return r.index
-}
-
-func (r dynamicLegacyDocumentRouter) routeLogRecord(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return r.route(resource, scope, recordAttrs), nil
-}
-
-func (r dynamicLegacyDocumentRouter) routeDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return r.route(resource, scope, recordAttrs), nil
-}
-
-func (r dynamicLegacyDocumentRouter) routeSpan(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return r.route(resource, scope, recordAttrs), nil
-}
-
-func (r dynamicLegacyDocumentRouter) routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error) {
-	return r.route(resource, scope, recordAttrs), nil
 }
 
 type logstashDocumentRouter struct {

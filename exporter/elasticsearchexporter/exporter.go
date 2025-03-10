@@ -31,7 +31,6 @@ type elasticsearchExporter struct {
 	config              *Config
 	index               string
 	dynamicIndex        bool
-	dynamicIndexLegacy  bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
@@ -39,13 +38,7 @@ type elasticsearchExporter struct {
 	bufferPool          *pool.BufferPool
 }
 
-func newExporter(
-	cfg *Config,
-	set exporter.Settings,
-	index string,
-	dynamicIndex bool,
-	dynamicIndexLegacy bool,
-) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string, dynamicIndex bool) *elasticsearchExporter {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	return &elasticsearchExporter{
@@ -53,7 +46,6 @@ func newExporter(
 		config:              cfg,
 		index:               index,
 		dynamicIndex:        dynamicIndex,
-		dynamicIndexLegacy:  dynamicIndexLegacy,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
@@ -84,7 +76,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if defaultIndex == "" {
 		defaultIndex = defaultLogsIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -187,7 +179,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if defaultIndex == "" {
 		defaultIndex = defaultMetricsIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -354,7 +346,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	if defaultIndex == "" {
 		defaultIndex = defaultTracesIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.dynamicIndexLegacy, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err

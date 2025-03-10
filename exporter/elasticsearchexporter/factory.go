@@ -121,7 +121,7 @@ func createLogsExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled, cf.LogsDynamicIndexLegacy.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -140,7 +140,7 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled, cf.MetricsDynamicIndexLegacy.Enabled)
+	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -158,7 +158,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled, cf.TracesDynamicIndexLegacy.Enabled)
+	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -181,7 +181,7 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, "", false, false)
+	exporter := newExporter(cf, set, "", false)
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,

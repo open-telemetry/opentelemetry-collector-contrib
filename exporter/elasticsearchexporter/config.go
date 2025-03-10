@@ -41,19 +41,16 @@ type Config struct {
 	NumWorkers int `mapstructure:"num_workers"`
 
 	// This setting is required when logging pipelines used.
-	LogsIndex              string                    `mapstructure:"logs_index"`
-	LogsDynamicIndex       DynamicIndexSetting       `mapstructure:"logs_dynamic_index"`
-	LogsDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"logs_dynamic_index_legacy"`
+	LogsIndex        string              `mapstructure:"logs_index"`
+	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 
 	// This setting is required when the exporter is used in a metrics pipeline.
-	MetricsIndex              string                    `mapstructure:"metrics_index"`
-	MetricsDynamicIndex       DynamicIndexSetting       `mapstructure:"metrics_dynamic_index"`
-	MetricsDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"metrics_dynamic_index_legacy"`
+	MetricsIndex        string              `mapstructure:"metrics_index"`
+	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
 
 	// This setting is required when traces pipelines used.
-	TracesIndex              string                    `mapstructure:"traces_index"`
-	TracesDynamicIndex       DynamicIndexSetting       `mapstructure:"traces_dynamic_index"`
-	TracesDynamicIndexLegacy DynamicIndexLegacySetting `mapstructure:"traces_dynamic_index_legacy"`
+	TracesIndex        string              `mapstructure:"traces_index"`
+	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
@@ -118,10 +115,6 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
-	Enabled bool `mapstructure:"enabled"`
-}
-
-type DynamicIndexLegacySetting struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -288,22 +281,11 @@ func (cfg *Config) Validate() error {
 	if cfg.LogsIndex != "" && cfg.LogsDynamicIndex.Enabled {
 		return errors.New("must not specify both logs_index and logs_dynamic_index")
 	}
-	if cfg.LogsDynamicIndex.Enabled && cfg.LogsDynamicIndexLegacy.Enabled {
-		return errors.New("must not specify both logs_dynamic_index and logs_dynamic_index_legacy")
-	}
-
 	if cfg.MetricsIndex != "" && cfg.MetricsDynamicIndex.Enabled {
 		return errors.New("must not specify both metrics_index and metrics_dynamic_index")
 	}
-	if cfg.MetricsDynamicIndex.Enabled && cfg.MetricsDynamicIndexLegacy.Enabled {
-		return errors.New("must not specify both metrics_dynamic_index and metrics_dynamic_index_legacy")
-	}
-
 	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
 		return errors.New("must not specify both traces_index and traces_dynamic_index")
-	}
-	if cfg.TracesDynamicIndex.Enabled && cfg.TracesDynamicIndexLegacy.Enabled {
-		return errors.New("must not specify both traces_dynamic_index and traces_dynamic_index_legacy")
 	}
 
 	return nil
