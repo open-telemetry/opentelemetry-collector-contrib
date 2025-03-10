@@ -18,7 +18,7 @@ type ProfileContext interface {
 	GetProfile() pprofile.Profile
 }
 
-func ProfilePathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}

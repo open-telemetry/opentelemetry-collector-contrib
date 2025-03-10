@@ -117,7 +117,7 @@ func Test_ProfilePathGetSetter(t *testing.T) {
 
 			profile := pprofile.NewProfile()
 
-			accessor, err := ProfilePathGetSetter[*profileContext](path)
+			accessor, err := PathGetSetter[*profileContext](path)
 			assert.NoError(t, err)
 
 			err = accessor.Set(context.Background(), newProfileContext(profile), tt.val)
