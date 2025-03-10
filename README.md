@@ -89,6 +89,7 @@ Emeritus Triagers:
 
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
+- [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
 - [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google (on leave)
