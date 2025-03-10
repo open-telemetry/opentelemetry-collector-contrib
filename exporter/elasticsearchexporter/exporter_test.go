@@ -76,7 +76,6 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
-			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			// record attrs
@@ -235,7 +234,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
-			cfg.LogsDynamicIndex.Enabled = false
+			cfg.LogsIndex = "index"
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
 		})
@@ -258,7 +257,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
-			cfg.LogsDynamicIndex.Enabled = false
+			cfg.LogsIndex = "index"
 			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
@@ -327,7 +326,6 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "otel"
-			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
@@ -361,7 +359,6 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
@@ -469,7 +466,6 @@ func TestExporterLogs(t *testing.T) {
 			})
 
 			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-				cfg.LogsDynamicIndex.Enabled = true
 				cfg.Mapping.Mode = "otel"
 			})
 			recordAttrs := map[string]any{
@@ -1653,7 +1649,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "otel"
-			cfg.TracesDynamicIndex.Enabled = true
 		})
 
 		traces := newTracesWithAttributes(
@@ -1693,7 +1688,6 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesDynamicIndex.Enabled = true
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
@@ -1765,7 +1759,6 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesDynamicIndex.Enabled = true
 			cfg.Mapping.Mode = "otel"
 		})
 

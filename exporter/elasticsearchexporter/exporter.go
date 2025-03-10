@@ -30,7 +30,6 @@ type elasticsearchExporter struct {
 	set                 exporter.Settings
 	config              *Config
 	index               string
-	dynamicIndex        bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
@@ -38,14 +37,13 @@ type elasticsearchExporter struct {
 	bufferPool          *pool.BufferPool
 }
 
-func newExporter(cfg *Config, set exporter.Settings, index string, dynamicIndex bool) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
-		dynamicIndex:        dynamicIndex,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
@@ -76,7 +74,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if defaultIndex == "" {
 		defaultIndex = defaultLogsIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -179,7 +177,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if defaultIndex == "" {
 		defaultIndex = defaultMetricsIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -346,7 +344,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	if defaultIndex == "" {
 		defaultIndex = defaultTracesIndex
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
