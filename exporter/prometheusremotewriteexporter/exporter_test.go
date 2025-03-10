@@ -772,7 +772,7 @@ func Test_PushMetrics(t *testing.T) {
 						metadatatest.AssertEqualExporterPrometheusremotewriteFailedTranslations(t, tel, []metricdata.DataPoint[int64]{
 							{
 								Value:      int64(tt.expectedFailedTranslations),
-								Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+								Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
 							},
 						}, metricdatatest.IgnoreTimestamp())
 					}
@@ -780,7 +780,7 @@ func Test_PushMetrics(t *testing.T) {
 					metadatatest.AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, tel, []metricdata.DataPoint[int64]{
 						{
 							Value:      int64(tt.expectedTimeSeries),
-							Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
+							Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
 						},
 					}, metricdatatest.IgnoreTimestamp())
 				})
@@ -1153,6 +1153,11 @@ func TestRetries(t *testing.T) {
 			endpointURL, err := url.Parse(mockServer.URL)
 			require.NoError(t, err)
 
+			// Create the telemetry
+			testTel := componenttest.NewTelemetry()
+			telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+			require.NoError(t, err)
+
 			// Create the prwExporter
 			exporter := &prwExporter{
 				endpointURL:    endpointURL,
@@ -1161,6 +1166,7 @@ func TestRetries(t *testing.T) {
 				retrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},
+				telemetry: telemetry,
 			}
 
 			err = exporter.execute(tt.ctx, &prompb.WriteRequest{})

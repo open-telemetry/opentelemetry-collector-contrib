@@ -43,7 +43,6 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
-        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -168,6 +167,7 @@ components:
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
         - ntp
@@ -199,6 +199,7 @@ components:
         - sshcheck
         - statsd
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -207,6 +208,7 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
         - zookeeper
     scraper:

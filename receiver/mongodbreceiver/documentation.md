@@ -242,6 +242,54 @@ metrics:
     enabled: true
 ```
 
+### mongodb.active.reads
+
+The number of read operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {reads} | Sum | Int | Cumulative | false |
+
+### mongodb.active.writes
+
+The number of write operations currently being processed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {writes} | Sum | Int | Cumulative | false |
+
+### mongodb.commands.rate
+
+The number of commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.deletes.rate
+
+The number of deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.flushes.rate
+
+The number of flushes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {flush}/s | Gauge | Double |
+
+### mongodb.getmores.rate
+
+The number of getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
 ### mongodb.health
 
 The health status of the server.
@@ -251,6 +299,14 @@ A value of '1' indicates healthy. A value of '0' indicates unhealthy.
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Int |
+
+### mongodb.inserts.rate
+
+The number of insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
 
 ### mongodb.lock.acquire.count
 
@@ -340,6 +396,78 @@ The number of replicated operations executed.
 | ---- | ----------- | ------ |
 | operation | The MongoDB operation being counted. | Str: ``insert``, ``query``, ``update``, ``delete``, ``getmore``, ``command`` |
 
+### mongodb.page_faults
+
+The number of page faults.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {faults} | Sum | Int | Cumulative | true |
+
+### mongodb.queries.rate
+
+The number of queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_commands_per_sec
+
+The number of replicated commands executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {command}/s | Gauge | Double |
+
+### mongodb.repl_deletes_per_sec
+
+The number of replicated deletes executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {delete}/s | Gauge | Double |
+
+### mongodb.repl_getmores_per_sec
+
+The number of replicated getmores executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {getmore}/s | Gauge | Double |
+
+### mongodb.repl_inserts_per_sec
+
+The number of replicated insertions executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {insert}/s | Gauge | Double |
+
+### mongodb.repl_queries_per_sec
+
+The number of replicated queries executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {query}/s | Gauge | Double |
+
+### mongodb.repl_updates_per_sec
+
+The number of replicated updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
+### mongodb.updates.rate
+
+The number of updates executed per second.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {update}/s | Gauge | Double |
+
 ### mongodb.uptime
 
 The amount of time that the server has been running.
@@ -347,6 +475,14 @@ The amount of time that the server has been running.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | ms | Sum | Int | Cumulative | true |
+
+### mongodb.wtcache.bytes.read
+
+The number of bytes read into the WiredTiger cache.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 
