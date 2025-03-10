@@ -1,15 +1,15 @@
 resourceLogs:
   - resource:
       attributes:
-        - key: host.ip
-          value:
-            stringValue: 1.2.3.4
         - key: ip
           value:
-            stringValue: 1.2.3.4
+            stringValue: 1.2.2.1
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: client.address
+                value:
+                  stringValue: 1.2.3.4
               - key: host.name
                 value:
                   stringValue: HOST.ONE
