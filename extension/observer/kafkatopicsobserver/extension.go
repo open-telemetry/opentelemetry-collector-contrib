@@ -14,6 +14,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
@@ -23,7 +24,7 @@ var (
 )
 
 type kafkaTopicsObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	logger           *zap.Logger
 	config           *Config
 	cancelKafkaAdmin func()
@@ -125,8 +126,6 @@ func (k *kafkaTopicsEndpointsLister) listMatchingTopics() ([]string, error) {
 
 var createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
 	saramaConfig := sarama.NewConfig()
-	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
-	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
 
 	var err error
 	if config.ResolveCanonicalBootstrapServersOnly {

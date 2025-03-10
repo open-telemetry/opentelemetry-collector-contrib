@@ -135,19 +135,90 @@ func TestTranslateV2(t *testing.T) {
 		expectedStats   remote.WriteResponseStats
 	}{
 		{
-			name: "duplicated scope name and version",
+			name: "missing metric name",
+			request: &writev2.Request{
+				Symbols: []string{"", "foo", "bar"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: "missing metric name in labels",
+		},
+		{
+			name: "duplicate label",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						LabelsRefs: []uint32{1, 2, 1, 2},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectError: `duplicate label "__name__" in labels`,
+		},
+		{
+			name:    "valid request",
+			request: writeV2RequestFixture,
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes1 := rm1.Resource().Attributes()
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
+
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				// Since we don't define the labels otel_scope_name and otel_scope_version, the default values coming from the receiver settings will be used.
+				sm1.Scope().SetName("OpenTelemetry Collector")
+				sm1.Scope().SetVersion("latest")
+				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp1.SetDoubleValue(1.0)
+				dp1.Attributes().PutStr("d", "e")
+				dp1.Attributes().PutStr("foo", "bar")
+
+				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp2.SetDoubleValue(2.0)
+				dp2.Attributes().PutStr("d", "e")
+				dp2.Attributes().PutStr("foo", "bar")
+
+				rm2 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes2 := rm2.Resource().Attributes()
+				rmAttributes2.PutStr("service.name", "foo")
+				rmAttributes2.PutStr("service.instance.id", "bar")
+
+				sm2 := rm2.ScopeMetrics().AppendEmpty()
+				sm2.Scope().SetName("OpenTelemetry Collector")
+				sm2.Scope().SetVersion("latest")
+				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp3.SetDoubleValue(2.0)
+				dp3.Attributes().PutStr("d", "e")
+				dp3.Attributes().PutStr("foo", "bar")
+
+				return expected
+			}(),
+			expectedStats: remote.WriteResponseStats{},
+		},
+		{
+			name: "timeseries with different scopes",
 			request: &writev2.Request{
 				Symbols: []string{
 					"",
-					"__name__", "test_metric",
-					"job", "service-x/test",
-					"instance", "107cn001",
-					"otel_scope_name", "scope1",
-					"otel_scope_version", "v1",
-					"otel_scope_name", "scope2",
-					"otel_scope_version", "v2",
-					"d", "e",
-					"foo", "bar",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"otel_scope_name", "scope2", // 11, 12
+					"otel_scope_version", "v2", // 13, 14
+					"d", "e", // 15, 16
+					"foo", "bar", // 17, 18
 				},
 				Timeseries: []writev2.TimeSeries{
 					{
@@ -196,71 +267,6 @@ func TestTranslateV2(t *testing.T) {
 				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(3.0)
-				dp3.Attributes().PutStr("foo", "bar")
-
-				return expected
-			}(),
-			expectedStats: remote.WriteResponseStats{},
-		},
-		{
-			name: "missing metric name",
-			request: &writev2.Request{
-				Symbols: []string{"", "foo", "bar"},
-				Timeseries: []writev2.TimeSeries{
-					{
-						LabelsRefs: []uint32{1, 2},
-						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-					},
-				},
-			},
-			expectError: "missing metric name in labels",
-		},
-		{
-			name: "duplicate label",
-			request: &writev2.Request{
-				Symbols: []string{"", "__name__", "test"},
-				Timeseries: []writev2.TimeSeries{
-					{
-						LabelsRefs: []uint32{1, 2, 1, 2},
-						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-					},
-				},
-			},
-			expectError: `duplicate label "__name__" in labels`,
-		},
-		{
-			name:    "valid request",
-			request: writeV2RequestFixture,
-			expectedMetrics: func() pmetric.Metrics {
-				expected := pmetric.NewMetrics()
-				rm1 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes1 := rm1.Resource().Attributes()
-				rmAttributes1.PutStr("service.namespace", "service-x")
-				rmAttributes1.PutStr("service.name", "test")
-				rmAttributes1.PutStr("service.instance.id", "107cn001")
-
-				sm1 := rm1.ScopeMetrics().AppendEmpty()
-				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
-				dp1.SetDoubleValue(1.0)
-				dp1.Attributes().PutStr("d", "e")
-				dp1.Attributes().PutStr("foo", "bar")
-
-				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-				dp2.SetDoubleValue(2.0)
-				dp2.Attributes().PutStr("d", "e")
-				dp2.Attributes().PutStr("foo", "bar")
-
-				rm2 := expected.ResourceMetrics().AppendEmpty()
-				rmAttributes2 := rm2.Resource().Attributes()
-				rmAttributes2.PutStr("service.name", "foo")
-				rmAttributes2.PutStr("service.instance.id", "bar")
-
-				dp3 := rm2.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
-				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-				dp3.SetDoubleValue(2.0)
-				dp3.Attributes().PutStr("d", "e")
 				dp3.Attributes().PutStr("foo", "bar")
 
 				return expected
