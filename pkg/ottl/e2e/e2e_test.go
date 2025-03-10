@@ -1397,58 +1397,97 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 	tests := []struct {
 		name      string
 		statement string
-		want      any
+		want      func() any
 	}{
 		{
 			name:      "string literal",
 			statement: `"foo"`,
-			want:      "foo",
+			want: func() any {
+				return "foo"
+			},
 		},
 		{
 			name:      "attribute value",
 			statement: `resource.attributes["host.name"]`,
-			want:      "localhost",
+			want: func() any {
+				return "localhost"
+			},
 		},
 		{
 			name:      "accessing enum",
 			statement: `SEVERITY_NUMBER_TRACE`,
-			want:      int64(1),
+			want: func() any {
+				return int64(1)
+			},
 		},
 		{
 			name:      "Using converter",
 			statement: `TraceID(0x0102030405060708090a0b0c0d0e0f10)`,
-			want:      pcommon.TraceID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10},
+			want: func() any {
+				return pcommon.TraceID{0x1, 0x2, 0x3, 0x4, 0x5, 0x6, 0x7, 0x8, 0x9, 0xa, 0xb, 0xc, 0xd, 0xe, 0xf, 0x10}
+			},
 		},
 		{
 			name:      "Adding results of two converter operations",
 			statement: `Len(attributes) + Len(attributes)`,
-			want:      int64(24),
+			want: func() any {
+				return int64(28)
+			},
 		},
 		{
 			name:      "Nested converter operations",
 			statement: `Hex(Len(attributes) + Len(attributes))`,
-			want:      "0000000000000018",
+			want: func() any {
+				return "000000000000001c"
+			},
 		},
 		{
-			name:      "return map type",
+			name:      "return map type 1",
 			statement: `attributes["foo"]`,
-			want: map[string]any{
-				"bar":   "pass",
-				"flags": "pass",
-				"slice": []any{
-					"val",
-				},
-				"nested": map[string]any{
-					"test": "pass",
-				},
+			want: func() any {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"bar": "pass",
+				})
+				return m
+			},
+		},
+		{
+			name:      "return map type 2",
+			statement: `attributes["foo2"]`,
+			want: func() any {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"slice": []any{
+						"val",
+					},
+				})
+				return m
+			},
+		},
+		{
+			name:      "return map type 3",
+			statement: `attributes["foo3"]`,
+			want: func() any {
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
+					"nested": map[string]any{
+						"test": "pass",
+					},
+				})
+				return m
 			},
 		},
 		{
 			name:      "return list",
 			statement: `attributes["things"]`,
-			want: []any{
-				map[string]any{"name": "foo", "value": int64(2)},
-				map[string]any{"name": "bar", "value": int64(5)},
+			want: func() any {
+				s := pcommon.NewSlice()
+				_ = s.FromRaw([]any{
+					map[string]any{"name": "foo"},
+					map[string]any{"name": "bar"},
+				})
+				return s
 			},
 		},
 	}
@@ -1461,11 +1500,11 @@ func Test_e2e_ottl_value_expressions(t *testing.T) {
 			valueExpr, err := logParser.ParseValueExpression(tt.statement)
 			assert.NoError(t, err)
 
-			tCtx := constructLogTransformContext()
+			tCtx := constructLogTransformContextValueExpressions()
 			val, err := valueExpr.Eval(context.Background(), tCtx)
 			assert.NoError(t, err)
 
-			assert.Equal(t, tt.want, val)
+			assert.Equal(t, tt.want(), val)
 		})
 	}
 }
@@ -1669,6 +1708,58 @@ func constructLogTransformContextEditors() ottllog.TransformContext {
 	thing2 := s2.AppendEmpty().SetEmptyMap()
 	thing2.PutStr("name", "bar")
 	thing2.PutInt("value", 5)
+
+	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
+}
+
+func constructLogTransformContextValueExpressions() ottllog.TransformContext {
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("host.name", "localhost")
+	resource.Attributes().PutStr("A|B|C", "newValue")
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("scope")
+
+	logRecord := plog.NewLogRecord()
+	logRecord.Body().SetStr("operationA")
+	logRecord.SetTimestamp(TestLogTimestamp)
+	logRecord.SetObservedTimestamp(TestObservedTimestamp)
+	logRecord.SetDroppedAttributesCount(1)
+	logRecord.SetFlags(plog.DefaultLogRecordFlags.WithIsSampled(true))
+	logRecord.SetSeverityNumber(1)
+	logRecord.SetTraceID(traceID)
+	logRecord.SetSpanID(spanID)
+	logRecord.Attributes().PutStr("http.method", "get")
+	logRecord.Attributes().PutStr("http.path", "/health")
+	logRecord.Attributes().PutStr("http.url", "http://localhost/health")
+	logRecord.Attributes().PutStr("flags", "A|B|C")
+	logRecord.Attributes().PutStr("total.string", "123456789")
+	logRecord.Attributes().PutStr("A|B|C", "something")
+	logRecord.Attributes().PutStr("foo", "foo")
+	logRecord.Attributes().PutStr("slice", "slice")
+	logRecord.Attributes().PutStr("val", "val2")
+	logRecord.Attributes().PutInt("int_value", 0)
+	arr := logRecord.Attributes().PutEmptySlice("array")
+	arr0 := arr.AppendEmpty()
+	arr0.SetStr("looong")
+	m := logRecord.Attributes().PutEmptyMap("foo")
+	m.PutStr("bar", "pass")
+
+	m2 := logRecord.Attributes().PutEmptyMap("foo2")
+	s := m2.PutEmptySlice("slice")
+	v := s.AppendEmpty()
+	v.SetStr("val")
+
+	m3 := logRecord.Attributes().PutEmptyMap("foo3")
+	m31 := m3.PutEmptyMap("nested")
+	m31.PutStr("test", "pass")
+
+	s2 := logRecord.Attributes().PutEmptySlice("things")
+	thing1 := s2.AppendEmpty().SetEmptyMap()
+	thing1.PutStr("name", "foo")
+
+	thing2 := s2.AppendEmpty().SetEmptyMap()
+	thing2.PutStr("name", "bar")
 
 	return ottllog.NewTransformContext(logRecord, scope, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 }

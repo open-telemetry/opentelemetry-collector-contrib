@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"reflect"
 	"regexp"
 	"testing"
@@ -2150,11 +2151,9 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "resolve context value",
 			valueExpression: `attributes`,
 			expected: func() any {
-				return map[string]any{
-					"attributes": map[string]any{
-						"foo": "bar",
-					},
-				}
+				m := pcommon.NewMap()
+				m.PutEmptyMap("attributes").PutStr("foo", "bar")
+				return m
 			},
 			tCtx: map[string]any{
 				"attributes": map[string]any{
@@ -2191,10 +2190,12 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "hex values",
 			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
 			expected: func() any {
-				return []any{
+				s := pcommon.NewSlice()
+				_ = s.FromRaw([]any{
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
-				}
+				})
+				return s
 			},
 		},
 		{
@@ -2208,23 +2209,28 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "map",
 			valueExpression: `{"map": 1}`,
 			expected: func() any {
-				return map[string]any{
+				m := pcommon.NewMap()
+				_ = m.FromRaw(map[string]any{
 					"map": int64(1),
-				}
+				})
+				return m
 			},
 		},
 		{
 			name:            "string list",
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
-				return []any{"list", "of", "strings"}
+				s := pcommon.NewSlice()
+				_ = s.FromRaw([]any{"list", "of", "strings"})
+				return s
 			},
 		},
 		{
 			name:            "nested list",
 			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
 			expected: func() any {
-				return []any{
+				s := pcommon.NewSlice()
+				_ = s.FromRaw([]any{
 					map[string]any{
 						"list": []any{
 							map[string]any{
@@ -2235,7 +2241,8 @@ func Test_parseValueExpression_full(t *testing.T) {
 					map[string]any{
 						"bar": "baz",
 					},
-				}
+				})
+				return s
 			},
 		},
 	}
