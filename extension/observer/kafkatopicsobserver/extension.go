@@ -15,17 +15,17 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 )
 
 var (
-	_ extension.Extension      = (*kafkaTopicsObserver)(nil)
-	_ observer.EndpointsLister = (*kafkaTopicsObserver)(nil)
-	_ observer.Observable      = (*kafkaTopicsObserver)(nil)
+	_ extension.Extension = (*kafkaTopicsObserver)(nil)
+	_ observer.Observable = (*kafkaTopicsObserver)(nil)
 )
 
 type kafkaTopicsObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	logger           *zap.Logger
 	config           *Config
 	doneChan         chan struct{}
@@ -54,7 +54,7 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 		kafkaAdmin:       admin,
 		doneChan:         make(chan struct{}),
 	}
-	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
+	d.EndpointsWatcher = endpointswatcher.New(d, time.Second, logger)
 	return d, nil
 }
 
