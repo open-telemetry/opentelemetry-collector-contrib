@@ -10,9 +10,37 @@ import (
 
 	"bitbucket.org/atlassian/go-asap/v2"
 	"github.com/SermoDigital/jose/crypto"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"google.golang.org/grpc/credentials"
 )
+
+var _ extensionauth.Client = (*asapAuthExtension)(nil)
+
+type asapAuthExtension struct {
+	provisioner asap.Provisioner
+	privateKey  any
+}
+
+// PerRPCCredentials returns extensionauth.Client.
+func (e *asapAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &perRPCAuth{provisioner: e.provisioner, privateKey: e.privateKey}, nil
+}
+
+// RoundTripper implements extensionauth.Client.
+func (e *asapAuthExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return asap.NewTransportDecorator(e.provisioner, e.privateKey)(base), nil
+}
+
+// Shutdown implements extensionauth.Client.
+func (e *asapAuthExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+// Start implements extensionauth.Client.
+func (e *asapAuthExtension) Start(context.Context, component.Host) error {
+	return nil
+}
 
 func createASAPClientAuthenticator(cfg *Config) (extensionauth.Client, error) {
 	pk, err := asap.NewPrivateKey([]byte(cfg.PrivateKey))
@@ -24,14 +52,10 @@ func createASAPClientAuthenticator(cfg *Config) (extensionauth.Client, error) {
 	p := asap.NewCachingProvisioner(asap.NewProvisioner(
 		cfg.KeyID, cfg.TTL, cfg.Issuer, cfg.Audience, crypto.SigningMethodRS256))
 
-	return extensionauth.NewClient(
-		extensionauth.WithClientRoundTripper(func(base http.RoundTripper) (http.RoundTripper, error) {
-			return asap.NewTransportDecorator(p, pk)(base), nil
-		}),
-		extensionauth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
-			return &perRPCAuth{provisioner: p, privateKey: pk}, nil
-		}),
-	)
+	return &asapAuthExtension{
+		provisioner: p,
+		privateKey:  pk,
+	}, nil
 }
 
 // perRPCAuth is a gRPC credentials.PerRPCCredentials implementation that returns an 'authorization' header.

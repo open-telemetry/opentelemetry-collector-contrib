@@ -27,9 +27,7 @@ import (
 
 func newTestExtension(t *testing.T, cfg *Config) extensionauth.Server {
 	t.Helper()
-	ext, err := newExtension(cfg, zap.NewNop())
-	require.NoError(t, err)
-	return ext
+	return newExtension(cfg, zap.NewNop())
 }
 
 func TestOIDCAuthenticationSucceeded(t *testing.T) {
