@@ -15,6 +15,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.27.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/extension/extensiontest v0.121.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/semconv v0.121.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
