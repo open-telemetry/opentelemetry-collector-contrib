@@ -6,6 +6,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/google/uuid v1.6.0
 	github.com/influxdata/influxdb-observability/common v0.5.12
+	github.com/influxdata/influxdb-observability/otel2influx v0.5.12
+	github.com/influxdata/line-protocol/v2 v2.2.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250307194215-7d3e03e500b0
@@ -14,10 +16,12 @@ require (
 	go.opentelemetry.io/collector/config/configretry v1.27.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/confmap v1.27.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/exporter v0.121.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/exporter/exportertest v0.121.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
 	go.uber.org/goleak v1.3.0
+	go.uber.org/zap v1.27.0
 )
 
 require go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
@@ -50,7 +54,6 @@ require (
 	go.opentelemetry.io/collector/config/configcompression v1.27.1-0.20250307194215-7d3e03e500b0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.27.1-0.20250307194215-7d3e03e500b0 // indirect
 	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307194215-7d3e03e500b0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
@@ -70,7 +73,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/exp v0.0.0-20240222234643-814bf88cf225 // indirect
 	golang.org/x/net v0.36.0 // indirect
 	golang.org/x/sys v0.30.0 // indirect
 	golang.org/x/text v0.22.0 // indirect
