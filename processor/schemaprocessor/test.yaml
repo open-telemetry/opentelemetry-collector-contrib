@@ -1,9 +1,0 @@
-file_format: 1.1.0
-schema_url: http://opentelemetry.io/schemas/1.1.0
-versions:
-  1.1.0:
-    span_events:
-      changes:
-        - rename_attributes:
-            attribute_map:
-              kubernetes.cluster.name: koobernetes.cluster.name
