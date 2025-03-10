@@ -13,5 +13,5 @@ const (
 	DocumentIDAttributeName = "elasticsearch.document_id"
 
 	// DocumentPipelineAttributeName is the attribute name used to specify the document ingest pipeline.
-	DocumentPipelineAttributeName = "elasticsearch.document_pipeline"
+	DocumentPipelineAttributeName = "elasticsearch.ingest_pipeline"
 )
