@@ -146,14 +146,14 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 
 	// Mock the procs
 	closeProc = MockProc{
-		call: func(args ...uintptr) (uintptr, uintptr, error) {
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
 			closeCalls++
 			return 1, 0, nil
 		},
 	}
 
 	subscribeProc = MockProc{
-		call: func(args ...uintptr) (uintptr, uintptr, error) {
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
 			subscribeCalls++
 			return 42, 0, nil
 		},
