@@ -282,13 +282,13 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.LogsIndex != "" && cfg.LogsDynamicIndex.Enabled {
-		return errors.New("must not specify both logs_index and logs_dynamic_index")
+		return errors.New("must not specify both logs_index and logs_dynamic_index; logs_index should be empty unless all documents should be sent to the same index")
 	}
 	if cfg.MetricsIndex != "" && cfg.MetricsDynamicIndex.Enabled {
-		return errors.New("must not specify both metrics_index and metrics_dynamic_index")
+		return errors.New("must not specify both metrics_index and metrics_dynamic_index; metrics_index should be empty unless all documents should be sent to the same index")
 	}
 	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
-		return errors.New("must not specify both traces_index and traces_dynamic_index")
+		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
 	}
 
 	return nil

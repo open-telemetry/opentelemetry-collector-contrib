@@ -59,15 +59,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		LogsDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
-		MetricsDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
-		TracesDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},

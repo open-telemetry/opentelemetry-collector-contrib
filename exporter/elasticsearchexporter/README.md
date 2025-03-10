@@ -118,7 +118,7 @@ Using the common `batcher` functionality provides several benefits over the defa
 
 ### Elasticsearch document routing
 
-By default, documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
+Documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
 1. "Static mode": To `logs_index` (for log records), `metrics_index` (for data points) and `traces_index` (for spans and span events) if they are configured.
 2. "Index attribute mode": To index name in `elasticsearch._index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
 3. "Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`, 
@@ -132,20 +132,20 @@ The resulting docs will contain the corresponding `data_stream.*` fields, see re
 
 This can be customised through the following settings:
 
-- `logs_index` (optional): The [index] or [data stream] name to publish events to.
+- `logs_index` (optional): The [index] or [data stream] name to publish events to. logs_index should be empty unless all documents should be sent to the same index.
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
+  - `enabled`(DEPRECATED): No-op. Dynamic index is now done by default. Will be removed in a future version.
 
-- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. Note that metrics support is currently in development.
+- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. metrics_index should be empty unless all documents should be sent to the same index. Note that metrics support is currently in development.
 
 - `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
+  - `enabled`(DEPRECATED): No-op. Dynamic index is now done by default. Will be removed in a future version.
 
-- `traces_index` (optional): The [index] or [data stream] name to publish traces to.
+- `traces_index` (optional): The [index] or [data stream] name to publish traces to. traces_index should be empty unless all documents should be sent to the same index.
 
 - `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
-  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
+  - `enabled`(DEPRECATED): No-op. Dynamic index is now done by default. Will be removed in a future version.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
   - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
