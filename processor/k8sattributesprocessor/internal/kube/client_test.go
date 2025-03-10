@@ -995,6 +995,19 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
+			name:  "operator-rules-label-values-instance",
+			rules: operatorRules,
+			additionalLabels: map[string]string{
+				"app.kubernetes.io/instance": "instance-service",
+				"app.kubernetes.io/name":     "label-service",
+				"app.kubernetes.io/version":  "label-version",
+			},
+			attributes: map[string]string{
+				"service.name":    "instance-service",
+				"service.version": "label-version",
+			},
+		},
+		{
 			name:  "operator-rules-annotation-override",
 			rules: operatorRules,
 			additionalAnnotations: map[string]string{
