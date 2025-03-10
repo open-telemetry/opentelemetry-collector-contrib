@@ -258,19 +258,21 @@ func (v *vcenterMetricScraper) recordVMStats(
 	vm *mo.VirtualMachine,
 	hs *mo.HostSystem,
 ) {
-	diskUsed := vm.Summary.Storage.Committed
-	diskFree := vm.Summary.Storage.Uncommitted
+	if vm.Summary.Storage != nil {
+		diskUsed := vm.Summary.Storage.Committed
+		diskFree := vm.Summary.Storage.Uncommitted
 
-	v.mb.RecordVcenterVMDiskUsageDataPoint(ts, diskUsed, metadata.AttributeDiskStateUsed)
-	v.mb.RecordVcenterVMDiskUsageDataPoint(ts, diskFree, metadata.AttributeDiskStateAvailable)
+		v.mb.RecordVcenterVMDiskUsageDataPoint(ts, diskUsed, metadata.AttributeDiskStateUsed)
+		v.mb.RecordVcenterVMDiskUsageDataPoint(ts, diskFree, metadata.AttributeDiskStateAvailable)
 
-	if vm.Config.Template {
-		return
+		if (vm.Config == nil || !vm.Config.Template) && diskFree != 0 {
+			diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
+			v.mb.RecordVcenterVMDiskUtilizationDataPoint(ts, diskUtilization)
+		}
 	}
 
-	if diskFree != 0 {
-		diskUtilization := float64(diskUsed) / float64(diskFree+diskUsed) * 100
-		v.mb.RecordVcenterVMDiskUtilizationDataPoint(ts, diskUtilization)
+	if vm.Config != nil && vm.Config.Template {
+		return
 	}
 
 	memUsage := vm.Summary.QuickStats.GuestMemoryUsage
@@ -301,18 +303,22 @@ func (v *vcenterMetricScraper) recordVMStats(
 	// VirtualMachine.runtime.maxCpuUsage is a property of the virtual machine, indicating the limit value.
 	// This value is always equal to the limit value set for that virtual machine.
 	// If no limit, it has full host mhz * vm.Config.Hardware.NumCPU.
-	cpuLimit := vm.Config.Hardware.NumCPU * hs.Summary.Hardware.CpuMhz
-	if vm.Runtime.MaxCpuUsage != 0 {
-		cpuLimit = vm.Runtime.MaxCpuUsage
-	}
-	if cpuLimit == 0 {
+	if vm.Config != nil {
+		cpuLimit := vm.Config.Hardware.NumCPU * hs.Summary.Hardware.CpuMhz
+		if vm.Runtime.MaxCpuUsage != 0 {
+			cpuLimit = vm.Runtime.MaxCpuUsage
+		}
 		// This shouldn't happen, but protect against division by zero.
-		return
+		if cpuLimit != 0 {
+			v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
+		}
 	}
-	v.mb.RecordVcenterVMCPUUtilizationDataPoint(ts, 100*float64(cpuUsage)/float64(cpuLimit))
 
-	cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
-	v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+	// CPU Readiness is only valid if the VM is running
+	if vm.Runtime.PowerState == types.VirtualMachinePowerStatePoweredOn {
+		cpuReadiness := vm.Summary.QuickStats.OverallCpuReadiness
+		v.mb.RecordVcenterVMCPUReadinessDataPoint(ts, int64(cpuReadiness))
+	}
 }
 
 var hostPerfMetricList = []string{
