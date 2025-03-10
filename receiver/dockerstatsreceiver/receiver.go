@@ -144,7 +144,7 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
 	rb.SetContainerImageID(container.Image)
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
-	l := make(map[string]any)
+	l := make(map[string]any, len(container.Config.Labels))
 	for k, v := range container.Config.Labels {
 		l[k] = v
 	}
