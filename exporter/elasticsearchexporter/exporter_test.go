@@ -322,13 +322,11 @@ func TestExporterLogs(t *testing.T) {
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			assert.Equal(t, index, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
 			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
@@ -341,7 +339,10 @@ func TestExporterLogs(t *testing.T) {
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 		mustSendLogs(t, exporter, logs)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -849,14 +850,11 @@ func TestExporterMetrics(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			assert.Equal(t, index, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "ecs"
+			cfg.Mapping.Mode = "otel"
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
@@ -867,7 +865,10 @@ func TestExporterMetrics(t *testing.T) {
 		)
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -1638,22 +1639,11 @@ func TestExporterTraces(t *testing.T) {
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			assert.Equal(t, index, create["_index"].(string))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "otel"
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
@@ -1665,7 +1655,10 @@ func TestExporterTraces(t *testing.T) {
 			nil,
 		))
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
