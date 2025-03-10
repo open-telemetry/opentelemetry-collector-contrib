@@ -731,13 +731,13 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], LuhnCheck("17893729974"))`,
+			statement: `set(attributes["test"], LuhnValid("17893729974"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("test", true)
 			},
 		},
 		{
-			statement: `set(attributes["test"], LuhnCheck("17893729975"))`,
+			statement: `set(attributes["test"], LuhnValid("17893729975"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("test", false)
 			},

@@ -11,25 +11,25 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-type LuhnCheckArguments[K any] struct {
+type LuhnValidArguments[K any] struct {
 	Target ottl.StringLikeGetter[K]
 }
 
-func NewLuhnCheckFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("LuhnCheck", &LuhnCheckArguments[K]{}, createLuhnCheckFunction[K])
+func NewLuhnValidFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("LuhnValid", &LuhnValidArguments[K]{}, createLuhnValidFunction[K])
 }
 
-func createLuhnCheckFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	args, ok := oArgs.(*LuhnCheckArguments[K])
+func createLuhnValidFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
+	args, ok := oArgs.(*LuhnValidArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("LuhnCheckFactory args must be of type *LuhnCheckArguments[K]")
+		return nil, fmt.Errorf("LuhnValidFactory args must be of type *LuhnValidArguments[K]")
 	}
 
-	return luhnCheckFunc(args.Target), nil
+	return luhnValidFunc(args.Target), nil
 }
 
-func luhnCheckFunc[K any](target ottl.StringLikeGetter[K]) ottl.ExprFunc[K] {
+func luhnValidFunc[K any](target ottl.StringLikeGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
