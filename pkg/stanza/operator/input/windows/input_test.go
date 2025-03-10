@@ -8,7 +8,6 @@ package windows // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"errors"
-	"syscall"
 	"testing"
 	"time"
 	"unsafe"
@@ -163,7 +162,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 		call: func(args ...uintptr) (uintptr, uintptr, error) {
 			nextCalls++
 			if nextCalls == 1 {
-				return 0, 0, syscall.Errno(windows.RPC_S_INVALID_BOUND)
+				return 0, 0, windows.RPC_S_INVALID_BOUND
 			}
 
 			// Return success on second call
