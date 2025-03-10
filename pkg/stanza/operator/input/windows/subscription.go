@@ -73,8 +73,10 @@ func (s *Subscription) Close() error {
 	return nil
 }
 
-var errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
-var ErrBatchSizeReduced = errors.New("batch size reduced due to RPC_S_INVALID_BOUND error")
+var (
+	errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
+	ErrBatchSizeReduced          = errors.New("batch size reduced due to RPC_S_INVALID_BOUND error")
+)
 
 // Read will read events from the subscription.
 func (s *Subscription) Read(maxReads int) ([]Event, error) {
@@ -117,7 +119,7 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 	}
 
 	if err != nil && errors.Is(err, windows.RPC_S_INVALID_BOUND) {
-		//close current subscription
+		// close current subscription
 		if closeErr := s.Close(); closeErr != nil {
 			return nil, fmt.Errorf("failed to close subscription during recovery: %w", closeErr)
 		}
