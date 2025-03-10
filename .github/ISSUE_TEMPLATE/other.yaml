@@ -90,6 +90,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -227,6 +228,7 @@ body:
       - receiver/elasticsearch
       - receiver/envoyals
       - receiver/expvar
+      - receiver/faro
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -279,6 +281,7 @@ body:
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
+      - receiver/pprof
       - receiver/prometheus
       - receiver/prometheusremotewrite
       - receiver/pulsar
