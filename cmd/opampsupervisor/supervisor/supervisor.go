@@ -235,7 +235,7 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 	if _, ok := cfg.Resource[semconv.AttributeServiceInstanceID]; !ok {
 		instanceUUID, _ := uuid.NewRandom()
 		instanceID := instanceUUID.String()
-		pcommonRes.Attributes().PutStr(semconv.AttributeServiceName, instanceID)
+		pcommonRes.Attributes().PutStr(semconv.AttributeServiceInstanceID, instanceID)
 	}
 
 	// TODO currently we do not have the build info containing the version available to set semconv.AttributeServiceVersion
