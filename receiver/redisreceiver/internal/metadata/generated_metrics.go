@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributePercentile specifies the value percentile attribute.
+// AttributePercentile specifies the a value percentile attribute.
 type AttributePercentile int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributePercentile = map[string]AttributePercentile{
 	"p99.9": AttributePercentileP999,
 }
 
-// AttributeRole specifies the value role attribute.
+// AttributeRole specifies the a value role attribute.
 type AttributeRole int
 
 const (
@@ -68,7 +68,7 @@ var MapAttributeRole = map[string]AttributeRole{
 	"primary": AttributeRolePrimary,
 }
 
-// AttributeState specifies the value state attribute.
+// AttributeState specifies the a value state attribute.
 type AttributeState int
 
 const (
@@ -303,6 +303,55 @@ func (m *metricRedisClientsMaxOutputBuffer) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsMaxOutputBuffer(cfg MetricConfig) metricRedisClientsMaxOutputBuffer {
 	m := metricRedisClientsMaxOutputBuffer{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricRedisClusterSlotsAssigned struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills redis.cluster.slots_assigned metric with initial data.
+func (m *metricRedisClusterSlotsAssigned) init() {
+	m.data.SetName("redis.cluster.slots_assigned")
+	m.data.SetDescription("Number of slots which are associated to some node")
+	m.data.SetUnit("{slots}")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricRedisClusterSlotsAssigned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricRedisClusterSlotsAssigned) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricRedisClusterSlotsAssigned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricRedisClusterSlotsAssigned(cfg MetricConfig) metricRedisClusterSlotsAssigned {
+	m := metricRedisClusterSlotsAssigned{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -1892,6 +1941,7 @@ type MetricsBuilder struct {
 	metricRedisClientsConnected                  metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer             metricRedisClientsMaxInputBuffer
 	metricRedisClientsMaxOutputBuffer            metricRedisClientsMaxOutputBuffer
+	metricRedisClusterSlotsAssigned              metricRedisClusterSlotsAssigned
 	metricRedisCmdCalls                          metricRedisCmdCalls
 	metricRedisCmdLatency                        metricRedisCmdLatency
 	metricRedisCmdUsec                           metricRedisCmdUsec
@@ -1942,6 +1992,7 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
+
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                       mbc,
@@ -1952,6 +2003,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisClientsConnected:                  newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:             newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
 		metricRedisClientsMaxOutputBuffer:            newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
+		metricRedisClusterSlotsAssigned:              newMetricRedisClusterSlotsAssigned(mbc.Metrics.RedisClusterSlotsAssigned),
 		metricRedisCmdCalls:                          newMetricRedisCmdCalls(mbc.Metrics.RedisCmdCalls),
 		metricRedisCmdLatency:                        newMetricRedisCmdLatency(mbc.Metrics.RedisCmdLatency),
 		metricRedisCmdUsec:                           newMetricRedisCmdUsec(mbc.Metrics.RedisCmdUsec),
@@ -2077,6 +2129,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClientsConnected.emit(ils.Metrics())
 	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
+	mb.metricRedisClusterSlotsAssigned.emit(ils.Metrics())
 	mb.metricRedisCmdCalls.emit(ils.Metrics())
 	mb.metricRedisCmdLatency.emit(ils.Metrics())
 	mb.metricRedisCmdUsec.emit(ils.Metrics())
@@ -2157,6 +2210,11 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pcommon.T
 // RecordRedisClientsMaxOutputBufferDataPoint adds a data point to redis.clients.max_output_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordRedisClusterSlotsAssignedDataPoint adds a data point to redis.cluster.slots_assigned metric.
+func (mb *MetricsBuilder) RecordRedisClusterSlotsAssignedDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricRedisClusterSlotsAssigned.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisCmdCallsDataPoint adds a data point to redis.cmd.calls metric.
