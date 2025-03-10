@@ -988,12 +988,10 @@ func TestExtractionRules(t *testing.T) {
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/name":    "label-service",
 				"app.kubernetes.io/version": "label-version",
-				"app.kubernetes.io/part-of": "label-namespace",
 			},
 			attributes: map[string]string{
-				"service.name":      "label-service",
-				"service.version":   "label-version",
-				"service.namespace": "label-namespace",
+				"service.name":    "label-service",
+				"service.version": "label-version",
 			},
 		},
 		{
