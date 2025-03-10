@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
-	telemetryconfig "go.opentelemetry.io/contrib/config/v0.3.0"
+	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
