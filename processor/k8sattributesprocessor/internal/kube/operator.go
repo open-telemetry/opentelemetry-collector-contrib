@@ -34,11 +34,6 @@ var OperatorLabelRules = []FieldExtractionRule{
 		Key:  "app.kubernetes.io/version",
 		From: MetadataFromPod,
 	},
-	{
-		Name: "service.namespace",
-		Key:  "app.kubernetes.io/part-of",
-		From: MetadataFromPod,
-	},
 }
 
 var serviceNamePrecedence = []string{

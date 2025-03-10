@@ -281,7 +281,6 @@ k8sattributes/2:
       # Also translate the following labels to the specified resource attributes: 
       # app.kubernetes.io/name    => service.name
       # app.kubernetes.io/version => service.version
-      # app.kubernetes.io/part-of => service.namespace
       # This setting is ignored if 'enabled' is set to false
       labels: true 
   pod_association:
