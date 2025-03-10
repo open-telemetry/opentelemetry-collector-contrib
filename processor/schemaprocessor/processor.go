@@ -86,7 +86,6 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			}
 			tr, err := t.manager.
 				RequestTranslation(ctx, spanSchemaURL)
-			fmt.Printf("### spanSchemaURL: %s\n", spanSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
 				continue

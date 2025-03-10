@@ -25,11 +25,11 @@ func TestTraces_RenameAttributes(t *testing.T) {
 			in: func() ptrace.Traces {
 				in := ptrace.NewTraces()
 				in.ResourceSpans().AppendEmpty()
-				in.ResourceSpans().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.10.0")
+				in.ResourceSpans().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
 				in.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
 				s := in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
 				s.SetName("http.request")
-				s.Attributes().PutStr("kubernetes.cluster.name", "test-cluster")
+				s.Attributes().PutStr("koobernetes.cluster.name", "test-cluster")
 				s.SetKind(ptrace.SpanKindConsumer)
 				s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 				return in
@@ -40,8 +40,10 @@ func TestTraces_RenameAttributes(t *testing.T) {
 				out.ResourceSpans().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
 				out.ResourceSpans().At(0).ScopeSpans().AppendEmpty()
 				s := out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().AppendEmpty()
+				out.ResourceSpans().At(0).ScopeSpans().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
 				s.SetName("http.request")
 				s.Attributes().PutStr("kubernetes.cluster.name", "test-cluster")
+
 				s.SetKind(ptrace.SpanKindConsumer)
 				s.CopyTo(out.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 				return out
@@ -52,7 +54,8 @@ func TestTraces_RenameAttributes(t *testing.T) {
       changes:
         - rename_attributes:
             attribute_map:
-              kubernetes.cluster.name: koobernetes.cluster.name`,
+              kubernetes.cluster.name: koobernetes.cluster.name
+  1.8.0:`,
 		},
 	}
 
