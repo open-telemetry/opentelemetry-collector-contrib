@@ -333,8 +333,12 @@ func TestExporterLogs(t *testing.T) {
 			map[string]any{
 				"elasticsearch._index": index,
 			},
-			nil,
-			nil,
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 		mustSendLogs(t, exporter, logs)
@@ -860,8 +864,12 @@ func TestExporterMetrics(t *testing.T) {
 			map[string]any{
 				"elasticsearch._index": index,
 			},
-			nil,
-			nil,
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
 		)
 		mustSendMetrics(t, exporter, metrics)
 
@@ -1636,6 +1644,7 @@ func TestExporterTraces(t *testing.T) {
 	t.Run("publish with elasticsearch._index", func(t *testing.T) {
 		rec := newBulkRecorder()
 		index := "someindex"
+		eventIndex := "some-event-index"
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1647,18 +1656,28 @@ func TestExporterTraces(t *testing.T) {
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributes(
+		traces := newTracesWithAttributes(
 			map[string]any{
 				"elasticsearch._index": index,
 			},
-			nil,
-			nil,
-		))
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch._index": "ignored",
+			},
+		)
+		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		event.Attributes().PutStr("elasticsearch._index", eventIndex)
+		mustSendTraces(t, exporter, traces)
 
-		docs := rec.WaitItems(1)
+		docs := rec.WaitItems(2)
 		doc := docs[0]
 		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
 		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
+		eventDoc := docs[1]
+		assert.Equal(t, eventIndex, actionJSONToIndex(t, eventDoc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(eventDoc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
