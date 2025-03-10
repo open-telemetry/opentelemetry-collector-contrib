@@ -93,6 +93,11 @@ var (
 	agentNotStarting agentStartStatus = "notStarting"
 )
 
+type telemetrySettings struct {
+	component.TelemetrySettings
+	loggerProvider log.LoggerProvider
+}
+
 // Supervisor implements supervising of OpenTelemetry Collector and uses OpAMPClient
 // to work with an OpAMP Server.
 type Supervisor struct {
@@ -172,8 +177,7 @@ type Supervisor struct {
 	opampServer     server.OpAMPServer
 	opampServerPort int
 
-	telemetrySettings component.TelemetrySettings
-	loggerProvider    log.LoggerProvider
+	telemetrySettings telemetrySettings
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -193,12 +197,11 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		return nil, err
 	}
 
-	telemetrySettings, lp, err := initTelemetrySettings(logger, cfg.Telemetry)
+	telSettings, err := initTelemetrySettings(logger, cfg.Telemetry)
 	if err != nil {
 		return nil, err
 	}
-	s.telemetrySettings = *telemetrySettings
-	s.loggerProvider = lp
+	s.telemetrySettings = telSettings
 
 	if err := cfg.Validate(); err != nil {
 		return nil, fmt.Errorf("error validating config: %w", err)
@@ -214,7 +217,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 	return s, nil
 }
 
-func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component.TelemetrySettings, log.LoggerProvider, error) {
+func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetrySettings, error) {
 	readers := cfg.Metrics.Readers
 	if cfg.Metrics.Level == configtelemetry.LevelNone {
 		readers = []telemetryconfig.MetricReader{}
@@ -268,7 +271,7 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component
 		),
 	)
 	if err != nil {
-		return nil, nil, err
+		return telemetrySettings{}, err
 	}
 
 	var lp log.LoggerProvider
@@ -288,12 +291,15 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (*component
 		}))
 	}
 
-	return &component.TelemetrySettings{
-		Logger:         logger,
-		TracerProvider: sdk.TracerProvider(),
-		MeterProvider:  sdk.MeterProvider(),
-		Resource:       pcommonRes,
-	}, lp, nil
+	return telemetrySettings{
+		component.TelemetrySettings{
+			Logger:         logger,
+			TracerProvider: sdk.TracerProvider(),
+			MeterProvider:  sdk.MeterProvider(),
+			Resource:       pcommonRes,
+		},
+		lp,
+	}, nil
 }
 
 func (s *Supervisor) Start() error {
@@ -1433,7 +1439,7 @@ func (s *Supervisor) shutdownTelemetry() error {
 		}
 	}
 
-	if prov, ok := s.loggerProvider.(shutdownable); ok {
+	if prov, ok := s.telemetrySettings.loggerProvider.(shutdownable); ok {
 		if shutdownErr := prov.Shutdown(ctx); shutdownErr != nil {
 			err = multierr.Append(err, fmt.Errorf("failed to shutdown logger provider: %w", shutdownErr))
 		}
