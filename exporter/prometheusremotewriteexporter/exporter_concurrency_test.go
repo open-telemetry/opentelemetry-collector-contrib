@@ -4,7 +4,7 @@
 //go:build !race
 // +build !race
 
-// note: this test doesn't pass currently due to a race condition in batchTimeSeries
+// note: this test doesn't pass currently due to a race condition in batchTimeSeries.
 // WARNING: DATA RACE
 // Write at 0x00c0001e9550 by goroutine 34:
 //   github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter.batchTimeSeries()
