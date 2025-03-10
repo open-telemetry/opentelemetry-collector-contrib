@@ -1586,8 +1586,10 @@ telemetry:
 	mockBackend.EnableRecording()
 	supervisor.telemetrySettings.Logger.Info("test log")
 	time.Sleep(4 * time.Second)
+	mockBackend.Stop()
 
-	require.Len(t, mockBackend.ReceivedLogs, 1)
+	receivedLogs := mockBackend.ReceivedLogs
+	require.Len(t, receivedLogs, 1)
 	l := mockBackend.ReceivedLogs[0]
 	require.Equal(t, 1, l.ResourceLogs().Len())
 	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
@@ -1604,5 +1606,4 @@ telemetry:
 	})
 
 	supervisor.Shutdown()
-	mockBackend.Stop()
 }
