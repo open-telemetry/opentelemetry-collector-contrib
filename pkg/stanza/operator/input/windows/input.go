@@ -27,6 +27,7 @@ type Input struct {
 	buffer              *Buffer
 	channel             string
 	maxReads            int
+	currentMaxReads     int
 	startAt             string
 	raw                 bool
 	excludeProviders    map[string]struct{}
@@ -40,6 +41,7 @@ type Input struct {
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
 	processEvent        func(context.Context, Event) error
+	logger              *zap.Logger
 }
 
 // newInput creates a new Input operator.
@@ -197,36 +199,41 @@ func (i *Input) readOnInterval(ctx context.Context) {
 
 // read will read events from the subscription.
 func (i *Input) read(ctx context.Context) {
-	events, err := i.subscription.Read(i.maxReads)
-	if err != nil {
-		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
-		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
-			i.Logger().Info("Resubscribing, closing remote subscription")
-			closeErr := i.subscription.Close()
-			if closeErr != nil {
-				i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
-				return
+	events, err := i.subscription.Read(i.currentMaxReads)
+	if errors.Is(err, ErrBatchSizeReduced) {
+		i.currentMaxReads = max(i.currentMaxReads/2, 1)
+		i.Logger().Warn("Encountered RPC_S_INVALID_BOUND, reducing batch size", zap.Int("current batch size", i.currentMaxReads), zap.Int("original batch size", i.maxReads))
+	} else {
+		if err != nil {
+			i.Logger().Error("Failed to read events from subscription", zap.Error(err))
+			if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
+				i.Logger().Info("Resubscribing, closing remote subscription")
+				closeErr := i.subscription.Close()
+				if closeErr != nil {
+					i.Logger().Error("Failed to close remote subscription", zap.Error(closeErr))
+					return
+				}
+				if err := i.stopRemoteSession(); err != nil {
+					i.Logger().Error("Failed to close remote session", zap.Error(err))
+				}
+				i.Logger().Info("Resubscribing, creating remote subscription")
+				i.subscription = NewRemoteSubscription(i.remote.Server)
+				if err := i.startRemoteSession(); err != nil {
+					i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
+					return
+				}
+				if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
+					i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
+					return
+				}
 			}
-			if err := i.stopRemoteSession(); err != nil {
-				i.Logger().Error("Failed to close remote session", zap.Error(err))
-			}
-			i.Logger().Info("Resubscribing, creating remote subscription")
-			i.subscription = NewRemoteSubscription(i.remote.Server)
-			if err := i.startRemoteSession(); err != nil {
-				i.Logger().Error("Failed to re-establish remote session", zap.String("server", i.remote.Server), zap.Error(err))
-				return
-			}
-			if err := i.subscription.Open(i.startAt, uintptr(i.remoteSessionHandle), i.channel, i.bookmark); err != nil {
-				i.Logger().Error("Failed to re-open subscription for remote server", zap.String("server", i.remote.Server), zap.Error(err))
-				return
-			}
+			return
 		}
-		return
 	}
 
 	for n, event := range events {
 		if err := i.processEvent(ctx, event); err != nil {
-			i.Logger().Error("process event", zap.Error(err))
+			i.logger.Error("process event", zap.Error(err))
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
