@@ -123,6 +123,7 @@ process:
   mute_process_io_error: <true|false>
   mute_process_user_error: <true|false>
   mute_process_cgroup_error: <true|false>
+  wmi_enabled: <true|false>
   scrape_process_delay: <time>
 ```
 
@@ -133,6 +134,19 @@ The following settings are optional:
 - `mute_process_cgroup_error` (default: false): mute the error encountered when trying to read the cgroup of a process the collector does not have permission to read. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_exe_error` (default: false): mute the error encountered when trying to read the executable path of a process the collector does not have permission to read (Linux only). This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
 - `mute_process_user_error` (default: false): mute the error encountered when trying to read a uid which doesn't exist on the system, eg. is owned by a user that only exists in a container. This flag is ignored when `mute_process_all_errors` is set to true as all errors are muted.
+- `wmi_enabled` (default: true): allow the scraper to use [Windows Management Instrumentation (WMI)](https://learn.microsoft.com/en-us/windows/win32/wmisdk/wmi-start-page) to fetch some information on Windows. This option has no effect on non-Windows environments.
+
+#### High CPU Usage On Windows
+
+Getting the Parent Process ID of all processes on Windows is a very expensive operation. There are two options to combat this:
+* Allow the collector to use WMI, this is the default behaviour with the `wmi_enabled` configuration option
+* Disable Parent Process ID collection like so:
+```yaml
+process:
+  resource_attributes:
+    process.parent_pid:
+      enabled: false
+```
 
 ## Advanced Configuration
 
