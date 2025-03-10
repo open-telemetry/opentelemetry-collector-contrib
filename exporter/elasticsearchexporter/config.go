@@ -400,4 +400,13 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
+	if cfg.LogsDynamicIndex.Enabled {
+		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+	}
+	if cfg.MetricsDynamicIndex.Enabled {
+		logger.Warn("metrics_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+	}
+	if cfg.TracesDynamicIndex.Enabled {
+		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+	}
 }
