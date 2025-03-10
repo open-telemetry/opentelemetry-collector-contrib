@@ -15,6 +15,8 @@ const (
 
 type Config struct {
 	Protocol JaegerProtocol `mapstructure:"protocol"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

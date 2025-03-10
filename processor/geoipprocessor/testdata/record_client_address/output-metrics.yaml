@@ -1,0 +1,213 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: ip
+          value:
+            stringValue: 1.2.2.1
+    schemaUrl: https://test-res-schema.com/schema
+    scopeMetrics:
+      - metrics:
+          - description: This also isn't a real metric
+            name: storage.amplitude
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: a
+                      value:
+                        stringValue: AAAA
+                    - key: geo.city_name
+                      value:
+                        stringValue: Boxford
+                    - key: geo.continent_code
+                      value:
+                        stringValue: EU
+                    - key: geo.continent_name
+                      value:
+                        stringValue: Europe
+                    - key: geo.country_iso_code
+                      value:
+                        stringValue: GB
+                    - key: geo.country_name
+                      value:
+                        stringValue: United Kingdom
+                    - key: geo.location.lat
+                      value:
+                        doubleValue: 1234
+                    - key: geo.location.lon
+                      value:
+                        doubleValue: 5678
+                    - key: geo.postal_code
+                      value:
+                        stringValue: OX1
+                    - key: geo.region_iso_code
+                      value:
+                        stringValue: WBK
+                    - key: geo.region_name
+                      value:
+                        stringValue: West Berkshire
+                    - key: geo.timezone
+                      value:
+                        stringValue: Europe/London
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+            unit: "1"
+          - histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - attributes:
+                    - key: geo.city_name
+                      value:
+                        stringValue: Boxford
+                    - key: geo.continent_code
+                      value:
+                        stringValue: EU
+                    - key: geo.continent_name
+                      value:
+                        stringValue: Europe
+                    - key: geo.country_iso_code
+                      value:
+                        stringValue: GB
+                    - key: geo.country_name
+                      value:
+                        stringValue: United Kingdom
+                    - key: geo.location.lat
+                      value:
+                        doubleValue: 1234
+                    - key: geo.location.lon
+                      value:
+                        doubleValue: 5678
+                    - key: geo.postal_code
+                      value:
+                        stringValue: OX1
+                    - key: geo.region_iso_code
+                      value:
+                        stringValue: WBK
+                    - key: geo.region_name
+                      value:
+                        stringValue: West Berkshire
+                    - key: geo.timezone
+                      value:
+                        stringValue: Europe/London
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+                  bucketCounts:
+                    - "9"
+                    - "12"
+                    - "17"
+                    - "8"
+                    - "34"
+                  explicitBounds:
+                    - 0.01
+                    - 0.1
+                    - 1
+                    - 10
+                    - 100
+                  timeUnixNano: "1000000"
+            name: delta.histogram.test
+          - name: summary.test
+            summary:
+              dataPoints:
+                - attributes:
+                    - key: geo.city_name
+                      value:
+                        stringValue: Boxford
+                    - key: geo.continent_code
+                      value:
+                        stringValue: EU
+                    - key: geo.continent_name
+                      value:
+                        stringValue: Europe
+                    - key: geo.country_iso_code
+                      value:
+                        stringValue: GB
+                    - key: geo.country_name
+                      value:
+                        stringValue: United Kingdom
+                    - key: geo.location.lat
+                      value:
+                        doubleValue: 1234
+                    - key: geo.location.lon
+                      value:
+                        doubleValue: 5678
+                    - key: geo.postal_code
+                      value:
+                        stringValue: OX1
+                    - key: geo.region_iso_code
+                      value:
+                        stringValue: WBK
+                    - key: geo.region_name
+                      value:
+                        stringValue: West Berkshire
+                    - key: geo.timezone
+                      value:
+                        stringValue: Europe/London
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 50
+                    - quantile: 0.5
+                      value: 20
+                    - quantile: 0.75
+                      value: 75
+                    - quantile: 0.95
+                      value: 10
+                  timeUnixNano: "1000000"
+          - gauge:
+              dataPoints:
+                - asDouble: 345
+                  attributes:
+                    - key: aaa
+                      value:
+                        stringValue: bbb
+                    - key: geo.city_name
+                      value:
+                        stringValue: Boxford
+                    - key: geo.continent_code
+                      value:
+                        stringValue: EU
+                    - key: geo.continent_name
+                      value:
+                        stringValue: Europe
+                    - key: geo.country_iso_code
+                      value:
+                        stringValue: GB
+                    - key: geo.country_name
+                      value:
+                        stringValue: United Kingdom
+                    - key: geo.location.lat
+                      value:
+                        doubleValue: 1234
+                    - key: geo.location.lon
+                      value:
+                        doubleValue: 5678
+                    - key: geo.postal_code
+                      value:
+                        stringValue: OX1
+                    - key: geo.region_iso_code
+                      value:
+                        stringValue: WBK
+                    - key: geo.region_name
+                      value:
+                        stringValue: West Berkshire
+                    - key: geo.timezone
+                      value:
+                        stringValue: Europe/London
+                    - key: client.address
+                      value:
+                        stringValue: 1.2.3.4
+                  timeUnixNano: "1000000"
+            name: test.gauge
+        schemaUrl: https://test-scope-schema.com/schema
+        scope:
+          attributes:
+            - key: foo
+              value:
+                stringValue: bar
+          name: MyTestInstrument
+          version: 1.2.3

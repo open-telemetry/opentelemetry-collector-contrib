@@ -17,6 +17,7 @@ import (
 	"golang.org/x/sync/errgroup"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 )
@@ -27,13 +28,12 @@ var (
 )
 
 var (
-	_ extension.Extension      = (*dockerObserver)(nil)
-	_ observer.EndpointsLister = (*dockerObserver)(nil)
-	_ observer.Observable      = (*dockerObserver)(nil)
+	_ extension.Extension = (*dockerObserver)(nil)
+	_ observer.Observable = (*dockerObserver)(nil)
 )
 
 type dockerObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	logger  *zap.Logger
 	config  *Config
 	cancel  context.CancelFunc
@@ -49,7 +49,7 @@ func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error
 			// Safe value provided on initialisation
 		},
 	}
-	d.EndpointsWatcher = observer.NewEndpointsWatcher(d, time.Second, logger)
+	d.EndpointsWatcher = endpointswatcher.New(d, time.Second, logger)
 	return d, nil
 }
 
