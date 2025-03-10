@@ -7,11 +7,11 @@ import (
 	"time"
 
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
 type logPacker struct {
@@ -25,31 +25,64 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 
 	data := contracts.NewData()
 
-	messageData := contracts.NewMessageData()
-	messageData.Properties = make(map[string]string)
+	if logRecord.SeverityNumber() == plog.SeverityNumberError {
+		// handle envelope for exceptions
+		exceptionData := contracts.NewExceptionData()
+		exceptionData.Properties = make(map[string]string)
+		exceptionData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
+		exceptionData.ProblemId = logRecord.SeverityText()
 
-	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
+		exceptionAttributeMap := logRecord.Attributes()
+		exceptionDetails := mapIncomingAttributeMapExceptionDetail(exceptionAttributeMap)
+		exceptionData.Exceptions = append(exceptionData.Exceptions, exceptionDetails)
 
-	messageData.Message = logRecord.Body().AsString()
+		envelope.Name = exceptionData.EnvelopeName("")
 
-	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
-	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
+		data.BaseData = exceptionData
+		data.BaseType = exceptionData.BaseType()
+		envelope.Data = data
 
-	envelope.Name = messageData.EnvelopeName("")
+		envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
+		envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
 
-	data.BaseData = messageData
-	data.BaseType = messageData.BaseType()
-	envelope.Data = data
+		resourceAttributes := resource.Attributes()
+		applyResourcesToDataProperties(exceptionData.Properties, resourceAttributes)
+		applyInstrumentationScopeValueToDataProperties(exceptionData.Properties, instrumentationScope)
+		applyCloudTagsToEnvelope(envelope, resourceAttributes)
+		applyInternalSdkVersionTagToEnvelope(envelope)
 
-	resourceAttributes := resource.Attributes()
-	applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
-	applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
-	applyCloudTagsToEnvelope(envelope, resourceAttributes)
-	applyInternalSdkVersionTagToEnvelope(envelope)
+		setAttributesAsProperties(logRecord.Attributes(), exceptionData.Properties)
 
-	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
+		packer.sanitize(func() []string { return exceptionData.Sanitize() })
 
-	packer.sanitize(func() []string { return messageData.Sanitize() })
+	} else {
+		// handle envelope for messages (traces)
+		messageData := contracts.NewMessageData()
+		messageData.Properties = make(map[string]string)
+
+		messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
+		messageData.Message = logRecord.Body().AsString()
+
+		envelope.Name = messageData.EnvelopeName("")
+
+		data.BaseData = messageData
+		data.BaseType = messageData.BaseType()
+		envelope.Data = data
+
+		envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
+		envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
+
+		resourceAttributes := resource.Attributes()
+		applyResourcesToDataProperties(messageData.Properties, resourceAttributes)
+		applyInstrumentationScopeValueToDataProperties(messageData.Properties, instrumentationScope)
+		applyCloudTagsToEnvelope(envelope, resourceAttributes)
+		applyInternalSdkVersionTagToEnvelope(envelope)
+
+		setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
+
+		packer.sanitize(func() []string { return messageData.Sanitize() })
+	}
+
 	packer.sanitize(func() []string { return envelope.Sanitize() })
 	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
 
@@ -96,4 +129,18 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 	}
 
 	return pcommon.NewTimestampFromTime(timeNow())
+}
+
+func mapIncomingAttributeMapExceptionDetail(attributemap pcommon.Map) *contracts.ExceptionDetails {
+	exceptionDetails := contracts.NewExceptionDetails()
+	if message, exists := attributemap.Get(conventions.AttributeExceptionMessage); exists {
+		exceptionDetails.Message = message.Str()
+	}
+	if typeName, exists := attributemap.Get(conventions.AttributeExceptionType); exists {
+		exceptionDetails.TypeName = typeName.Str()
+	}
+	if stackTrace, exists := attributemap.Get(conventions.AttributeExceptionStacktrace); exists {
+		exceptionDetails.Stack = stackTrace.Str()
+	}
+	return exceptionDetails
 }
