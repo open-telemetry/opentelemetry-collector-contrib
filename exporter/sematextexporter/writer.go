@@ -95,6 +95,7 @@ func (w *sematextHTTPWriter) Start(ctx context.Context, host component.Host) err
 	w.httpClient = httpClient
 	return nil
 }
+
 func (w *sematextHTTPWriter) Shutdown(_ context.Context) error {
 	if w.httpClient != nil {
 		w.httpClient.CloseIdleConnections() // Closes all idle connections for the HTTP client
@@ -102,6 +103,7 @@ func (w *sematextHTTPWriter) Shutdown(_ context.Context) error {
 	w.logger.Debug("HTTP client connections closed successfully for Sematext HTTP Writer")
 	return nil
 }
+
 func (w *sematextHTTPWriter) NewBatch() otel2influx.InfluxWriterBatch {
 	return newSematextHTTPWriterBatch(w)
 }
