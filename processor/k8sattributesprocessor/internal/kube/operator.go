@@ -26,6 +26,11 @@ var OperatorAnnotationRule = FieldExtractionRule{
 var OperatorLabelRules = []FieldExtractionRule{
 	{
 		Name: "service.name",
+		Key:  "app.kubernetes.io/instance", // todo check that it takes precedence over app.kubernetes.io/name
+		From: MetadataFromPod,
+	},
+	{
+		Name: "service.name",
 		Key:  "app.kubernetes.io/name",
 		From: MetadataFromPod,
 	},

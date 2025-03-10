@@ -276,11 +276,12 @@ k8sattributes/2:
         key: app.kubernetes.io/component
         from: pod
     operator_rules:
-      # Apply the operator rules - see https://github.com/open-telemetry/opentelemetry-operator#configure-resource-attributes
+      # Apply the operator rules - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
       enabled: true
       # Also translate the following labels to the specified resource attributes: 
-      # app.kubernetes.io/name    => service.name
-      # app.kubernetes.io/version => service.version
+      # app.kubernetes.io/instance => service.name (higher priority than app.kubernetes.io/name)
+      # app.kubernetes.io/name     => service.name
+      # app.kubernetes.io/version  => service.version
       # This setting is ignored if 'enabled' is set to false
       labels: true 
   pod_association:
