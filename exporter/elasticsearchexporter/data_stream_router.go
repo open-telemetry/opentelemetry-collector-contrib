@@ -190,9 +190,16 @@ func routeRecord(
 	scopeAttr := scope.Attributes()
 
 	// Order:
-	// 1. read data_stream.* from attributes
-	// 2. receiver-based routing
-	// 3. use default hardcoded data_stream.*
+	// 1. elasticsearch._index from attributes
+	// 2. read data_stream.* from attributes
+	// 3. receiver-based routing
+	// 4. use default hardcoded data_stream.*
+	if esIndex, esIndexExists := getFromAttributes(elasticsearch.IndexAttributeName, "", recordAttr, scopeAttr, resourceAttr); esIndexExists {
+		// Advanced users can route documents by setting IndexAttributeName in a processor earlier in the pipeline.
+		// If `data_stream.*` needs to be set in the document, users should use `data_stream.*` attributes.
+		return elasticsearch.Index{Index: esIndex}, nil
+	}
+
 	dataset, _ := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
 	namespace, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 

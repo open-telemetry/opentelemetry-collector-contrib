@@ -11,4 +11,7 @@ const (
 
 	// DocumentIDAttributeName is the attribute name used to specify the document ID.
 	DocumentIDAttributeName = "elasticsearch.document_id"
+
+	// IndexAttributeName is the attribute name used to specify the index to which the document should be routed.
+	IndexAttributeName = "elasticsearch._index"
 )
