@@ -14,8 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 )
 
-// create Test_ProfilePathGetSetter
-func Test_ProfilePathGetSetter(t *testing.T) {
+func TestPathGetSetter(t *testing.T) {
 	// create tests
 	tests := []struct {
 		path string

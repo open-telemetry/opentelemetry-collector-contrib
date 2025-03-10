@@ -5,7 +5,6 @@ package ottlprofile // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -176,7 +175,7 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 
 func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	if path == nil {
-		return nil, fmt.Errorf("path cannot be nil")
+		return nil, ctxerror.New("nil", "nil", ctxprofile.Name, ctxprofile.DocRef)
 	}
 	// Higher contexts parsing
 	if path.Context() != "" && path.Context() != ctxprofile.Name {
