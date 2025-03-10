@@ -38,7 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
-	telemetryconfig "go.opentelemetry.io/contrib/config/v0.3.0"
+	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -61,8 +61,8 @@ var (
 	//go:embed templates/owntelemetry.yaml
 	ownTelemetryTpl string
 
-	lastRecvRemoteConfigFile     = "last_recv_remote_config.dat"
-	lastRecvOwnMetricsConfigFile = "last_recv_own_metrics_config.dat"
+	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
+	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 )
 
 const (
@@ -907,7 +907,7 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 }
 
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
-	var lastRecvRemoteConfig, lastRecvOwnMetricsConfig []byte
+	var lastRecvRemoteConfig, lastRecvOwnTelemetryConfig []byte
 	var err error
 
 	if s.config.Capabilities.AcceptsRemoteConfig {
@@ -931,16 +931,16 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 		s.telemetrySettings.Logger.Debug("Remote config is not supported, will not attempt to load config from fil")
 	}
 
-	if s.config.Capabilities.ReportsOwnMetrics {
+	if s.config.Capabilities.ReportsOwnMetrics || s.config.Capabilities.ReportsOwnTraces || s.config.Capabilities.ReportsOwnLogs {
 		// Try to load the last received own metrics config if it exists.
-		lastRecvOwnMetricsConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnMetricsConfigFile))
+		lastRecvOwnTelemetryConfig, err = os.ReadFile(filepath.Join(s.config.Storage.Directory, lastRecvOwnTelemetryConfigFile))
 		if err == nil {
-			set := &protobufs.TelemetryConnectionSettings{}
-			err = proto.Unmarshal(lastRecvOwnMetricsConfig, set)
+			set := &protobufs.ConnectionSettingsOffers{}
+			err = proto.Unmarshal(lastRecvOwnTelemetryConfig, set)
 			if err != nil {
-				s.telemetrySettings.Logger.Error("Cannot parse last received own metrics config", zap.Error(err))
+				s.telemetrySettings.Logger.Error("Cannot parse last received own telemetry config", zap.Error(err))
 			} else {
-				s.setupOwnMetrics(context.Background(), set)
+				s.setupOwnTelemetry(context.Background(), set)
 			}
 		}
 	} else {
@@ -985,26 +985,32 @@ func (s *Supervisor) createEffectiveConfigMsg() *protobufs.EffectiveConfig {
 	return cfg
 }
 
-func (s *Supervisor) setupOwnMetrics(_ context.Context, settings *protobufs.TelemetryConnectionSettings) (configChanged bool) {
+func (s *Supervisor) updateOwnTelemetryData(data map[string]any, signal string, settings *protobufs.TelemetryConnectionSettings) map[string]any {
+	if settings == nil || len(settings.DestinationEndpoint) == 0 {
+		return data
+	}
+	data[fmt.Sprintf("%sEndpoint", signal)] = settings.DestinationEndpoint
+	data[fmt.Sprintf("%sHeaders", signal)] = []protobufs.Header{}
+
+	if settings.Headers != nil {
+		data[fmt.Sprintf("%sHeaders", signal)] = settings.Headers.Headers
+	}
+	return data
+}
+
+func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.ConnectionSettingsOffers) (configChanged bool) {
 	var cfg bytes.Buffer
-	if settings.DestinationEndpoint == "" {
-		// No destination. Disable metric collection.
-		s.telemetrySettings.Logger.Debug("Disabling own metrics pipeline in the config")
+
+	data := s.updateOwnTelemetryData(map[string]any{}, "Metrics", settings.GetOwnMetrics())
+	data = s.updateOwnTelemetryData(data, "Logs", settings.GetOwnLogs())
+	data = s.updateOwnTelemetryData(data, "Traces", settings.GetOwnTraces())
+
+	if len(data) == 0 {
+		s.telemetrySettings.Logger.Debug("Disabling own telemetry pipeline in the config")
 	} else {
-		s.telemetrySettings.Logger.Debug("Enabling own metrics pipeline in the config")
-
-		data := map[string]any{
-			"MetricsEndpoint": settings.DestinationEndpoint,
-			"MetricsHeaders":  []protobufs.Header{},
-		}
-
-		if settings.Headers != nil {
-			data["MetricsHeaders"] = settings.Headers.Headers
-		}
-
 		err := s.ownTelemetryTemplate.Execute(&cfg, data)
 		if err != nil {
-			s.telemetrySettings.Logger.Error("Could not setup own metrics", zap.Error(err))
+			s.telemetrySettings.Logger.Error("Could not setup own telemetry", zap.Error(err))
 			return
 		}
 	}
@@ -1413,7 +1419,7 @@ func (s *Supervisor) saveLastReceivedConfig(config *protobufs.AgentRemoteConfig)
 	return os.WriteFile(filepath.Join(s.config.Storage.Directory, lastRecvRemoteConfigFile), cfg, 0o600)
 }
 
-func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.TelemetryConnectionSettings, filePath string) error {
+func (s *Supervisor) saveLastReceivedOwnTelemetrySettings(set *protobufs.ConnectionSettingsOffers, filePath string) error {
 	cfg, err := proto.Marshal(set)
 	if err != nil {
 		return err
@@ -1447,8 +1453,12 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
 	}
 
-	if msg.OwnMetricsConnSettings != nil {
-		configChanged = s.processOwnMetricsConnSettingsMessage(ctx, msg.OwnMetricsConnSettings) || configChanged
+	if msg.OwnMetricsConnSettings != nil || msg.OwnTracesConnSettings != nil || msg.OwnLogsConnSettings != nil {
+		configChanged = s.processOwnTelemetryConnSettingsMessage(ctx, &protobufs.ConnectionSettingsOffers{
+			OwnMetrics: msg.OwnMetricsConnSettings,
+			OwnTraces:  msg.OwnTracesConnSettings,
+			OwnLogs:    msg.OwnLogsConnSettings,
+		}) || configChanged
 	}
 
 	// Update the agent config if any messages have touched the config
@@ -1515,12 +1525,12 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	return configChanged
 }
 
-// processOwnMetricsConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
-func (s *Supervisor) processOwnMetricsConnSettingsMessage(ctx context.Context, msg *protobufs.TelemetryConnectionSettings) bool {
-	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnMetricsConfigFile); err != nil {
+// processOwnTelemetryConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
+func (s *Supervisor) processOwnTelemetryConnSettingsMessage(ctx context.Context, msg *protobufs.ConnectionSettingsOffers) bool {
+	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnTelemetryConfigFile); err != nil {
 		s.telemetrySettings.Logger.Error("Could not save last received own telemetry settings", zap.Error(err))
 	}
-	return s.setupOwnMetrics(ctx, msg)
+	return s.setupOwnTelemetry(ctx, msg)
 }
 
 // processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.

@@ -5,6 +5,7 @@ package truereset
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -12,7 +13,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
 )
 
 var (
@@ -71,7 +73,7 @@ func TestGauge(t *testing.T) {
 			adjusted:    metrics(gaugeMetric(gauge1, doublePoint(k1v1k2v2, t3, t3, 55))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSum(t *testing.T) {
@@ -102,7 +104,7 @@ func TestSum(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSumWithDifferentResources(t *testing.T) {
@@ -133,7 +135,7 @@ func TestSumWithDifferentResources(t *testing.T) {
 			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t3, t5, 72))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t5, t5, 10)))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSummaryNoCount(t *testing.T) {
@@ -160,7 +162,7 @@ func TestSummaryNoCount(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSummaryFlagNoRecordedValue(t *testing.T) {
@@ -177,7 +179,7 @@ func TestSummaryFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSummary(t *testing.T) {
@@ -220,7 +222,7 @@ func TestSummary(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestHistogram(t *testing.T) {
@@ -243,7 +245,7 @@ func TestHistogram(t *testing.T) {
 			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t4, bounds0, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestHistogramFlagNoRecordedValue(t *testing.T) {
@@ -260,7 +262,7 @@ func TestHistogramFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -277,7 +279,7 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 // In TestExponentHistogram we exclude negative buckets on purpose as they are
@@ -304,7 +306,7 @@ func TestExponentialHistogram(t *testing.T) {
 			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t3, t4, 3, 1, 0, []uint64{}, -2, []uint64{7, 4, 2, 12}))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
@@ -321,7 +323,7 @@ func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -338,7 +340,7 @@ func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -355,7 +357,7 @@ func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -372,7 +374,7 @@ func TestGaugeFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
@@ -389,7 +391,7 @@ func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 		},
 	}
 
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestMultiMetrics(t *testing.T) {
@@ -453,7 +455,7 @@ func TestMultiMetrics(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestNewDataPointsAdded(t *testing.T) {
@@ -515,7 +517,7 @@ func TestNewDataPointsAdded(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestMultiTimeseries(t *testing.T) {
@@ -574,7 +576,7 @@ func TestMultiTimeseries(t *testing.T) {
 			),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestEmptyLabels(t *testing.T) {
@@ -600,7 +602,7 @@ func TestEmptyLabels(t *testing.T) {
 			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
 		},
 	}
-	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), "job", "0", script)
+	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
 func TestTsGC(t *testing.T) {
@@ -656,16 +658,21 @@ func TestTsGC(t *testing.T) {
 
 	ma := NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute)
 
+	resourceAttr := "0"
+	resourceAttrs := pcommon.NewMap()
+	resourceAttrs.PutStr("0", resourceAttr)
+	resourceHash := pdatautil.MapHash(resourceAttrs)
+
 	// run round 1
-	runScript(t, ma, "job", "0", script1)
+	runScript(t, ma, script1, resourceAttr)
 	// gc the tsmap, unmarking all entries
-	ma.jobsMap.get("job", "0").gc()
+	ma.startTimeCache.get(resourceHash).gc()
 	// run round 2 - update metrics first timeseries only
-	runScript(t, ma, "job", "0", script2)
+	runScript(t, ma, script2, resourceAttr)
 	// gc the tsmap, collecting umarked entries
-	ma.jobsMap.get("job", "0").gc()
+	ma.startTimeCache.get(resourceHash).gc()
 	// run round 3 - verify that metrics second timeseries have been gc'd
-	runScript(t, ma, "job", "0", script3)
+	runScript(t, ma, script3, resourceAttr)
 }
 
 func TestJobGC(t *testing.T) {
@@ -717,19 +724,19 @@ func TestJobGC(t *testing.T) {
 	ma := NewAdjuster(componenttest.NewNopTelemetrySettings(), gcInterval)
 
 	// run job 1, round 1 - all entries marked
-	runScript(t, ma, "job1", "0", job1Script1)
+	runScript(t, ma, job1Script1, "0")
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// run job 2, round1 - trigger job gc, unmarking all entries
-	runScript(t, ma, "job1", "1", job2Script1)
+	runScript(t, ma, job2Script1, "1")
 	// sleep longer than gcInterval to enable job gc in the next run
 	time.Sleep(2 * gcInterval)
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
-	runScript(t, ma, "job1", "1", job2Script1)
+	runScript(t, ma, job2Script1, "1")
 	// ensure that at least one jobsMap.gc() completed
-	ma.jobsMap.gc()
+	ma.startTimeCache.gc()
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
-	runScript(t, ma, "job1", "0", job1Script2)
+	runScript(t, ma, job1Script2, "0")
 }
 
 type metricsAdjusterTest struct {
@@ -738,7 +745,7 @@ type metricsAdjusterTest struct {
 	adjusted    pmetric.Metrics
 }
 
-func runScript(t *testing.T, ma *Adjuster, job, instance string, tests []*metricsAdjusterTest) {
+func runScript(t *testing.T, ma *Adjuster, tests []*metricsAdjusterTest, additionalResourceAttrs ...string) {
 	for _, test := range tests {
 		t.Run(test.description, func(t *testing.T) {
 			adjusted := pmetric.NewMetrics()
@@ -746,13 +753,8 @@ func runScript(t *testing.T, ma *Adjuster, job, instance string, tests []*metric
 			// Add the instance/job to the input metrics if they aren't already present.
 			for i := 0; i < adjusted.ResourceMetrics().Len(); i++ {
 				rm := adjusted.ResourceMetrics().At(i)
-				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
-				if !found {
-					rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
-				}
-				_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-				if !found {
-					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+				for i, attr := range additionalResourceAttrs {
+					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
 			var err error
@@ -762,13 +764,8 @@ func runScript(t *testing.T, ma *Adjuster, job, instance string, tests []*metric
 			// Add the instance/job to the expected metrics as well if they aren't already present.
 			for i := 0; i < test.adjusted.ResourceMetrics().Len(); i++ {
 				rm := test.adjusted.ResourceMetrics().At(i)
-				_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)
-				if !found {
-					rm.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
-				}
-				_, found = rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
-				if !found {
-					rm.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+				for i, attr := range additionalResourceAttrs {
+					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
 			assert.EqualValues(t, test.adjusted, adjusted)

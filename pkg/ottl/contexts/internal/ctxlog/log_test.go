@@ -244,6 +244,17 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refLog.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(log plog.LogRecord) {
+				_ = log.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes.key",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",

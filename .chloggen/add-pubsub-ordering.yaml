@@ -1,4 +1,0 @@
-change_type: enhancement
-component: googlecloudpubsubexporter
-note: Add support for exporting ordered messages to GCP Pub/Sub
-issues: [32850]
