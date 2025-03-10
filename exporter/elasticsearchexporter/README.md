@@ -118,30 +118,38 @@ Using the common `batcher` functionality provides several benefits over the defa
 
 ### Elasticsearch document routing
 
-Telemetry data will be written to signal specific data streams by default:
-logs to `logs-generic-default`, metrics to `metrics-generic-default`, and traces to `traces-generic-default`.
+By default, documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
+1. "Static mode": To `logs_index` (for log records), `metrics_index` (for data points) and `traces_index` (for spans and span events) if they are configured.
+2. "Index attribute mode": To index name in `elasticsearch._index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
+3. "Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`, 
+where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans and span events, 
+with an exception in OTel mapping mode (`mapping::mode: otel`) where `data_stream.type` is `logs` for span events.
+In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
+The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+   1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute)
+   2. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
+   3. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
+
 This can be customised through the following settings:
 
-- `logs_index`: The [index] or [data stream] name to publish events to.  The default value is `logs-generic-default`.
+- `logs_index` (optional): The [index] or [data stream] name to publish events to.
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
-  - `enabled`(default=true): Enable/Disable dynamic index for log records. Not compatible with `logs_index`. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: log record attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `logs-${data_stream.dataset}-${data_stream.namespace}`. In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) is also supported to dynamically construct index in the form `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1. Otherwise, the index name falls back to `logs-generic-default`. The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
 
-- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. The default value is `metrics-generic-default`.
-  ⚠️ Note that metrics support is currently in development.
+- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. Note that metrics support is currently in development.
 
 - `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
-  ⚠️ Note that metrics support is currently in development.
-  - `enabled`(default=true): Enable/disable dynamic index for metrics. Not compatible with `metrics_index`. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: data point attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `metrics-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1. Otherwise, the index name falls back to `metrics-generic-default`. The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
+  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
 
-- `traces_index`: The [index] or [data stream] name to publish traces to. The default value is `traces-generic-default`.
+- `traces_index` (optional): The [index] or [data stream] name to publish traces to.
 
 - `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
-  - `enabled`(default=true): Enable/Disable dynamic index for trace spans. Not compatible with `traces_index`. If `data_stream.dataset` or `data_stream.namespace` exist in attributes (precedence: span attribute > scope attribute > resource attribute), they will be used to dynamically construct index name in the form `traces-${data_stream.dataset}-${data_stream.namespace}`. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1. Otherwise, the index name falls back to `traces-generic-default`. The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html). There is an exception for span events under OTel mapping mode (`mapping::mode: otel`), where span event attributes instead of span attributes are considered, and `data_stream.type` is always `logs` instead of `traces` such that documents are routed to `logs-${data_stream.dataset}-${data_stream.namespace}`.
+  - `enabled`(DEPRECATED): No-op. Dynamic routing is now done by default. Will be removed in a future version.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
-  - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using `(logs|metrics|traces)_index` or `(logs|metrics|traces)_dynamic_index` as prefix and the date as suffix,
-    e.g: If `logs_index` or `logs_dynamic_index` is equal to `logs-generic-default`, your index will become `logs-generic-default-YYYY.MM.DD`.
+  - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
+    e.g: If the computed index name is `logs-generic-default`, the resulting index will be `logs-generic-default-YYYY.MM.DD`.
     The last string appended belongs to the date when the data is being generated.
   - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
   - `date_format`(default=`%Y.%m.%d`): Time format (based on strftime) to generate the second part of the Index name.
@@ -185,12 +193,10 @@ and `data_stream.namespace`. Instead of serializing these values under the `*att
 they are put at the root of the document, to conform with the conventions of the data stream naming
 scheme that maps these as `constant_keyword` fields.
 
-`data_stream.dataset` will always be appended with `.otel`. It is recommended to use with
-`*_dynamic_index::enabled: true` (e.g. `logs_dynamic_index::enabled`) to route documents to data stream
-`${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
+`data_stream.dataset` will always be appended with `.otel` if data stream routing mode is active.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
-`logs` if `traces_dynamic_index::enabled` is `true`.
+`logs` if data stream routing mode is active.
 
 | Signal    | Supported          |
 | --------- | ------------------ |
