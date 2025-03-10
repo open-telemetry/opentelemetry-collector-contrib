@@ -772,79 +772,79 @@ func TestGetMetricAggregations(t *testing.T) {
 		want    []string
 	}{
 		{
-			"should return all aggregations when metrics filter empty",
-			NestedListAlias{},
-			aggregations,
+			name:    "should return all aggregations when metrics filter empty",
+			filters: NestedListAlias{},
+			want:    aggregations,
 		},
 		{
-			"should return all aggregations when namespace not in filters",
-			NestedListAlias{
+			name: "should return all aggregations when namespace not in filters",
+			filters: NestedListAlias{
 				"another.namespace": nil,
 			},
-			aggregations,
+			want: aggregations,
 		},
 		{
-			"should return all aggregations when metric in filters",
-			NestedListAlias{
+			name: "should return all aggregations when metric in filters",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {},
 				},
 			},
-			aggregations,
+			want: aggregations,
 		},
 		{
-			"should return all aggregations ignoring metric name case",
-			NestedListAlias{
+			name: "should return all aggregations ignoring metric name case",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					strings.ToLower(testMetricName): {},
 				},
 			},
-			aggregations,
+			want: aggregations,
 		},
 		{
-			"should return all aggregations when asterisk in filters",
-			NestedListAlias{
+			name: "should return all aggregations when asterisk in filters",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {filterAllAggregations},
 				},
 			},
-			aggregations,
+			want: aggregations,
 		},
 		{
-			"should be empty when metric not in filters",
-			NestedListAlias{
+			name: "should be empty when metric not in filters",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					"not_this_metric": {},
 				},
 			},
-			[]string{},
+			want: []string{},
 		},
 		{
-			"should return one aggregations",
-			NestedListAlias{
+			name: "should return one aggregations",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {aggregations[0]},
 				},
 			},
-			[]string{aggregations[0]},
+			want: []string{aggregations[0]},
 		},
 		{
-			"should return one aggregations ignoring aggregation case",
-			NestedListAlias{
+			name: "should return one aggregations ignoring aggregation case",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {strings.ToLower(aggregations[0])},
 				},
 			},
-			[]string{aggregations[0]},
+			want: []string{aggregations[0]},
 		},
 		{
-			"should return many aggregations",
-			NestedListAlias{
+			name: "should return many aggregations",
+			filters: NestedListAlias{
 				testNamespaceName: {
 					testMetricName: {aggregations[0], aggregations[2]},
 				},
 			},
-			[]string{aggregations[0], aggregations[2]},
+			want: []string{aggregations[0], aggregations[2]},
 		},
 	}
 
@@ -869,19 +869,19 @@ func TestMapFindInsensitive(t *testing.T) {
 		want bool
 	}{
 		{
-			"should find when same case",
-			testNamespace,
-			true,
+			name: "should find when same case",
+			key:  testNamespace,
+			want: true,
 		},
 		{
-			"should find when different case",
-			strings.ToLower(testNamespace),
-			true,
+			name: "should find when different case",
+			key:  strings.ToLower(testNamespace),
+			want: true,
 		},
 		{
-			"should not find when not exists",
-			"microsoft.eventhub/namespaces",
-			false,
+			name: "should not find when not exists",
+			key:  "microsoft.eventhub/namespaces",
+			want: false,
 		},
 	}
 	for _, tt := range tests {
