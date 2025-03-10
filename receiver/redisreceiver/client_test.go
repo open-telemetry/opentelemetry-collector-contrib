@@ -33,6 +33,10 @@ func (fakeClient) retrieveInfo() (string, error) {
 	return readFile("info")
 }
 
+func (fakeClient) retrieveClusterInfo() (string, error) {
+	return readFile("clusterInfo")
+}
+
 func (fakeClient) close() error {
 	return nil
 }

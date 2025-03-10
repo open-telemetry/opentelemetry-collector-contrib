@@ -84,6 +84,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisClusterSlotsAssignedDataPoint(ts, 1)
+
 			allMetricsCount++
 			mb.RecordRedisCmdCallsDataPoint(ts, 1, "cmd-val")
 
@@ -275,6 +279,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Longest output list among current client connections", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.cluster.slots_assigned":
+					assert.False(t, validatedMetrics["redis.cluster.slots_assigned"], "Found a duplicate in the metrics slice: redis.cluster.slots_assigned")
+					validatedMetrics["redis.cluster.slots_assigned"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of slots which are associated to some node", ms.At(i).Description())
+					assert.Equal(t, "{slots}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
