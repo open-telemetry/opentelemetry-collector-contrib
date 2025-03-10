@@ -86,6 +86,8 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
+var cannotRetrieveImage = errors.New("cannot retrieve image name")
+
 // New initializes a new k8s Client.
 func New(
 	set component.TelemetrySettings,
@@ -718,7 +720,7 @@ func parseNameAndTagFromImage(image string) (name, tag string, err error) {
 	}
 	namedRef, ok := ref.(reference.Named)
 	if !ok {
-		return "", "", errors.New("cannot retrieve image name")
+		return "", "", cannotRetrieveImage
 	}
 	name = namedRef.Name()
 	if taggedRef, ok := namedRef.(reference.Tagged); ok {
@@ -730,6 +732,38 @@ func parseNameAndTagFromImage(image string) (name, tag string, err error) {
 		}
 	}
 	return
+}
+
+// parseServiceVersionFromImage parses the service version for differently-formatted image names
+// according to https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceversion-should-be-calculated
+func parseServiceVersionFromImage(image string) (string, error) {
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return "", err
+	}
+
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return "", cannotRetrieveImage
+	}
+	var tag, digest string
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		tag = taggedRef.Tag()
+	}
+	if digestedRef, ok := namedRef.(reference.Digested); ok {
+		digest = digestedRef.Digest().String()
+	}
+	if digest != "" {
+		if tag != "" {
+			return fmt.Sprintf("%s@%s", tag, digest), nil
+		}
+		return digest, nil
+	}
+	if tag != "" {
+		return tag, nil
+	}
+
+	return "", cannotRetrieveImage
 }
 
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
@@ -751,10 +785,14 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageTag {
 					container.ImageTag = tag
 				}
+			}
+			serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+			if err == nil {
 				if c.Rules.OperatorRules.Enabled {
-					container.ServiceVersion = tag
+					container.ServiceVersion = serviceVersion
 				}
 			}
+
 			containers.ByName[spec.Name] = container
 		}
 	}

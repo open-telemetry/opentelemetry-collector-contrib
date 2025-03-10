@@ -1638,15 +1638,15 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
-					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
-					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2", ServiceVersion: "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d"},
+					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
 				},
 				ByName: map[string]*Container{
 					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
-					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0"},
-					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container", ServiceVersion: "latest"},
+					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2", ServiceVersion: "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d"},
+					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
 				},
 			},
 		},
