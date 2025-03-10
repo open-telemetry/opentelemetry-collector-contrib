@@ -59,17 +59,14 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		LogsIndex:     defaultLogsIndex,
 		LogsDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
+			Enabled: true,
 		},
-		MetricsIndex: defaultMetricsIndex,
 		MetricsDynamicIndex: DynamicIndexSetting{
 			Enabled: true,
 		},
-		TracesIndex: defaultTracesIndex,
 		TracesDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
+			Enabled: true,
 		},
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
@@ -124,7 +121,7 @@ func createLogsExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled, cf.LogsDynamicIndexLegacy.Enabled)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -143,7 +140,7 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled, cf.MetricsDynamicIndexLegacy.Enabled)
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -161,7 +158,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled, cf.TracesDynamicIndexLegacy.Enabled)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -184,7 +181,7 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, "", false)
+	exporter := newExporter(cf, set, "", false, false)
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,
