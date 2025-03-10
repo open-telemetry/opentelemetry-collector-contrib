@@ -12,6 +12,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -24,7 +25,6 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
-	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -76,6 +76,8 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
+
+var cannotRetrieveImage = errors.New("cannot retrieve image name")
 
 // New initializes a new k8s Client.
 func New(
@@ -695,6 +697,62 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	return &transformedPod
 }
 
+// parseNameAndTagFromImage parses the image name and tag for differently-formatted image names.
+// returns "latest" as the default if tag not present. also checks if the image contains a digest.
+// if it does, no latest tag is assumed.
+func parseNameAndTagFromImage(image string) (name, tag string, err error) {
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return
+	}
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return "", "", cannotRetrieveImage
+	}
+	name = namedRef.Name()
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		tag = taggedRef.Tag()
+	}
+	if tag == "" {
+		if digestedRef, ok := namedRef.(reference.Digested); !ok || digestedRef.String() == "" {
+			tag = "latest"
+		}
+	}
+	return
+}
+
+// parseServiceVersionFromImage parses the service version for differently-formatted image names
+// according to https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceversion-should-be-calculated
+func parseServiceVersionFromImage(image string) (string, error) {
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return "", err
+	}
+
+	namedRef, ok := ref.(reference.Named)
+	if !ok {
+		return "", cannotRetrieveImage
+	}
+	var tag, digest string
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		tag = taggedRef.Tag()
+	}
+	if digestedRef, ok := namedRef.(reference.Digested); ok {
+		digest = digestedRef.Digest().String()
+	}
+	if digest != "" {
+		if tag != "" {
+			return fmt.Sprintf("%s@%s", tag, digest), nil
+		}
+		return digest, nil
+	}
+	if tag != "" {
+		return tag, nil
+	}
+
+	return "", cannotRetrieveImage
+}
+
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
 	containers := PodContainers{
 		ByID:   map[string]*Container{},
@@ -706,18 +764,22 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.OperatorRules.Enabled {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			imageRef, err := dcommon.ParseImageName(spec.Image)
+			name, tag, err := parseNameAndTagFromImage(spec.Image)
 			if err == nil {
 				if c.Rules.ContainerImageName {
-					container.ImageName = imageRef.Repository
+					container.ImageName = name
 				}
 				if c.Rules.ContainerImageTag {
-					container.ImageTag = imageRef.Tag
-				}
-				if c.Rules.OperatorRules.Enabled {
-					container.ServiceVersion = tag
+					container.ImageTag = tag
 				}
 			}
+			serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+			if err == nil {
+				if c.Rules.OperatorRules.Enabled {
+					container.ServiceVersion = serviceVersion
+				}
+			}
+
 			containers.ByName[spec.Name] = container
 		}
 	}
@@ -752,8 +814,12 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			}
 
 			if c.Rules.ContainerImageRepoDigests {
-				if canonicalRef, err := dcommon.CanonicalImageRef(apiStatus.ImageID); err == nil {
-					containerStatus.ImageRepoDigest = canonicalRef
+				if parsed, err := reference.ParseAnyReference(apiStatus.ImageID); err == nil {
+					switch parsed.(type) {
+					case reference.Canonical:
+						containerStatus.ImageRepoDigest = parsed.String()
+					default:
+					}
 				}
 			}
 
