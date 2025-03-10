@@ -6,6 +6,7 @@ package schemaprocessor // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -85,6 +86,7 @@ func (t schemaProcessor) processTraces(ctx context.Context, td ptrace.Traces) (p
 			}
 			tr, err := t.manager.
 				RequestTranslation(ctx, spanSchemaURL)
+			fmt.Printf("### spanSchemaURL: %s\n", spanSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
 				continue

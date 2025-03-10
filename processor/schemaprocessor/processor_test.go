@@ -6,6 +6,8 @@ package schemaprocessor
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,20 +20,24 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-type dummySchemaProvider struct{}
+type dummySchemaProvider struct {
+	transformations string
+}
 
 func (m *dummySchemaProvider) Retrieve(ctx context.Context, schemaURL string) (string, error) {
-	data := `
-file_format: 1.0.0
-schema_url: https://example.com/testdata/schema_sections/span_events_rename_spans/1.1.0
+	data := fmt.Sprintf(`
+file_format: 1.1.0
+schema_url: http://opentelemetry.io/schemas/1.9.0
 versions:
-  1.1.0:`
+  %s`, m.transformations)
+	data = strings.TrimSpace(data)
+	fmt.Printf("data: %s\n", data)
 	return data, nil
 }
 
-func newTestSchemaProcessor(t *testing.T) *schemaProcessor {
+func newTestSchemaProcessor(t *testing.T, transformations string, targerVerion string) *schemaProcessor {
 	cfg := &Config{
-		Targets: []string{"http://opentelemetry.io/schemas/1.9.0"},
+		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
 	}
 	trans, err := newSchemaProcessor(context.Background(), cfg, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
@@ -39,21 +45,25 @@ func newTestSchemaProcessor(t *testing.T) *schemaProcessor {
 		},
 	})
 	require.NoError(t, err, "Must not error when creating default schemaProcessor")
-	trans.manager.AddProvider(&dummySchemaProvider{})
+	trans.manager.AddProvider(&dummySchemaProvider{
+		transformations: transformations,
+	})
 	return trans
 }
 
 func TestSchemaProcessorStart(t *testing.T) {
 	t.Parallel()
 
-	trans := newTestSchemaProcessor(t)
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	assert.NoError(t, trans.start(context.Background(), nil))
 }
 
 func TestSchemaProcessorProcessing(t *testing.T) {
 	t.Parallel()
+	// these tests are just to ensure that the processor does not error out
+	// and that the data is not modified as dummyprovider has no transformations
 
-	trans := newTestSchemaProcessor(t)
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	t.Run("metrics", func(t *testing.T) {
 		in := pmetric.NewMetrics()
 		in.ResourceMetrics().AppendEmpty()
@@ -67,7 +77,7 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 
 		out, err := trans.processMetrics(context.Background(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 
 	t.Run("traces", func(t *testing.T) {
@@ -83,7 +93,7 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 
 		out, err := trans.processTraces(context.Background(), in)
 		assert.NoError(t, err, "Must not error when processing traces")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 
 	t.Run("logs", func(t *testing.T) {
@@ -98,6 +108,6 @@ func TestSchemaProcessorProcessing(t *testing.T) {
 
 		out, err := trans.processLogs(context.Background(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 }
