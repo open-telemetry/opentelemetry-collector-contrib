@@ -68,7 +68,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		defer r.unlockFile()
 	}
 
-	// if compression is set, we support mixed compression use case
 	if len(r.compression) != 0 {
 		// Identifying a filename by its extension may not always be correct. We could have compressed file without the .gz extension
 		if filepath.Ext(r.fileName) == ".gz" && slices.Contains(r.compression, "gzip") {
