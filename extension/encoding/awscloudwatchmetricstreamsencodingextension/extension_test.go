@@ -4,7 +4,6 @@
 package awscloudwatchmetricstreamsencodingextension
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,7 +17,8 @@ func TestNew_JSON(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalMetrics([]byte{})
-	expectedErr := fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatJSON, errEmptyRecord)
+	expectedErr := formatJSONError(errEmptyRecord)
+	require.Error(t, expectedErr)
 	assert.EqualError(t, err, expectedErr.Error())
 }
 
@@ -28,7 +28,8 @@ func TestNew_OpenTelemetry10(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalMetrics([]byte{})
-	expectedErr := fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatOpenTelemetry10, errUvarintReadFailure)
+	expectedErr := formatOpenTelemetryError(errEmptyRecord)
+	require.Error(t, expectedErr)
 	assert.EqualError(t, err, expectedErr.Error())
 }
 

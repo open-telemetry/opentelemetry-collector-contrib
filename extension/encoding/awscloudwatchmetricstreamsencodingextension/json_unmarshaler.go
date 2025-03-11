@@ -32,7 +32,6 @@ var (
 	errNoMetricNamespace = errors.New("cloudwatch metric is missing namespace field")
 	errNoMetricUnit      = errors.New("cloudwatch metric is missing unit field")
 	errNoMetricValue     = errors.New("cloudwatch metric is missing value")
-	errEmptyRecord       = errors.New("0 metrics were extracted from the record")
 )
 
 type formatJSONUnmarshaler struct {
@@ -166,7 +165,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	}
 
 	if len(byResource) == 0 {
-		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatJSON, errEmptyRecord)
+		return pmetric.Metrics{}, formatJSONError(errEmptyRecord)
 	}
 
 	return c.createMetrics(byResource), nil
@@ -272,4 +271,10 @@ func setDataPointAttributes(metric cloudwatchMetric, dp pmetric.SummaryDataPoint
 			attrs.PutStr(k, v)
 		}
 	}
+}
+
+// formatJSONError appends message indicating
+// formatJSON as origin to the beginning of the error
+func formatJSONError(err error) error {
+	return fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatJSON, err)
 }
