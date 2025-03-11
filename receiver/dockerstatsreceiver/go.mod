@@ -10,21 +10,21 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.121.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	go.opentelemetry.io/collector/component v1.27.0
-	go.opentelemetry.io/collector/component/componentstatus v0.121.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.0
-	go.opentelemetry.io/collector/confmap v1.27.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.121.0
-	go.opentelemetry.io/collector/consumer v1.27.0
-	go.opentelemetry.io/collector/consumer/consumertest v0.121.0
-	go.opentelemetry.io/collector/filter v0.121.0
-	go.opentelemetry.io/collector/pdata v1.27.0
-	go.opentelemetry.io/collector/pipeline v0.121.0
-	go.opentelemetry.io/collector/receiver v0.121.0
-	go.opentelemetry.io/collector/receiver/receivertest v0.121.0
-	go.opentelemetry.io/collector/scraper v0.121.0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.121.0
-	go.opentelemetry.io/collector/semconv v0.121.0
+	go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component/componentstatus v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/confmap v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/filter v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/receiver v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/receiver/receivertest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/scraper v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/semconv v0.121.1-0.20250307194215-7d3e03e500b0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -52,6 +52,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect

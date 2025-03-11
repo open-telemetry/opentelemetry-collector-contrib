@@ -23,6 +23,9 @@ type Config struct {
 
 	// Filename points to a file that contains the bearer token(s) to use for every RPC.
 	Filename string `mapstructure:"filename,omitempty"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var (
