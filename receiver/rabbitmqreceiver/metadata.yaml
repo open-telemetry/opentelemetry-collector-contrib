@@ -22,8 +22,8 @@ status:
     unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    emeritus: [cpheps]
     active: [VenuEmmadi]
+    emeritus: [cpheps]
 
 resource_attributes:
   rabbitmq.queue.name:
