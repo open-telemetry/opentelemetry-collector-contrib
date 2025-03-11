@@ -201,6 +201,8 @@ scheme that maps these as `constant_keyword` fields.
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
 `logs` if [dynamic data stream routing mode](#elasticsearch-document-routing) is active.
 
+Attribute `elasticsearch.index` will be removed from the final document if exists.
+
 | Signal    | Supported          |
 | --------- | ------------------ |
 | Logs      | :white_check_mark: |
