@@ -8,10 +8,9 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
-
-	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
 var errUvarintReadFailure = errors.New("failed to get uvarint from record")
