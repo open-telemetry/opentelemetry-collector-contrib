@@ -93,7 +93,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.11 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.36.0 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
