@@ -26,9 +26,7 @@ func TestNew_OpenTelemetry10(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalMetrics([]byte{})
-	expectedErr := formatOpenTelemetryError(errEmptyRecord)
-	require.Error(t, expectedErr)
-	assert.EqualError(t, err, expectedErr.Error())
+	assert.EqualError(t, err, `failed to unmarshal metrics as 'opentelemetry1.0' format: 0 metrics were extracted from the record`)
 }
 
 func TestNew_Unimplemented(t *testing.T) {
