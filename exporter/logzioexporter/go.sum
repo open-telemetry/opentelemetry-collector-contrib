@@ -35,8 +35,6 @@ github.com/hashicorp/go-hclog v1.6.3 h1:Qr2kF+eVWjTiYmU7Y31tYlP1h0q/X3Nl3tPGdaB1
 github.com/hashicorp/go-hclog v1.6.3/go.mod h1:W4Qnvbt70Wk/zYJryRzDRU/4r0kIg0PVHBcfoyhpF5M=
 github.com/hashicorp/go-version v1.7.0 h1:5tqGy27NaOTB8yJKUZELlFAS/LTKJkrmONwQKeRZfjY=
 github.com/hashicorp/go-version v1.7.0/go.mod h1:fltr4n8CU8Ke44wwGCBoEymUuxUHl09ZGVZPK5anwXA=
-github.com/jaegertracing/jaeger v1.67.0 h1:t0BiJZVW9D3Z16y3uHqKzV9bKFTusooTH1Kgr77xF2Q=
-github.com/jaegertracing/jaeger v1.67.0/go.mod h1:tE/FEQfybCSdUbBgel51YaCSkc58O+Njih8oTl6j8vw=
 github.com/jaegertracing/jaeger-idl v0.5.0 h1:zFXR5NL3Utu7MhPg8ZorxtCBjHrL3ReM1VoB65FOFGE=
 github.com/jaegertracing/jaeger-idl v0.5.0/go.mod h1:ON90zFo9eoyXrt9F/KN8YeF3zxcnujaisMweFY/rg5k=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
@@ -91,7 +89,6 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector v0.121.0 h1:K23nHTjhqKDOYpBUDyeK0/Yjzs5Py8Ysvec7zyKXuK0=
 go.opentelemetry.io/collector/client v1.27.1-0.20250307194215-7d3e03e500b0 h1:ndU7oGOWxYpni/PeZ7g0mXDPfWVxqZWuiL4Xr/GLRNE=
 go.opentelemetry.io/collector/client v1.27.1-0.20250307194215-7d3e03e500b0/go.mod h1:6SZ34Gze7yUmEwtCp1x2u3vrL+M+RR0tTdfawN/AorI=
 go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0 h1:8HrrJJ31eViQ0qRaPcdZ1b8NV2OxKtVA4ZyzImh0GVY=
