@@ -709,4 +709,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          # Printing envs for debugging
+          echo "GITHUB_REPOSITORY_OWNER: $GITHUB_REPOSITORY_OWNER"
+          echo "GITHUB_REPOSITORY: $GITHUB_REPOSITORY"
+          echo "GITHUB_SERVER_URL: $GITHUB_SERVER_URL"
+          echo "GITHUB_RUN_ID: $GITHUB_RUN_ID"
           ./.tools/issuegenerator -path ./internal/tools/testresults/
