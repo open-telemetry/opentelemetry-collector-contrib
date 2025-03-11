@@ -28,7 +28,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.11
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.64.0-rc.11 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.35.0
+	github.com/DataDog/datadog-api-client-go/v2 v2.36.0
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0
