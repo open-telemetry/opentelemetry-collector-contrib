@@ -401,12 +401,12 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
 	}
 	if cfg.LogsDynamicIndex.Enabled {
-		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
 	if cfg.MetricsDynamicIndex.Enabled {
-		logger.Warn("metrics_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+		logger.Warn("metrics_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
 	if cfg.TracesDynamicIndex.Enabled {
-		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Documents are now always routed dynamically.")
+		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
 }
