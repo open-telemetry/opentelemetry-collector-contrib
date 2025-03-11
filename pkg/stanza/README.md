@@ -49,6 +49,34 @@ Common functionality for all of these receivers is provided by the adapter packa
 - A special `emitter` operator, combined with a `converter` which together act as a bridge from the operator sequence to the
   OpenTelemetry Collector's pipelines.
 
+### Feature Gates
+
+#### `stanza.synchronousLogEmitter`
+
+The `stanza.synchronousLogEmitter` feature gate prevents possible data loss during an ungraceful shutdown of the collector by emitting logs in LogEmitter synchronously,
+instead of batching the logs in LogEmitter's internal buffer. See related issue <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35456>.
+
+LogEmitter is a component in Stanza that passes logs from Stanza pipeline to the collector's pipeline.
+LogEmitter keeps an internal buffer of logs and only emits the logs as a single batch when the buffer is full (or when flush timeout elapses).
+This was done in order to increase performance, as processing data in batches is much more performant than processing each entry separately.
+However, this has the disadvantage of losing the data in the buffer in case of an ungraceful shutdown of the collector.
+To prevent this, enable this feature gate to make LogEmitter synchronous, eliminating the risk of data loss.
+
+Note that enabling this feature gate may have negative performance impact in some situations, see below.
+
+The performance impact does not occur when using receivers based on Stanza inputs that support batching. Currently these are: File Log receiver. See caveat below.
+
+The performance impact may be observed when using receivers based on Stanza inputs that do not support batching. Currently these are: Journald receiver, Named Pipe receiver, Syslog receiver, TCP Log receiver, UDP Log receiver, Windows EventLog receiver.
+
+The caveat is that even when using a receiver that supports batching (like the File Log receiver), the performance impact may still be observed when additional operators are configured (see `operators` configuration option).
+This is because Stanza transform operators currently don't support processing logs in batches, so even if the File Log receiver's File input operator creates a batch of logs,
+the next operator in Stanza pipeline will split every batch into single entries.
+
+The planned schedule for this feature gate is the following:
+
+- Introduce as `Alpha` (disabled by default) in v0.122.0
+- Move to `Beta` (enabled by default) after transform operators support batching and after all receivers that are selected to support batching support it
+
 ### FAQ
 
 Q: Why don't we make every parser and transform operator into a distinct OpenTelemetry processor?
