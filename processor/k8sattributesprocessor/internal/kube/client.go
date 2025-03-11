@@ -30,6 +30,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
+//nolint:unused
 var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
 	"k8sattr.rfc3339",
 	featuregate.StageStable,
@@ -148,6 +149,7 @@ func New(
 	c.Namespaces = map[string]*Namespace{}
 	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
+	c.Deployments = map[string]*Deployment{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -737,6 +739,8 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		transformedPod.Spec.NodeName = pod.Spec.NodeName
 	}
 
+	//teoreticky tu
+
 	if rules.PodHostName {
 		transformedPod.Spec.Hostname = pod.Spec.Hostname
 	}
@@ -917,15 +921,15 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	return tags
 }
 
-func (c *WatchClient) extractDeploymentAttributes(node *apps_v1.Deployment) map[string]string {
+func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[string]string {
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDeploymentMetadata(node.Labels, tags, "k8s.deployment.labels.%s")
+		r.extractFromDeploymentMetadata(d.Labels, tags, "k8s.deployment.labels.%s")
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(node.Annotations, tags, "k8s.deployment.annotations.%s")
+		r.extractFromDeploymentMetadata(d.Annotations, tags, "k8s.deployment.annotations.%s")
 	}
 
 	return tags

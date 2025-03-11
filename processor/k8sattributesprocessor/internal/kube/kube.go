@@ -297,6 +297,7 @@ type FieldExtractionRule struct {
 	//  - pod
 	//  - namespace
 	//  - node
+	//  - deployment
 	From string
 }
 
