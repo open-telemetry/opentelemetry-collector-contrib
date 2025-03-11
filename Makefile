@@ -437,7 +437,7 @@ endef
 
 MODULES="internal/buildscripts/modules"
 .PHONY: update-core-modules
-update-core-modules:
+update-core-module-list:
 	BETA_LINE=$$(grep -n '  beta:' $(CORE_VERSIONS) | cut -d : -f 1); \
 	(\
 		echo -e '#!/bin/bash\n\nbeta_modules=('; \
@@ -459,7 +459,6 @@ update-otel:$(MULTIMOD)
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
-	$(MAKE) update-core-modules
 	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol

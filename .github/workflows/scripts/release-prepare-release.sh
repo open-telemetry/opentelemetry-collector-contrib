@@ -33,6 +33,10 @@ git checkout -b "${BRANCH}"
 
 make update-otel OTEL_VERSION="v$CANDIDATE_BETA" OTEL_STABLE_VERSION="v$CANDIDATE_STABLE"
 
+make update-core-module-list
+git add internal/buildscripts/modules
+git commit -m "update core modules list"
+
 make chlog-update VERSION="v${CANDIDATE_BETA}"
 git add --all
 git commit -m "changelog update ${CANDIDATE_BETA}"
