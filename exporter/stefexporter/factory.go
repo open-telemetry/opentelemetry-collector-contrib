@@ -16,13 +16,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter/internal/metadata"
 )
 
-// The value of "type" key in configuration.
-var componentType = component.MustNewType("stef")
-
-// NewFactory creates a factory for Debug exporter
+// NewFactory creates a factory for STEF exporter
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		componentType,
+		metadata.Type,
 		createDefaultConfig,
 		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
 	)

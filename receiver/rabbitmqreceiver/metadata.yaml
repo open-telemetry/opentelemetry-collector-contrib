@@ -1,5 +1,21 @@
 type: rabbitmq
 
+tests:              # generated_component_test.go looking for test.config from metadata.yaml
+  config:
+    endpoint: "http://localhost:15672"
+    username: "testuser"
+    password: "testpassword"
+    collection_interval: 10s
+    metrics:
+      rabbitmq.node.disk_free:
+        enabled: true
+      rabbitmq.node.fd_used:
+        enabled: true
+      rabbitmq.node.mem_limit:
+        enabled: true
+      rabbitmq.node.mem_used:
+        enabled: true
+
 status:
   class: receiver
   stability:
@@ -81,3 +97,35 @@ metrics:
       value_type: int
     attributes: [message.state]
     enabled: true
+  rabbitmq.node.disk_free:
+    description: Free disk space on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.fd_used:
+    description: The number of file descriptors used on the node.
+    unit: "{fd}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.mem_limit:
+    description: The memory limit on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.mem_used:
+    description: The memory used on the node.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
