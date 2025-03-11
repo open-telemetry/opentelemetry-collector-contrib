@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/aws/aws-sdk-go v1.55.6
-	github.com/google/cadvisor v0.52.0
+	github.com/google/cadvisor v0.52.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.121.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/k8s v0.121.0
@@ -94,7 +94,6 @@ require (
 	github.com/opencontainers/cgroups v0.0.1 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
-	github.com/opencontainers/runc v1.2.5 // indirect
 	github.com/opencontainers/runtime-spec v1.2.0 // indirect
 	github.com/openshift/api v3.9.0+incompatible // indirect
 	github.com/openshift/client-go v0.0.0-20210521082421-73d9475a9142 // indirect
