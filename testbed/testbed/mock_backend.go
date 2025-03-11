@@ -50,7 +50,7 @@ type MockBackend struct {
 
 	// Recording fields.
 	isRecording     bool
-	RecordMutex     sync.Mutex
+	recordMutex     sync.Mutex
 	ReceivedTraces  []ptrace.Traces
 	ReceivedMetrics []pmetric.Metrics
 	ReceivedLogs    []plog.Logs
@@ -129,8 +129,8 @@ func (mb *MockBackend) Stop() {
 
 // EnableRecording enables recording of all data received by MockBackend.
 func (mb *MockBackend) EnableRecording() {
-	mb.RecordMutex.Lock()
-	defer mb.RecordMutex.Unlock()
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
 	mb.isRecording = true
 }
 
@@ -149,24 +149,30 @@ func (mb *MockBackend) DataItemsReceived() uint64 {
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
 // return by DataItemsReceived() are not cleared, they are cumulative.
 func (mb *MockBackend) ClearReceivedItems() {
-	mb.RecordMutex.Lock()
-	defer mb.RecordMutex.Unlock()
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
 	mb.ReceivedLogs = nil
 }
 
+func (mb *MockBackend) GetReceivedLogs() []plog.Logs {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	return mb.ReceivedLogs
+}
+
 func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {
-	mb.RecordMutex.Lock()
-	defer mb.RecordMutex.Unlock()
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedTraces = append(mb.ReceivedTraces, td)
 	}
 }
 
 func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
-	mb.RecordMutex.Lock()
-	defer mb.RecordMutex.Unlock()
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
 	}
@@ -274,8 +280,8 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	lc.backend.RecordMutex.Lock()
-	defer lc.backend.RecordMutex.Unlock()
+	lc.backend.recordMutex.Lock()
+	defer lc.backend.recordMutex.Unlock()
 	if err := lc.backend.decision(); err != nil {
 		if lc.backend.isRecording {
 			if consumererror.IsPermanent(err) {
