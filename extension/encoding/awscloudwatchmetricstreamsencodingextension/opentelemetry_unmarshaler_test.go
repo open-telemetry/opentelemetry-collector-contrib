@@ -5,6 +5,7 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -46,15 +47,18 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 		},
 		"invalid_record_empty": {
 			record:      []byte{},
-			expectedErr: errUvarintReadFailure,
+			expectedErr: fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatOpenTelemetry10, errUvarintReadFailure),
 		},
 		"invalid_record_no_metrics": {
-			record:      []byte{1, 2, 3},
-			expectedErr: errors.New("proto: MetricsData: illegal tag 0 (wire type 2)"),
+			record: []byte{1, 2, 3},
+			expectedErr: fmt.Errorf("failed to unmarshal metrics as '%s' format: %w",
+				formatOpenTelemetry10,
+				errors.New("proto: MetricsData: illegal tag 0 (wire type 2)"),
+			),
 		},
 	}
 
-	unmarshaler := formatOpenTelemetry10Unmarshaler{protoUnmarshaler: &pmetric.ProtoUnmarshaler{}}
+	unmarshaler := formatOpenTelemetry10Unmarshaler{}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result, err := unmarshaler.UnmarshalMetrics(test.record)

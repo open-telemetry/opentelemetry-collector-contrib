@@ -28,9 +28,7 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			logger:    settings.Logger,
 		}}, nil
 	case formatOpenTelemetry10:
-		return &encodingExtension{Unmarshaler: &formatOpenTelemetry10Unmarshaler{
-			protoUnmarshaler: &pmetric.ProtoUnmarshaler{},
-		}}, nil
+		return &encodingExtension{Unmarshaler: &formatOpenTelemetry10Unmarshaler{}}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid

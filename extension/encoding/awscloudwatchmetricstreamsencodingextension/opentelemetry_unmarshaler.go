@@ -6,6 +6,7 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 import (
 	"encoding/binary"
 	"errors"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -16,8 +17,7 @@ import (
 var errUvarintReadFailure = errors.New("failed to get uvarint from record")
 
 type formatOpenTelemetry10Unmarshaler struct {
-	protoUnmarshaler *pmetric.ProtoUnmarshaler
-	buildInfo        component.BuildInfo
+	buildInfo component.BuildInfo
 }
 
 var _ pmetric.Unmarshaler = (*formatOpenTelemetry10Unmarshaler)(nil)
@@ -26,14 +26,15 @@ func (f formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmetr
 	// if bytesRead is <= 0, there was an error
 	_, bytesRead := binary.Uvarint(record)
 	if bytesRead <= 0 {
-		return pmetric.Metrics{}, errUvarintReadFailure
+		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatOpenTelemetry10, errUvarintReadFailure)
 	}
 
 	// remove length prefix and get
 	// only the protobuf message
-	metrics, err := f.protoUnmarshaler.UnmarshalMetrics(record[bytesRead:])
+	u := &pmetric.ProtoUnmarshaler{}
+	metrics, err := u.UnmarshalMetrics(record[bytesRead:])
 	if err != nil {
-		return pmetric.Metrics{}, err
+		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatOpenTelemetry10, err)
 	}
 
 	// add scope name and build info version to

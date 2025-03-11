@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -165,7 +166,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	}
 
 	if len(byResource) == 0 {
-		return pmetric.Metrics{}, errEmptyRecord
+		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatJSON, errEmptyRecord)
 	}
 
 	return c.createMetrics(byResource), nil
