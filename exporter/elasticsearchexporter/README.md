@@ -119,11 +119,10 @@ Using the common `batcher` functionality provides several benefits over the defa
 ### Elasticsearch document routing
 
 Documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
-1. "Static mode": To `logs_index` (for log records), `metrics_index` (for data points) and `traces_index` (for spans and span events) if they are configured.
+1. "Static mode": To `logs_index` for log records, `metrics_index` for data points and `traces_index` for spans, if these configs are not empty respectively. In OTel mapping mode (`mapping::mode: otel`), span events are separate documents routed to `traces_index`.
 2. "Index attribute mode": To index name in `elasticsearch.index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
 3. "Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`, 
-where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans and span events, 
-with an exception in OTel mapping mode (`mapping::mode: otel`) where `data_stream.type` is `logs` for span events.
+where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans. There is an exception in OTel mapping mode (`mapping::mode: otel`) where `data_stream.type` is `logs` for span events as they are separate documents.
 In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
 The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
    1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute)
@@ -132,17 +131,17 @@ The resulting docs will contain the corresponding `data_stream.*` fields, see re
 
 This can be customised through the following settings:
 
-- `logs_index` (optional): The [index] or [data stream] name to publish events to. logs_index should be empty unless all documents should be sent to the same index.
+- `logs_index` (optional): The [index] or [data stream] name to publish logs to. `logs_index` should be empty unless all documents should be sent to the same index.
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically. Will be removed in a future version.
 
-- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. metrics_index should be empty unless all documents should be sent to the same index. Note that metrics support is currently in development.
+- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. `metrics_index` should be empty unless all documents should be sent to the same index. Note that metrics support is currently in development.
 
 - `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically. Will be removed in a future version.
 
-- `traces_index` (optional): The [index] or [data stream] name to publish traces to. traces_index should be empty unless all documents should be sent to the same index.
+- `traces_index` (optional): The [index] or [data stream] name to publish traces to. `traces_index` should be empty unless all documents should be sent to the same index.
 
 - `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically. Will be removed in a future version.
