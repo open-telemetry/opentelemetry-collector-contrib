@@ -42,6 +42,8 @@ type Config struct {
 	Spans      []MetricInfo `mapstructure:"spans"`
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
@@ -158,6 +160,8 @@ type MetricInfo struct {
 	Histogram            *Histogram            `mapstructure:"histogram"`
 	ExponentialHistogram *ExponentialHistogram `mapstructure:"exponential_histogram"`
 	Sum                  *Sum                  `mapstructure:"sum"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (mi *MetricInfo) ensureDefaults() {
