@@ -5,6 +5,7 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -12,13 +13,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-// getMetricsAndRecordFromFile reads the pmetric.Metrics
-// from filename and returns them along with their record
-// in the format the encoding extension expects them to be
-func getMetricsAndRecordFromFile(t *testing.T, filename string) (pmetric.Metrics, []byte) {
+// getRecordFromFile reads the pmetric.Metrics
+// from filename and returns the record in the
+// format the encoding extension expects the
+// metrics to be
+func getRecordFromFile(t *testing.T, filename string) []byte {
 	metrics, err := golden.ReadMetrics(filename)
 	require.NoError(t, err)
 
@@ -28,22 +29,20 @@ func getMetricsAndRecordFromFile(t *testing.T, filename string) (pmetric.Metrics
 
 	record := proto.EncodeVarint(uint64(len(data)))
 	record = append(record, data...)
-	return metrics, record
+	return record
 }
 
 func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 	t.Parallel()
 
-	validMetrics, validRecord := getMetricsAndRecordFromFile(t, "testdata/opentelemetry1/valid_metric.yaml")
-
 	tests := map[string]struct {
-		record          []byte
-		expectedMetrics pmetric.Metrics
-		expectedErr     error
+		record                  []byte
+		expectedMetricsFilename string
+		expectedErr             error
 	}{
 		"valid_record": {
-			record:          validRecord,
-			expectedMetrics: validMetrics,
+			record:                  getRecordFromFile(t, "testdata/opentelemetry1/valid_metric.yaml"),
+			expectedMetricsFilename: "testdata/opentelemetry1/valid_metric_expected.yaml",
 		},
 		"invalid_record_empty": {
 			record:      []byte{},
@@ -66,7 +65,9 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			err = pmetrictest.CompareMetrics(test.expectedMetrics, result)
+			expected, err := golden.ReadMetrics(test.expectedMetricsFilename)
+			require.NoError(t, err)
+			err = pmetrictest.CompareMetrics(expected, result)
 			require.NoError(t, err)
 		})
 	}
