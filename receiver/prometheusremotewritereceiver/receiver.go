@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"time"
 
@@ -167,6 +166,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+		// TODO(jj): create a metric cache using the internal/exp/metric/identity
 	)
 
 	for _, ts := range req.Timeseries {
@@ -196,7 +196,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			prw.addGaugeDatapoints(rm, ls, ts, intraRequestCache)
+			prw.addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			prw.addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
@@ -230,58 +230,24 @@ func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.Resourc
 	// TODO: Implement this function
 }
 
-func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries, intraRequestCache map[uint64]pmetric.ResourceMetrics) {
-	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
-	// In OTel name+type+unit is the unique identifier of a metric and we should not create
-	// a new metric if it already exists.
-	metricName := ls.Get(labels.MetricName)
-	unitRefStr := strconv.FormatUint(uint64(ts.Metadata.GetUnitRef()), 10)
-	helpRefStr := strconv.FormatUint(uint64(ts.Metadata.GetHelpRef()), 10)
-	hashedLabels := xxhash.Sum64String(metricName +
-		string([]byte{'\xff'}) +
-		unitRefStr +
-		string([]byte{'\xff'}) +
-		helpRefStr +
-		string([]byte{'\xff'}))
-
-	cachedResourceMetric, ok := intraRequestCache[hashedLabels]
-	fmt.Printf("hash exists? %t\n", ok)
-	if !ok {
-		intraRequestCache[hashedLabels] = rm
-	}
-
+func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
 	scopeName, scopeVersion := prw.extractScopeInfo(ls)
 
 	// Check if the name and version present in the labels are already present in the ResourceMetrics.
 	// If it is not present, we should create a new ScopeMetrics.
 	// Otherwise, we should append to the existing ScopeMetrics.
-	fmt.Printf("Len scope metrics: %d\n", rm.ScopeMetrics().Len())
-	for i := 0; i < rm.ScopeMetrics().Len(); i++ {
-		scope := rm.ScopeMetrics().At(i)
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
 		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			if ok {
-				// if the scope already exists and the metrics too, we should append the cached datapoints to the existing metric
-				fmt.Printf("Appending to existing metric\n")
-				fmt.Printf("index: %d\n", i)
-				fmt.Printf("cachedResourceMetric.ScopeMetrics().At(i).Metrics().Len(): %d\n", cachedResourceMetric.ScopeMetrics().At(i).Metrics().Len())
-				addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
-				// addDatapoints(cachedResourceMetric.ScopeMetrics().At(i).Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
-				return
-			} else {
-				fmt.Printf("Creating new metric\n")
-				// if the scope already exists and the metric does not, create a new empty metric and add the datapoints
-				addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
-				return
-			}
+			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+			return
 		}
 	}
 
-	// if the scope was never created, this means that the metric was also never created. That is, we should create a new scope and a new metric.
 	scope := rm.ScopeMetrics().AppendEmpty()
 	scope.Scope().SetName(scopeName)
 	scope.Scope().SetVersion(scopeVersion)
 	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
-	fmt.Printf("Creating new metric\n")
 	addDatapoints(m.DataPoints(), ls, ts)
 }
 
