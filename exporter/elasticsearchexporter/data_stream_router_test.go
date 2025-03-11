@@ -65,8 +65,9 @@ func createRouteTests(dsType string) []routeTestCase {
 			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
 		},
 		{
-			name: "otel with elasticsearch.index",
-			mode: MappingOTel,
+			name:      "otel with elasticsearch.index",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
 			recordAttrs: map[string]any{
 				"elasticsearch.index": "my-index",
 			},
@@ -75,8 +76,9 @@ func createRouteTests(dsType string) []routeTestCase {
 			},
 		},
 		{
-			name: "otel with data_stream attrs",
-			mode: MappingOTel,
+			name:      "otel with data_stream attrs",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
 			recordAttrs: map[string]any{
 				"data_stream.dataset":   "foo",
 				"data_stream.namespace": "bar",

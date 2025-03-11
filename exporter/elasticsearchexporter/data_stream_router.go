@@ -166,7 +166,7 @@ func routeRecord(
 		return elasticsearch.Index{Index: esIndex}, nil
 	}
 
-	dataset, _ := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
+	dataset, datasetExists := getFromAttributes(elasticsearch.DataStreamDataset, defaultDataStreamDataset, recordAttr, scopeAttr, resourceAttr)
 	namespace, _ := getFromAttributes(elasticsearch.DataStreamNamespace, defaultDataStreamNamespace, recordAttr, scopeAttr, resourceAttr)
 
 	dsType := defaultDSType
@@ -178,13 +178,16 @@ func routeRecord(
 		}
 	}
 
-	// Receiver-based routing
-	// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
-	// for the scope name
-	// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
-	if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
-		receiverName := submatch[1]
-		dataset = receiverName
+	// Only use receiver-based routing if dataset is not specified.
+	if !datasetExists {
+		// Receiver-based routing
+		// For example, hostmetricsreceiver (or hostmetricsreceiver.otel in the OTel output mode)
+		// for the scope name
+		// github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper
+		if submatch := receiverRegex.FindStringSubmatch(scope.Name()); len(submatch) > 0 {
+			receiverName := submatch[1]
+			dataset = receiverName
+		}
 	}
 
 	// For dataset, the naming convention for datastream is expected to be "logs-[dataset].otel-[namespace]".
