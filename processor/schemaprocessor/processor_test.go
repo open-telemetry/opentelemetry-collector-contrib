@@ -6,6 +6,8 @@ package schemaprocessor
 import (
 	"context"
 	_ "embed"
+	"fmt"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -18,27 +20,49 @@ import (
 	"go.uber.org/zap/zaptest"
 )
 
-func newTestTransformer(t *testing.T) *transformer {
-	trans, err := newTransformer(context.Background(), newDefaultConfiguration(), processor.Settings{
+type dummySchemaProvider struct {
+	transformations string
+}
+
+func (m *dummySchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
+	data := fmt.Sprintf(`
+file_format: 1.1.0
+schema_url: http://opentelemetry.io/schemas/1.9.0
+versions:
+  %s`, m.transformations)
+	data = strings.TrimSpace(data)
+	return data, nil
+}
+
+func newTestSchemaProcessor(t *testing.T, transformations string, targerVerion string) *schemaProcessor {
+	cfg := &Config{
+		Targets: []string{fmt.Sprintf("http://opentelemetry.io/schemas/%s", targerVerion)},
+	}
+	trans, err := newSchemaProcessor(context.Background(), cfg, processor.Settings{
 		TelemetrySettings: component.TelemetrySettings{
 			Logger: zaptest.NewLogger(t),
 		},
 	})
-	require.NoError(t, err, "Must not error when creating default transformer")
+	require.NoError(t, err, "Must not error when creating default schemaProcessor")
+	trans.manager.AddProvider(&dummySchemaProvider{
+		transformations: transformations,
+	})
 	return trans
 }
 
-func TestTransformerStart(t *testing.T) {
+func TestSchemaProcessorStart(t *testing.T) {
 	t.Parallel()
 
-	trans := newTestTransformer(t)
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	assert.NoError(t, trans.start(context.Background(), nil))
 }
 
-func TestTransformerProcessing(t *testing.T) {
+func TestSchemaProcessorProcessing(t *testing.T) {
 	t.Parallel()
+	// these tests are just to ensure that the processor does not error out
+	// and that the data is not modified as dummyprovider has no transformations
 
-	trans := newTestTransformer(t)
+	trans := newTestSchemaProcessor(t, "", "1.9.0")
 	t.Run("metrics", func(t *testing.T) {
 		in := pmetric.NewMetrics()
 		in.ResourceMetrics().AppendEmpty()
@@ -52,7 +76,7 @@ func TestTransformerProcessing(t *testing.T) {
 
 		out, err := trans.processMetrics(context.Background(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 
 	t.Run("traces", func(t *testing.T) {
@@ -67,8 +91,8 @@ func TestTransformerProcessing(t *testing.T) {
 		s.CopyTo(in.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0))
 
 		out, err := trans.processTraces(context.Background(), in)
-		assert.NoError(t, err, "Must not error when processing metrics")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.NoError(t, err, "Must not error when processing traces")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 
 	t.Run("logs", func(t *testing.T) {
@@ -83,6 +107,6 @@ func TestTransformerProcessing(t *testing.T) {
 
 		out, err := trans.processLogs(context.Background(), in)
 		assert.NoError(t, err, "Must not error when processing metrics")
-		assert.Equal(t, in, out, "Must return the same data (subject to change)")
+		assert.Equal(t, in, out, "Must return the same data")
 	})
 }
