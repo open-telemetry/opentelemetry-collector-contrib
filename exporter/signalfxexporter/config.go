@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/correlation"
@@ -24,17 +23,27 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
 )
 
-const (
-	translationRulesConfigKey = "translation_rules"
-)
+// This mimics the original translation_rules config option (now deleted), but is not reachable
+// by user configuration. It's only used by defaultTranslationRules to parse the
+// YAML into a []translation.Rule object.
+type translationRulesConfig struct {
+	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
+}
 
 var defaultTranslationRules = func() []translation.Rule {
-	cfg, err := loadConfig([]byte(translation.DefaultTranslationRulesYaml))
+	var data map[string]any
+	var defaultRules translationRulesConfig
+
 	// It is safe to panic since this is deterministic, and will not fail anywhere else if it doesn't fail all the time.
-	if err != nil {
+	if err := yaml.Unmarshal([]byte(translation.DefaultTranslationRulesYaml), &data); err != nil {
 		panic(err)
 	}
-	return cfg.TranslationRules
+
+	if err := confmap.NewFromStringMap(data).Unmarshal(&defaultRules); err != nil {
+		panic(fmt.Errorf("failed to load default translation rules: %w", err))
+	}
+
+	return defaultRules.TranslationRules
 }()
 
 var defaultExcludeMetrics = func() []dpfilters.MetricFilter {
@@ -74,7 +83,7 @@ type Config struct {
 	// value takes precedence over the value of Realm
 	APIURL string `mapstructure:"api_url"`
 
-	// api_tls needs to be set if the exporter's APIURL is pointing to a httforwarder extension
+	// api_tls needs to be set if the exporter's APIURL is pointing to a httpforwarder extension
 	// with TLS enabled and using a self-signed certificate where its CA is not loaded in the system cert pool.
 	APITLSSettings configtls.ClientConfig `mapstructure:"api_tls,omitempty"`
 
@@ -88,11 +97,6 @@ type Config struct {
 	DimensionClient DimensionClientConfig `mapstructure:"dimension_client"`
 
 	splunk.AccessTokenPassthroughConfig `mapstructure:",squash"`
-
-	// TranslationRules defines a set of rules how to translate metrics to a SignalFx compatible format
-	// Rules defined in translation/constants.go are used by default.
-	// Deprecated: Use metricstransform processor to do metrics transformations.
-	TranslationRules []translation.Rule `mapstructure:"translation_rules"`
 
 	DisableDefaultTranslationRules bool `mapstructure:"disable_default_translation_rules"`
 
@@ -150,25 +154,17 @@ type DimensionClientConfig struct {
 	Timeout             time.Duration `mapstructure:"timeout"`
 }
 
-func (cfg *Config) getMetricTranslator(logger *zap.Logger, done chan struct{}) (*translation.MetricTranslator, error) {
-	rules := defaultTranslationRules
-	if cfg.TranslationRules != nil {
-		// Previous way to disable default translation rules.
-		if len(cfg.TranslationRules) == 0 {
-			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use `disable_default_translation_rules` to disable the default rules in a gateway mode.")
-			rules = []translation.Rule{}
-		} else {
-			logger.Warn("You are using the deprecated `translation_rules` option that will be removed soon; Use metricstransform processor instead.")
-			rules = cfg.TranslationRules
-		}
-	}
+func (cfg *Config) getMetricTranslator(done chan struct{}) (*translation.MetricTranslator, error) {
+	var rules []translation.Rule
 	// The new way to disable default translation rules. This override any setting of the default TranslationRules.
 	if cfg.DisableDefaultTranslationRules {
 		rules = []translation.Rule{}
+	} else {
+		rules = defaultTranslationRules
 	}
 	metricTranslator, err := translation.NewMetricTranslator(rules, cfg.DeltaTranslationTTL, done)
 	if err != nil {
-		return nil, fmt.Errorf("invalid \"%s\": %w", translationRulesConfigKey, err)
+		return nil, fmt.Errorf("invalid default translation rules: %w", err)
 	}
 
 	return metricTranslator, nil

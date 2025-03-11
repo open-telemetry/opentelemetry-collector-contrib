@@ -12,6 +12,8 @@ type Config struct {
 	Encoding              string `mapstructure:"encoding"`
 	MarshalingSeparator   string `mapstructure:"marshaling_separator"`
 	UnmarshalingSeparator string `mapstructure:"unmarshaling_separator"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
@@ -20,9 +22,7 @@ func (c *Config) Validate() error {
 			return err
 		}
 	}
-	encCfg := textutils.NewEncodingConfig()
-	encCfg.Encoding = c.Encoding
-	_, err := encCfg.Build()
+	_, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return err
 	}

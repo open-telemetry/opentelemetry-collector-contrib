@@ -49,10 +49,15 @@ var newMetricsReceiver = func(
 		}
 		sc.Version = version
 	}
+
+	if config.RefreshFrequency != 0 {
+		sc.Metadata.RefreshFrequency = config.RefreshFrequency
+	}
+
 	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, sc); err != nil {
 		return nil, err
 	}
-	scraperControllerOptions := make([]scraperhelper.ScraperControllerOption, 0, len(config.Scrapers))
+	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
 			s, err := s(ctx, config, sc, params)
@@ -65,7 +70,7 @@ var newMetricsReceiver = func(
 		return nil, fmt.Errorf("no scraper found for key: %s", scraper)
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&config.ControllerConfig,
 		params,
 		consumer,

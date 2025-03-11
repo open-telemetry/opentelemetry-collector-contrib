@@ -6,7 +6,7 @@
 | Stability     | [beta]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fsumologic%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fsumologic) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fsumologic%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fsumologic) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@chan-tim-sumo](https://www.github.com/chan-tim-sumo) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@chan-tim-sumo](https://www.github.com/chan-tim-sumo), [@echlebek](https://www.github.com/echlebek), [@amdprophet](https://www.github.com/amdprophet) |
 | Emeritus      | [@aboguszewski-sumo](https://www.github.com/aboguszewski-sumo), [@kasia-kujawa](https://www.github.com/kasia-kujawa), [@mat-rumian](https://www.github.com/mat-rumian), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -101,7 +101,7 @@ processors:
 ### Adding `cloud.namespace` resource attribute
 
 Some of the apps in Sumo Logic require the `cloud.namespace` attribute to be set
-to better understand the data coming from AWS EC2, AWS ECS and AWS Elactic Beanstalk.
+to better understand the data coming from AWS EC2, AWS ECS and AWS Elastic Beanstalk.
 This attribute is similar to the standard OpenTelemetry attribute [`cloud.provider`][opentelemetry_cloud_provider_attribute].
 In the future, the Sumo Logic apps might switch to the standard `cloud.provider` attribute.
 Before this happens, the following mapping defines the relationship between `cloud.provider` and `cloud.namespace` values:

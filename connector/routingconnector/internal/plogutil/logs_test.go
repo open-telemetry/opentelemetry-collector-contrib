@@ -16,12 +16,12 @@ import (
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(plog.ResourceLogs) bool
 		from       plog.Logs
 		to         plog.Logs
 		expectFrom plog.Logs
 		expectTo   plog.Logs
+		moveIf     func(plog.ResourceLogs) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -86,12 +86,12 @@ func TestMoveResourcesIf(t *testing.T) {
 
 func TestMoveRecordsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool
 		from       plog.Logs
 		to         plog.Logs
 		expectFrom plog.Logs
 		expectTo   plog.Logs
+		moveIf     func(plog.ResourceLogs, plog.ScopeLogs, plog.LogRecord) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -231,5 +231,18 @@ func TestMoveRecordsWithContextIf(t *testing.T) {
 			assert.NoError(t, plogtest.CompareLogs(tt.expectFrom, tt.from), "from not modified as expected")
 			assert.NoError(t, plogtest.CompareLogs(tt.expectTo, tt.to), "to not as expected")
 		})
+	}
+}
+
+func BenchmarkMoveResourcesIfLogs(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		from := plogutiltest.NewLogs("AB", "CD", "EF")
+		to := plog.NewLogs()
+		plogutil.MoveResourcesIf(from, to, func(plog.ResourceLogs) bool {
+			return true
+		})
+		assert.Equal(b, 0, from.LogRecordCount())
+		assert.Equal(b, 8, to.LogRecordCount())
 	}
 }

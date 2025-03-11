@@ -13,14 +13,15 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/flush"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 )
 
 type Metadata struct {
@@ -29,7 +30,8 @@ type Metadata struct {
 	RecordNum       int64
 	FileAttributes  map[string]any
 	HeaderFinalized bool
-	FlushState      *flush.State
+	FlushState      flush.State
+	TokenLenState   tokenlen.State
 }
 
 // Reader manages a single file
@@ -44,7 +46,7 @@ type Reader struct {
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
 	contentSplitFunc       bufio.SplitFunc
-	decoder                *decode.Decoder
+	decoder                *encoding.Decoder
 	headerReader           *header.Reader
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
@@ -52,6 +54,7 @@ type Reader struct {
 	includeFileRecordNum   bool
 	compression            string
 	acquireFSLock          bool
+	maxBatchSize           int
 }
 
 // ReadToEnd will read until the end of the file
@@ -82,9 +85,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 			}
 			return
-		} else {
-			r.reader = gzipReader
 		}
+		r.reader = gzipReader
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
 		// we need to set the offset to the end of the file.
 		defer func() {
@@ -139,7 +141,7 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 			return true
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		token, err := textutils.DecodeAsString(r.decoder, s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode header token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
@@ -164,7 +166,6 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	}
 	r.headerReader = nil
 	r.HeaderFinalized = true
-	r.initialBufferSize = scanner.DefaultBufferSize
 
 	// Reset position in file to r.Offest after the header scanner might have moved it past a content token.
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
@@ -177,8 +178,17 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 func (r *Reader) readContents(ctx context.Context) {
 	// Create the scanner to read the contents of the file.
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.contentSplitFunc)
+	bufferSize := r.initialBufferSize
+	if r.TokenLenState.MinimumLength > bufferSize {
+		// If we previously saw a potential token larger than the default buffer,
+		// size the buffer to be at least one byte larger so we can see if there's more data
+		bufferSize = r.TokenLenState.MinimumLength + 1
+	}
 
+	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
+
+	tokenBodies := make([][]byte, r.maxBatchSize)
+	numTokensBatched := 0
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -194,27 +204,38 @@ func (r *Reader) readContents(ctx context.Context) {
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
+
+			if numTokensBatched > 0 {
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+				if err != nil {
+					r.set.Logger.Error("failed to emit token", zap.Error(err))
+				}
+				r.Offset = s.Pos()
+			}
 			return
 		}
 
-		token, err := r.decoder.Decode(s.Bytes())
+		var err error
+		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
+		numTokensBatched++
 
 		if r.includeFileRecordNum {
 			r.RecordNum++
-			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		err = r.emitFunc(ctx, emit.NewToken(token, r.FileAttributes))
-		if err != nil {
-			r.set.Logger.Error("failed to process token", zap.Error(err))
+		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
+			err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+			if err != nil {
+				r.set.Logger.Error("failed to emit token", zap.Error(err))
+			}
+			numTokensBatched = 0
+			r.Offset = s.Pos()
 		}
-
-		r.Offset = s.Pos()
 	}
 }
 

@@ -7,7 +7,13 @@ all_set:
       enabled: true
     sqlserver.batch.sql_recompilation.rate:
       enabled: true
+    sqlserver.database.backup_or_restore.rate:
+      enabled: true
     sqlserver.database.count:
+      enabled: true
+    sqlserver.database.execution.errors:
+      enabled: true
+    sqlserver.database.full_scan.rate:
       enabled: true
     sqlserver.database.io:
       enabled: true
@@ -15,9 +21,29 @@ all_set:
       enabled: true
     sqlserver.database.operations:
       enabled: true
+    sqlserver.database.tempdb.space:
+      enabled: true
+    sqlserver.database.tempdb.version_store.size:
+      enabled: true
+    sqlserver.deadlock.rate:
+      enabled: true
+    sqlserver.index.search.rate:
+      enabled: true
+    sqlserver.lock.timeout.rate:
+      enabled: true
     sqlserver.lock.wait.rate:
       enabled: true
     sqlserver.lock.wait_time.avg:
+      enabled: true
+    sqlserver.login.rate:
+      enabled: true
+    sqlserver.logout.rate:
+      enabled: true
+    sqlserver.memory.grants.pending.count:
+      enabled: true
+    sqlserver.memory.usage:
+      enabled: true
+    sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: true
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: true
@@ -27,15 +53,25 @@ all_set:
       enabled: true
     sqlserver.page.life_expectancy:
       enabled: true
+    sqlserver.page.lookup.rate:
+      enabled: true
     sqlserver.page.operation.rate:
       enabled: true
     sqlserver.page.split.rate:
       enabled: true
     sqlserver.processes.blocked:
       enabled: true
+    sqlserver.replica.data.rate:
+      enabled: true
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: true
+    sqlserver.table.count:
+      enabled: true
+    sqlserver.transaction.delay:
+      enabled: true
+    sqlserver.transaction.mirror_write.rate:
       enabled: true
     sqlserver.transaction.rate:
       enabled: true
@@ -56,6 +92,10 @@ all_set:
     sqlserver.user.connection.count:
       enabled: true
   resource_attributes:
+    server.address:
+      enabled: true
+    server.port:
+      enabled: true
     sqlserver.computer.name:
       enabled: true
     sqlserver.database.name:
@@ -70,7 +110,13 @@ none_set:
       enabled: false
     sqlserver.batch.sql_recompilation.rate:
       enabled: false
+    sqlserver.database.backup_or_restore.rate:
+      enabled: false
     sqlserver.database.count:
+      enabled: false
+    sqlserver.database.execution.errors:
+      enabled: false
+    sqlserver.database.full_scan.rate:
       enabled: false
     sqlserver.database.io:
       enabled: false
@@ -78,9 +124,29 @@ none_set:
       enabled: false
     sqlserver.database.operations:
       enabled: false
+    sqlserver.database.tempdb.space:
+      enabled: false
+    sqlserver.database.tempdb.version_store.size:
+      enabled: false
+    sqlserver.deadlock.rate:
+      enabled: false
+    sqlserver.index.search.rate:
+      enabled: false
+    sqlserver.lock.timeout.rate:
+      enabled: false
     sqlserver.lock.wait.rate:
       enabled: false
     sqlserver.lock.wait_time.avg:
+      enabled: false
+    sqlserver.login.rate:
+      enabled: false
+    sqlserver.logout.rate:
+      enabled: false
+    sqlserver.memory.grants.pending.count:
+      enabled: false
+    sqlserver.memory.usage:
+      enabled: false
+    sqlserver.page.buffer_cache.free_list.stalls.rate:
       enabled: false
     sqlserver.page.buffer_cache.hit_ratio:
       enabled: false
@@ -90,15 +156,25 @@ none_set:
       enabled: false
     sqlserver.page.life_expectancy:
       enabled: false
+    sqlserver.page.lookup.rate:
+      enabled: false
     sqlserver.page.operation.rate:
       enabled: false
     sqlserver.page.split.rate:
       enabled: false
     sqlserver.processes.blocked:
       enabled: false
+    sqlserver.replica.data.rate:
+      enabled: false
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
     sqlserver.resource_pool.disk.throttled.write.rate:
+      enabled: false
+    sqlserver.table.count:
+      enabled: false
+    sqlserver.transaction.delay:
+      enabled: false
+    sqlserver.transaction.mirror_write.rate:
       enabled: false
     sqlserver.transaction.rate:
       enabled: false
@@ -119,6 +195,10 @@ none_set:
     sqlserver.user.connection.count:
       enabled: false
   resource_attributes:
+    server.address:
+      enabled: false
+    server.port:
+      enabled: false
     sqlserver.computer.name:
       enabled: false
     sqlserver.database.name:
@@ -127,6 +207,14 @@ none_set:
       enabled: false
 filter_set_include:
   resource_attributes:
+    server.address:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    server.port:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_include:
@@ -141,6 +229,14 @@ filter_set_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    server.address:
+      enabled: true
+      metrics_exclude:
+        - strict: "server.address-val"
+    server.port:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
     sqlserver.computer.name:
       enabled: true
       metrics_exclude:

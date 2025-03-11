@@ -6,7 +6,8 @@
 | Stability     | [beta]  |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Ffilestorage%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Ffilestorage) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Ffilestorage%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Ffilestorage) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@djaglowski](https://www.github.com/djaglowski) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@swiatekm](https://www.github.com/swiatekm), [@VihasMakwana](https://www.github.com/VihasMakwana) \| Seeking more code owners! |
+| Emeritus      | [@djaglowski](https://www.github.com/djaglowski) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -25,7 +26,9 @@ The default timeout is `1s`.
 
 `fsync` when set, will force the database to perform an fsync after each write.  This helps to ensure database integrity if there is an interruption to the database process, but at the cost of performance.  See [DB.NoSync](https://pkg.go.dev/go.etcd.io/bbolt#DB) for more information.
 
-`create_directory` when set, will create the data storage and compaction directory if it does not already exist. The directory will be created with `0750 (rwxr-x--)` permissions, by default. Use `directory_permissions` to customize directory creation permissions.
+`create_directory` when set, will create the data storage and compaction directories if they do not already exist.
+By default, the directories will be created with `0750 (rwxr-x---)` permissions, minus the process umask.
+Use `directory_permissions` to customize directory creation permissions, minus the process umask.
 
 
 ## Compaction
@@ -72,10 +75,9 @@ y ├─────XXXXXXXXXXXXXXXXXXXXX..──────────── 
  . - claimed but no longer used space
 ```
 
-
 ## Example
 
-```
+```yaml
 extensions:
   file_storage:
   file_storage/all_settings:
@@ -92,13 +94,10 @@ service:
   pipelines:
     traces:
       receivers: [nop]
-      processors: [nop]
       exporters: [nop]
 
 # Data pipeline is required to load the config.
 receivers:
-  nop:
-processors:
   nop:
 exporters:
   nop:

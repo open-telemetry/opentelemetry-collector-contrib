@@ -6,6 +6,7 @@ package integrationtest // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"bytes"
 	"compress/gzip"
+	"compress/zlib"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DataDog/agent-payload/v5/gogen"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/stretchr/testify/assert"
@@ -47,7 +49,10 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter"
+	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
+	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
@@ -92,6 +97,10 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -104,7 +113,7 @@ func testIntegration(t *testing.T) {
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
-	sendTraces(t)
+	sendTraces(t, otlpGRPCEndpoint)
 
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
@@ -155,27 +164,28 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 		factories otelcol.Factories
 		err       error
 	)
-	factories.Receivers, err = receiver.MakeFactoryMap(
+	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
 			prometheusreceiver.NewFactory(),
+			hostmetricsreceiver.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Processors, err = processor.MakeFactoryMap(
+	factories.Processors, err = otelcol.MakeFactoryMap[processor.Factory](
 		[]processor.Factory{
 			batchprocessor.NewFactory(),
 			tailsamplingprocessor.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Connectors, err = connector.MakeFactoryMap(
+	factories.Connectors, err = otelcol.MakeFactoryMap[connector.Factory](
 		[]connector.Factory{
 			datadogconnector.NewFactory(),
 		}...,
 	)
 	require.NoError(t, err)
-	factories.Exporters, err = exporter.MakeFactoryMap(
+	factories.Exporters, err = otelcol.MakeFactoryMap[exporter.Factory](
 		[]exporter.Factory{
 			datadogexporter.NewFactory(),
 			debugexporter.NewFactory(),
@@ -186,8 +196,6 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 }
 
 func getIntegrationTestCollector(t *testing.T, cfgFile string, factories otelcol.Factories) *otelcol.Collector {
-	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33594
-	// nolint:staticcheck
 	_, err := otelcoltest.LoadConfigAndValidate(cfgFile, factories)
 	require.NoError(t, err, "All yaml config must be valid.")
 
@@ -223,11 +231,11 @@ func waitForReadiness(app *otelcol.Collector) {
 	}
 }
 
-func sendTraces(t *testing.T) {
+func sendTraces(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
@@ -284,6 +292,10 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -296,7 +308,7 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	waitForReadiness(app)
 
 	// 3. Generate and send traces
-	sendTracesComputeTopLevelBySpanKind(t)
+	sendTracesComputeTopLevelBySpanKind(t, otlpGRPCEndpoint)
 
 	// 4. Validate traces and APM stats from the mock server
 	var spans []*pb.Span
@@ -384,11 +396,11 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	}
 }
 
-func sendTracesComputeTopLevelBySpanKind(t *testing.T) {
+func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure())
+	traceExporter, err := otlptracegrpc.New(ctx, otlptracegrpc.WithInsecure(), otlptracegrpc.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
@@ -463,7 +475,12 @@ func TestIntegrationLogs(t *testing.T) {
 		}
 	})
 	defer server.Close()
+	thing := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("SERVER_URL", server.URL)
+	t.Setenv("PROM_SERVER", thing)
+	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
+	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
 
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
@@ -476,7 +493,7 @@ func TestIntegrationLogs(t *testing.T) {
 	waitForReadiness(app)
 
 	// 3. Generate and send logs
-	sendLogs(t, 5)
+	sendLogs(t, 5, otlpGRPCEndpoint)
 
 	// 4. Validate logs and metrics from the mock server
 	// Wait until `doneChannel` is closed and prometheus metrics are received.
@@ -520,10 +537,160 @@ func TestIntegrationLogs(t *testing.T) {
 	assert.Equal(t, 2, numSentLogRecords)
 }
 
-func sendLogs(t *testing.T, numLogs int) {
+func sendLogs(t *testing.T, numLogs int, endpoint string) {
 	ctx := context.Background()
-	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure())
+	logExporter, err := otlploggrpc.New(ctx, otlploggrpc.WithInsecure(), otlploggrpc.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
 	assert.NoError(t, logExporter.Export(ctx, lr))
+}
+
+func TestIntegrationHostMetrics_WithRemapping(t *testing.T) {
+	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+	}()
+
+	expectedMetrics := map[string]struct{}{
+		// DD conventions
+		"system.load.15":    {},
+		"system.load.5":     {},
+		"system.mem.total":  {},
+		"system.mem.usable": {},
+
+		// OTel conventions with otel. prefix
+		"otel.system.cpu.load_average.15m": {},
+		"otel.system.cpu.load_average.5m":  {},
+		"otel.system.memory.usage":         {},
+	}
+	testIntegrationHostMetrics(t, expectedMetrics, false)
+}
+
+func TestIntegrationHostMetrics_WithRemappingSerializer(t *testing.T) {
+	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	}()
+
+	expectedMetrics := map[string]struct{}{
+		// DD conventions
+		"system.load.15":    {},
+		"system.load.5":     {},
+		"system.mem.total":  {},
+		"system.mem.usable": {},
+
+		// OTel conventions with otel. prefix
+		"otel.system.cpu.load_average.15m": {},
+		"otel.system.cpu.load_average.5m":  {},
+		"otel.system.memory.usage":         {},
+	}
+	testIntegrationHostMetrics(t, expectedMetrics, true)
+}
+
+func TestIntegrationHostMetrics_WithoutRemapping(t *testing.T) {
+	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
+	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+	}()
+
+	expectedMetrics := map[string]struct{}{
+		// OTel conventions
+		"system.cpu.load_average.15m": {},
+		"system.cpu.load_average.5m":  {},
+		"system.memory.usage":         {},
+	}
+	testIntegrationHostMetrics(t, expectedMetrics, false)
+}
+
+func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{}, useSerializer bool) {
+	// 1. Set up mock Datadog server
+	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte, 100)}
+	server := testutil.DatadogServerMock(seriesRec.HandlerFunc)
+	defer server.Close()
+	t.Setenv("SERVER_URL", server.URL)
+
+	// 2. Start in-process collector
+	factories := getIntegrationTestComponents(t)
+	app := getIntegrationTestCollector(t, "integration_test_host_metrics_config.yaml", factories)
+	go func() {
+		assert.NoError(t, app.Run(context.Background()))
+	}()
+	defer app.Shutdown()
+
+	waitForReadiness(app)
+
+	// 3. Validate host metrics in DD and/or OTel conventions are sent to the mock server
+	// See https://docs.datadoghq.com/opentelemetry/integrations/host_metrics/?tab=host
+	metricMap := make(map[string]series)
+	for len(metricMap) < len(expectedMetrics) {
+		select {
+		case metricsBytes := <-seriesRec.ReqChan:
+			if useSerializer {
+				var err error
+				metricMap, err = seriesFromSerializer(metricsBytes, expectedMetrics)
+				require.NoError(t, err)
+			} else {
+				var err error
+				metricMap, err = seriesFromAPIClient(t, metricsBytes, expectedMetrics)
+				require.NoError(t, err)
+			}
+		case <-time.After(60 * time.Second):
+			t.Fail()
+		}
+	}
+}
+
+func seriesFromSerializer(metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
+	zr, err := zlib.NewReader(bytes.NewReader(metricsBytes))
+	if err != nil {
+		return nil, err
+	}
+	pl := new(gogen.MetricPayload)
+	b, err := io.ReadAll(zr)
+	if err != nil {
+		return nil, err
+	}
+
+	if err = pl.Unmarshal(b); err != nil {
+		return nil, err
+	}
+	metricMap := make(map[string]series)
+	for _, s := range pl.GetSeries() {
+		if _, ok := expectedMetrics[s.GetMetric()]; ok {
+			points := make([]point, len(s.GetPoints()))
+			for i, p := range s.GetPoints() {
+				points[i] = point{
+					Timestamp: int(p.GetTimestamp()),
+					Value:     p.GetValue(),
+				}
+			}
+			metricMap[s.GetMetric()] = series{
+				Metric: s.GetMetric(),
+				Points: points,
+			}
+		}
+	}
+	return metricMap, nil
+}
+
+func seriesFromAPIClient(t *testing.T, metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
+	var metrics seriesSlice
+	gz := getGzipReader(t, metricsBytes)
+	dec := json.NewDecoder(gz)
+	if err := dec.Decode(&metrics); err != nil {
+		return nil, err
+	}
+	metricMap := make(map[string]series)
+	for _, s := range metrics.Series {
+		if _, ok := expectedMetrics[s.Metric]; ok {
+			metricMap[s.Metric] = s
+		}
+	}
+	return metricMap, nil
 }

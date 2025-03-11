@@ -38,14 +38,22 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 		consumer consumer.Metrics,
 	) (receiver.Metrics, error) {
 		sqlCfg := cfg.(*Config)
-		var opts []scraperhelper.ScraperControllerOption
+		var opts []scraperhelper.ControllerOption
 		for i, query := range sqlCfg.Queries {
 			if len(query.Metrics) == 0 {
 				continue
 			}
 			id := component.MustNewIDWithName("sqlqueryreceiver", fmt.Sprintf("query-%d: %s", i, query.SQL))
 			dbProviderFunc := func() (*sql.DB, error) {
-				return sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
+				dbPool, err := sqlOpenerFunc(sqlCfg.Driver, sqlCfg.DataSource)
+				if err != nil {
+					return nil, err
+				}
+
+				if dbPool != nil {
+					dbPool.SetMaxOpenConns(sqlCfg.MaxOpenConn)
+				}
+				return dbPool, nil
 			}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(metadata.ScopeName)
@@ -54,7 +62,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			opt := scraperhelper.AddScraper(metadata.Type, mp)
 			opts = append(opts, opt)
 		}
-		return scraperhelper.NewScraperControllerReceiver(
+		return scraperhelper.NewMetricsController(
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,

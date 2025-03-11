@@ -16,12 +16,12 @@ import (
 
 func TestMoveResourcesIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -83,12 +83,12 @@ func TestMoveResourcesIf(t *testing.T) {
 
 func TestMoveMetricsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric) bool
+		name       string
 	}{
 		{
 			name: "move_none",
@@ -265,12 +265,12 @@ func TestMoveMetricsWithContextIf(t *testing.T) {
 
 func TestMoveDataPointsWithContextIf(t *testing.T) {
 	testCases := []struct {
-		name       string
-		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool
 		from       pmetric.Metrics
 		to         pmetric.Metrics
 		expectFrom pmetric.Metrics
 		expectTo   pmetric.Metrics
+		moveIf     func(pmetric.ResourceMetrics, pmetric.ScopeMetrics, pmetric.Metric, any) bool
+		name       string
 	}{
 		// gauge
 		{
@@ -1504,5 +1504,18 @@ func TestMoveDataPointsWithContextIf(t *testing.T) {
 			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectFrom, tt.from), "from not modified as expected")
 			assert.NoError(t, pmetrictest.CompareMetrics(tt.expectTo, tt.to), "to not as expected")
 		})
+	}
+}
+
+func BenchmarkMoveResourcesIfMetrics(b *testing.B) {
+	b.ReportAllocs()
+	for i := 0; i < b.N; i++ {
+		from := pmetricutiltest.NewGauges("AB", "CD", "EF", "GH")
+		to := pmetric.NewMetrics()
+		pmetricutil.MoveResourcesIf(from, to, func(pmetric.ResourceMetrics) bool {
+			return true
+		})
+		assert.Equal(b, 0, from.DataPointCount())
+		assert.Equal(b, 16, to.DataPointCount())
 	}
 }

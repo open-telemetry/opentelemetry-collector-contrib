@@ -37,6 +37,11 @@ coralogix/all:
   application_name: "APP_NAME"
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
+  batcher:
+    enabled: true
+    flush_timeout: 3s
+    min_size: 8888
+
 
 coralogix/domain:
   domain: "coralogix.com"
@@ -49,7 +54,7 @@ coralogix/domain:
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
 
-coralogix/domain_endoints:
+coralogix/domain_endpoints:
   domain: "coralogix.com"
   traces:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

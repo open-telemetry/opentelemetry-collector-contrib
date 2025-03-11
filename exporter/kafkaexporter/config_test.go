@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
@@ -204,7 +205,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -292,6 +293,22 @@ func TestValidate_sasl_version(t *testing.T) {
 
 	err := config.Validate()
 	assert.EqualError(t, err, "auth.sasl.version has to be either 0 or 1. configured value 42")
+}
+
+func TestValidate_sasl_iam(t *testing.T) {
+	config := &Config{
+		Producer: Producer{
+			Compression: "none",
+		},
+		Authentication: kafka.Authentication{
+			SASL: &kafka.SASLConfig{
+				Mechanism: "AWS_MSK_IAM",
+			},
+		},
+	}
+
+	err := config.Validate()
+	assert.NoError(t, err)
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {

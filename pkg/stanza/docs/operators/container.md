@@ -37,7 +37,7 @@ will produce the following k8s metadata:
       "k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d6",
       "k8s.container.name":          "kube-controller",
       "k8s.container.restart_count": "1",
-      "k8s.namespace.name":          "some"
+      "k8s.namespace.name":          "some-ns"
     }
   }
 }
@@ -320,10 +320,3 @@ receivers:
 </td>
 </tr>
 </table>
-
-### Removing original time field
-
-In order to remove the original time field from the log records users can enable the
-`filelog.container.removeOriginalTimeField` feature gate.
-The feature gate `filelog.container.removeOriginalTimeField` will be deprecated and eventually removed
-in the future, following the [feature lifecycle](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate#feature-lifecycle).

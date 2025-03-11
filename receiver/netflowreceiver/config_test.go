@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver/internal/metadata"
 )
@@ -36,7 +37,27 @@ func TestLoadConfig(t *testing.T) {
 				Port:      2055,
 				Sockets:   1,
 				Workers:   1,
-				QueueSize: 1000000,
+				QueueSize: 1000,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "zero_queue"),
+			expected: &Config{
+				Scheme:    "netflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "sflow"),
+			expected: &Config{
+				Scheme:    "sflow",
+				Port:      6343,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
 			},
 		},
 	}
@@ -50,7 +71,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -68,11 +89,19 @@ func TestInvalidConfig(t *testing.T) {
 	}{
 		{
 			id:  component.NewIDWithName(metadata.Type, "invalid_schema"),
-			err: "scheme must be one of sflow, netflow, or flow",
+			err: "scheme must be netflow or sflow",
 		},
 		{
 			id:  component.NewIDWithName(metadata.Type, "invalid_port"),
 			err: "port must be greater than 0",
+		},
+		{
+			id:  component.NewIDWithName(metadata.Type, "zero_sockets"),
+			err: "sockets must be greater than 0",
+		},
+		{
+			id:  component.NewIDWithName(metadata.Type, "zero_workers"),
+			err: "workers must be greater than 0",
 		},
 	}
 
@@ -85,7 +114,7 @@ func TestInvalidConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			err = component.ValidateConfig(cfg)
+			err = xconfmap.Validate(cfg)
 			assert.ErrorContains(t, err, tt.err)
 		})
 	}

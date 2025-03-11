@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -19,7 +20,7 @@ import (
 // Config defines configuration for HostMetrics receiver.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Scrapers                       map[component.Type]internal.Config `mapstructure:"-"`
+	Scrapers                       map[component.Type]component.Config `mapstructure:"-"`
 	// RootPath is the host's root directory (linux only).
 	RootPath string `mapstructure:"root_path"`
 
@@ -32,8 +33,8 @@ type Config struct {
 }
 
 var (
-	_ component.ConfigValidator = (*Config)(nil)
-	_ confmap.Unmarshaler       = (*Config)(nil)
+	_ xconfmap.Validator  = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
 )
 
 // Validate checks the receiver configuration is valid
@@ -58,7 +59,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	// dynamically load the individual collector configs based on the key name
 
-	cfg.Scrapers = map[component.Type]internal.Config{}
+	cfg.Scrapers = map[component.Type]component.Config{}
 
 	scrapersSection, err := componentParser.Sub("scrapers")
 	if err != nil {
@@ -84,7 +85,9 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 			return fmt.Errorf("error reading settings for scraper type %q: %w", key, err)
 		}
 
-		scraperCfg.SetRootPath(cfg.RootPath)
+		if iCfg, ok := scraperCfg.(internal.Config); ok {
+			iCfg.SetRootPath(cfg.RootPath)
+		}
 
 		cfg.Scrapers[key] = scraperCfg
 	}

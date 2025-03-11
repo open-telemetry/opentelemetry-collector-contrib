@@ -98,13 +98,11 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("query-%d: %s", i, query))
 
 		sqlServerScraper := newSQLServerScraper(id, query,
-			cfg.InstanceName,
-			cfg.ControllerConfig,
-			params.Logger,
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
-			metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params))
+			params,
+			cfg)
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}
@@ -115,10 +113,10 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 // Note: This method will fail silently if there is no work to do. This is an acceptable use case
 // as this receiver can still get information on Windows from performance counters without a direct
 // connection. Messages will be logged at the INFO level in such cases.
-func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ScraperControllerOption, error) {
+func setupScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.ControllerOption, error) {
 	sqlServerScrapers := setupSQLServerScrapers(params, cfg)
 
-	var opts []scraperhelper.ScraperControllerOption
+	var opts []scraperhelper.ControllerOption
 	for _, sqlScraper := range sqlServerScrapers {
 		s, err := scraper.NewMetrics(sqlScraper.ScrapeMetrics,
 			scraper.WithStart(sqlScraper.Start),

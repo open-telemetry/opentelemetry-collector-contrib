@@ -21,10 +21,14 @@ import (
 //go:embed sql/logs_ddl.sql
 var logsDDL string
 
+//go:embed sql/logs_view.sql
+var logsView string
+
 // dLog Log to Doris
 type dLog struct {
 	ServiceName        string         `json:"service_name"`
 	Timestamp          string         `json:"timestamp"`
+	ServiceInstanceID  string         `json:"service_instance_id"`
 	TraceID            string         `json:"trace_id"`
 	SpanID             string         `json:"span_id"`
 	SeverityNumber     int32          `json:"severity_number"`
@@ -42,7 +46,7 @@ type logsExporter struct {
 
 func newLogsExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *logsExporter {
 	return &logsExporter{
-		commonExporter: newExporter(logger, cfg, set),
+		commonExporter: newExporter(logger, cfg, set, "LOG"),
 	}
 }
 
@@ -53,24 +57,33 @@ func (e *logsExporter) start(ctx context.Context, host component.Host) error {
 	}
 	e.client = client
 
-	if !e.cfg.CreateSchema {
-		return nil
+	if e.cfg.CreateSchema {
+		conn, err := createDorisMySQLClient(e.cfg)
+		if err != nil {
+			return err
+		}
+		defer conn.Close()
+
+		err = createAndUseDatabase(ctx, conn, e.cfg)
+		if err != nil {
+			return err
+		}
+
+		ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.propertiesStr())
+		_, err = conn.ExecContext(ctx, ddl)
+		if err != nil {
+			return err
+		}
+
+		view := fmt.Sprintf(logsView, e.cfg.Table.Logs, e.cfg.Table.Logs)
+		_, err = conn.ExecContext(ctx, view)
+		if err != nil {
+			e.logger.Warn("failed to create materialized view", zap.Error(err))
+		}
 	}
 
-	conn, err := createDorisMySQLClient(e.cfg)
-	if err != nil {
-		return err
-	}
-	defer conn.Close()
-
-	err = createAndUseDatabase(ctx, conn, e.cfg)
-	if err != nil {
-		return err
-	}
-
-	ddl := fmt.Sprintf(logsDDL, e.cfg.Table.Logs, e.cfg.propertiesStr())
-	_, err = conn.ExecContext(ctx, ddl)
-	return err
+	go e.reporter.report()
+	return nil
 }
 
 func (e *logsExporter) shutdown(_ context.Context) error {
@@ -81,6 +94,7 @@ func (e *logsExporter) shutdown(_ context.Context) error {
 }
 
 func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
+	label := generateLabel(e.cfg, e.cfg.Table.Logs)
 	logs := make([]*dLog, 0, ld.LogRecordCount())
 
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
@@ -92,6 +106,11 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		if ok {
 			serviceName = v.AsString()
 		}
+		serviceInstance := ""
+		v, ok = resourceAttributes.Get(semconv.AttributeServiceInstanceID)
+		if ok {
+			serviceInstance = v.AsString()
+		}
 
 		for j := 0; j < resourceLogs.ScopeLogs().Len(); j++ {
 			scopeLogs := resourceLogs.ScopeLogs().At(j)
@@ -102,6 +121,7 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 				log := &dLog{
 					ServiceName:        serviceName,
 					Timestamp:          e.formatTime(logRecord.Timestamp().AsTime()),
+					ServiceInstanceID:  serviceInstance,
 					TraceID:            traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID()),
 					SpanID:             traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID()),
 					SeverityNumber:     int32(logRecord.SeverityNumber()),
@@ -118,16 +138,16 @@ func (e *logsExporter) pushLogData(ctx context.Context, ld plog.Logs) error {
 		}
 	}
 
-	return e.pushLogDataInternal(ctx, logs)
+	return e.pushLogDataInternal(ctx, logs, label)
 }
 
-func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog) error {
-	marshal, err := json.Marshal(logs)
+func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog, label string) error {
+	marshal, err := toJSONLines(logs)
 	if err != nil {
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Logs, marshal)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Logs, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -149,9 +169,21 @@ func (e *logsExporter) pushLogDataInternal(ctx context.Context, logs []*dLog) er
 		return err
 	}
 
-	if !response.success() {
-		return fmt.Errorf("failed to push log data: %s", response.Message)
+	if response.success() {
+		e.reporter.incrTotalRows(int64(len(logs)))
+		e.reporter.incrTotalBytes(int64(len(marshal)))
+
+		if response.duplication() {
+			e.logger.Warn("label already exists", zap.String("label", label), zap.Int("skipped", len(logs)))
+		}
+
+		if e.cfg.LogResponse {
+			e.logger.Info("log response:\n" + string(body))
+		} else {
+			e.logger.Debug("log response:\n" + string(body))
+		}
+		return nil
 	}
 
-	return nil
+	return fmt.Errorf("failed to push log data, response:%s", string(body))
 }
