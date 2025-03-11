@@ -16,44 +16,39 @@ This exporter supports sending metrics to [Sematext Cloud](https://sematext.com/
 
 The following configuration options are supported:
 * `timeout` (default = 5s) Timeout for requests
-* `region`  Region specifies the Sematext region the user is operating in; must be one of:
-  * `US`
-  * `EU`
+* `sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
+    * `enabled` (default = true)
+    * `num_consumers` (default = 10) The number of consumers from the queue
+    * `queue_size` (default = 1000) Maximum number of batches allowed in queue at a given time
 * `retry_on_failure` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
     * `enabled` (default = true)
     * `initial_interval` (default = 5s) Time to wait after the first failure before retrying
     * `max_interval` (default = 30s) Upper bound on backoff interval
     * `max_elapsed_time` (default = 120s) Maximum amount of time (including retries) spent trying to send a request/batch  
+* `region` Region specifies the Sematext region the user is operating in; must be one of:
+  * `US`
+  * `EU`    
 * `metrics.app_token` specifies the token of the Sematext Monitoring App to which metrics data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `2046e37c-4fac-45f6-831d-922d43fde759`.
-* `logs.app_token` specifies the token of the Sematext Logs App to which logs data will be sent. It must be a valid UUID string in the format `xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx`. For example: `9604e37c-49ac-49f6-831d-922d43fde759`.
 * `metrics.payload_max_lines` (default = 1_000) Maximum number of lines allowed per HTTP POST request
 * `metrics.payload_max_bytes` (default = 300_000) Maximum number of bytes allowed per HTTP POST request
-* `metrics.metrics_schema` (default = telegraf-prometheus-v2) The chosen metrics schema to write
-* `metrics.sending_queue` [details here](https://github.com/open-telemetry/opentelemetry-collector/blob/v0.25.0/exporter/exporterhelper/README.md#configuration)
-    * `enabled` (default = true)
-    * `num_consumers` (default = 10) The number of consumers from the queue
-    * `queue_size` (default = 1000) Maximum number of batches allowed in queue at a given time
-
 
 The full list of settings exposed for this exporter are documented in [config.go](config.go).
 
 Example:
 ```yaml
 timeout: 500ms
-region: US  
+sending_queue:
+  enabled: true
+  num_consumers: 3
+  queue_size: 10
 retry_on_failure:
   enabled: true
   initial_interval: 1s
   max_interval: 3s
   max_elapsed_time: 10s
+region: US  
 metrics:
   app_token: 2064e37c-4fac-45f6-831d-922d43fde759
-  sending_queue:
-    enabled: true
-    num_consumers: 3
-    queue_size: 10
   payload_max_lines: 100
   payload_max_bytes: 1000
-logs:
-  app_token: 9064e37c-4gac-49f6-831d-922l43fse759
 ```
