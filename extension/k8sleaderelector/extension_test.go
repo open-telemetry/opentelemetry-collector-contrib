@@ -6,6 +6,7 @@ package k8sleaderelector
 import (
 	"context"
 	"fmt"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -30,8 +31,6 @@ func TestExtension(t *testing.T) {
 		RetryPeriod:    2 * time.Second,
 	}
 
-	iamInvokedOnLeading := false
-
 	ctx := context.TODO()
 	fakeClient := fake.NewClientset()
 	config.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {
@@ -47,9 +46,10 @@ func TestExtension(t *testing.T) {
 		leaseHolderID: "foo",
 	}
 
+	var onStartLeadingInvoked atomic.Bool
 	leaderElection.SetCallBackFuncs(
 		func(_ context.Context) {
-			iamInvokedOnLeading = true
+			onStartLeadingInvoked.Store(true)
 			fmt.Printf("LeaderElection started leading")
 		},
 		func() {
@@ -69,6 +69,6 @@ func TestExtension(t *testing.T) {
 		return true
 	}, 10*time.Second, 100*time.Millisecond)
 
-	require.True(t, iamInvokedOnLeading)
+	require.True(t, onStartLeadingInvoked.Load())
 	require.NoError(t, leaderElection.Shutdown(ctx))
 }
