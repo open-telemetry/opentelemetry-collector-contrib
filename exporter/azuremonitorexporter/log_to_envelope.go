@@ -25,15 +25,16 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 
 	data := contracts.NewData()
 
-	if logRecord.SeverityNumber() == plog.SeverityNumberError {
+	logAttributeMap := logRecord.Attributes()
+
+	if hasRequiredKeys(logAttributeMap, conventions.AttributeExceptionMessage, conventions.AttributeExceptionType) {
 		// handle envelope for exceptions
 		exceptionData := contracts.NewExceptionData()
 		exceptionData.Properties = make(map[string]string)
 		exceptionData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
 		exceptionData.ProblemId = logRecord.SeverityText()
 
-		exceptionAttributeMap := logRecord.Attributes()
-		exceptionDetails := mapIncomingAttributeMapExceptionDetail(exceptionAttributeMap)
+		exceptionDetails := mapIncomingAttributeMapExceptionDetail(logAttributeMap)
 		exceptionData.Exceptions = append(exceptionData.Exceptions, exceptionDetails)
 
 		envelope.Name = exceptionData.EnvelopeName("")
@@ -51,7 +52,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 		applyCloudTagsToEnvelope(envelope, resourceAttributes)
 		applyInternalSdkVersionTagToEnvelope(envelope)
 
-		setAttributesAsProperties(logRecord.Attributes(), exceptionData.Properties)
+		setAttributesAsProperties(logAttributeMap, exceptionData.Properties)
 
 		packer.sanitize(func() []string { return exceptionData.Sanitize() })
 
@@ -78,7 +79,7 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 		applyCloudTagsToEnvelope(envelope, resourceAttributes)
 		applyInternalSdkVersionTagToEnvelope(envelope)
 
-		setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
+		setAttributesAsProperties(logAttributeMap, messageData.Properties)
 
 		packer.sanitize(func() []string { return messageData.Sanitize() })
 	}
@@ -143,4 +144,13 @@ func mapIncomingAttributeMapExceptionDetail(attributemap pcommon.Map) *contracts
 		exceptionDetails.Stack = stackTrace.Str()
 	}
 	return exceptionDetails
+}
+func hasRequiredKeys(attrMap pcommon.Map, keys ...string) bool {
+	for _, key := range keys {
+		_, exists := attrMap.Get(key)
+		if !exists {
+			return false
+		}
+	}
+	return true
 }
