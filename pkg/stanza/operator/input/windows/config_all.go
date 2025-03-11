@@ -36,6 +36,7 @@ type Config struct {
 	Raw                   bool          `mapstructure:"raw,omitempty"`
 	SuppressRenderingInfo bool          `mapstructure:"suppress_rendering_info,omitempty"`
 	ExcludeProviders      []string      `mapstructure:"exclude_providers,omitempty"`
+	IncludeProviders      []string      `mapstructure:"include_providers,omitempty"`
 	Remote                RemoteConfig  `mapstructure:"remote,omitempty"`
 }
 

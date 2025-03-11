@@ -50,6 +50,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		pollInterval:     c.PollInterval,
 		raw:              c.Raw,
 		excludeProviders: createProvidersSet(c.ExcludeProviders),
+		includeProviders: createProvidersSet(c.IncludeProviders),
 		remote:           c.Remote,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
