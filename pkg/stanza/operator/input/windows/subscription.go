@@ -112,7 +112,7 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 		return nil, nil
 	}
 
-	if err != nil && errors.Is(err, windows.RPC_S_INVALID_BOUND) {
+	if errors.Is(err, windows.RPC_S_INVALID_BOUND) {
 		// close current subscription
 		if closeErr := s.Close(); closeErr != nil {
 			return nil, fmt.Errorf("failed to close subscription during recovery: %w", closeErr)

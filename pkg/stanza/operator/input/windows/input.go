@@ -41,7 +41,6 @@ type Input struct {
 	remoteSessionHandle windows.Handle
 	startRemoteSession  func() error
 	processEvent        func(context.Context, Event) error
-	logger              *zap.Logger
 }
 
 // newInput creates a new Input operator.
@@ -202,7 +201,7 @@ func (i *Input) read(ctx context.Context) {
 	events, err := i.subscription.Read(i.currentMaxReads)
 	if errors.Is(err, ErrBatchSizeReduced) {
 		i.currentMaxReads = max(i.currentMaxReads/2, 1)
-		i.Logger().Warn("Encountered RPC_S_INVALID_BOUND, reducing batch size", zap.Int("current batch size", i.currentMaxReads), zap.Int("original batch size", i.maxReads))
+		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reducing batch size", zap.Int("current batch size", i.currentMaxReads), zap.Int("original batch size", i.maxReads))
 	} else if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
@@ -231,12 +230,12 @@ func (i *Input) read(ctx context.Context) {
 
 	for n, event := range events {
 		if err := i.processEvent(ctx, event); err != nil {
-			i.logger.Error("process event", zap.Error(err))
+			i.Logger().Error("process event", zap.Error(err))
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
 			if err := i.subscription.bookmark.Update(event); err != nil {
-				i.logger.Error("Failed to update bookmark from event", zap.Error(err))
+				i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
 			}
 		}
 		event.Close()
