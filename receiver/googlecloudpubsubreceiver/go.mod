@@ -29,7 +29,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
-	google.golang.org/api v0.224.0
+	google.golang.org/api v0.225.0
 	google.golang.org/genproto v0.0.0-20250122153221-138b5a5a4fd4
 	google.golang.org/genproto/googleapis/api v0.0.0-20250124145028-65684f501c47
 	google.golang.org/grpc v1.71.0
@@ -76,14 +76,14 @@ require (
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.59.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.59.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
-	golang.org/x/crypto v0.35.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/oauth2 v0.27.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
-	golang.org/x/time v0.10.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/oauth2 v0.28.0 // indirect
+	golang.org/x/sync v0.12.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/time v0.11.0 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
