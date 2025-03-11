@@ -30,7 +30,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.11 // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.11 // indirect
-	github.com/DataDog/datadog-api-client-go/v2 v2.35.0 // indirect
+	github.com/DataDog/datadog-api-client-go/v2 v2.36.0 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.26.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.26.0 // indirect
