@@ -235,6 +235,9 @@ func (i *Input) read(ctx context.Context) {
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
+			if err := i.subscription.bookmark.Update(event); err != nil {
+				i.logger.Error("Failed to update bookmark from event", zap.Error(err))
+			}
 		}
 		event.Close()
 	}

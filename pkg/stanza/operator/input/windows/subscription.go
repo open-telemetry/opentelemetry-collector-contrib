@@ -108,12 +108,6 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 
 	err := evtNext(s.handle, uint32(maxReads), &eventHandles[0], 0, 0, &eventsRead)
 
-	events := make([]Event, 0, eventsRead)
-	for _, eventHandle := range eventHandles[:eventsRead] {
-		event := NewEvent(eventHandle)
-		events = append(events, event)
-	}
-
 	if errors.Is(err, ErrorInvalidOperation) && eventsRead == 0 {
 		return nil, nil
 	}
@@ -139,6 +133,11 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 		return nil, err
 	}
 
+	events := make([]Event, 0, eventsRead)
+	for _, eventHandle := range eventHandles[:eventsRead] {
+		event := NewEvent(eventHandle)
+		events = append(events, event)
+	}
 	return events, nil
 }
 
