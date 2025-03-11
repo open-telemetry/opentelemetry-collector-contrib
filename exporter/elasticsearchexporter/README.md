@@ -118,16 +118,20 @@ Using the common `batcher` functionality provides several benefits over the defa
 
 ### Elasticsearch document routing
 
-Documents are routed to the target index / data stream dynamically in the following order. The first routing mode that applies will be used.
-1. "Static mode": To `logs_index` for log records, `metrics_index` for data points and `traces_index` for spans, if these configs are not empty respectively. In OTel mapping mode (`mapping::mode: otel`), span events are separate documents routed to `logs_index`.
-2. "Index attribute mode": To index name in `elasticsearch.index` attribute (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute) if the attribute exists.
-3. "Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`, 
-where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans. There is an exception in OTel mapping mode (`mapping::mode: otel`) where `data_stream.type` is `logs` for span events as they are separate documents.
+Documents are statically or dynamically routed to the target index / data stream in the following order. The first routing mode that applies will be used.
+1. "Static mode": To `logs_index` for log records, `metrics_index` for data points and `traces_index` for spans, if these configs are not empty respectively. In OTel mapping mode (`mapping::mode: otel`), span events are separate documents routed to `logs_index` if non-empty.
+2. "Dynamic - Index attribute mode": To index name in `elasticsearch.index` attribute (precedence: log record / data point / span attribute [^3] > scope attribute > resource attribute) if the attribute exists. In OTel mapping mode (`mapping::mode: otel`), span events are separate documents routed according to span events attributes, not span attributes.
+3. "Dynamic - Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
+where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans.
+In OTel mapping mode (`mapping::mode: otel`), span events are separate documents that have `data_stream.type: logs` and are routed using span event attributes, not span attributes.
+Note that in OTel mapping mode, `data_stream.dataset` will always be appended with `.otel`.
 In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
 The resulting docs will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
-   1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span / span event attribute > scope attribute > resource attribute)
+   1. `data_stream.dataset` or `data_stream.namespace` in attributes (precedence: log record / data point / span attribute [^3] > scope attribute > resource attribute)
    2. Otherwise, if scope name matches regex `/receiver/(\w*receiver)`, `data_stream.dataset` will be capture group #1
    3. Otherwise, `data_stream.dataset` falls back to `generic` and `data_stream.namespace` falls back to `default`. 
+
+[^3]: Additionally, span event attribute in OTel mode
 
 This can be customised through the following settings:
 
