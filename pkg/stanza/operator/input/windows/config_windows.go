@@ -49,7 +49,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		startAt:          c.StartAt,
 		pollInterval:     c.PollInterval,
 		raw:              c.Raw,
-		excludeProviders: excludeProvidersSet(c.ExcludeProviders),
+		excludeProviders: createProvidersSet(c.ExcludeProviders),
 		remote:           c.Remote,
 	}
 	input.startRemoteSession = input.defaultStartRemoteSession
@@ -63,7 +63,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	return input, nil
 }
 
-func excludeProvidersSet(providers []string) map[string]struct{} {
+func createProvidersSet(providers []string) map[string]struct{} {
 	set := make(map[string]struct{}, len(providers))
 	for _, provider := range providers {
 		set[provider] = struct{}{}
