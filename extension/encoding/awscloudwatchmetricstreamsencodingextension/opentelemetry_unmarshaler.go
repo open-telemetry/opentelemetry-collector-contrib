@@ -53,7 +53,6 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 				sm.Scope().SetVersion(f.buildInfo.Version)
 			}
 		}
-		// req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 
 		md = expmetrics.Merge(md, req.Metrics())
 	}
@@ -62,6 +61,5 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 		return pmetric.Metrics{}, errEmptyRecord
 	}
 
-	// metrics = expmetrics.Merge(pmetric.NewMetrics(), metrics)
 	return md, nil
 }
