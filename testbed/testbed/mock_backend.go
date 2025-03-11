@@ -50,7 +50,7 @@ type MockBackend struct {
 
 	// Recording fields.
 	isRecording     bool
-	recordMutex     sync.Mutex
+	RecordMutex     sync.Mutex
 	ReceivedTraces  []ptrace.Traces
 	ReceivedMetrics []pmetric.Metrics
 	ReceivedLogs    []plog.Logs
@@ -129,8 +129,8 @@ func (mb *MockBackend) Stop() {
 
 // EnableRecording enables recording of all data received by MockBackend.
 func (mb *MockBackend) EnableRecording() {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
+	mb.RecordMutex.Lock()
+	defer mb.RecordMutex.Unlock()
 	mb.isRecording = true
 }
 
@@ -149,24 +149,24 @@ func (mb *MockBackend) DataItemsReceived() uint64 {
 // ClearReceivedItems clears the list of received traces and metrics. Note: counters
 // return by DataItemsReceived() are not cleared, they are cumulative.
 func (mb *MockBackend) ClearReceivedItems() {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
+	mb.RecordMutex.Lock()
+	defer mb.RecordMutex.Unlock()
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
 	mb.ReceivedLogs = nil
 }
 
 func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
+	mb.RecordMutex.Lock()
+	defer mb.RecordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedTraces = append(mb.ReceivedTraces, td)
 	}
 }
 
 func (mb *MockBackend) ConsumeMetric(md pmetric.Metrics) {
-	mb.recordMutex.Lock()
-	defer mb.recordMutex.Unlock()
+	mb.RecordMutex.Lock()
+	defer mb.RecordMutex.Unlock()
 	if mb.isRecording {
 		mb.ReceivedMetrics = append(mb.ReceivedMetrics, md)
 	}
@@ -274,8 +274,8 @@ func (lc *MockLogConsumer) Capabilities() consumer.Capabilities {
 }
 
 func (lc *MockLogConsumer) ConsumeLogs(_ context.Context, ld plog.Logs) error {
-	lc.backend.recordMutex.Lock()
-	defer lc.backend.recordMutex.Unlock()
+	lc.backend.RecordMutex.Lock()
+	defer lc.backend.RecordMutex.Unlock()
 	if err := lc.backend.decision(); err != nil {
 		if lc.backend.isRecording {
 			if consumererror.IsPermanent(err) {

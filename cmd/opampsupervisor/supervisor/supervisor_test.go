@@ -1587,6 +1587,8 @@ telemetry:
 	supervisor.telemetrySettings.Logger.Info("test log")
 
 	require.Eventually(t, func() bool {
+		mockBackend.RecordMutex.Lock()
+		defer mockBackend.RecordMutex.Unlock()
 		return len(mockBackend.ReceivedLogs) > 0
 	}, 5*time.Second, 1*time.Second)
 
