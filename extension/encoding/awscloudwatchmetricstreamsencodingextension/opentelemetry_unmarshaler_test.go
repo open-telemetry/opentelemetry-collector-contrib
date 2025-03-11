@@ -5,6 +5,7 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"errors"
+	"path/filepath"
 	"testing"
 
 	"github.com/gogo/protobuf/proto"
@@ -15,45 +16,57 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-// getRecordFromFile reads the pmetric.Metrics
-// from filename and returns the record in the
-// format the encoding extension expects the
-// metrics to be
-func getRecordFromFile(t *testing.T, filename string) []byte {
-	metrics, err := golden.ReadMetrics(filename)
-	require.NoError(t, err)
+// getRecordsFromMetrics reads the pmetric.Metrics
+// from each given file in metricFiles and returns
+// the record in the format the encoding extension
+// expects the metrics to be
+func getRecordFromFiles(t *testing.T, metricFiles []string) []byte {
+	var record []byte
+	for _, file := range metricFiles {
+		metrics, err := golden.ReadMetrics(file)
+		require.NoError(t, err)
 
-	m := pmetric.ProtoMarshaler{}
-	data, err := m.MarshalMetrics(metrics)
-	require.NoError(t, err)
+		m := pmetric.ProtoMarshaler{}
+		data, err := m.MarshalMetrics(metrics)
+		require.NoError(t, err)
 
-	record := proto.EncodeVarint(uint64(len(data)))
-	record = append(record, data...)
+		datum := proto.EncodeVarint(uint64(len(data)))
+		datum = append(datum, data...)
+
+		record = append(record, datum...)
+	}
+
 	return record
 }
 
 func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 	t.Parallel()
 
+	filesDirectory := "testdata/opentelemetry1"
 	unmarshaler := formatOpenTelemetry10Unmarshaler{}
 	tests := map[string]struct {
 		record                  []byte
 		expectedMetricsFilename string
 		expectedErr             error
 	}{
-		"valid_record": {
-			record:                  getRecordFromFile(t, "testdata/opentelemetry1/valid_metric.yaml"),
-			expectedMetricsFilename: "testdata/opentelemetry1/valid_metric_expected.yaml",
+		"valid_record_single_metric": {
+			record:                  getRecordFromFiles(t, []string{filepath.Join(filesDirectory, "valid_metric.yaml")}),
+			expectedMetricsFilename: filepath.Join(filesDirectory, "valid_metric_single_expected.yaml"),
+		},
+		"valid_record_multiple_metrics": {
+			record: getRecordFromFiles(t, []string{
+				filepath.Join(filesDirectory, "valid_metric.yaml"),
+				filepath.Join(filesDirectory, "valid_metric.yaml"),
+			}),
+			expectedMetricsFilename: filepath.Join(filesDirectory, "valid_metric_multiple_expected.yaml"),
 		},
 		"invalid_record_empty": {
 			record:      []byte{},
-			expectedErr: formatOpenTelemetryError(errEmptyRecord),
+			expectedErr: errEmptyRecord,
 		},
 		"invalid_record_no_metrics": {
-			record: []byte{1, 2, 3},
-			expectedErr: formatOpenTelemetryError(
-				errors.New("unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)"),
-			),
+			record:      []byte{1, 2, 3},
+			expectedErr: errors.New("unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)"),
 		},
 	}
 

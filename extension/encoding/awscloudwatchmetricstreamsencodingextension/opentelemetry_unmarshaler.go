@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
+	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 var errInvalidOTLPMessageLength = errors.New("unable to decode data length from message")
@@ -23,12 +24,6 @@ type formatOpenTelemetry10Unmarshaler struct {
 
 var _ pmetric.Unmarshaler = (*formatOpenTelemetry10Unmarshaler)(nil)
 
-// formatOpenTelemetryError appends message indicating
-// formatOpenTelemetry10 as origin to the beginning of the error
-func formatOpenTelemetryError(err error) error {
-	return fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", formatOpenTelemetry10, err)
-}
-
 func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
 	dataLen, pos := len(record), 0
@@ -36,7 +31,7 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 		// get start of the datum
 		n, nLen := proto.DecodeVarint(record)
 		if nLen == 0 && n == 0 {
-			return md, formatOpenTelemetryError(errInvalidOTLPMessageLength)
+			return md, errInvalidOTLPMessageLength
 		}
 
 		// unmarshal datum
@@ -45,7 +40,7 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 		err := req.UnmarshalProto(record[pos : pos+int(n)])
 		pos += int(n)
 		if err != nil {
-			return pmetric.Metrics{}, formatOpenTelemetryError(fmt.Errorf("unable to unmarshal input: %w", err))
+			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
 		}
 
 		// add scope name and build info version to
@@ -58,12 +53,15 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 				sm.Scope().SetVersion(f.buildInfo.Version)
 			}
 		}
-		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+		// req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
+
+		md = expmetrics.Merge(md, req.Metrics())
 	}
 
 	if md.DataPointCount() == 0 {
-		return pmetric.Metrics{}, formatOpenTelemetryError(errEmptyRecord)
+		return pmetric.Metrics{}, errEmptyRecord
 	}
 
+	// metrics = expmetrics.Merge(pmetric.NewMetrics(), metrics)
 	return md, nil
 }

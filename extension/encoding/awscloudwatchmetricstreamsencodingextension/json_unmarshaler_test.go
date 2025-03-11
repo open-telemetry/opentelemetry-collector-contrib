@@ -131,7 +131,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		"invalid_record": {
 			// test a record with one invalid metric
 			files:       []string{"invalid_metric.json"},
-			expectedErr: formatJSONError(errEmptyRecord),
+			expectedErr: errEmptyRecord,
 		},
 		"valid_record_multiple_metrics": {
 			// test a record with multiple
