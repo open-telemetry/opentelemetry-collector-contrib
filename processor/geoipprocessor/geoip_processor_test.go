@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"go.opentelemetry.io/otel/attribute"
-	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -83,52 +82,51 @@ var baseProviderMock = providerMock{
 }
 
 var testCases = []struct {
-	name             string
-	goldenDir        string
-	context          ContextID
-	lookupAttributes []attribute.Key
+	name       string
+	goldenDir  string
+	context    ContextID
+	attributes []attribute.Key
 }{
 	{
-		name:             "default source.address attribute, not found",
-		goldenDir:        "no_source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute, not found",
+		goldenDir: "resource_no_source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute",
-		goldenDir:        "source_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute",
+		goldenDir: "resource_source_address",
+		context:   resource,
 	},
 	{
-		name:             "default source.address attribute no geo metadata found by providers",
-		goldenDir:        "source_address_geo_not_found",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.address attribute no geo metadata found by providers",
+		goldenDir: "resource_source_address_geo_not_found",
+		context:   resource,
 	},
 	{
-		name:             "default source.ip attribute with an unspecified IP address should be skipped",
-		goldenDir:        "unspecified_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "default source.ip attribute with an unspecified IP address should be skipped",
+		goldenDir: "resource_unspecified_address",
+		context:   resource,
 	},
 	{
-		name:             "custom source attributes",
-		goldenDir:        "custom_sources",
-		context:          resource,
-		lookupAttributes: []attribute.Key{"ip", "host.ip"},
+		name:      "do not add resource attributes with an invalid ip",
+		goldenDir: "resource_invalid_address",
+		context:   resource,
 	},
 	{
-		name:             "do not add resource attributes with an invalid ip",
-		goldenDir:        "invalid_address",
-		context:          resource,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "source address located in the record attributes",
+		goldenDir: "record_source_address",
+		context:   record,
 	},
 	{
-		name:             "source address located in inner attributes",
-		goldenDir:        "attribute_source_address",
-		context:          record,
-		lookupAttributes: defaultResourceAttributes,
+		name:      "client address located in the record attributes",
+		goldenDir: "record_client_address",
+		context:   record,
+	},
+	{
+		name:       "custom address located in the record attributes",
+		goldenDir:  "record_custom_address",
+		context:    record,
+		attributes: []attribute.Key{"source.address", "client.address", "custom.address"},
 	},
 }
 
@@ -206,7 +204,6 @@ func TestProcessor(t *testing.T) {
 	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
 		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
 			return attribute.NewSet([]attribute.KeyValue{
-				semconv.SourceAddress("1.2.3.4"),
 				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
 				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
 				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
@@ -227,7 +224,11 @@ func TestProcessor(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}}
+			var attributes []attribute.Key = defaultAttributes
+			if tt.attributes != nil {
+				attributes = tt.attributes
+			}
+			cfg := &Config{Context: tt.context, Providers: map[string]provider.Config{providerKey: &providerConfigMock{}}, Attributes: attributes}
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
