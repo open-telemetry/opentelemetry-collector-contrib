@@ -1343,6 +1343,102 @@ func TestNodeExtractionRules(t *testing.T) {
 	}
 }
 
+func TestDeploymentExtractionRules(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+
+	deployment := &apps_v1.Deployment{
+		ObjectMeta: meta_v1.ObjectMeta{
+			Name:              "k8s-node-example",
+			UID:               "aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee",
+			CreationTimestamp: meta_v1.Now(),
+			Labels: map[string]string{
+				"label1": "lv1",
+			},
+			Annotations: map[string]string{
+				"annotation1": "av1",
+			},
+		},
+	}
+
+	testCases := []struct {
+		name       string
+		rules      ExtractionRules
+		attributes map[string]string
+	}{
+		{
+			name:       "no-rules",
+			rules:      ExtractionRules{},
+			attributes: nil,
+		},
+		{
+			name: "labels and annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDeployment,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"l1": "lv1",
+				"a1": "av1",
+			},
+		},
+		{
+			name: "all-labels",
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:la.*)$"),
+						From:     MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.labels.label1": "lv1",
+			},
+		},
+		{
+			name: "all-annotations",
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						KeyRegex: regexp.MustCompile("^(?:an.*)$"),
+						From:     MetadataFromDeployment,
+					},
+				},
+			},
+			attributes: map[string]string{
+				"k8s.deployment.annotations.annotation1": "av1",
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			c.handleDeploymentAdd(deployment)
+			n, ok := c.GetDeployment(deployment.Name)
+			require.True(t, ok)
+
+			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			for k, v := range tc.attributes {
+				got, ok := n.Attributes[k]
+				assert.True(t, ok)
+				assert.Equal(t, v, got)
+			}
+		})
+	}
+}
+
 func TestFilters(t *testing.T) {
 	testCases := []struct {
 		name    string
@@ -1977,6 +2073,70 @@ func TestExtractNamespaceLabelsAnnotations(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			assert.Equal(t, tc.shouldExtractNamespace, c.extractNamespaceLabelsAnnotations())
+		})
+	}
+}
+
+func TestExtractDeploymentLabelsAnnotations(t *testing.T) {
+	c, _ := newTestClientWithRulesAndFilters(t, Filters{})
+	testCases := []struct {
+		name                    string
+		shouldExtractDeployment bool
+		rules                   ExtractionRules
+	}{
+		{
+			name:                    "empty-rules",
+			shouldExtractDeployment: false,
+			rules:                   ExtractionRules{},
+		}, {
+			name:                    "pod-rules",
+			shouldExtractDeployment: false,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromPod,
+					},
+				},
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromPod,
+					},
+				},
+			},
+		}, {
+			name:                    "deployment-rules-only-annotations",
+			shouldExtractDeployment: true,
+			rules: ExtractionRules{
+				Annotations: []FieldExtractionRule{
+					{
+						Name: "a1",
+						Key:  "annotation1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+		}, {
+			name:                    "deployment-rules-only-labels",
+			shouldExtractDeployment: true,
+			rules: ExtractionRules{
+				Labels: []FieldExtractionRule{
+					{
+						Name: "l1",
+						Key:  "label1",
+						From: MetadataFromDeployment,
+					},
+				},
+			},
+		},
+	}
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			c.Rules = tc.rules
+			assert.Equal(t, tc.shouldExtractDeployment, c.extractDeploymentLabelsAnnotations())
 		})
 	}
 }
