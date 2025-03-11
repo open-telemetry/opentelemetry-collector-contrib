@@ -20,6 +20,7 @@ func TestDefaultConfiguration(t *testing.T) {
 	assert.Empty(t, c.BlockedValues)
 	assert.Empty(t, c.AllowedValues)
 	assert.Empty(t, c.BlockedKeyPatterns)
+	assert.Empty(t, c.HashFunction)
 }
 
 func TestCreateTestProcessor(t *testing.T) {
