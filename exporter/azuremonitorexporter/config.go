@@ -19,4 +19,5 @@ type Config struct {
 	MaxBatchSize       int                        `mapstructure:"maxbatchsize"`
 	MaxBatchInterval   time.Duration              `mapstructure:"maxbatchinterval"`
 	SpanEventsEnabled  bool                       `mapstructure:"spaneventsenabled"`
+	ShutdownTimeout    time.Duration              `mapstructure:"shutdown_timeout"`
 }

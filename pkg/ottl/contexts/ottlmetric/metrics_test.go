@@ -10,17 +10,19 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refMetric := createMetricTelemetry()
+	refMetric := createTelemetry()
 
 	newCache := pcommon.NewMap()
 	newCache.PutStr("temp", "value")
@@ -155,11 +157,20 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
+			// Create a controlled test cache
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			pep := pathExpressionParser{
+				telemetrySettings: component.TelemetrySettings{},
+				cacheGetSetter:    ctxcache.PathExpressionParser(cacheGetter),
+			}
+
 			accessor, err := pep.parsePath(tt.path)
 			assert.NoError(t, err)
 
-			metric := createMetricTelemetry()
+			metric := createTelemetry()
 
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
@@ -170,12 +181,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
-			exMetric := createMetricTelemetry()
+			exMetric := createTelemetry()
 			exCache := pcommon.NewMap()
 			tt.modified(exMetric, exCache)
 
 			assert.Equal(t, exMetric, metric)
-			assert.Equal(t, exCache, ctx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -244,7 +255,7 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 	cacheValue := pcommon.NewMap()
 	cacheValue.PutStr("test", "pass")
 
-	ctx := NewTransformContext(
+	tCtx := NewTransformContext(
 		pmetric.NewMetric(),
 		pmetric.NewMetricSlice(),
 		pcommon.NewInstrumentationScope(),
@@ -254,10 +265,10 @@ func Test_newPathGetSetter_WithCache(t *testing.T) {
 		WithCache(&cacheValue),
 	)
 
-	assert.Equal(t, cacheValue, ctx.getCache())
+	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
-func createMetricTelemetry() pmetric.Metric {
+func createTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")
 	metric.SetDescription("description")
