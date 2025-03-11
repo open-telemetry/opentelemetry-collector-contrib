@@ -504,7 +504,7 @@ jobs:
             arch: arm64
           - os: aix
             arch: ppc64le
-          - os: darwin
+          - os: aix
             arch: s390x
           - os: darwin
             arch: arm
