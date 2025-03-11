@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -151,6 +153,8 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
+type Ident = identity.Metric
+
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
 //
@@ -166,12 +170,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
-		// TODO(jj): create a metric cache using the internal/exp/metric/identity
+		// metricCache is used to store previously created pmetric.Metric to speed up the process of appending new datapoints samples.
+		metricCache = make(map[Ident]pmetric.Metric)
 	)
 
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-
 		if !ls.Has(labels.MetricName) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
@@ -192,10 +196,56 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			intraRequestCache[hashedLabels] = rm
 		}
 
+		// metricHash := xxhash.Sum64String(ls.Get(labels.MetricName) +
+		// 	string([]byte{'\xff'}) +
+		// 	req.Symbols[ts.Metadata.UnitRef] +
+		// 	string([]byte{'\xff'}) +
+		// 	req.Symbols[ts.Metadata.HelpRef] +
+		// 	string([]byte{'\xff'}) +
+		// 	ts.Metadata.Type.String())
+		// fmt.Printf("metric hash: %v\n", metricHash)
+
+		resourceID := identity.OfResource(rm.Resource())
+		exists := false
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			scope := rm.ScopeMetrics().At(j)
+			scopeID := identity.OfScope(resourceID, scope.Scope())
+			fmt.Printf("scope hash: %v\n", scopeID.String())
+			fmt.Printf("Debug Length of metrics: %v\n", scope.Metrics().Len())
+			for k := 0; k < scope.Metrics().Len(); k++ {
+				metric := scope.Metrics().At(k)
+				metricID := identity.OfMetric(scopeID, metric)
+				fmt.Printf("metric hash: %v\n", metricID.String())
+				_, ok := metricCache[metricID]
+				if ok {
+					fmt.Printf("Debug: metric already exists\n")
+					// if the metric was already created, we can append the new datapoints to the existing metric.
+					addDatapoints(metric.Gauge().DataPoints(), ls, ts)
+					exists = true
+					continue
+				}
+
+				fmt.Printf("Debug: metric does not exist adding to cache\n")
+				metricCache[metricID] = metric
+				fmt.Printf("Debug metric Name: %v\n", ls.Get(labels.MetricName))
+				fmt.Printf("Debug symbols unit ref: %v\n", req.Symbols[ts.Metadata.UnitRef])
+				metric.SetName(ls.Get(labels.MetricName))
+				metric.SetUnit(req.Symbols[ts.Metadata.UnitRef])
+			}
+		}
+		if exists {
+			// if the metric was already created, we can skip the rest of the loop to avoid add the same metric/datapoins multiple times.
+			fmt.Printf("Debug: metric already exists continue\n")
+			continue
+		}
+		fmt.Printf("Debug: metric does not exist\n")
+
+		// otherwise, we create a new metric and add it to the cache.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
+			fmt.Printf("Debug: gauge\n")
 			prw.addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			prw.addSummaryDatapoints(rm, ls, ts)

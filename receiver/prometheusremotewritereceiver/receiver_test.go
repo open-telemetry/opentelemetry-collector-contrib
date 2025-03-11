@@ -322,7 +322,7 @@ func TestTranslateV2(t *testing.T) {
 				// The first metric should have 2 data points.
 				// The second metric should have 1 data point.
 				metrics1 := sm1.Metrics().AppendEmpty()
-				metrics1.SetName("metricName1")
+				metrics1.SetName("test_metric")
 				metrics1.SetUnit("seconds")
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -335,7 +335,7 @@ func TestTranslateV2(t *testing.T) {
 				dp2.Attributes().PutStr("d", "e")
 
 				metrics2 := sm1.Metrics().AppendEmpty()
-				metrics2.SetName("metricName2")
+				metrics2.SetName("test_metric")
 				metrics2.SetUnit("milliseconds")
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
