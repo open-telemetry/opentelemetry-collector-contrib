@@ -6,8 +6,10 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 import (
 	"encoding/binary"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
+
 	"go.opentelemetry.io/collector/component"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )

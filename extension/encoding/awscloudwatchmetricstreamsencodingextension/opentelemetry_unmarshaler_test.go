@@ -5,8 +5,9 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"testing"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
