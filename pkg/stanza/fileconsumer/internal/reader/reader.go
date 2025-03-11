@@ -98,6 +98,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			}()
 		} else if slices.Contains(r.compression, "none") {
 			r.reader = r.file
+		} else {
+			r.set.Logger.Error("failed to start a reader: unsupported compression type was provided")
 		}
 	} else {
 		r.reader = r.file

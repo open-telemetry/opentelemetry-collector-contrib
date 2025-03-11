@@ -45,9 +45,8 @@ func NewFromFile(file *os.File, size int) (*Fingerprint, error) {
 		n, err := uncompressData.Read(buf)
 		if err != nil && !errors.Is(err, io.EOF) {
 			return nil, fmt.Errorf("reading compressed fingerprint bytes: %w", err)
-		} else {
-			return New(buf[:n]), nil
 		}
+		return New(buf[:n]), nil
 	}
 
 	n, err := file.ReadAt(buf, 0)

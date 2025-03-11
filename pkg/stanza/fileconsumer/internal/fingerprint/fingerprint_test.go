@@ -12,8 +12,9 @@ import (
 	"os"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 )
 
 func TestNewDoesNotModifyOffset(t *testing.T) {
@@ -323,7 +324,7 @@ func TestCompressionFingerprint(t *testing.T) {
 	// Write data
 	n, err := gzipWriter.Write(data)
 	require.NoError(t, err)
-	require.NoError(t, err, gzipWriter.Close())
+	require.NoError(t, gzipWriter.Close())
 	require.NotZero(t, n, "gzip file should not be empty")
 
 	// set seek to the start of the file``
@@ -335,5 +336,4 @@ func TestCompressionFingerprint(t *testing.T) {
 
 	fingerprint := New(data)
 	fingerprint.Equal(compressedFP)
-
 }
