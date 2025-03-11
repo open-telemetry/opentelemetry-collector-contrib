@@ -184,7 +184,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		err = batch.AddPoint(string(measurement), tags, fields, ts, common.InfluxMetricValueTypeUntyped)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
-			_, _ = fmt.Fprintf(w, "failed to append to the batch")
+			_, _ = fmt.Fprintf(w, "failed to append to the batch: %v", err)
 			return
 		}
 	}

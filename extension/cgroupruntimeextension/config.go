@@ -8,15 +8,21 @@ import "errors" // Config contains the configuration for the cgroup runtime exte
 type Config struct {
 	GoMaxProcs GoMaxProcsConfig `mapstructure:"gomaxprocs"`
 	GoMemLimit GoMemLimitConfig `mapstructure:"gomemlimit"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type GoMaxProcsConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type GoMemLimitConfig struct {
 	Enabled bool    `mapstructure:"enabled"`
 	Ratio   float64 `mapstructure:"ratio"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the extension configuration is valid

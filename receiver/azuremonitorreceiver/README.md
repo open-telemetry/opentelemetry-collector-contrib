@@ -31,6 +31,8 @@ The following settings are optional:
 - `maximum_number_of_records_per_resource` (default = 10): Maximum number of records to fetch per resource.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Valid values: `AzureCloud`, `AzureUSGovernment`, `AzureChinaCloud`.
+- `dimensions.enabled` (default = `true`): allows to opt out from automatically split by all the dimensions of the resource type.
+- `dimensions.overrides` (default = `{}`): if dimensions are enabled, it allows you to specify a set of dimensions for a particular metric. This is a two levels map with first key being the resource type and second key being the metric name. Programmatic value should be used for metric name https://learn.microsoft.com/en-us/azure/azure-monitor/reference/metrics-index
 
 Authenticating using service principal requires following additional settings:
 
@@ -99,6 +101,22 @@ receivers:
   azuremonitor:
     subscription_id: "${subscription_id}"
     auth: "default_credentials"
+```
+
+Overriding dimensions for a particular metric:
+```yaml
+receivers:
+  azuremonitor:
+    dimensions:
+      enabled: true
+      overrides:
+        "Microsoft.Network/azureFirewalls":
+          # Real example of an Azure limitation here:
+          # Dimensions exposed are Reason, Status, Protocol,
+          # but when selecting Protocol in the filters, it returns nothing.
+          # Note here that the metric display name is ``Network rules hit count`` but it's programmatic value is ``NetworkRuleHit``
+          # Ref: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-network-azurefirewalls-metrics
+          "NetworkRuleHit": [Reason, Status]
 ```
 
 
