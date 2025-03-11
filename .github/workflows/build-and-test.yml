@@ -707,8 +707,4 @@ jobs:
         run: make install-tools
       - name: Generate Issues
         run: |
-          ls -lha ./internal/tools/testresults/
-          ls -lha ./internal/tools/
-          ls -lha ./internal/
-          ls -lha ./
-          ./tools/issuegenerator -path ./internal/tools/testresults/
+          ./.tools/issuegenerator -path ./internal/tools/testresults/
