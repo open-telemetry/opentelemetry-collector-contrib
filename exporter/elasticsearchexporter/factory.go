@@ -26,13 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	defaultLogsIndex    = "logs-generic-default"
-	defaultMetricsIndex = "metrics-generic-default"
-	defaultTracesIndex  = "traces-generic-default"
-)
-
 var defaultBatcherMinSizeItems = 5000
 
 // NewFactory creates a factory for Elastic exporter.

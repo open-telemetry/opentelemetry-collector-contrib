@@ -358,8 +358,7 @@ func TestExporterLogs(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-		})
+		exporter := newTestLogsExporter(t, server.URL)
 		logs := newLogsWithAttributes(
 			map[string]any{
 				elasticsearch.DataStreamDataset: "record.dataset.\\/*?\"<>| ,#:",
@@ -1687,8 +1686,7 @@ func TestExporterTraces(t *testing.T) {
 			return itemsAllOK(docs)
 		})
 
-		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-		})
+		exporter := newTestTracesExporter(t, server.URL)
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
