@@ -177,6 +177,8 @@ See below for a description of each mapping mode.
 
 #### OTel mapping mode
 
+Requires Elasticsearch 8.12 or above.
+
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
 closely follows the event structure from the OTLP events.

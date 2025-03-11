@@ -277,15 +277,13 @@ func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	assert.NoError(t, err)
 }
 
-type (
-	MockServer struct {
-		mockserver            *httptest.Server // this means MockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
-		fooCalledSuccessfully bool             // this is false by default
-	}
-)
+type mockServer struct {
+	mockserver            *httptest.Server // this means mockServer aggregates 'httptest.Server', but can it's more like inheritance in C++
+	fooCalledSuccessfully bool             // this is false by default
+}
 
-func newMockServer(t *testing.T) *MockServer {
-	mock := MockServer{
+func newMockServer(t *testing.T) *mockServer {
+	mock := mockServer{
 		fooCalledSuccessfully: false,
 	}
 

@@ -19,7 +19,7 @@ graph LR;
     end
 
 ``` 
-The [Transformer](transformer.go) is registered as a Processor in the Collector by the factory.
+The [Schema Processor](processor.go) is registered as a Processor in the Collector by the factory.
 Data flows into the Transformer, which uses the Schema URL to fetch the translation from the Translation Manager.
 The Translation Manager (at internal/translation/manager.go in a future PR) is responsible for fetching and caching the translations.  It takes in a schema URL and returns a Translator struct.
 

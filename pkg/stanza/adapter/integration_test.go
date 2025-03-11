@@ -56,7 +56,7 @@ func createNoopReceiver(nextConsumer consumer.Logs) (*receiver, error) {
 		obsrecv:  obsrecv,
 	}
 
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 
 	rcv.emitter = emitter
 	return rcv, nil

@@ -103,6 +103,11 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
+				"failed to collect metric mongodb.active.reads: could not find key for metric",
+				"failed to collect metric mongodb.active.writes: could not find key for metric",
+				"failed to collect metric mongodb.flushes.rate: could not find key for metric",
+				"failed to collect metric mongodb.page_faults: could not find key for metric",
+				"failed to collect metric mongodb.wtcache.bytes.read: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(

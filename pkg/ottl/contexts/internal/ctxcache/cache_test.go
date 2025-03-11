@@ -89,6 +89,26 @@ func Test_PathExpressionParser(t *testing.T) {
 		require.NotEqual(t, cache, val)
 	})
 
+	t.Run("modify entire cache raw", func(t *testing.T) {
+		path := &pathtest.Path[testContext]{
+			N: "cache",
+		}
+
+		getter, err := parser(path)
+		require.NoError(t, err)
+
+		newCache := pcommon.NewMap()
+		newCache.PutStr("new_key", "new_value")
+
+		err = getter.Set(context.Background(), ctx, newCache.AsRaw())
+		require.NoError(t, err)
+
+		val, ok := ctx.cache.Get("new_key")
+		assert.True(t, ok)
+		assert.Equal(t, "new_value", val.Str())
+		require.NotEqual(t, cache, val)
+	})
+
 	t.Run("modify specific cache key", func(t *testing.T) {
 		path := &pathtest.Path[testContext]{
 			N: "cache",

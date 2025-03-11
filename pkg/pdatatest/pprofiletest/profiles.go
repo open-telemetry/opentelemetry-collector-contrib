@@ -181,11 +181,13 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	var outOfOrderErrs error
 	for e := 0; e < numProfiles; e++ {
 		elr := expected.Profiles().At(e)
+		errs = multierr.Append(errs, ValidateProfile(elr))
 		em := profileAttributesToMap(elr)
 
 		var foundMatch bool
 		for a := 0; a < numProfiles; a++ {
 			alr := actual.Profiles().At(a)
+			errs = multierr.Append(errs, ValidateProfile(alr))
 			if _, ok := matchingProfiles[alr]; ok {
 				continue
 			}
@@ -266,7 +268,7 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	}
 
 	if !reflect.DeepEqual(expected.StringTable(), actual.StringTable()) {
-		errs = multierr.Append(errs, fmt.Errorf("stringTable does not match expected"))
+		errs = multierr.Append(errs, fmt.Errorf("stringTable '%v' does not match expected '%v'", actual.StringTable().AsRaw(), expected.StringTable().AsRaw()))
 	}
 
 	if expected.OriginalPayloadFormat() != actual.OriginalPayloadFormat() {

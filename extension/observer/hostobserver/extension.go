@@ -16,10 +16,11 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
 type hostObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 }
 
 type endpointsLister struct {
@@ -36,7 +37,7 @@ var _ extension.Extension = (*hostObserver)(nil)
 
 func newObserver(params extension.Settings, config *Config) (extension.Extension, error) {
 	h := &hostObserver{
-		EndpointsWatcher: observer.NewEndpointsWatcher(
+		EndpointsWatcher: endpointswatcher.New(
 			endpointsLister{
 				logger:                params.Logger,
 				observerName:          params.ID.String(),

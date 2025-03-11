@@ -6,8 +6,6 @@ package ctxresource // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
@@ -41,10 +39,7 @@ func accessResourceAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetResource().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetResource().Attributes())
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetResource().Attributes(), val)
 		},
 	}
 }
