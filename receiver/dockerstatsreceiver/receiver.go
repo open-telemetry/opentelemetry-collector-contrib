@@ -53,13 +53,17 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
-func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
+func (r *metricsReceiver) clientOptions() []client.Opt {
 	var opts []client.Opt
 	if r.config.Config.Endpoint == "" {
 		opts = append(opts, client.WithHostFromEnv())
 	}
+	return opts
+}
+
+func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, opts...)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, r.clientOptions()...)
 	if err != nil {
 		return err
 	}
