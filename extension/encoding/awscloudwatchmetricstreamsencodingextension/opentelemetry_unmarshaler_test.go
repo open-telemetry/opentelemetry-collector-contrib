@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-// getRecordsFromMetrics reads the pmetric.Metrics
+// getRecordFromFiles reads the pmetric.Metrics
 // from each given file in metricFiles and returns
 // the record in the format the encoding extension
 // expects the metrics to be
