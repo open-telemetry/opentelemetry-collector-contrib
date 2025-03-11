@@ -11,7 +11,7 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
+	"path/filepath"
 )
 
 const DefaultSize = 1000 // bytes
@@ -29,7 +29,7 @@ func New(first []byte) *Fingerprint {
 }
 
 func hasGzipExtension(filename string) bool {
-	return strings.Contains(filename, ".gz")
+	return filepath.Ext(filename) == ".gz"
 }
 
 func NewFromFile(file *os.File, size int) (*Fingerprint, error) {

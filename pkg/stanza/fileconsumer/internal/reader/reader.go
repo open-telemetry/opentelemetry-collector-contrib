@@ -10,6 +10,8 @@ import (
 	"errors"
 	"io"
 	"os"
+	"path/filepath"
+	"slices"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -52,7 +54,7 @@ type Reader struct {
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
 	includeFileRecordNum   bool
-	compression            string
+	compression            []string
 	acquireFSLock          bool
 	maxBatchSize           int
 }
@@ -66,33 +68,38 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		defer r.unlockFile()
 	}
 
-	switch r.compression {
-	case "gzip":
-		// We need to create a gzip reader each time ReadToEnd is called because the underlying
-		// SectionReader can only read a fixed window (from previous offset to EOF).
-		info, err := r.file.Stat()
-		if err != nil {
-			r.set.Logger.Error("failed to stat", zap.Error(err))
-			return
-		}
-		currentEOF := info.Size()
-
-		// use a gzip Reader with an underlying SectionReader to pick up at the last
-		// offset of a gzip compressed file
-		gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
-		if err != nil {
-			if !errors.Is(err, io.EOF) {
-				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+	// if compression is set, we support mixed compression use case
+	if len(r.compression) != 0 {
+		// Identifying a filename by its extension may not always be correct. We could have compressed file without the .gz extension
+		if filepath.Ext(r.fileName) == ".gz" && slices.Contains(r.compression, "gzip") {
+			// We need to create a gzip reader each time ReadToEnd is called because the underlying
+			// SectionReader can only read a fixed window (from previous offset to EOF).
+			info, err := r.file.Stat()
+			if err != nil {
+				r.set.Logger.Error("failed to stat", zap.Error(err))
+				return
 			}
-			return
+			currentEOF := info.Size()
+
+			// use a gzip Reader with an underlying SectionReader to pick up at the last
+			// offset of a gzip compressed file
+			gzipReader, err := gzip.NewReader(io.NewSectionReader(r.file, r.Offset, currentEOF))
+			if err != nil {
+				if !errors.Is(err, io.EOF) {
+					r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
+				}
+				return
+			}
+			r.reader = gzipReader
+			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+			// we need to set the offset to the end of the file.
+			defer func() {
+				r.Offset = currentEOF
+			}()
+		} else if slices.Contains(r.compression, "none") {
+			r.reader = r.file
 		}
-		r.reader = gzipReader
-		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-		// we need to set the offset to the end of the file.
-		defer func() {
-			r.Offset = currentEOF
-		}()
-	default:
+	} else {
 		r.reader = r.file
 	}
 

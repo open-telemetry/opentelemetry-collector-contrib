@@ -12,6 +12,7 @@ import (
 	"os"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/stretchr/testify/require"
 )
 
@@ -314,8 +315,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 // Test compressed and uncompressed file with same content have equal fingerprint
 func TestCompressionFingerprint(t *testing.T) {
 	tmp := t.TempDir()
-	compressedFile, err := os.CreateTemp(tmp, "input.log.gz")
-	require.NoError(t, err)
+	compressedFile := filetest.OpenTempWithPattern(t, tmp, "*.gz")
 	gzipWriter := gzip.NewWriter(compressedFile)
 	defer gzipWriter.Close()
 
