@@ -1,4 +1,4 @@
-package ottlfuncs
+package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 
 import (
 	"context"
