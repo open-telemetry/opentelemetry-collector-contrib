@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/stanza
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Adds dynamic batching whenever err no 1734 (invalid bounds) has occured.
+note: Add retries when calls to retrieve Windows event via `EvtNext` fail with error RPC_S_INVALID_BOUND (1734).
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38149]
@@ -16,8 +16,8 @@ issues: [38149]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Whever large events were read in by the windows event log receiver / stanza input operator for windows
-  There would be an Invalid array bounds error that popped up (1734). This can be solved by reducing the batch size / maxreads.
+  Whenever large events were read in by the windows event log receiver / stanza input operator for windows,
+  The collector would fail with error RPC_S_INVALID_BOUND (1734). This can be solved by reducing max reads and retrying.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.

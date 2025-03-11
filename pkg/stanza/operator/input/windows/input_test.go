@@ -175,7 +175,7 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	}()
 
 	// Create a logger with an observer for testing log output
-	core, logs := observer.New(zap.WarnLevel)
+	core, logs := observer.New(zap.DebugLevel)
 	logger := zap.New(core)
 
 	// Create input instance with mocked dependencies
@@ -186,7 +186,6 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	// Set up test values
 	input.maxReads = 100
 	input.currentMaxReads = 100
-	input.logger = logger
 
 	// Set up subscription with valid handle and enough info to reopen
 	input.subscription = Subscription{
