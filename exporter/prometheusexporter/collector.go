@@ -146,26 +146,23 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 }
 
 func getTranslatorMetricType(metric pmetric.Metric) prometheustranslator.MetricType {
-	var translatorMetricType prometheustranslator.MetricType
 	switch metric.Type() {
 	case pmetric.MetricTypeGauge:
-		translatorMetricType = prometheustranslator.MetricTypeGauge
+		return prometheustranslator.MetricTypeGauge
 	case pmetric.MetricTypeSum:
 		if metric.Sum().IsMonotonic() {
-			translatorMetricType = prometheustranslator.MetricTypeMonotonicCounter
-		} else {
-			translatorMetricType = prometheustranslator.MetricTypeNonMonotonicCounter
+			return prometheustranslator.MetricTypeMonotonicCounter
 		}
+		return prometheustranslator.MetricTypeNonMonotonicCounter
 	case pmetric.MetricTypeHistogram:
-		translatorMetricType = prometheustranslator.MetricTypeHistogram
+		return prometheustranslator.MetricTypeHistogram
 	case pmetric.MetricTypeExponentialHistogram:
-		translatorMetricType = prometheustranslator.MetricTypeExponentialHistogram
+		return prometheustranslator.MetricTypeExponentialHistogram
 	case pmetric.MetricTypeSummary:
-		translatorMetricType = prometheustranslator.MetricTypeSummary
+		return prometheustranslator.MetricTypeSummary
 	default:
-		translatorMetricType = prometheustranslator.MetricTypeUnknown
+		return prometheustranslator.MetricTypeUnknown
 	}
-	return translatorMetricType
 }
 
 func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
