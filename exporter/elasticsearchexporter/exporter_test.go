@@ -1703,7 +1703,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash format index", func(t *testing.T) {
+	t.Run("publish with logstash format index, default traces index", func(t *testing.T) {
 		var defaultCfg Config
 
 		rec := newBulkRecorder()
