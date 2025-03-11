@@ -12,6 +12,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
 )
 
 // Type is the value users can use to configure the true reset point adjuster.
@@ -26,14 +28,14 @@ const Type = "true_reset_point"
 // and provides AdjustMetric, which takes a sequence of metrics and adjust their start times based on
 // the initial points.
 type Adjuster struct {
-	startTimeCache *StartTimeCache
+	startTimeCache *starttimecache.StartTimeCache
 	set            component.TelemetrySettings
 }
 
 // NewAdjuster returns a new Adjuster which adjust metrics' start times based on the initial received points.
 func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adjuster {
 	return &Adjuster{
-		startTimeCache: NewStartTimeCache(gcInterval),
+		startTimeCache: starttimecache.NewStartTimeCache(gcInterval),
 		set:            set,
 	}
 }
@@ -44,7 +46,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
-		tsm := a.startTimeCache.get(attrHash)
+		tsm := a.startTimeCache.Get(attrHash)
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 		// nothing else can modify the data used for adjustment.
@@ -83,7 +85,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	return metrics, nil
 }
 
-func (a *Adjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricHistogram(tsm *starttimecache.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -94,37 +96,37 @@ func (a *Adjuster) adjustMetricHistogram(tsm *timeseriesMap, current pmetric.Met
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 
-		tsi, found := tsm.get(current, currentDist.Attributes())
+		tsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.histogram.startTime = currentDist.StartTimestamp()
-			tsi.histogram.previousCount = currentDist.Count()
-			tsi.histogram.previousSum = currentDist.Sum()
+			tsi.Histogram.StartTime = currentDist.StartTimestamp()
+			tsi.Histogram.PreviousCount = currentDist.Count()
+			tsi.Histogram.PreviousSum = currentDist.Sum()
 			continue
 		}
 
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			currentDist.SetStartTimestamp(tsi.Histogram.StartTime)
 			continue
 		}
 
-		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
+		if currentDist.Count() < tsi.Histogram.PreviousCount || currentDist.Sum() < tsi.Histogram.PreviousSum {
 			// reset re-initialize everything.
-			tsi.histogram.startTime = currentDist.StartTimestamp()
-			tsi.histogram.previousCount = currentDist.Count()
-			tsi.histogram.previousSum = currentDist.Sum()
+			tsi.Histogram.StartTime = currentDist.StartTimestamp()
+			tsi.Histogram.PreviousCount = currentDist.Count()
+			tsi.Histogram.PreviousSum = currentDist.Sum()
 			continue
 		}
 
 		// Update only previous values.
-		tsi.histogram.previousCount = currentDist.Count()
-		tsi.histogram.previousSum = currentDist.Sum()
-		currentDist.SetStartTimestamp(tsi.histogram.startTime)
+		tsi.Histogram.PreviousCount = currentDist.Count()
+		tsi.Histogram.PreviousSum = currentDist.Sum()
+		currentDist.SetStartTimestamp(tsi.Histogram.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricExponentialHistogram(tsm *starttimecache.TimeseriesMap, current pmetric.Metric) {
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
@@ -135,105 +137,105 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *timeseriesMap, current 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 
-		tsi, found := tsm.get(current, currentDist.Attributes())
+		tsi, found := tsm.Get(current, currentDist.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.histogram.startTime = currentDist.StartTimestamp()
-			tsi.histogram.previousCount = currentDist.Count()
-			tsi.histogram.previousSum = currentDist.Sum()
+			tsi.Histogram.StartTime = currentDist.StartTimestamp()
+			tsi.Histogram.PreviousCount = currentDist.Count()
+			tsi.Histogram.PreviousSum = currentDist.Sum()
 			continue
 		}
 
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentDist.SetStartTimestamp(tsi.histogram.startTime)
+			currentDist.SetStartTimestamp(tsi.Histogram.StartTime)
 			continue
 		}
 
-		if currentDist.Count() < tsi.histogram.previousCount || currentDist.Sum() < tsi.histogram.previousSum {
+		if currentDist.Count() < tsi.Histogram.PreviousCount || currentDist.Sum() < tsi.Histogram.PreviousSum {
 			// reset re-initialize everything.
-			tsi.histogram.startTime = currentDist.StartTimestamp()
-			tsi.histogram.previousCount = currentDist.Count()
-			tsi.histogram.previousSum = currentDist.Sum()
+			tsi.Histogram.StartTime = currentDist.StartTimestamp()
+			tsi.Histogram.PreviousCount = currentDist.Count()
+			tsi.Histogram.PreviousSum = currentDist.Sum()
 			continue
 		}
 
 		// Update only previous values.
-		tsi.histogram.previousCount = currentDist.Count()
-		tsi.histogram.previousSum = currentDist.Sum()
-		currentDist.SetStartTimestamp(tsi.histogram.startTime)
+		tsi.Histogram.PreviousCount = currentDist.Count()
+		tsi.Histogram.PreviousSum = currentDist.Sum()
+		currentDist.SetStartTimestamp(tsi.Histogram.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricSum(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricSum(tsm *starttimecache.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSum := currentPoints.At(i)
 
-		tsi, found := tsm.get(current, currentSum.Attributes())
+		tsi, found := tsm.Get(current, currentSum.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.number.startTime = currentSum.StartTimestamp()
-			tsi.number.previousValue = currentSum.DoubleValue()
+			tsi.Number.StartTime = currentSum.StartTimestamp()
+			tsi.Number.PreviousValue = currentSum.DoubleValue()
 			continue
 		}
 
 		if currentSum.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentSum.SetStartTimestamp(tsi.number.startTime)
+			currentSum.SetStartTimestamp(tsi.Number.StartTime)
 			continue
 		}
 
-		if currentSum.DoubleValue() < tsi.number.previousValue {
+		if currentSum.DoubleValue() < tsi.Number.PreviousValue {
 			// reset re-initialize everything.
-			tsi.number.startTime = currentSum.StartTimestamp()
-			tsi.number.previousValue = currentSum.DoubleValue()
+			tsi.Number.StartTime = currentSum.StartTimestamp()
+			tsi.Number.PreviousValue = currentSum.DoubleValue()
 			continue
 		}
 
-		// Update only previous values.
-		tsi.number.previousValue = currentSum.DoubleValue()
-		currentSum.SetStartTimestamp(tsi.number.startTime)
+		// Update only Previous values.
+		tsi.Number.PreviousValue = currentSum.DoubleValue()
+		currentSum.SetStartTimestamp(tsi.Number.StartTime)
 	}
 }
 
-func (a *Adjuster) adjustMetricSummary(tsm *timeseriesMap, current pmetric.Metric) {
+func (a *Adjuster) adjustMetricSummary(tsm *starttimecache.TimeseriesMap, current pmetric.Metric) {
 	currentPoints := current.Summary().DataPoints()
 
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentSummary := currentPoints.At(i)
 
-		tsi, found := tsm.get(current, currentSummary.Attributes())
+		tsi, found := tsm.Get(current, currentSummary.Attributes())
 		if !found {
 			// initialize everything.
-			tsi.summary.startTime = currentSummary.StartTimestamp()
-			tsi.summary.previousCount = currentSummary.Count()
-			tsi.summary.previousSum = currentSummary.Sum()
+			tsi.Summary.StartTime = currentSummary.StartTimestamp()
+			tsi.Summary.PreviousCount = currentSummary.Count()
+			tsi.Summary.PreviousSum = currentSummary.Sum()
 			continue
 		}
 
 		if currentSummary.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			currentSummary.SetStartTimestamp(tsi.summary.startTime)
+			currentSummary.SetStartTimestamp(tsi.Summary.StartTime)
 			continue
 		}
 
 		if (currentSummary.Count() != 0 &&
-			tsi.summary.previousCount != 0 &&
-			currentSummary.Count() < tsi.summary.previousCount) ||
+			tsi.Summary.PreviousCount != 0 &&
+			currentSummary.Count() < tsi.Summary.PreviousCount) ||
 			(currentSummary.Sum() != 0 &&
-				tsi.summary.previousSum != 0 &&
-				currentSummary.Sum() < tsi.summary.previousSum) {
+				tsi.Summary.PreviousSum != 0 &&
+				currentSummary.Sum() < tsi.Summary.PreviousSum) {
 			// reset re-initialize everything.
-			tsi.summary.startTime = currentSummary.StartTimestamp()
-			tsi.summary.previousCount = currentSummary.Count()
-			tsi.summary.previousSum = currentSummary.Sum()
+			tsi.Summary.StartTime = currentSummary.StartTimestamp()
+			tsi.Summary.PreviousCount = currentSummary.Count()
+			tsi.Summary.PreviousSum = currentSummary.Sum()
 			continue
 		}
 
-		// Update only previous values.
-		tsi.summary.previousCount = currentSummary.Count()
-		tsi.summary.previousSum = currentSummary.Sum()
-		currentSummary.SetStartTimestamp(tsi.summary.startTime)
+		// Update only Previous values.
+		tsi.Summary.PreviousCount = currentSummary.Count()
+		tsi.Summary.PreviousSum = currentSummary.Sum()
+		currentSummary.SetStartTimestamp(tsi.Summary.StartTime)
 	}
 }

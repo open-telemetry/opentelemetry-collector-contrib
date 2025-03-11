@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package truereset // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/truereset"
+package starttimecache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
 
 import (
 	"sync"
@@ -47,78 +47,78 @@ import (
 //    approach requires adding 'lastGC' Time and (potentially) a gcInterval duration to
 //    timeseriesMap so the current approach is used instead.
 
-// timeseriesInfo contains the information necessary to adjust from the initial point and to detect resets.
-type timeseriesInfo struct {
-	mark bool
+// TimeseriesInfo contains the information necessary to adjust from the initial point and to detect resets.
+type TimeseriesInfo struct {
+	Mark bool
 
-	number    numberInfo
-	histogram histogramInfo
-	summary   summaryInfo
+	Number    NumberInfo
+	Histogram HistogramInfo
+	Summary   SummaryInfo
 }
 
-type numberInfo struct {
-	startTime     pcommon.Timestamp
-	previousValue float64
+type NumberInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousValue float64
 }
 
-type histogramInfo struct {
-	startTime     pcommon.Timestamp
-	previousCount uint64
-	previousSum   float64
+type HistogramInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousCount uint64
+	PreviousSum   float64
 }
 
-type summaryInfo struct {
-	startTime     pcommon.Timestamp
-	previousCount uint64
-	previousSum   float64
+type SummaryInfo struct {
+	StartTime     pcommon.Timestamp
+	PreviousCount uint64
+	PreviousSum   float64
 }
 
-type timeseriesKey struct {
-	name           string
-	attributes     [16]byte
-	aggTemporality pmetric.AggregationTemporality
+type TimeseriesKey struct {
+	Name           string
+	Attributes     [16]byte
+	AggTemporality pmetric.AggregationTemporality
 }
 
-// timeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
+// TimeseriesMap maps from a timeseries instance (metric * label values) to the timeseries info for
 // the instance.
-type timeseriesMap struct {
+type TimeseriesMap struct {
 	sync.RWMutex
 	// The mutex is used to protect access to the member fields. It is acquired for the entirety of
 	// AdjustMetricSlice() and also acquired by gc().
 
-	mark   bool
-	tsiMap map[timeseriesKey]*timeseriesInfo
+	Mark   bool
+	TsiMap map[TimeseriesKey]*TimeseriesInfo
 }
 
-// Get the timeseriesInfo for the timeseries associated with the metric and label values.
-func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeseriesInfo, bool) {
+// Get the TimeseriesInfo for the timeseries associated with the metric and label values.
+func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*TimeseriesInfo, bool) {
 	// This should only be invoked be functions called (directly or indirectly) by AdjustMetricSlice().
 	// The lock protecting tsm.tsiMap is acquired there.
 	name := metric.Name()
-	key := timeseriesKey{
-		name:       name,
-		attributes: getAttributesSignature(kv),
+	key := TimeseriesKey{
+		Name:       name,
+		Attributes: getAttributesSignature(kv),
 	}
 	switch metric.Type() {
 	case pmetric.MetricTypeHistogram:
 		// There are 2 types of Histograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
-		key.aggTemporality = metric.Histogram().AggregationTemporality()
+		key.AggTemporality = metric.Histogram().AggregationTemporality()
 	case pmetric.MetricTypeExponentialHistogram:
 		// There are 2 types of ExponentialHistograms whose aggregation temporality needs distinguishing:
 		// * CumulativeHistogram
 		// * GaugeHistogram
-		key.aggTemporality = metric.ExponentialHistogram().AggregationTemporality()
+		key.AggTemporality = metric.ExponentialHistogram().AggregationTemporality()
 	}
 
-	tsm.mark = true
-	tsi, ok := tsm.tsiMap[key]
+	tsm.Mark = true
+	tsi, ok := tsm.TsiMap[key]
 	if !ok {
-		tsi = &timeseriesInfo{}
-		tsm.tsiMap[key] = tsi
+		tsi = &TimeseriesInfo{}
+		tsm.TsiMap[key] = tsi
 	}
-	tsi.mark = true
+	tsi.Mark = true
 	return tsi, ok
 }
 
@@ -136,25 +136,25 @@ func getAttributesSignature(m pcommon.Map) [16]byte {
 }
 
 // Remove timeseries that have aged out.
-func (tsm *timeseriesMap) gc() {
+func (tsm *TimeseriesMap) GC() {
 	tsm.Lock()
 	defer tsm.Unlock()
 	// this shouldn't happen under the current gc() strategy
-	if !tsm.mark {
+	if !tsm.Mark {
 		return
 	}
-	for ts, tsi := range tsm.tsiMap {
-		if !tsi.mark {
-			delete(tsm.tsiMap, ts)
+	for ts, tsi := range tsm.TsiMap {
+		if !tsi.Mark {
+			delete(tsm.TsiMap, ts)
 		} else {
-			tsi.mark = false
+			tsi.Mark = false
 		}
 	}
-	tsm.mark = false
+	tsm.Mark = false
 }
 
-func newTimeseriesMap() *timeseriesMap {
-	return &timeseriesMap{mark: true, tsiMap: map[timeseriesKey]*timeseriesInfo{}}
+func newTimeseriesMap() *TimeseriesMap {
+	return &TimeseriesMap{Mark: true, TsiMap: map[TimeseriesKey]*TimeseriesInfo{}}
 }
 
 // StartTimeCache maps from a resource to a map of timeseries instances for the resource.
@@ -165,12 +165,12 @@ type StartTimeCache struct {
 
 	gcInterval  time.Duration
 	lastGC      time.Time
-	resourceMap map[[16]byte]*timeseriesMap
+	resourceMap map[[16]byte]*TimeseriesMap
 }
 
 // NewStartTimeCache creates a new (empty) JobsMap.
 func NewStartTimeCache(gcInterval time.Duration) *StartTimeCache {
-	return &StartTimeCache{gcInterval: gcInterval, lastGC: time.Now(), resourceMap: make(map[[16]byte]*timeseriesMap)}
+	return &StartTimeCache{gcInterval: gcInterval, lastGC: time.Now(), resourceMap: make(map[[16]byte]*TimeseriesMap)}
 }
 
 // Remove jobs and timeseries that have aged out.
@@ -181,22 +181,22 @@ func (c *StartTimeCache) gc() {
 	if time.Since(c.lastGC) > c.gcInterval {
 		for sig, tsm := range c.resourceMap {
 			tsm.RLock()
-			tsmNotMarked := !tsm.mark
+			tsmNotMarked := !tsm.Mark
 			// take a read lock here, no need to get a full lock as we have a lock on the JobsMap
 			tsm.RUnlock()
 			if tsmNotMarked {
 				delete(c.resourceMap, sig)
 			} else {
 				// a full lock will be obtained in here, if required.
-				tsm.gc()
+				tsm.GC()
 			}
 		}
 		c.lastGC = time.Now()
 	}
 }
 
-func (c *StartTimeCache) maybeGC() {
-	// speculatively check if gc() is necessary, recheck once the structure is locked
+// Speculatively check if gc() is necessary, recheck once the structure is locked
+func (c *StartTimeCache) MaybeGC() {
 	c.RLock()
 	defer c.RUnlock()
 	if time.Since(c.lastGC) > c.gcInterval {
@@ -204,12 +204,13 @@ func (c *StartTimeCache) maybeGC() {
 	}
 }
 
-func (c *StartTimeCache) get(resourceHash [16]byte) *timeseriesMap {
-	// a read lock is taken here as we will not need to modify jobsMap if the target timeseriesMap is available.
+// Fetches the TimeseriesMap for the given resource hash. Creates a new map if required.
+func (c *StartTimeCache) Get(resourceHash [16]byte) *TimeseriesMap {
+	// a read lock is taken here as we will not need to modify resourceMap if the target timeseriesMap is available.
 	c.RLock()
 	tsm, ok := c.resourceMap[resourceHash]
 	c.RUnlock()
-	defer c.maybeGC()
+	defer c.MaybeGC()
 	if ok {
 		return tsm
 	}
