@@ -1585,7 +1585,11 @@ telemetry:
 
 	mockBackend.EnableRecording()
 	supervisor.telemetrySettings.Logger.Info("test log")
-	time.Sleep(4 * time.Second)
+
+	require.Eventually(t, func() bool {
+		return len(mockBackend.ReceivedLogs) > 0
+	}, 5*time.Second, 1*time.Second)
+
 	mockBackend.Stop()
 
 	receivedLogs := mockBackend.ReceivedLogs
