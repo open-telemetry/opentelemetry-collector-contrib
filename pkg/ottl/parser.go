@@ -494,18 +494,6 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 						return nil, err
 					}
 					return m, nil
-				case []any:
-					for index, elem := range v {
-						// make sure also nested maps within a slice are returned in their raw form
-						if m, ok := elem.(pcommon.Map); ok {
-							v[index] = m.AsRaw()
-						}
-					}
-					s := pcommon.NewSlice()
-					if err := s.FromRaw(v); err != nil {
-						return nil, err
-					}
-					return s, nil
 				default:
 					return v, nil
 				}
