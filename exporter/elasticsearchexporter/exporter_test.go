@@ -1831,9 +1831,11 @@ func TestExporterTraces(t *testing.T) {
 				wantIndex: "logs-generic.otel-default",
 			},
 			{
-				name: "static traces_index",
+				name: "static index config",
 				config: func(cfg *Config) {
-					cfg.TracesIndex = "someindex"
+					cfg.LogsIndex = "someindex"
+					cfg.MetricsIndex = "ignored"
+					cfg.TracesIndex = "ignored"
 				},
 				wantIndex: "someindex",
 			},
