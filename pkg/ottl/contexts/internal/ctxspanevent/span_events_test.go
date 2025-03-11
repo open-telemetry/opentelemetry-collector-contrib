@@ -101,6 +101,17 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refSpanEvent.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(spanEvent ptrace.SpanEvent) {
+				_ = spanEvent.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
