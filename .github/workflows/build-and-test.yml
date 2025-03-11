@@ -475,6 +475,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
+          - aix
           - darwin
           - linux
           - windows
@@ -483,17 +484,32 @@ jobs:
           - amd64
           - arm
           - arm64
+          - ppc64
           - ppc64le
           - s390x
         include:
+          - goos: aix
+            goarch: ppc64
           - os: linux
             arch: arm
             arm: 7
         exclude:
-          - os: darwin
+          - os: aix
             arch: 386
+          - os: aix
+            arch: amd64
+          - os: aix
+            arch: arm
+          - os: aix
+            arch: arm64
+          - os: aix
+            arch: ppc64le
+          - os: darwin
+            arch: s390x
           - os: darwin
             arch: arm
+          - os: darwin
+            arch: ppc64
           - os: darwin
             arch: ppc64le
           - os: darwin
@@ -502,6 +518,8 @@ jobs:
             arch: arm
           - os: windows
             arch: arm64
+          - os: windows
+            arch: ppc64
           - os: windows
             arch: ppc64le
           - os: windows
