@@ -5,6 +5,7 @@ package datadogsemanticsprocessor // import "github.com/open-telemetry/opentelem
 
 import (
 	"context"
+
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
