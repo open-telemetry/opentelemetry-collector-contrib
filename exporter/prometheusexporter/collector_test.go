@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	prometheustranslator "github.com/ArthurSens/otlp-prometheus-translator"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	io_prometheus_client "github.com/prometheus/client_model/go"
@@ -20,8 +21,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	prometheustranslator "github.com/ArthurSens/otlp-prometheus-translator"
 )
 
 type mockAccumulator struct {

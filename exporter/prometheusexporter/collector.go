@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	prometheustranslator "github.com/ArthurSens/otlp-prometheus-translator"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
@@ -18,8 +19,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-
-	prometheustranslator "github.com/ArthurSens/otlp-prometheus-translator"
 )
 
 var separatorString = string([]byte{model.SeparatorByte})
