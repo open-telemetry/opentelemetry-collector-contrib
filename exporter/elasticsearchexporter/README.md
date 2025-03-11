@@ -193,10 +193,7 @@ and `data_stream.namespace`. Instead of serializing these values under the `*att
 they are put at the root of the document, to conform with the conventions of the data stream naming
 scheme that maps these as `constant_keyword` fields.
 
-It is recommended to enable `logs_dynamic_index`, `metrics_dynamic_index` and `traces_dynamic_index` (e.g. `logs_dynamic_index::enabled: true`),
-such that `data_stream.dataset` will always be appended with `.otel`
-and match the index templates from [otel-data plugin](https://github.com/elastic/elasticsearch/tree/main/x-pack/plugin/otel-data)
-in Elasticsearch 8.16+.
+`data_stream.dataset` will always be appended with `.otel` if [dynamic data stream routing mode](#elasticsearch-document-routing) is active.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
 `logs` if `traces_dynamic_index::enabled` is `true`.
