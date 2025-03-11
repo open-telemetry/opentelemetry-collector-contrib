@@ -10,7 +10,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"unsafe"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -159,15 +158,12 @@ func TestInputRead_RPCInvalidBound(t *testing.T) {
 	}
 
 	nextProc = MockProc{
-		call: func(args ...uintptr) (uintptr, uintptr, error) {
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
 			nextCalls++
 			if nextCalls == 1 {
 				return 0, 0, windows.RPC_S_INVALID_BOUND
 			}
 
-			// Return success on second call
-			returned := (*uint32)(unsafe.Pointer(args[5]))
-			*returned = 0 // No events
 			return 1, 0, nil
 		},
 	}
