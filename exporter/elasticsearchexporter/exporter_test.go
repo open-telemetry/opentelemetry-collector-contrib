@@ -1819,6 +1819,77 @@ func TestExporterTraces(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("otel mode span event routing", func(t *testing.T) {
+		for _, tc := range []struct {
+			name           string
+			config         func(cfg *Config)
+			spanEventAttrs map[string]any
+			wantIndex      string
+		}{
+			{
+				name:      "default",
+				wantIndex: "logs-generic.otel-default",
+			},
+			{
+				name: "static traces_index",
+				config: func(cfg *Config) {
+					cfg.TracesIndex = "someindex"
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic elasticsearch.index",
+				spanEventAttrs: map[string]any{
+					"elasticsearch.index": "someindex",
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic data_stream.*",
+				spanEventAttrs: map[string]any{
+					"data_stream.dataset":   "foo",
+					"data_stream.namespace": "bar",
+				},
+				wantIndex: "logs-foo.otel-bar",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				configs := []func(cfg *Config){
+					func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+					},
+				}
+				if tc.config != nil {
+					configs = append(configs, tc.config)
+				}
+
+				exporter := newTestTracesExporter(t, server.URL, configs...)
+
+				traces := newTracesWithAttributes(nil, nil, nil)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("some_event_name")
+				fillAttributeMap(spanEvent.Attributes(), tc.spanEventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(2)
+				var spanEventDocs []itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDocs = append(spanEventDocs, doc)
+					}
+				}
+				require.Len(t, spanEventDocs, 1)
+				assert.Equal(t, tc.wantIndex, gjson.GetBytes(spanEventDocs[0].Action, "create._index").Str)
+			})
+		}
+	})
+
 	t.Run("otel mode attribute array value", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
