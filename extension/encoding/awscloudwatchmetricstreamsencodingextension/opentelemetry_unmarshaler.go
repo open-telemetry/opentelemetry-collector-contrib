@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
-	expmetrics "github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics"
 )
 
 var errInvalidOTLPMessageLength = errors.New("unable to decode data length from message")
@@ -53,8 +52,7 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 				sm.Scope().SetVersion(f.buildInfo.Version)
 			}
 		}
-
-		md = expmetrics.Merge(md, req.Metrics())
+		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
 	if md.DataPointCount() == 0 {
