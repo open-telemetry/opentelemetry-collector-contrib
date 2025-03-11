@@ -51,15 +51,16 @@ type documentRouter interface {
 	routeSpanEvent(resource pcommon.Resource, scope pcommon.InstrumentationScope, recordAttrs pcommon.Map) (elasticsearch.Index, error)
 }
 
-func newDocumentRouter(mode MappingMode, dynamicIndex bool, defaultIndex string, cfg *Config) documentRouter {
+// newDocumentRouter returns a router that routes document based on configured mode, static index config, and config.
+func newDocumentRouter(mode MappingMode, staticIndex string, cfg *Config) documentRouter {
 	var router documentRouter
-	if dynamicIndex {
+	if staticIndex == "" {
 		router = dynamicDocumentRouter{
 			mode: mode,
 		}
 	} else {
 		router = staticDocumentRouter{
-			index: elasticsearch.Index{Index: defaultIndex},
+			index: elasticsearch.Index{Index: staticIndex},
 		}
 	}
 	if cfg.LogstashFormat.Enabled {

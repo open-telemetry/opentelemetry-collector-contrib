@@ -70,11 +70,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if err != nil {
 		return err
 	}
-	defaultIndex := e.index
-	if defaultIndex == "" {
-		defaultIndex = defaultLogsIndex
-	}
-	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -173,11 +169,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if err != nil {
 		return err
 	}
-	defaultIndex := e.index
-	if defaultIndex == "" {
-		defaultIndex = defaultMetricsIndex
-	}
-	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -340,11 +332,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	if err != nil {
 		return err
 	}
-	defaultIndex := e.index
-	if defaultIndex == "" {
-		defaultIndex = defaultTracesIndex
-	}
-	router := newDocumentRouter(mappingMode, e.index == "", defaultIndex, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
