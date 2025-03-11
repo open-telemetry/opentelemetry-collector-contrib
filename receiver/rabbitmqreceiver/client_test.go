@@ -26,6 +26,7 @@ import (
 
 const (
 	queuesAPIResponseFile = "get_queues_response.json"
+	nodesAPIResponseFile  = "get_nodes_response.json"
 )
 
 func TestNewClient(t *testing.T) {
@@ -152,6 +153,75 @@ func TestGetQueuesDetails(t *testing.T) {
 				clusters, err := tc.GetQueues(context.Background())
 				require.NoError(t, err)
 				require.Equal(t, expected, clusters)
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.desc, tc.testFunc)
+	}
+}
+
+func TestGetNodesDetails(t *testing.T) {
+	testCases := []struct {
+		desc     string
+		testFunc func(*testing.T)
+	}{
+		{
+			desc: "Non-200 Response for GetNodes",
+			testFunc: func(t *testing.T) {
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					w.WriteHeader(http.StatusForbidden)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				nodes, err := tc.GetNodes(context.Background())
+				require.Nil(t, nodes)
+				require.EqualError(t, err, "non 200 code returned 403")
+			},
+		},
+		{
+			desc: "Bad payload returned for GetNodes",
+			testFunc: func(t *testing.T) {
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write([]byte("{invalid-json}"))
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				nodes, err := tc.GetNodes(context.Background())
+				require.Nil(t, nodes)
+				require.ErrorContains(t, err, "failed to decode response payload")
+			},
+		},
+		{
+			desc: "Successful GetNodes call",
+			testFunc: func(t *testing.T) {
+				data := loadAPIResponseData(t, nodesAPIResponseFile)
+
+				// Setup test server
+				ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+					_, err := w.Write(data)
+					assert.NoError(t, err)
+				}))
+				defer ts.Close()
+
+				tc := createTestClient(t, ts.URL)
+
+				// Load the valid data into a struct to compare
+				var expected []*models.Node
+				err := json.Unmarshal(data, &expected)
+				require.NoError(t, err)
+
+				nodes, err := tc.GetNodes(context.Background())
+				require.NoError(t, err)
+				require.Equal(t, expected, nodes)
 			},
 		},
 	}

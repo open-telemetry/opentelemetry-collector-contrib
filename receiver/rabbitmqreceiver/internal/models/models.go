@@ -18,3 +18,15 @@ type Queue struct {
 	// Embedded Metrics
 	MessageStats map[string]any `json:"message_stats"`
 }
+
+// Node represents a RabbitMQ node in the API response
+type Node struct {
+	// Identifiers
+	Name string `json:"name"`
+
+	// Metrics
+	DiskFree int64 `json:"disk_free"`
+	FDUsed   int64 `json:"fd_used"`
+	MemLimit int64 `json:"mem_limit"`
+	MemUsed  int64 `json:"mem_used"`
+}
