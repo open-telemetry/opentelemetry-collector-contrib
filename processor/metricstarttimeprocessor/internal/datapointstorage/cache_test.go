@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package starttimecache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
+package datapointstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
 
 import (
 	"testing"
@@ -16,7 +16,7 @@ import (
 
 func TestStartTimeCache_NewStartTimeCache(t *testing.T) {
 	gcInterval := time.Minute
-	stc := NewStartTimeCache(gcInterval)
+	stc := NewDataPointCache(gcInterval)
 
 	assert.NotNil(t, stc)
 	assert.Equal(t, gcInterval, stc.gcInterval)
@@ -25,7 +25,7 @@ func TestStartTimeCache_NewStartTimeCache(t *testing.T) {
 }
 
 func TestStartTimeCache_Get(t *testing.T) {
-	stc := NewStartTimeCache(time.Minute)
+	stc := NewDataPointCache(time.Minute)
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("k1", "v1")
 	resourceHash := pdatautil.MapHash(resourceAttrs)
@@ -40,7 +40,7 @@ func TestStartTimeCache_Get(t *testing.T) {
 }
 
 func TestStartTimeCache_MaybeGC(t *testing.T) {
-	stc := NewStartTimeCache(time.Millisecond)
+	stc := NewDataPointCache(time.Millisecond)
 	resourceAttrs := pcommon.NewMap()
 	resourceAttrs.PutStr("k1", "v1")
 	resourceHash := pdatautil.MapHash(resourceAttrs)

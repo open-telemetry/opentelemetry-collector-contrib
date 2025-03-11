@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package starttimecache // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
+package datapointstorage // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/starttimecache"
 
 import (
 	"sync"
@@ -30,7 +30,7 @@ import (
 // The gc strategy uses a standard mark-and-sweep approach - each time a timeseriesMap is accessed,
 // it is marked. Similarly, each time a timeseriesInfo is accessed, it is also marked.
 //
-// At the end of each StartTimeCache.get(), if the last time the StartTimeCache was gc'd exceeds the 'gcInterval',
+// At the end of each StartTimeCache.Get(), if the last time the StartTimeCache was gc'd exceeds the 'gcInterval',
 // the StartTimeCache is locked and any timeseriesMaps that are unmarked are removed from the StartTimeCache
 // otherwise the timeseriesMap is gc'd
 //
@@ -57,20 +57,20 @@ type TimeseriesInfo struct {
 }
 
 type NumberInfo struct {
-	StartTime     pcommon.Timestamp
-	PreviousValue float64
+	StartTime pcommon.Timestamp
+	Value     float64
 }
 
 type HistogramInfo struct {
-	StartTime     pcommon.Timestamp
-	PreviousCount uint64
-	PreviousSum   float64
+	StartTime pcommon.Timestamp
+	Count     uint64
+	Sum       float64
 }
 
 type SummaryInfo struct {
-	StartTime     pcommon.Timestamp
-	PreviousCount uint64
-	PreviousSum   float64
+	StartTime pcommon.Timestamp
+	Count     uint64
+	Sum       float64
 }
 
 type TimeseriesKey struct {
@@ -157,8 +157,8 @@ func newTimeseriesMap() *TimeseriesMap {
 	return &TimeseriesMap{Mark: true, TsiMap: map[TimeseriesKey]*TimeseriesInfo{}}
 }
 
-// StartTimeCache maps from a resource to a map of timeseries instances for the resource.
-type StartTimeCache struct {
+// DataPointCache maps from a resource to a map of timeseries instances for the resource.
+type DataPointCache struct {
 	sync.RWMutex
 	// The mutex is used to protect access to the member fields. It is acquired for most of
 	// get() and also acquired by gc().
@@ -168,13 +168,13 @@ type StartTimeCache struct {
 	resourceMap map[[16]byte]*TimeseriesMap
 }
 
-// NewStartTimeCache creates a new (empty) JobsMap.
-func NewStartTimeCache(gcInterval time.Duration) *StartTimeCache {
-	return &StartTimeCache{gcInterval: gcInterval, lastGC: time.Now(), resourceMap: make(map[[16]byte]*TimeseriesMap)}
+// NewDataPointCache creates a new (empty) JobsMap.
+func NewDataPointCache(gcInterval time.Duration) *DataPointCache {
+	return &DataPointCache{gcInterval: gcInterval, lastGC: time.Now(), resourceMap: make(map[[16]byte]*TimeseriesMap)}
 }
 
 // Remove jobs and timeseries that have aged out.
-func (c *StartTimeCache) gc() {
+func (c *DataPointCache) gc() {
 	c.Lock()
 	defer c.Unlock()
 	// once the structure is locked, confirm that gc() is still necessary
@@ -196,7 +196,7 @@ func (c *StartTimeCache) gc() {
 }
 
 // Speculatively check if gc() is necessary, recheck once the structure is locked
-func (c *StartTimeCache) MaybeGC() {
+func (c *DataPointCache) MaybeGC() {
 	c.RLock()
 	defer c.RUnlock()
 	if time.Since(c.lastGC) > c.gcInterval {
@@ -205,7 +205,7 @@ func (c *StartTimeCache) MaybeGC() {
 }
 
 // Fetches the TimeseriesMap for the given resource hash. Creates a new map if required.
-func (c *StartTimeCache) Get(resourceHash [16]byte) *TimeseriesMap {
+func (c *DataPointCache) Get(resourceHash [16]byte) *TimeseriesMap {
 	// a read lock is taken here as we will not need to modify resourceMap if the target timeseriesMap is available.
 	c.RLock()
 	tsm, ok := c.resourceMap[resourceHash]
