@@ -7,7 +7,7 @@ change_type: enhancement
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `Murmur3Hash`, `Murmur3Hash128`, `Murmur3Hex` and `Murmur3Hex128` functions to convert the `target` to Murmur3 hash in signed integer or hexadecimal string format
+note: Add `Murmur3Hash`and `Murmur3Hash128` functions to convert the `target` string to Murmur3 hash in hexadecimal string format
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [34077]

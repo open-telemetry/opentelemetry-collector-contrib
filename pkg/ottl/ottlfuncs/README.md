@@ -491,8 +491,6 @@ Available Converters:
 - [Month](#month)
 - [Murmur3Hash](#murmur3hash)
 - [Murmur3Hash128](#murmur3hash128)
-- [Murmur3Hex](#murmur3hex)
-- [Murmur3Hex128](#murmur3hex128)
 - [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
@@ -1353,11 +1351,11 @@ Examples:
 
 `Murmur3Hash(target)`
 
-The `Murmur3Hash` Converter converts the `target` to a signed integer of the 32-bit Murmur3 hash.
+The `Murmur3Hex128` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
 
 `target` is a Getter that returns a string.
 
-The returned type is `int64`.
+The returned type is `string`.
 
 Examples:
 
@@ -1367,43 +1365,15 @@ Examples:
 
 `Murmur3Hash128(target)`
 
-The `Murmur3Hash128` Converter converts the `target` to two signed integers of the 128-bit Murmur3 hash.
+The `Murmur3Hash128` Converter converts the `target` string to a hexadecimal string in little-endian of the 128-bit Murmur3 hash.
 
 `target` is a Getter that returns a string.
 
-The returned type is a slice of two `int64`.
+The returned type is `string`.
 
 Examples:
 
 - `Murmur3Hash128(attributes["order.productId"])`
-
-### Murmur3Hex
-
-`Murmur3Hex(target)`
-
-The `Murmur3Hex` Converter converts the `target` to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
-
-`target` is a Getter that returns a string.
-
-The returned type is `string`.
-
-Examples:
-
-- `Murmur3Hex(attributes["order.productId"])`
-
-### Murmur3Hex128
-
-`Murmur3Hex128(target)`
-
-The `Murmur3Hex128` Converter converts the `target` to a hexadecimal string in little-endian of the 128-bit Murmur3 hash.
-
-`target` is a Getter that returns a string.
-
-The returned type is `string`.
-
-Examples:
-
-- `Murmur3Hex128(attributes["order.productId"])`
 
 ### Nanosecond
 
