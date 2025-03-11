@@ -71,7 +71,7 @@ receivers:
         scrapers:
             scraper:
                 metrics:
-                    vcs.repository.contributor.count:
+                    vcs.contributor.count:
                         enabled: true
                 github_org: myfancyorg
                 search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
@@ -86,8 +86,6 @@ service:
             processors: []
             exporters: [...]
 ```
-
-A [Grafana Dashboard for metrics from this receiver is on the marketplace](https://grafana.com/grafana/dashboards/20976-engineering-effectiveness-metrics/).
 
 ### Scraping
 

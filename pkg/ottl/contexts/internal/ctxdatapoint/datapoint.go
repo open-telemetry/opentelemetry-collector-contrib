@@ -104,21 +104,13 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			switch tCtx.GetDataPoint().(type) {
 			case pmetric.NumberDataPoint:
-				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes())
-				}
+				return ctxutil.SetMap(tCtx.GetDataPoint().(pmetric.NumberDataPoint).Attributes(), val)
 			case pmetric.HistogramDataPoint:
-				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes())
-				}
+				return ctxutil.SetMap(tCtx.GetDataPoint().(pmetric.HistogramDataPoint).Attributes(), val)
 			case pmetric.ExponentialHistogramDataPoint:
-				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes())
-				}
+				return ctxutil.SetMap(tCtx.GetDataPoint().(pmetric.ExponentialHistogramDataPoint).Attributes(), val)
 			case pmetric.SummaryDataPoint:
-				if attrs, ok := val.(pcommon.Map); ok {
-					attrs.CopyTo(tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes())
-				}
+				return ctxutil.SetMap(tCtx.GetDataPoint().(pmetric.SummaryDataPoint).Attributes(), val)
 			}
 			return nil
 		},

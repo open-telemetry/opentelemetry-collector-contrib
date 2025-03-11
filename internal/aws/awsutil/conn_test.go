@@ -32,7 +32,7 @@ func (c *mockConn) getEC2Region(_ *session.Session) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(_ *zap.Logger, _ string, _ string) (*session.Session, error) {
+func (c *mockConn) newAWSSession(_ *zap.Logger, _ string, _ string, _ string) (*session.Session, error) {
 	return c.sn, nil
 }
 
@@ -104,15 +104,16 @@ func TestGetAWSConfigSessionWithEC2RegionErr(t *testing.T) {
 func TestNewAWSSessionWithErr(t *testing.T) {
 	logger := zap.NewNop()
 	roleArn := "fake_arn"
+	externalID := ""
 	region := "fake_region"
 	t.Setenv("AWS_EC2_METADATA_DISABLED", "true")
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	conn := &Conn{}
-	se, err := conn.newAWSSession(logger, roleArn, region)
+	se, err := conn.newAWSSession(logger, roleArn, externalID, region)
 	assert.Error(t, err)
 	assert.Nil(t, se)
 	roleArn = ""
-	se, err = conn.newAWSSession(logger, roleArn, region)
+	se, err = conn.newAWSSession(logger, roleArn, externalID, region)
 	assert.Error(t, err)
 	assert.Nil(t, se)
 	t.Setenv("AWS_SDK_LOAD_CONFIG", "true")
@@ -132,10 +133,10 @@ func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	regions := []string{"us-east-1", "us-gov-west-1", "cn-north-1"}
 
 	for _, region := range regions {
-		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", region)
+		creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "", region)
 		assert.NotNil(t, creds)
 	}
-	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "fake_region")
+	creds := getSTSCredsFromPrimaryRegionEndpoint(logger, session, "", "", "fake_region")
 	assert.Nil(t, creds)
 }
 
@@ -150,9 +151,10 @@ func TestGetSTSCreds(t *testing.T) {
 	logger := zap.NewNop()
 	region := "fake_region"
 	roleArn := ""
-	_, err := getSTSCreds(logger, region, roleArn)
+	externalID := ""
+	_, err := getSTSCreds(logger, region, roleArn, externalID)
 	assert.NoError(t, err)
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
-	_, err = getSTSCreds(logger, region, roleArn)
+	_, err = getSTSCreds(logger, region, roleArn, externalID)
 	assert.Error(t, err)
 }

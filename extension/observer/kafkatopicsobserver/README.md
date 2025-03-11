@@ -25,8 +25,6 @@ The following settings can be optionally configured:
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `topic_regex` regex pattern of the topic name to subscribe to.
-- `session_timeout` (default = `10s`): The request timeout for detecting client failures when using Kafka’s group management facilities.
-- `heartbeat_interval` (default = `3s`): The expected time between heartbeats to the consumer coordinator when using Kafka’s group management facilities.
 - `auth`
     - `plain_text`
         - `username`: The username to use.

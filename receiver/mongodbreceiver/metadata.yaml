@@ -406,6 +406,98 @@ metrics:
       value_type: double
       aggregation_temporality: delta
       monotonic: false
+  mongodb.queries.rate:
+    description: The number of queries executed per second.
+    unit: "{query}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.inserts.rate:
+    description: The number of insertions executed per second.
+    unit: "{insert}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.commands.rate:
+    description: The number of commands executed per second.
+    unit: "{command}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.getmores.rate:
+    description: The number of getmores executed per second.
+    unit: "{getmore}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.deletes.rate:
+    description: The number of deletes executed per second.
+    unit: "{delete}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false 
+  mongodb.updates.rate:
+    description: The number of updates executed per second.
+    unit: "{update}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.flushes.rate:
+    description: The number of flushes executed per second.
+    unit: "{flush}/s"
+    enabled: false
+    gauge:
+      value_type: double
+      aggregation_temporality: delta
+      monotonic: false
+  mongodb.active.writes:
+    description: The number of write operations currently being processed.
+    unit: "{writes}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []
+  mongodb.active.reads:
+    description: The number of read operations currently being processed.
+    unit: "{reads}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+    attributes: []      
+  mongodb.wtcache.bytes.read:
+    description: The number of bytes read into the WiredTiger cache.
+    unit: "By"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []
+  mongodb.page_faults:
+    description: The number of page faults.
+    unit: "{faults}"
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    attributes: []    
 
 tests:
   config:

@@ -86,8 +86,10 @@ BUILD_TYPE?=release
 # All source code and documents. Used in spell check.
 ALL_SRC_AND_DOC_CMD := find . -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
 
-
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
+
+# All source code and .sh files (evaluated when used)
+ALL_SRC_AND_SHELL = $(shell find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort)
 
 pwd:
 	@pwd
@@ -157,8 +159,7 @@ benchmark: $(GOTESTSUM)
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
-	ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
-	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
+	@ADDLICENSEOUT=$$(for f in $(ALL_SRC_AND_SHELL); do \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
 	if [ "$$ADDLICENSEOUT" ]; then \
@@ -171,8 +172,7 @@ addlicense: $(ADDLICENSE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
-  ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
-	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
+	@licRes=$$(for f in $(ALL_SRC_AND_SHELL); do \
 		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
 		$(ADDLICENSE_CMD) -check "$$f" 2>&1 || echo "$$f"; \

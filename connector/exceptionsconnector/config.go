@@ -31,6 +31,8 @@ type Config struct {
 	Dimensions []Dimension `mapstructure:"dimensions"`
 	// Exemplars defines the configuration for exemplars.
 	Exemplars Exemplars `mapstructure:"exemplars"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ xconfmap.Validator = (*Config)(nil)

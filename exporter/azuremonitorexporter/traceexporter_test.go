@@ -28,6 +28,7 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
 }
 
 // Tests the export onTraceData callback with a single Span
@@ -51,6 +52,34 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
+}
+
+// Tests the export onTraceData callback calls exporter flush only once for 8 spans
+func TestExporterTraceDataCallbackCallFlushOnce(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	ilss.CopyTo(rs.ScopeSpans().AppendEmpty())
+	rs.CopyTo(traces.ResourceSpans().AppendEmpty())
+
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 8)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
 }
 
 // Tests the export onTraceData callback with a single Span with SpanEvents
@@ -83,6 +112,7 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
 }
 
 // Tests the export onTraceData callback with a single Span that fails to produce an envelope
@@ -112,6 +142,7 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
 }
 
 func getMockTransportChannel() *mockTransportChannel {

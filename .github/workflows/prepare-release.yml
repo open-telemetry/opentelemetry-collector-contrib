@@ -26,7 +26,7 @@ jobs:
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib

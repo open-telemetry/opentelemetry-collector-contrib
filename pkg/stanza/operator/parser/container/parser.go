@@ -62,7 +62,7 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.LogEmitter
+	criLogEmitter           *helper.BatchingLogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
