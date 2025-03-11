@@ -49,9 +49,6 @@ type WatchClient struct {
 	namespaceInformer      cache.SharedInformer
 	nodeInformer           cache.SharedInformer
 	deploymentInformer     cache.SharedInformer
-	statefulSetInformer    cache.SharedInformer
-	daemonSetInformer      cache.SharedInformer
-	jobInformer            cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
@@ -76,21 +73,9 @@ type WatchClient struct {
 	// Key is node name
 	Nodes map[string]*Node
 
-	// A map containing Node related data, used to associate them with resources.
-	// Key is node name
+	// A map containing Deployment related data, used to associate them with resources.
+	// Key is deployment name
 	Deployments map[string]*Deployment
-
-	// A map containing Node related data, used to associate them with resources.
-	// Key is node name
-	DaemonSets map[string]*DaemonSet
-
-	// A map containing Node related data, used to associate them with resources.
-	// Key is node name
-	StatefulSets map[string]*StatefulSet
-
-	// A map containing Node related data, used to associate them with resources.
-	// Key is node name
-	Jobs map[string]*Job
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -233,18 +218,6 @@ func New(
 		c.deploymentInformer = newDeploymentSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
-	if c.extractStatefulSetLabelsAnnotations() {
-		c.statefulSetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
-	}
-
-	if c.extractDaemonSetLabelsAnnotations() {
-		c.daemonSetInformer = newDaemonSetSharedInformer(c.kc, c.Filters.Namespace)
-	}
-
-	if c.extractJobLabelsAnnotations() {
-		c.jobInformer = newJobSharedInformer(c.kc, c.Filters.Namespace)
-	}
-
 	return c, err
 }
 
@@ -302,45 +275,6 @@ func (c *WatchClient) Start() error {
 		synced = append(synced, reg.HasSynced)
 		go c.deploymentInformer.Run(c.stopCh)
 	}
-
-	// if c.statefulSetInformer != nil {
-	// 	reg, err = c.statefulSetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-	// 		AddFunc:    c.handleStatefulSetAdd,
-	// 		UpdateFunc: c.handleStatefulSetUpdate,
-	// 		DeleteFunc: c.handleStatefulSetDelete,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	synced = append(synced, reg.HasSynced)
-	// 	go c.statefulSetInformer.Run(c.stopCh)
-	// }
-
-	// if c.daemonSetInformer != nil {
-	// 	reg, err = c.daemonSetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-	// 		AddFunc:    c.handleDaemonSetAdd,
-	// 		UpdateFunc: c.handleDaemonSetUpdate,
-	// 		DeleteFunc: c.handleDaemonSetDelete,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	synced = append(synced, reg.HasSynced)
-	// 	go c.daemonSetInformer.Run(c.stopCh)
-	// }
-
-	// if c.jobInformer != nil {
-	// 	reg, err = c.jobInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-	// 		AddFunc:    c.handleJobAdd,
-	// 		UpdateFunc: c.handleJobUpdate,
-	// 		DeleteFunc: c.handleJobDelete,
-	// 	})
-	// 	if err != nil {
-	// 		return err
-	// 	}
-	// 	synced = append(synced, reg.HasSynced)
-	// 	go c.jobInformer.Run(c.stopCh)
-	// }
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
@@ -738,8 +672,6 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	if rules.Node {
 		transformedPod.Spec.NodeName = pod.Spec.NodeName
 	}
-
-	//teoreticky tu
 
 	if rules.PodHostName {
 		transformedPod.Spec.Hostname = pod.Spec.Hostname
@@ -1196,54 +1128,6 @@ func (c *WatchClient) extractDeploymentLabelsAnnotations() bool {
 
 	for _, r := range c.Rules.Annotations {
 		if r.From == MetadataFromDeployment {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (c *WatchClient) extractStatefulSetLabelsAnnotations() bool {
-	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromStatefulSet {
-			return true
-		}
-	}
-
-	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromStatefulSet {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (c *WatchClient) extractDaemonSetLabelsAnnotations() bool {
-	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromDaemonSet {
-			return true
-		}
-	}
-
-	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromDaemonSet {
-			return true
-		}
-	}
-
-	return false
-}
-
-func (c *WatchClient) extractJobLabelsAnnotations() bool {
-	for _, r := range c.Rules.Labels {
-		if r.From == MetadataFromJob {
-			return true
-		}
-	}
-
-	for _, r := range c.Rules.Annotations {
-		if r.From == MetadataFromJob {
 			return true
 		}
 	}

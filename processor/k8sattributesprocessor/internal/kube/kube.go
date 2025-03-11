@@ -31,12 +31,6 @@ const (
 	MetadataFromNode = "node"
 	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
 	MetadataFromDeployment = "deployment"
-	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
-	MetadataFromStatefulSet = "statefulset"
-	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
-	MetadataFromDaemonSet = "daemonset"
-	// MetadataFromJob is used to specify to extract metadata/labels/annotations from job
-	MetadataFromJob        = "job"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -100,9 +94,6 @@ type Client interface {
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
-	// GetStatefulSet(string) (*StatefulSet, bool)
-	// GetDaemonSet(string) (*DaemonSet, bool)
-	// GetJob(string) (*Job, bool)
 	Start() error
 	Stop()
 }
@@ -389,24 +380,6 @@ type AssociationSource struct {
 type Deployment struct {
 	Name       string
 	UID        string
-	Attributes map[string]string
-}
-
-// StatefulSet represents a kubernetes statefulset.
-type StatefulSet struct {
-	Name       string
-	Attributes map[string]string
-}
-
-// DaemonSet represents a kubernetes daemonset.
-type DaemonSet struct {
-	Name       string
-	Attributes map[string]string
-}
-
-// Job represents a kubernetes job.
-type Job struct {
-	Name       string
 	Attributes map[string]string
 }
 
