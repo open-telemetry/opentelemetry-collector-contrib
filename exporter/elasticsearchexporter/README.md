@@ -196,10 +196,10 @@ and `data_stream.namespace`. Instead of serializing these values under the `*att
 they are put at the root of the document, to conform with the conventions of the data stream naming
 scheme that maps these as `constant_keyword` fields.
 
-`data_stream.dataset` will always be appended with `.otel` if data stream routing mode is active.
+`data_stream.dataset` will always be appended with `.otel` if [dynamic data stream routing mode](#elasticsearch-document-routing) is active.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
-`logs` if data stream routing mode is active.
+`logs` if [dynamic data stream routing mode](#elasticsearch-document-routing) is active.
 
 | Signal    | Supported          |
 | --------- | ------------------ |
