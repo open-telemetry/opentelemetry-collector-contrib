@@ -160,7 +160,7 @@ This can be customised through the following settings:
 
 #### Document routing exceptions for OTel data mode
 
-In OTel mapping mode (`mapping::mode: otel`), there are certain exceptions to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
+In OTel mapping mode (`mapping::mode: otel`), there is special handling in addition to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
 The order to determine the routing mode is the same as [Elasticsearch document routing](#elasticsearch-document-routing).
 
 1. "Static mode": Span events are separate documents routed to `logs_index` if non-empty.
