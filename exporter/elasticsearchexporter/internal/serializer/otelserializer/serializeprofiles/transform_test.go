@@ -216,6 +216,10 @@ func TestTransform(t *testing.T) {
 					UnsymbolizedLeafFrames: []libpf.FrameID{
 						libpf.NewFrameID(buildID, address),
 					},
+					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
+						buildID:  {},
+						buildID2: {},
+					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
@@ -328,6 +332,10 @@ func TestStackPayloads(t *testing.T) {
 					UnsymbolizedLeafFrames: []libpf.FrameID{
 						libpf.NewFrameID(buildID, address),
 					},
+					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
+						buildID:  {},
+						buildID2: {},
+					},
 				},
 				{
 					StackTraceEvent: StackTraceEvent{
@@ -412,6 +420,10 @@ func TestStackPayloads(t *testing.T) {
 					},
 					UnsymbolizedLeafFrames: []libpf.FrameID{
 						libpf.NewFrameID(buildID, address),
+					},
+					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
+						buildID:  {},
+						buildID2: {},
 					},
 				},
 				{

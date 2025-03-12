@@ -19,6 +19,8 @@ import (
 )
 
 func TestSerializeProfile(t *testing.T) {
+	nowTime := time.Now()
+	nowTimeStr := nowTime.Format(time.RFC3339Nano)
 	tests := []struct {
 		name              string
 		profileCustomizer func(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile)
@@ -81,6 +83,20 @@ func TestSerializeProfile(t *testing.T) {
 					"upsert":          map[string]any{},
 				},
 				{
+					"Stacktrace.frame.id":     []any{"YA3K_koRAADyvzjEk_X7kgAAAAAAAABv"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": nowTimeStr,
+					"Time.created":            nowTimeStr,
+					"ecs.version":             "",
+				},
+				{
+					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": nowTimeStr,
+					"Time.created":            nowTimeStr,
+					"ecs.version":             "",
+				},
+				{
 					"@timestamp":          "1970-01-01T00:00:00Z",
 					"Stacktrace.count":    json.Number("1"),
 					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
@@ -99,6 +115,14 @@ func TestSerializeProfile(t *testing.T) {
 			profile := scope.Profiles().AppendEmpty()
 			tt.profileCustomizer(resource.Resource(), scope.Scope(), profile)
 			profiles.MarkReadOnly()
+
+			nowOld := now
+			t.Cleanup(func() {
+				now = nowOld
+			})
+			now = func() time.Time {
+				return nowTime
+			}
 
 			buf := []*bytes.Buffer{}
 			err := SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {

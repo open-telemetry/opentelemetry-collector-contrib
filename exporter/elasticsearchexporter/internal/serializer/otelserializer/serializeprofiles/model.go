@@ -4,6 +4,8 @@
 package serializeprofiles // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 
 import (
+	"time"
+
 	"go.opentelemetry.io/ebpf-profiler/libpf"
 )
 
@@ -27,7 +29,8 @@ type StackPayload struct {
 	StackFrames     []StackFrame
 	Executables     []ExeMetadata
 
-	UnsymbolizedLeafFrames []libpf.FrameID
+	UnsymbolizedLeafFrames  []libpf.FrameID
+	UnsymbolizedExecutables map[libpf.FileID]struct{}
 }
 
 // StackTraceEvent represents a stacktrace event serializable into ES.
@@ -129,4 +132,24 @@ func NewExeMetadata(docID string, lastSeen uint32, buildID, fileName string) Exe
 			},
 		},
 	}
+}
+
+// ExecutableSymbolizationData represents an array of executable FileIDs written into the
+// executable symbolization queue index.
+type ExecutableSymbolizationData struct {
+	EcsVersion
+	FileID  []string  `json:"Executable.file.id"`
+	Created time.Time `json:"Time.created"`
+	Next    time.Time `json:"Symbolization.time.next"`
+	Retries int       `json:"Symbolization.retries"`
+}
+
+// LeafFrameSymbolizationData represents an array of frame IDs written into the
+// leaf frame symbolization queue index.
+type LeafFrameSymbolizationData struct {
+	EcsVersion
+	FrameID []string  `json:"Stacktrace.frame.id"`
+	Created time.Time `json:"Time.created"`
+	Next    time.Time `json:"Symbolization.time.next"`
+	Retries int       `json:"Symbolization.retries"`
 }

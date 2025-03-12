@@ -6,6 +6,7 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"encoding/json"
+	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -13,11 +14,16 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
 
+var now = time.Now
+
 const (
 	AllEventsIndex   = "profiling-events-all"
 	StackTraceIndex  = "profiling-stacktraces"
 	StackFrameIndex  = "profiling-stackframes"
 	ExecutablesIndex = "profiling-executables"
+
+	ExecutablesSymQueueIndex = "profiling-sq-executables"
+	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
@@ -34,6 +40,8 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 	if err != nil {
 		return err
 	}
+
+	nowTime := now()
 
 	for _, payload := range data {
 		event := payload.StackTraceEvent
@@ -61,6 +69,32 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 
 		for _, executable := range payload.Executables {
 			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
+				return err
+			}
+		}
+
+		for _, frame := range payload.UnsymbolizedLeafFrames {
+			docID := frame.String()
+			doc := serializeprofiles.LeafFrameSymbolizationData{
+				FrameID: []string{docID},
+				Created: nowTime,
+				Next:    nowTime,
+				Retries: 0,
+			}
+			if err = pushDataAsJSON(doc, docID, LeafFramesSymQueueIndex); err != nil {
+				return err
+			}
+		}
+
+		for fileID := range payload.UnsymbolizedExecutables {
+			docID := fileID.Base64()
+			doc := serializeprofiles.ExecutableSymbolizationData{
+				FileID:  []string{docID},
+				Created: nowTime,
+				Next:    nowTime,
+				Retries: 0,
+			}
+			if err = pushDataAsJSON(doc, docID, ExecutablesSymQueueIndex); err != nil {
 				return err
 			}
 		}

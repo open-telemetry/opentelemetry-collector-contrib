@@ -78,6 +78,7 @@ func checkProfileType(profile pprofile.Profile) error {
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
 	unsymbolizedLeafFrames := make([]libpf.FrameID, 0, profile.Sample().Len())
+	unsymbolizedExecutables := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
 
 	hostMetadata := newHostMetadata(resource, scope, profile)
@@ -111,6 +112,22 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 			unsymbolizedLeafFrames = append(unsymbolizedLeafFrames, *leafFrame)
 		}
 
+		for j := range frames {
+			if frameTypes[j].IsError() {
+				// Artificial error frames can't be symbolized.
+				continue
+			}
+			if isFrameSymbolized(frames[j]) {
+				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
+				continue
+			}
+			frameID, err := libpf.NewFrameIDFromString(frames[j].DocID)
+			if err != nil {
+				return nil, fmt.Errorf("stackPayloads: %w", err)
+			}
+			unsymbolizedExecutables[frameID.FileID()] = struct{}{}
+		}
+
 		// Add one event per timestamp and its count value.
 		for j := 0; j < sample.TimestampsUnixNano().Len(); j++ {
 			t := sample.TimestampsUnixNano().At(j)
@@ -139,6 +156,7 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 			stackPayload[0].Executables = exeMetadata
 		}
 		stackPayload[0].UnsymbolizedLeafFrames = unsymbolizedLeafFrames
+		stackPayload[0].UnsymbolizedExecutables = unsymbolizedExecutables
 	}
 
 	return stackPayload, nil
