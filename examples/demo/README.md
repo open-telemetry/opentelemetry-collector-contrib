@@ -19,9 +19,9 @@ OpenTelemetry Collectors deployed:
 - The OTel Collector then sends the data to the appropriate backend, in this demo
  Jaeger, Zipkin, and Prometheus;
 
-This demo uses `docker-compose` and by default runs against the
-`otel/opentelemetry-collector:0.67.0` image. To run the demo, switch
-to the `examples/demo` folder and run:
+This demo uses [Docker Compose](https://docs.docker.com/compose/) and by
+default runs against the most recent release of `otel/opentelemetry-collector`.
+To run the demo, switch to the `examples/demo` folder and run:
 
 ```shell
 docker compose up -d
@@ -42,12 +42,23 @@ To clean up any docker container from the demo run `docker-compose down` from
 the `examples/demo` folder.
 
 ### Using a Locally Built Image
+
 Developers interested in running a local build of the Collector need to build a
-docker image using the command below:
+Docker image using the command below:
 
 ```shell
 make docker-otelcontribcol
 ```
 
-And set an environment variable `OTELCOL_IMG` to `otelcontribcol` before
-launching the command `docker-compose up -d`.
+Then either modify `examples/demo/docker-compose.yml` to use the newly
+`otelcontribcol` image, or create another Compose file that will be merged
+with the base Compose file to override the image, like:
+
+```yaml
+services:
+  otel-collector:
+    image: otelcontribcol
+```
+
+For more on merging Compose files, see
+https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/#how-to-merge-multiple-compose-files
