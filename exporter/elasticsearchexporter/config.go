@@ -40,15 +40,18 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// This setting is required when logging pipelines used.
+	// LogsIndex configures the static index used for document routing for logs.
+	// It should be empty if dynamic document routing is preferred.
 	LogsIndex        string              `mapstructure:"logs_index"`
 	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 
-	// This setting is required when the exporter is used in a metrics pipeline.
+	// MetricsIndex configures the static index used for document routing for metrics.
+	// It should be empty if dynamic document routing is preferred.
 	MetricsIndex        string              `mapstructure:"metrics_index"`
 	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
 
-	// This setting is required when traces pipelines used.
+	// TracesIndex configures the static index used for document routing for metrics.
+	// It should be empty if dynamic document routing is preferred.
 	TracesIndex        string              `mapstructure:"traces_index"`
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
