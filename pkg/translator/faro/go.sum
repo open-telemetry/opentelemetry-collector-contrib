@@ -23,10 +23,8 @@ github.com/google/go-cmp v0.6.0/go.mod h1:17dUlkBOakJ0+DkrSSNjCkIjxS6bF9zb3elmeN
 github.com/google/gofuzz v1.0.0/go.mod h1:dBl0BpW6vV/+mYPU4Po3pmUjxk6FQPldtuIdl/M65Eg=
 github.com/google/uuid v1.6.0 h1:NIvaJDMOsjHA8n1jAhLSgzrAzy1Hgr+hNrb57e+94F0=
 github.com/google/uuid v1.6.0/go.mod h1:TIyPZe4MgqvfeYDBFedMoGGpEw/LqOeaOT+nhxU+yHo=
-github.com/grafana/faro/pkg/go v0.0.0-20250212082855-b99ea3b24d33 h1:v5MQnqMBmu1pmzRKG0qoQpv8rQ1/tKDrPS6VoeGwBxY=
-github.com/grafana/faro/pkg/go v0.0.0-20250212082855-b99ea3b24d33/go.mod h1:4CP5sfwz5+uVfNgCeA5/N6csXnzOgnkgT1jh57ASaK4=
-github.com/grafana/faro/pkg/translator/faro v0.0.0-20250303131049-4a4f3d5b57fc h1:neCsFHveZH7yq9f3ogV9KMzdwdWL1vCfkFV33L/dNe8=
-github.com/grafana/faro/pkg/translator/faro v0.0.0-20250303131049-4a4f3d5b57fc/go.mod h1:7Dy30gHxxekUVVlUCsn/Z2X0f+HUzy75FCFxYNTiK6w=
+github.com/grafana/faro/pkg/go v0.0.0-20250303131049-4a4f3d5b57fc h1:Q+Fmfsw7on/ZEyneEVDMswsXQso0/ZMuODLxtGrFYzw=
+github.com/grafana/faro/pkg/go v0.0.0-20250303131049-4a4f3d5b57fc/go.mod h1:4CP5sfwz5+uVfNgCeA5/N6csXnzOgnkgT1jh57ASaK4=
 github.com/json-iterator/go v1.1.12 h1:PV8peI4a0ysnczrg+LtxykD8LfKY9ML6u2jnxaEnrnM=
 github.com/json-iterator/go v1.1.12/go.mod h1:e30LSqwooZae/UwlEbR2852Gd8hjQvJoHmT4TnhNGBo=
 github.com/juju/gnuflag v0.0.0-20171113085948-2ce1bb71843d/go.mod h1:2PavIy+JPciBPrBUjwbNvtwB6RQlve+hkpll6QSNmOE=
