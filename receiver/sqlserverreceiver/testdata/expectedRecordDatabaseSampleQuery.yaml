@@ -103,12 +103,6 @@ resourceLogs:
               - key: sqlserver.username
                 value:
                   stringValue: sa
-              - key: sqlserver.wait_code
-                value:
-                  intValue: 0
-              - key: sqlserver.wait_category
-                value:
-                  stringValue: Unknown
             body:
               stringValue: sample
         scope:

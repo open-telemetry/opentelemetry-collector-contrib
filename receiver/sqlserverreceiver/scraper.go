@@ -10,7 +10,6 @@ import (
 	"errors"
 	"fmt"
 	"strconv"
-	"strings"
 	"time"
 
 	lru "github.com/hashicorp/golang-lru/v2"
@@ -668,10 +667,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		record.Attributes().PutStr(dbPrefix+username, row[username])
 
-		waitCode, waitCategory := getWaitCategory(row[waitType])
-		record.Attributes().PutInt(dbPrefix+"wait_code", int64(waitCode))
-		record.Attributes().PutStr(dbPrefix+"wait_category", waitCategory)
-
 		// client.address: use host_name if it has value, if not, use client_net_address.
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
@@ -686,55 +681,4 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.Body().SetStr("sample")
 	}
 	return logs, errors.Join(errs...)
-}
-
-func anyOf(s string, f func(a string, b string) bool, vals ...string) bool {
-	if len(vals) == 0 {
-		return false
-	}
-
-	for _, v := range vals {
-		if f(s, v) {
-			return true
-		}
-	}
-	return false
-}
-
-func getWaitCategory(s string) (uint, string) {
-	if code, exists := detailedWaitTypes[s]; exists {
-		return code, waitTypes[code]
-	}
-
-	switch {
-	case strings.HasPrefix(s, "LOCK_M_"):
-		return 3, "Lock"
-	case strings.HasPrefix(s, "LATCH_"):
-		return 4, "Latch"
-	case strings.HasPrefix(s, "PAGELATCH_"):
-		return 5, "Buffer Latch"
-	case strings.HasPrefix(s, "PAGEIOLATCH_"):
-		return 6, "Buffer IO"
-	case anyOf(s, strings.HasPrefix, "CLR", "SQLCLR"):
-		return 8, "SQL CLR"
-	case strings.HasPrefix(s, "DBMIRROR"):
-		return 9, "Mirroring"
-	case anyOf(s, strings.HasPrefix, "XACT", "DTC", "TRAN_MARKLATCH_", "MSQL_XACT_"):
-		return 10, "Transaction"
-	case strings.HasPrefix(s, "SLEEP_"):
-		return 11, "Idle"
-	case strings.HasPrefix(s, "PREEMPTIVE_"):
-		return 12, "Preemptive"
-	case strings.HasPrefix(s, "BROKER_") && s != "BROKER_RECEIVE_WAITFOR":
-		return 13, "Service Broker"
-	case anyOf(s, strings.HasPrefix, "HT", "BMP", "BP"):
-		return 16, "Parallelism"
-	case anyOf(s, strings.HasPrefix, "SE_REPL_", "REPL_", "PWAIT_HADR_"),
-		strings.HasPrefix(s, "HADR_") && s != "HADR_THROTTLE_LOG_RATE_GOVERNOR":
-		return 22, "Replication"
-	case strings.HasPrefix(s, "RBIO_RG_"):
-		return 23, "Log Rate Governor"
-	default:
-		return 0, "Unknown"
-	}
 }
