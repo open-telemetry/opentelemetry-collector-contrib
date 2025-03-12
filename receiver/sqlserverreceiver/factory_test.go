@@ -47,6 +47,10 @@ func TestFactory(t *testing.T) {
 						MaxQuerySampleCount: 1000,
 						TopQueryCount:       200,
 					},
+					QuerySample: QuerySample{
+						Enabled:           false,
+						MaxResultPerQuery: 100,
+					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
 
@@ -196,7 +200,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Enabled = true
+				cfg.TopQueryCollection.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
