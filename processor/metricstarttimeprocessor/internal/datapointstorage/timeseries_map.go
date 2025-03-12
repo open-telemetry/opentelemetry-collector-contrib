@@ -102,6 +102,82 @@ func (tsm *TimeseriesMap) GC() {
 	tsm.Mark = false
 }
 
+func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
+	if h.Count() != 0 && tsi.Histogram.Count() != 0 && h.Count() < tsi.Histogram.Count() {
+		return true
+	}
+	if h.Sum() != 0 && tsi.Histogram.Sum() != 0 && h.Sum() < tsi.Histogram.Sum() {
+		return true
+	}
+
+	// Guard against bucket boundaries changes.
+	refBounds := tsi.Histogram.ExplicitBounds().AsRaw()
+	hBounds := h.ExplicitBounds().AsRaw()
+	if len(refBounds) != len(hBounds) {
+		return true
+	}
+	for i := range len(refBounds) {
+		if hBounds[i] != refBounds[i] {
+			return true
+		}
+	}
+
+	// We need to check individual buckets to make sure the counts are all increasing.
+	if tsi.Histogram.BucketCounts().Len() != h.BucketCounts().Len() {
+		return true
+	}
+	for i := range tsi.Histogram.BucketCounts().Len() {
+		if h.BucketCounts().At(i) < tsi.Histogram.BucketCounts().At(i) {
+			return true
+		}
+	}
+	return false
+}
+
+func (tsi *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHistogramDataPoint) bool {
+	// Same as the histogram implementation
+	if eh.Count() != 0 && tsi.ExponentialHistogram.Count() != 0 && eh.Count() < tsi.ExponentialHistogram.Count() {
+		return true
+	}
+	if eh.Sum() != 0 && tsi.ExponentialHistogram.Sum() != 0 && eh.Sum() < tsi.ExponentialHistogram.Sum() {
+		return true
+	}
+
+	// Guard against bucket boundaries changes.
+	if tsi.ExponentialHistogram.Scale() != eh.Scale() {
+		return true
+	}
+
+	// We need to check individual buckets to make sure the counts are all increasing.
+	if tsi.ExponentialHistogram.Positive().BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+		return true
+	}
+	for i := range tsi.ExponentialHistogram.Positive().BucketCounts().Len() {
+		if eh.Positive().BucketCounts().At(i) < tsi.ExponentialHistogram.Positive().BucketCounts().At(i) {
+			return true
+		}
+	}
+	if tsi.ExponentialHistogram.Negative().BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+		return true
+	}
+	for i := range tsi.ExponentialHistogram.Negative().BucketCounts().Len() {
+		if eh.Negative().BucketCounts().At(i) < tsi.ExponentialHistogram.Negative().BucketCounts().At(i) {
+			return true
+		}
+	}
+
+	return false
+}
+
+func (tsi *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
+	return (s.Count() != 0 && tsi.Summary.Count() != 0 && s.Count() < tsi.Summary.Count()) ||
+		(s.Sum() != 0 && tsi.Summary.Sum() != 0 && s.Sum() < tsi.Summary.Sum())
+}
+
+func (tsi *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
+	return s.DoubleValue() < tsi.Number.DoubleValue()
+}
+
 func newTimeseriesMap() *TimeseriesMap {
 	return &TimeseriesMap{Mark: true, TsiMap: map[TimeseriesKey]*TimeseriesInfo{}}
 }
