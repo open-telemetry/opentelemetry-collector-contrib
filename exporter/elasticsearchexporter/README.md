@@ -158,7 +158,7 @@ The Elasticsearch exporter supports several document schemas and preprocessing
 behaviours, which may be configured through the following settings:
 
 - `mapping`:
-  - `mode` (default=none): The default mapping mode. Valid modes are:
+  - `mode` (default=otel): The default mapping mode. Valid modes are:
     - `none`
     - `ecs`
     - `otel`
@@ -177,7 +177,12 @@ See below for a description of each mapping mode.
 
 #### OTel mapping mode
 
-Requires Elasticsearch 8.12 or above.
+The default and recommended "OTel-native" mapping mode.
+
+Requires Elasticsearch 8.12 or above[^1], works best with Elasticsearch 8.16 or above[^2].
+
+[^1]: as it uses the undocumented `require_data_stream` bulk API parameter supported from Elasticsearch 8.12
+[^2]: Elasticsearch 8.16 contains a built-in `otel-data` plugin
 
 In `otel` mapping mode, the Elasticsearch Exporter stores documents in Elastic's preferred
 "OTel-native" schema. In this mapping mode, documents use the original attribute names and
@@ -188,9 +193,7 @@ and `data_stream.namespace`. Instead of serializing these values under the `*att
 they are put at the root of the document, to conform with the conventions of the data stream naming
 scheme that maps these as `constant_keyword` fields.
 
-`data_stream.dataset` will always be appended with `.otel`. It is recommended to use with
-`*_dynamic_index::enabled: true` (e.g. `logs_dynamic_index::enabled`) to route documents to data stream
-`${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`.
+`data_stream.dataset` will always be appended with `.otel` if [dynamic data stream routing mode](#elasticsearch-document-routing) is active.
 
 Span events are stored in separate documents. They will be routed with `data_stream.type` set to
 `logs` if `traces_dynamic_index::enabled` is `true`.
@@ -516,3 +519,16 @@ This gives the exporter the opportunity to group all related metrics into the sa
 
 2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
  This means that the same metric with the same dimensions is sent from multiple sources, which is not allowed in the OTel metrics data model.
+
+### flush failed (400) illegal_argument_exception
+
+Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
+
+```
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+```
+
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode from v0.122.0, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
+
+To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
+Alternatively, try other mapping modes, but the document structure will be different.
