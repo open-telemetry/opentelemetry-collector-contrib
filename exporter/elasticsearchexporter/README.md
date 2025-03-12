@@ -522,7 +522,7 @@ This gives the exporter the opportunity to group all related metrics into the sa
 
 ### flush failed (400) illegal_argument_exception
 
-Symptom: bulk indexer logs an error that indicates flush failed with HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
+Symptom: bulk indexer logs an error that indicates "bulk indexer flush error" with bulk request returning HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
 
 ```
 error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
