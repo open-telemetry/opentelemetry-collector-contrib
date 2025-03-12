@@ -33,6 +33,8 @@ type Config struct {
 	// MaxRetry is the maximum retries per level, once this limit is hit for a level, even if the next pipeline level fails,
 	// it will not try to recover the level that exceeded the maximum retries
 	MaxRetries int `mapstructure:"max_retries"` // **Deprecated**
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate needs to ensure RetryInterval > # elements in PriorityList * RetryGap

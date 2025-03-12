@@ -21,8 +21,8 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(_ context.Context, _ extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newExtension(cfg.(*Config))
+func createExtension(_ context.Context, settings extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return newExtension(cfg.(*Config), settings)
 }
 
 func createDefaultConfig() component.Config {
