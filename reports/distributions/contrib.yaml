@@ -78,6 +78,7 @@ components:
         - http_forwarder
         - jaegerremotesampling
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp

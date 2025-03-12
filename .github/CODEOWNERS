@@ -283,6 +283,7 @@ receiver/prometheusremotewritereceiver/                          @open-telemetry
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
 receiver/purefbreceiver/                                         @open-telemetry/collector-contrib-approvers @jpkrohling @dgoscn @chrroberts-pure
+receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers @VenuEmmadi
 receiver/receivercreator/                                        @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/redisreceiver/                                          @open-telemetry/collector-contrib-approvers @dmitryax @hughesjj
 receiver/riakreceiver/                                           @open-telemetry/collector-contrib-approvers @armstrmi
@@ -350,7 +351,6 @@ receiver/elasticsearchreceiver/                                  @open-telemetry
 receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers
 receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers
 receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers
-receiver/rabbitmqreceiver/                                       @open-telemetry/collector-contrib-approvers
 receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers
 scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers
 
