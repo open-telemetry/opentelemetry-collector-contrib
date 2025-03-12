@@ -117,7 +117,7 @@ type LogstashFormatSettings struct {
 type DynamicIndexSetting struct {
 	// Enabled enables dynamic index routing.
 	//
-	// Deprecated: This config is now ignored. Dynamic index routing is always done by default.
+	// Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.
 	Enabled bool `mapstructure:"enabled"`
 }
 
