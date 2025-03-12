@@ -38,7 +38,7 @@ func TestLoadConfig(t *testing.T) {
 				ProtocolVersion:                      "3.7.0",
 				Brokers:                              []string{"1.2.3.4:9092", "2.3.4.5:9092"},
 				TopicRegex:                           "^topic[0-9]$",
-				TopicsSyncInterval:                   5 * time.Second,
+				TopicsSyncInterval:                   100 * time.Millisecond,
 				ResolveCanonicalBootstrapServersOnly: false,
 				Authentication: kafka.Authentication{
 					PlainText: &kafka.PlainTextConfig{
