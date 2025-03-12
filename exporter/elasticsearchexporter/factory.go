@@ -84,7 +84,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "none",
+			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{

@@ -8,6 +8,8 @@ import (
 	"fmt"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/oauth2"
@@ -16,9 +18,14 @@ import (
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
+var _ extensionauth.Client = (*clientAuthenticator)(nil)
+
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
+	component.StartFunc
+	component.ShutdownFunc
+
 	clientCredentials *clientCredentialsConfig
 	logger            *zap.Logger
 	client            *http.Client
@@ -75,9 +82,9 @@ func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 	return tok, nil
 }
 
-// roundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
+// RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
-func (o *clientAuthenticator) roundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (o *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
 		Source: errorWrappingTokenSource{
@@ -88,9 +95,9 @@ func (o *clientAuthenticator) roundTripper(base http.RoundTripper) (http.RoundTr
 	}, nil
 }
 
-// perRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
+// PerRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
 // oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
-func (o *clientAuthenticator) perRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return grpcOAuth.TokenSource{
 		TokenSource: errorWrappingTokenSource{
