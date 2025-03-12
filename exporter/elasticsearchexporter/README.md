@@ -519,3 +519,16 @@ This gives the exporter the opportunity to group all related metrics into the sa
 
 2. Otherwise, check your metrics pipeline setup for misconfiguration that causes an actual violation of the [single writer principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer).
  This means that the same metric with the same dimensions is sent from multiple sources, which is not allowed in the OTel metrics data model.
+
+### flush failed (400) illegal_argument_exception
+
+Symptom: bulk indexer logs an error that indicates flush failed with HTTP 400 and an error type of `illegal_argument_exception`, similar to the following.
+
+```
+error   elasticsearchexporter@v0.120.1/bulkindexer.go:343       bulk indexer flush error        {"otelcol.component.id": "elasticsearch", "otelcol.component.kind": "Exporter", "otelcol.signal": "logs", "error": "flush failed (400): {\"error\":{\"type\":\"illegal_argument_exception\",\"caused_by\":{}}}"}
+```
+
+This may happen when you use [OTel mapping mode](#otel-mapping-mode) (the default mapping mode, or explicitly by configuring `mapping::mode: otel`) sending to Elasticsearch version < 8.12.
+
+To resolve this, it is recommended to upgrade your Elasticsearch to 8.12+, ideally 8.16+.
+Alternatively, try other mapping modes, but the document structure will be different.
