@@ -3,6 +3,8 @@ kind: StatefulSet
 metadata: 
   name: {{ .Name }}-{{ .DataType }}-statefulset
   namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: statefulset-annotation
 spec:
   serviceName: {{ .Name }}-{{ .DataType }}-statefulset
   replicas: 1

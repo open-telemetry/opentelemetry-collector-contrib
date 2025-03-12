@@ -171,3 +171,27 @@ Number of ReplicaSet update events received
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_added
+
+Number of statefulset add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_deleted
+
+Number of statefulset delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_updated
+
+Number of statefulset update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |

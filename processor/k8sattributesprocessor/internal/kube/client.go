@@ -49,6 +49,7 @@ type WatchClient struct {
 	namespaceInformer      cache.SharedInformer
 	nodeInformer           cache.SharedInformer
 	deploymentInformer     cache.SharedInformer
+	statefulsetInformer    cache.SharedInformer
 	replicasetInformer     cache.SharedInformer
 	replicasetRegex        *regexp.Regexp
 	cronJobRegex           *regexp.Regexp
@@ -76,6 +77,10 @@ type WatchClient struct {
 	// A map containing Deployment related data, used to associate them with resources.
 	// Key is deployment name
 	Deployments map[string]*Deployment
+
+	// A map containing StatefulSet related data, used to associate them with resources.
+	// Key is statefulset uid
+	StatefulSets map[string]*StatefulSet
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
 	// Key is replicaset uid
@@ -135,6 +140,7 @@ func New(
 	c.Nodes = map[string]*Node{}
 	c.ReplicaSets = map[string]*ReplicaSet{}
 	c.Deployments = map[string]*Deployment{}
+	c.StatefulSets = map[string]*StatefulSet{}
 	if newClientSet == nil {
 		newClientSet = k8sconfig.MakeClient
 	}
@@ -218,6 +224,10 @@ func New(
 		c.deploymentInformer = newDeploymentSharedInformer(c.kc, c.Filters.Namespace)
 	}
 
+	if c.extractStatefulSetLabelsAnnotations() {
+		c.statefulsetInformer = newStatefulSetSharedInformer(c.kc, c.Filters.Namespace)
+	}
+
 	return c, err
 }
 
@@ -274,6 +284,19 @@ func (c *WatchClient) Start() error {
 		}
 		synced = append(synced, reg.HasSynced)
 		go c.deploymentInformer.Run(c.stopCh)
+	}
+
+	if c.statefulsetInformer != nil {
+		reg, err = c.statefulsetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+			AddFunc:    c.handleStatefulSetAdd,
+			UpdateFunc: c.handleStatefulSetUpdate,
+			DeleteFunc: c.handleStatefulSetDelete,
+		})
+		if err != nil {
+			return err
+		}
+		synced = append(synced, reg.HasSynced)
+		go c.statefulsetInformer.Run(c.stopCh)
 	}
 
 	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -439,6 +462,37 @@ func (c *WatchClient) handleDeploymentDelete(obj any) {
 	}
 }
 
+func (c *WatchClient) handleStatefulSetAdd(obj any) {
+	c.telemetryBuilder.OtelsvcK8sStatefulsetAdded.Add(context.Background(), 1)
+	if statefulset, ok := obj.(*apps_v1.StatefulSet); ok {
+		c.addOrUpdateStatefulSet(statefulset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", obj))
+	}
+}
+
+func (c *WatchClient) handleStatefulSetUpdate(_, newStatefulSet any) {
+	c.telemetryBuilder.OtelsvcK8sStatefulsetUpdated.Add(context.Background(), 1)
+	if statefulset, ok := newStatefulSet.(*apps_v1.StatefulSet); ok {
+		c.addOrUpdateStatefulSet(statefulset)
+	} else {
+		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", newStatefulSet))
+	}
+}
+
+func (c *WatchClient) handleStatefulSetDelete(obj any) {
+	c.telemetryBuilder.OtelsvcK8sStatefulsetDeleted.Add(context.Background(), 1)
+	if statefulset, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.StatefulSet); ok {
+		c.m.Lock()
+		if n, ok := c.StatefulSets[string(statefulset.UID)]; ok {
+			delete(c.StatefulSets, n.UID)
+		}
+		c.m.Unlock()
+	} else {
+		c.logger.Error("object received was not of type api_v1.StatefulSet", zap.Any("received", obj))
+	}
+}
+
 func (c *WatchClient) deleteLoop(interval time.Duration, gracePeriod time.Duration) {
 	// This loop runs after N seconds and deletes pods from cache.
 	// It iterates over the delete queue and deletes all that aren't
@@ -522,6 +576,16 @@ func (c *WatchClient) GetDeployment(deploymentName string) (*Deployment, bool) {
 	c.m.RUnlock()
 	if ok {
 		return deployment, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) GetStatefulSet(statefulSetUID string) (*StatefulSet, bool) {
+	c.m.RLock()
+	statefulSet, ok := c.StatefulSets[statefulSetUID]
+	c.m.RUnlock()
+	if ok {
+		return statefulSet, ok
 	}
 	return nil, false
 }
@@ -867,12 +931,27 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	return tags
 }
 
+func (c *WatchClient) extractStatefulSetAttributes(d *apps_v1.StatefulSet) map[string]string {
+	tags := map[string]string{}
+
+	for _, r := range c.Rules.Labels {
+		r.extractFromStatefulSetMetadata(d.Labels, tags, "k8s.statefulset.labels.%s")
+	}
+
+	for _, r := range c.Rules.Annotations {
+		r.extractFromStatefulSetMetadata(d.Annotations, tags, "k8s.statefulset.annotations.%s")
+	}
+
+	return tags
+}
+
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
 		Name:           pod.Name,
 		Namespace:      pod.GetNamespace(),
 		NodeName:       pod.Spec.NodeName,
 		DeploymentName: "",
+		StatefulSetUID: "",
 		Address:        pod.Status.PodIP,
 		HostNetwork:    pod.Spec.HostNetwork,
 		PodUID:         string(pod.UID),
@@ -883,6 +962,10 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 		if replicaset.Deployment.Name != "" {
 			newPod.DeploymentName = replicaset.Deployment.Name
 		}
+	}
+
+	if statefulset, ok := c.getStatefulSet(getPodStatefulSetUID(pod)); ok {
+		newPod.StatefulSetUID = statefulset.UID
 	}
 
 	if c.shouldIgnorePod(pod) {
@@ -900,6 +983,15 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 func getPodReplicaSetUID(pod *api_v1.Pod) string {
 	for _, ref := range pod.OwnerReferences {
 		if ref.Kind == "ReplicaSet" {
+			return string(ref.UID)
+		}
+	}
+	return ""
+}
+
+func getPodStatefulSetUID(pod *api_v1.Pod) string {
+	for _, ref := range pod.OwnerReferences {
+		if ref.Kind == "StatefulSet" {
 			return string(ref.UID)
 		}
 	}
@@ -1135,6 +1227,22 @@ func (c *WatchClient) extractDeploymentLabelsAnnotations() bool {
 	return false
 }
 
+func (c *WatchClient) extractStatefulSetLabelsAnnotations() bool {
+	for _, r := range c.Rules.Labels {
+		if r.From == MetadataFromStatefulSet {
+			return true
+		}
+	}
+
+	for _, r := range c.Rules.Annotations {
+		if r.From == MetadataFromStatefulSet {
+			return true
+		}
+	}
+
+	return false
+}
+
 func (c *WatchClient) extractNodeLabelsAnnotations() bool {
 	for _, r := range c.Rules.Labels {
 		if r.From == MetadataFromNode {
@@ -1178,6 +1286,20 @@ func (c *WatchClient) addOrUpdateDeployment(deployment *apps_v1.Deployment) {
 	c.m.Lock()
 	if deployment.Name != "" {
 		c.Deployments[deployment.Name] = newDeployment
+	}
+	c.m.Unlock()
+}
+
+func (c *WatchClient) addOrUpdateStatefulSet(statefulset *apps_v1.StatefulSet) {
+	newStatefulSet := &StatefulSet{
+		Name: statefulset.Name,
+		UID:  string(statefulset.UID),
+	}
+	newStatefulSet.Attributes = c.extractStatefulSetAttributes(statefulset)
+
+	c.m.Lock()
+	if statefulset.UID != "" {
+		c.StatefulSets[string(statefulset.UID)] = newStatefulSet
 	}
 	c.m.Unlock()
 }
@@ -1263,6 +1385,16 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 	c.m.RUnlock()
 	if ok {
 		return replicaset, ok
+	}
+	return nil, false
+}
+
+func (c *WatchClient) getStatefulSet(uid string) (*StatefulSet, bool) {
+	c.m.RLock()
+	statefulset, ok := c.StatefulSets[uid]
+	c.m.RUnlock()
+	if ok {
+		return statefulset, ok
 	}
 	return nil, false
 }
