@@ -19,11 +19,11 @@ tests:              # generated_component_test.go looking for test.config from m
 status:
   class: receiver
   stability:
-    unmaintained: [metrics]
+    beta: [metrics]
   distributions: [contrib]
   codeowners:
+    active: [VenuEmmadi]
     emeritus: [cpheps]
-    seeking_new: true
 
 resource_attributes:
   rabbitmq.queue.name:
