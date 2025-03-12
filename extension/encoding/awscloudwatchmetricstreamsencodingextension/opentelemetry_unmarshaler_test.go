@@ -32,7 +32,8 @@ func getRecordFromFiles(t *testing.T, metricFiles []string) []byte {
 
 		buf := make([]byte, binary.MaxVarintLen64)
 		n := binary.PutUvarint(buf, uint64(len(data)))
-		datum := append(buf[:n], data...)
+		datum := buf[:n]
+		datum = append(datum, data...)
 
 		record = append(record, datum...)
 	}
