@@ -1,0 +1,40 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: aws.cloudwatch.metric_stream_name
+          value:
+            stringValue: MyMetricStream
+        - key: cloud.account.id
+          value:
+            stringValue: "1234567890"
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: service.name
+          value:
+            stringValue: EC2
+        - key: service.namespace
+          value:
+            stringValue: AWS
+    scopeMetrics:
+      - metrics:
+          - name: DiskWriteOps
+            summary:
+              dataPoints:
+                - attributes:
+                    - key: service.instance.id
+                      value:
+                        stringValue: i-123456789012
+                  count: "3"
+                  quantileValues:
+                    - {}
+                    - quantile: 1
+                      value: 18
+                  sum: 20
+                  timeUnixNano: 1611929698000000000
+            unit: Seconds
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension

@@ -396,4 +396,5 @@ func TestExtensionObserveIngresses(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }
