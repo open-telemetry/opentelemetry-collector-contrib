@@ -41,7 +41,7 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 					attributeValue.SetStr(rExp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 					return true
 				})
-			} else if setting.AttributeType == ResourceAttribute && setting.AttributeKey != "" {
+			} else if (setting.AttributeType == ResourceAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey != "" {
 				if attributeValue, ok := resourceAttributes.Get(setting.AttributeKey); ok {
 					attributeValue.SetStr(rExp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 				}
@@ -64,7 +64,7 @@ func (sp *scrubbingProcessor) applyMasking(ld plog.Logs) {
 							attributeValue.SetStr(rExp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 							return true
 						})
-					} else if setting.AttributeType == RecordAttribute && setting.AttributeKey != "" {
+					} else if (setting.AttributeType == RecordAttribute || setting.AttributeType == EmptyAttribute) && setting.AttributeKey != "" {
 						if attributeValue, ok := log.Attributes().Get(setting.AttributeKey); ok {
 							attributeValue.SetStr(rExp.ReplaceAllString(attributeValue.AsString(), setting.Placeholder))
 						}
