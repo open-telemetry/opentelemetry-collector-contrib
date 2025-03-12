@@ -24,6 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -362,6 +363,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
@@ -1733,6 +1735,7 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
@@ -1976,6 +1979,7 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
+		cfg.Mapping.Mode = "otel"
 	}
 
 	checkOTelResource := func(t *testing.T, doc []byte, _ string) {
@@ -2119,9 +2123,11 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		batcherCfg := exporterbatcher.NewDefaultConfig()
+		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     exporterbatcher.Config{Enabled: false},
+			Config:     batcherCfg,
 			enabledSet: true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
@@ -2165,6 +2171,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2183,6 +2190,7 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2201,6 +2209,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2229,6 +2238,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp

@@ -55,30 +55,30 @@ type idxTContent struct {
 }
 
 // '/services/data/indexes-extended'
-type IndexesExtended struct {
-	Entries []IdxEEntry `json:"entry"`
+type indexesExtended struct {
+	Entries []idxEEntry `json:"entry"`
 }
 
-type IdxEEntry struct {
+type idxEEntry struct {
 	Name    string      `json:"name"`
-	Content IdxEContent `json:"content"`
+	Content idxEContent `json:"content"`
 }
 
-type IdxEContent struct {
+type idxEContent struct {
 	TotalBucketCount string         `json:"total_bucket_count"`
 	TotalEventCount  int            `json:"totalEventCount"`
 	TotalSize        string         `json:"total_size"`
 	TotalRawSize     string         `json:"total_raw_size"`
-	BucketDirs       IdxEBucketDirs `json:"bucket_dirs"`
+	BucketDirs       idxEBucketDirs `json:"bucket_dirs"`
 }
 
-type IdxEBucketDirs struct {
-	Cold   IdxEBucketDirsDetails `json:"cold"`
-	Home   IdxEBucketDirsDetails `json:"home"`
-	Thawed IdxEBucketDirsDetails `json:"thawed"`
+type idxEBucketDirs struct {
+	Cold   idxEBucketDirsDetails `json:"cold"`
+	Home   idxEBucketDirsDetails `json:"home"`
+	Thawed idxEBucketDirsDetails `json:"thawed"`
 }
 
-type IdxEBucketDirsDetails struct {
+type idxEBucketDirsDetails struct {
 	Capacity        string `json:"capacity"`
 	EventCount      string `json:"event_count"`
 	EventMaxTime    string `json:"event_max_time"`
@@ -89,16 +89,16 @@ type IdxEBucketDirsDetails struct {
 }
 
 // '/services/server/introspection/queues'
-type IntrospectionQueues struct {
-	Entries []IntrQEntry `json:"entry"`
+type introspectionQueues struct {
+	Entries []intrQEntry `json:"entry"`
 }
 
-type IntrQEntry struct {
+type intrQEntry struct {
 	Name    string      `json:"name"`
-	Content IdxQContent `json:"content"`
+	Content idxQContent `json:"content"`
 }
 
-type IdxQContent struct {
+type idxQContent struct {
 	CurrentSize      int `json:"current_size"`
 	CurrentSizeBytes int `json:"current_size_bytes"`
 	LargestSize      int `json:"largest_size"`
@@ -108,29 +108,29 @@ type IdxQContent struct {
 // '/services/kvstore/status'
 const (
 	// unknown/failed values
-	KVStatusUnknown        = "unknown"
-	KVRestoreStatusUnknown = "Unknown status"
-	KVBackupStatusFailed   = "Failed"
+	kvStatusUnknown        = "unknown"
+	kvRestoreStatusUnknown = "Unknown status"
+	kvBackupStatusFailed   = "Failed"
 )
 
-type KVStoreStatus struct {
-	Entries []KVEntry `json:"entry"`
+type kvStoreStatus struct {
+	Entries []kvEntry `json:"entry"`
 }
 
-type KVEntry struct {
-	Content KVStatus `json:"content"`
+type kvEntry struct {
+	Content kvStatus `json:"content"`
 }
 
-type KVStatus struct {
-	Current   KVStoreCurrent `json:"current"`
-	KVService KVService      `json:"externalKVStore,omitempty"`
+type kvStatus struct {
+	Current   kvStoreCurrent `json:"current"`
+	KVService kvService      `json:"externalKVStore,omitempty"`
 }
 
-type KVService struct {
+type kvService struct {
 	Status string `json:"status"`
 }
 
-type KVStoreCurrent struct {
+type kvStoreCurrent struct {
 	Status              string `json:"status"`
 	BackupRestoreStatus string `json:"backupRestoreStatus"`
 	ReplicationStatus   string `json:"replicationStatus"`
@@ -138,15 +138,15 @@ type KVStoreCurrent struct {
 }
 
 // '/services/server/status/dispatch-artifacts'
-type DispatchArtifacts struct {
-	Entries []DispatchArtifactEntry `json:"entry"`
+type dispatchArtifacts struct {
+	Entries []dispatchArtifactEntry `json:"entry"`
 }
 
-type DispatchArtifactEntry struct {
-	Content DispatchArtifactContent `json:"content"`
+type dispatchArtifactEntry struct {
+	Content dispatchArtifactContent `json:"content"`
 }
 
-type DispatchArtifactContent struct {
+type dispatchArtifactContent struct {
 	AdhocCount         string `json:"adhoc_count"`
 	ScheduledCount     string `json:"scheduled_count"`
 	SavedSearchesCount string `json:"ss_count"`

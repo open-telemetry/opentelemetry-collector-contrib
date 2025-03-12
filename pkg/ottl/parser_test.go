@@ -2151,11 +2151,9 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "resolve context value",
 			valueExpression: `attributes`,
 			expected: func() any {
-				return map[string]any{
-					"attributes": map[string]any{
-						"foo": "bar",
-					},
-				}
+				m := pcommon.NewMap()
+				m.PutEmptyMap("attributes").PutStr("foo", "bar")
+				return m
 			},
 			tCtx: map[string]any{
 				"attributes": map[string]any{
@@ -2211,7 +2209,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			expected: func() any {
 				m := pcommon.NewMap()
 				_ = m.FromRaw(map[string]any{
-					"map": 1,
+					"map": int64(1),
 				})
 				return m
 			},
@@ -2221,6 +2219,21 @@ func Test_parseValueExpression_full(t *testing.T) {
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
 				return []any{"list", "of", "strings"}
+			},
+		},
+		{
+			name:            "nested list",
+			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
+			expected: func() any {
+				m1 := pcommon.NewMap()
+				m1.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+
+				m2 := pcommon.NewMap()
+				m2.PutStr("bar", "baz")
+				return []any{
+					m1,
+					m2,
+				}
 			},
 		},
 	}
