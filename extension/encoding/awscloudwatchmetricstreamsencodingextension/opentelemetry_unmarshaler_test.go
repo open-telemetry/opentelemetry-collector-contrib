@@ -4,11 +4,11 @@
 package awscloudwatchmetricstreamsencodingextension
 
 import (
+	"encoding/binary"
 	"errors"
 	"path/filepath"
 	"testing"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -30,8 +30,9 @@ func getRecordFromFiles(t *testing.T, metricFiles []string) []byte {
 		data, err := m.MarshalMetrics(metrics)
 		require.NoError(t, err)
 
-		datum := proto.EncodeVarint(uint64(len(data)))
-		datum = append(datum, data...)
+		buf := make([]byte, binary.MaxVarintLen64)
+		n := binary.PutUvarint(buf, uint64(len(data)))
+		datum := append(buf[:n], data...)
 
 		record = append(record, datum...)
 	}

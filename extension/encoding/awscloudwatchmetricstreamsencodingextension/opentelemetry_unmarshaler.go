@@ -4,10 +4,10 @@
 package awscloudwatchmetricstreamsencodingextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension"
 
 import (
+	"encoding/binary"
 	"errors"
 	"fmt"
 
-	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
@@ -15,7 +15,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
 )
 
-var errInvalidOTLPMessageLength = errors.New("unable to decode data length from message")
+var errInvalidUvarint = errors.New("invalid OTLP message length: failed to decode varint")
 
 type formatOpenTelemetry10Unmarshaler struct {
 	buildInfo component.BuildInfo
@@ -27,17 +27,17 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 	md := pmetric.NewMetrics()
 	dataLen, pos := len(record), 0
 	for pos < dataLen {
-		// get start of the datum
-		n, nLen := proto.DecodeVarint(record)
-		if nLen == 0 && n == 0 {
-			return md, errInvalidOTLPMessageLength
+		// get size of datum
+		nLen, bytesRead := binary.Uvarint(record[pos:])
+		if bytesRead <= 0 {
+			return md, errInvalidUvarint
 		}
+		pos += bytesRead
 
 		// unmarshal datum
 		req := pmetricotlp.NewExportRequest()
-		pos += nLen
-		err := req.UnmarshalProto(record[pos : pos+int(n)])
-		pos += int(n)
+		err := req.UnmarshalProto(record[pos : pos+int(nLen)])
+		pos += int(nLen)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
 		}
