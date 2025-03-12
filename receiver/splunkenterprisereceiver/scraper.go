@@ -1135,7 +1135,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(ctx, ept)
@@ -1188,7 +1188,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1235,7 +1235,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1288,7 +1288,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1341,7 +1341,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1411,7 +1411,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1474,7 +1474,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IntrospectionQueues
+	var it introspectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
 
@@ -1522,7 +1522,7 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	var it IntrospectionQueues
+	var it introspectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
 
@@ -1572,7 +1572,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-	var kvs KVStoreStatus
+	var kvs kvStoreStatus
 
 	ept := apiDict[`SplunkKVStoreStatus`]
 
@@ -1605,7 +1605,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 		// a 0 gauge value means that the metric was not reported in the api call
 		// to the introspection endpoint.
 		if st == "" {
-			st = KVStatusUnknown
+			st = kvStatusUnknown
 			// set to 0 to indicate no status being reported
 			s.mb.RecordSplunkKvstoreStatusDataPoint(now, 0, se, ext, st)
 		} else {
@@ -1613,14 +1613,14 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 		}
 
 		if rs == "" {
-			rs = KVRestoreStatusUnknown
+			rs = kvRestoreStatusUnknown
 			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs)
 		} else {
 			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs)
 		}
 
 		if brs == "" {
-			brs = KVBackupStatusFailed
+			brs = kvBackupStatusFailed
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs)
 		} else {
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs)
@@ -1635,7 +1635,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeSh)
-	var da DispatchArtifacts
+	var da dispatchArtifacts
 
 	ept := apiDict[`SplunkDispatchArtifacts`]
 

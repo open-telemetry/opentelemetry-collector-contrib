@@ -37,7 +37,7 @@ var jmxJarReleases = map[string]string{
 	"1.10.0-alpha": "https://repo1.maven.org/maven2/io/opentelemetry/contrib/opentelemetry-jmx-metrics/1.10.0-alpha/opentelemetry-jmx-metrics-1.10.0-alpha.jar",
 }
 
-type JMXIntegrationSuite struct {
+type jmxIntegrationSuite struct {
 	suite.Suite
 	VersionToJar map[string]string
 }
@@ -45,10 +45,10 @@ type JMXIntegrationSuite struct {
 // It is recommended that this test be run locally with a longer timeout than the default 30s
 // go test -timeout 60s -run ^TestJMXIntegration$ github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jmxreceiver
 func TestJMXIntegration(t *testing.T) {
-	suite.Run(t, new(JMXIntegrationSuite))
+	suite.Run(t, new(jmxIntegrationSuite))
 }
 
-func (suite *JMXIntegrationSuite) SetupSuite() {
+func (suite *jmxIntegrationSuite) SetupSuite() {
 	suite.VersionToJar = make(map[string]string)
 	for version, url := range jmxJarReleases {
 		jarPath, err := downloadJMXMetricGathererJAR(url)
@@ -57,7 +57,7 @@ func (suite *JMXIntegrationSuite) SetupSuite() {
 	}
 }
 
-func (suite *JMXIntegrationSuite) TearDownSuite() {
+func (suite *jmxIntegrationSuite) TearDownSuite() {
 	for _, path := range suite.VersionToJar {
 		suite.Require().NoError(os.Remove(path))
 	}
@@ -80,7 +80,7 @@ func downloadJMXMetricGathererJAR(url string) (string, error) {
 	return file.Name(), err
 }
 
-func (suite *JMXIntegrationSuite) TestJMXReceiverHappyPath() {
+func (suite *jmxIntegrationSuite) TestJMXReceiverHappyPath() {
 	for version, jar := range suite.VersionToJar {
 		suite.T().Run(version, integrationTest(version, jar))
 	}

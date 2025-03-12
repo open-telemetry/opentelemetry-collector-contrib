@@ -244,6 +244,9 @@ type Telemetry struct {
 type Logs struct {
 	Level       zapcore.Level `mapstructure:"level"`
 	OutputPaths []string      `mapstructure:"output_paths"`
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of supported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
 }
 
 type Metrics struct {
