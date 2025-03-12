@@ -74,7 +74,7 @@ type WatchClient struct {
 	Nodes map[string]*Node
 
 	// A map containing Deployment related data, used to associate them with resources.
-	// Key is deployment name
+	// Key is deployment uid
 	Deployments map[string]*Deployment
 
 	// A map containing ReplicaSets related data, used to associate them with resources.
@@ -431,7 +431,7 @@ func (c *WatchClient) handleDeploymentDelete(obj any) {
 	if deployment, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.Deployment); ok {
 		c.m.Lock()
 		if n, ok := c.Deployments[deployment.Name]; ok {
-			delete(c.Deployments, n.Name)
+			delete(c.Deployments, n.UID)
 		}
 		c.m.Unlock()
 	} else {
@@ -869,19 +869,19 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 
 func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	newPod := &Pod{
-		Name:           pod.Name,
-		Namespace:      pod.GetNamespace(),
-		NodeName:       pod.Spec.NodeName,
-		DeploymentName: "",
-		Address:        pod.Status.PodIP,
-		HostNetwork:    pod.Spec.HostNetwork,
-		PodUID:         string(pod.UID),
-		StartTime:      pod.Status.StartTime,
+		Name:          pod.Name,
+		Namespace:     pod.GetNamespace(),
+		NodeName:      pod.Spec.NodeName,
+		DeploymentUID: "",
+		Address:       pod.Status.PodIP,
+		HostNetwork:   pod.Spec.HostNetwork,
+		PodUID:        string(pod.UID),
+		StartTime:     pod.Status.StartTime,
 	}
 
 	if replicaset, ok := c.getReplicaSet(getPodReplicaSetUID(pod)); ok {
-		if replicaset.Deployment.Name != "" {
-			newPod.DeploymentName = replicaset.Deployment.Name
+		if replicaset.Deployment.UID != "" {
+			newPod.DeploymentUID = replicaset.Deployment.UID
 		}
 	}
 
@@ -1172,12 +1172,13 @@ func (c *WatchClient) addOrUpdateNode(node *api_v1.Node) {
 func (c *WatchClient) addOrUpdateDeployment(deployment *apps_v1.Deployment) {
 	newDeployment := &Deployment{
 		Name: deployment.Name,
+		UID:  string(deployment.UID),
 	}
 	newDeployment.Attributes = c.extractDeploymentAttributes(deployment)
 
 	c.m.Lock()
-	if deployment.Name != "" {
-		c.Deployments[deployment.Name] = newDeployment
+	if deployment.UID != "" {
+		c.Deployments[string(deployment.UID)] = newDeployment
 	}
 	c.m.Unlock()
 }

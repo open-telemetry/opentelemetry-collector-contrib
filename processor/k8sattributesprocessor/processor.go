@@ -185,7 +185,7 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		}
 	}
 
-	deployment := getDeploymentName(pod, resource.Attributes())
+	deployment := getDeploymentUID(pod, resource.Attributes())
 	if deployment != "" {
 		attrsToAdd := kp.getAttributesForPodsDeployment(deployment)
 		for key, val := range attrsToAdd {
@@ -215,9 +215,9 @@ func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
 	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
 }
 
-func getDeploymentName(pod *kube.Pod, resAttrs pcommon.Map) string {
-	if pod != nil && pod.DeploymentName != "" {
-		return pod.DeploymentName
+func getDeploymentUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DeploymentUID != "" {
+		return pod.DeploymentUID
 	}
 	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SDeploymentName)
 }
@@ -308,8 +308,8 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 	return node.Attributes
 }
 
-func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentName string) map[string]string {
-	d, ok := kp.kc.GetDeployment(deploymentName)
+func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentUID string) map[string]string {
+	d, ok := kp.kc.GetDeployment(deploymentUID)
 	if !ok {
 		return nil
 	}

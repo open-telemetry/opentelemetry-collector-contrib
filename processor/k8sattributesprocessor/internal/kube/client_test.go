@@ -1426,7 +1426,7 @@ func TestDeploymentExtractionRules(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			c.Rules = tc.rules
 			c.handleDeploymentAdd(deployment)
-			n, ok := c.GetDeployment(deployment.Name)
+			n, ok := c.GetDeployment(string(deployment.UID))
 			require.True(t, ok)
 
 			assert.Equal(t, len(tc.attributes), len(n.Attributes))

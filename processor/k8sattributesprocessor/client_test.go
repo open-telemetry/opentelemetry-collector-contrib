@@ -72,8 +72,8 @@ func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
 	return node, ok
 }
 
-func (f *fakeClient) GetDeployment(deploymentName string) (*kube.Deployment, bool) {
-	d, ok := f.Deployments[deploymentName]
+func (f *fakeClient) GetDeployment(deploymentUID string) (*kube.Deployment, bool) {
+	d, ok := f.Deployments[deploymentUID]
 	return d, ok
 }
 
