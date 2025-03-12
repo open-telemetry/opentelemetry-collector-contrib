@@ -36,11 +36,10 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 
 		// unmarshal datum
 		req := pmetricotlp.NewExportRequest()
-		err := req.UnmarshalProto(record[pos : pos+int(nLen)])
-		pos += int(nLen)
-		if err != nil {
+		if err := req.UnmarshalProto(record[pos : pos+int(nLen)]); err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
 		}
+		pos += int(nLen)
 
 		// add scope name and build info version to
 		// the resource metrics
