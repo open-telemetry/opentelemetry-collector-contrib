@@ -199,6 +199,7 @@ pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
+processor/datadogsemanticsprocessor
 processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
 processor/filterprocessor
