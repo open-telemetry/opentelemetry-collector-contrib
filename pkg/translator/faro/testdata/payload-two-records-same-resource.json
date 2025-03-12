@@ -1,0 +1,35 @@
+{
+  "logs": [
+    {
+      "message": "opened pricing page",
+      "level": "info",
+      "context": {
+        "component": "AppRoot",
+        "page": "Pricing"
+      },
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "def"
+      }
+    },
+    {
+      "message": "loading price list",
+      "level": "trace",
+      "context": {
+        "component": "AppRoot",
+        "page": "Pricing"
+      },
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "ghj"
+      }
+    }
+  ],
+  "meta": {
+    "app": {
+      "name": "testapp"
+    }
+  }
+}
