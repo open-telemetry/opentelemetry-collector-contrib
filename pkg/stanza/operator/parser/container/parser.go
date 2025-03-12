@@ -62,11 +62,15 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.LogEmitter
+	criLogEmitter           *helper.BatchingLogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup
 	timeLayout              string
+}
+
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.ProcessBatchWith(ctx, entries, p.Process)
 }
 
 // Process will parse an entry of Container logs
