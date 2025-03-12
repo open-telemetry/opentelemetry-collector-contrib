@@ -9,9 +9,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
-
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
@@ -62,7 +61,7 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 				if err = insertAttrIfMissing(sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres)); err != nil {
 					return ptrace.Traces{}, err
 				}
-				if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet); ok && src.Kind == source.HostnameKind {
+				if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet, nil); ok && src.Kind == source.HostnameKind {
 					if err = insertAttrIfMissing(otelres.Attributes(), "datadog.host.name", src.Identifier); err != nil {
 						return ptrace.Traces{}, err
 					}
