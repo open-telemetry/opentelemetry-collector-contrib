@@ -117,8 +117,8 @@ processors:
 
 ## When/Where to use Schema Processor
 
-The Schema Processor should be used in the collector when there are multiple services involved and the configurations expected by the collector configuration uses atrribute names from a sepcific semantic convetion verison.
+The Schema Processor should be used in the collector when there are multiple services involved and the configurations expected by the collector configuration use attribute names from a specific semantic convention version.
 
 Isolating and transforming incoming data at the very start of the processing pipeline decouples the service owners from the collector configuration. This means that individual services can upgrade or adjust their telemetry outputs without forcing simultaneous changes to the collector setup.
 
-Schema processor shouldnot be used to downgrade the incoming telemetry signals for more than 3 last versions. We recommend customer to update collector configuration and any other backend configuration at regular intervals to ensure they are using last 3 relases of semantic conventions
+Schema processor should not be used to downgrade the incoming telemetry signals for more than 3 last versions. We recommend customer to update collector configuration and any other backend configuration at regular intervals to ensure they are using last 3 releases of semantic conventions
