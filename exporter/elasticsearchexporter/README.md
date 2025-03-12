@@ -138,7 +138,7 @@ This can be customised through the following settings:
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `logs_index` is not empty. Will be removed in a future version.
 
-- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. `metrics_index` should be empty unless all documents should be sent to the same index. Note that metrics support is currently in development.
+- `metrics_index` (optional): The [index] or [data stream] name to publish metrics to. `metrics_index` should be empty unless all metrics should be sent to the same index. Note that metrics support is currently in development.
 
 - `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `metrics_index` is not empty. Will be removed in a future version.
