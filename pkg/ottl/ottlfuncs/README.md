@@ -1351,7 +1351,7 @@ Examples:
 
 `Murmur3Hash(target)`
 
-The `Murmur3Hex128` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
+The `Murmur3Hash` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
 
 `target` is a Getter that returns a string.
 
