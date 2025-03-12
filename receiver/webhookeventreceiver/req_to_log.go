@@ -5,22 +5,27 @@ package webhookeventreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"bufio"
+	"net/http"
 	"net/url"
+	"regexp"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
-func reqToLog(sc *bufio.Scanner,
+const (
+	headerNamespace = "header"
+)
+
+func (er *eventReceiver) reqToLog(sc *bufio.Scanner,
+	headers http.Header,
 	query url.Values,
-	cfg *Config,
-	settings receiver.Settings,
 ) (plog.Logs, int) {
-	if cfg.SplitLogsAtNewLine {
+	if er.cfg.SplitLogsAtNewLine {
 		sc.Split(bufio.ScanLines)
 	} else {
 		// we simply dont split the data passed into scan (i.e. scan the whole thing)
@@ -42,8 +47,8 @@ func reqToLog(sc *bufio.Scanner,
 	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
 
 	scopeLog.Scope().SetName(scopeLogName)
-	scopeLog.Scope().SetVersion(settings.BuildInfo.Version)
-	scopeLog.Scope().Attributes().PutStr("source", settings.ID.String())
+	scopeLog.Scope().SetVersion(er.settings.BuildInfo.Version)
+	scopeLog.Scope().Attributes().PutStr("source", er.settings.ID.String())
 	scopeLog.Scope().Attributes().PutStr("receiver", metadata.Type.String())
 
 	for sc.Scan() {
@@ -51,6 +56,9 @@ func reqToLog(sc *bufio.Scanner,
 		logRecord.SetObservedTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		line := sc.Text()
 		logRecord.Body().SetStr(line)
+		if er.includeHeadersRegex != nil {
+			appendHeaders(headers, logRecord, er.includeHeadersRegex)
+		}
 	}
 
 	return log, scopeLog.LogRecords().Len()
@@ -63,4 +71,22 @@ func appendMetadata(resourceLog plog.ResourceLogs, query url.Values) {
 			resourceLog.Resource().Attributes().PutStr(k, query.Get(k))
 		}
 	}
+}
+
+// append headers as logRecord attributes if they match supplied regex
+func appendHeaders(h http.Header, l plog.LogRecord, r *regexp.Regexp) {
+	for k := range h {
+		// Skip the required header used for authentication
+		if r.MatchString(k) {
+			slice := l.Attributes().PutEmptySlice(headerAttributeKey(k))
+			for _, v := range h.Values(k) {
+				slice.AppendEmpty().SetStr(v)
+			}
+		}
+	}
+}
+
+// prepend the header key with the "header." namespace
+func headerAttributeKey(header string) string {
+	return strings.Join([]string{headerNamespace, header}, ".")
 }

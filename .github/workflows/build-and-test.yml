@@ -26,7 +26,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -82,7 +82,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -151,7 +151,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -175,7 +175,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -264,6 +264,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
+          check-latest: true # Since we're using "~" in the version, check we're using latest
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
@@ -367,7 +368,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -379,6 +380,10 @@ jobs:
             ~/go/pkg/mod
             ./.tools
           key: go-cache-${{ runner.os }}-${{ hashFiles('**/go.sum') }}
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@fb28c93772363301b8d0a6072ce850224b73f74e # 0.5.0
+        with:
+          key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
 
@@ -406,7 +411,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -433,7 +438,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -505,7 +510,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -555,7 +560,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.7"
           cache: false
       - name: Mkdir bin and dist
         run: |

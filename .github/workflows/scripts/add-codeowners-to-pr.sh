@@ -32,7 +32,7 @@ main () {
     AUTHOR=$(echo -n "${JSON}"| jq -r '.author.login')
     FILES=$(echo -n "${JSON}"| jq -r '.files[].path')
     REVIEW_LOGINS=$(echo -n "${JSON}"| jq -r '.latestReviews[].author.login')
-    COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh")
+    COMPONENTS=$(bash "${CUR_DIRECTORY}/get-components.sh" | tac) # Reversed so we visit subdirectories first
     REVIEWERS=""
     LABELS=""
     declare -A PROCESSED_COMPONENTS
