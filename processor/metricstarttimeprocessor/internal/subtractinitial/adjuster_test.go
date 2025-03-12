@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package truereset
+package subtractinitial // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/subtractinitial"
 
 import (
 	"context"
@@ -81,12 +81,12 @@ func TestSum(t *testing.T) {
 		{
 			description: "Sum: round 1 - initial instance, start time is established",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1)),
 		},
 		{
 			description: "Sum: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 22))),
 		},
 		{
 			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
@@ -112,12 +112,12 @@ func TestSumWithDifferentResources(t *testing.T) {
 		{
 			description: "Sum: round 1 - initial instance, start time is established",
 			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
-			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1)), resourceMetrics("job2", "instance2", sumMetric(sum2))),
 		},
 		{
 			description: "Sum: round 2 - instance adjusted based on round 1 (metrics in different order)",
 			metrics:     metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t2, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)))),
-			adjusted:    metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t2, 22))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 22)))),
 		},
 		{
 			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
@@ -143,12 +143,12 @@ func TestSummaryNoCount(t *testing.T) {
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1)),
 		},
 		{
 			description: "Summary No Count: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 0, 70, percent0, []float64{7, 44, 9}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 70, percent0, []float64{7, 44, 9}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 30, percent0, []float64{7, 44, 9}))),
 		},
 		{
 			description: "Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
@@ -170,7 +170,7 @@ func TestSummaryFlagNoRecordedValue(t *testing.T) {
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1)),
 		},
 		{
 			description: "Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
@@ -190,7 +190,7 @@ func TestSummary(t *testing.T) {
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 			adjusted: metrics(
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+				summaryMetric(summary1),
 			),
 		},
 		{
@@ -199,7 +199,7 @@ func TestSummary(t *testing.T) {
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
 			),
 			adjusted: metrics(
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 5, 30, percent0, []float64{7, 44, 9})),
 			),
 		},
 		{
@@ -230,11 +230,11 @@ func TestHistogram(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
-			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1)),
 		}, {
 			description: "Histogram: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8}))),
-			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8}))),
+			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{2, 1, 1, 1}))),
 		}, {
 			description: "Histogram: round 3 - instance reset (value less than previous value), start time is reset",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t3, t3, bounds0, []uint64{5, 3, 2, 7}))),
@@ -253,7 +253,7 @@ func TestHistogramFlagNoRecordedValue(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
-			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
+			adjusted:    metrics(histogramMetric(histogram1)),
 		},
 		{
 			description: "Histogram: round 2 - instance adjusted based on round 1",
@@ -270,7 +270,7 @@ func TestHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is unknown",
 			metrics:     metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metrics(histogramMetric(histogram1, histogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(histogramMetric(histogram1)),
 		},
 		{
 			description: "Histogram: round 2 - instance unchanged",
@@ -291,11 +291,11 @@ func TestExponentialHistogram(t *testing.T) {
 		{
 			description: "Exponential Histogram: round 1 - initial instance, start time is established",
 			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
-			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1)),
 		}, {
 			description: "Exponential Histogram: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
-			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{6, 2, 3, 7}))),
+			adjusted:    metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 0, 0, []uint64{}, -2, []uint64{2, 0, 0, 0}))),
 		}, {
 			description: "Exponential Histogram: round 3 - instance reset (value less than previous value), start time is reset",
 			metrics:     metrics(exponentialHistogramMetric(exponentialHistogram1, exponentialHistogramPoint(k1v1k2v2, t3, t3, 3, 1, 0, []uint64{}, -2, []uint64{5, 3, 2, 7}))),
@@ -314,7 +314,7 @@ func TestExponentialHistogramFlagNoRecordedValue(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
 			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
-			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPoint(k1v1k2v2, t1, t1, 0, 2, 2, []uint64{7, 4, 2, 12}, 3, []uint64{}))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1)),
 		},
 		{
 			description: "Histogram: round 2 - instance adjusted based on round 1",
@@ -331,7 +331,7 @@ func TestExponentialHistogramFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is unknown",
 			metrics:     metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metrics(exponentialHistogramMetric(histogram1, exponentialHistogramPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(exponentialHistogramMetric(histogram1)),
 		},
 		{
 			description: "Histogram: round 2 - instance unchanged",
@@ -348,7 +348,7 @@ func TestSummaryFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			description: "Summary: round 1 - initial instance, start time is unknown",
 			metrics:     metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(summaryMetric(summary1)),
 		},
 		{
 			description: "Summary: round 2 - instance unchanged",
@@ -382,7 +382,7 @@ func TestSumFlagNoRecordedValueFirstObservation(t *testing.T) {
 		{
 			description: "Sum: round 1 - initial instance, start time is unknown",
 			metrics:     metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
-			adjusted:    metrics(sumMetric("sum1", doublePointNoValue(k1v1k2v2, tUnknown, t1))),
+			adjusted:    metrics(sumMetric("sum1")),
 		},
 		{
 			description: "Sum: round 2 - instance unchanged",
@@ -406,9 +406,9 @@ func TestMultiMetrics(t *testing.T) {
 			),
 			adjusted: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t1, t1, 44)),
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+				sumMetric(sum1),
+				histogramMetric(histogram1),
+				summaryMetric(summary1),
 			),
 		},
 		{
@@ -421,9 +421,9 @@ func TestMultiMetrics(t *testing.T) {
 			),
 			adjusted: metrics(
 				gaugeMetric(gauge1, doublePoint(k1v1k2v2, t2, t2, 66)),
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 4, 8})),
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 22)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{2, 1, 1, 1})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 5, 30, percent0, []float64{7, 44, 9})),
 			),
 		},
 		{
@@ -474,15 +474,9 @@ func TestNewDataPointsAdded(t *testing.T) {
 					summaryPoint(k1v100k2v200, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1,
-					doublePoint(k1v1k2v2, t1, t1, 44),
-					doublePoint(k1v100k2v200, t1, t1, 44)),
-				histogramMetric(histogram1,
-					histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}),
-					histogramPoint(k1v100k2v200, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
-				summaryMetric(summary1,
-					summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8}),
-					summaryPoint(k1v100k2v200, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+				sumMetric(sum1),
+				histogramMetric(histogram1),
+				summaryMetric(summary1),
 			),
 		},
 		{
@@ -503,17 +497,14 @@ func TestNewDataPointsAdded(t *testing.T) {
 			),
 			adjusted: metrics(
 				sumMetric(sum1,
-					doublePoint(k1v1k2v2, t1, t2, 44),
-					doublePoint(k1v10k2v20, t2, t2, 44),
-					doublePoint(k1v100k2v200, t1, t2, 44)),
+					doublePoint(k1v1k2v2, t1, t2, 0),
+					doublePoint(k1v100k2v200, t1, t2, 0)),
 				histogramMetric(histogram1,
-					histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 2, 3, 7}),
-					histogramPoint(k1v10k2v20, t2, t2, bounds0, []uint64{4, 2, 3, 7}),
-					histogramPoint(k1v100k2v200, t1, t2, bounds0, []uint64{4, 2, 3, 7})),
+					histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{0, 0, 0, 0}),
+					histogramPoint(k1v100k2v200, t1, t2, bounds0, []uint64{0, 0, 0, 0})),
 				summaryMetric(summary1,
-					summaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8}),
-					summaryPoint(k1v10k2v20, t2, t2, 10, 40, percent0, []float64{1, 5, 8}),
-					summaryPoint(k1v100k2v200, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+					summaryPoint(k1v1k2v2, t1, t2, 0, 0, percent0, []float64{1, 5, 8}),
+					summaryPoint(k1v100k2v200, t1, t2, 0, 0, percent0, []float64{1, 5, 8})),
 			),
 		},
 	}
@@ -525,7 +516,7 @@ func TestMultiTimeseries(t *testing.T) {
 		{
 			description: "MultiTimeseries: round 1 - initial first instance, start time is established",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1)),
 		},
 		{
 			description: "MultiTimeseries: round 2 - first instance adjusted based on round 1, initial second instance",
@@ -534,8 +525,8 @@ func TestMultiTimeseries(t *testing.T) {
 				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t2, 20.0)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 22)),
+				sumMetric(sum1),
 			),
 		},
 		{
@@ -545,8 +536,8 @@ func TestMultiTimeseries(t *testing.T) {
 				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 49.0)),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 88.0)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t3, 49.0)),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 44.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t3, 29.0)),
 			),
 		},
 		{
@@ -558,8 +549,8 @@ func TestMultiTimeseries(t *testing.T) {
 			),
 			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 87.0)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t4, 57.0)),
-				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t4, 10.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t4, 37.0)),
+				sumMetric(sum1),
 			),
 		},
 		{
@@ -571,8 +562,8 @@ func TestMultiTimeseries(t *testing.T) {
 			),
 			adjusted: metrics(
 				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t5, 90.0)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t5, 65.0)),
-				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t5, 22.0)),
+				sumMetric(sum1, doublePoint(k1v10k2v20, t2, t5, 45.0)),
+				sumMetric(sum1, doublePoint(k1v100k2v200, t4, t5, 12.0)),
 			),
 		},
 	}
@@ -584,22 +575,22 @@ func TestEmptyLabels(t *testing.T) {
 		{
 			description: "EmptyLabels: round 1 - initial instance, implicitly empty labels, start time is established",
 			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t1, 44))),
+			adjusted:    metrics(sumMetric(sum1)),
 		},
 		{
 			description: "EmptyLabels: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(sumMetric(sum1, doublePoint(emptyLabels, t2, t2, 66))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t2, 66))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(emptyLabels, t1, t2, 22))),
 		},
 		{
 			description: "EmptyLabels: round 3 - one explicitly empty label, instance adjusted based on round 1",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmpty, t3, t3, 77))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmpty, t1, t3, 77))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmpty, t1, t3, 33))),
 		},
 		{
 			description: "EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
 			metrics:     metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t3, t3, 88))),
-			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 88))),
+			adjusted:    metrics(sumMetric(sum1, doublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 44))),
 		},
 	}
 	runScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
@@ -616,10 +607,10 @@ func TestTsGC(t *testing.T) {
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
-				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+				sumMetric(sum1),
+				sumMetric(sum1),
+				histogramMetric(histogram1),
+				histogramMetric(histogram1),
 			),
 		},
 	}
@@ -632,8 +623,8 @@ func TestTsGC(t *testing.T) {
 				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{8, 7, 9, 14})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 88)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{8, 7, 9, 14})),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 44)),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{4, 5, 6, 7})),
 			),
 		},
 	}
@@ -648,10 +639,10 @@ func TestTsGC(t *testing.T) {
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t3, t3, bounds0, []uint64{55, 66, 33, 77})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 99)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t3, t3, 80)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t3, bounds0, []uint64{9, 8, 10, 15})),
-				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t3, t3, bounds0, []uint64{55, 66, 33, 77})),
+				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t3, 55)),
+				sumMetric(sum1),
+				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t3, bounds0, []uint64{5, 6, 7, 8})),
+				histogramMetric(histogram1),
 			),
 		},
 	}
@@ -666,16 +657,17 @@ func TestTsGC(t *testing.T) {
 	// run round 1
 	runScript(t, ma, script1, resourceAttr)
 	// gc the tsmap, unmarking all entries
-	tsm, ok := ma.startTimeCache.Get(resourceHash)
+	ma.referenceCache.Get(resourceHash)
+	refTsm, ok := ma.referenceCache.Get(resourceHash)
 	assert.True(t, ok)
-	tsm.GC()
-
+	refTsm.GC()
 	// run round 2 - update metrics first timeseries only
 	runScript(t, ma, script2, resourceAttr)
 	// gc the tsmap, collecting umarked entries
-	tsm, ok = ma.startTimeCache.Get(resourceHash)
+	ma.referenceCache.Get(resourceHash)
+	refTsm, ok = ma.referenceCache.Get(resourceHash)
 	assert.True(t, ok)
-	tsm.GC()
+	refTsm.GC()
 	// run round 3 - verify that metrics second timeseries have been gc'd
 	runScript(t, ma, script3, resourceAttr)
 }
@@ -691,10 +683,10 @@ func TestJobGC(t *testing.T) {
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t1, t1, 20)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7})),
-				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t1, t1, bounds0, []uint64{40, 20, 30, 70})),
+				sumMetric(sum1),
+				sumMetric(sum1),
+				histogramMetric(histogram1),
+				histogramMetric(histogram1),
 			),
 		},
 	}
@@ -717,15 +709,15 @@ func TestJobGC(t *testing.T) {
 				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t4, t4, bounds0, []uint64{55, 66, 33, 77})),
 			),
 			adjusted: metrics(
-				sumMetric(sum1, doublePoint(k1v1k2v2, t4, t4, 99)),
-				sumMetric(sum1, doublePoint(k1v10k2v20, t4, t4, 80)),
-				histogramMetric(histogram1, histogramPoint(k1v1k2v2, t4, t4, bounds0, []uint64{9, 8, 10, 15})),
-				histogramMetric(histogram1, histogramPoint(k1v10k2v20, t4, t4, bounds0, []uint64{55, 66, 33, 77})),
+				sumMetric(sum1),
+				sumMetric(sum1),
+				histogramMetric(histogram1),
+				histogramMetric(histogram1),
 			),
 		},
 	}
 
-	gcInterval := 1 * time.Millisecond
+	gcInterval := 10 * time.Millisecond
 	ma := NewAdjuster(componenttest.NewNopTelemetrySettings(), gcInterval)
 
 	// run job 1, round 1 - all entries marked
@@ -740,7 +732,8 @@ func TestJobGC(t *testing.T) {
 	runScript(t, ma, job2Script1, "1")
 	// ensure that at least one jobsMap.gc() completed
 	time.Sleep(gcInterval)
-	ma.startTimeCache.MaybeGC()
+	ma.referenceCache.MaybeGC()
+	ma.previousValueCache.MaybeGC()
 	time.Sleep(5 * time.Second) // Wait for the goroutine to complete.
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	runScript(t, ma, job1Script2, "0")
@@ -775,7 +768,7 @@ func runScript(t *testing.T, ma *Adjuster, tests []*metricsAdjusterTest, additio
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.Equal(t, test.adjusted, adjusted)
+			assert.EqualValues(t, test.adjusted, adjusted)
 		})
 	}
 }
