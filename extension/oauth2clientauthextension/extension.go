@@ -23,6 +23,9 @@ var _ extensionauth.Client = (*clientAuthenticator)(nil)
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
 type clientAuthenticator struct {
+	component.StartFunc
+	component.ShutdownFunc
+
 	clientCredentials *clientCredentialsConfig
 	logger            *zap.Logger
 	client            *http.Client
@@ -77,16 +80,6 @@ func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 			err)
 	}
 	return tok, nil
-}
-
-// Shutdown implements extensionauth.Client.
-func (o *clientAuthenticator) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extensionauth.Client.
-func (o *clientAuthenticator) Start(context.Context, component.Host) error {
-	return nil
 }
 
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and

@@ -46,6 +46,7 @@ var _ extensionauth.Server = (*basicAuthServer)(nil)
 type basicAuthServer struct {
 	htpasswd  *HtpasswdSettings
 	matchFunc func(username, password string) bool
+	component.ShutdownFunc
 }
 
 func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
@@ -74,10 +75,6 @@ func (ba *basicAuthServer) Start(_ context.Context, _ component.Host) error {
 
 	ba.matchFunc = htp.Match
 
-	return nil
-}
-
-func (*basicAuthServer) Shutdown(context.Context) error {
 	return nil
 }
 
@@ -207,12 +204,10 @@ func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response
 var _ extensionauth.Client = (*basicAuthClient)(nil)
 
 type basicAuthClient struct {
-	clientAuth *ClientAuthSettings
-}
+	component.StartFunc
+	component.ShutdownFunc
 
-// Start implements extensionauth.Client.
-func (ba *basicAuthClient) Start(context.Context, component.Host) error {
-	return nil
+	clientAuth *ClientAuthSettings
 }
 
 func (ba *basicAuthClient) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
@@ -235,8 +230,4 @@ func (ba *basicAuthClient) PerRPCCredentials() (creds.PerRPCCredentials, error) 
 			"authorization": fmt.Sprintf("Basic %s", encoded),
 		},
 	}, nil
-}
-
-func (ba *basicAuthClient) Shutdown(context.Context) error {
-	return nil
 }

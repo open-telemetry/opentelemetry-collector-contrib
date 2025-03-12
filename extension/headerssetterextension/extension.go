@@ -26,6 +26,9 @@ type Header struct {
 var _ extensionauth.Client = (*headerSetterExtension)(nil)
 
 type headerSetterExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+
 	headers []Header
 }
 
@@ -40,16 +43,6 @@ func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.Round
 		base:    base,
 		headers: h.headers,
 	}, nil
-}
-
-// Shutdown implements extensionauth.Client.
-func (h *headerSetterExtension) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extensionauth.Client.
-func (h *headerSetterExtension) Start(context.Context, component.Host) error {
-	return nil
 }
 
 func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.Client, error) {

@@ -18,6 +18,9 @@ import (
 var _ extensionauth.Client = (*asapAuthExtension)(nil)
 
 type asapAuthExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+
 	provisioner asap.Provisioner
 	privateKey  any
 }
@@ -30,16 +33,6 @@ func (e *asapAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, 
 // RoundTripper implements extensionauth.Client.
 func (e *asapAuthExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return asap.NewTransportDecorator(e.provisioner, e.privateKey)(base), nil
-}
-
-// Shutdown implements extensionauth.Client.
-func (e *asapAuthExtension) Shutdown(context.Context) error {
-	return nil
-}
-
-// Start implements extensionauth.Client.
-func (e *asapAuthExtension) Start(context.Context, component.Host) error {
-	return nil
 }
 
 func createASAPClientAuthenticator(cfg *Config) (extensionauth.Client, error) {
