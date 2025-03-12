@@ -143,13 +143,13 @@ This can be customised through the following settings:
 - `metrics_dynamic_index` (optional): uses resource, scope or data point attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `metrics_index` is not empty. Will be removed in a future version.
 
-- `traces_index` (optional): The [index] or [data stream] name to publish traces to. `traces_index` should be empty unless all documents should be sent to the same index.
+- `traces_index` (optional): The [index] or [data stream] name to publish traces to. `traces_index` should be empty unless all traces should be sent to the same index.
 
 - `traces_dynamic_index` (optional): uses resource, scope, or span attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `traces_index` is not empty. Will be removed in a future version.
 
 - `logstash_format` (optional): Logstash format compatibility. Logs, metrics and traces can be written into an index in Logstash format.
-  - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format.enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
+  - `enabled`(default=false):  Enable/disable Logstash format compatibility. When `logstash_format::enabled` is `true`, the index name is composed using the above dynamic routing rules as prefix and the date as suffix,
     e.g: If the computed index name is `logs-generic-default`, the resulting index will be `logs-generic-default-YYYY.MM.DD`.
     The last string appended belongs to the date when the data is being generated.
   - `prefix_separator`(default=`-`): Set a separator between logstash_prefix and date.
