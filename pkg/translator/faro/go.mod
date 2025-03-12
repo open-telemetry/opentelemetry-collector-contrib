@@ -11,6 +11,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/otel v1.34.0
+	go.uber.org/goleak v1.3.0
 )
 
 require (
