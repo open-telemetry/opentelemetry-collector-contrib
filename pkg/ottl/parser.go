@@ -240,7 +240,7 @@ func (p *Parser[K]) prependContextToStatementPaths(context string, statement str
 	})
 }
 
-// prependContextToConditionPaths changes the given OTTL statement adding the context name prefix
+// prependContextToConditionPaths changes the given OTTL condition adding the context name prefix
 // to all context-less paths. No modifications are performed for paths which [Path.Context]
 // value matches any WithPathContextNames value.
 // The context argument must be valid WithPathContextNames value, otherwise an error is returned.

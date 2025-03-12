@@ -22,7 +22,7 @@ type StatementsGetter interface {
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func NewStatementsGetter(statements []string) StatementsGetter {
-	return defaultStatementsConditionsGetter(statements)
+	return defaultOTTLGetter(statements)
 }
 
 // ConditionsGetter represents a set of conditions to be parsed.
@@ -36,17 +36,17 @@ type ConditionsGetter interface {
 // NewConditionsGetter creates a new ConditionsGetter.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func NewConditionsGetter(statements []string) ConditionsGetter {
-	return defaultStatementsConditionsGetter(statements)
+func NewConditionsGetter(conditions []string) ConditionsGetter {
+	return defaultOTTLGetter(conditions)
 }
 
-type defaultStatementsConditionsGetter []string
+type defaultOTTLGetter []string
 
-func (d defaultStatementsConditionsGetter) GetStatements() []string {
+func (d defaultOTTLGetter) GetStatements() []string {
 	return d
 }
 
-func (d defaultStatementsConditionsGetter) GetConditions() []string {
+func (d defaultOTTLGetter) GetConditions() []string {
 	return d
 }
 
