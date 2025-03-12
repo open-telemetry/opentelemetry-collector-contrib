@@ -57,7 +57,7 @@ func TestMultipleCreateWithAPIServer(t *testing.T) {
 			Endpoint: "localhost:9090",
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	host := componenttest.NewNopHost()

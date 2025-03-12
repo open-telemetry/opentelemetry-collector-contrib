@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
 	v1 "github.com/prometheus/client_golang/api/prometheus/v1"
 	"github.com/prometheus/common/model"
 	"github.com/prometheus/prometheus/config"
@@ -59,7 +60,7 @@ func TestPrometheusAPIServer(t *testing.T) {
 		defer mp.Close()
 
 		require.NoError(t, err)
-		receiver := newPrometheusReceiver(receivertest.NewNopSettings(), &Config{
+		receiver := newPrometheusReceiver(receivertest.NewNopSettings(metadata.Type), &Config{
 			PrometheusConfig: cfg,
 			APIServer: &APIServer{
 				Enabled: true,
