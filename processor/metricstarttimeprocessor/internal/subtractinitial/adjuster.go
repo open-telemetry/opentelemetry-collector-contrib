@@ -57,7 +57,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 
 		attrHash := pdatautil.MapHash(rm.Resource().Attributes())
 		referenceTsm := a.referenceCache.Get(attrHash)
-		previousValueTsm := a.referenceCache.Get(attrHash)
+		previousValueTsm := a.previousValueCache.Get(attrHash)
 
 		// The lock on the relevant timeseriesMap is held throughout the adjustment process to ensure that
 		// nothing else can modify the data used for adjustment.
@@ -73,6 +73,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
+
 				switch dataType := metric.Type(); dataType {
 				case pmetric.MetricTypeGauge:
 					// gauges don't need to be adjusted so no additional processing is necessary
@@ -80,20 +81,16 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 					metric.CopyTo(resMetric)
 
 				case pmetric.MetricTypeHistogram:
-					resMetric := a.adjustMetricHistogram(referenceTsm, previousValueTsm, metric)
-					metric.CopyTo(resMetric)
+					a.adjustMetricHistogram(referenceTsm, previousValueTsm, metric, resScope)
 
 				case pmetric.MetricTypeSummary:
-					resMetric := a.adjustMetricSummary(referenceTsm, previousValueTsm, metric)
-					metric.CopyTo(resMetric)
+					a.adjustMetricSummary(referenceTsm, previousValueTsm, metric, resScope)
 
 				case pmetric.MetricTypeSum:
-					resMetric := a.adjustMetricSum(referenceTsm, previousValueTsm, metric)
-					metric.CopyTo(resMetric)
+					a.adjustMetricSum(referenceTsm, previousValueTsm, metric, resScope)
 
 				case pmetric.MetricTypeExponentialHistogram:
-					resMetric := a.adjustMetricExponentialHistogram(referenceTsm, previousValueTsm, metric)
-					metric.CopyTo(resMetric)
+					a.adjustMetricExponentialHistogram(referenceTsm, previousValueTsm, metric, resScope)
 
 				case pmetric.MetricTypeEmpty:
 					fallthrough
@@ -106,12 +103,12 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 		}
 		referenceTsm.Unlock()
 		previousValueTsm.Unlock()
-
 	}
+
 	return resultMetrics, nil
 }
 
-func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric) pmetric.Metric {
+func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
 	res := pmetric.NewMetric()
 	res.SetName(current.Name())
 	res.SetDescription(current.Description())
@@ -121,7 +118,7 @@ func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapoi
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
-		return res
+		return
 	}
 
 	currentPoints := histogram.DataPoints()
@@ -177,11 +174,9 @@ func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapoi
 		tmp := res.Histogram().DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
-
-	return res
 }
 
-func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric) pmetric.Metric {
+func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
 	res := pmetric.NewMetric()
 	res.SetName(current.Name())
 	res.SetDescription(current.Description())
@@ -191,7 +186,7 @@ func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueT
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
-		return res
+		return
 	}
 
 	currentPoints := histogram.DataPoints()
@@ -247,16 +242,17 @@ func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueT
 		tmp := res.ExponentialHistogram().DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
-
-	return res
 }
 
-func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric) pmetric.Metric {
-	res := pmetric.NewMetric()
+func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
+	res := resScope.Metrics().AppendEmpty()
 	res.SetName(current.Name())
 	res.SetDescription(current.Description())
 	res.SetUnit(current.Unit())
 	current.Metadata().CopyTo(res.Metadata())
+	resSum := res.SetEmptySum()
+	resSum.SetAggregationTemporality(current.Sum().AggregationTemporality())
+	resSum.SetIsMonotonic(current.Sum().IsMonotonic())
 
 	currentPoints := current.Sum().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
@@ -273,12 +269,12 @@ func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstor
 		// Adjust the datapoint based on the reference value.
 		adjustedPoint := pmetric.NewNumberDataPoint()
 		currentDist.CopyTo(adjustedPoint)
-		adjustedPoint.SetStartTimestamp(referenceTsi.Histogram.StartTime)
+		adjustedPoint.SetStartTimestamp(referenceTsi.Number.StartTime)
 		adjustedPoint.SetDoubleValue(adjustedPoint.DoubleValue() - referenceTsi.Number.Value)
 
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			tmp := res.Sum().DataPoints().AppendEmpty()
+			tmp := resSum.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
@@ -303,14 +299,12 @@ func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstor
 		previousTsi.Number.Value = adjustedPoint.DoubleValue()
 		previousTsi.Number.StartTime = adjustedPoint.StartTimestamp()
 
-		tmp := res.Sum().DataPoints().AppendEmpty()
+		tmp := resSum.DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
-
-	return res
 }
 
-func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric) pmetric.Metric {
+func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
 	res := pmetric.NewMetric()
 	res.SetName(current.Name())
 	res.SetDescription(current.Description())
@@ -371,6 +365,4 @@ func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapoint
 		tmp := res.Summary().DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
-
-	return res
 }
