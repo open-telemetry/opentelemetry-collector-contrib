@@ -42,16 +42,16 @@ const (
 
 var (
 	target = scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
-		labels.FromMap(map[string]string{
-			model.InstanceLabel: "localhost:8080",
-		}),
+		// // processedLabels contain label values after processing (e.g. relabeling)
+		// labels.FromMap(map[string]string{
+		// 	model.InstanceLabel: "localhost:8080",
+		// }),
 		// discoveredLabels contain labels prior to any processing
 		labels.FromMap(map[string]string{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
 		}),
-		nil)
+		nil, nil, nil)
 
 	scrapeCtx = scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), target),
@@ -454,17 +454,17 @@ func testTransactionAppendWithEmptyLabelArrayFallbackToTargetLabels(t *testing.T
 	sink := new(consumertest.MetricsSink)
 
 	scrapeTarget := scrape.NewTarget(
-		// processedLabels contain label values after processing (e.g. relabeling)
-		labels.FromMap(map[string]string{
-			model.InstanceLabel: "localhost:8080",
-			model.JobLabel:      "federate",
-		}),
-		// discoveredLabels contain labels prior to any processing
+		// // processedLabels contain label values after processing (e.g. relabeling)
+		// labels.FromMap(map[string]string{
+		// 	model.InstanceLabel: "localhost:8080",
+		// 	model.JobLabel:      "federate",
+		// }),
+		// labels prior to any processing
 		labels.FromMap(map[string]string{
 			model.AddressLabel: "address:8080",
 			model.SchemeLabel:  "http",
 		}),
-		nil)
+		nil, nil, nil)
 
 	ctx := scrape.ContextWithMetricMetadataStore(
 		scrape.ContextWithTarget(context.Background(), scrapeTarget),
