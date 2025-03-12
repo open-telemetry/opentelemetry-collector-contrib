@@ -26,6 +26,9 @@ type TelemetryBuilder struct {
 	meter                       metric.Meter
 	mu                          sync.Mutex
 	registrations               []metric.Registration
+	OtelsvcK8sDeploymentAdded   metric.Int64Counter
+	OtelsvcK8sDeploymentDeleted metric.Int64Counter
+	OtelsvcK8sDeploymentUpdated metric.Int64Counter
 	OtelsvcK8sIPLookupMiss      metric.Int64Counter
 	OtelsvcK8sNamespaceAdded    metric.Int64Counter
 	OtelsvcK8sNamespaceDeleted  metric.Int64Counter
@@ -71,6 +74,24 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
+	builder.OtelsvcK8sDeploymentAdded, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_added",
+		metric.WithDescription("Number of deployment add events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDeploymentDeleted, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_deleted",
+		metric.WithDescription("Number of deployment delete events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
+	builder.OtelsvcK8sDeploymentUpdated, err = builder.meter.Int64Counter(
+		"otelcol_otelsvc_k8s_deployment_updated",
+		metric.WithDescription("Number of deployment update events received"),
+		metric.WithUnit("1"),
+	)
+	errs = errors.Join(errs, err)
 	builder.OtelsvcK8sIPLookupMiss, err = builder.meter.Int64Counter(
 		"otelcol_otelsvc_k8s_ip_lookup_miss",
 		metric.WithDescription("Number of times pod by IP lookup failed."),

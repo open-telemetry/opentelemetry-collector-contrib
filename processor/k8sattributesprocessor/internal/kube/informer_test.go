@@ -33,6 +33,13 @@ func Test_newSharedNamespaceInformer(t *testing.T) {
 	assert.NotNil(t, informer)
 }
 
+func Test_newSharedDeploymentInformer(t *testing.T) {
+	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
+	require.NoError(t, err)
+	informer := newDeploymentSharedInformer(client, "ns")
+	assert.NotNil(t, informer)
+}
+
 func Test_newKubeSystemSharedInformer(t *testing.T) {
 	client, err := newFakeAPIClientset(k8sconfig.APIConfig{})
 	require.NoError(t, err)

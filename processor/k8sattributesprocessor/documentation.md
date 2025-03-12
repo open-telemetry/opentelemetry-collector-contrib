@@ -36,6 +36,30 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_otelsvc_k8s_deployment_added
+
+Number of deployment add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_deployment_deleted
+
+Number of deployment delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_deployment_updated
+
+Number of deployment update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_otelsvc_k8s_ip_lookup_miss
 
 Number of times pod by IP lookup failed.

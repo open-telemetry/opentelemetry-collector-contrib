@@ -3,6 +3,8 @@ kind: Deployment
 metadata: 
   name: {{ .Name }}-{{ .DataType }}-deployment
   namespace: e2ek8sattribute-clusterrbac
+  annotations:
+    workload: deployment-annotation
 spec:
   replicas: 1
   selector:

@@ -28,7 +28,9 @@ const (
 	// MetadataFromNamespace is used to specify to extract metadata/labels/annotations from namespace
 	MetadataFromNamespace = "namespace"
 	// MetadataFromNode is used to specify to extract metadata/labels/annotations from node
-	MetadataFromNode       = "node"
+	MetadataFromNode = "node"
+	// MetadataFromDeployment is used to specify to extract metadata/labels/annotations from deployment
+	MetadataFromDeployment = "deployment"
 	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
@@ -91,12 +93,13 @@ type Client interface {
 	GetPod(PodIdentifier) (*Pod, bool)
 	GetNamespace(string) (*Namespace, bool)
 	GetNode(string) (*Node, bool)
+	GetDeployment(string) (*Deployment, bool)
 	Start() error
 	Stop()
 }
 
 // ClientProvider defines a func type that returns a new Client.
-type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformerProvider, InformerProviderNamespace, InformerProviderReplicaSet, bool, time.Duration) (Client, error)
+type ClientProvider func(component.TelemetrySettings, k8sconfig.APIConfig, ExtractionRules, Filters, []Association, Excludes, APIClientsetProvider, InformersFactoryList, bool, time.Duration) (Client, error)
 
 // APIClientsetProvider defines a func type that initializes and return a new kubernetes
 // Clientset object.
@@ -104,15 +107,16 @@ type APIClientsetProvider func(config k8sconfig.APIConfig) (kubernetes.Interface
 
 // Pod represents a kubernetes pod.
 type Pod struct {
-	Name        string
-	Address     string
-	PodUID      string
-	Attributes  map[string]string
-	StartTime   *metav1.Time
-	Ignore      bool
-	Namespace   string
-	NodeName    string
-	HostNetwork bool
+	Name           string
+	Address        string
+	PodUID         string
+	Attributes     map[string]string
+	StartTime      *metav1.Time
+	Ignore         bool
+	Namespace      string
+	NodeName       string
+	DeploymentName string
+	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
 	Containers PodContainers
@@ -284,6 +288,7 @@ type FieldExtractionRule struct {
 	//  - pod
 	//  - namespace
 	//  - node
+	//  - deployment
 	From string
 }
 
@@ -302,6 +307,12 @@ func (r *FieldExtractionRule) extractFromNamespaceMetadata(metadata map[string]s
 
 func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.From == MetadataFromNode {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromDeployment {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
@@ -367,8 +378,9 @@ type AssociationSource struct {
 
 // Deployment represents a kubernetes deployment.
 type Deployment struct {
-	Name string
-	UID  string
+	Name       string
+	UID        string
+	Attributes map[string]string
 }
 
 // ReplicaSet represents a kubernetes replicaset.
