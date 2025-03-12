@@ -74,23 +74,29 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 			for k := 0; k < ilm.Metrics().Len(); k++ {
 				metric := ilm.Metrics().At(k)
 
+				// Copy over metric info to the result.
+				resMetric := resScope.Metrics().AppendEmpty()
+				resMetric.SetName(metric.Name())
+				resMetric.SetDescription(metric.Description())
+				resMetric.SetUnit(metric.Unit())
+				metric.Metadata().CopyTo(resMetric.Metadata())
+
 				switch dataType := metric.Type(); dataType {
 				case pmetric.MetricTypeGauge:
 					// gauges don't need to be adjusted so no additional processing is necessary
-					resMetric := resScope.Metrics().AppendEmpty()
 					metric.CopyTo(resMetric)
 
 				case pmetric.MetricTypeHistogram:
-					a.adjustMetricHistogram(referenceTsm, previousValueTsm, metric, resScope)
+					a.adjustMetricHistogram(referenceTsm, previousValueTsm, metric, resMetric.SetEmptyHistogram())
 
 				case pmetric.MetricTypeSummary:
-					a.adjustMetricSummary(referenceTsm, previousValueTsm, metric, resScope)
+					a.adjustMetricSummary(referenceTsm, previousValueTsm, metric, resMetric.SetEmptySummary())
 
 				case pmetric.MetricTypeSum:
-					a.adjustMetricSum(referenceTsm, previousValueTsm, metric, resScope)
+					a.adjustMetricSum(referenceTsm, previousValueTsm, metric, resMetric.SetEmptySum())
 
 				case pmetric.MetricTypeExponentialHistogram:
-					a.adjustMetricExponentialHistogram(referenceTsm, previousValueTsm, metric, resScope)
+					a.adjustMetricExponentialHistogram(referenceTsm, previousValueTsm, metric, resMetric.SetEmptyExponentialHistogram())
 
 				case pmetric.MetricTypeEmpty:
 					fallthrough
@@ -108,16 +114,13 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 	return resultMetrics, nil
 }
 
-func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
-	res := pmetric.NewMetric()
-	res.SetName(current.Name())
-	res.SetDescription(current.Description())
-	res.SetUnit(current.Unit())
-	current.Metadata().CopyTo(res.Metadata())
+func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resHistogram pmetric.Histogram) {
+	resHistogram.SetAggregationTemporality(current.Histogram().AggregationTemporality())
 
 	histogram := current.Histogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
+		histogram.CopyTo(resHistogram)
 		return
 	}
 
@@ -138,15 +141,14 @@ func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapoi
 		adjustedPoint := pmetric.NewHistogramDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Histogram.StartTime)
-		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Histogram.Count)
-		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Histogram.Sum)
-
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			tmp := res.Histogram().DataPoints().AppendEmpty()
+			tmp := resHistogram.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
+		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Histogram.Count)
+		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Histogram.Sum)
 
 		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -161,7 +163,7 @@ func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapoi
 			adjustedPoint.SetSum(currentDist.Sum())
 			adjustedPoint.SetStartTimestamp(currentDist.StartTimestamp())
 
-			tmp := res.Histogram().DataPoints().AppendEmpty()
+			tmp := resHistogram.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
@@ -171,21 +173,18 @@ func (a *Adjuster) adjustMetricHistogram(referenceTsm, previousValueTsm *datapoi
 		previousTsi.Histogram.Sum = adjustedPoint.Sum()
 		previousTsi.Histogram.StartTime = adjustedPoint.StartTimestamp()
 
-		tmp := res.Histogram().DataPoints().AppendEmpty()
+		tmp := resHistogram.DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
 }
 
-func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
-	res := pmetric.NewMetric()
-	res.SetName(current.Name())
-	res.SetDescription(current.Description())
-	res.SetUnit(current.Unit())
-	current.Metadata().CopyTo(res.Metadata())
+func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resExpHistogram pmetric.ExponentialHistogram) {
+	resExpHistogram.SetAggregationTemporality(current.ExponentialHistogram().AggregationTemporality())
 
 	histogram := current.ExponentialHistogram()
 	if histogram.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
 		// Only dealing with CumulativeDistributions.
+		histogram.CopyTo(resExpHistogram)
 		return
 	}
 
@@ -206,15 +205,14 @@ func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueT
 		adjustedPoint := pmetric.NewExponentialHistogramDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Histogram.StartTime)
-		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Histogram.Count)
-		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Histogram.Sum)
-
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			tmp := res.ExponentialHistogram().DataPoints().AppendEmpty()
+			tmp := resExpHistogram.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
+		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Histogram.Count)
+		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Histogram.Sum)
 
 		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -229,7 +227,7 @@ func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueT
 			adjustedPoint.SetSum(currentDist.Sum())
 			adjustedPoint.SetStartTimestamp(currentDist.StartTimestamp())
 
-			tmp := res.ExponentialHistogram().DataPoints().AppendEmpty()
+			tmp := resExpHistogram.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
@@ -239,18 +237,12 @@ func (a *Adjuster) adjustMetricExponentialHistogram(referenceTsm, previousValueT
 		previousTsi.Histogram.Sum = adjustedPoint.Sum()
 		previousTsi.Histogram.StartTime = adjustedPoint.StartTimestamp()
 
-		tmp := res.ExponentialHistogram().DataPoints().AppendEmpty()
+		tmp := resExpHistogram.DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
 }
 
-func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
-	res := resScope.Metrics().AppendEmpty()
-	res.SetName(current.Name())
-	res.SetDescription(current.Description())
-	res.SetUnit(current.Unit())
-	current.Metadata().CopyTo(res.Metadata())
-	resSum := res.SetEmptySum()
+func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resSum pmetric.Sum) {
 	resSum.SetAggregationTemporality(current.Sum().AggregationTemporality())
 	resSum.SetIsMonotonic(current.Sum().IsMonotonic())
 
@@ -270,14 +262,13 @@ func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstor
 		adjustedPoint := pmetric.NewNumberDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Number.StartTime)
-		adjustedPoint.SetDoubleValue(adjustedPoint.DoubleValue() - referenceTsi.Number.Value)
-
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
 			tmp := resSum.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
+		adjustedPoint.SetDoubleValue(adjustedPoint.DoubleValue() - referenceTsi.Number.Value)
 
 		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -290,7 +281,7 @@ func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstor
 			adjustedPoint.SetDoubleValue(currentDist.DoubleValue())
 			adjustedPoint.SetStartTimestamp(currentDist.StartTimestamp())
 
-			tmp := res.Sum().DataPoints().AppendEmpty()
+			tmp := resSum.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
@@ -304,15 +295,8 @@ func (a *Adjuster) adjustMetricSum(referenceTsm, previousValueTsm *datapointstor
 	}
 }
 
-func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resScope pmetric.ScopeMetrics) {
-	res := pmetric.NewMetric()
-	res.SetName(current.Name())
-	res.SetDescription(current.Description())
-	res.SetUnit(current.Unit())
-	current.Metadata().CopyTo(res.Metadata())
-
+func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resSummary pmetric.Summary) {
 	currentPoints := current.Summary().DataPoints()
-
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
 
@@ -329,15 +313,14 @@ func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapoint
 		adjustedPoint := pmetric.NewSummaryDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Summary.StartTime)
-		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Summary.Count)
-		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Summary.Sum)
-
 		if currentDist.Flags().NoRecordedValue() {
 			// TODO: Investigate why this does not reset.
-			tmp := res.Summary().DataPoints().AppendEmpty()
+			tmp := resSummary.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
+		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Summary.Count)
+		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Summary.Sum)
 
 		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
 		if !found {
@@ -352,7 +335,7 @@ func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapoint
 			adjustedPoint.SetSum(currentDist.Sum())
 			adjustedPoint.SetStartTimestamp(currentDist.StartTimestamp())
 
-			tmp := res.Summary().DataPoints().AppendEmpty()
+			tmp := resSummary.DataPoints().AppendEmpty()
 			adjustedPoint.CopyTo(tmp)
 			continue
 		}
@@ -362,7 +345,53 @@ func (a *Adjuster) adjustMetricSummary(referenceTsm, previousValueTsm *datapoint
 		previousTsi.Summary.Sum = adjustedPoint.Sum()
 		previousTsi.Summary.StartTime = adjustedPoint.StartTimestamp()
 
-		tmp := res.Summary().DataPoints().AppendEmpty()
+		tmp := resSummary.DataPoints().AppendEmpty()
 		adjustedPoint.CopyTo(tmp)
 	}
+}
+
+// subtractHistogramDataPoint subtracts b from a.
+func subtractHistogramDataPoint(a, b pmetric.HistogramDataPoint) {
+	// Use the timestamp from the normalization point
+	a.SetStartTimestamp(b.Timestamp())
+	// Adjust the value based on the start point's value
+	a.SetCount(a.Count() - b.Count())
+	// We drop points without a sum, so no need to check here.
+	a.SetSum(a.Sum() - b.Sum())
+	aBuckets := a.BucketCounts()
+	bBuckets := b.BucketCounts()
+	newBuckets := make([]uint64, aBuckets.Len())
+	for i := 0; i < aBuckets.Len(); i++ {
+		newBuckets[i] = aBuckets.At(i) - bBuckets.At(i)
+	}
+	a.BucketCounts().FromRaw(newBuckets)
+}
+
+// subtractExponentialHistogramDataPoint subtracts b from a.
+func subtractExponentialHistogramDataPoint(a, b pmetric.ExponentialHistogramDataPoint) {
+	// Use the timestamp from the normalization point
+	a.SetStartTimestamp(b.Timestamp())
+	// Adjust the value based on the start point's value
+	a.SetCount(a.Count() - b.Count())
+	// We drop points without a sum, so no need to check here.
+	a.SetSum(a.Sum() - b.Sum())
+	a.SetZeroCount(a.ZeroCount() - b.ZeroCount())
+	a.Positive().BucketCounts().FromRaw(subtractExponentialBuckets(a.Positive(), b.Positive()))
+	a.Negative().BucketCounts().FromRaw(subtractExponentialBuckets(a.Negative(), b.Negative()))
+}
+
+// subtractExponentialBuckets subtracts b from a.
+func subtractExponentialBuckets(a, b pmetric.ExponentialHistogramDataPointBuckets) []uint64 {
+	newBuckets := make([]uint64, a.BucketCounts().Len())
+	offsetDiff := int(a.Offset() - b.Offset())
+	for i := 0; i < a.BucketCounts().Len(); i++ {
+		bOffset := i + offsetDiff
+		// if there is no corresponding bucket for the starting BucketCounts, don't normalize
+		if bOffset < 0 || bOffset >= b.BucketCounts().Len() {
+			newBuckets[i] = a.BucketCounts().At(i)
+		} else {
+			newBuckets[i] = a.BucketCounts().At(i) - b.BucketCounts().At(bOffset)
+		}
+	}
+	return newBuckets
 }

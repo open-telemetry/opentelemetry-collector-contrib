@@ -112,12 +112,12 @@ func TestSumWithDifferentResources(t *testing.T) {
 		{
 			description: "Sum: round 1 - initial instance, start time is established",
 			metrics:     metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
-			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t1, 44))), resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t1, 44)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job1", "instance1", sumMetric(sum1)), resourceMetrics("job2", "instance2", sumMetric(sum2))),
 		},
 		{
 			description: "Sum: round 2 - instance adjusted based on round 1 (metrics in different order)",
 			metrics:     metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t2, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t2, t2, 66)))),
-			adjusted:    metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t2, 66))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 66)))),
+			adjusted:    metricsFromResourceMetrics(resourceMetrics("job2", "instance2", sumMetric(sum2, doublePoint(k1v1k2v2, t1, t2, 22))), resourceMetrics("job1", "instance1", sumMetric(sum1, doublePoint(k1v1k2v2, t1, t2, 22)))),
 		},
 		{
 			description: "Sum: round 3 - instance reset (value less than previous value), start time is reset",
@@ -143,12 +143,12 @@ func TestSummaryNoCount(t *testing.T) {
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1)),
 		},
 		{
 			description: "Summary No Count: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 0, 70, percent0, []float64{7, 44, 9}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 70, percent0, []float64{7, 44, 9}))),
+			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 0, 30, percent0, []float64{7, 44, 9}))),
 		},
 		{
 			description: "Summary No Count: round 3 - instance reset (count less than previous), start time is reset",
@@ -170,7 +170,7 @@ func TestSummaryFlagNoRecordedValue(t *testing.T) {
 		{
 			description: "Summary No Count: round 1 - initial instance, start time is established",
 			metrics:     metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
-			adjusted:    metrics(summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 0, 40, percent0, []float64{1, 5, 8}))),
+			adjusted:    metrics(summaryMetric(summary1)),
 		},
 		{
 			description: "Summary Flag NoRecordedValue: round 2 - instance adjusted based on round 1",
@@ -190,7 +190,7 @@ func TestSummary(t *testing.T) {
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
 			),
 			adjusted: metrics(
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+				summaryMetric(summary1),
 			),
 		},
 		{
@@ -199,7 +199,7 @@ func TestSummary(t *testing.T) {
 				summaryMetric(summary1, summaryPoint(k1v1k2v2, t2, t2, 15, 70, percent0, []float64{7, 44, 9})),
 			),
 			adjusted: metrics(
-				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 15, 70, percent0, []float64{7, 44, 9})),
+				summaryMetric(summary1, summaryPoint(k1v1k2v2, t1, t2, 5, 30, percent0, []float64{7, 44, 9})),
 			),
 		},
 		{
@@ -230,7 +230,7 @@ func TestHistogram(t *testing.T) {
 		{
 			description: "Histogram: round 1 - initial instance, start time is established",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
-			adjusted:    metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{4, 2, 3, 7}))),
+			adjusted:    metrics(histogramMetric(histogram1)),
 		}, {
 			description: "Histogram: round 2 - instance adjusted based on round 1",
 			metrics:     metrics(histogramMetric(histogram1, histogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 4, 8}))),
