@@ -161,11 +161,14 @@ This can be customised through the following settings:
 #### Document routing exceptions for OTel data mode
 
 In OTel mapping mode (`mapping::mode: otel`), there are certain exceptions to the above document routing rules in [Elasticsearch document routing](#elasticsearch-document-routing).
+The order to determine the routing mode is the same as [Elasticsearch document routing](#elasticsearch-document-routing).
 
-1. "Static mode": span events are separate documents routed to `logs_index` if non-empty.
-2. "Dynamic - Index attribute mode": span events are separate documents routed using attribute (precedence: span event attribute > scope attribute > resource attribute)
-3. "Dynamic - Data stream routing mode": Span events are separate documents that have `data_stream.type: logs` and are routed using attribute (precedence: span event attribute > scope attribute > resource attribute)
-For all documents, `data_stream.dataset` will always be appended with `.otel`.
+1. "Static mode": Span events are separate documents routed to `logs_index` if non-empty.
+2. "Dynamic - Index attribute mode": Span events are separate documents routed using attribute `elasticsearch.index` (precedence: span event attribute > scope attribute > resource attribute) if the attribute exists.
+3. "Dynamic - Data stream routing mode":
+  - For all documents, `data_stream.dataset` will always be appended with `.otel`.
+  - A special case to (3)(1) in [Elasticsearch document routing](#elasticsearch-document-routing), span events are separate documents that have `data_stream.type: logs` and are routed using data stream attributes (precedence: span event attribute > scope attribute > resource attribute)
+
 
 
 ### Elasticsearch document mapping
