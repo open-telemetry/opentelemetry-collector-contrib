@@ -430,7 +430,7 @@ func (c *WatchClient) handleDeploymentDelete(obj any) {
 	c.telemetryBuilder.OtelsvcK8sDeploymentDeleted.Add(context.Background(), 1)
 	if deployment, ok := ignoreDeletedFinalStateUnknown(obj).(*apps_v1.Deployment); ok {
 		c.m.Lock()
-		if n, ok := c.Deployments[deployment.Name]; ok {
+		if n, ok := c.Deployments[string(deployment.UID)]; ok {
 			delete(c.Deployments, n.UID)
 		}
 		c.m.Unlock()
