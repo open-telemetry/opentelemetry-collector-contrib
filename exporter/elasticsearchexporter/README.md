@@ -121,7 +121,7 @@ Using the common `batcher` functionality provides several benefits over the defa
 Documents are statically or dynamically routed to the target index / data stream in the following order. The first routing mode that applies will be used.
 1. "Static mode": Route to `logs_index` for log records, `metrics_index` for data points and `traces_index` for spans, if these configs are not empty respectively. [^3]
 2. "Dynamic - Index attribute mode": Route to index name specified in `elasticsearch.index` attribute (precedence: log record / data point / span attribute > scope attribute > resource attribute) if the attribute exists. [^3]
-3. "Dynamic - Data stream routing mode": To data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
+3. "Dynamic - Data stream routing mode": Route to data stream constructed from `${data_stream.type}-${data_stream.dataset}-${data_stream.namespace}`,
 where `data_stream.type` is `logs` for log records, `metrics` for data points, and `traces` for spans, and is static. [^3]
 In a special case with `mapping::mode: bodymap`, `data_stream.type` field (valid values: `logs`, `metrics`) can be dynamically set from attributes.
 The resulting documents will contain the corresponding `data_stream.*` fields, see restrictions applied to [Data Stream Fields](https://www.elastic.co/guide/en/ecs/current/ecs-data_stream.html).
