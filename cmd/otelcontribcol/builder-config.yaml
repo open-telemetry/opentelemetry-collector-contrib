@@ -33,6 +33,7 @@ extensions:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecstaskobserver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/hostobserver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver v0.121.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/oidcauthextension v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension v0.121.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/extension/pprofextension v0.121.0
