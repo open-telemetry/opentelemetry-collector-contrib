@@ -22,7 +22,7 @@ The following settings are required:
 - `token`: Your authorization token from the Fiddler Settings page under the Credentials tab.
 
 The following settings are optional:
-- `interval`: The interval at which metrics data is pulled from Fiddler (default: 30m).
+- `interval`: The interval at which metrics data is pulled from Fiddler (default: `30m`).
 
 ### Example Configuration
 
