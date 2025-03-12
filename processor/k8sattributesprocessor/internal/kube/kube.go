@@ -33,7 +33,9 @@ const (
 	MetadataFromDeployment = "deployment"
 	// MetadataFromStatefulSet is used to specify to extract metadata/labels/annotations from statefulset
 	MetadataFromStatefulSet = "statefulset"
-	PodIdentifierMaxLength  = 4
+	// MetadataFromDaemonSet  is used to specify to extract metadata/labels/annotations from daemonset
+	MetadataFromDaemonSet  = "daemonset"
+	PodIdentifierMaxLength = 4
 
 	ResourceSource   = "resource_attribute"
 	ConnectionSource = "connection"
@@ -97,6 +99,7 @@ type Client interface {
 	GetNode(string) (*Node, bool)
 	GetDeployment(string) (*Deployment, bool)
 	GetStatefulSet(string) (*StatefulSet, bool)
+	GetDaemonSet(string) (*DaemonSet, bool)
 	Start() error
 	Stop()
 }
@@ -120,6 +123,7 @@ type Pod struct {
 	NodeName       string
 	DeploymentName string
 	StatefulSetUID string
+	DaemonSetUID   string
 	HostNetwork    bool
 
 	// Containers specifies all containers in this pod.
@@ -294,6 +298,7 @@ type FieldExtractionRule struct {
 	//  - node
 	//  - deployment
 	//  - statefulset
+	//  - daemonset
 	From string
 }
 
@@ -324,6 +329,12 @@ func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata map[string]
 
 func (r *FieldExtractionRule) extractFromStatefulSetMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.From == MetadataFromStatefulSet {
+		r.extractFromMetadata(metadata, tags, formatter)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromDaemonSetMetadata(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.From == MetadataFromDaemonSet {
 		r.extractFromMetadata(metadata, tags, formatter)
 	}
 }
@@ -404,6 +415,13 @@ type ReplicaSet struct {
 
 // StatefulSet represents a kubernetes statefulset.
 type StatefulSet struct {
+	Name       string
+	UID        string
+	Attributes map[string]string
+}
+
+// DaemonSet represents a kubernetes daemonset.
+type DaemonSet struct {
 	Name       string
 	UID        string
 	Attributes map[string]string

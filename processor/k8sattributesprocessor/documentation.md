@@ -36,6 +36,30 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_otelsvc_k8s_daemonset_added
+
+Number of daemonset add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_daemonset_deleted
+
+Number of daemonset delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_daemonset_updated
+
+Number of daemonset update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_otelsvc_k8s_deployment_added
 
 Number of deployment add events received
