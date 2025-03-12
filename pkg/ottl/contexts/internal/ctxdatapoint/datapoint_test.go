@@ -143,6 +143,17 @@ func TestPathGetSetter_NumberDataPoint(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refNumberDataPoint.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(datapoint pmetric.NumberDataPoint) {
+				_ = datapoint.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
@@ -606,6 +617,17 @@ func TestPathGetSetter_HistogramDataPoint(t *testing.T) {
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.HistogramDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
+			},
+		},
+		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refHistogramDataPoint.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(datapoint pmetric.HistogramDataPoint) {
+				_ = datapoint.Attributes().FromRaw(newAttrs.AsRaw())
 			},
 		},
 		{
@@ -1159,6 +1181,17 @@ func TestPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refExpoHistogramDataPoint.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(datapoint pmetric.ExponentialHistogramDataPoint) {
+				_ = datapoint.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
@@ -1606,6 +1639,17 @@ func TestPathGetSetter_SummaryDataPoint(t *testing.T) {
 			newVal: newAttrs,
 			modified: func(datapoint pmetric.SummaryDataPoint) {
 				newAttrs.CopyTo(datapoint.Attributes())
+			},
+		},
+		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refSummaryDataPoint.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(datapoint pmetric.SummaryDataPoint) {
+				_ = datapoint.Attributes().FromRaw(newAttrs.AsRaw())
 			},
 		},
 		{

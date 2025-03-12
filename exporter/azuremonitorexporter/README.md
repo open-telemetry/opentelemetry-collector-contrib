@@ -42,6 +42,7 @@ The following settings can be optionally configured:
   - `num_consumers` (default = 10): Number of consumers that dequeue batches; ignored if `enabled` is `false`
   - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
+- `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
 
 Example:
 

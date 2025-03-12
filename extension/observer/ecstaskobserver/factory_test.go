@@ -10,7 +10,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 )
 
 func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
@@ -21,5 +21,5 @@ func TestFactoryCreatedExtensionIsEndpointsLister(t *testing.T) {
 	eto, err := etoFactory.Create(context.Background(), extensiontest.NewNopSettings(etoFactory.Type()), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, eto)
-	require.Implements(t, (*observer.EndpointsLister)(nil), eto)
+	require.Implements(t, (*endpointswatcher.EndpointsLister)(nil), eto)
 }

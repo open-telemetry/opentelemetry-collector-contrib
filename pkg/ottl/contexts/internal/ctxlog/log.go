@@ -222,10 +222,7 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetLogRecord().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetLogRecord().Attributes())
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetLogRecord().Attributes(), val)
 		},
 	}
 }
