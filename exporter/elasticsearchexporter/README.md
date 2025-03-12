@@ -133,7 +133,7 @@ The resulting documents will contain the corresponding `data_stream.*` fields, s
 
 This can be customised through the following settings:
 
-- `logs_index` (optional): The [index] or [data stream] name to publish logs (and span events in OTel mapping mode) to. `logs_index` should be empty unless all documents should be sent to the same index.
+- `logs_index` (optional): The [index] or [data stream] name to publish logs (and span events in OTel mapping mode) to. `logs_index` should be empty unless all logs should be sent to the same index.
 
 - `logs_dynamic_index` (optional): uses resource, scope, or log record attributes to dynamically construct index name.
   - `enabled`(DEPRECATED): No-op. Documents are now always routed dynamically unless `logs_index` is not empty. Will be removed in a future version.
