@@ -24,6 +24,8 @@ import (
 	"go.uber.org/zap"
 )
 
+var _ extensionauth.Server = (*oidcExtension)(nil)
+
 type oidcExtension struct {
 	cfg *Config
 
@@ -45,23 +47,18 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) (extensionauth.Server, error) {
+func newExtension(cfg *Config, logger *zap.Logger) extensionauth.Server {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
 
-	oe := &oidcExtension{
+	return &oidcExtension{
 		cfg:    cfg,
 		logger: logger,
 	}
-	return extensionauth.NewServer(
-		extensionauth.WithServerStart(oe.start),
-		extensionauth.WithServerAuthenticate(oe.authenticate),
-		extensionauth.WithServerShutdown(oe.shutdown),
-	)
 }
 
-func (e *oidcExtension) start(ctx context.Context, _ component.Host) error {
+func (e *oidcExtension) Start(ctx context.Context, _ component.Host) error {
 	err := e.setProviderConfig(ctx, e.cfg)
 	if err != nil {
 		return fmt.Errorf("failed to get configuration from the auth server: %w", err)
@@ -72,7 +69,7 @@ func (e *oidcExtension) start(ctx context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e *oidcExtension) shutdown(context.Context) error {
+func (e *oidcExtension) Shutdown(context.Context) error {
 	if e.client != nil {
 		e.client.CloseIdleConnections()
 	}
@@ -84,7 +81,7 @@ func (e *oidcExtension) shutdown(context.Context) error {
 }
 
 // authenticate checks whether the given context contains valid auth data. Successfully authenticated calls will always return a nil error and a context with the auth data.
-func (e *oidcExtension) authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+func (e *oidcExtension) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
 	var authHeaders []string
 	for k, v := range headers {
 		if strings.EqualFold(k, e.cfg.Attribute) {
