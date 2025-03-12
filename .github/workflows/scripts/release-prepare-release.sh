@@ -4,13 +4,6 @@
 # SPDX-License-Identifier: Apache-2.0
 
 PATTERN="^[0-9]+\.[0-9]+\.[0-9]+.*"
-
-if ! [[ ${CANDIDATE_STABLE} =~ $PATTERN ]]
-then
-    echo "CANDIDATE_STABLE should follow a semver format and not be led by a v"
-    exit 1
-fi
-
 if ! [[ ${CURRENT_BETA} =~ $PATTERN ]]
 then
     echo "CURRENT_BETA should follow a semver format and not be led by a v"
@@ -28,10 +21,12 @@ CURRENT_BETA_ESCAPED=${CURRENT_BETA//./[.]}
 
 git config user.name opentelemetrybot
 git config user.email 107717825+opentelemetrybot@users.noreply.github.com
+
 BRANCH="prepare-release-prs/${CANDIDATE_BETA}"
 git checkout -b "${BRANCH}"
 
-make update-otel OTEL_VERSION="v$CANDIDATE_BETA" OTEL_STABLE_VERSION="v$CANDIDATE_STABLE"
+# If the version is blank, multimod will use the version from versions.yaml
+make update-otel OTEL_VERSION="" OTEL_STABLE_VERSION=""
 
 make update-core-module-list
 git add internal/buildscripts/modules
