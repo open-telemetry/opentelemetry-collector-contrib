@@ -15,7 +15,7 @@ issues: [37241]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext: To retain the old behavior, explicitly set `mapping::mode` to `none`.
+subtext: The new default, OTel mapping mode, requires Elasticsearch 8.12+. To retain the old behavior, explicitly set `mapping::mode` to `none`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
