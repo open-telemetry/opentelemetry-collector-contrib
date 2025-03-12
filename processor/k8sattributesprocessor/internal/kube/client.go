@@ -516,9 +516,9 @@ func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
 	return nil, false
 }
 
-func (c *WatchClient) GetDeployment(deploymentName string) (*Deployment, bool) {
+func (c *WatchClient) GetDeployment(deploymentUID string) (*Deployment, bool) {
 	c.m.RLock()
-	deployment, ok := c.Deployments[deploymentName]
+	deployment, ok := c.Deployments[deploymentUID]
 	c.m.RUnlock()
 	if ok {
 		return deployment, ok
