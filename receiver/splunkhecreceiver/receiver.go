@@ -458,7 +458,6 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			events = append(events, &msg)
 		}
 	}
-	
 	resourceCustomizer := r.createResourceCustomizer(req)
 	if r.logsConsumer != nil && len(events) > 0 {
 		ld, err := splunkHecToLogData(r.settings.Logger, events, resourceCustomizer, r.config)
