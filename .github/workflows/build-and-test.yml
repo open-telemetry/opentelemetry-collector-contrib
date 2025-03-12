@@ -494,6 +494,7 @@ jobs:
             arch: arm
             arm: 7
         exclude:
+          # AIX is only supported on ppc64
           - os: aix
             arch: 386
           - os: aix
@@ -506,6 +507,10 @@ jobs:
             arch: ppc64le
           - os: aix
             arch: s390x
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
+          - goos: darwin
+            goarch: 386
           - os: darwin
             arch: arm
           - os: darwin
