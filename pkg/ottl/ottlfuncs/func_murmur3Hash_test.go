@@ -60,7 +60,7 @@ func Test_Murmur3Hash(t *testing.T) {
 	}
 }
 
-func TestCreateMurmur3HashFunc(t *testing.T) {
+func Test_CreateMurmur3HashFunc(t *testing.T) {
 	factory := NewMurmur3HashFactory[any]()
 	fCtx := ottl.FunctionContext{}
 
