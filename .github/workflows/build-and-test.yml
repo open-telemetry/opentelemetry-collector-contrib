@@ -514,6 +514,8 @@ jobs:
             arch: ppc64le
           - os: darwin
             arch: s390x
+          - os: linux
+            arch: ppc64
           - os: windows
             arch: arm
           - os: windows
