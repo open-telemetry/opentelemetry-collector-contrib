@@ -164,7 +164,6 @@ func (b *sematextHTTPWriterBatch) EnqueuePoint(ctx context.Context, measurement 
 // WriteBatch sends the internal line protocol buffer to Sematext.
 func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	if b.encoder == nil {
-		fmt.Println("Encoder is nil")
 		return nil
 	}
 
@@ -182,7 +181,6 @@ func (b *sematextHTTPWriterBatch) WriteBatch(ctx context.Context) error {
 	}
 	res, err := b.httpClient.Do(req)
 	if err != nil {
-		fmt.Println("Error sending request:", err)
 		return err
 	}
 	body, err := io.ReadAll(res.Body)

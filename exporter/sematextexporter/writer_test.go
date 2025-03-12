@@ -197,9 +197,7 @@ func TestSematextHTTPWriterBatchEnqueuePointEmptyTagValue(t *testing.T) {
 			var err error
 			recordedRequest = r
 			recordedRequestBody, err = io.ReadAll(r.Body)
-			if err != nil {
-				fmt.Println(err.Error())
-			}
+			require.NoError(t, err)
 		}
 	}))
 	t.Cleanup(noopHTTPServer.Close)
