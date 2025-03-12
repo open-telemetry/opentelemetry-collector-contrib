@@ -20,6 +20,9 @@ type Config struct {
 	Include MatchConfig `mapstructure:"include"`
 	Exclude MatchConfig `mapstructure:"exclude"`
 
+	// Exclude getting the parent process ID since it can be a costly operation on Windows.
+	ExcludeParentPid bool `mapstructure:"exclude_parent_pid,omitempty"`
+
 	// MuteProcessAllErrors is a flag that will mute all the errors encountered when trying to read metrics of a process.
 	// When this flag is enabled, there is no need to activate any other error suppression flags.
 	MuteProcessAllErrors bool `mapstructure:"mute_process_all_errors,omitempty"`

@@ -118,6 +118,8 @@ func (p *gopsProcessHandles) Len() int {
 
 type wrappedProcessHandle struct {
 	*process.Process
+	ppid    int32
+	threads int32
 }
 
 func (p wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
@@ -129,6 +131,28 @@ func (p wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, er
 	}
 
 	return strings.TrimSuffix(string(contents), "\n"), nil
+}
+
+func (p wrappedProcessHandle) PpidWithContext(ctx context.Context) (int32, error) {
+	if p.ppid == -1 {
+		ppid, err := p.Process.PpidWithContext(ctx)
+		if err != nil {
+			return 0, err
+		}
+		p.ppid = ppid
+	}
+	return p.ppid, nil
+}
+
+func (p wrappedProcessHandle) NumThreadsWithContext(ctx context.Context) (int32, error) {
+	if p.threads == -1 {
+		threads, err := p.Process.NumThreadsWithContext(ctx)
+		if err != nil {
+			return 0, err
+		}
+		p.threads = threads
+	}
+	return p.threads, nil
 }
 
 // copied from gopsutil:
@@ -157,7 +181,11 @@ func getProcessHandlesInternal(ctx context.Context) (processHandles, error) {
 	}
 	wrapped := make([]wrappedProcessHandle, len(processes))
 	for i, p := range processes {
-		wrapped[i] = wrappedProcessHandle{Process: p}
+		wrapped[i] = wrappedProcessHandle{
+			Process: p,
+			ppid:    -1,
+			threads: -1,
+		}
 	}
 
 	return &gopsProcessHandles{handles: wrapped}, nil

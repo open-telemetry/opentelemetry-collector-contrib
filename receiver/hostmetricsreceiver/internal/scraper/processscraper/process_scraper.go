@@ -250,7 +250,7 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 		}
 
 		command, err := getProcessCommand(ctx, handle)
-		if err != nil {
+		if err != nil && !s.config.MuteProcessAllErrors {
 			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 		}
 
@@ -271,14 +271,17 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 			continue
 		}
 
-		parentPid, err := parentPid(ctx, handle, pid)
-		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+		parentProcessID := int32(0)
+		if !s.config.ExcludeParentPid {
+			parentProcessID, err = parentPid(ctx, handle, pid)
+			if err != nil {
+				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+			}
 		}
 
 		md := &processMetadata{
 			pid:        pid,
-			parentPid:  parentPid,
+			parentPid:  parentProcessID,
 			executable: executable,
 			command:    command,
 			username:   username,
