@@ -5,6 +5,13 @@ on:
     # Determine the version number that will be assigned to the release. During the beta phase, we increment
     # the minor version number and set the patch number to 0.
     inputs:
+      new-candidate-beta:
+        type: choice
+        required: true
+        description: Select what kind of version bump this should be
+        options:
+          - minor
+          - patch
       candidate-beta:
         required: true
         description: Release candidate version (beta, like 0.70.0)
@@ -46,12 +53,12 @@ jobs:
 
       - name: Outputs
         run: |
-          echo "major: ${{ steps.semvers.major }}"
-          echo "minor: ${{ steps.semvers.minor }}"
-          echo "patch: ${{ steps.semvers.patch }}"
-          echo "v_major: ${{ steps.semvers.v_major }}"
-          echo "v_minor: ${{ steps.semvers.v_minor }}"
-          echo "v_patch: ${{ steps.semvers.v_patch }}"
+          echo "major: ${{ steps.semvers.outputs.major }}"
+          echo "minor: ${{ steps.semvers.outputs.minor }}"
+          echo "patch: ${{ steps.semvers.outputs.patch }}"
+          echo "v_major: ${{ steps.semvers.outputs.v_major }}"
+          echo "v_minor: ${{ steps.semvers.outputs.v_minor }}"
+          echo "v_patch: ${{ steps.semvers.outputs.v_patch }}"
 
 #      - name: Prepare release for contrib
 #        working-directory: opentelemetry-collector-contrib
