@@ -48,6 +48,44 @@ func newSchemaProcessor(_ context.Context, conf component.Config, set processor.
 }
 
 func (t schemaProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs, error) {
+	for rt := 0; rt < ld.ResourceLogs().Len(); rt++ {
+		rLogs := ld.ResourceLogs().At(rt)
+		resourceSchemaURL := rLogs.SchemaUrl()
+		if resourceSchemaURL != "" {
+			t.log.Debug("requesting translation for resourceSchemaURL", zap.String("resourceSchemaURL", resourceSchemaURL))
+			tr, err := t.manager.
+				RequestTranslation(context.Background(), resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				return ld, err
+			}
+			err = tr.ApplyAllResourceChanges(rLogs, resourceSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply resource changes", zap.Error(err))
+				return ld, err
+			}
+		}
+		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
+			logs := rLogs.ScopeLogs().At(ss)
+			spanSchemaURL := logs.SchemaUrl()
+			if spanSchemaURL == "" {
+				spanSchemaURL = resourceSchemaURL
+			}
+			if spanSchemaURL == "" {
+				continue
+			}
+			tr, err := t.manager.
+				RequestTranslation(context.Background(), spanSchemaURL)
+			if err != nil {
+				t.log.Error("failed to request translation", zap.Error(err))
+				continue
+			}
+			err = tr.ApplyScopeLogChanges(logs, spanSchemaURL)
+			if err != nil {
+				t.log.Error("failed to apply scope log changes", zap.Error(err))
+			}
+		}
+	}
 	return ld, nil
 }
 
