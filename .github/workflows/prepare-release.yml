@@ -19,6 +19,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          fetch-depth: 0
           repository: "open-telemetry/opentelemetry-collector"
           path: opentelemetry-collector
       - uses: actions/checkout@v4
@@ -33,6 +34,8 @@ jobs:
       - name: Get Previous tag
         id: previoustag
         uses: WyriHaximus/github-action-get-previous-tag@v1
+        with:
+          workingDirectory: opentelemetry-collector-contrib
 
       - name: Get next minor version
         id: semvers
