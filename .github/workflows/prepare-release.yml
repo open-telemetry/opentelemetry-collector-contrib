@@ -47,9 +47,9 @@ jobs:
       - name: Select next version
         id: next-version
         run: |
-          if [[ ${{ inputs.candidate-beta }} == 'minor' ]]; then
+          if [[ '${{ inputs.candidate-beta }}' == 'minor' ]]; then
             echo "next-version=${{ steps.semvers.outputs.minor }}" >> $GITHUB_OUTPUT
-          elif [[ ${{ inputs.candidate-beta }} == 'patch' ]]; then
+          elif [[ '${{ inputs.candidate-beta }}' == 'patch' ]]; then
             echo "next-version=${{ steps.semvers.outputs.patch }}" >> $GITHUB_OUTPUT
           else
             echo "Error: unsupported semver type"
