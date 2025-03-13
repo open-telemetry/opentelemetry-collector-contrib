@@ -289,6 +289,7 @@ func Test_e2e_editors(t *testing.T) {
 				tCtx.GetLogRecord().Attributes().PutStr("total.string", "barbar1")
 				s := tCtx.GetLogRecord().Attributes().PutEmptySlice("slice")
 				v := s.AppendEmpty()
+				v.SetStr("val")
 				m2 := tCtx.GetLogRecord().Attributes().PutEmptyMap("nested")
 				m2.PutStr("test", "pass")
 			},
