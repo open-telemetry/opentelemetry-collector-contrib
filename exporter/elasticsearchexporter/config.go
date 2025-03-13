@@ -58,6 +58,9 @@ type Config struct {
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
 	LogsDynamicID DynamicIDSettings `mapstructure:"logs_dynamic_id"`
 
+	// LogsDynamicPipeline configures whether log record attribute `elasticsearch.document_pipeline` is set as the document ingest pipeline for ES.
+	LogsDynamicPipeline DynamicPipelineSettings `mapstructure:"logs_dynamic_pipeline"`
+
 	// Pipeline configures the ingest node pipeline name that should be used to process the
 	// events.
 	//
@@ -122,6 +125,10 @@ type DynamicIndexSetting struct {
 }
 
 type DynamicIDSettings struct {
+	Enabled bool `mapstructure:"enabled"`
+}
+
+type DynamicPipelineSettings struct {
 	Enabled bool `mapstructure:"enabled"`
 }
 

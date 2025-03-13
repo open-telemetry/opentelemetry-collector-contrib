@@ -53,11 +53,21 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.C
 	headers := make([]Header, 0, len(cfg.HeadersConfig))
 	for _, header := range cfg.HeadersConfig {
 		var s source.Source
-		if header.Value != nil {
+		switch {
+		case header.Value != nil:
 			s = &source.StaticSource{
 				Value: *header.Value,
 			}
-		} else if header.FromContext != nil {
+		case header.FromAttribute != nil:
+			defaultValue := ""
+			if header.DefaultValue != nil {
+				defaultValue = *header.DefaultValue
+			}
+			s = &source.AttributeSource{
+				Key:          *header.FromAttribute,
+				DefaultValue: defaultValue,
+			}
+		case header.FromContext != nil:
 			defaultValue := ""
 			if header.DefaultValue != nil {
 				defaultValue = *header.DefaultValue

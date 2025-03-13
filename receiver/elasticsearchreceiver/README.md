@@ -15,6 +15,9 @@
 
 This receiver queries the Elasticsearch [node stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-nodes-stats.html), [cluster health](https://www.elastic.co/guide/en/elasticsearch/reference/current/cluster-health.html) and [index stats](https://www.elastic.co/guide/en/elasticsearch/reference/current/indices-stats.html) endpoints in order to scrape metrics from a running Elasticsearch cluster.
 
+Note: in the future, Elasticsearch will be instrumented with the OpenTelemetry Java SDK directly (https://github.com/elastic/elasticsearch/issues/109335).
+When this is complete, native OpenTelemetry metrics may be added for measuring cluster health, index statistics, and so on. Please subscribe to the linked issue to keep updated.
+
 ## Prerequisites
 
 This receiver supports Elasticsearch versions 7.9+
