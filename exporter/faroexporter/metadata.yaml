@@ -1,14 +1,9 @@
-name: faro
-type: exporter
-
-spec:
-  version: next
+type: faro
 
 status:
+  class: exporter
   stability:
-    traces: development
-    metrics: development
-    logs: development
-  distributions: [contrib]
+    development: [logs, traces]
+  distributions: []
   codeowners:
-    active: [] 
+    active: [dehaansa,rlankfo,mar4uk]

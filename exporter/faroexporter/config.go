@@ -9,25 +9,40 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 )
 
 // Config defines configuration settings for the Faro exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-
-	// Configures the exporter client.
-	// The Endpoint to send the Faro telemetry data to (e.g.: https://faro.example.com/collect).
-	confighttp.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	confighttp.ClientConfig    `mapstructure:",squash"`
+	exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	RetryConfig                configretry.BackOffConfig `mapstructure:"retry_on_failure"`
+	FaroEndpoint               string                    `mapstructure:"faro_endpoint"`
 }
 
-var _ component.Config = (*Config)(nil)
+var (
+	_ component.Config    = (*Config)(nil)
+	_ confmap.Unmarshaler = (*Config)(nil)
+)
 
-// Validate checks if the exporter configuration is valid
-func (cfg *Config) Validate() error {
-	if cfg.ClientConfig.Endpoint == "" {
-		return errors.New("endpoint required")
+func (c *Config) Validate() error {
+	var errs error
+	if c.Endpoint == "" {
+		errs = multierr.Append(errs, errors.New("endpoint is required"))
 	}
+	return errs
+}
+
+func (c *Config) Unmarshal(component *confmap.Conf) error {
+	if component == nil {
+		return nil
+	}
+
+	if err := component.Unmarshal(c); err != nil {
+		return err
+	}
+
 	return nil
 }
