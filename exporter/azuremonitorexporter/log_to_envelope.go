@@ -71,7 +71,7 @@ func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *c
 	packer.sanitizeAll(envelope, messageData)
 }
 
-func (packer *logPacker) sanitizeAll(envelope *contracts.Envelope, data interface{}) {
+func (packer *logPacker) sanitizeAll(envelope *contracts.Envelope, data any) {
 	if sanitizer, ok := data.(interface{ Sanitize() []string }); ok {
 		packer.sanitize(sanitizer.Sanitize)
 	}
