@@ -29,6 +29,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsConnected:                  MetricConfig{Enabled: true},
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: true},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: true},
+					RedisClusterSlotsAssigned:              MetricConfig{Enabled: true},
 					RedisCmdCalls:                          MetricConfig{Enabled: true},
 					RedisCmdLatency:                        MetricConfig{Enabled: true},
 					RedisCmdUsec:                           MetricConfig{Enabled: true},
@@ -76,6 +77,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RedisClientsConnected:                  MetricConfig{Enabled: false},
 					RedisClientsMaxInputBuffer:             MetricConfig{Enabled: false},
 					RedisClientsMaxOutputBuffer:            MetricConfig{Enabled: false},
+					RedisClusterSlotsAssigned:              MetricConfig{Enabled: false},
 					RedisCmdCalls:                          MetricConfig{Enabled: false},
 					RedisCmdLatency:                        MetricConfig{Enabled: false},
 					RedisCmdUsec:                           MetricConfig{Enabled: false},
@@ -119,8 +121,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
@@ -164,8 +167,9 @@ func TestResourceAttributesConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
