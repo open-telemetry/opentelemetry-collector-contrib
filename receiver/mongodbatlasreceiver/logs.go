@@ -35,7 +35,7 @@ type logsReceiver struct {
 	end         time.Time
 }
 
-type ProjectContext struct {
+type projectContext struct {
 	Project mongodbatlas.Project
 	orgName string
 }
@@ -118,7 +118,7 @@ func (s *logsReceiver) collect(ctx context.Context) {
 			s.log.Error("Error retrieving project "+projectCfg.Name+":", zap.Error(err))
 			continue
 		}
-		pc := ProjectContext{Project: *project}
+		pc := projectContext{Project: *project}
 
 		org, err := s.client.GetOrganization(ctx, project.OrgID)
 		if err != nil {
@@ -148,16 +148,16 @@ func (s *logsReceiver) processClusters(ctx context.Context, projectCfg LogsProje
 	return filterClusters(clusters, projectCfg.ProjectConfig)
 }
 
-type ClusterInfo struct {
+type clusterInfo struct {
 	ClusterName         string
 	RegionName          string
 	ProviderName        string
 	MongoDBMajorVersion string
 }
 
-func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc ProjectContext) {
+func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, projectCfg LogsProjectConfig, pc projectContext) {
 	for _, cluster := range clusters {
-		clusterInfo := ClusterInfo{
+		c := clusterInfo{
 			ClusterName:         cluster.Name,
 			RegionName:          cluster.ProviderSettings.RegionName,
 			ProviderName:        cluster.ProviderSettings.ProviderName,
@@ -169,15 +169,15 @@ func (s *logsReceiver) collectClusterLogs(clusters []mongodbatlas.Cluster, proje
 			// Defaults to true if not specified
 			if projectCfg.EnableHostLogs == nil || *projectCfg.EnableHostLogs {
 				s.log.Debug("Collecting logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
-				s.collectLogs(pc, hostname, "mongodb.gz", clusterInfo)
-				s.collectLogs(pc, hostname, "mongos.gz", clusterInfo)
+				s.collectLogs(pc, hostname, "mongodb.gz", c)
+				s.collectLogs(pc, hostname, "mongos.gz", c)
 			}
 
 			// Defaults to false if not specified
 			if projectCfg.EnableAuditLogs {
 				s.log.Debug("Collecting audit logs for host", zap.String("hostname", hostname), zap.String("cluster", cluster.Name))
-				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", clusterInfo)
-				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", clusterInfo)
+				s.collectAuditLogs(pc, hostname, "mongodb-audit-log.gz", c)
+				s.collectAuditLogs(pc, hostname, "mongos-audit-log.gz", c)
 			}
 		}
 	}
@@ -234,7 +234,7 @@ func (s *logsReceiver) getHostAuditLogs(groupID, hostname, logName string) ([]mo
 	return decodeAuditJSON(s.log, buf)
 }
 
-func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) {
+func (s *logsReceiver) collectLogs(pc projectContext, hostname, logName string, clusterInfo clusterInfo) {
 	logs, err := s.getHostLogs(pc.Project.ID, hostname, logName, clusterInfo.MongoDBMajorVersion)
 	if err != nil && !errors.Is(err, io.EOF) {
 		s.log.Warn("Failed to retrieve host logs", zap.Error(err), zap.String("hostname", hostname), zap.String("log", logName), zap.Time("startTime", s.start), zap.Time("endTime", s.end))
@@ -258,7 +258,7 @@ func (s *logsReceiver) collectLogs(pc ProjectContext, hostname, logName string, 
 	}
 }
 
-func (s *logsReceiver) collectAuditLogs(pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) {
+func (s *logsReceiver) collectAuditLogs(pc projectContext, hostname, logName string, clusterInfo clusterInfo) {
 	logs, err := s.getHostAuditLogs(
 		pc.Project.ID,
 		hostname,

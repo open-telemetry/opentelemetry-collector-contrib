@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -31,7 +30,7 @@ import (
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/plog/plogotlp"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -264,13 +263,15 @@ func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Componen
 	return h.exts
 }
 
+var _ extensionauth.GRPCClient = (*testAuthExtension)(nil)
+
 type testAuthExtension struct {
 	extension.Extension
 
 	prc credentials.PerRPCCredentials
 }
 
-func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) auth.Client {
+func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) extension.Extension {
 	ctrl := gomock.NewController(t)
 	prc := grpcmock.NewMockPerRPCCredentials(ctrl)
 	prc.EXPECT().RequireTransportSecurity().AnyTimes().Return(false)
@@ -282,10 +283,6 @@ func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string
 	return &testAuthExtension{
 		prc: prc,
 	}
-}
-
-func (a *testAuthExtension) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
-	return nil, fmt.Errorf("unused")
 }
 
 func (a *testAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
@@ -327,7 +324,7 @@ func TestSendTraces(t *testing.T) {
 	// caller's context, and the newStream doesn't have it.
 	cfg.Arrow.Disabled = true
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
@@ -471,7 +468,7 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			if test.useTLS {
 				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
 			}
-			set := exportertest.NewNopSettings()
+			set := exportertest.NewNopSettings(factory.Type())
 			exp, err := factory.CreateTraces(context.Background(), set, cfg)
 			require.NoError(t, err)
 			require.NotNil(t, exp)
@@ -526,7 +523,7 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -625,7 +622,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 		WaitForReady: true,
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -683,7 +680,7 @@ func TestSendTraceDataServerStartWhileRequest(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -737,7 +734,7 @@ func TestSendTracesOnResourceExhaustion(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -820,7 +817,7 @@ func TestSendLogData(t *testing.T) {
 		},
 	}
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.BuildInfo.Description = "Collector"
 	set.BuildInfo.Version = "1.2.3test"
 	exp, err := factory.CreateLogs(context.Background(), set, cfg)
@@ -936,7 +933,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 	cfg.QueueSettings.Enabled = false
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -1105,7 +1102,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	}
 	cfg.QueueSettings.Enabled = false
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -1169,7 +1166,7 @@ func TestUserDialOptions(t *testing.T) {
 		grpc.WithUserAgent(testAgent),
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(factory.Type())
 	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)

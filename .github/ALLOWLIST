@@ -33,6 +33,12 @@ exporter/kineticaexporter
 exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
-receiver/rabbitmqreceiver
+receiver/couchdbreceiver
+receiver/elasticsearchreceiver
+receiver/memcachedreceiver
+receiver/mysqlreceiver
+receiver/postgresqlreceiver
+receiver/zookeeperreceiver
+scraper/zookeeperscraper
 
 # End unmaintained components list

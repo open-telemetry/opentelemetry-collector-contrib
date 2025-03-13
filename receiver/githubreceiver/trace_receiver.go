@@ -11,7 +11,7 @@ import (
 	"strings"
 	"sync"
 
-	"github.com/google/go-github/v68/github"
+	"github.com/google/go-github/v69/github"
 	"github.com/gorilla/mux"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -164,10 +164,7 @@ func (gtr *githubTracesReceiver) handleReq(w http.ResponseWriter, req *http.Requ
 			w.WriteHeader(http.StatusNoContent)
 			return
 		}
-		return
-		// TODO: Enable when handleWorkflowJob is implemented
-		// See: https://github.com/open-telemetry/semantic-conventions/issues/1645
-		// td, err = gtr.handleWorkflowJob(ctx, e)
+		td, err = gtr.handleWorkflowJob(e)
 	case *github.PingEvent:
 		w.Header().Add("Content-Type", "application/json")
 		w.WriteHeader(http.StatusOK)
