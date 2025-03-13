@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 // Config defines configuration for docker observer
@@ -22,10 +22,10 @@ type Config struct {
 	// required in SASL environments.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 	// Kafka protocol version
-	ProtocolVersion    string               `mapstructure:"protocol_version"`
-	Authentication     kafka.Authentication `mapstructure:"auth"`
-	TopicRegex         string               `mapstructure:"topic_regex"`
-	TopicsSyncInterval time.Duration        `mapstructure:"topics_sync_interval"`
+	ProtocolVersion    string                           `mapstructure:"protocol_version"`
+	Authentication     configkafka.AuthenticationConfig `mapstructure:"auth"`
+	TopicRegex         string                           `mapstructure:"topic_regex"`
+	TopicsSyncInterval time.Duration                    `mapstructure:"topics_sync_interval"`
 }
 
 func (config *Config) Validate() (errs error) {
