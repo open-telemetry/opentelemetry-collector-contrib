@@ -760,6 +760,10 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			event: "",
 		},
 		{
+			name:  "any value event",
+			event: "some event",
+		},
+		{
 			name: "nil event",
 		},
 	}
