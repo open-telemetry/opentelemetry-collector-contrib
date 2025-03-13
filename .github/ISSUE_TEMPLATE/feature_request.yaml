@@ -176,6 +176,7 @@ body:
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
+      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
