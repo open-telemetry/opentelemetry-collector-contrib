@@ -525,7 +525,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 				},
 			},
 			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Map]]{},
-			function: 				optionalArg,
+			function:          optionalArg,
 			want: func(expectedMap pcommon.Map) {
 				expectedMap.PutStr("test", "hello world")
 				expectedMap.PutStr("hash(2)", "hello")
