@@ -1,8 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter
 
-go 1.23.0
-
-toolchain go1.24.1
+go 1.24.1
 
 require (
 	github.com/grafana/faro/pkg/go v0.0.0-20250303131049-4a4f3d5b57fc
