@@ -2190,14 +2190,10 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "hex values",
 			valueExpression: `[0x0000000000000000, 0x0000000000000000]`,
 			expected: func() any {
-				raw := []any{
+				return []any{
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 					[]uint8{0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0, 0x0},
 				}
-
-				s := pcommon.NewSlice()
-				_ = s.FromRaw(raw)
-				return s
 			},
 		},
 		{
@@ -2222,11 +2218,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			name:            "string list",
 			valueExpression: `["list", "of", "strings"]`,
 			expected: func() any {
-				raw := []any{"list", "of", "strings"}
-
-				s := pcommon.NewSlice()
-				_ = s.FromRaw(raw)
-				return s
+				return []any{"list", "of", "strings"}
 			},
 		},
 		{

@@ -181,7 +181,7 @@ type mapGetter[K any] struct {
 }
 
 func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
-	evaluated := map[string]any{}
+	result := pcommon.NewMap()
 	for k, v := range m.mapValues {
 		val, err := v.Get(ctx, tCtx)
 		if err != nil {
