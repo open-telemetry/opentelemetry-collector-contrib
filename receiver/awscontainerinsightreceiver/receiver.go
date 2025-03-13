@@ -209,7 +209,7 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start neuron scraper", zap.Error(err))
 		}
-		err = acir.initEfaSysfsScraper(localNodeDecorator)
+		err = acir.initEfaSysfsScraper(localNodeDecorator, hostInfo)
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start EFA scraper", zap.Error(err))
 		}
@@ -376,7 +376,7 @@ func (acir *awsContainerInsightReceiver) initNeuronScraper(ctx context.Context, 
 	return err
 }
 
-func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localNodeDecorator stores.Decorator) error {
+func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localNodeDecorator stores.Decorator, hostInfo *hostinfo.Info) error {
 	if !acir.config.EnableAcceleratedComputeMetrics {
 		return nil
 	}
@@ -384,7 +384,7 @@ func (acir *awsContainerInsightReceiver) initEfaSysfsScraper(localNodeDecorator 
 	if acir.podResourcesStore == nil {
 		return errors.New("pod resources store was not initialized")
 	}
-	acir.efaSysfsScraper = efa.NewEfaSyfsScraper(acir.settings.Logger, localNodeDecorator, acir.podResourcesStore)
+	acir.efaSysfsScraper = efa.NewEfaSyfsScraper(acir.settings.Logger, localNodeDecorator, acir.podResourcesStore, hostInfo)
 	return nil
 }
 

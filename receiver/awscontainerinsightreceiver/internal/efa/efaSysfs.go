@@ -57,6 +57,11 @@ type Scraper struct {
 	podResourcesStore podResourcesStore
 	store             *efaStore
 	logger            *zap.Logger
+	hostInfo          hostInfoProvider
+}
+
+type hostInfoProvider interface {
+	GetNetworkInterfaceID(macAddress string) (string, error)
 }
 
 type sysFsReader interface {
@@ -64,6 +69,7 @@ type sysFsReader interface {
 	ListDevices() ([]efaDeviceName, error)
 	ListPorts(deviceName efaDeviceName) ([]string, error)
 	ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error)
+	GetMACAddressFromDeviceName(deviceName efaDeviceName) (string, error)
 }
 
 type podResourcesStore interface {
@@ -78,7 +84,13 @@ type efaStore struct {
 
 // efaDevices is a collection of every Amazon Elastic Fabric Adapter (EFA) device in
 // /sys/class/infiniband.
-type efaDevices map[efaDeviceName]*efaCounters
+type efaDevices map[efaDevice]*efaCounters
+
+type efaDevice struct {
+	Name       efaDeviceName
+	MacAddress string
+	EniID      string
+}
 
 type efaDeviceName string
 
@@ -94,7 +106,7 @@ type efaCounters struct {
 	txBytes            uint64 // hw_counters/tx_bytes
 }
 
-func NewEfaSyfsScraper(logger *zap.Logger, decorator stores.Decorator, podResourcesStore podResourcesStore) *Scraper {
+func NewEfaSyfsScraper(logger *zap.Logger, decorator stores.Decorator, podResourcesStore podResourcesStore, hostInfo hostInfoProvider) *Scraper {
 	ctx, cancel := context.WithCancel(context.Background())
 	podResourcesStore.AddResourceName(efaK8sResourceName)
 	e := &Scraper{
@@ -106,6 +118,7 @@ func NewEfaSyfsScraper(logger *zap.Logger, decorator stores.Decorator, podResour
 		podResourcesStore:  podResourcesStore,
 		store:              new(efaStore),
 		logger:             logger,
+		hostInfo:           hostInfo,
 	}
 
 	go e.startScrape(ctx)
@@ -133,10 +146,13 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 	if store == nil || store.devices == nil {
 		return result
 	}
-	for deviceName, counters := range *store.devices {
+	for efaDevice, counters := range *store.devices {
 		if counters == nil {
 			continue
 		}
+		deviceName := efaDevice.Name
+		eniID := efaDevice.EniID
+
 		containerInfo := s.podResourcesStore.GetContainerInfo(string(deviceName), efaK8sResourceName)
 
 		nodeMetric := stores.NewCIMetric(ci.TypeNodeEFA, s.logger)
@@ -189,6 +205,7 @@ func (s *Scraper) GetMetrics() []pmetric.Metrics {
 
 		for _, m := range allMetrics {
 			m.AddTag(ci.EfaDevice, string(deviceName))
+			m.AddTag(ci.EniID, eniID)
 			m.AddTag(ci.Timestamp, strconv.FormatInt(store.timestamp.UnixNano(), 10))
 		}
 		for _, m := range podContainerMetrics {
@@ -269,7 +286,23 @@ func (s *Scraper) parseEfaDevices() (*efaDevices, error) {
 			return nil, err
 		}
 
-		devices[name] = counters
+		macAddress, err := s.sysFsReader.GetMACAddressFromDeviceName(name)
+		if err != nil {
+			return nil, err
+		}
+
+		eniID, err := s.hostInfo.GetNetworkInterfaceID(macAddress)
+		if err != nil {
+			return nil, err
+		}
+
+		device := efaDevice{
+			Name:       name,
+			MacAddress: macAddress,
+			EniID:      eniID,
+		}
+
+		devices[device] = counters
 	}
 
 	return &devices, nil
@@ -390,6 +423,21 @@ func (r *sysfsReaderImpl) ListPorts(deviceName efaDeviceName) ([]string, error) 
 func (r *sysfsReaderImpl) ReadCounter(deviceName efaDeviceName, port string, counter string) (uint64, error) {
 	path := filepath.Join(efaPath, string(deviceName), "ports", port, "hw_counters", counter)
 	return readUint64ValueFromFile(path)
+}
+
+func (r *sysfsReaderImpl) GetMACAddressFromDeviceName(deviceName efaDeviceName) (string, error) {
+	// Construct sysfs path for GID
+	gidPath := fmt.Sprintf("/sys/class/infiniband/%s/ports/1/gids/0", string(deviceName))
+
+	// Read the GID file
+	gidBytes, err := os.ReadFile(gidPath)
+	if err != nil {
+		return "", fmt.Errorf("failed to read GID file: %w", err)
+	}
+
+	ipString := strings.TrimSpace(string(gidBytes))
+
+	return IPv6LinkLocalToMAC(ipString)
 }
 
 func readUint64ValueFromFile(path string) (uint64, error) {

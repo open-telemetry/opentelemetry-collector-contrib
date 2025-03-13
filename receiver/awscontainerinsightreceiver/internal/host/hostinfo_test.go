@@ -46,6 +46,10 @@ func (m *mockEC2Metadata) getRegion() string {
 	return "region"
 }
 
+func (m *mockEC2Metadata) getNetworkInterfaceID(_ string) (string, error) {
+	return "eni-001", nil
+}
+
 type mockEBSVolume struct{}
 
 func (m *mockEBSVolume) getEBSVolumeID(_ string) string {

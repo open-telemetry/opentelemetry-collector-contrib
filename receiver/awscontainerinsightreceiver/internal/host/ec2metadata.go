@@ -18,6 +18,7 @@ import (
 
 type metadataClient interface {
 	GetInstanceIdentityDocument() (awsec2metadata.EC2InstanceIdentityDocument, error)
+	GetMetadata(string) (string, error)
 }
 
 type ec2MetadataProvider interface {
@@ -25,6 +26,7 @@ type ec2MetadataProvider interface {
 	getInstanceType() string
 	getRegion() string
 	getInstanceIP() string
+	getNetworkInterfaceID(macAddress string) (string, error)
 }
 
 type ec2Metadata struct {
@@ -39,6 +41,7 @@ type ec2Metadata struct {
 	instanceIDReadyC     chan bool
 	instanceIPReadyC     chan bool
 	localMode            bool
+	networkInterfaceIDs  map[string]string
 }
 
 type ec2MetadataOption func(*ec2Metadata)
@@ -57,6 +60,7 @@ func newEC2Metadata(ctx context.Context, session *session.Session, refreshInterv
 		instanceIPReadyC:     instanceIPReadyC,
 		localMode:            localMode,
 		logger:               logger,
+		networkInterfaceIDs:  make(map[string]string),
 	}
 	if configurer != nil {
 		err := configurer.Configure(awsmiddleware.SDKv1(&emd.client.(*awsec2metadata.EC2Metadata).Handlers))
@@ -128,4 +132,29 @@ func (emd *ec2Metadata) getRegion() string {
 
 func (emd *ec2Metadata) getInstanceIP() string {
 	return emd.instanceIP
+}
+
+func (emd *ec2Metadata) getNetworkInterfaceID(macAddress string) (string, error) {
+	// Check if we already have the ENI ID cached
+	if eniID, exists := emd.networkInterfaceIDs[macAddress]; exists {
+		return eniID, nil
+	}
+
+	// Load the ENI ID from metadata service
+	eniID, err := emd.loadNetworkInterfaceID(macAddress)
+	if err != nil {
+		return "", err
+	}
+
+	// Cache the result
+	emd.networkInterfaceIDs[macAddress] = eniID
+	return eniID, nil
+}
+
+func (emd *ec2Metadata) loadNetworkInterfaceID(macAddress string) (string, error) {
+	eniID, err := emd.client.GetMetadata("network/interfaces/macs/" + macAddress + "/interface-id")
+	if err == nil {
+		return eniID, nil
+	}
+	return emd.clientFallbackEnable.GetMetadata("network/interfaces/macs/" + macAddress + "/interface-id")
 }

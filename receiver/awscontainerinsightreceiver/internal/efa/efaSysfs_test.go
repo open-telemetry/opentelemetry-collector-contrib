@@ -32,6 +32,19 @@ func newMockSysfsReader() mockSysfsReader {
 	}
 }
 
+type mockHostInfo struct {
+	macToENI map[string]string
+	err      error
+}
+
+func (m *mockHostInfo) GetNetworkInterfaceID(macAddress string) (string, error) {
+	if m.err != nil {
+		return "", m.err
+	}
+	eniID := m.macToENI[macAddress]
+	return eniID, nil
+}
+
 func (r mockSysfsReader) EfaDataExists() (bool, error) {
 	return true, nil
 }
@@ -42,6 +55,16 @@ func (r mockSysfsReader) ListDevices() ([]efaDeviceName, error) {
 
 func (r mockSysfsReader) ListPorts(_ efaDeviceName) ([]string, error) {
 	return []string{"1", "2"}, nil
+}
+
+func (r mockSysfsReader) GetMACAddressFromDeviceName(deviceName efaDeviceName) (string, error) {
+	switch deviceName {
+	case "efa0":
+		return "00:00:00:00:00:01", nil
+	case "efa1":
+		return "00:00:00:00:00:02", nil
+	}
+	return "", fmt.Errorf("unknown device")
 }
 
 var mockCounterValues = map[string]uint64{
@@ -102,6 +125,13 @@ type expectation struct {
 	tags   map[string]string
 }
 
+var mockHost = &mockHostInfo{
+	macToENI: map[string]string{
+		"00:00:00:00:00:01": "eni-001",
+		"00:00:00:00:00:02": "eni-002",
+	},
+}
+
 var efa0Metrics = []expectation{
 	{
 		map[string]uint64{
@@ -115,6 +145,7 @@ var efa0Metrics = []expectation{
 		map[string]string{
 			ci.MetricType: ci.TypeNodeEFA,
 			ci.EfaDevice:  "efa0",
+			ci.EniID:      "eni-001",
 			ci.Timestamp:  "to-be-replaced",
 			"decorated":   "true",
 		},
@@ -131,6 +162,7 @@ var efa0Metrics = []expectation{
 		map[string]string{
 			ci.MetricType:       ci.TypePodEFA,
 			ci.EfaDevice:        "efa0",
+			ci.EniID:            "eni-001",
 			ci.K8sNamespace:     "namespace0",
 			ci.K8sPodNameKey:    "pod0",
 			ci.ContainerNamekey: "container0",
@@ -150,6 +182,7 @@ var efa0Metrics = []expectation{
 		map[string]string{
 			ci.MetricType:       ci.TypeContainerEFA,
 			ci.EfaDevice:        "efa0",
+			ci.EniID:            "eni-001",
 			ci.K8sNamespace:     "namespace0",
 			ci.K8sPodNameKey:    "pod0",
 			ci.ContainerNamekey: "container0",
@@ -171,6 +204,7 @@ var efa1NodeMetric = expectation{
 	map[string]string{
 		ci.MetricType: ci.TypeNodeEFA,
 		ci.EfaDevice:  "efa1",
+		ci.EniID:      "eni-002",
 		ci.Timestamp:  "to-be-replaced",
 		"decorated":   "true",
 	},
@@ -189,6 +223,7 @@ var efa1PodContainerMetrics = []expectation{
 		map[string]string{
 			ci.MetricType:       ci.TypePodEFA,
 			ci.EfaDevice:        "efa1",
+			ci.EniID:            "eni-002",
 			ci.K8sNamespace:     "namespace1",
 			ci.K8sPodNameKey:    "pod1",
 			ci.ContainerNamekey: "container1",
@@ -208,6 +243,7 @@ var efa1PodContainerMetrics = []expectation{
 		map[string]string{
 			ci.MetricType:       ci.TypeContainerEFA,
 			ci.EfaDevice:        "efa1",
+			ci.EniID:            "eni-002",
 			ci.K8sNamespace:     "namespace1",
 			ci.K8sPodNameKey:    "pod1",
 			ci.ContainerNamekey: "container1",
@@ -220,7 +256,7 @@ var efa1PodContainerMetrics = []expectation{
 var efa1Metrics = []expectation{efa1NodeMetric, efa1PodContainerMetrics[0], efa1PodContainerMetrics[1]}
 
 func TestGetMetrics(t *testing.T) {
-	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{})
+	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{}, mockHost)
 	s.sysFsReader = newMockSysfsReader()
 
 	var expectedMetrics []expectation
@@ -239,7 +275,7 @@ func TestGetMetrics(t *testing.T) {
 }
 
 func TestGetMetricsBeforeSuccessfulScrape(t *testing.T) {
-	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{})
+	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStore{}, mockHost)
 
 	result := s.GetMetrics()
 	assert.Empty(t, result)
@@ -266,7 +302,7 @@ func (p mockPodResourcesStoreMissingOneDevice) GetContainerInfo(deviceID string,
 }
 
 func TestGetMetricsMissingDeviceFromPodResources(t *testing.T) {
-	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStoreMissingOneDevice{})
+	s := NewEfaSyfsScraper(zap.NewNop(), mockDecorator{}, mockPodResourcesStoreMissingOneDevice{}, mockHost)
 	s.sysFsReader = newMockSysfsReader()
 
 	assert.NoError(t, s.scrape())
@@ -364,8 +400,10 @@ func findTimestamp(t *testing.T, attrs pcommon.Map) (string, time.Time) {
 }
 
 func TestScrape(t *testing.T) {
-	s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{})
+	s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{}, mockHost)
 	s.sysFsReader = newMockSysfsReader()
+
+	s.hostInfo = mockHost
 
 	expectedCounters := efaCounters{
 		// All values multiplied by 2 because we mock 2 ports
@@ -377,8 +415,16 @@ func TestScrape(t *testing.T) {
 		txBytes:            12,
 	}
 	expected := efaDevices{
-		"efa0": &expectedCounters,
-		"efa1": &expectedCounters,
+		efaDevice{
+			Name:       "efa0",
+			MacAddress: "00:00:00:00:00:01",
+			EniID:      "eni-001", // Mock ENI ID
+		}: &expectedCounters,
+		efaDevice{
+			Name:       "efa1",
+			MacAddress: "00:00:00:00:00:02",
+			EniID:      "eni-002", // Mock ENI ID
+		}: &expectedCounters,
 	}
 
 	assert.NoError(t, s.scrape())
@@ -403,6 +449,10 @@ func (r mockSysfsReaderError1) ReadCounter(_ efaDeviceName, _ string, _ string) 
 	return 0, nil
 }
 
+func (r mockSysfsReaderError1) GetMACAddressFromDeviceName(_ efaDeviceName) (string, error) {
+	return "00:00:00:00:00:01", nil
+}
+
 type mockSysfsReaderError2 struct{}
 
 func (r mockSysfsReaderError2) EfaDataExists() (bool, error) {
@@ -419,6 +469,10 @@ func (r mockSysfsReaderError2) ListPorts(_ efaDeviceName) ([]string, error) {
 
 func (r mockSysfsReaderError2) ReadCounter(_ efaDeviceName, _ string, _ string) (uint64, error) {
 	return 0, nil
+}
+
+func (r mockSysfsReaderError2) GetMACAddressFromDeviceName(_ efaDeviceName) (string, error) {
+	return "", errors.New("mocked error")
 }
 
 type mockSysfsReaderError3 struct{}
@@ -439,6 +493,10 @@ func (r mockSysfsReaderError3) ReadCounter(_ efaDeviceName, _ string, _ string) 
 	return 0, nil
 }
 
+func (r mockSysfsReaderError3) GetMACAddressFromDeviceName(_ efaDeviceName) (string, error) {
+	return "00:00:00:00:00:01", nil
+}
+
 type mockSysfsReaderError4 struct{}
 
 func (r mockSysfsReaderError4) EfaDataExists() (bool, error) {
@@ -457,9 +515,14 @@ func (r mockSysfsReaderError4) ReadCounter(_ efaDeviceName, _ string, _ string) 
 	return 1, errors.New("mocked error")
 }
 
+func (r mockSysfsReaderError4) GetMACAddressFromDeviceName(_ efaDeviceName) (string, error) {
+	return "00:00:00:00:00:01", nil
+}
+
 func TestScrapeErrors(t *testing.T) {
 	for _, reader := range []sysFsReader{mockSysfsReaderError1{}, mockSysfsReaderError2{}, mockSysfsReaderError3{}, mockSysfsReaderError4{}} {
-		s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{})
+		s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{}, mockHost)
+
 		s.sysFsReader = reader
 
 		assert.Error(t, s.scrape())
@@ -485,8 +548,13 @@ func (r mockSysfsReaderNoEfaData) ReadCounter(_ efaDeviceName, _ string, _ strin
 	return 0, errors.New("mocked error")
 }
 
+func (r mockSysfsReaderNoEfaData) GetMACAddressFromDeviceName(_ efaDeviceName) (string, error) {
+	return "", errors.New("mocked error")
+}
+
 func TestScrapeNoEfaData(t *testing.T) {
-	s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{})
+	s := NewEfaSyfsScraper(zap.NewNop(), nil, mockPodResourcesStore{}, mockHost)
+
 	s.sysFsReader = mockSysfsReaderNoEfaData{}
 
 	assert.NoError(t, s.scrape())

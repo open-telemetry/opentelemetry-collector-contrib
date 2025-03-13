@@ -229,6 +229,11 @@ func (m *Info) GetEBSVolumeID(devName string) string {
 	return ""
 }
 
+// GetNetworkInterfaceID returns the network interface ID for the given MAC address
+func (m *Info) GetNetworkInterfaceID(macAddress string) (string, error) {
+	return m.ec2Metadata.getNetworkInterfaceID(macAddress)
+}
+
 // GetClusterName returns the cluster name associated with the host
 func (m *Info) GetClusterName() string {
 	if m.clusterName != "" {

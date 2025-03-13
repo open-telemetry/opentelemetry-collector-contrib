@@ -33,6 +33,10 @@ func (m *mockMetadataClient) GetInstanceIdentityDocument() (awsec2metadata.EC2In
 	}, nil
 }
 
+func (m *mockMetadataClient) GetMetadata(_ string) (string, error) {
+	return "eni-001", nil
+}
+
 func TestEC2Metadata(t *testing.T) {
 	ctx := context.Background()
 	sess := mock.Session
@@ -51,4 +55,7 @@ func TestEC2Metadata(t *testing.T) {
 	assert.Equal(t, "c4.xlarge", e.getInstanceType())
 	assert.Equal(t, "us-west-2", e.getRegion())
 	assert.Equal(t, "79.168.255.0", e.getInstanceIP())
+	eniID, err := e.getNetworkInterfaceID("00:00:00:00:00:01")
+	assert.NoError(t, err)
+	assert.Equal(t, "eni-001", eniID)
 }
