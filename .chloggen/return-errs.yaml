@@ -10,7 +10,7 @@ component: awscloudwatchmetricstreamsencodingextension
 note: Return errors when extracting the metrics from the record instead of logging them.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [38596]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
