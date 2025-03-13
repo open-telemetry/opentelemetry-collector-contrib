@@ -19,7 +19,7 @@ func getProcessHandlesInternalNew(ctx context.Context) (processHandles, error) {
 	if err != nil {
 		return nil, fmt.Errorf("could not create snapshot: %w", err)
 	}
-	defer func () {
+	defer func() {
 		_ = windows.CloseHandle(snap)
 	}()
 
