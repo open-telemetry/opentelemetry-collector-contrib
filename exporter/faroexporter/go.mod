@@ -13,7 +13,9 @@ require (
 	go.opentelemetry.io/collector/confmap v1.27.1-0.20250313100724-0885401136ff
 	go.opentelemetry.io/collector/consumer v1.27.1-0.20250313100724-0885401136ff
 	go.opentelemetry.io/collector/exporter v0.121.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/exporter/exportertest v0.121.0
 	go.opentelemetry.io/collector/pdata v1.27.1-0.20250313100724-0885401136ff
+	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -52,6 +54,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250313100724-0885401136ff // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250313100724-0885401136ff // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.121.0 // indirect
 	go.opentelemetry.io/collector/extension v1.27.1-0.20250313100724-0885401136ff // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250313100724-0885401136ff // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.121.1-0.20250313100724-0885401136ff // indirect

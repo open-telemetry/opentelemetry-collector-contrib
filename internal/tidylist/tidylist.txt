@@ -104,9 +104,9 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
-exporter/faroexporter
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
