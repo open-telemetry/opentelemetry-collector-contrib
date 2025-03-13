@@ -34,6 +34,8 @@ const (
 	kueueComponentLabelSelector = "app.kubernetes.io/component=controller"
 	kueueServiceFieldSelector   = "metadata.name=kueue-controller-manager-metrics-service"
 	kueueMetricsLogStream       = "kubernetes-kueue"
+
+	serviceAccountTokenDefaultPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
 )
 
 var ( // list of regular expressions for the kueue metrics this scraper is intended to capture
@@ -69,7 +71,6 @@ type KueuePrometheusScraperOpts struct {
 	Consumer          consumer.Metrics
 	Host              component.Host
 	ClusterName       string
-	BearerToken       string
 }
 
 func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheusScraper, error) {
@@ -87,6 +88,10 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 		HTTPClientConfig: configutil.HTTPClientConfig{
 			TLSConfig: configutil.TLSConfig{
 				InsecureSkipVerify: true,
+			},
+			Authorization: &configutil.Authorization{
+				Type:            "Bearer",
+				CredentialsFile: serviceAccountTokenDefaultPath,
 			},
 		},
 		ScrapeInterval:  model.Duration(kmCollectionInterval),
@@ -112,12 +117,6 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 			},
 		},
 		MetricRelabelConfigs: GetKueueRelabelConfigs(opts.ClusterName),
-	}
-
-	if opts.BearerToken != "" {
-		scrapeConfig.HTTPClientConfig.BearerToken = configutil.Secret(opts.BearerToken)
-	} else {
-		opts.TelemetrySettings.Logger.Warn("bearer token is not set, kueue metrics will not be published")
 	}
 
 	promConfig := prometheusreceiver.Config{

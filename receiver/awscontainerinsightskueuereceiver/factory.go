@@ -51,5 +51,5 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	rCfg := baseCfg.(*Config)
-	return newAWSContainerInsightReceiver(params.TelemetrySettings, rCfg, consumer)
+	return newAWSContainerInsightsKueueReceiver(params.TelemetrySettings, rCfg, consumer)
 }

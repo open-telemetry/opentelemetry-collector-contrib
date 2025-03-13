@@ -74,7 +74,6 @@ func TestNewKueuePrometheusScraperBadInputs(t *testing.T) {
 			Consumer:          nil,
 			Host:              componenttest.NewNopHost(),
 			ClusterName:       "DummyCluster",
-			BearerToken:       "/path/to/dummy/token",
 		},
 		{ // case: no host
 			Ctx:               context.TODO(),
@@ -82,14 +81,12 @@ func TestNewKueuePrometheusScraperBadInputs(t *testing.T) {
 			Consumer:          mockKueueConsumer{},
 			Host:              nil,
 			ClusterName:       "DummyCluster",
-			BearerToken:       "/path/to/dummy/token",
 		},
 		{ // case: no cluster name
 			Ctx:               context.TODO(),
 			TelemetrySettings: settings,
 			Consumer:          mockKueueConsumer{},
 			Host:              componenttest.NewNopHost(),
-			BearerToken:       "/path/to/dummy/token",
 		},
 	}
 
@@ -123,7 +120,6 @@ func TestNewKueuePrometheusScraperEndToEnd(t *testing.T) {
 			Consumer:          mConsumer,
 			Host:              componenttest.NewNopHost(),
 			ClusterName:       "DummyCluster",
-			BearerToken:       "",
 		},
 	)
 	assert.NoError(t, err)
