@@ -35,6 +35,7 @@ jobs:
         id: previoustag
         uses: WyriHaximus/github-action-get-previous-tag@v1
         with:
+          prefix: v
           workingDirectory: opentelemetry-collector-contrib
 
       - name: Get next minor version
