@@ -5,20 +5,13 @@ on:
     # Determine the version number that will be assigned to the release. During the beta phase, we increment
     # the minor version number and set the patch number to 0.
     inputs:
-      new-candidate-beta:
+      candidate-beta:
         type: choice
         required: true
         description: Select what kind of version bump this should be
         options:
           - minor
           - patch
-      candidate-beta:
-        required: true
-        description: Release candidate version (beta, like 0.70.0)
-
-      current-beta:
-        required: true
-        description: Current version (beta, like 0.69.1)
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
@@ -51,20 +44,15 @@ jobs:
         with:
           version: ${{ steps.previoustag.outputs.tag }}
 
-      - name: Outputs
+      - name: Select next version
         run: |
-          echo "major: ${{ steps.semvers.outputs.major }}"
-          echo "minor: ${{ steps.semvers.outputs.minor }}"
-          echo "patch: ${{ steps.semvers.outputs.patch }}"
-          echo "v_major: ${{ steps.semvers.outputs.v_major }}"
-          echo "v_minor: ${{ steps.semvers.outputs.v_minor }}"
-          echo "v_patch: ${{ steps.semvers.outputs.v_patch }}"
+          echo "next-version=${{ format('steps.semvers.outputs.{0}', format('{0}', inputs.candidate-beta)) }}" >> $GITHUB_OUTPUT
 
-#      - name: Prepare release for contrib
-#        working-directory: opentelemetry-collector-contrib
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-#          REPO: open-telemetry/opentelemetry-collector-contrib
-#          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
-#          CURRENT_BETA: ${{ inputs.current-beta }}
-#        run: ./.github/workflows/scripts/release-prepare-release.sh
+      - name: Prepare release for contrib
+        working-directory: opentelemetry-collector-contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
+        run: ./.github/workflows/scripts/release-prepare-release.sh
