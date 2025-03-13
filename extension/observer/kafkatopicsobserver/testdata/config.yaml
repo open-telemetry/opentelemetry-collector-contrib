@@ -2,7 +2,7 @@ kafkatopics_observer/all_settings:
   protocol_version: 3.7.0
   brokers: ["1.2.3.4:9092", "2.3.4.5:9092"]
   topic_regex: "^topic[0-9]$"
-  topics_sync_interval: 5s
+  topics_sync_interval: 100ms
   resolve_canonical_bootstrap_servers_only: false
   auth:
     plain_text:

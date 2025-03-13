@@ -169,6 +169,7 @@ func (l *listGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
+
 		evaluated[i] = val
 	}
 
@@ -186,17 +187,32 @@ func (m *mapGetter[K]) Get(ctx context.Context, tCtx K) (any, error) {
 		if err != nil {
 			return nil, err
 		}
-		switch t := val.(type) {
+		switch typedVal := val.(type) {
 		case pcommon.Map:
-			evaluated[k] = t.AsRaw()
+			target := result.PutEmpty(k).SetEmptyMap()
+			typedVal.CopyTo(target)
+		case []any:
+			target := result.PutEmpty(k).SetEmptySlice()
+			for _, el := range typedVal {
+				switch typedEl := el.(type) {
+				case pcommon.Map:
+					m := target.AppendEmpty().SetEmptyMap()
+					typedEl.CopyTo(m)
+				default:
+					err := target.AppendEmpty().FromRaw(el)
+					if err != nil {
+						return nil, err
+					}
+				}
+			}
 		default:
-			evaluated[k] = t
+			err := result.PutEmpty(k).FromRaw(val)
+			if err != nil {
+				return nil, err
+			}
 		}
 	}
-	// return the raw map instead of creating a pcommon.Map,
-	// otherwise map structures cannot be used within slices, as the Slice.FromRaw() method
-	// only supports raw types for its items
-	return evaluated, nil
+	return result, nil
 }
 
 // TypeError represents that a value was not an expected type.

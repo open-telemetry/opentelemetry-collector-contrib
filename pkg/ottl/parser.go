@@ -475,7 +475,6 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	if err != nil {
 		return nil, err
 	}
-
 	getter, err := p.newGetter(*parsed)
 	if err != nil {
 		return nil, err
@@ -484,26 +483,19 @@ func (p *Parser[K]) ParseValueExpression(raw string) (*ValueExpression[K], error
 	return &ValueExpression[K]{
 		getter: &StandardGetSetter[K]{
 			Getter: func(ctx context.Context, tCtx K) (any, error) {
-				get, err := getter.Get(ctx, tCtx)
+				val, err := getter.Get(ctx, tCtx)
 				if err != nil {
 					return nil, err
 				}
-
-				switch v := get.(type) {
+				switch v := val.(type) {
 				case map[string]any:
 					m := pcommon.NewMap()
 					if err := m.FromRaw(v); err != nil {
 						return nil, err
 					}
 					return m, nil
-				case []any:
-					s := pcommon.NewSlice()
-					if err := s.FromRaw(v); err != nil {
-						return nil, err
-					}
-					return s, nil
 				default:
-					return get, nil
+					return v, nil
 				}
 			},
 		},

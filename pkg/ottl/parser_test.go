@@ -2213,7 +2213,7 @@ func Test_parseValueExpression_full(t *testing.T) {
 			expected: func() any {
 				m := pcommon.NewMap()
 				_ = m.FromRaw(map[string]any{
-					"map": 1,
+					"map": int64(1),
 				})
 				return m
 			},
@@ -2227,6 +2227,21 @@ func Test_parseValueExpression_full(t *testing.T) {
 				s := pcommon.NewSlice()
 				_ = s.FromRaw(raw)
 				return s
+			},
+		},
+		{
+			name:            "nested list",
+			valueExpression: `[{"list":[{"foo":"bar"}]}, {"bar":"baz"}]`,
+			expected: func() any {
+				m1 := pcommon.NewMap()
+				m1.PutEmptySlice("list").AppendEmpty().SetEmptyMap().PutStr("foo", "bar")
+
+				m2 := pcommon.NewMap()
+				m2.PutStr("bar", "baz")
+				return []any{
+					m1,
+					m2,
+				}
 			},
 		},
 	}
