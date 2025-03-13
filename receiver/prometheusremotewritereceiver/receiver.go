@@ -1,6 +1,5 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
-
 package prometheusremotewritereceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver"
 
 import (
@@ -154,7 +153,8 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
-// nolint
+//
+//nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
 	var (
 		badRequestErrors error
@@ -193,13 +193,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addCounterDatapoints(rm, ls, ts)
+			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addGaugeDatapoints(rm, ls, ts)
+			prw.addGaugeDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			addSummaryDatapoints(rm, ls, ts)
+			prw.addSummaryDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			addHistogramDatapoints(rm, ls, ts)
+			prw.addHistogramDatapoints(rm, ls, ts)
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
 		}
@@ -225,41 +225,78 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-func addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
 	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
 	// In OTel name+type+unit is the unique identifier of a metric and we should not create
 	// a new metric if it already exists.
 
-	// TODO: Check if Scope is already present by comparing labels "otel_scope_name" and "otel_scope_version"
-	// with Scope.Name and Scope.Version. If it is present, we should append to the existing Scope.
-	m := rm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetEmptyGauge()
+	scopeName, scopeVersion := prw.extractScopeInfo(ls)
+
+	// Check if the name and version present in the labels are already present in the ResourceMetrics.
+	// If it is not present, we should create a new ScopeMetrics.
+	// Otherwise, we should append to the existing ScopeMetrics.
+	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+		scope := rm.ScopeMetrics().At(j)
+		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
+			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
+			return
+		}
+	}
+
+	scope := rm.ScopeMetrics().AppendEmpty()
+	scope.Scope().SetName(scopeName)
+	scope.Scope().SetVersion(scopeVersion)
+	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
 	addDatapoints(m.DataPoints(), ls, ts)
 }
 
-func addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
+func (prw *prometheusRemoteWriteReceiver) addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
 }
 
 // addDatapoints adds the labels to the datapoints attributes.
-// TODO: We're still not handling several fields that make a datapoint complete, e.g. StartTimestamp,
-// Timestamp, Value, etc.
-func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, _ writev2.TimeSeries) {
-	attributes := datapoints.AppendEmpty().Attributes()
+// TODO: We're still not handling the StartTimestamp.
+func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	// Add samples from the timeseries
+	for _, sample := range ts.Samples {
+		dp := datapoints.AppendEmpty()
 
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // Become resource attributes "service.name", "service.instance.id" and "service.namespace"
-			l.Name == labels.MetricName || // Becomes metric name
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-			continue
+		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
+		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
+		dp.SetDoubleValue(sample.Value)
+
+		attributes := dp.Attributes()
+		for _, l := range ls {
+			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+				l.Name == labels.MetricName || // Becomes metric name
+				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+				continue
+			}
+			attributes.PutStr(l.Name, l.Value)
 		}
-		attributes.PutStr(l.Name, l.Value)
 	}
+}
+
+// extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
+// it will use the default values from the settings.
+func (prw *prometheusRemoteWriteReceiver) extractScopeInfo(ls labels.Labels) (string, string) {
+	scopeName := prw.settings.BuildInfo.Description
+	scopeVersion := prw.settings.BuildInfo.Version
+
+	if sName := ls.Get("otel_scope_name"); sName != "" {
+		scopeName = sName
+	}
+
+	if sVersion := ls.Get("otel_scope_version"); sVersion != "" {
+		scopeVersion = sVersion
+	}
+	return scopeName, scopeVersion
 }

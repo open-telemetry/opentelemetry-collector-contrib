@@ -22,11 +22,6 @@ var (
 
 // Config defines configuration for the Routing processor.
 type Config struct {
-	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be
-	// found in the routing table.
-	// Optional.
-	DefaultPipelines []pipeline.ID `mapstructure:"default_pipelines"`
-
 	// ErrorMode determines how the processor reacts to errors that occur while processing an OTTL
 	// condition.
 	// Valid values are `ignore` and `propagate`.
@@ -37,14 +32,15 @@ type Config struct {
 	// dropped from the collector.
 	// The default value is `propagate`.
 	ErrorMode ottl.ErrorMode `mapstructure:"error_mode"`
-
+	// DefaultPipelines contains the list of pipelines to use when a more specific record can't be
+	// found in the routing table.
+	// Optional.
+	DefaultPipelines []pipeline.ID `mapstructure:"default_pipelines"`
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
-
-	// MatchOnce determines whether the connector matches multiple statements.
-	// Unused. Deprecated in v0.116.0. Will be removed in v0.120.0.
-	MatchOnce *bool `mapstructure:"match_once"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the processor configuration is valid.
@@ -68,7 +64,7 @@ func (c *Config) Validate() error {
 		}
 
 		switch item.Context {
-		case "", "resource": // ok
+		case "", "resource", "span", "metric", "datapoint", "log": // ok
 		case "request":
 			if item.Statement != "" || item.Condition == "" {
 				return fmt.Errorf("%q context requires a 'condition'", item.Context)
@@ -76,7 +72,6 @@ func (c *Config) Validate() error {
 			if _, err := parseRequestCondition(item.Condition); err != nil {
 				return err
 			}
-			fallthrough
 		default:
 			return errors.New("invalid context: " + item.Context)
 		}
@@ -104,4 +99,6 @@ type RoutingTableItem struct {
 	// The routing processor will fail upon the first failure from these pipelines.
 	// Optional.
 	Pipelines []pipeline.ID `mapstructure:"pipelines"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

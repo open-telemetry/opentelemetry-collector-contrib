@@ -39,6 +39,7 @@ type Config struct {
 	syslog.BaseConfig  `mapstructure:",squash"`
 	TCP                *tcp.BaseConfig `mapstructure:"tcp"`
 	UDP                *udp.BaseConfig `mapstructure:"udp"`
+	OnError            string          `mapstructure:"on_error"`
 }
 
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
@@ -52,6 +53,9 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	syslogParserCfg.SetID(inputBase.ID() + "_internal_parser")
 	syslogParserCfg.OutputIDs = c.OutputIDs
 	syslogParserCfg.MaxOctets = c.MaxOctets
+	if c.OnError != "" {
+		syslogParserCfg.OnError = c.OnError
+	}
 	syslogParser, err := syslogParserCfg.Build(set)
 	if err != nil {
 		return nil, fmt.Errorf("failed to resolve syslog config: %w", err)

@@ -245,6 +245,12 @@ type value struct {
 	List           *list            `parser:"| @@)"`
 }
 
+func (v *value) checkForCustomError() error {
+	validator := &grammarCustomErrorsVisitor{}
+	v.accept(validator)
+	return validator.join()
+}
+
 func (v *value) accept(vis grammarVisitor) {
 	vis.visitValue(v)
 	if v.Literal != nil {
@@ -290,12 +296,16 @@ func (f *field) accept(v grammarVisitor) {
 }
 
 type key struct {
-	String     *string          `parser:"'[' (@String "`
-	Int        *int64           `parser:"| @Int"`
-	Expression *mathExprLiteral `parser:"| @@ ) ']'"`
+	String         *string          `parser:"'[' (@String "`
+	Int            *int64           `parser:"| @Int"`
+	MathExpression *mathExpression  `parser:"| @@"`
+	Expression     *mathExprLiteral `parser:"| @@ ) ']'"`
 }
 
 func (k *key) accept(v grammarVisitor) {
+	if k.MathExpression != nil {
+		k.MathExpression.accept(v)
+	}
 	if k.Expression != nil {
 		k.Expression.accept(v)
 	}

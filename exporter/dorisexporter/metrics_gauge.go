@@ -24,7 +24,7 @@ type dMetricGauge struct {
 }
 
 type metricModelGauge struct {
-	data []*dMetricGauge
+	metricModelCommon[dMetricGauge]
 }
 
 func (m *metricModelGauge) metricType() pmetric.MetricType {
@@ -45,11 +45,11 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
-		newExeplars := make([]*dExemplar, 0, exemplars.Len())
+		newExemplars := make([]*dExemplar, 0, exemplars.Len())
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
-			newExeplar := &dExemplar{
+			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
 				Value:              e.getExemplarValue(exemplar),
@@ -57,7 +57,7 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 				TraceID:            exemplar.TraceID().String(),
 			}
 
-			newExeplars = append(newExeplars, newExeplar)
+			newExemplars = append(newExemplars, newExemplar)
 		}
 
 		metric := &dMetricGauge{
@@ -66,22 +66,10 @@ func (m *metricModelGauge) add(pm pmetric.Metric, dm *dMetric, e *metricsExporte
 			Attributes: dp.Attributes().AsRaw(),
 			StartTime:  e.formatTime(dp.StartTimestamp().AsTime()),
 			Value:      e.getNumberDataPointValue(dp),
-			Exemplars:  newExeplars,
+			Exemplars:  newExemplars,
 		}
 		m.data = append(m.data, metric)
 	}
 
 	return nil
-}
-
-func (m *metricModelGauge) raw() any {
-	return m.data
-}
-
-func (m *metricModelGauge) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelGauge) bytes() ([]byte, error) {
-	return toJSONLines(m.data)
 }

@@ -34,14 +34,15 @@ func Test_ProcessScrape(t *testing.T) {
 			func(_ *testing.T, cfg component.Config, _ *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
 				pCfg.MuteProcessExeError = true
 				pCfg.Include = processscraper.MatchConfig{
 					Config: filterset.Config{MatchType: filterset.Regexp},
 					Names:  []string{"sleep"},
 				}
 				rCfg.Scrapers = map[component.Type]component.Config{
-					processscraper.Type: pCfg,
+					f.Type(): pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -69,9 +70,10 @@ func Test_ProcessScrapeWithCustomRootPath(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = rootPath
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
 				rCfg.Scrapers = map[component.Type]component.Config{
-					processscraper.Type: pCfg,
+					f.Type(): pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),
@@ -98,9 +100,10 @@ func Test_ProcessScrapeWithBadRootPathAndEnvVar(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.CollectionInterval = time.Second
 				rCfg.RootPath = badRootPath
-				pCfg := (&processscraper.Factory{}).CreateDefaultConfig().(*processscraper.Config)
+				f := processscraper.NewFactory()
+				pCfg := f.CreateDefaultConfig().(*processscraper.Config)
 				rCfg.Scrapers = map[component.Type]component.Config{
-					processscraper.Type: pCfg,
+					f.Type(): pCfg,
 				}
 			}),
 		scraperinttest.WithExpectedFile(expectedFile),

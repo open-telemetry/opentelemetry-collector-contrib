@@ -14,6 +14,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper"
 )
@@ -43,8 +44,9 @@ func TestLoadConfigRootPath(t *testing.T) {
 
 	expectedConfig := factory.CreateDefaultConfig().(*Config)
 	expectedConfig.RootPath = "testdata"
-	cpuScraperCfg := (&cpuscraper.Factory{}).CreateDefaultConfig()
-	expectedConfig.Scrapers = map[component.Type]component.Config{cpuscraper.Type: cpuScraperCfg}
+	f := cpuscraper.NewFactory()
+	cpuScraperCfg := f.CreateDefaultConfig()
+	expectedConfig.Scrapers = map[component.Type]component.Config{f.Type(): cpuScraperCfg}
 	assert.Equal(t, expectedConfig, cfg)
 	expectedEnvMap := common.EnvMap{
 		common.HostDevEnvKey: "testdata/dev",
@@ -62,7 +64,7 @@ func TestLoadInvalidConfig_RootPathNotExist(t *testing.T) {
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config-bad-root-path.yaml"))
 	require.NoError(t, err)
 	require.NoError(t, cm.Unmarshal(cfg))
-	assert.ErrorContains(t, component.ValidateConfig(cfg), "invalid root_path:")
+	assert.ErrorContains(t, xconfmap.Validate(cfg), "invalid root_path:")
 	globalRootPath = ""
 }
 

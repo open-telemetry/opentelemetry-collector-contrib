@@ -38,27 +38,27 @@ func (r *purefbMetricsReceiver) Start(ctx context.Context, compHost component.Ho
 	fact := prometheusreceiver.NewFactory()
 	scrapeCfgs := []*config.ScrapeConfig{}
 
-	commomLabel := model.LabelSet{
+	commonLabel := model.LabelSet{
 		"env":           model.LabelValue(r.cfg.Env),
 		"fb_array_name": model.LabelValue(r.cfg.Endpoint),
 		"host":          model.LabelValue(r.cfg.Endpoint),
 	}
 
-	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commomLabel)
+	arrScraper := internal.NewScraper(ctx, internal.ScraperTypeArray, r.cfg.Endpoint, r.cfg.Arrays, r.cfg.Settings.ReloadIntervals.Array, commonLabel)
 	if scCfgs, err := arrScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	clientsScraper := internal.NewScraper(ctx, internal.ScraperTypeClients, r.cfg.Endpoint, r.cfg.Clients, r.cfg.Settings.ReloadIntervals.Clients, commomLabel)
+	clientsScraper := internal.NewScraper(ctx, internal.ScraperTypeClients, r.cfg.Endpoint, r.cfg.Clients, r.cfg.Settings.ReloadIntervals.Clients, commonLabel)
 	if scCfgs, err := clientsScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
 		return err
 	}
 
-	usageScraper := internal.NewScraper(ctx, internal.ScraperTypeUsage, r.cfg.Endpoint, r.cfg.Usage, r.cfg.Settings.ReloadIntervals.Usage, commomLabel)
+	usageScraper := internal.NewScraper(ctx, internal.ScraperTypeUsage, r.cfg.Endpoint, r.cfg.Usage, r.cfg.Settings.ReloadIntervals.Usage, commonLabel)
 	if scCfgs, err := usageScraper.ToPrometheusReceiverConfig(compHost, fact); err == nil {
 		scrapeCfgs = append(scrapeCfgs, scCfgs...)
 	} else {
@@ -67,7 +67,12 @@ func (r *purefbMetricsReceiver) Start(ctx context.Context, compHost component.Ho
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
 	promRecvCfg.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: scrapeCfgs}
 
-	wrapped, err := fact.CreateMetrics(ctx, r.set, promRecvCfg, r.next)
+	set := receiver.Settings{
+		ID:                component.NewIDWithName(fact.Type(), r.set.ID.String()),
+		TelemetrySettings: r.set.TelemetrySettings,
+		BuildInfo:         r.set.BuildInfo,
+	}
+	wrapped, err := fact.CreateMetrics(ctx, set, promRecvCfg, r.next)
 	if err != nil {
 		return err
 	}

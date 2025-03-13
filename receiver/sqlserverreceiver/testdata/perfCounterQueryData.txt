@@ -21,6 +21,16 @@
       "value":"14458"
    },
    {
+      "counter":"Execution Errors",
+      "counter_type":"272696576",
+      "instance":"",
+      "measurement":"sqlserver_performance",
+      "object":"SQLServer:Access Methods",
+      "sql_instance":"8cac97ac9b8f",
+      "computer_name":"abcde",
+      "value":"1048"
+   },
+   {
       "counter":"Index Searches/sec",
       "counter_type":"272696576",
       "instance":"",

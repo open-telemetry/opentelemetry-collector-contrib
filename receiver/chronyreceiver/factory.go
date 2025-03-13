@@ -20,7 +20,7 @@ import (
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
-		newDefaultCongfig,
+		newDefaultConfig,
 		receiver.WithMetrics(newMetricsReceiver, metadata.MetricsStability),
 	)
 }
@@ -48,7 +48,7 @@ func newMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&cfg.ControllerConfig,
 		set,
 		consumer,

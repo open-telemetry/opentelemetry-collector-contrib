@@ -93,3 +93,17 @@ func invertHasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlic
 	}
 	return true
 }
+
+func SetAttrOnScopeSpans(data *TraceData, attrName string, attrKey string) {
+	data.Mutex.Lock()
+	defer data.Mutex.Unlock()
+
+	rs := data.ReceivedBatches.ResourceSpans()
+	for i := 0; i < rs.Len(); i++ {
+		rss := rs.At(i)
+		for j := 0; j < rss.ScopeSpans().Len(); j++ {
+			ss := rss.ScopeSpans().At(j)
+			ss.Scope().Attributes().PutStr(attrName, attrKey)
+		}
+	}
+}
