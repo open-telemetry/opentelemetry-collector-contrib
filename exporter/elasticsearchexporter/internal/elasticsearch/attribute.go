@@ -12,6 +12,9 @@ const (
 	// DocumentIDAttributeName is the attribute name used to specify the document ID.
 	DocumentIDAttributeName = "elasticsearch.document_id"
 
+	// DocumentPipelineAttributeName is the attribute name used to specify the document ingest pipeline.
+	DocumentPipelineAttributeName = "elasticsearch.ingest_pipeline"
+
 	// IndexAttributeName is the attribute name used to specify the index to which the document should be routed.
 	IndexAttributeName = "elasticsearch.index"
 )

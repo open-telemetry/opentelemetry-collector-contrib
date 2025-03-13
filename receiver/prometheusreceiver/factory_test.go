@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -45,6 +46,28 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
 	require.NoError(t, err)
 	assert.NoError(t, sub.Unmarshal(cfg))
+}
+
+func TestMultipleCreateWithAPIServer(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.APIServer = &APIServer{
+		Enabled: true,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:9090",
+		},
+	}
+	set := receivertest.NewNopSettings(metadata.Type)
+	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	host := componenttest.NewNopHost()
+	require.NoError(t, err)
+	require.NoError(t, firstRcvr.Start(context.Background(), host))
+	require.NoError(t, firstRcvr.Shutdown(context.Background()))
+	secondRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, secondRcvr.Start(context.Background(), host))
+	require.NoError(t, secondRcvr.Shutdown(context.Background()))
 }
 
 func TestMultipleCreate(t *testing.T) {

@@ -1,0 +1,74 @@
+kafka: {}
+kafka/full:
+  brokers: ["foo:123", "bar:456"]
+  resolve_canonical_bootstrap_servers_only: true
+  client_id: vip
+  protocol_version: 1.2.3
+  auth:
+    tls:
+      ca_file: ca.pem
+      cert_file: cert.pem
+      key_file: key.pem
+  metadata:
+    full: false
+    retry:
+      max: 10
+      backoff: 5s
+kafka/sasl_aws_msk_iam:
+  auth:
+    sasl:
+      mechanism: AWS_MSK_IAM
+kafka/sasl_plain:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: abc
+      password: def
+
+# Invalid configurations
+kafka/brokers_required:
+  brokers: []
+
+kafka/invalid_protocol_version:
+  protocol_version: none
+
+kafka/sasl_invalid_mechanism:
+  auth:
+    sasl:
+      mechanism: FANCY
+
+kafka/sasl_invalid_version:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: abc
+      password: def
+      version: -1
+
+kafka/sasl_plain_username_required:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      password: xyz
+
+kafka/sasl_plain_password_required:
+  auth:
+    sasl:
+      mechanism: PLAIN
+      username: xyz
+
+kafka/foo:
+  brokers:
+    - "foo:123"
+    - "bar:456"
+  resolve_canonical_bootstrap_servers_only: true
+  client_id: otel-collector
+  auth:
+    tls:
+      ca_file: ca.pem
+      cert_file: cert.pem
+      key_file: key.pem
+  metadata:
+    retry:
+      max: 10
+      backoff: 5s
