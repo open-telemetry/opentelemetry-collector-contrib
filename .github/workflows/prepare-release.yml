@@ -45,14 +45,18 @@ jobs:
           version: ${{ steps.previoustag.outputs.tag }}
 
       - name: Select next version
+        id: next-version
         run: |
           echo "next-version=${{ format('steps.semvers.outputs.{0}', format('{0}', inputs.candidate-beta)) }}" >> $GITHUB_OUTPUT
 
-      - name: Prepare release for contrib
-        working-directory: opentelemetry-collector-contrib
-        env:
-          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-          REPO: open-telemetry/opentelemetry-collector-contrib
-          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
-          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
-        run: ./.github/workflows/scripts/release-prepare-release.sh
+      - name: Debug output
+        run: echo "${{ steps.next-version.outputs.next-version }}"
+
+#      - name: Prepare release for contrib
+#        working-directory: opentelemetry-collector-contrib
+#        env:
+#          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+#          REPO: open-telemetry/opentelemetry-collector-contrib
+#          CANDIDATE_BETA: ${{ steps.next-version.outputs.next-version }}
+#          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
+#        run: ./.github/workflows/scripts/release-prepare-release.sh
