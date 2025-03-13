@@ -31,7 +31,6 @@ var (
 	errNoMetricNamespace = errors.New("cloudwatch metric is missing namespace field")
 	errNoMetricUnit      = errors.New("cloudwatch metric is missing unit field")
 	errNoMetricValue     = errors.New("cloudwatch metric is missing value")
-	errEmptyRecord       = errors.New("0 metrics were extracted from the record")
 )
 
 type formatJSONUnmarshaler struct {
