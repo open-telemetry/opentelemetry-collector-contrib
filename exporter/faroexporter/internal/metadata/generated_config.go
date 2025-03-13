@@ -7,7 +7,7 @@ import (
 )
 
 // Type is the component type.
-const Type component.Type = "faro"
+const Type = "faro"
 
 // TracesStability is the component stability level for traces.
 const TracesStability = component.StabilityLevelDevelopment

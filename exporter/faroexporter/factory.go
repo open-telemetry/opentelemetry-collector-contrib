@@ -23,7 +23,7 @@ const (
 // NewFactory creates a factory for Faro exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
-		metadata.Type,
+		component.Type(metadata.Type),
 		createDefaultConfig,
 		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
 		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
