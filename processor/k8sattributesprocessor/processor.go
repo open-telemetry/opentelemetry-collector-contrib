@@ -362,7 +362,7 @@ func (kp *kubernetesprocessor) processTraceResources(ctx context.Context, resour
 		}
 	}
 
-	if _, found := resource.Attributes().Get("k8s.pod.uid"); found {
+	if _, found := resource.Attributes().Get("k8s.pod.name"); found {
 		resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource)
 		podname, _ := resource.Attributes().Get("k8s.pod.name")
 		if resourceUuid != "" {
@@ -372,54 +372,7 @@ func (kp *kubernetesprocessor) processTraceResources(ctx context.Context, resour
 		} else {
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
 		}
-	} else if nodename, found := resource.Attributes().Get("k8s.node.name"); found {
-		resourceUuid = kp.GetResourceUuidUsingResourceNodeMoid(ctx, resource)
-		if resourceUuid != "" {
-			resourceName = nodename.Str()
-			resource.Attributes().PutStr("k8s.node.resourceUUID", resourceUuid)
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("nodename", nodename.Str()))
-		}
-	} else if dpname, found := resource.Attributes().Get("k8s.deployment.name"); found {
-		resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dpname, "deployment")
-		if resourceUuid != "" {
-			resourceName = dpname.Str()
-			resource.Attributes().PutStr("k8s.deployment.resourceUUID", resourceUuid)
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("deployment", dpname.Str()))
-		}
-	} else if dsname, found := resource.Attributes().Get("k8s.daemonset.name"); found {
-		resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dsname, "daemonset")
-		if resourceUuid != "" {
-			resourceName = dsname.Str()
-			resource.Attributes().PutStr("k8s.daemonset.resourceUUID", resourceUuid)
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("daemonset", dsname.Str()))
-		}
-	} else if rsname, found := resource.Attributes().Get("k8s.replicaset.name"); found {
-		resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, rsname, "replicaset")
-		if resourceUuid != "" {
-			resourceName = rsname.Str()
-			resource.Attributes().PutStr("k8s.replicaset.resourceUUID", resourceUuid)
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("replicaset", rsname.Str()))
-		}
-	} else if ssname, found := resource.Attributes().Get("k8s.statefulset.name"); found {
-		resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, ssname, "statefulset")
-		if resourceUuid != "" {
-			resourceName = ssname.Str()
-			resource.Attributes().PutStr("k8s.statefulset.resourceUUID", resourceUuid)
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("statefulset", ssname.Str()))
-		}
-	} else {
-		resourceUuid = kp.redisConfig.ClusterUid
-		if resourceUuid != "" {
-			resourceName = kp.redisConfig.ClusterName
-		} else {
-			kp.logger.Debug("opsramp resourceuuid not found", zap.Any("clustername", kp.redisConfig.ClusterName))
-		}
-	}
+	} 
 
 	if resourceUuid != "" {
 		resource.Attributes().PutStr("resourceUUID", resourceUuid)
