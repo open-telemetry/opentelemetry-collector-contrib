@@ -76,10 +76,11 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 		for _, frame := range payload.UnsymbolizedLeafFrames {
 			docID := frame.String()
 			doc := serializeprofiles.LeafFrameSymbolizationData{
-				FrameID: []string{docID},
-				Created: nowTime,
-				Next:    nowTime,
-				Retries: 0,
+				EcsVersion: serializeprofiles.EcsVersion{V: serializeprofiles.EcsVersionString},
+				FrameID:    []string{docID},
+				Created:    nowTime,
+				Next:       nowTime,
+				Retries:    0,
 			}
 			if err = pushDataAsJSON(doc, docID, LeafFramesSymQueueIndex); err != nil {
 				return err
@@ -89,10 +90,11 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 		for fileID := range payload.UnsymbolizedExecutables {
 			docID := fileID.Base64()
 			doc := serializeprofiles.ExecutableSymbolizationData{
-				FileID:  []string{docID},
-				Created: nowTime,
-				Next:    nowTime,
-				Retries: 0,
+				EcsVersion: serializeprofiles.EcsVersion{V: serializeprofiles.EcsVersionString},
+				FileID:     []string{docID},
+				Created:    nowTime,
+				Next:       nowTime,
+				Retries:    0,
 			}
 			if err = pushDataAsJSON(doc, docID, ExecutablesSymQueueIndex); err != nil {
 				return err

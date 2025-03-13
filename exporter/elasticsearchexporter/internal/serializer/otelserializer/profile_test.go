@@ -87,14 +87,14 @@ func TestSerializeProfile(t *testing.T) {
 					"Symbolization.retries":   json.Number("0"),
 					"Symbolization.time.next": nowTimeStr,
 					"Time.created":            nowTimeStr,
-					"ecs.version":             "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
 				{
 					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
 					"Symbolization.retries":   json.Number("0"),
 					"Symbolization.time.next": nowTimeStr,
 					"Time.created":            nowTimeStr,
-					"ecs.version":             "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
 				{
 					"@timestamp":          "1970-01-01T00:00:00Z",
