@@ -7,11 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net/http"
 	"net/url"
 	"runtime"
 
-	faro "github.com/grafana/faro/pkg/go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
@@ -21,8 +19,8 @@ import (
 )
 
 type faroExporter struct {
-	config    *Config
-	client    *http.Client
+	config *Config
+	// client    *http.Client
 	logger    *zap.Logger
 	settings  component.TelemetrySettings
 	userAgent string
@@ -53,9 +51,9 @@ func (fe *faroExporter) start(ctx context.Context, host component.Host) error {
 	return nil
 }
 
-func (fe *faroExporter) export(ctx context.Context, fp []*faro.Payload) error {
-	return nil
-}
+// func (fe *faroExporter) export(ctx context.Context, fp []*faro.Payload) error {
+// 	return nil
+// }
 
 func (fe *faroExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	return nil
