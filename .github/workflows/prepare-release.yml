@@ -32,7 +32,7 @@ jobs:
           cache: false
 
       - name: Get Previous tag
-        id: previoustag
+        id: previous-version
         uses: WyriHaximus/github-action-get-previous-tag@v1
         with:
           prefix: v
@@ -42,7 +42,7 @@ jobs:
         id: semvers
         uses: WyriHaximus/github-action-next-semvers@v1
         with:
-          version: ${{ steps.previoustag.outputs.tag }}
+          version: ${{ steps.previous-version.outputs.tag }}
 
       - name: Select next version
         id: next-version
@@ -62,5 +62,5 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector-contrib
           CANDIDATE_BETA: ${{ steps.next-version.outputs.next-version }}
-          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
+          CURRENT_BETA: ${{ steps.previous-version.outputs.tag }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
