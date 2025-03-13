@@ -9,7 +9,7 @@ import (
 
 	"go.uber.org/multierr"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 // Config defines configuration for docker observer
@@ -22,14 +22,10 @@ type Config struct {
 	// required in SASL environments.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 	// Kafka protocol version
-	ProtocolVersion string `mapstructure:"protocol_version"`
-	// Session interval for the Kafka consumer
-	SessionTimeout time.Duration `mapstructure:"session_timeout"`
-	// Heartbeat interval for the Kafka consumer
-	HeartbeatInterval  time.Duration        `mapstructure:"heartbeat_interval"`
-	Authentication     kafka.Authentication `mapstructure:"auth"`
-	TopicRegex         string               `mapstructure:"topic_regex"`
-	TopicsSyncInterval time.Duration        `mapstructure:"topics_sync_interval"`
+	ProtocolVersion    string                           `mapstructure:"protocol_version"`
+	Authentication     configkafka.AuthenticationConfig `mapstructure:"auth"`
+	TopicRegex         string                           `mapstructure:"topic_regex"`
+	TopicsSyncInterval time.Duration                    `mapstructure:"topics_sync_interval"`
 }
 
 func (config *Config) Validate() (errs error) {
@@ -44,12 +40,6 @@ func (config *Config) Validate() (errs error) {
 	}
 	if config.TopicsSyncInterval <= 0 {
 		errs = multierr.Append(errs, fmt.Errorf("topics_sync_interval must be greater than 0"))
-	}
-	if config.SessionTimeout <= 0 {
-		errs = multierr.Append(errs, fmt.Errorf("session_timeout must be greater than 0"))
-	}
-	if config.HeartbeatInterval <= 0 {
-		errs = multierr.Append(errs, fmt.Errorf("heartbeat_interval must be greater than 0"))
 	}
 	return errs
 }

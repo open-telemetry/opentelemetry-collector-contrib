@@ -235,6 +235,17 @@ func TestPathGetSetter(t *testing.T) {
 			},
 		},
 		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refSpan.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(span ptrace.Span) {
+				_ = span.Attributes().FromRaw(newAttrs.AsRaw())
+			},
+		},
+		{
 			name: "attributes string",
 			path: &pathtest.Path[*testContext]{
 				N: "attributes",
@@ -611,11 +622,11 @@ func TestPathGetSetter(t *testing.T) {
 
 			span := createTelemetry()
 
-			got, err := accessor.Get(context.Background(), newSpanContext(span))
+			got, err := accessor.Get(context.Background(), newTestContext(span))
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			err = accessor.Set(context.Background(), newSpanContext(span), tt.newVal)
+			err = accessor.Set(context.Background(), newTestContext(span), tt.newVal)
 			assert.NoError(t, err)
 
 			expectedSpan := createTelemetry()
@@ -706,6 +717,6 @@ func (r *testContext) GetSpan() ptrace.Span {
 	return r.span
 }
 
-func newSpanContext(span ptrace.Span) *testContext {
+func newTestContext(span ptrace.Span) *testContext {
 	return &testContext{span: span}
 }

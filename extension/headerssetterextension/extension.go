@@ -9,7 +9,8 @@ import (
 	"fmt"
 	"net/http"
 
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
 
@@ -22,7 +23,29 @@ type Header struct {
 	source source.Source
 }
 
-func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, error) {
+var _ extensionauth.Client = (*headerSetterExtension)(nil)
+
+type headerSetterExtension struct {
+	component.StartFunc
+	component.ShutdownFunc
+
+	headers []Header
+}
+
+// PerRPCCredentials implements extensionauth.Client.
+func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+	return &headersPerRPC{headers: h.headers}, nil
+}
+
+// RoundTripper implements extensionauth.Client.
+func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &headersRoundTripper{
+		base:    base,
+		headers: h.headers,
+	}, nil
+}
+
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.Client, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}
@@ -30,11 +53,21 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 	headers := make([]Header, 0, len(cfg.HeadersConfig))
 	for _, header := range cfg.HeadersConfig {
 		var s source.Source
-		if header.Value != nil {
+		switch {
+		case header.Value != nil:
 			s = &source.StaticSource{
 				Value: *header.Value,
 			}
-		} else if header.FromContext != nil {
+		case header.FromAttribute != nil:
+			defaultValue := ""
+			if header.DefaultValue != nil {
+				defaultValue = *header.DefaultValue
+			}
+			s = &source.AttributeSource{
+				Key:          *header.FromAttribute,
+				DefaultValue: defaultValue,
+			}
+		case header.FromContext != nil:
 			defaultValue := ""
 			if header.DefaultValue != nil {
 				defaultValue = *header.DefaultValue
@@ -63,18 +96,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (auth.Client, er
 		headers = append(headers, Header{action: a, source: s})
 	}
 
-	return auth.NewClient(
-		auth.WithClientRoundTripper(
-			func(base http.RoundTripper) (http.RoundTripper, error) {
-				return &headersRoundTripper{
-					base:    base,
-					headers: headers,
-				}, nil
-			}),
-		auth.WithClientPerRPCCredentials(func() (credentials.PerRPCCredentials, error) {
-			return &headersPerRPC{headers: headers}, nil
-		}),
-	), nil
+	return &headerSetterExtension{headers: headers}, nil
 }
 
 // headersPerRPC is a gRPC credentials.PerRPCCredentials implementation sets

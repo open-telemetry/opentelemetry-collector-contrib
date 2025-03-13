@@ -5,26 +5,26 @@ go 1.23.0
 require (
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/google/go-cmp v0.7.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.120.1
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.121.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.121.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/confmap/xconfmap v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/filter v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/receiver v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/scraper v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/semconv v0.120.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component/componentstatus v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/confmap v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250307164521-7c787571daa5
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/filter v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/receiver v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/receiver/receivertest v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/scraper v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/semconv v0.121.1-0.20250307194215-7d3e03e500b0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
@@ -57,6 +57,7 @@ require (
 	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.17.9 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
@@ -75,7 +76,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.121.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.0 // indirect
 	github.com/pkg/errors v0.9.1 // indirect
