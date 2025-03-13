@@ -47,7 +47,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*faroExporter, er
 	}, nil
 }
 
-func (fe *faroExporter) start(ctx context.Context, host component.Host) error {
+func (fe *faroExporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
@@ -55,11 +55,11 @@ func (fe *faroExporter) start(ctx context.Context, host component.Host) error {
 // 	return nil
 // }
 
-func (fe *faroExporter) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
+func (fe *faroExporter) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
 
-func (fe *faroExporter) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
+func (fe *faroExporter) ConsumeLogs(_ context.Context, _ plog.Logs) error {
 	return nil
 }
 
