@@ -6,6 +6,7 @@ package serializeprofiles
 import (
 	"bytes"
 	"errors"
+	"sort"
 	"testing"
 	"time"
 
@@ -52,6 +53,8 @@ func formatFileIDFormat(hi, lo uint64) (fileID libpf.FileID, fileIDHex, fileIDBa
 }
 
 func TestTransform(t *testing.T) {
+	nowTime := time.Now()
+	//	nowTimeStr := nowTime.Format(time.RFC3339Nano)
 	wantedTraceID := mkStackTraceID(t, []libpf.FrameID{
 		libpf.NewFrameID(buildID, address),
 		libpf.NewFrameID(buildID2, address2),
@@ -213,12 +216,33 @@ func TestTransform(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
-					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
-						buildID:  {},
-						buildID2: {},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
 				},
 				{
@@ -237,7 +261,17 @@ func TestTransform(t *testing.T) {
 			rp := tt.buildResourceProfiles()
 			sp := rp.ScopeProfiles().At(0)
 
+			nowOld := Now
+			t.Cleanup(func() {
+				Now = nowOld
+			})
+			Now = func() time.Time {
+				return nowTime
+			}
+
 			payload, err := Transform(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			sortPayloads(payload)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payload)
 		})
@@ -245,6 +279,7 @@ func TestTransform(t *testing.T) {
 }
 
 func TestStackPayloads(t *testing.T) {
+	nowTime := time.Now()
 	wantedTraceID := mkStackTraceID(t, []libpf.FrameID{
 		libpf.NewFrameID(buildID, address),
 		libpf.NewFrameID(buildID2, address2),
@@ -329,12 +364,33 @@ func TestStackPayloads(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
-					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
-						buildID:  {},
-						buildID2: {},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
 				},
 				{
@@ -418,12 +474,33 @@ func TestStackPayloads(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
-					UnsymbolizedExecutables: map[libpf.FileID]struct{}{
-						buildID:  {},
-						buildID2: {},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+							Created:    nowTime,
+							Next:       nowTime,
+							Retries:    0,
+						},
 					},
 				},
 				{
@@ -441,7 +518,17 @@ func TestStackPayloads(t *testing.T) {
 			rp := tt.buildResourceProfiles()
 			sp := rp.ScopeProfiles().At(0)
 
+			nowOld := Now
+			t.Cleanup(func() {
+				Now = nowOld
+			})
+			Now = func() time.Time {
+				return nowTime
+			}
+
 			payloads, err := stackPayloads(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			sortPayloads(payloads)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payloads)
 		})
@@ -707,4 +794,14 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 	require.NoError(t, err)
 
 	return traceID
+}
+
+// sortPayloads brings the payloads into a deterministic form to allow comparisons.
+func sortPayloads(payloads []StackPayload) {
+	for idx := range payloads {
+		payload := &payloads[idx]
+		sort.Slice(payload.UnsymbolizedExecutables, func(i, j int) bool {
+			return payload.UnsymbolizedExecutables[i].DocID < payload.UnsymbolizedExecutables[j].DocID
+		})
+	}
 }

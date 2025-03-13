@@ -116,11 +116,11 @@ func TestSerializeProfile(t *testing.T) {
 			tt.profileCustomizer(resource.Resource(), scope.Scope(), profile)
 			profiles.MarkReadOnly()
 
-			nowOld := now
+			nowOld := serializeprofiles.Now
 			t.Cleanup(func() {
-				now = nowOld
+				serializeprofiles.Now = nowOld
 			})
-			now = func() time.Time {
+			serializeprofiles.Now = func() time.Time {
 				return nowTime
 			}
 

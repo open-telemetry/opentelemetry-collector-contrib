@@ -6,15 +6,12 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
-
-var now = time.Now
 
 const (
 	AllEventsIndex   = "profiling-events-all"
@@ -40,8 +37,6 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 	if err != nil {
 		return err
 	}
-
-	nowTime := now()
 
 	for _, payload := range data {
 		event := payload.StackTraceEvent
@@ -74,29 +69,13 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 		}
 
 		for _, frame := range payload.UnsymbolizedLeafFrames {
-			docID := frame.String()
-			doc := serializeprofiles.LeafFrameSymbolizationData{
-				EcsVersion: serializeprofiles.EcsVersion{V: serializeprofiles.EcsVersionString},
-				FrameID:    []string{docID},
-				Created:    nowTime,
-				Next:       nowTime,
-				Retries:    0,
-			}
-			if err = pushDataAsJSON(doc, docID, LeafFramesSymQueueIndex); err != nil {
+			if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
 				return err
 			}
 		}
 
-		for fileID := range payload.UnsymbolizedExecutables {
-			docID := fileID.Base64()
-			doc := serializeprofiles.ExecutableSymbolizationData{
-				EcsVersion: serializeprofiles.EcsVersion{V: serializeprofiles.EcsVersionString},
-				FileID:     []string{docID},
-				Created:    nowTime,
-				Next:       nowTime,
-				Retries:    0,
-			}
-			if err = pushDataAsJSON(doc, docID, ExecutablesSymQueueIndex); err != nil {
+		for _, executable := range payload.UnsymbolizedExecutables {
+			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
 				return err
 			}
 		}
