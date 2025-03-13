@@ -54,9 +54,5 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
 	}
 
-	if md.DataPointCount() == 0 {
-		return pmetric.Metrics{}, errEmptyRecord
-	}
-
 	return md, nil
 }

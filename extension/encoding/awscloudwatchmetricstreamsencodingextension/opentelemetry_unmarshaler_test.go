@@ -62,9 +62,9 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 			}),
 			expectedMetricsFilename: filepath.Join(filesDirectory, "valid_metric_multiple_expected.yaml"),
 		},
-		"invalid_record_empty": {
-			record:      []byte{},
-			expectedErr: errEmptyRecord,
+		"empty_record": {
+			record:                  []byte{},
+			expectedMetricsFilename: filepath.Join(filesDirectory, "empty_expected.yaml"),
 		},
 		"invalid_record_no_metrics": {
 			record:      []byte{1, 2, 3},

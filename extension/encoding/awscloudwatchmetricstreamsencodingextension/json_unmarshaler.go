@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -139,20 +140,10 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
 		var cwMetric cloudwatchMetric
 		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
-			c.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("datum_index", datumIndex),
-			)
-			continue
+			return pmetric.Metrics{}, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err)
 		}
 		if err := validateMetric(cwMetric); err != nil {
-			c.logger.Error(
-				"Invalid metric",
-				zap.Int("datum_index", datumIndex),
-				zap.Error(err),
-			)
-			continue
+			return pmetric.Metrics{}, fmt.Errorf("invalid cloudwatch metric at index %d: %w", datumIndex, err)
 		}
 
 		c.addMetricToResource(byResource, cwMetric)
@@ -161,10 +152,6 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	if err := scanner.Err(); err != nil {
 		// Treat this as a non-fatal error, and handle the data below.
 		c.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
-	}
-
-	if len(byResource) == 0 {
-		return pmetric.Metrics{}, errEmptyRecord
 	}
 
 	return c.createMetrics(byResource), nil

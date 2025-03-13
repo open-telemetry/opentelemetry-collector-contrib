@@ -17,7 +17,7 @@ func TestNew_JSON(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalMetrics([]byte{})
-	assert.EqualError(t, err, `failed to unmarshal metrics as 'json' format: 0 metrics were extracted from the record`)
+	assert.NoError(t, err)
 }
 
 func TestNew_OpenTelemetry10(t *testing.T) {
@@ -26,7 +26,7 @@ func TestNew_OpenTelemetry10(t *testing.T) {
 	require.NotNil(t, e)
 
 	_, err = e.UnmarshalMetrics([]byte{})
-	assert.EqualError(t, err, `failed to unmarshal metrics as 'opentelemetry1.0' format: 0 metrics were extracted from the record`)
+	assert.NoError(t, err)
 }
 
 func TestNew_Unimplemented(t *testing.T) {

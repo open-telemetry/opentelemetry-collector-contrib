@@ -6,6 +6,7 @@ package awscloudwatchmetricstreamsencodingextension
 import (
 	"bytes"
 	"encoding/json"
+	"errors"
 	"os"
 	"path/filepath"
 	"testing"
@@ -131,7 +132,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		"invalid_record": {
 			// test a record with one invalid metric
 			files:       []string{"invalid_metric.json"},
-			expectedErr: errEmptyRecord,
+			expectedErr: errors.New("invalid cloudwatch metric at index 0: cloudwatch metric is missing value"),
 		},
 		"valid_record_multiple_metrics": {
 			// test a record with multiple
@@ -141,9 +142,8 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 				"valid_metric.json",
 				"invalid_metric.json",
 				"valid_metric.json",
-				"invalid_metric.json",
 			},
-			metricExpectedFilename: "valid_record_multiple_metrics_expected.yaml",
+			expectedErr: errors.New("invalid cloudwatch metric at index 1: cloudwatch metric is missing value"),
 		},
 	}
 
@@ -154,7 +154,8 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 
 			metrics, err := unmarshalerCW.UnmarshalMetrics(record)
 			if test.expectedErr != nil {
-				require.Equal(t, test.expectedErr, err)
+				require.Error(t, err)
+				require.EqualError(t, test.expectedErr, err.Error())
 				return
 			}
 

@@ -5,7 +5,6 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -14,8 +13,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
-
-var errEmptyRecord = errors.New("0 metrics were extracted from the record")
 
 var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
 
