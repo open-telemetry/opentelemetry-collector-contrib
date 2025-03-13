@@ -54,7 +54,7 @@ var newMetricsReceiver = func(
 		sc.Metadata.RefreshFrequency = config.RefreshFrequency
 	}
 
-	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, sc); err != nil {
+	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, sc); err != nil {
 		return nil, err
 	}
 	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(config.Scrapers))
