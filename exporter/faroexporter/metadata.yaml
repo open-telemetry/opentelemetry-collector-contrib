@@ -1,0 +1,9 @@
+type: faro
+
+status:
+  class: exporter
+  stability:
+    development: [traces, logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [] 
