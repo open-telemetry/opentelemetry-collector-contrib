@@ -42,7 +42,6 @@ func TestCreateExporter(t *testing.T) {
 	assert.NoError(t, err)
 	assert.NotNil(t, le, "failed to create logs exporter")
 
-	me, err := factory.CreateMetrics(ctx, set, cfg)
-	assert.NoError(t, err)
-	assert.NotNil(t, me, "failed to create metrics exporter")
+	// Metrics are not supported according to metadata.yaml
+	// Skip testing metrics exporter
 }
