@@ -5,10 +5,14 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
+	"net/http"
+	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -45,7 +49,7 @@ type Client struct {
 	logger               *zap.Logger
 }
 
-func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*Client, error) {
+func NewDockerClient(config *Config, logger *zap.Logger, tlsConfig *tls.Config, opts ...docker.Opt) (*Client, error) {
 	version := minimumRequiredDockerAPIVersion
 	if config.DockerAPIVersion != "" {
 		var err error
@@ -53,13 +57,53 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 			return nil, err
 		}
 	}
-	client, err := docker.NewClientWithOpts(
-		append([]docker.Opt{
-			docker.WithHost(config.Endpoint),
-			docker.WithVersion(version),
-			docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
-		}, opts...)...,
-	)
+
+	// Basic options
+	clientOpts := []docker.Opt{
+		docker.WithHost(config.Endpoint),
+		docker.WithVersion(version),
+		docker.WithHTTPHeaders(map[string]string{"User-Agent": userAgent}),
+	}
+
+	// Use the provided TLS configuration if available
+	if tlsConfig != nil {
+		httpClient := &http.Client{Transport: &http.Transport{TLSClientConfig: tlsConfig}}
+		clientOpts = append(clientOpts, docker.WithHTTPClient(httpClient))
+		logger.Debug("Using provided TLS configuration for Docker client")
+	} else if strings.HasPrefix(config.Endpoint, "https://") {
+		// Look for certificates in default locations or from environment variables
+		certPath := os.Getenv("DOCKER_CERT_PATH")
+		if certPath == "" {
+			homeDir, err := os.UserHomeDir()
+			if err == nil {
+				certPath = filepath.Join(homeDir, ".docker")
+			}
+		}
+
+		if certPath != "" {
+			certFile := filepath.Join(certPath, "cert.pem")
+			keyFile := filepath.Join(certPath, "key.pem")
+			caFile := filepath.Join(certPath, "ca.pem")
+
+			if fileExists(certFile) && fileExists(keyFile) && fileExists(caFile) {
+				clientOpts = append(clientOpts, docker.WithTLSClientConfig(caFile, certFile, keyFile))
+				logger.Debug("Loaded TLS certificates from default location",
+					zap.String("cert", certFile),
+					zap.String("key", keyFile),
+					zap.String("ca", caFile))
+			} else {
+				logger.Warn("TLS certificates not found at expected location",
+					zap.String("cert", certFile),
+					zap.String("key", keyFile),
+					zap.String("ca", caFile))
+			}
+		}
+	}
+
+	// Add any additional options
+	clientOpts = append(clientOpts, opts...)
+
+	client, err := docker.NewClientWithOpts(clientOpts...)
 	if err != nil {
 		return nil, fmt.Errorf("could not create docker client: %w", err)
 	}
@@ -79,6 +123,12 @@ func NewDockerClient(config *Config, logger *zap.Logger, opts ...docker.Opt) (*C
 	}
 
 	return dc, nil
+}
+
+// Helper function to check if a file exists
+func fileExists(filename string) bool {
+	_, err := os.Stat(filename)
+	return err == nil
 }
 
 // Containers provides a slice of Container to use for individual FetchContainerStats calls.
