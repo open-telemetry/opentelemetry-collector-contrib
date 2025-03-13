@@ -59,7 +59,7 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	attributes.Range(func(k string, val pcommon.Value) bool {
 		switch k {
-		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace, elasticsearch.MappingHintsAttrKey, elasticsearch.DocumentIDAttributeName:
+		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace, elasticsearch.MappingHintsAttrKey, elasticsearch.DocumentIDAttributeName, elasticsearch.DocumentPipelineAttributeName:
 			return true
 		}
 		if isGeoAttribute(k, val) {

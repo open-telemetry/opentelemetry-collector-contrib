@@ -112,10 +112,11 @@ attribute is not configurable, and is called `sampling.priority`.
 
 In logs pipelines, when the priority attribute has value 0, the
 configured probability will by modified to 0%, and the item will not
-pass the sampler.  Otherwise, the logs sampling priority attribute is
+pass the sampler. Otherwise, the logs sampling priority attribute is
 interpreted as a percentage, with values >= 100 equal to 100%
-sampling.  The logs sampling priority attribute is configured via
-`sampling_priority`.
+sampling. The logs sampling priority attribute is configured via
+`sampling_priority`. If the logs sampling priority attribute is not
+set on a log record, the default sampling percentage applies.
 
 ## Mode Selection
 
