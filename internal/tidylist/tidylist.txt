@@ -106,6 +106,7 @@ extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
 extension/encoding
 extension/encoding/otlpencodingextension
+exporter/faroexporter
 exporter/fileexporter
 exporter/googlecloudexporter
 exporter/googlecloudpubsubexporter
