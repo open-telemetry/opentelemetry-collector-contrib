@@ -67,20 +67,20 @@ func (t schemaProcessor) processLogs(_ context.Context, ld plog.Logs) (plog.Logs
 		}
 		for ss := 0; ss < rLogs.ScopeLogs().Len(); ss++ {
 			logs := rLogs.ScopeLogs().At(ss)
-			spanSchemaURL := logs.SchemaUrl()
-			if spanSchemaURL == "" {
-				spanSchemaURL = resourceSchemaURL
+			logsSchemaURL := logs.SchemaUrl()
+			if logsSchemaURL == "" {
+				logsSchemaURL = resourceSchemaURL
 			}
-			if spanSchemaURL == "" {
+			if logsSchemaURL == "" {
 				continue
 			}
 			tr, err := t.manager.
-				RequestTranslation(context.Background(), spanSchemaURL)
+				RequestTranslation(context.Background(), logsSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
 				continue
 			}
-			err = tr.ApplyScopeLogChanges(logs, spanSchemaURL)
+			err = tr.ApplyScopeLogChanges(logs, logsSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope log changes", zap.Error(err))
 			}
