@@ -155,11 +155,11 @@ gotest-with-cover:
 
 .PHONY: gotest-with-junit
 gotest-with-junit:
-	@$(MAKE) for-all-target TARGET="test-with-junit"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit"
 
 .PHONY: gotest-with-junit-and-cover
 gotest-with-junit-and-cover:
-	@$(MAKE) for-all-target TARGET="test-with-junit-and-cover"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
 
 .PHONY: gobuildtest
 gobuildtest:
@@ -479,7 +479,6 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker compose -f examples/demo/docker-compose.yaml build
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
 	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 

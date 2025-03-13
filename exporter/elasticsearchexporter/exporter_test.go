@@ -24,11 +24,13 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/configopaque"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
-	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -355,6 +357,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
@@ -821,6 +824,82 @@ func TestExporterLogs(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("publish with dynamic pipeline", func(t *testing.T) {
+		t.Parallel()
+		examplePipeline := "abc123"
+		tableTests := []struct {
+			name             string
+			expectedPipeline string // "" means the pipeline will not be set
+			recordAttrs      map[string]any
+		}{
+			{
+				name:             "missing document pipeline attribute should not set pipeline",
+				expectedPipeline: "",
+			},
+			{
+				name:             "empty document pipeline attribute should not set pipeline",
+				expectedPipeline: "",
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentPipelineAttributeName: "",
+				},
+			},
+			{
+				name:             "record attributes",
+				expectedPipeline: examplePipeline,
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentPipelineAttributeName: examplePipeline,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				cfg.Batcher.Enabled = false
+			},
+			"sync": func(cfg *Config) {
+				cfg.Batcher.Enabled = true
+				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedPipeline == "" {
+							assert.NotContainsf(t, string(docs[0].Action), "pipeline", "%s: expected pipeline to not be set", tt.name)
+						} else {
+							assert.Equalf(t, tt.expectedPipeline, actionJSONToPipeline(t, docs[0].Action), "%s: expected pipeline to be set in action: %s", tt.name, docs[0].Action)
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContainsf(t, string(docs[0].Document), elasticsearch.DocumentPipelineAttributeName, "%s: expected document pipeline attribute to be removed", tt.name)
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.LogsDynamicPipeline.Enabled = true
+						cfgFn(cfg)
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+					mustSendLogs(t, exporter, logs)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
+
 	t.Run("otel mode attribute complex value", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1726,6 +1805,7 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "none"
 			cfg.TracesDynamicIndex.Enabled = true
 		})
 
@@ -1969,6 +2049,7 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
+		cfg.Mapping.Mode = "otel"
 	}
 
 	checkOTelResource := func(t *testing.T, doc []byte, _ string) {
@@ -2086,15 +2167,13 @@ func TestExporterAuth(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &extensionauthtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(*http.Request) (*http.Response, error) {
-					select {
-					case done <- struct{}{}:
-					default:
-					}
-					return nil, errors.New("nope")
-				}),
-			},
+			testauthID: newMockAuthClient(func(*http.Request) (*http.Response, error) {
+				select {
+				case done <- struct{}{}:
+				default:
+				}
+				return nil, errors.New("nope")
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -2110,9 +2189,11 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
+		batcherCfg := exporterbatcher.NewDefaultConfig()
+		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     exporterbatcher.Config{Enabled: false},
+			Config:     batcherCfg,
 			enabledSet: true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
@@ -2120,12 +2201,10 @@ func TestExporterBatcher(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: &extensionauthtest.MockClient{
-				ResultRoundTripper: roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-					requests = append(requests, req)
-					return nil, errors.New("nope")
-				}),
-			},
+			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
+				requests = append(requests, req)
+				return nil, errors.New("nope")
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -2154,6 +2233,7 @@ func newTestTracesExporter(t *testing.T, url string, fns ...func(*Config)) expor
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2172,6 +2252,7 @@ func newTestProfilesExporter(t *testing.T, url string, fns ...func(*Config)) xex
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateProfiles(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2190,6 +2271,7 @@ func newTestMetricsExporter(t *testing.T, url string, fns ...func(*Config)) expo
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 
@@ -2218,6 +2300,7 @@ func newUnstartedTestLogsExporter(t *testing.T, url string, fns ...func(*Config)
 		cfg.NumWorkers = 1
 		cfg.Flush.Interval = 10 * time.Millisecond
 	}}, fns...)...)
+	require.NoError(t, xconfmap.Validate(cfg))
 	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	return exp
@@ -2299,24 +2382,58 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
+var (
+	_ extension.Extension      = (*mockAuthClient)(nil)
+	_ extensionauth.HTTPClient = (*mockAuthClient)(nil)
+)
+
+type mockAuthClient struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ClientRoundTripperFunc
+}
+
+func newMockAuthClient(f func(*http.Request) (*http.Response, error)) *mockAuthClient {
+	return &mockAuthClient{ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
+		return roundTripperFunc(f), nil
+	}}
+}
+
 func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
-	action := struct {
-		Create struct {
-			Index string `json:"_index"`
-		} `json:"create"`
-	}{}
-	err := json.Unmarshal(actionJSON, &action)
-	require.NoError(t, err)
-	return action.Create.Index
+	t.Helper()
+	return actionGetValue(t, actionJSON, "_index")
 }
 
 func actionJSONToID(t *testing.T, actionJSON json.RawMessage) string {
-	action := struct {
-		Create struct {
-			ID string `json:"_id"`
-		} `json:"create"`
-	}{}
-	err := json.Unmarshal(actionJSON, &action)
-	require.NoError(t, err)
-	return action.Create.ID
+	t.Helper()
+	return actionGetValue(t, actionJSON, "_id")
+}
+
+func actionJSONToPipeline(t *testing.T, actionJSON json.RawMessage) string {
+	t.Helper()
+	return actionGetValue(t, actionJSON, "pipeline")
+}
+
+// actionGetValue assumes the actionJSON is an object that has a key
+// of create whose value is another object and target represents one
+// of the inner keys.  The value of the inner key must be a string.
+func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) string {
+	t.Helper()
+	a := map[string]any{}
+
+	err := json.Unmarshal(actionJSON, &a)
+	require.NoErrorf(t, err, "error unmarshalling action: %s", err)
+
+	create, prs := a["create"]
+	require.Truef(t, prs, "create was not present in action")
+
+	createMap, ok := create.(map[string]any)
+	require.True(t, ok, "create was not a map[string]interface{}")
+
+	v, prs := createMap[target]
+	require.Truef(t, prs, "%s was not present in action.create", target)
+
+	vString, ok := v.(string)
+	require.True(t, ok, "the type of action.create.%s was not string", target)
+	return vString
 }
