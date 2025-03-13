@@ -127,7 +127,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkKvstoreBackupStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkKvstoreReplicationStatusDataPoint(ts, 1, "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
+			mb.RecordSplunkSearchDurationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSplunkSearchInitiationDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSplunkSearchStatusDataPoint(ts, 1, "splunk.search.state-val")
+
+			allMetricsCount++
+			mb.RecordSplunkSearchSuccessDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val")
 
 			allMetricsCount++
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
