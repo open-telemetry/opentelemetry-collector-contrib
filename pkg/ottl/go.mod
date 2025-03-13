@@ -15,9 +15,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.121.0
 	github.com/stretchr/testify v1.10.0
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
-	go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component v1.27.1-0.20250313100724-0885401136ff
 	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250307194215-7d3e03e500b0
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250313100724-0885401136ff
 	go.opentelemetry.io/collector/semconv v0.121.1-0.20250307194215-7d3e03e500b0
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/goleak v1.3.0
