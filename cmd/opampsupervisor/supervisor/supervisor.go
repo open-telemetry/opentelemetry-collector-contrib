@@ -67,7 +67,6 @@ var (
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
 
-
 	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
 )
 
@@ -520,6 +519,17 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			return errors.New("collector's OpAMP client never connected to the Supervisor")
 		}
 	case err = <-done:
+		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
+		if errors.Is(err, errNonMatchingInstanceUID) {
+			if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{
+				Healthy:            false,
+				LastError:          err.Error(),
+				Status:             "",
+				StatusTimeUnixNano: 0,
+			}); err != nil {
+				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+			}
+		}
 		return err
 	}
 }
