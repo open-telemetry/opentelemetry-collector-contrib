@@ -17,10 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter/internal/metadata"
 )
 
-const (
-	defaultTimeout = time.Second * 5
-)
-
 // NewFactory creates a factory for Faro exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
