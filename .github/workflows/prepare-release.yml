@@ -56,14 +56,11 @@ jobs:
             exit 1
           fi
 
-      - name: Debug output
-        run: echo "${{ steps.next-version.outputs.next-version }}"
-
-#      - name: Prepare release for contrib
-#        working-directory: opentelemetry-collector-contrib
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-#          REPO: open-telemetry/opentelemetry-collector-contrib
-#          CANDIDATE_BETA: ${{ steps.next-version.outputs.next-version }}
-#          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
-#        run: ./.github/workflows/scripts/release-prepare-release.sh
+      - name: Prepare release for contrib
+        working-directory: opentelemetry-collector-contrib
+        env:
+          GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
+          REPO: open-telemetry/opentelemetry-collector-contrib
+          CANDIDATE_BETA: ${{ steps.next-version.outputs.next-version }}
+          CURRENT_BETA: ${{ steps.previoustag.outputs.tag }}
+        run: ./.github/workflows/scripts/release-prepare-release.sh
