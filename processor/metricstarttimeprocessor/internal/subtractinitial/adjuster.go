@@ -36,14 +36,12 @@ func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adj
 	}
 }
 
-// AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
-// previous points in the timeseriesMap.
+// AdjustMetrics takes a sequence of metrics and applies the following adjustment to it:
 // For each metric:
-// - Check if it exists in the map already.
-// - If it doesn't, save its value in the reference cache and move on
-// - If it does, find its reference cache value
-// - Add new entry to the result with the value - reference value
-// - When a reset is discovered, update the reference as well.
+//   - Dropping the initial point, and recording its value and timestamp.
+//   - Subtracting the initial point from all subsequent points, and using the timestamp of the initial point as the start timestamp.
+//   - When a reset is discovered, reset the start timestamp to the current timestamp and report the value as is.
+//   - Subsequent points after the reset use the reset timestamp as the start time, and report the value unadjusted.
 func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
 	// Create a copy of metrics to store the results
 	resultMetrics := pmetric.NewMetrics()
