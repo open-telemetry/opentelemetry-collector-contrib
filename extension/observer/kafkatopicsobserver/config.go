@@ -4,9 +4,12 @@
 package kafkatopicsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver"
 
 import (
+	"fmt"
 	"time"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"go.uber.org/multierr"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 // Config defines configuration for docker observer
@@ -19,15 +22,24 @@ type Config struct {
 	// required in SASL environments.
 	ResolveCanonicalBootstrapServersOnly bool `mapstructure:"resolve_canonical_bootstrap_servers_only"`
 	// Kafka protocol version
-	ProtocolVersion string `mapstructure:"protocol_version"`
-	// Session interval for the Kafka consumer
-	SessionTimeout time.Duration `mapstructure:"session_timeout"`
-	// Heartbeat interval for the Kafka consumer
-	HeartbeatInterval time.Duration        `mapstructure:"heartbeat_interval"`
-	Authentication    kafka.Authentication `mapstructure:"auth"`
-	TopicRegex        string               `mapstructure:"topic_regex"`
+	ProtocolVersion    string                           `mapstructure:"protocol_version"`
+	Authentication     configkafka.AuthenticationConfig `mapstructure:"auth"`
+	TopicRegex         string                           `mapstructure:"topic_regex"`
+	TopicsSyncInterval time.Duration                    `mapstructure:"topics_sync_interval"`
 }
 
-func (config Config) Validate() error {
-	return nil
+func (config *Config) Validate() (errs error) {
+	if len(config.Brokers) == 0 {
+		errs = multierr.Append(errs, fmt.Errorf("brokers list must be specified"))
+	}
+	if len(config.ProtocolVersion) == 0 {
+		errs = multierr.Append(errs, fmt.Errorf("protocol_version must be specified"))
+	}
+	if len(config.TopicRegex) == 0 {
+		errs = multierr.Append(errs, fmt.Errorf("topic_regex must be specified"))
+	}
+	if config.TopicsSyncInterval <= 0 {
+		errs = multierr.Append(errs, fmt.Errorf("topics_sync_interval must be greater than 0"))
+	}
+	return errs
 }

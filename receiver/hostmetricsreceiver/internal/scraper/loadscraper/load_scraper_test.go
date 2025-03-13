@@ -75,7 +75,7 @@ func TestScrape(t *testing.T) {
 		// wait for measurement to start
 		<-startChan
 
-		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(), test.config)
+		scraper := newLoadScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), test.config)
 		if test.loadFunc != nil {
 			scraper.load = test.loadFunc
 		}

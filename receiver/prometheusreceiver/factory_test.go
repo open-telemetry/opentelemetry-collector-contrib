@@ -8,11 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -31,7 +31,7 @@ func TestCreateReceiver(t *testing.T) {
 
 	// The default config does not provide scrape_config so we expect that metrics receiver
 	// creation must also fail.
-	creationSet := receivertest.NewNopSettings()
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	mReceiver, _ := createMetricsReceiver(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, mReceiver)
 	assert.NotNil(t, mReceiver.(*pReceiver).cfg.PrometheusConfig.GlobalConfig)
@@ -48,10 +48,16 @@ func TestFactoryCanParseServiceDiscoveryConfigs(t *testing.T) {
 	assert.NoError(t, sub.Unmarshal(cfg))
 }
 
-func TestMultipleCreate(t *testing.T) {
+func TestMultipleCreateWithAPIServer(t *testing.T) {
 	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	set := receivertest.NewNopSettings()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.APIServer = &APIServer{
+		Enabled: true,
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:9090",
+		},
+	}
+	set := receivertest.NewNopSettings(metadata.Type)
 	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 	host := componenttest.NewNopHost()
@@ -64,20 +70,18 @@ func TestMultipleCreate(t *testing.T) {
 	require.NoError(t, secondRcvr.Shutdown(context.Background()))
 }
 
-func TestDefaultFallbackScrapeProtocol(t *testing.T) {
-	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_fallback_scrape_protocol.yaml"))
-	require.NoError(t, err)
+func TestMultipleCreate(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
-
-	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "").String())
+	set := receivertest.NewNopSettings(metadata.Type)
+	firstRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
 	require.NoError(t, err)
-	assert.NoError(t, sub.Unmarshal(cfg))
-
-	_, err = factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	host := componenttest.NewNopHost()
 	require.NoError(t, err)
-
-	// During receiver creation, scrapeconfig without fallback scrape protocol set, should be set to 'PrometheusText1.0.0'.
-	assert.Equal(t, promconfig.PrometheusText1_0_0, cfg.(*Config).PrometheusConfig.ScrapeConfigs[0].ScrapeFallbackProtocol)
-	assert.Equal(t, promconfig.OpenMetricsText1_0_0, cfg.(*Config).PrometheusConfig.ScrapeConfigs[1].ScrapeFallbackProtocol)
+	require.NoError(t, firstRcvr.Start(context.Background(), host))
+	require.NoError(t, firstRcvr.Shutdown(context.Background()))
+	secondRcvr, err := factory.CreateMetrics(context.Background(), set, cfg, consumertest.NewNop())
+	require.NoError(t, err)
+	require.NoError(t, secondRcvr.Start(context.Background(), host))
+	require.NoError(t, secondRcvr.Shutdown(context.Background()))
 }
