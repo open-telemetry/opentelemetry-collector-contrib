@@ -4,8 +4,10 @@ go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
+	github.com/cespare/xxhash v1.1.0
 	github.com/elastic/go-docappender/v2 v2.6.1
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
+	github.com/elastic/go-freelru v0.16.0
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
 	github.com/lestrrat-go/strftime v1.1.0
@@ -42,7 +44,6 @@ require (
 	github.com/cilium/ebpf v0.16.0 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/elastic/elastic-transport-go/v8 v8.6.1 // indirect
-	github.com/elastic/go-freelru v0.16.0 // indirect
 	github.com/elastic/go-sysinfo v1.15.0 // indirect
 	github.com/elastic/go-windows v1.0.2 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
