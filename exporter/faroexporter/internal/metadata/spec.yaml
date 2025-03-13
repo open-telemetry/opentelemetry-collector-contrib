@@ -1,5 +1,8 @@
 type: faro
 
+spec:
+  version: next
+
 status:
   stability:
     development: [traces, logs, metrics]
