@@ -107,9 +107,9 @@ func TestLogs_RenameAttributes(t *testing.T) {
 			ctx := context.Background()
 			out, err := pr.processLogs(ctx, tt.in)
 			if err != nil {
-				t.Errorf("Error while processing traces: %v", err)
+				t.Errorf("Error while processing logs: %v", err)
 			}
-			assert.Equal(t, tt.out, out, "Traces transformation failed")
+			assert.Equal(t, tt.out, out, "Logs transformation failed")
 		})
 	}
 }
