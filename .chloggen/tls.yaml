@@ -6,4 +6,5 @@ subtext: |
   - The start function now correctly determines whether TLS is enabled or not.
   - If TLS is disabled, it logs a message and proceeds without it.
   - Ensures secure TLS configuration handling to prevent misconfigurations.
+  - The `tlsConfig` is now correctly injected into the Docker client wherever applicable.
 change_logs: ["user"]

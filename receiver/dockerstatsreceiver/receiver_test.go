@@ -164,7 +164,7 @@ func TestResolveTLSConfig(t *testing.T) {
 				TLSConfig: tc.tlsConfig,
 			}
 
-			tlsConfig, err := config.resolveTLSConfig()
+			tlsConfig, err := config.resolveTLSConfig(context.Background())
 
 			if tc.expectedError {
 				if err == nil {

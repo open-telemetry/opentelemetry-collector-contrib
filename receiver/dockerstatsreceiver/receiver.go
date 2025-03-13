@@ -54,29 +54,29 @@ func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver 
 	}
 }
 
-func (c *Config) resolveTLSConfig() (*tls.Config, error) {
+func (c *Config) resolveTLSConfig(ctx context.Context) (*tls.Config, error) {
 	if c.TLSConfig == nil {
 		return nil, nil
 	}
 
-	return c.TLSConfig.LoadTLSConfig(context.Background())
+	return c.TLSConfig.LoadTLSConfig(ctx)
 }
 
 func (r *metricsReceiver) start(ctx context.Context, _ component.Host) error {
-	tlsConfig, tlsErr := r.config.resolveTLSConfig()
+	tlsConfig, tlsErr := r.config.resolveTLSConfig(ctx)
 	if tlsErr != nil {
 		r.settings.Logger.Error("Failed to resolve TLS config", zap.Error(tlsErr))
 		return fmt.Errorf("failed to resolve TLS config: %w", tlsErr)
 	}
 
 	if tlsConfig == nil {
-		r.settings.Logger.Info("TLS is not enabled, running without TLS.")
+		r.settings.Logger.Debug("TLS is not enabled, running without TLS.")
 	} else {
-		r.settings.Logger.Info("TLS is enabled.")
+		r.settings.Logger.Debug("TLS is enabled.")
 	}
 
 	var err error
-	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger)
+	r.client, err = docker.NewDockerClient(&r.config.Config, r.settings.Logger, tlsConfig)
 	if err != nil {
 		return err
 	}
