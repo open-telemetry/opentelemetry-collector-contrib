@@ -75,7 +75,3 @@ require (
 	google.golang.org/protobuf v1.36.5 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal => ../../internal/coreinternal
-
-replace go.opentelemetry.io/collector/exporter/exporterhelper => go.opentelemetry.io/collector/exporter v0.121.0
