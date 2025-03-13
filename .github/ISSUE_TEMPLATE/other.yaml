@@ -51,6 +51,7 @@ body:
       - exporter/dataset
       - exporter/doris
       - exporter/elasticsearch
+      - exporter/faro
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
