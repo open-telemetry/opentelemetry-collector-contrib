@@ -1,0 +1,5 @@
+faro:
+  endpoint: https://faro.example.com/collect
+
+faro/2:
+  endpoint: https://faro.example.com/collect 

@@ -1,0 +1,8 @@
+type: faro
+
+status:
+  stability:
+    development: [traces, logs, metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [] 
