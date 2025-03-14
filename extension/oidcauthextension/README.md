@@ -23,6 +23,7 @@ extensions:
     issuer_url: http://localhost:8080/auth/realms/opentelemetry
     issuer_ca_path: /etc/pki/tls/cert.pem
     audience: account
+    ignore_audience: <bool> # false if unspecified
     username_claim: email
 
 receivers:
