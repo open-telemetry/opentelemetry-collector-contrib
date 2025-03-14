@@ -768,11 +768,11 @@ func checkAndResetTimes(payload []StackPayload) error {
 	for i := range payload {
 		for j := range payload[i].UnsymbolizedLeafFrames {
 			if !isWithinLastSecond(payload[i].UnsymbolizedLeafFrames[j].Created) {
-				errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Created is too old: %v",
+				errs = errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Created is too old: %v",
 					i, j, payload[i].UnsymbolizedLeafFrames[j].Created))
 			}
 			if !isWithinLastSecond(payload[i].UnsymbolizedLeafFrames[j].Next) {
-				errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Next is too old: %v",
+				errs = errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Next is too old: %v",
 					i, j, payload[i].UnsymbolizedLeafFrames[j].Next))
 			}
 			payload[i].UnsymbolizedLeafFrames[j].Created = time.Time{}
@@ -780,11 +780,11 @@ func checkAndResetTimes(payload []StackPayload) error {
 		}
 		for j := range payload[i].UnsymbolizedExecutables {
 			if !isWithinLastSecond(payload[i].UnsymbolizedExecutables[j].Created) {
-				errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Created is too old: %v",
+				errs = errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Created is too old: %v",
 					i, j, payload[i].UnsymbolizedExecutables[j].Created))
 			}
 			if !isWithinLastSecond(payload[i].UnsymbolizedExecutables[j].Next) {
-				errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Next is too old: %v",
+				errs = errors.Join(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Next is too old: %v",
 					i, j, payload[i].UnsymbolizedExecutables[j].Next))
 			}
 			payload[i].UnsymbolizedExecutables[j].Created = time.Time{}
