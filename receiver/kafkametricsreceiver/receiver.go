@@ -18,7 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
-type createKafkaScraper func(context.Context, Config, *sarama.Config, receiver.Settings) (scraper.Metrics, error)
+type createKafkaScraper func(context.Context, Config, receiver.Settings) (scraper.Metrics, error)
 
 var (
 	brokersScraperType   = component.MustNewType("brokers")
@@ -29,6 +29,9 @@ var (
 		topicsScraperType.String():    createTopicsScraper,
 		consumersScraperType.String(): createConsumerScraper,
 	}
+
+	newSaramaClient = kafka.NewSaramaClient
+	newClusterAdmin = sarama.NewClusterAdminFromClient
 )
 
 var newMetricsReceiver = func(
@@ -37,30 +40,10 @@ var newMetricsReceiver = func(
 	params receiver.Settings,
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	sc := sarama.NewConfig()
-	sc.ClientID = config.ClientID
-	if config.ResolveCanonicalBootstrapServersOnly {
-		sc.Net.ResolveCanonicalBootstrapServers = true
-	}
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		sc.Version = version
-	}
-
-	if config.RefreshFrequency != 0 {
-		sc.Metadata.RefreshFrequency = config.RefreshFrequency
-	}
-
-	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, sc); err != nil {
-		return nil, err
-	}
 	scraperControllerOptions := make([]scraperhelper.ControllerOption, 0, len(config.Scrapers))
 	for _, scraper := range config.Scrapers {
 		if s, ok := allScrapers[scraper]; ok {
-			s, err := s(ctx, config, sc, params)
+			s, err := s(ctx, config, params)
 			if err != nil {
 				return nil, err
 			}

@@ -227,6 +227,10 @@ type MetadataConfig struct {
 	// memory if you have many topics and partitions. Defaults to true.
 	Full bool `mapstructure:"full"`
 
+	// RefreshInterval controls the frequency at which cluster metadata is
+	// refreshed. Defaults to 10 minutes.
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+
 	// Retry configuration for metadata.
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
@@ -245,7 +249,8 @@ type MetadataRetryConfig struct {
 
 func NewDefaultMetadataConfig() MetadataConfig {
 	return MetadataConfig{
-		Full: true,
+		Full:            true,
+		RefreshInterval: 10 * time.Minute,
 		Retry: MetadataRetryConfig{
 			Max:     3,
 			Backoff: time.Millisecond * 250,

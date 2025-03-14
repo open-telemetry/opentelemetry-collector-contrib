@@ -4,11 +4,14 @@
 package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
+	"context"
 	"errors"
 	"strconv"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 const (
@@ -26,22 +29,17 @@ const (
 )
 
 var (
-	newSaramaClient = sarama.NewClient
-	newClusterAdmin = sarama.NewClusterAdmin
-)
-
-var (
 	testTopics     = []string{testTopic}
 	testPartitions = []int32{1}
 	testReplicas   = []int32{1}
 	testBrokers    = make([]*sarama.Broker, 1)
 )
 
-func mockNewSaramaClient([]string, *sarama.Config) (sarama.Client, error) {
+func mockNewSaramaClient(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 	return newMockClient(), nil
 }
 
-func mockNewClusterAdmin([]string, *sarama.Config) (sarama.ClusterAdmin, error) {
+func mockNewClusterAdmin(sarama.Client) (sarama.ClusterAdmin, error) {
 	return newMockClusterAdmin(), nil
 }
 
