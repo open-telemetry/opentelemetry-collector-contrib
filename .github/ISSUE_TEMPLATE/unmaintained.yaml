@@ -37,7 +37,6 @@ body:
       - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
-      - examples/demo
       - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
