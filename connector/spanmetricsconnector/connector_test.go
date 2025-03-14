@@ -1875,3 +1875,105 @@ func (c alwaysIncreasingClock) Now() time.Time {
 	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
 }
+
+func TestBuildAttributes_InstrumentationScope(t *testing.T) {
+	tests := []struct {
+		name                 string
+		instrumentationScope pcommon.InstrumentationScope
+		config               Config
+		want                 map[string]string
+	}{
+		{
+			name: "with instrumentation scope name and version",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("test_name")
+				scope.SetVersion("test_version")
+				return scope
+			}(),
+			config: Config{},
+			want: map[string]string{
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "test_name",
+				instrumentationScopeVersionKey: "test_version",
+			},
+		},
+		{
+			name: "with excluded instrumentation scope",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("test_name")
+				scope.SetVersion("test_version")
+				return scope
+			}(),
+			config: Config{
+				ExcludeInstrumentationScope: []string{instrumentationScopeNameKey, instrumentationScopeVersionKey},
+			},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+		{
+			name: "with instrumentation scope attributes",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.Attributes().PutStr("library.language", "go")
+				return scope
+			}(),
+			config: Config{
+				InstrumentationScope: []string{"library.language"},
+			},
+			want: map[string]string{
+				serviceNameKey:     "test_service",
+				spanNameKey:        "test_span",
+				spanKindKey:        "SPAN_KIND_INTERNAL",
+				statusCodeKey:      "STATUS_CODE_UNSET",
+				"library.language": "go",
+			},
+		},
+		{
+			name:                 "with default instrumentation scope attribute",
+			instrumentationScope: pcommon.NewInstrumentationScope(),
+			config: Config{
+				InstrumentationScope: []string{"library.language"},
+			},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create connector
+			p := &connectorImp{
+				config: tt.config,
+			}
+
+			// Create basic span
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			// Build attributes
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+
+			// Verify results
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.Str())
+			}
+		})
+	}
+}
