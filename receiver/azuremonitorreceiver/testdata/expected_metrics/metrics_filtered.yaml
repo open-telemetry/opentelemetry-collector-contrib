@@ -11,237 +11,188 @@ resourceMetrics:
       - metrics:
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 11
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceA/namespace1/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceA/namespace1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric1_maximum
-            unit: unit1
+            name: azure_connectionstotal_count
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 0.1
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric4_minimum
-            unit: unit1
+            name: azure_incommingmessages_minimum
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 11
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric1_total
-            unit: unit1
+            name: azure_incommingmessages_count
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 11
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric3_total
-            unit: unit1
+            name: azure_incommingmessages_total
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 123.45
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric4_average
-            unit: unit1
+            name: azure_incommingmessages_average
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 123.45
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric4_maximum
-            unit: unit1
+            name: azure_incommingmessages_maximum
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 123.45
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric1_count
-            unit: unit1
+            name: azure_transferedbytes_maximum
+            unit: u
           - gauge:
               dataPoints:
-                - asDouble: 1
+                - asDouble: 0.1
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
                     - key: location
                       value:
-                        stringValue: location1
+                        stringValue: location-name
                     - key: name
                       value:
-                        stringValue: name1
+                        stringValue: resource-name
                     - key: resource_group
                       value:
-                        stringValue: group1
+                        stringValue: resource-group
                     - key: type
                       value:
-                        stringValue: type1
+                        stringValue: Microsoft.ServiceB/namespace2
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric1_minimum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric1_average
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId3
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric7_count
-            unit: unit1
+            name: azure_transferedbytes_minimum
+            unit: u
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
           version: latest

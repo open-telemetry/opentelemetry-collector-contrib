@@ -5,6 +5,7 @@ package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"net/http"
 	"path/filepath"
 	"reflect"
 	"strings"
@@ -15,10 +16,13 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
+	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
+	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/fake"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -348,6 +352,243 @@ func TestAzureScraperScrape(t *testing.T) {
 			))
 		})
 	}
+}
+
+func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
+	fakeSubID := "/subscription/azuremonitor-receiver"
+	fakeCreds := &azfake.TokenCredential{}
+	metricNamespace1, metricNamespace2 := "Microsoft.ServiceA/namespace1", "Microsoft.ServiceB/namespace2"
+	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncommingMessages", "TransferedBytes"
+	metricAggregation1, metricAggregation2, metricAggregation3 := "Count", "Maximum", "Minimum"
+	cfgLimitedMertics := createDefaultConfig().(*Config)
+	cfgLimitedMertics.Metrics = NestedListAlias{
+		metricNamespace1: {
+			metricName1: {metricAggregation1},
+		},
+		metricNamespace2: {
+			metricName2: {filterAllAggregations},
+			metricName3: {metricAggregation2, metricAggregation3},
+		},
+	}
+
+	t.Run("should filter metrics and aggregations", func(t *testing.T) {
+		fakeResourceServer := &armresourcesfake.Server{
+			NewListPager: func(*armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
+				name := "resource-name"
+				id1 := fakeSubID + "/resourceGroups/resource-group/providers/" + metricNamespace1 + "/" + name
+				id2 := fakeSubID + "/resourceGroups/resource-group/providers/" + metricNamespace2 + "/" + name
+				location := "location-name"
+				resp.AddPage(http.StatusOK, armresources.ClientListResponse{
+					ResourceListResult: armresources.ResourceListResult{
+						Value: []*armresources.GenericResourceExpanded{
+							{
+								ID:       &id1,
+								Location: &location,
+								Name:     &name,
+								Type:     &metricNamespace1,
+							},
+						},
+					},
+				}, nil)
+				resp.AddPage(http.StatusOK, armresources.ClientListResponse{
+					ResourceListResult: armresources.ResourceListResult{
+						Value: []*armresources.GenericResourceExpanded{
+							{
+								ID:       &id2,
+								Location: &location,
+								Name:     &name,
+								Type:     &metricNamespace2,
+							},
+						},
+					},
+				}, nil)
+				return
+			},
+		}
+		armClientMock, err := armresources.NewClient(fakeSubID, fakeCreds, &arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				Transport: armresourcesfake.NewServerTransport(fakeResourceServer),
+			},
+		})
+		require.NoError(t, err, "should create fake client")
+
+		fakeMetricDefinitionsServer := &armmonitorfake.MetricDefinitionsServer{
+			NewListPager: func(uri string, _ *armmonitor.MetricDefinitionsClientListOptions) (resp azfake.PagerResponder[armmonitor.MetricDefinitionsClientListResponse]) {
+				timeGrain := "PT1M"
+				if strings.Contains(uri, metricNamespace1) {
+					resp.AddPage(http.StatusOK, armmonitor.MetricDefinitionsClientListResponse{
+						MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
+							Value: []*armmonitor.MetricDefinition{
+								{
+									Namespace: &metricNamespace1,
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName1,
+									},
+									MetricAvailabilities: []*armmonitor.MetricAvailability{
+										{
+											TimeGrain: &timeGrain,
+										},
+									},
+								},
+							},
+						},
+					}, nil)
+				}
+				if strings.Contains(uri, metricNamespace2) {
+					resp.AddPage(http.StatusOK, armmonitor.MetricDefinitionsClientListResponse{
+						MetricDefinitionCollection: armmonitor.MetricDefinitionCollection{
+							Value: []*armmonitor.MetricDefinition{
+								{
+									Namespace: &metricNamespace2,
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName2,
+									},
+									MetricAvailabilities: []*armmonitor.MetricAvailability{
+										{
+											TimeGrain: &timeGrain,
+										},
+									},
+								},
+								{
+									Namespace: &metricNamespace2,
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName3,
+									},
+									MetricAvailabilities: []*armmonitor.MetricAvailability{
+										{
+											TimeGrain: &timeGrain,
+										},
+									},
+								},
+							},
+						},
+					}, nil)
+				}
+				return
+			},
+		}
+		metricsDefinitionsClientMock, err := armmonitor.NewMetricDefinitionsClient(fakeSubID, fakeCreds, &arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				Transport: armmonitorfake.NewMetricDefinitionsServerTransport(fakeMetricDefinitionsServer),
+			},
+		})
+		require.NoError(t, err, "should create fake metric definition client")
+
+		fakeMetricsServer := &armmonitorfake.MetricsServer{
+			List: func(_ context.Context, _ string, opts *armmonitor.MetricsClientListOptions) (resp azfake.Responder[armmonitor.MetricsClientListResponse], errResp azfake.ErrorResponder) {
+				var unit armmonitor.Unit = "u"
+				var valueCount float64 = 11
+				valueMaximum := 123.45
+				valueMinimum := 0.1
+				switch *opts.Metricnames {
+				case metricName1:
+					resp.SetResponse(http.StatusOK, armmonitor.MetricsClientListResponse{
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName1,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Count: &valueCount,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}, nil)
+				case metricName2:
+					resp.SetResponse(http.StatusOK, armmonitor.MetricsClientListResponse{
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName2,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Average: &valueMaximum,
+													Count:   &valueCount,
+													Maximum: &valueMaximum,
+													Minimum: &valueMinimum,
+													Total:   &valueCount,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}, nil)
+				case metricName3:
+					resp.SetResponse(http.StatusOK, armmonitor.MetricsClientListResponse{
+						Response: armmonitor.Response{
+							Value: []*armmonitor.Metric{
+								{
+									Name: &armmonitor.LocalizableString{
+										Value: &metricName3,
+									},
+									Unit: &unit,
+									Timeseries: []*armmonitor.TimeSeriesElement{
+										{
+											Data: []*armmonitor.MetricValue{
+												{
+													Maximum: &valueMaximum,
+													Minimum: &valueMinimum,
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					}, nil)
+				}
+				return
+			},
+		}
+		metricsClientMock, err := armmonitor.NewMetricsClient(fakeSubID, fakeCreds, &arm.ClientOptions{
+			ClientOptions: azcore.ClientOptions{
+				Transport: armmonitorfake.NewMetricsServerTransport(fakeMetricsServer),
+			},
+		})
+		require.NoError(t, err, "should create fake metric client")
+
+		settings := receivertest.NewNopSettings(metadata.Type)
+		s := &azureScraper{
+			cfg:                      cfgLimitedMertics,
+			clientResources:          armClientMock,
+			clientMetricsDefinitions: metricsDefinitionsClientMock,
+			clientMetricsValues:      metricsClientMock,
+			mb:                       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+			mutex:                    &sync.Mutex{},
+			time:                     getTimeMock(),
+			resources:                map[string]*azureResource{},
+		}
+
+		metrics, err := s.scrape(context.Background())
+
+		require.NoError(t, err)
+		expectedFile := filepath.Join("testdata", "expected_metrics", "metrics_filtered.yaml")
+		expectedMetrics, err := golden.ReadMetrics(expectedFile)
+		require.NoError(t, err)
+		require.NoError(t, pmetrictest.CompareMetrics(
+			expectedMetrics,
+			metrics,
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreMetricsOrder(),
+		))
+	})
 }
 
 func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
