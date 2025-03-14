@@ -126,11 +126,12 @@ Examples:
 
 ### flatten
 
-`flatten(target, Optional[prefix], Optional[depth])`
+`flatten(target, Optional[prefix], Optional[depth], Optional[resolveConflicts])`
 
 The `flatten` function flattens a `pcommon.Map` by moving items from nested maps to the root. 
 
-`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int.
+`target` is a path expression to a `pcommon.Map` type field. `prefix` is an optional string. `depth` is an optional non-negative int, `resolveConflicts` resolves the potential conflicts in the map keys by adding a number suffix starting with `0` from the first duplicated key.
+
 
 For example, the following map
 
@@ -199,6 +200,46 @@ the result would be
 
 A `depth` of `0` means that no flattening will occur.
 
+If `resolveConflicts` is set to `true`, conflicts within the map will be resolved
+
+```json
+{
+  "address": {
+    "street": {
+      "number": "first",
+    },
+    "house": "1234",
+  },
+  "address.street": {
+    "number": ["second", "third"],
+  },
+  "address.street.number": "fourth",
+  "occupants": [
+    "user 1",
+    "user 2",
+  ],
+}
+```
+
+the result would be
+
+```json
+{
+  "address.street.number":   "first",
+  "address.house":           "1234",
+  "address.street.number.0": "second",
+  "address.street.number.1": "third",
+  "occupants":               "user 1",
+  "occupants.0":             "user 2",
+  "address.street.number.2": "fourth",
+}
+
+```
+
+**Note:**
+Please note that when the `resolveConflicts` parameter is set to `true`, the flattening of arrays is managed differently.
+With conflict resolution enabled, arrays and any potentially conflicting keys are handled in a standardized manner. Specifically, a `.<number>` suffix is added to the first conflicting key, with the `number` incrementing for each additional conflict.
+
 Examples:
 
 - `flatten(resource.attributes)`
@@ -208,6 +249,9 @@ Examples:
 
 
 - `flatten(log.body, depth=2)`
+
+
+- `flatten(body, resolveConflicts=true)`
 
 
 ### keep_keys
@@ -445,6 +489,8 @@ Available Converters:
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Murmur3Hash](#murmur3hash)
+- [Murmur3Hash128](#murmur3hash128)
 - [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
@@ -1300,6 +1346,34 @@ The returned type is `int64`.
 Examples:
 
 - `Month(Now())`
+
+### Murmur3Hash
+
+`Murmur3Hash(target)`
+
+The `Murmur3Hash` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash(attributes["order.productId"])`
+
+### Murmur3Hash128
+
+`Murmur3Hash128(target)`
+
+The `Murmur3Hash128` Converter converts the `target` string to a hexadecimal string in little-endian of the 128-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash128(attributes["order.productId"])`
 
 ### Nanosecond
 

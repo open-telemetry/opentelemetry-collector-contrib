@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -30,12 +31,12 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sp"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				URL: "https://fakeaccount.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:         "service_principal",
-					TenantID:     "<tenand id>",
-					ClientID:     "<client id>",
-					ClientSecret: "<client secret>",
+					TenantID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
+					ClientID:     "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
+					ClientSecret: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
 				Container: &Container{
 					Metrics: "test",
@@ -43,19 +44,21 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+					LogsFormat:     "2006/01/02/logs_15_04_05.json",
+					TracesFormat:   "2006/01/02/traces_15_04_05.json",
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "smi"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				URL: "https://fakeaccount.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type: "system_managed_identity",
 				},
@@ -65,22 +68,24 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+					LogsFormat:     "2006/01/02/logs_15_04_05.json",
+					TracesFormat:   "2006/01/02/traces_15_04_05.json",
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "proto",
+				FormatType:    "proto",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "umi"),
 			expected: &Config{
-				URL: "https://<account>.blob.core.windows.net/",
+				URL: "https://fakeaccount.blob.core.windows.net/",
 				Auth: &Authentication{
 					Type:     "user_managed_identity",
-					ClientID: "<user managed identity id>",
+					ClientID: "e4b5a5f0-3d6a-4b1c-9e2f-7c8a1b8f2c3d",
 				},
 				Container: &Container{
 					Metrics: "test",
@@ -88,13 +93,15 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+					LogsFormat:     "2006/01/02/logs_15_04_05.json",
+					TracesFormat:   "2006/01/02/traces_15_04_05.json",
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{
@@ -102,7 +109,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				Auth: &Authentication{
 					Type:             "connection_string",
-					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=<account>;AccountKey=<account key>;EndpointSuffix=core.windows.net",
+					ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
 				},
 				Container: &Container{
 					Metrics: "test",
@@ -110,13 +117,15 @@ func TestLoadConfig(t *testing.T) {
 					Traces:  "test",
 				},
 				BlobNameFormat: &BlobNameFormat{
-					MetricsFormat:  "2006/01/02/metrics_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					LogsFormat:     "2006/01/02/logs_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
-					TracesFormat:   "2006/01/02/traces_15_04_05_{{.SerialNum}}.{{.FileExtension}}",
+					MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+					LogsFormat:     "2006/01/02/logs_15_04_05.json",
+					TracesFormat:   "2006/01/02/traces_15_04_05.json",
 					SerialNumRange: 10000,
 					Params:         map[string]string{},
 				},
-				FormatType: "json",
+				FormatType:    "json",
+				Encodings:     &Encodings{},
+				BackOffConfig: configretry.NewDefaultBackOffConfig(),
 			},
 		},
 		{

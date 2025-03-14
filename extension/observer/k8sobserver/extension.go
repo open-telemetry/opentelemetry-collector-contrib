@@ -18,6 +18,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -27,7 +28,7 @@ var (
 )
 
 type k8sObserver struct {
-	*observer.EndpointsWatcher
+	*endpointswatcher.EndpointsWatcher
 	telemetry            component.TelemetrySettings
 	podListerWatcher     cache.ListerWatcher
 	serviceListerWatcher cache.ListerWatcher
@@ -138,7 +139,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 	}
 	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
 	obs := &k8sObserver{
-		EndpointsWatcher:     observer.NewEndpointsWatcher(h, time.Second, set.TelemetrySettings.Logger),
+		EndpointsWatcher:     endpointswatcher.New(h, time.Second, set.TelemetrySettings.Logger),
 		telemetry:            set.TelemetrySettings,
 		podListerWatcher:     podListerWatcher,
 		serviceListerWatcher: serviceListerWatcher,

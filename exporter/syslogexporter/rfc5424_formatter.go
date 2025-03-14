@@ -6,6 +6,7 @@ package syslogexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -78,9 +79,9 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 		return emptyValue
 	}
 
-	sdElements := []string{}
+	var sdBuilder strings.Builder
 	for key, val := range structuredDataAttributeValue.Map().AsRaw() {
-		sdElements = append(sdElements, key)
+		sdElements := []string{key}
 		vval, ok := val.(map[string]any)
 		if !ok {
 			continue
@@ -92,8 +93,9 @@ func (f *rfc5424Formatter) formatStructuredData(logRecord plog.LogRecord) string
 			}
 			sdElements = append(sdElements, fmt.Sprintf("%s=\"%s\"", k, vv))
 		}
+		sdBuilder.WriteString(fmt.Sprint(sdElements))
 	}
-	return fmt.Sprint(sdElements)
+	return sdBuilder.String()
 }
 
 func (f *rfc5424Formatter) formatMessage(logRecord plog.LogRecord) string {

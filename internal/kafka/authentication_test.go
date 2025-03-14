@@ -12,6 +12,8 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/configtls"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 func TestAuthentication(t *testing.T) {
@@ -52,15 +54,17 @@ func TestAuthentication(t *testing.T) {
 	require.NoError(t, err)
 	saramaTLSCfg.Net.TLS.Config = tlscfg
 
-	ctx := context.Background()
-	saramaSASLAWSIAMOATUHConfig := &sarama.Config{}
-	saramaSASLAWSIAMOATUHConfig.Net.SASL.Enable = true
-	saramaSASLAWSIAMOATUHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-	saramaSASLAWSIAMOATUHConfig.Net.SASL.TokenProvider = &AWSMSKConfig{Region: "region", ctx: ctx}
+	saramaSASLAWSIAMOAUTHConfig := &sarama.Config{}
+	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Enable = true
+	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+	saramaSASLAWSIAMOAUTHConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{
+		ctx:    context.Background(),
+		region: "region",
+	}
 
 	tlsConfig := tls.Config{}
-	saramaSASLAWSIAMOATUHConfig.Net.TLS.Enable = true
-	saramaSASLAWSIAMOATUHConfig.Net.TLS.Config = &tlsConfig
+	saramaSASLAWSIAMOAUTHConfig.Net.TLS.Enable = true
+	saramaSASLAWSIAMOAUTHConfig.Net.TLS.Config = &tlsConfig
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
@@ -89,86 +93,82 @@ func TestAuthentication(t *testing.T) {
 	saramaKerberosDisablePAFXFASTFalseCfg.Net.SASL.GSSAPI.DisablePAFXFAST = false
 
 	tests := []struct {
-		auth         Authentication
+		auth         configkafka.AuthenticationConfig
 		saramaConfig *sarama.Config
 		err          string
 	}{
 		{
-			auth:         Authentication{PlainText: &PlainTextConfig{Username: "jdoe", Password: "pass"}},
+			auth: configkafka.AuthenticationConfig{
+				PlainText: &configkafka.PlainTextConfig{Username: "jdoe", Password: "pass"},
+			},
 			saramaConfig: saramaPlaintext,
 		},
 		{
-			auth:         Authentication{TLS: &configtls.ClientConfig{}},
+			auth:         configkafka.AuthenticationConfig{TLS: &configtls.ClientConfig{}},
 			saramaConfig: saramaTLSCfg,
 		},
 		{
-			auth: Authentication{TLS: &configtls.ClientConfig{
+			auth: configkafka.AuthenticationConfig{TLS: &configtls.ClientConfig{
 				Config: configtls.Config{CAFile: "/doesnotexists"},
 			}},
 			saramaConfig: saramaTLSCfg,
 			err:          "failed to load TLS config",
 		},
 		{
-			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar"}},
+			auth: configkafka.AuthenticationConfig{
+				Kerberos: &configkafka.KerberosConfig{ServiceName: "foobar"},
+			},
 			saramaConfig: saramaKerberosCfg,
 		},
 		{
-			auth:         Authentication{Kerberos: &KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"}},
+			auth: configkafka.AuthenticationConfig{
+				Kerberos: &configkafka.KerberosConfig{UseKeyTab: true, KeyTabPath: "/path"},
+			},
 			saramaConfig: saramaKerberosKeyTabCfg,
 		},
 		{
-			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: true}},
+			auth: configkafka.AuthenticationConfig{
+				Kerberos: &configkafka.KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: true},
+			},
 			saramaConfig: saramaKerberosDisablePAFXFASTTrueCfg,
 		},
 		{
-			auth:         Authentication{Kerberos: &KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: false}},
+			auth:         configkafka.AuthenticationConfig{Kerberos: &configkafka.KerberosConfig{ServiceName: "foobar", DisablePAFXFAST: false}},
 			saramaConfig: saramaKerberosDisablePAFXFASTFalseCfg,
 		},
 		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-256"}},
+			auth:         configkafka.AuthenticationConfig{SASL: &configkafka.SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-256"}},
 			saramaConfig: saramaSASLSCRAM256Config,
 		},
 		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
+			auth:         configkafka.AuthenticationConfig{SASL: &configkafka.SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
 			saramaConfig: saramaSASLSCRAM512Config,
 		},
 		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 1}},
+			auth: configkafka.AuthenticationConfig{
+				SASL: &configkafka.SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 1},
+			},
 			saramaConfig: saramaSASLHandshakeV1Config,
 		},
 		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "PLAIN"}},
+			auth: configkafka.AuthenticationConfig{
+				SASL: &configkafka.SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "PLAIN"},
+			},
 			saramaConfig: saramaSASLPLAINConfig,
 		},
 		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "", Mechanism: "AWS_MSK_IAM_OAUTHBEARER", AWSMSK: AWSMSKConfig{Region: "region"}}},
-			saramaConfig: saramaSASLAWSIAMOATUHConfig,
-		},
-		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-222"}},
-			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "invalid SASL Mechanism",
-		},
-		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "", Password: "pass", Mechanism: "SCRAM-SHA-512"}},
-			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "username have to be provided",
-		},
-		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "", Mechanism: "SCRAM-SHA-512"}},
-			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "password have to be provided",
-		},
-		{
-			auth:         Authentication{SASL: &SASLConfig{Username: "jdoe", Password: "pass", Mechanism: "SCRAM-SHA-512", Version: 2}},
-			saramaConfig: saramaSASLSCRAM512Config,
-			err:          "invalid SASL Protocol Version",
+			auth: configkafka.AuthenticationConfig{
+				SASL: &configkafka.SASLConfig{
+					Mechanism: "AWS_MSK_IAM_OAUTHBEARER", AWSMSK: configkafka.AWSMSKConfig{Region: "region"},
+				},
+			},
+			saramaConfig: saramaSASLAWSIAMOAUTHConfig,
 		},
 	}
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			err := ConfigureAuthentication(context.Background(), test.auth, config)
+			err := ConfigureSaramaAuthentication(context.Background(), test.auth, config)
 			if test.err != "" {
 				assert.ErrorContains(t, err, test.err)
 			} else {
@@ -178,4 +178,16 @@ func TestAuthentication(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConfigureSaramaAuthentication_TLS(t *testing.T) {
+	auth := configkafka.AuthenticationConfig{
+		TLS: &configtls.ClientConfig{
+			Config: configtls.Config{
+				CAFile: "/nonexistent",
+			},
+		},
+	}
+	err := ConfigureSaramaAuthentication(context.Background(), auth, &sarama.Config{})
+	require.ErrorContains(t, err, "failed to load TLS config")
 }

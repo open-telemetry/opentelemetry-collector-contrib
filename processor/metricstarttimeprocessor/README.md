@@ -50,3 +50,20 @@ Cons:
 * The True Reset point doesn't make sense semantically. It has a zero duration, but non-zero values.
 * Many backends reject points with equal start and end timestamps.
     * If the True Reset point is rejected, the next point will appear to have a very large rate.
+
+### Strategy: Subtract Initial Point
+
+The `subtract_initial_point` strategy handles missing start times for
+cumulative points by dropping the first point in a cumulative series,
+"subtracting" that point's value from subsequent points and using the initial
+point's timestamp as the start timestamp for subsequent points.
+
+Pros:
+
+* Cumulative semantics are preserved. This means that for a point with a given `[start, end]` interval, the cumulative value occurred in that interval.
+* Rates over resulting timeseries are correct, even if points are lost. This strategy is not stateful.
+
+Cons:
+
+* The absolute value of counters is modified. This is generally not an issue, since counters are usually used to compute rates.
+* The initial point is dropped, which loses information.

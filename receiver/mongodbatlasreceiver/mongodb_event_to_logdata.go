@@ -45,7 +45,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // mongoAuditEventToLogRecord converts model.AuditLog event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) (plog.Logs, error) {
+func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc projectContext, hostname, logName string, clusterInfo clusterInfo) (plog.Logs, error) {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -147,7 +147,7 @@ func mongodbAuditEventToLogData(logger *zap.Logger, logs []model.AuditLog, pc Pr
 }
 
 // mongoEventToLogRecord converts model.LogEntry event to plog.LogRecordSlice and adds the resource attributes.
-func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc ProjectContext, hostname, logName string, clusterInfo ClusterInfo) plog.Logs {
+func mongodbEventToLogData(logger *zap.Logger, logs []model.LogEntry, pc projectContext, hostname, logName string, clusterInfo clusterInfo) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()

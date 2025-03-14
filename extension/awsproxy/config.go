@@ -11,4 +11,6 @@ import (
 type Config struct {
 	// ProxyServer defines configurations related to the local TCP proxy server.
 	ProxyConfig proxy.Config `mapstructure:",squash"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

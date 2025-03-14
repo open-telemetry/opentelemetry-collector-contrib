@@ -3,16 +3,15 @@ type: tlscheck
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [atoulme, michael-burt]
 
-
 resource_attributes:
-  tlscheck.url:
+  tlscheck.endpoint:
     enabled: true
-    description: Url at which the certificate was accessed.
+    description: Endpoint at which the certificate was accessed.
     type: string
 
 attributes:

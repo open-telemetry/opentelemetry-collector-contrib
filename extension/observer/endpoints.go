@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"reflect"
 )
 
 type (
@@ -103,25 +102,6 @@ func (e *Endpoint) Env() (EndpointEnv, error) {
 
 func (e *Endpoint) String() string {
 	return fmt.Sprintf("Endpoint{ID: %v, Target: %v, Details: %T%+v}", e.ID, e.Target, e.Details, e.Details)
-}
-
-func (e Endpoint) equals(other Endpoint) bool {
-	switch {
-	case e.ID != other.ID:
-		return false
-	case e.Target != other.Target:
-		return false
-	case e.Details == nil && other.Details != nil:
-		return false
-	case other.Details == nil && e.Details != nil:
-		return false
-	case e.Details == nil && other.Details == nil:
-		return true
-	case e.Details.Type() != other.Details.Type():
-		return false
-	default:
-		return reflect.DeepEqual(e.Details.Env(), other.Details.Env())
-	}
 }
 
 // K8sService is a discovered k8s service.

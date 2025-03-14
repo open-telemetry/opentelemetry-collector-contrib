@@ -11,7 +11,7 @@ import (
 	corelog "github.com/DataDog/datadog-agent/comp/core/log/def"
 	pkgconfigmodel "github.com/DataDog/datadog-agent/pkg/config/model"
 	pkgconfigsetup "github.com/DataDog/datadog-agent/pkg/config/setup"
-	viperconfig "github.com/DataDog/datadog-agent/pkg/config/viperconfig"
+	"github.com/DataDog/datadog-agent/pkg/config/viperconfig"
 	"go.opentelemetry.io/collector/component"
 	"golang.org/x/net/http/httpproxy"
 

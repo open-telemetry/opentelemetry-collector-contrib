@@ -17,8 +17,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/ptraceutiltest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 )
 
 func TestTracesRegisterConsumersForValidRoute(t *testing.T) {
@@ -409,6 +411,12 @@ func TestTracesConnectorDetailed(t *testing.T) {
 	isResourceX := `attributes["resourceName"] == "resourceX"`
 	isResourceY := `attributes["resourceName"] == "resourceY"`
 
+	// IsMap and IsString are just candidate for Standard Converter Function to prevent any unknown regressions for this component
+	isResourceString := `IsString(attributes["resourceName"]) == true`
+	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsString")
+	isAttributesMap := `IsMap(attributes) == true`
+	require.Contains(t, common.Functions[ottlresource.TransformContext](), "IsMap")
+
 	isSpanE := `name == "spanE"`
 	isSpanF := `name == "spanF"`
 	isSpanX := `name == "spanX"`
@@ -610,6 +618,26 @@ func TestTracesConnectorDetailed(t *testing.T) {
 			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "FG"),
 			expectSink0: ptrace.Traces{},
 			expectSink1: ptrace.Traces{},
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_converter_function_is_string",
+			cfg: testConfig(
+				withRoute("resource", isResourceString, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSinkD: ptrace.Traces{},
+		},
+		{
+			name: "resource/with_converter_function_is_map",
+			cfg: testConfig(
+				withRoute("resource", isAttributesMap, idSink0),
+				withDefault(idSinkD),
+			),
+			input:       ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
+			expectSink0: ptraceutiltest.NewTraces("AB", "CD", "EF", "GH"),
 			expectSinkD: ptrace.Traces{},
 		},
 		{
