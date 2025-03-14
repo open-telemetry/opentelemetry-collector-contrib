@@ -16,8 +16,12 @@ func TestNew_JSON(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	_, err = e.UnmarshalMetrics([]byte{})
-	assert.NoError(t, err)
+	expectedErrStr := "failed to unmarshal metrics as 'json' format: " +
+		"error unmarshaling datum at index 0: readObjectStart: " +
+		"expect { or n, but found a, error found in #1 byte of ...|a|..., " +
+		"bigger context ...|a|..."
+	_, err = e.UnmarshalMetrics([]byte("a"))
+	assert.EqualError(t, err, expectedErrStr)
 }
 
 func TestNew_OpenTelemetry10(t *testing.T) {
@@ -25,8 +29,10 @@ func TestNew_OpenTelemetry10(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, e)
 
-	_, err = e.UnmarshalMetrics([]byte{})
-	assert.NoError(t, err)
+	expectedErrStr := "failed to unmarshal metrics as 'opentelemetry1.0' format: " +
+		"index out of bounds: length prefix exceeds available bytes in record"
+	_, err = e.UnmarshalMetrics([]byte("a"))
+	assert.EqualError(t, err, expectedErrStr)
 }
 
 func TestNew_Unimplemented(t *testing.T) {

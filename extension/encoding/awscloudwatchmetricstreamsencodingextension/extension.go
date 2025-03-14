@@ -27,7 +27,6 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: &formatJSONUnmarshaler{
 				buildInfo: settings.BuildInfo,
-				logger:    settings.Logger,
 			},
 			format: formatJSON,
 		}, nil

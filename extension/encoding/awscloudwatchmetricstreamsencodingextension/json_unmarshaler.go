@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
 )
@@ -36,7 +35,6 @@ var (
 
 type formatJSONUnmarshaler struct {
 	buildInfo component.BuildInfo
-	logger    *zap.Logger
 }
 
 var _ pmetric.Unmarshaler = (*formatJSONUnmarshaler)(nil)
@@ -150,8 +148,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	}
 
 	if err := scanner.Err(); err != nil {
-		// Treat this as a non-fatal error, and handle the data below.
-		c.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
+		return pmetric.Metrics{}, fmt.Errorf("error scanning for newline-delimited JSON: %w", err)
 	}
 
 	return c.createMetrics(byResource), nil
