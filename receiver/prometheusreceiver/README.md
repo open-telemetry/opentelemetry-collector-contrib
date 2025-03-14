@@ -203,3 +203,25 @@ the OpenTelemetry Instrumentation Scope name and version. It drops the `otel_sco
 and uses attributes (other than `otel_scope_name` and `otel_scope_version`) to populate Scope
 Attributes.
 
+## Prometheus API Server
+The Prometheus API server can be enabled to host info about the Prometheus targets, config, service discovery, and metrics. The `server_config` can be specified using the OpenTelemetry confighttp package. An example configuration would be:
+
+```
+receivers:
+  prometheus:
+    api_server:
+      enabled: true
+      server_config:
+        endpoint: "localhost:9090"
+```
+
+The API server hosts the same paths as the Prometheus agent-mode API. These include:
+- [/api/v1/targets](https://prometheus.io/docs/prometheus/latest/querying/api/#targets)
+- [/api/v1/targets/metdata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
+- [/api/v1/status/config](https://prometheus.io/docs/prometheus/latest/querying/api/#config)
+- /api/v1/scrape_pools
+- /metrics
+
+More info about querying `/api/v1/` and the data format that is returned can be found in the [Prometheus documentation](https://prometheus.io/docs/prometheus/latest/querying/api/).
+
+

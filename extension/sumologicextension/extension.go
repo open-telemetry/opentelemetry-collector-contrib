@@ -28,10 +28,10 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
-	grpccredentials "google.golang.org/grpc/credentials"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/api"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension/credentials"
@@ -103,10 +103,11 @@ func init() {
 	)
 }
 
-var errGRPCNotSupported = fmt.Errorf("gRPC is not supported by sumologicextension")
-
-// SumologicExtension implements ClientAuthenticator
-var _ extensionauth.Client = (*SumologicExtension)(nil)
+// SumologicExtension implements extensionauth.HTTPClient
+var (
+	_ extension.Extension      = (*SumologicExtension)(nil)
+	_ extensionauth.HTTPClient = (*SumologicExtension)(nil)
+)
 
 func newSumologicExtension(conf *Config, logger *zap.Logger, id component.ID, buildVersion string) (*SumologicExtension, error) {
 	if conf.Credentials.InstallationToken == "" {
@@ -1016,10 +1017,6 @@ func (se *SumologicExtension) RoundTripper(base http.RoundTripper) (http.RoundTr
 		updateStickySessionCookie: se.updateStickySessionCookie,
 		base:                      base,
 	}, nil
-}
-
-func (se *SumologicExtension) PerRPCCredentials() (grpccredentials.PerRPCCredentials, error) {
-	return nil, errGRPCNotSupported
 }
 
 func (se *SumologicExtension) addStickySessionCookie(req *http.Request) {

@@ -11,11 +11,11 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thda/tds v0.1.7
-	go.opentelemetry.io/collector/component v1.27.1-0.20250307194215-7d3e03e500b0
-	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250307194215-7d3e03e500b0
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250307194215-7d3e03e500b0
-	go.opentelemetry.io/collector/scraper v0.121.1-0.20250307194215-7d3e03e500b0
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.121.1-0.20250307194215-7d3e03e500b0
+	go.opentelemetry.io/collector/component v1.27.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/scraper v0.121.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.121.1-0.20250313100724-0885401136ff
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -78,15 +78,15 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.27.1-0.20250307194215-7d3e03e500b0 // indirect
-	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
-	go.opentelemetry.io/collector/receiver v0.121.1-0.20250307194215-7d3e03e500b0 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250307194215-7d3e03e500b0 // indirect
-	go.opentelemetry.io/otel v1.34.0 // indirect
-	go.opentelemetry.io/otel/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/trace v1.34.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/collector/receiver v0.121.1-0.20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/crypto v0.35.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.17.0 // indirect

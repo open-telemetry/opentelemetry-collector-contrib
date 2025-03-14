@@ -8,7 +8,6 @@ import (
 	"fmt"
 	"io"
 	"net"
-	"net/http"
 	"path/filepath"
 	"runtime"
 	"sync"
@@ -264,13 +263,15 @@ func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Componen
 	return h.exts
 }
 
+var _ extensionauth.GRPCClient = (*testAuthExtension)(nil)
+
 type testAuthExtension struct {
 	extension.Extension
 
 	prc credentials.PerRPCCredentials
 }
 
-func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) extensionauth.Client {
+func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string]string) extension.Extension {
 	ctrl := gomock.NewController(t)
 	prc := grpcmock.NewMockPerRPCCredentials(ctrl)
 	prc.EXPECT().RequireTransportSecurity().AnyTimes().Return(false)
@@ -282,10 +283,6 @@ func newTestAuthExtension(t *testing.T, mdf func(ctx context.Context) map[string
 	return &testAuthExtension{
 		prc: prc,
 	}
-}
-
-func (a *testAuthExtension) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
-	return nil, fmt.Errorf("unused")
 }
 
 func (a *testAuthExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {

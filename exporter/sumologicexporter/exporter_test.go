@@ -648,3 +648,51 @@ func TestGetSignalURL(t *testing.T) {
 		})
 	}
 }
+
+func TestNChars(t *testing.T) {
+	s := nchars('*', 10)
+	require.Equal(t, "**********", s)
+	s = nchars(' ', 2)
+	require.Equal(t, "  ", s)
+}
+
+func TestSanitizeURL(t *testing.T) {
+	testCases := []struct {
+		description string
+		urlString   string
+		expected    string
+	}{
+		{
+			description: "sanitized logs url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxxx/v1/logs",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/*****/v1/logs",
+		},
+		{
+			description: "sanitized metrics url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/metrics",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/metrics",
+		},
+		{
+			description: "sanitized traces url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/traces",
+		},
+		{
+			description: "no sanitization required",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+		},
+		{
+			description: "no sanitization required with otlp/ appearing after v1/",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+		},
+	}
+	for _, tC := range testCases {
+		testCase := tC
+		t.Run(tC.description, func(t *testing.T) {
+			actual := sanitizeURL(testCase.urlString)
+			require.Equal(t, testCase.expected, actual)
+		})
+	}
+}

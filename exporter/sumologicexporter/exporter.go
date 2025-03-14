@@ -281,7 +281,7 @@ func (se *sumologicexporter) getHTTPClient() *http.Client {
 
 func (se *sumologicexporter) setDataURLs(logs, metrics, traces string) {
 	se.dataURLsLock.Lock()
-	se.logger.Info("setting data urls", zap.String("logs_url", logs), zap.String("metrics_url", metrics), zap.String("traces_url", traces))
+	se.logger.Info("setting data urls", zap.String("logs_url", sanitizeURL(logs)), zap.String("metrics_url", sanitizeURL(metrics)), zap.String("traces_url", sanitizeURL(traces)))
 	se.dataURLLogs, se.dataURLMetrics, se.dataURLTraces = logs, metrics, traces
 	se.dataURLsLock.Unlock()
 }
@@ -455,4 +455,32 @@ func getSignalURL(oCfg *Config, endpointURL string, signal pipeline.Signal) (str
 	}
 
 	return url.String(), nil
+}
+
+func sanitizeURL(urlString string) string {
+	strBefore := "otlp/"
+	strAfter := "/v1/"
+	leftIndex := strings.Index(urlString, strBefore)
+	rightIndex := strings.LastIndex(urlString, strAfter)
+	if leftIndex == -1 || rightIndex == -1 {
+		return urlString
+	}
+	length := len(strBefore)
+	checkSensitiveStrLen := (rightIndex - leftIndex) - length
+	if checkSensitiveStrLen > 0 {
+		s1 := urlString[0 : leftIndex+len(strBefore)]
+		s2 := nchars('*', (rightIndex - leftIndex - length))
+		s3 := urlString[rightIndex:]
+		sanitizedStr := strings.Join([]string{s1, s2, s3}, "")
+		return sanitizedStr
+	}
+	return urlString
+}
+
+func nchars(b byte, n int) string {
+	s := make([]byte, n)
+	for i := range n {
+		s[i] = b
+	}
+	return string(s)
 }

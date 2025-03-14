@@ -136,7 +136,7 @@ var createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.C
 			return nil, err
 		}
 	}
-	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
+	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
 		return nil, err
 	}
 	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)

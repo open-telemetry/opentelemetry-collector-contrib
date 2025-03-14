@@ -38,7 +38,6 @@ connector/servicegraphconnector/                                 @open-telemetry
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
 connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
-examples/demo/                                                   @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
@@ -179,6 +178,7 @@ pkg/xk8stest/                                                    @open-telemetry
 processor/attributesprocessor/                                   @open-telemetry/collector-contrib-approvers @boostchicken
 processor/coralogixprocessor/                                    @open-telemetry/collector-contrib-approvers @crobert-1 @povilasv
 processor/cumulativetodeltaprocessor/                            @open-telemetry/collector-contrib-approvers @TylerHelmuth
+processor/datadogsemanticsprocessor/                             @open-telemetry/collector-contrib-approvers @songy23 @IbraheemA @mx-psi @dineshg13 @ankitpatel96 @jade-guiton-dd @jackgopack4
 processor/deltatocumulativeprocessor/                            @open-telemetry/collector-contrib-approvers @sh0rez @RichieSams
 processor/deltatorateprocessor/                                  @open-telemetry/collector-contrib-approvers @Aneurysm9
 processor/filterprocessor/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @boostchicken

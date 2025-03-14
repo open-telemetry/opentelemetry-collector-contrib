@@ -174,7 +174,7 @@ func WithMetricParser(functions map[string]ottl.Factory[ottlmetric.TransformCont
 		if err != nil {
 			return err
 		}
-		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, convertMetricStatements)(pc)
+		return ottl.WithParserCollectionContext(ottlmetric.ContextName, &metricParser, ottl.WithStatementConverter(convertMetricStatements))(pc)
 	}
 }
 
@@ -184,7 +184,7 @@ func WithDataPointParser(functions map[string]ottl.Factory[ottldatapoint.Transfo
 		if err != nil {
 			return err
 		}
-		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, convertDataPointStatements)(pc)
+		return ottl.WithParserCollectionContext(ottldatapoint.ContextName, &dataPointParser, ottl.WithStatementConverter(convertDataPointStatements))(pc)
 	}
 }
 
@@ -195,7 +195,7 @@ func WithMetricErrorMode(errorMode ottl.ErrorMode) MetricParserCollectionOption 
 func NewMetricParserCollection(settings component.TelemetrySettings, options ...MetricParserCollectionOption) (*MetricParserCollection, error) {
 	pcOptions := []ottl.ParserCollectionOption[MetricsConsumer]{
 		withCommonContextParsers[MetricsConsumer](),
-		ottl.EnableParserCollectionModifiedStatementLogging[MetricsConsumer](true),
+		ottl.EnableParserCollectionModifiedPathsLogging[MetricsConsumer](true),
 	}
 
 	for _, option := range options {
@@ -211,7 +211,7 @@ func NewMetricParserCollection(settings component.TelemetrySettings, options ...
 	return &mpc, nil
 }
 
-func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *ottl.Parser[ottlmetric.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlmetric.TransformContext]) (MetricsConsumer, error) {
+func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottlmetric.TransformContext]) (MetricsConsumer, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
 		return nil, err
@@ -232,7 +232,7 @@ func convertMetricStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *ottl
 	return metricStatements{mStatements, globalExpr}, nil
 }
 
-func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], _ *ottl.Parser[ottldatapoint.TransformContext], _ string, statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottldatapoint.TransformContext]) (MetricsConsumer, error) {
+func convertDataPointStatements(pc *ottl.ParserCollection[MetricsConsumer], statements ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottldatapoint.TransformContext]) (MetricsConsumer, error) {
 	contextStatements, err := toContextStatements(statements)
 	if err != nil {
 		return nil, err

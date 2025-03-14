@@ -1,5 +1,0 @@
-type: demo
-
-status:
-  codeowners:
-    active: [open-telemetry/collector-approvers]

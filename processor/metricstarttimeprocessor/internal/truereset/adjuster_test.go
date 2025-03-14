@@ -666,11 +666,16 @@ func TestTsGC(t *testing.T) {
 	// run round 1
 	runScript(t, ma, script1, resourceAttr)
 	// gc the tsmap, unmarking all entries
-	ma.startTimeCache.get(resourceHash).gc()
+	tsm, ok := ma.startTimeCache.Get(resourceHash)
+	assert.True(t, ok)
+	tsm.GC()
+
 	// run round 2 - update metrics first timeseries only
 	runScript(t, ma, script2, resourceAttr)
 	// gc the tsmap, collecting umarked entries
-	ma.startTimeCache.get(resourceHash).gc()
+	tsm, ok = ma.startTimeCache.Get(resourceHash)
+	assert.True(t, ok)
+	tsm.GC()
 	// run round 3 - verify that metrics second timeseries have been gc'd
 	runScript(t, ma, script3, resourceAttr)
 }
@@ -720,7 +725,7 @@ func TestJobGC(t *testing.T) {
 		},
 	}
 
-	gcInterval := 10 * time.Millisecond
+	gcInterval := 1 * time.Millisecond
 	ma := NewAdjuster(componenttest.NewNopTelemetrySettings(), gcInterval)
 
 	// run job 1, round 1 - all entries marked
@@ -734,7 +739,9 @@ func TestJobGC(t *testing.T) {
 	// re-run job 2, round1 - trigger job gc, removing unmarked entries
 	runScript(t, ma, job2Script1, "1")
 	// ensure that at least one jobsMap.gc() completed
-	ma.startTimeCache.gc()
+	time.Sleep(gcInterval)
+	ma.startTimeCache.MaybeGC()
+	time.Sleep(5 * time.Second) // Wait for the goroutine to complete.
 	// run job 1, round 2 - verify that all job 1 timeseries have been gc'd
 	runScript(t, ma, job1Script2, "0")
 }
@@ -770,24 +777,5 @@ func runScript(t *testing.T, ma *Adjuster, tests []*metricsAdjusterTest, additio
 			}
 			assert.EqualValues(t, test.adjusted, adjusted)
 		})
-	}
-}
-
-func BenchmarkGetAttributesSignature(b *testing.B) {
-	attrs := pcommon.NewMap()
-	attrs.PutStr("key1", "some-random-test-value-1")
-	attrs.PutStr("key2", "some-random-test-value-2")
-	attrs.PutStr("key6", "some-random-test-value-6")
-	attrs.PutStr("key3", "some-random-test-value-3")
-	attrs.PutStr("key4", "some-random-test-value-4")
-	attrs.PutStr("key5", "some-random-test-value-5")
-	attrs.PutStr("key7", "some-random-test-value-7")
-	attrs.PutStr("key8", "some-random-test-value-8")
-
-	b.ResetTimer()
-	b.ReportAllocs()
-
-	for i := 0; i < b.N; i++ {
-		getAttributesSignature(attrs)
 	}
 }
