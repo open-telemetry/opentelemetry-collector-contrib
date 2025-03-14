@@ -115,15 +115,15 @@ func (p Profile) getLocations(start, length int32) (locations, error) {
 	return ls, joinedErr
 }
 
-func (p Profile) getAttribute(idx int32) (attribut, error) {
+func (p Profile) getAttribute(idx int32) (attribute, error) {
 	pp := pprofile.Profile(p)
 	attrTable := pp.AttributeTable()
 	if idx >= int32(attrTable.Len()) {
-		return attribut{}, fmt.Errorf("attribute index out of bounds: %d", idx)
+		return attribute{}, fmt.Errorf("attribute index out of bounds: %d", idx)
 	}
 	attr := attrTable.At(int(idx))
 	// Is there a better way to marshal the value?
-	return attribut{attr.Key(), attr.Value().AsString()}, nil
+	return attribute{attr.Key(), attr.Value().AsString()}, nil
 }
 
 type samples []sample
@@ -331,7 +331,7 @@ func (m link) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return nil
 }
 
-type attributes []attribut
+type attributes []attribute
 
 func (s attributes) MarshalLogArray(encoder zapcore.ArrayEncoder) error {
 	var joinedErr error
@@ -356,12 +356,12 @@ func newAttributes(p Profile, pattrs pcommon.Int32Slice) (attributes, error) {
 	return as, joinedErr
 }
 
-type attribut struct {
+type attribute struct {
 	key   string
 	value string
 }
 
-func (a attribut) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
+func (a attribute) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	encoder.AddString("key", a.key)
 	encoder.AddString("value", a.value)
 	return nil
