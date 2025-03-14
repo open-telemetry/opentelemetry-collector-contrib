@@ -391,21 +391,23 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
-	_, span := s.getTracer().Start(context.Background(), "get-bootstrap-info")
+	_, span := s.getTracer().Start(context.Background(), "GetBootstrapInfo")
 	defer span.End()
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
 		return err
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
 		return err
 	}
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
-		span.SetStatus(codes.Error, "")
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
@@ -487,6 +489,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 	}.toServerSettings())
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
 		return err
 	}
 
@@ -503,10 +506,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
 	if err = cmd.Start(context.Background()); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
@@ -519,9 +524,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	select {
 	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
-			return errors.New("collector connected but never responded with an AgentDescription message")
+			msg := "collector connected but never responded with an AgentDescription message"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		} else {
-			return errors.New("collector's OpAMP client never connected to the Supervisor")
+			msg := "collector's OpAMP client never connected to the Supervisor"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		}
 	case err = <-done:
 		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
@@ -535,6 +544,10 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
 			}
 		}
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.SetStatus(codes.Ok, "")
 		return err
 	}
 }
