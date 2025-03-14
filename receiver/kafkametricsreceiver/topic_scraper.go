@@ -11,7 +11,6 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
@@ -22,43 +21,45 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
-type topicScraper struct {
-	client       sarama.Client
-	clusterAdmin sarama.ClusterAdmin
-	settings     receiver.Settings
-	topicFilter  *regexp.Regexp
-	saramaConfig *sarama.Config
-	config       Config
-	mb           *metadata.MetricsBuilder
-}
-
 const (
 	minInsyncReplicas = "min.insync.replicas"
 	retentionMs       = "retention.ms"
 	retentionBytes    = "retention.bytes"
 )
 
-func (s *topicScraper) shutdown(context.Context) error {
-	if s.client != nil && !s.client.Closed() {
-		return s.client.Close()
-	}
-	return nil
+type topicScraper struct {
+	kafkaScraper
+	topicFilter *regexp.Regexp
 }
 
-func (s *topicScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
-	return nil
+func newTopicsScraper(
+	cfg Config,
+	settings receiver.Settings,
+	newSaramaClient newSaramaClientFunc,
+	newSaramaClusterAdminClient newSaramaClusterAdminClientFunc,
+) (scraper.Metrics, error) {
+	topicFilter, err := regexp.Compile(cfg.TopicMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
+	}
+	s := topicScraper{
+		kafkaScraper: kafkaScraper{
+			config:                      cfg,
+			settings:                    settings,
+			mb:                          metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+			newSaramaClient:             newSaramaClient,
+			newSaramaClusterAdminClient: newSaramaClusterAdminClient,
+		},
+		topicFilter: topicFilter,
+	}
+	return scraper.NewMetrics(
+		s.scrape,
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
+	)
 }
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-		if err != nil {
-			return pmetric.Metrics{}, fmt.Errorf("failed to create client in topics scraper: %w", err)
-		}
-		s.client = client
-	}
-
 	topics, err := s.client.Topics()
 	if err != nil {
 		s.settings.Logger.Error("Error fetching cluster topics ", zap.Error(err))
@@ -122,15 +123,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		!s.config.Metrics.KafkaTopicReplicationFactor.Enabled {
 		return
 	}
-	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-		if err != nil {
-			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
-			return
-		}
-		s.clusterAdmin = admin
-	}
-	topics, err := s.clusterAdmin.ListTopics()
+	topics, err := s.adminClient.ListTopics()
 	if err != nil {
 		s.settings.Logger.Error("Error fetching cluster topic configurations", zap.Error(err))
 		return
@@ -138,7 +131,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 
 	for name, topic := range topics {
 		s.mb.RecordKafkaTopicReplicationFactorDataPoint(now, int64(topic.ReplicationFactor), name)
-		configEntries, _ := s.clusterAdmin.DescribeConfig(sarama.ConfigResource{
+		configEntries, _ := s.adminClient.DescribeConfig(sarama.ConfigResource{
 			Type:        sarama.TopicResource,
 			Name:        name,
 			ConfigNames: []string{minInsyncReplicas, retentionMs, retentionBytes},
@@ -167,22 +160,4 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 			}
 		}
 	}
-}
-
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
-	topicFilter, err := regexp.Compile(cfg.TopicMatch)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
-	}
-	s := topicScraper{
-		settings:     settings,
-		topicFilter:  topicFilter,
-		saramaConfig: saramaConfig,
-		config:       cfg,
-	}
-	return scraper.NewMetrics(
-		s.scrape,
-		scraper.WithStart(s.start),
-		scraper.WithShutdown(s.shutdown),
-	)
 }

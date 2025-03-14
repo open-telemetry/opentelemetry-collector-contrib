@@ -5,8 +5,6 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"errors"
-	"regexp"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -14,184 +12,97 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
-func TestTopicShutdown(t *testing.T) {
-	client := newMockClient()
-	client.closed = false
-	client.close = nil
-	client.Mock.
-		On("Close").Return(nil).
-		On("Closed").Return(false)
-	scraper := brokerScraper{
-		client:   client,
-		settings: receivertest.NewNopSettings(metadata.Type),
-		config:   Config{},
-	}
-	_ = scraper.shutdown(context.Background())
-	client.AssertExpectations(t)
+func TestTopicScraper_StartShutdown(t *testing.T) {
+	testScraperStartShutdown(t, func(f1 newSaramaClientFunc, f2 newSaramaClusterAdminClientFunc) (scraper.Metrics, error) {
+		return newTopicsScraper(
+			Config{TopicMatch: ".*"},
+			receivertest.NewNopSettings(metadata.Type), f1, f2,
+		)
+	})
 }
 
-func TestTopicShutdown_closed(t *testing.T) {
-	client := newMockClient()
-	client.closed = true
-	client.Mock.
-		On("Closed").Return(true)
-	scraper := topicScraper{
-		client:   client,
-		settings: receivertest.NewNopSettings(metadata.Type),
-		config:   Config{},
-	}
-	_ = scraper.shutdown(context.Background())
-	client.AssertExpectations(t)
+func TestNewTopicScraper_InvalidTopicMatch(t *testing.T) {
+	scraper, err := newTopicsScraper(
+		Config{TopicMatch: "["},
+		receivertest.NewNopSettings(metadata.Type),
+		mockNewSaramaClient, mockNewClusterAdmin,
+	)
+	assert.EqualError(t, err, "failed to compile topic filter: error parsing regexp: missing closing ]: `[`")
+	assert.Nil(t, scraper)
 }
 
-func TestTopicScraper_createsScraper(t *testing.T) {
-	sc := sarama.NewConfig()
-	newSaramaClient = mockNewSaramaClient
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, ms)
-}
-
-func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, errors.New("no scraper here")
-	}
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, ms)
-	assert.NoError(t, err)
-	_, err = ms.ScrapeMetrics(context.Background())
-	assert.Error(t, err)
-}
-
-func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, errors.New("no scraper here")
-	}
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, ms)
-	assert.NoError(t, err)
-	err = ms.Shutdown(context.Background())
-	assert.NoError(t, err)
-}
-
-func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, ms)
-	assert.NoError(t, err)
-	err = ms.Start(context.Background(), nil)
-	assert.NoError(t, err)
-}
-
-func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{
-		TopicMatch: "[",
-	}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.Error(t, err)
-	assert.Nil(t, ms)
-}
-
-func TestTopicScraper_scrapes(t *testing.T) {
-	client := newMockClient()
+func TestTopicScraper_ScrapeMetrics(t *testing.T) {
 	var testOffset int64 = 5
-	client.offset = testOffset
-	config := createDefaultConfig().(*Config)
-	match := regexp.MustCompile(config.TopicMatch)
-	scraper := topicScraper{
-		client:       client,
-		clusterAdmin: newMockClusterAdmin(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		config:       *config,
-		topicFilter:  match,
-	}
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
-	md, err := scraper.scrape(context.Background())
+	mockClient := newMockClient()
+	mockClient.offset = testOffset
+	config := *createDefaultConfig().(*Config)
+	config.Metrics.KafkaTopicLogRetentionPeriod.Enabled = true
+	config.Metrics.KafkaTopicLogRetentionSize.Enabled = true
+	config.Metrics.KafkaTopicMinInsyncReplicas.Enabled = true
+	config.Metrics.KafkaTopicReplicationFactor.Enabled = true
+	scraper := newTestTopicsScraper(t, config, mockClient)
+
+	md, err := scraper.ScrapeMetrics(context.Background())
 	assert.NoError(t, err)
-	require.Equal(t, 1, md.ResourceMetrics().Len())
-	require.Equal(t, 1, md.ResourceMetrics().At(0).ScopeMetrics().Len())
-	if val, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get("kafka.cluster.alias"); ok {
-		require.Equal(t, testClusterAlias, val.Str())
-	}
-	ms := md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics()
-	for i := 0; i < ms.Len(); i++ {
-		m := ms.At(i)
-		switch m.Name() {
-		case "kafka.topic.partitions":
-			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testPartitions)))
-		case "kafka.topic.replication_factor":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testReplicationFactor))
-		case "kafka.topic.min_insync_replicas":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testMinInsyncReplicas))
-		case "kafka.topic.log_retention_period":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionMs/1000))
-		case "kafka.topic.log_retention_size":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), int64(testLogRetentionBytes))
-		case "kafka.partition.current_offset":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
-		case "kafka.partition.oldest_offset":
-			assert.Equal(t, m.Gauge().DataPoints().At(0).IntValue(), testOffset)
-		case "kafka.partition.replicas":
-			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
-		case "kafka.partition.replicas_in_sync":
-			assert.Equal(t, m.Sum().DataPoints().At(0).IntValue(), int64(len(testReplicas)))
-		}
-	}
+
+	expected, err := golden.ReadMetrics("testdata/golden/" + t.Name() + ".yaml")
+	assert.NoError(t, err)
+	assert.NoError(t, pmetrictest.CompareMetrics(
+		expected, md,
+		pmetrictest.IgnoreStartTimestamp(),
+		pmetrictest.IgnoreTimestamp(),
+	))
 }
 
-func TestTopicScraper_scrape_handlesTopicError(t *testing.T) {
-	client := newMockClient()
-	client.topics = nil
-	config := createDefaultConfig().(*Config)
-	match := regexp.MustCompile(config.TopicMatch)
-	scraper := topicScraper{
-		client:      client,
-		settings:    receivertest.NewNopSettings(metadata.Type),
-		topicFilter: match,
-	}
-	_, err := scraper.scrape(context.Background())
-	assert.Error(t, err)
+func TestTopicScraper_ScrapeMetrics_Errors(t *testing.T) {
+	mockClient := newMockClient()
+	scraper := newTestTopicsScraper(t, *createDefaultConfig().(*Config), mockClient)
+
+	// Trigger failure to scrape topic-partitions, which results in a partial error.
+	mockClient.replicas = nil
+	mockClient.inSyncReplicas = nil
+	mockClient.replicas = nil
+	mockClient.offset = -1
+	_, err := scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "mock offset error; mock offset error; mock replicas error; mock in sync replicas error")
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+
+	// trigger mockSaramaClient.Partitions() to return an error
+	mockClient.partitions = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "mock partition error")
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
+
+	// trigger mockSaramaClient.Topics to return an error
+	mockClient.topics = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "mock topic error")
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
 }
 
-func TestTopicScraper_scrape_handlesPartitionError(t *testing.T) {
-	client := newMockClient()
-	client.partitions = nil
-	config := createDefaultConfig().(*Config)
-	match := regexp.MustCompile(config.TopicMatch)
-	scraper := topicScraper{
-		client:       client,
-		clusterAdmin: newMockClusterAdmin(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		topicFilter:  match,
-	}
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
-	_, err := scraper.scrape(context.Background())
-	assert.Error(t, err)
-}
+func newTestTopicsScraper(tb testing.TB, config Config, mockClient sarama.Client) scraper.Metrics {
+	scraper, err := newTopicsScraper(
+		config, receivertest.NewNopSettings(metadata.Type),
+		func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+			return mockClient, nil
+		},
+		mockNewClusterAdmin,
+	)
+	require.NoError(tb, err)
 
-func TestTopicScraper_scrape_handlesPartialScrapeErrors(t *testing.T) {
-	client := newMockClient()
-	client.replicas = nil
-	client.inSyncReplicas = nil
-	client.replicas = nil
-	client.offset = -1
-	config := createDefaultConfig().(*Config)
-	match := regexp.MustCompile(config.TopicMatch)
-	scraper := topicScraper{
-		client:       client,
-		clusterAdmin: newMockClusterAdmin(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		topicFilter:  match,
-	}
-	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
-	_, err := scraper.scrape(context.Background())
-	assert.Error(t, err)
+	err = scraper.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(tb, err)
+	tb.Cleanup(func() {
+		assert.NoError(tb, scraper.Shutdown(context.Background()))
+	})
+	return scraper
 }

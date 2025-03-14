@@ -1,0 +1,130 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Current offset of partition of topic.
+            gauge:
+              dataPoints:
+                - asInt: "5"
+                  attributes:
+                    - key: partition
+                      value:
+                        intValue: "1"
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.partition.current_offset
+            unit: "1"
+          - description: Oldest offset of partition of topic
+            gauge:
+              dataPoints:
+                - asInt: "5"
+                  attributes:
+                    - key: partition
+                      value:
+                        intValue: "1"
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.partition.oldest_offset
+            unit: "1"
+          - description: Number of replicas for partition of topic
+            name: kafka.partition.replicas
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: partition
+                      value:
+                        intValue: "1"
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{replicas}'
+          - description: Number of synchronized replicas of partition
+            name: kafka.partition.replicas_in_sync
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: partition
+                      value:
+                        intValue: "1"
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{replicas}'
+          - description: log retention period of a topic (s).
+            gauge:
+              dataPoints:
+                - asInt: "86400"
+                  attributes:
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.topic.log_retention_period
+            unit: s
+          - description: log retention size of a topic in Bytes, The value (-1) indicates infinite size.
+            gauge:
+              dataPoints:
+                - asInt: "-1"
+                  attributes:
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.topic.log_retention_size
+            unit: By
+          - description: minimum in-sync replicas of a topic.
+            gauge:
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.topic.min_insync_replicas
+            unit: '{replicas}'
+          - description: Number of partitions in topic.
+            name: kafka.topic.partitions
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  attributes:
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{partitions}'
+          - description: replication factor of a topic.
+            gauge:
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: topic
+                      value:
+                        stringValue: test_topic
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.topic.replication_factor
+            unit: "1"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+          version: latest
