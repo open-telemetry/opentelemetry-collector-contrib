@@ -33,11 +33,11 @@ if [[ -n "${TITLE_COMPONENT}" && ! ("${TITLE_COMPONENT}" =~ " ") ]]; then
   if [[ -n "${CODEOWNERS}" ]]; then
     PING_LINES+="- ${TITLE_COMPONENT}: ${CODEOWNERS}\n"
     PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
-
-    if (( "${#TITLE_COMPONENT}" <= 50 )); then
-      LABELS+="${TITLE_COMPONENT}"
+    LABEL_NAME=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $2}' .github/component_labels.txt)
+    if (( "${#LABEL_NAME}" <= 50 )); then
+      LABELS+="${LABEL_NAME}"
     else
-      echo "'${TITLE_COMPONENT}' exceeds GitHub's 50-character limit, skipping adding a label"
+      echo "'${LABEL_NAME}' exceeds GitHub's 50-character limit, skipping adding a label"
     fi
   fi
 fi
@@ -55,16 +55,16 @@ for COMPONENT in ${BODY_COMPONENTS}; do
 
     PING_LINES+="- ${COMPONENT}: ${CODEOWNERS}\n"
     PINGED_COMPONENTS["${COMPONENT}"]=1
-
-    if (( "${#COMPONENT}" > 50 )); then
-      echo "'${COMPONENT}' exceeds GitHub's 50-character limit on labels, skipping adding a label"
+    LABEL_NAME=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $2}' .github/component_labels.txt)
+    if (( "${#LABEL_NAME}" > 50 )); then
+      echo "'${LABEL_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding a label"
       continue
     fi
 
     if [[ -n "${LABELS}" ]]; then
       LABELS+=","
     fi
-    LABELS+="${COMPONENT}"
+    LABELS+="${LABEL_NAME}"
   fi
 done
 
