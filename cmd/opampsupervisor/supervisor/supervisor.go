@@ -10,6 +10,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net"
 	"net/http"
 	"net/url"
@@ -389,6 +391,8 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
+	_, span := s.getTracer().Start(context.Background(), "get-bootstrap-info")
+	defer span.End()
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		return err
@@ -401,6 +405,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
+		span.SetStatus(codes.Error, "")
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
@@ -1645,6 +1650,10 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func (s *Supervisor) getTracer() trace.Tracer {
+	return s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
 }
 
 // The default koanf behavior is to override lists in the config.
