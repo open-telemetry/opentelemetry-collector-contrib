@@ -479,7 +479,6 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker compose -f examples/demo/docker-compose.yaml build
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
 	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
