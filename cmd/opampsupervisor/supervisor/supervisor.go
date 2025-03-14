@@ -535,13 +535,16 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	case err = <-done:
 		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 		if errors.Is(err, errNonMatchingInstanceUID) {
-			if err := s.opampClient.SetHealth(&protobufs.ComponentHealth{
+			// TODO this will not work yet as the opAmp client currently is created after getting the agent Description from the message
+			// to be able to report the health before that, we need to init the opAmp client with the expected agent description (i.e. instance ID)
+			// and update the agent description containing the identifying attributes in a later step
+			if err2 := s.opampClient.SetHealth(&protobufs.ComponentHealth{
 				Healthy:            false,
 				LastError:          err.Error(),
 				Status:             "",
 				StatusTimeUnixNano: 0,
-			}); err != nil {
-				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+			}); err2 != nil {
+				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err2))
 			}
 		}
 		if err != nil {
