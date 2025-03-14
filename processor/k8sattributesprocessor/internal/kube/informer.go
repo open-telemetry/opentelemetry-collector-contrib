@@ -7,6 +7,7 @@ import (
 	"context"
 
 	apps_v1 "k8s.io/api/apps/v1"
+	batch_v1 "k8s.io/api/batch/v1"
 	api_v1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/fields"
@@ -233,5 +234,32 @@ func daemonsetListFuncWithSelectors(client kubernetes.Interface, namespace strin
 func daemonsetWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
 	return func(opts metav1.ListOptions) (watch.Interface, error) {
 		return client.AppsV1().DaemonSets(namespace).Watch(context.Background(), opts)
+	}
+}
+
+func newJobSharedInformer(
+	client kubernetes.Interface,
+	namespace string,
+) cache.SharedInformer {
+	informer := cache.NewSharedInformer(
+		&cache.ListWatch{
+			ListFunc:  jobListFuncWithSelectors(client, namespace),
+			WatchFunc: jobWatchFuncWithSelectors(client, namespace),
+		},
+		&batch_v1.Job{},
+		watchSyncPeriod,
+	)
+	return informer
+}
+
+func jobListFuncWithSelectors(client kubernetes.Interface, namespace string) cache.ListFunc {
+	return func(opts metav1.ListOptions) (runtime.Object, error) {
+		return client.BatchV1().Jobs(namespace).List(context.Background(), opts)
+	}
+}
+
+func jobWatchFuncWithSelectors(client kubernetes.Interface, namespace string) cache.WatchFunc {
+	return func(opts metav1.ListOptions) (watch.Interface, error) {
+		return client.BatchV1().Jobs(namespace).Watch(context.Background(), opts)
 	}
 }

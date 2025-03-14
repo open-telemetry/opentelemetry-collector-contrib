@@ -92,6 +92,30 @@ Number of times pod by IP lookup failed.
 | ---- | ----------- | ---------- | --------- |
 | 1 | Sum | Int | true |
 
+### otelcol_otelsvc_k8s_job_added
+
+Number of job add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_job_deleted
+
+Number of job delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_job_updated
+
+Number of job update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_otelsvc_k8s_namespace_added
 
 Number of namespace add events received
