@@ -84,7 +84,6 @@ func (p Profile) getMapping(idx int32) (mapping, error) {
 	return newMapping(p, mTable.At(int(idx)))
 }
 
-//nolint:unused
 func (p Profile) getLink(idx int32) (link, error) {
 	pp := pprofile.Profile(p)
 	lTable := pp.LinkTable()
@@ -152,7 +151,7 @@ type sample struct {
 	attributes attributes
 	locations  locations
 	values     values
-	link       *link //nolint:unused
+	link       *link
 }
 
 func newSample(p Profile, ps pprofile.Sample) (sample, error) {
@@ -165,12 +164,11 @@ func newSample(p Profile, ps pprofile.Sample) (sample, error) {
 	joinedErr = errors.Join(joinedErr, err)
 	s.locations, err = p.getLocations(ps.LocationsStartIndex(), ps.LocationsLength())
 	joinedErr = errors.Join(joinedErr, err)
-	// TODO: remove comments for v1.121.0, which introduces LinkIndex()
-	//	if ps.LinkIndex() != 0 { // optional
-	//		l, err = p.getLink(p, ps.LinkIndex())
-	//		joinedErr = errors.Join(joinedErr, err)
-	//		s.link = &l
-	//	}
+	if ps.HasLinkIndex() { // optional
+		l, err := p.getLink(ps.LinkIndex())
+		joinedErr = errors.Join(joinedErr, err)
+		s.link = &l
+	}
 
 	return s, joinedErr
 }
@@ -317,12 +315,10 @@ func (m mapping) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	return nil
 }
 
-//nolint:unused
 type link struct {
 	pprofile.Link
 }
 
-//nolint:unused
 func (m link) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 	traceID := m.TraceID()
 	encoder.AddString("trace_id", hex.EncodeToString(traceID[:]))
