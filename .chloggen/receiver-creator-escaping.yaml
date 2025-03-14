@@ -7,7 +7,7 @@ change_type: bug_fix
 component: receivercreator
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fix backtick escaping wrong logic
+note: Only remove backslash characters if they are placed before a backtick.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38614]
