@@ -71,7 +71,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "duration",
-			val:  pcommon.NewTimestampFromTime(time.Now().UTC()),
+			val:  time.Now().UTC(),
 		},
 		{
 			path: "period_type",

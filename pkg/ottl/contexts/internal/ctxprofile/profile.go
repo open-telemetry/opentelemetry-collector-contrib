@@ -252,11 +252,11 @@ func accessTime[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessDuration[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().Duration(), nil
+			return tCtx.GetProfile().Duration().AsTime(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(pcommon.Timestamp); ok {
-				tCtx.GetProfile().SetDuration(i)
+			if t, ok := val.(time.Time); ok {
+				tCtx.GetProfile().SetDuration(pcommon.NewTimestampFromTime(t))
 			}
 			return nil
 		},
