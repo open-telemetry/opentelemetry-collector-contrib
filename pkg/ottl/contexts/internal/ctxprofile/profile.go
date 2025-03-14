@@ -5,12 +5,14 @@ package ctxprofile // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"encoding/hex"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 )
 
@@ -58,6 +60,13 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 	case "default_sample_type_string_index":
 		return accessDefaultSampleTypeStringIndex[K](), nil
 	case "profile_id":
+		nextPath := path.Next()
+		if nextPath != nil {
+			if nextPath.Name() == "string" {
+				return accessStringProfileID[K](), nil
+			}
+			return nil, ctxerror.New(nextPath.Name(), nextPath.String(), Name, DocRef)
+		}
 		return accessProfileID[K](), nil
 	case "attribute_indices":
 		return accessAttributeIndices[K](), nil
@@ -318,6 +327,25 @@ func accessProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if i, ok := val.(pprofile.ProfileID); ok {
 				tCtx.GetProfile().SetProfileID(i)
+			}
+			return nil
+		},
+	}
+}
+
+func accessStringProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			id := tCtx.GetProfile().ProfileID()
+			return hex.EncodeToString(id[:]), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			if s, ok := val.(string); ok {
+				id, err := ctxcommon.ParseProfileID(s)
+				if err != nil {
+					return err
+				}
+				tCtx.GetProfile().SetProfileID(id)
 			}
 			return nil
 		},

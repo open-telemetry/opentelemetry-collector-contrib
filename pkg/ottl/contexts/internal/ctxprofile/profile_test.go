@@ -4,6 +4,7 @@
 package ctxprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 import (
 	"context"
+	"strings"
 	"testing"
 	"time"
 
@@ -93,6 +94,10 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createProfileID(),
 		},
 		{
+			path: "profile_id string",
+			val:  createProfileID().String(),
+		},
+		{
 			path: "attribute_indices",
 			val:  createInt32Slice(567),
 		},
@@ -112,7 +117,11 @@ func TestPathGetSetter(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.path, func(t *testing.T) {
-			path := &pathtest.Path[*profileContext]{N: tt.path}
+			pathParts := strings.Split(tt.path, " ")
+			path := &pathtest.Path[*profileContext]{N: pathParts[0]}
+			if len(pathParts) > 1 {
+				path.NextPath = &pathtest.Path[*profileContext]{N: pathParts[1]}
+			}
 
 			profile := pprofile.NewProfile()
 
