@@ -300,9 +300,6 @@ for-integration-target: $(INTEGRATION_MODS)
 .PHONY: for-cgo-target
 for-cgo-target: $(CGO_MODS)
 
-.PHONY: for-generated-target
-for-generated-target: $(GENERATED_MODS)
-
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -413,6 +410,18 @@ telemetrygenlite:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
+MODULES="internal/buildscripts/modules"
+.PHONY: update-core-modules
+update-core-module-list:
+	BETA_LINE=$$(grep -n '  beta:' $(CORE_VERSIONS) | cut -d : -f 1); \
+	(\
+		echo -e '#!/bin/bash\n\nbeta_modules=('; \
+		tail -n +$$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')\n\nstable_modules=('; \
+		head -n $$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')' \
+	) > $(MODULES);
+
 # helper function to update the core packages in builder-config.yaml
 # input parameters are
 # $(1) = path/to/versions.yaml (where it greps the relevant packages)
@@ -444,13 +453,14 @@ update-otel:$(MULTIMOD)
 	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash "$(OTEL_STABLE_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash "$(OTEL_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
