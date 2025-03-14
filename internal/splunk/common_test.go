@@ -52,6 +52,22 @@ func TestIsMetric(t *testing.T) {
 		Event: "metric",
 	}
 	assert.True(t, metric.IsMetric())
+	metric = Event{
+		Event: "",
+		Fields: map[string]any{
+			"metric_name": "foo",
+			"_value":      123,
+		},
+	}
+	assert.True(t, metric.IsMetric())
+	metric = Event{
+		Event: "any value",
+		Fields: map[string]any{
+			"metric_name": "foo",
+			"_value":      123,
+		},
+	}
+	assert.True(t, metric.IsMetric())
 	arr := Event{
 		Event: []any{"foo", "bar"},
 	}
