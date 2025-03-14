@@ -308,11 +308,11 @@ func accessCommentStringIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessDefaultSampleTypeStringIndex[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().DefaultSampleTypeStrindex(), nil
+			return int64(tCtx.GetProfile().DefaultSampleTypeStrindex()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(int32); ok {
-				tCtx.GetProfile().SetDefaultSampleTypeStrindex(i)
+			if i, ok := val.(int64); ok {
+				tCtx.GetProfile().SetDefaultSampleTypeStrindex(int32(i))
 			}
 			return nil
 		},
@@ -369,11 +369,11 @@ func accessAttributeIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessDroppedAttributesCount[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().DroppedAttributesCount(), nil
+			return int64(tCtx.GetProfile().DroppedAttributesCount()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(uint32); ok {
-				tCtx.GetProfile().SetDroppedAttributesCount(i)
+			if i, ok := val.(int64); ok {
+				tCtx.GetProfile().SetDroppedAttributesCount(uint32(i))
 			}
 			return nil
 		},

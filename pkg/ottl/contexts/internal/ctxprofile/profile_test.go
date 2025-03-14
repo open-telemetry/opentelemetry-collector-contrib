@@ -87,7 +87,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "default_sample_type_string_index",
-			val:  int32(456),
+			val:  int64(456),
 		},
 		{
 			path: "profile_id",
@@ -103,7 +103,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "dropped_attributes_count",
-			val:  uint32(678),
+			val:  int64(678),
 		},
 		{
 			path: "original_payload_format",
