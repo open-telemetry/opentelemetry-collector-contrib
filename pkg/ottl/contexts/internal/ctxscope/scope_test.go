@@ -8,7 +8,6 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -364,7 +363,7 @@ func TestPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ctxscope.PathGetSetter[*testContext](tt.path.Context(), tt.path)
+			accessor, err := ctxscope.PathGetSetter[*testContext](tt.path)
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
@@ -382,23 +381,6 @@ func TestPathGetSetter(t *testing.T) {
 			assert.Equal(t, expectedIS, is)
 		})
 	}
-}
-
-func TestScopePathGetSetterCacheAccessError(t *testing.T) {
-	path := &pathtest.Path[*testContext]{
-		N: "cache",
-		C: "instrumentation_scope",
-		KeySlice: []ottl.Key[*testContext]{
-			&pathtest.Key[*testContext]{
-				S: ottltest.Strp("key"),
-			},
-		},
-		FullPath: "instrumentation_scope.cache[key]",
-	}
-
-	_, err := ctxscope.PathGetSetter[*testContext]("metric", path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "instrumentation_scope.cache[key]" with "metric.cache[key]"`)
 }
 
 func createInstrumentationScope() pcommon.InstrumentationScope {

@@ -80,8 +80,6 @@ connector/roundrobinconnector
 connector/servicegraphconnector
 connector/signaltometricsconnector
 connector/sumconnector
-examples/demo/client
-examples/demo/server
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter
 internal/aws/awsutil
