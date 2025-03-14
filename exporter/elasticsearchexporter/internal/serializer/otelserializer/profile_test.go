@@ -19,8 +19,6 @@ import (
 )
 
 func TestSerializeProfile(t *testing.T) {
-	nowTime := time.Now()
-	nowTimeStr := nowTime.Format(time.RFC3339Nano)
 	tests := []struct {
 		name              string
 		profileCustomizer func(resource pcommon.Resource, scope pcommon.InstrumentationScope, record pprofile.Profile)
@@ -85,15 +83,15 @@ func TestSerializeProfile(t *testing.T) {
 				{
 					"Stacktrace.frame.id":     []any{"YA3K_koRAADyvzjEk_X7kgAAAAAAAABv"},
 					"Symbolization.retries":   json.Number("0"),
-					"Symbolization.time.next": nowTimeStr,
-					"Time.created":            nowTimeStr,
+					"Symbolization.time.next": "",
+					"Time.created":            "",
 					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
 				{
 					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
 					"Symbolization.retries":   json.Number("0"),
-					"Symbolization.time.next": nowTimeStr,
-					"Time.created":            nowTimeStr,
+					"Symbolization.time.next": "",
+					"Time.created":            "",
 					"ecs.version":             serializeprofiles.EcsVersionString,
 				},
 				{
@@ -116,14 +114,6 @@ func TestSerializeProfile(t *testing.T) {
 			tt.profileCustomizer(resource.Resource(), scope.Scope(), profile)
 			profiles.MarkReadOnly()
 
-			nowOld := serializeprofiles.Now
-			t.Cleanup(func() {
-				serializeprofiles.Now = nowOld
-			})
-			serializeprofiles.Now = func() time.Time {
-				return nowTime
-			}
-
 			buf := []*bytes.Buffer{}
 			err := SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
 				buf = append(buf, b)
@@ -138,13 +128,26 @@ func TestSerializeProfile(t *testing.T) {
 				var d map[string]any
 				decoder := json.NewDecoder(v)
 				decoder.UseNumber()
-				err := decoder.Decode(&d)
+				require.NoError(t, decoder.Decode(&d))
 
-				require.NoError(t, err)
+				// Remove timestamps to allow comparing test results with expected values.
+				for k, v := range d {
+					switch k {
+					case "Symbolization.time.next", "Time.created":
+						tm, err := time.Parse(time.RFC3339Nano, v.(string))
+						require.NoError(t, err)
+						assert.True(t, isWithinLastSecond(tm))
+						d[k] = ""
+					}
+				}
 				results = append(results, d)
 			}
 
 			assert.Equal(t, tt.expected, results)
 		})
 	}
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }

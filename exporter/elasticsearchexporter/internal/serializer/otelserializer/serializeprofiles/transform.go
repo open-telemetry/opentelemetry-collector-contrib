@@ -18,8 +18,6 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
-var Now = time.Now
-
 // Transform transforms a [pprofile.Profile] into our own
 // representation, for ingestion into Elasticsearch
 func Transform(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
@@ -165,15 +163,15 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 }
 
 func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []UnsymbolizedExecutable {
-	nowTime := Now()
+	now := time.Now()
 	unsymbolized := make([]UnsymbolizedExecutable, 0, len(executables))
 	for fileID := range executables {
 		unsymbolized = append(unsymbolized, UnsymbolizedExecutable{
 			EcsVersion: EcsVersion{V: EcsVersionString},
 			DocID:      fileID.Base64(),
 			FileID:     []string{fileID.Base64()},
-			Created:    nowTime,
-			Next:       nowTime,
+			Created:    now,
+			Next:       now,
 			Retries:    0,
 		})
 	}
@@ -181,15 +179,15 @@ func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []Unsymboliz
 }
 
 func unsymbolizedLeafFrames(frameIDs map[libpf.FrameID]struct{}) []UnsymbolizedLeafFrame {
-	nowTime := Now()
+	now := time.Now()
 	unsymbolized := make([]UnsymbolizedLeafFrame, 0, len(frameIDs))
 	for frameID := range frameIDs {
 		unsymbolized = append(unsymbolized, UnsymbolizedLeafFrame{
 			EcsVersion: EcsVersion{V: EcsVersionString},
 			DocID:      frameID.String(),
 			FrameID:    []string{frameID.String()},
-			Created:    nowTime,
-			Next:       nowTime,
+			Created:    now,
+			Next:       now,
 			Retries:    0,
 		})
 	}
