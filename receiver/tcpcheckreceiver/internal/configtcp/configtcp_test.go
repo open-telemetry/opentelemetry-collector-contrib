@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
 type mockHost struct {
@@ -22,7 +22,7 @@ type mockHost struct {
 func TestAllTCPClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 

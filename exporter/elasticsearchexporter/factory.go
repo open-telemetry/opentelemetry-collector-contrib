@@ -74,6 +74,9 @@ func createDefaultConfig() component.Config {
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
+		LogsDynamicPipeline: DynamicPipelineSettings{
+			Enabled: false,
+		},
 		Retry: RetrySettings{
 			Enabled:         true,
 			MaxRetries:      0, // default is set in exporter code
@@ -84,7 +87,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "none",
+			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{

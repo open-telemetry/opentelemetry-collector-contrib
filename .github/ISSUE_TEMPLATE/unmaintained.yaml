@@ -37,7 +37,6 @@ body:
       - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
-      - examples/demo
       - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -95,6 +94,7 @@ body:
       - extension/cgroupruntime
       - extension/encoding
       - extension/encoding/avrologencoding
+      - extension/encoding/awscloudwatchmetricstreamsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -180,6 +180,7 @@ body:
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
+      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
@@ -231,6 +232,7 @@ body:
       - receiver/elasticsearch
       - receiver/envoyals
       - receiver/expvar
+      - receiver/faro
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
@@ -283,6 +285,7 @@ body:
       - receiver/otlpjsonfile
       - receiver/podman
       - receiver/postgresql
+      - receiver/pprof
       - receiver/prometheus
       - receiver/prometheusremotewrite
       - receiver/pulsar
