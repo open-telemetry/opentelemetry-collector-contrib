@@ -234,6 +234,7 @@ body:
       - receiver/envoyals
       - receiver/expvar
       - receiver/faro
+      - receiver/fiddler
       - receiver/filelog
       - receiver/filestats
       - receiver/flinkmetrics
