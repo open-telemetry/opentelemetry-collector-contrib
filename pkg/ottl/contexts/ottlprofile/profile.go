@@ -197,9 +197,9 @@ func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ot
 func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
 	switch context {
 	case ctxresource.Name:
-		return ctxresource.PathGetSetter(ctxprofile.Name, path)
+		return ctxresource.PathGetSetter(path)
 	case ctxscope.LegacyName:
-		return ctxscope.PathGetSetter(ctxprofile.Name, path)
+		return ctxscope.PathGetSetter(path)
 	default:
 		var fullPath string
 		if path != nil {
