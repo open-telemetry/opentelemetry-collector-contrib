@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
@@ -617,7 +616,7 @@ func TestPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ctxspan.PathGetSetter[*testContext](tt.path.Context(), tt.path)
+			accessor, err := ctxspan.PathGetSetter[*testContext](tt.path)
 			assert.NoError(t, err)
 
 			span := createTelemetry()
@@ -635,23 +634,6 @@ func TestPathGetSetter(t *testing.T) {
 			assert.Equal(t, expectedSpan, span)
 		})
 	}
-}
-
-func TestPathGetSetterCacheAccessError(t *testing.T) {
-	path := &pathtest.Path[*testContext]{
-		N: "cache",
-		C: "span",
-		KeySlice: []ottl.Key[*testContext]{
-			&pathtest.Key[*testContext]{
-				S: ottltest.Strp("key"),
-			},
-		},
-		FullPath: "span.cache[key]",
-	}
-
-	_, err := ctxspan.PathGetSetter[*testContext]("spanevent", path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "span.cache[key]" with "spanevent.cache[key]"`)
 }
 
 func createTelemetry() ptrace.Span {

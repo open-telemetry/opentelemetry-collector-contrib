@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -38,7 +38,7 @@ type Config struct {
 	GroupMatch string `mapstructure:"group_match"`
 
 	// Authentication data
-	Authentication kafka.Authentication `mapstructure:"auth"`
+	Authentication configkafka.AuthenticationConfig `mapstructure:"auth"`
 
 	// Cluster metadata refresh frequency
 	// Configures the refresh frequency to update cached cluster metadata

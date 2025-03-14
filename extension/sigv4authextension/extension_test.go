@@ -46,15 +46,6 @@ func TestRoundTripper(t *testing.T) {
 	assert.Equal(t, cfg.credsProvider, si.credsProvider)
 }
 
-func TestPerRPCCredentials(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}}
-	sa := newSigv4Extension(cfg, "", zap.NewNop())
-
-	rpc, err := sa.PerRPCCredentials()
-	assert.Nil(t, rpc)
-	assert.Error(t, err)
-}
-
 func TestGetCredsProviderFromConfig(t *testing.T) {
 	tests := []struct {
 		name            string

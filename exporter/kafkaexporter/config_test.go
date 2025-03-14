@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -63,8 +63,8 @@ func TestLoadConfig(t *testing.T) {
 				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
-				Authentication: kafka.Authentication{
-					PlainText: &kafka.PlainTextConfig{
+				Authentication: configkafka.AuthenticationConfig{
+					PlainText: &configkafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
@@ -86,8 +86,8 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			option: func(conf *Config) {
-				conf.Authentication = kafka.Authentication{
-					SASL: &kafka.SASLConfig{
+				conf.Authentication = configkafka.AuthenticationConfig{
+					SASL: &configkafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
@@ -119,12 +119,12 @@ func TestLoadConfig(t *testing.T) {
 				PartitionLogsByResourceAttributes:    true,
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
-				Authentication: kafka.Authentication{
-					PlainText: &kafka.PlainTextConfig{
+				Authentication: configkafka.AuthenticationConfig{
+					PlainText: &configkafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
-					SASL: &kafka.SASLConfig{
+					SASL: &configkafka.SASLConfig{
 						Username:  "jdoe",
 						Password:  "pass",
 						Mechanism: "PLAIN",
@@ -175,8 +175,8 @@ func TestLoadConfig(t *testing.T) {
 				Brokers:                              []string{"foo:123", "bar:456"},
 				ClientID:                             "test_client_id",
 				ResolveCanonicalBootstrapServersOnly: true,
-				Authentication: kafka.Authentication{
-					PlainText: &kafka.PlainTextConfig{
+				Authentication: configkafka.AuthenticationConfig{
+					PlainText: &configkafka.PlainTextConfig{
 						Username: "jdoe",
 						Password: "pass",
 					},
@@ -220,95 +220,6 @@ func TestValidate_err_compression(t *testing.T) {
 
 	err := config.Validate()
 	assert.EqualError(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
-}
-
-func TestValidate_sasl_username(t *testing.T) {
-	config := &Config{
-		Producer: Producer{
-			Compression: "none",
-		},
-		Authentication: kafka.Authentication{
-			SASL: &kafka.SASLConfig{
-				Username:  "",
-				Password:  "pass",
-				Mechanism: "PLAIN",
-			},
-		},
-	}
-
-	err := config.Validate()
-	assert.EqualError(t, err, "auth.sasl.username is required")
-}
-
-func TestValidate_sasl_password(t *testing.T) {
-	config := &Config{
-		Producer: Producer{
-			Compression: "none",
-		},
-		Authentication: kafka.Authentication{
-			SASL: &kafka.SASLConfig{
-				Username:  "jdoe",
-				Password:  "",
-				Mechanism: "PLAIN",
-			},
-		},
-	}
-
-	err := config.Validate()
-	assert.EqualError(t, err, "auth.sasl.password is required")
-}
-
-func TestValidate_sasl_mechanism(t *testing.T) {
-	config := &Config{
-		Producer: Producer{
-			Compression: "none",
-		},
-		Authentication: kafka.Authentication{
-			SASL: &kafka.SASLConfig{
-				Username:  "jdoe",
-				Password:  "pass",
-				Mechanism: "FAKE",
-			},
-		},
-	}
-
-	err := config.Validate()
-	assert.EqualError(t, err, "auth.sasl.mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value FAKE")
-}
-
-func TestValidate_sasl_version(t *testing.T) {
-	config := &Config{
-		Producer: Producer{
-			Compression: "none",
-		},
-		Authentication: kafka.Authentication{
-			SASL: &kafka.SASLConfig{
-				Username:  "jdoe",
-				Password:  "pass",
-				Mechanism: "PLAIN",
-				Version:   42,
-			},
-		},
-	}
-
-	err := config.Validate()
-	assert.EqualError(t, err, "auth.sasl.version has to be either 0 or 1. configured value 42")
-}
-
-func TestValidate_sasl_iam(t *testing.T) {
-	config := &Config{
-		Producer: Producer{
-			Compression: "none",
-		},
-		Authentication: kafka.Authentication{
-			SASL: &kafka.SASLConfig{
-				Mechanism: "AWS_MSK_IAM",
-			},
-		},
-	}
-
-	err := config.Validate()
-	assert.NoError(t, err)
 }
 
 func Test_saramaProducerCompressionCodec(t *testing.T) {

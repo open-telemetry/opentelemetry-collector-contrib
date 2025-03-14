@@ -264,6 +264,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
+          check-latest: true # Since we're using "~" in the version, check we're using latest
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
