@@ -112,6 +112,9 @@ func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
 type TelemetrySettings struct {
 	LogRequestBody  bool `mapstructure:"log_request_body"`
 	LogResponseBody bool `mapstructure:"log_response_body"`
+
+	LogFailedDocsSource          bool          `mapstructure:"log_failed_docs_source"`
+	LogFailedDocsSourceRateLimit time.Duration `mapstructure:"log_failed_docs_source_rate_limit"`
 }
 
 type LogstashFormatSettings struct {
@@ -396,5 +399,17 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
+}
+
+func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
+	if cfg.TelemetrySettings.LogRequestBody {
+		logger.Warn("telemetry::log_request_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.TelemetrySettings.LogResponseBody {
+		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.TelemetrySettings.LogFailedDocsSource {
+		logger.Warn("telemetry::log_failed_docs_source is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
 }
