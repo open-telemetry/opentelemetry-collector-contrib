@@ -10,6 +10,7 @@ import (
 	"sync"
 	"time"
 
+	prometheustranslator "github.com/ArthurSens/otlp-prometheus-translator"
 	"github.com/prometheus/client_golang/prometheus"
 	dto "github.com/prometheus/client_model/go"
 	"github.com/prometheus/common/model"
@@ -18,8 +19,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 var separatorString = string([]byte{model.SeparatorByte})
@@ -45,7 +44,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         prometheustranslator.CleanUpStrings(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
@@ -115,7 +114,10 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+	name := prometheustranslator.BuildCompliantMetricName(metric.Name(), metric.Unit(), getTranslatorMetricType(metric), c.addMetricSuffixes)
+	if c.namespace != "" {
+		name = c.namespace + "_" + name
+	}
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -140,6 +142,26 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	}
 
 	return prometheus.NewDesc(name, help, keys, c.constLabels), values, nil
+}
+
+func getTranslatorMetricType(metric pmetric.Metric) prometheustranslator.MetricType {
+	switch metric.Type() {
+	case pmetric.MetricTypeGauge:
+		return prometheustranslator.MetricTypeGauge
+	case pmetric.MetricTypeSum:
+		if metric.Sum().IsMonotonic() {
+			return prometheustranslator.MetricTypeMonotonicCounter
+		}
+		return prometheustranslator.MetricTypeNonMonotonicCounter
+	case pmetric.MetricTypeHistogram:
+		return prometheustranslator.MetricTypeHistogram
+	case pmetric.MetricTypeExponentialHistogram:
+		return prometheustranslator.MetricTypeExponentialHistogram
+	case pmetric.MetricTypeSummary:
+		return prometheustranslator.MetricTypeSummary
+	default:
+		return prometheustranslator.MetricTypeUnknown
+	}
 }
 
 func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
