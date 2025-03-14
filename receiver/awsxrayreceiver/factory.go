@@ -5,11 +5,13 @@ package awsxrayreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
@@ -39,12 +41,22 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTracesReceiver(
-	_ context.Context,
-	params receiver.Settings,
-	cfg component.Config,
-	consumer consumer.Traces,
-) (receiver.Traces, error) {
-	rcfg := cfg.(*Config)
-	return newReceiver(rcfg, consumer, params)
+func createTracesReceiver(ctx context.Context, params receiver.Settings, cfg component.Config, consumer consumer.Traces) (receiver.Traces, error) {
+	rcfg, ok := cfg.(*Config)
+	if !ok {
+		params.Logger.Error("Failed to cast receiver config")
+		return nil, fmt.Errorf("invalid config type")
+	}
+
+	if rcfg.Region == "" {
+		rcfg.Region = "us-west-2"
+	}
+
+	client, err := newXRayClient(ctx, rcfg.Region)
+	if err != nil {
+		params.Logger.Error("Failed to create AWS X-Ray client", zap.Error(err))
+		return nil, err
+	}
+
+	return newReceiver(rcfg, consumer, params, client)
 }
