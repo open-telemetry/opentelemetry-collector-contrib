@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 type MockClusterAdmin struct {
@@ -40,16 +41,14 @@ func TestCollectEndpointsDefaultConfig(t *testing.T) {
 	mockAdmin := &MockClusterAdmin{}
 	mockAdmin.On("ListTopics").Return(map[string]sarama.TopicDetail{"abc": {}, "def": {}}, nil)
 	mockAdmin.On("Close").Return(nil).Once()
-	// Override the createKafkaClusterAdmin function to return the mock admin
-	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
-	createKafkaClusterAdmin = func(_ context.Context, _ Config) (sarama.ClusterAdmin, error) {
-		return mockAdmin, nil
-	}
-	defer func() {
-		createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
-	}()
 
-	ext, err := newObserver(zap.NewNop(), factory.CreateDefaultConfig().(*Config))
+	ext, err := newObserver(
+		zap.NewNop(),
+		factory.CreateDefaultConfig().(*Config),
+		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
+			return mockAdmin, nil
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 
@@ -84,16 +83,13 @@ func TestCollectEndpointsAllConfigSettings(t *testing.T) {
 	mockAdmin.On("Close").Return(nil).Once()
 
 	// Override the createKafkaClusterAdmin function to return the mock admin
-	originalCreateKafkaClusterAdmin := createKafkaClusterAdmin
-	createKafkaClusterAdmin = func(_ context.Context, _ Config) (sarama.ClusterAdmin, error) {
-		return mockAdmin, nil
-	}
-	defer func() {
-		createKafkaClusterAdmin = originalCreateKafkaClusterAdmin
-	}()
-
 	extAllSettings := loadConfig(t, component.NewIDWithName(metadata.Type, "all_settings"))
-	ext, err := newObserver(zap.NewNop(), extAllSettings)
+	ext, err := newObserver(
+		zap.NewNop(), extAllSettings,
+		func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
+			return mockAdmin, nil
+		},
+	)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 

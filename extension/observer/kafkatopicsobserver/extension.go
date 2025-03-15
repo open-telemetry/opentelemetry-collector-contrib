@@ -15,7 +15,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/endpointswatcher"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 var (
@@ -25,20 +25,25 @@ var (
 
 type kafkaTopicsObserver struct {
 	*endpointswatcher.EndpointsWatcher
-	logger           *zap.Logger
-	config           *Config
-	cancelKafkaAdmin func()
+	logger *zap.Logger
+	config *Config
+
 	adminClient      sarama.ClusterAdmin
+	cancelKafkaAdmin func()
 }
 
-func newObserver(logger *zap.Logger, config *Config) (extension.Extension, error) {
+func newObserver(
+	logger *zap.Logger,
+	config *Config,
+	newAdminClusterClient func(context.Context, configkafka.ClientConfig) (sarama.ClusterAdmin, error),
+) (extension.Extension, error) {
 	topicRegexp, err := regexp.Compile(config.TopicRegex)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic regex: %w", err)
 	}
 
 	kCtx, cancel := context.WithCancel(context.Background())
-	adminClient, err := createKafkaClusterAdmin(kCtx, *config)
+	adminClient, err := newAdminClusterClient(kCtx, config.ClientConfig)
 	if err != nil {
 		cancel()
 		return nil, fmt.Errorf("could not create kafka cluster admin: %w", err)
@@ -122,22 +127,4 @@ func (k *kafkaTopicsEndpointsLister) listMatchingTopics() ([]string, error) {
 		}
 	}
 	return matchingTopics, nil
-}
-
-var createKafkaClusterAdmin = func(ctx context.Context, config Config) (sarama.ClusterAdmin, error) {
-	saramaConfig := sarama.NewConfig()
-
-	var err error
-	if config.ResolveCanonicalBootstrapServersOnly {
-		saramaConfig.Net.ResolveCanonicalBootstrapServers = true
-	}
-	if config.ProtocolVersion != "" {
-		if saramaConfig.Version, err = sarama.ParseKafkaVersion(config.ProtocolVersion); err != nil {
-			return nil, err
-		}
-	}
-	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
-		return nil, err
-	}
-	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
 }
