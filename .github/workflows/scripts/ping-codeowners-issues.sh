@@ -13,7 +13,7 @@ if [[ -z "${COMPONENT:-}" || -z "${ISSUE:-}" ]]; then
 fi
 
 CUR_DIRECTORY=$(dirname "$0")
-
+COMPONENT=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $1}' .github/component_labels.txt)
 OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
 if [[ -z "${OWNERS}" ]]; then
