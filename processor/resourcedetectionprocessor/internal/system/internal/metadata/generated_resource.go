@@ -112,6 +112,13 @@ func (rb *ResourceBuilder) SetOsType(val string) {
 	}
 }
 
+// SetOsVersion sets provided value as "os.version" attribute.
+func (rb *ResourceBuilder) SetOsVersion(val string) {
+	if rb.config.OsVersion.Enabled {
+		rb.res.Attributes().PutStr("os.version", val)
+	}
+}
+
 // Emit returns the built resource and resets the internal builder state.
 func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
