@@ -514,6 +514,28 @@ func Test_replaceAllPatterns(t *testing.T) {
 				expectedMap.PutStr("test7", "empty_string_replacement")
 			},
 		},
+		{
+			name:    "replacement matches with function",
+			target:  target,
+			mode:    modeKey,
+			pattern: `test(\d)`,
+			replacement: ottl.StandardStringGetter[pcommon.Map]{
+				Getter: func(context.Context, pcommon.Map) (any, error) {
+					return "$1", nil
+				},
+			},
+			replacementFormat: ottl.Optional[ottl.StringGetter[pcommon.Map]]{},
+			function:          optionalArg,
+			want: func(expectedMap pcommon.Map) {
+				expectedMap.PutStr("test", "hello world")
+				expectedMap.PutStr("hash(2)", "hello")
+				expectedMap.PutStr("hash(3)", "goodbye world1 and world2")
+				expectedMap.PutInt("hash(4)", 1234)
+				expectedMap.PutDouble("hash(5)", 1234)
+				expectedMap.PutBool("hash(6)", true)
+				expectedMap.PutStr("hash(7)", "")
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
