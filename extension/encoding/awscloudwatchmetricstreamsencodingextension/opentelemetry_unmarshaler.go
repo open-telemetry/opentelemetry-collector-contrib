@@ -25,21 +25,25 @@ var _ pmetric.Unmarshaler = (*formatOpenTelemetry10Unmarshaler)(nil)
 
 func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 	md := pmetric.NewMetrics()
-	dataLen, pos := len(record), 0
-	for pos < dataLen {
+	dataLen, start := len(record), 0
+	for start < dataLen {
 		// get size of datum
-		nLen, bytesRead := binary.Uvarint(record[pos:])
+		nLen, bytesRead := binary.Uvarint(record[start:])
 		if bytesRead <= 0 {
-			return md, errInvalidUvarint
+			return pmetric.Metrics{}, errInvalidUvarint
 		}
-		pos += bytesRead
+		start += bytesRead
+		end := start + int(nLen)
+		if end > len(record) {
+			return pmetric.Metrics{}, errors.New("index out of bounds: length prefix exceeds available bytes in record")
+		}
 
 		// unmarshal datum
 		req := pmetricotlp.NewExportRequest()
-		if err := req.UnmarshalProto(record[pos : pos+int(nLen)]); err != nil {
+		if err := req.UnmarshalProto(record[start:end]); err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("unable to unmarshal input: %w", err)
 		}
-		pos += int(nLen)
+		start = end
 
 		// add scope name and build info version to
 		// the resource metrics
@@ -52,10 +56,6 @@ func (f *formatOpenTelemetry10Unmarshaler) UnmarshalMetrics(record []byte) (pmet
 			}
 		}
 		req.Metrics().ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
-	}
-
-	if md.DataPointCount() == 0 {
-		return pmetric.Metrics{}, errEmptyRecord
 	}
 
 	return md, nil
