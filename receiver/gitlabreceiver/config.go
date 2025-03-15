@@ -30,6 +30,7 @@ const (
 	defaultGitlabEventHeader       = "X-Gitlab-Event"
 	defaultGitlabEventUUIDHeader   = "X-Gitlab-Event-UUID"
 	defaultIdempotencyKeyHeader    = "Idempotency-Key"
+	defaultGitlabTokenHeader       = "X-Gitlab-Token"
 )
 
 var (
