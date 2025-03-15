@@ -240,10 +240,11 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("foo",
-			compareMetricIsMonotonic(false),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"foo",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -259,10 +260,13 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 						compareAttributes(map[string]string{"entity": "replica", "name": "prettiername", "version": "8.1.9"}),
 					},
 				},
-			}),
-		assertMetricPresent("bar",
+			},
 			compareMetricIsMonotonic(false),
-			compareMetricUnit(""),
+		},
+		{
+			"bar",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -306,7 +310,9 @@ func verifyInfoStatesetMetrics(t *testing.T, td *testData, resourceMetrics []pme
 						compareAttributes(map[string]string{"entity": "replica", "foo": "ccc"}),
 					},
 				},
-			}),
+			},
+			compareMetricIsMonotonic(false),
+		},
 	}
 	doCompare(t, "scrape-infostatesetmetrics-1", wantAttributes, m1, e1)
 }
