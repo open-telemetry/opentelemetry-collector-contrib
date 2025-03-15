@@ -296,11 +296,13 @@ Examples:
 
 ### merge_maps
 
-`merge_maps(target, source, strategy)`
+`merge_maps(target, Optional[source], Optional[strategy], Optional[sources])`
 
-The `merge_maps` function merges the source map into the target map using the supplied strategy to handle conflicts.
+The `merge_maps` function merges the source map or slice of source maps into the target map using the supplied strategy to handle conflicts.
 
-`target` is a `pcommon.Map` type field. `source` is a `pcommon.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`.
+`target` is a `pcommon.Map` type field. `source` is a `pcommon.Map` type field. `strategy` is a string that must be one of `insert`, `update`, or `upsert`. `sources` is a `pcommon.Slice` type field of maps.
+
+At least one of the `source` or `sources` needs to be set, otherwise an error is returned.
 
 If strategy is:
 
@@ -312,13 +314,21 @@ If strategy is:
 
 Examples:
 
-- `merge_maps(log.attributes, ParseJSON(log.body), "upsert")`
+- `merge_maps(log.attributes, ParseJSON(log.body))`
 
+- `merge_maps(log.attributes, ParseJSON(log.body), "upsert")`
 
 - `merge_maps(log.attributes, ParseJSON(log.attributes["kubernetes"]), "update")`
 
-
 - `merge_maps(log.attributes, resource.attributes, "insert")`
+
+- `merge_maps(log.attributes, strategy="insert", sources=attributes["map_slice"])`
+
+- `merge_maps(log.attributes, sources=attributes["map_slice"])`
+
+- `merge_maps(log.attributes, source=resource.attributes, sources=attributes["map_slice"])`
+
+- `merge_maps(log.attributes, source=resource.attributes, strategy="insert", sources=attributes["map_slice"])`
 
 ### replace_all_matches
 

@@ -447,6 +447,67 @@ func (g StandardPMapGetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, er
 	}
 }
 
+// PMapSliceGetter is a Getter that must return a []pcommon.Map.
+type PMapSliceGetter[K any] interface {
+	// Get retrieves a []pcommon.Map value.
+	Get(ctx context.Context, tCtx K) ([]pcommon.Map, error)
+}
+
+// StandardPMapSliceGetter is a basic implementation of PMapSliceGetter
+type StandardPMapSliceGetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+}
+
+// Get retrieves a []pcommon.Map value.
+// If the value is not a []pcommon.Map a new TypeError is returned.
+// If there is an error getting the value it will be returned.
+func (g StandardPMapSliceGetter[K]) Get(ctx context.Context, tCtx K) ([]pcommon.Map, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return []pcommon.Map{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return []pcommon.Map{}, TypeError("expected []pcommon.Map but got nil")
+	}
+	switch v := val.(type) {
+	case []pcommon.Map:
+		return v, nil
+	case []map[string]any:
+		result := []pcommon.Map{}
+		for _, mm := range v {
+			m := pcommon.NewMap()
+			err = m.FromRaw(mm)
+			if err != nil {
+				return []pcommon.Map{}, err
+			}
+			result = append(result, m)
+		}
+		return result, nil
+	case pcommon.Slice:
+		result := []pcommon.Map{}
+		for _, mm := range v.AsRaw() {
+			mmm, ok := mm.(pcommon.Map)
+			if ok {
+				result = append(result, mmm)
+			} else {
+				mmm, ok := mm.(map[string]any)
+				if !ok {
+					return []pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map/map[string]any but got %T", v))
+				}
+				m := pcommon.NewMap()
+				err = m.FromRaw(mmm)
+				if err != nil {
+					return []pcommon.Map{}, err
+				}
+				result = append(result, m)
+			}
+		}
+		return result, nil
+	default:
+		return []pcommon.Map{}, TypeError(fmt.Sprintf("expected []pcommon.Map but got %T", val))
+	}
+}
+
 // StringLikeGetter is a Getter that returns a string by converting the underlying value to a string if necessary.
 type StringLikeGetter[K any] interface {
 	// Get retrieves a string value.
