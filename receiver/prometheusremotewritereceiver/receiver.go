@@ -170,8 +170,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
-		// metricCache is used to store previously created pmetric.Metric to speed up the process of appending new datapoints samples.
-		metricCache = make(map[Ident]pmetric.Metric)
+		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
+		// TODO: use the appropriate hash function.
+		metricCache = make(map[string]pmetric.Metric)
 	)
 
 	for _, ts := range req.Timeseries {
@@ -196,63 +197,75 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			intraRequestCache[hashedLabels] = rm
 		}
 
-		// metricHash := xxhash.Sum64String(ls.Get(labels.MetricName) +
-		// 	string([]byte{'\xff'}) +
-		// 	req.Symbols[ts.Metadata.UnitRef] +
-		// 	string([]byte{'\xff'}) +
-		// 	req.Symbols[ts.Metadata.HelpRef] +
-		// 	string([]byte{'\xff'}) +
-		// 	ts.Metadata.Type.String())
-		// fmt.Printf("metric hash: %v\n", metricHash)
+		scopeName, scopeVersion := prw.extractScopeInfo(ls)
+		metricName := ls.Get(labels.MetricName)
+		unit := ""
+		// TODO: Like UnitRef, we should assign the HelpRef to the metric.
+		if ts.Metadata.UnitRef > 0 && ts.Metadata.UnitRef < uint32(len(req.Symbols)) {
+			unit = req.Symbols[ts.Metadata.UnitRef]
+		}
 
-		resourceID := identity.OfResource(rm.Resource())
-		exists := false
-		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-			scope := rm.ScopeMetrics().At(j)
-			scopeID := identity.OfScope(resourceID, scope.Scope())
-			fmt.Printf("scope hash: %v\n", scopeID.String())
-			fmt.Printf("Debug Length of metrics: %v\n", scope.Metrics().Len())
-			for k := 0; k < scope.Metrics().Len(); k++ {
-				metric := scope.Metrics().At(k)
-				metricID := identity.OfMetric(scopeID, metric)
-				fmt.Printf("metric hash: %v\n", metricID.String())
-				_, ok := metricCache[metricID]
-				if ok {
-					fmt.Printf("Debug: metric already exists\n")
-					// if the metric was already created, we can append the new datapoints to the existing metric.
-					addDatapoints(metric.Gauge().DataPoints(), ls, ts)
-					exists = true
-					continue
-				}
+		// Temporary approach to generate the metric key.
+		// TODO: Replace this with a proper hashing function.
+		metricKey := fmt.Sprintf("%d:%s:%s:%s:%s:%d",
+			hashedLabels,     // Resource identity
+			scopeName,        // Scope name
+			scopeVersion,     // Scope version
+			metricName,       // Metric name
+			unit,             // Unit
+			ts.Metadata.Type) // Metric type
 
-				fmt.Printf("Debug: metric does not exist adding to cache\n")
-				metricCache[metricID] = metric
-				fmt.Printf("Debug metric Name: %v\n", ls.Get(labels.MetricName))
-				fmt.Printf("Debug symbols unit ref: %v\n", req.Symbols[ts.Metadata.UnitRef])
-				metric.SetName(ls.Get(labels.MetricName))
-				metric.SetUnit(req.Symbols[ts.Metadata.UnitRef])
+		var scope pmetric.ScopeMetrics
+		var foundScope bool
+		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+			s := rm.ScopeMetrics().At(i)
+			if s.Scope().Name() == scopeName && s.Scope().Version() == scopeVersion {
+				scope = s
+				foundScope = true
+				break
 			}
 		}
-		if exists {
-			// if the metric was already created, we can skip the rest of the loop to avoid add the same metric/datapoins multiple times.
-			fmt.Printf("Debug: metric already exists continue\n")
-			continue
+		if !foundScope {
+			scope = rm.ScopeMetrics().AppendEmpty()
+			scope.Scope().SetName(scopeName)
+			scope.Scope().SetVersion(scopeVersion)
 		}
-		fmt.Printf("Debug: metric does not exist\n")
 
-		// otherwise, we create a new metric and add it to the cache.
+		metric, exists := metricCache[metricKey]
+		// If the metric does not exist, we create an empty metric and add it to the cache.
+		if !exists {
+			metric = scope.Metrics().AppendEmpty()
+			metric.SetName(metricName)
+			metric.SetUnit(unit)
+
+			switch ts.Metadata.Type {
+			case writev2.Metadata_METRIC_TYPE_GAUGE:
+				metric.SetEmptyGauge()
+			case writev2.Metadata_METRIC_TYPE_COUNTER:
+				sum := metric.SetEmptySum()
+				sum.SetIsMonotonic(true)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+				metric.SetEmptyHistogram()
+			case writev2.Metadata_METRIC_TYPE_SUMMARY:
+				metric.SetEmptySummary()
+			}
+
+			metricCache[metricKey] = metric
+		}
+
+		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
-		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			fmt.Printf("Debug: gauge\n")
-			prw.addGaugeDatapoints(rm, ls, ts)
-		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			prw.addSummaryDatapoints(rm, ls, ts)
+			addDatapoints(metric.Gauge().DataPoints(), ls, ts)
+		case writev2.Metadata_METRIC_TYPE_COUNTER:
+			addDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			prw.addHistogramDatapoints(rm, ls, ts)
+			// TODO: Implement histogram to summary conversion
+		case writev2.Metadata_METRIC_TYPE_SUMMARY:
+			// TODO: Implement histogram to summary conversion
 		default:
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
 	}
 
@@ -274,39 +287,6 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 		}
 		dest.PutStr("service.name", job)
 	}
-}
-
-func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
-	scopeName, scopeVersion := prw.extractScopeInfo(ls)
-
-	// Check if the name and version present in the labels are already present in the ResourceMetrics.
-	// If it is not present, we should create a new ScopeMetrics.
-	// Otherwise, we should append to the existing ScopeMetrics.
-	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-		scope := rm.ScopeMetrics().At(j)
-		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
-			return
-		}
-	}
-
-	scope := rm.ScopeMetrics().AppendEmpty()
-	scope.Scope().SetName(scopeName)
-	scope.Scope().SetVersion(scopeVersion)
-	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
-	addDatapoints(m.DataPoints(), ls, ts)
-}
-
-func (prw *prometheusRemoteWriteReceiver) addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-func (prw *prometheusRemoteWriteReceiver) addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
 }
 
 // addDatapoints adds the labels to the datapoints attributes.
