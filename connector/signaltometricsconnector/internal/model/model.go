@@ -171,7 +171,7 @@ func (md *MetricDef[K]) FromMetricInfo(
 // definition.
 func (md *MetricDef[K]) FilterResourceAttributes(
 	attrs pcommon.Map,
-	collectorInfo *CollectorInstanceInfo,
+	collectorInfo CollectorInstanceInfo,
 ) pcommon.Map {
 	var filteredAttributes pcommon.Map
 	switch {
