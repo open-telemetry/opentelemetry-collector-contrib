@@ -43,6 +43,7 @@ The following settings can be optionally configured:
   - `queue_size` (default = 1000): Maximum number of batches kept in memory before data; ignored if `enabled` is `false`
   - `storage` (default = `none`): When set, enables persistence and uses the component specified as a storage extension for the persistent queue
 - `shutdown_timeout` (default = 1s): Timeout to wait for graceful shutdown. Once exceeded, the component will shut down forcibly, dropping any element in queue.
+- `custom_events_enabled` (default = `false`): Enables export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`.
 
 Example:
 
@@ -117,6 +118,10 @@ Exception events are saved to the Application Insights `exception` table.
 
 This exporter saves log records to Application Insights `traces` table.
 [TraceId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-traceid) is mapped to `operation_id` column and [SpanId](https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/logs/data-model.md#field-spanid) is mapped to `operation_parentId` column.
+
+#### Custom Events
+
+When `custom_events_enabled` = `true`, azure monitor exporter will export log record to custom events when there's attribute `microsoft.custom_event.name` or `APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE`. 
 
 ### Metrics
 

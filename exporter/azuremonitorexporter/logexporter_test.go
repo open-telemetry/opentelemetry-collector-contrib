@@ -24,7 +24,8 @@ import (
 
 const (
 	defaultEnvelopeName = "Microsoft.ApplicationInsights.Message"
-	defaultdBaseType    = "MessageData"
+	defaultBaseType     = "MessageData"
+	eventBaseType       = "EventData"
 )
 
 var (
@@ -54,8 +55,9 @@ func TestLogRecordToEnvelope(t *testing.T) {
 	}
 
 	tests := []struct {
-		name  string
-		index int
+		name     string
+		baseType string
+		index    int
 	}{
 		{
 			name:  "timestamp is correct",
@@ -86,7 +88,7 @@ func TestLogRecordToEnvelope(t *testing.T) {
 			assert.Equal(t, toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano), envelope.Time)
 			require.NotNil(t, envelope.Data)
 			envelopeData := envelope.Data.(*contracts.Data)
-			assert.Equal(t, defaultdBaseType, envelopeData.BaseType)
+			assert.Equal(t, defaultBaseType, envelopeData.BaseType)
 
 			require.NotNil(t, envelopeData.BaseData)
 
@@ -189,7 +191,7 @@ func getLogsExporter(config *Config, transportChannel appinsights.TelemetryChann
 }
 
 func getLogPacker() *logPacker {
-	return newLogPacker(zap.NewNop())
+	return newLogPacker(zap.NewNop(), defaultConfig)
 }
 
 func getTestLogs() plog.Logs {
@@ -260,4 +262,88 @@ func getTestLogRecord(index int) (pcommon.Resource, pcommon.InstrumentationScope
 	logRecord := logRecords.At(index)
 
 	return resource, scope, logRecord
+}
+
+func TestHandleEventData(t *testing.T) {
+	logger := zap.NewNop()
+	config := &Config{}
+	packer := newLogPacker(logger, config)
+
+	tests := []struct {
+		name              string
+		logRecord         func() plog.LogRecord
+		expectedEventName string
+		expectedProperty  map[string]string
+	}{
+		{
+			name: "Event name from attributeMicrosoftCustomEventName",
+			logRecord: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr(attributeMicrosoftCustomEventName, "CustomEvent")
+				lr.Attributes().PutStr("test_attribute", "test_value")
+				return lr
+			},
+			expectedEventName: "CustomEvent",
+			expectedProperty: map[string]string{
+				attributeMicrosoftCustomEventName: "CustomEvent",
+				"test_attribute":                  "test_value",
+			},
+		},
+		{
+			name: "Event name from attributeApplicationInsightsEventMarkerAttribute",
+			logRecord: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr(attributeApplicationInsightsEventMarkerAttribute, "MarkerEvent")
+				lr.Attributes().PutStr("test_attribute", "test_value")
+				return lr
+			},
+			expectedEventName: "MarkerEvent",
+			expectedProperty: map[string]string{
+				attributeApplicationInsightsEventMarkerAttribute: "MarkerEvent",
+				"test_attribute": "test_value",
+			},
+		},
+		{
+			name: "No event name attributes",
+			logRecord: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Attributes().PutStr("test_attribute", "test_value")
+				return lr
+			},
+			expectedEventName: "",
+			expectedProperty: map[string]string{
+				"test_attribute": "test_value",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			envelope := contracts.NewEnvelope()
+			data := contracts.NewData()
+			logRecord := tt.logRecord()
+
+			packer.handleEventData(envelope, data, logRecord)
+
+			eventData := data.BaseData.(*contracts.EventData)
+			assert.Equal(t, tt.expectedEventName, eventData.Name)
+			assert.Equal(t, tt.expectedProperty, eventData.Properties)
+		})
+	}
+}
+
+func TestSetAttributesAsProperties(t *testing.T) {
+	properties := make(map[string]string)
+	attributes := pcommon.NewMap()
+	attributes.PutStr("string_key", "string_value")
+	attributes.PutInt("int_key", 123)
+	attributes.PutDouble("double_key", 4.56)
+	attributes.PutBool("bool_key", true)
+
+	setAttributesAsProperties(attributes, properties)
+
+	assert.Equal(t, "string_value", properties["string_key"])
+	assert.Equal(t, "123", properties["int_key"])
+	assert.Equal(t, "4.56", properties["double_key"])
+	assert.Equal(t, "true", properties["bool_key"])
 }

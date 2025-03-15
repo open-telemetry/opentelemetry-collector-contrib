@@ -16,29 +16,48 @@ import (
 
 type logPacker struct {
 	logger *zap.Logger
+	config *Config
 }
 
-func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) *contracts.Envelope {
+func (packer *logPacker) initEnvelope(logRecord plog.LogRecord) (*contracts.Envelope, *contracts.Data) {
 	envelope := contracts.NewEnvelope()
 	envelope.Tags = make(map[string]string)
 	envelope.Time = toTime(timestampFromLogRecord(logRecord)).Format(time.RFC3339Nano)
+	return envelope, contracts.NewData()
+}
 
-	data := contracts.NewData()
+func (packer *logPacker) handleEventData(envelope *contracts.Envelope, data *contracts.Data, logRecord plog.LogRecord) {
+	attributes := logRecord.Attributes()
+	eventData := contracts.NewEventData()
+	if val, ok := attributes.Get(attributeMicrosoftCustomEventName); ok {
+		eventData.Name = val.AsString()
+	} else if val, ok := attributes.Get(attributeApplicationInsightsEventMarkerAttribute); ok {
+		eventData.Name = val.AsString()
+	}
 
+	eventData.Properties = make(map[string]string)
+	setAttributesAsProperties(attributes, eventData.Properties)
+
+	data.BaseData = eventData
+	data.BaseType = eventData.BaseType()
+	envelope.Name = eventData.EnvelopeName("")
+	envelope.Data = data
+
+	packer.sanitizeAll(envelope, eventData)
+}
+
+func (packer *logPacker) handleMessageData(envelope *contracts.Envelope, data *contracts.Data, logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) {
 	messageData := contracts.NewMessageData()
 	messageData.Properties = make(map[string]string)
-
 	messageData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
-
 	messageData.Message = logRecord.Body().AsString()
 
 	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
 	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
 
-	envelope.Name = messageData.EnvelopeName("")
-
 	data.BaseData = messageData
 	data.BaseType = messageData.BaseType()
+	envelope.Name = messageData.EnvelopeName("")
 	envelope.Data = data
 
 	resourceAttributes := resource.Attributes()
@@ -49,9 +68,26 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 
 	setAttributesAsProperties(logRecord.Attributes(), messageData.Properties)
 
-	packer.sanitize(func() []string { return messageData.Sanitize() })
-	packer.sanitize(func() []string { return envelope.Sanitize() })
+	packer.sanitizeAll(envelope, messageData)
+}
+
+func (packer *logPacker) sanitizeAll(envelope *contracts.Envelope, data any) {
+	if sanitizer, ok := data.(interface{ Sanitize() []string }); ok {
+		packer.sanitize(sanitizer.Sanitize)
+	}
+	packer.sanitize(envelope.Sanitize)
 	packer.sanitize(func() []string { return contracts.SanitizeTags(envelope.Tags) })
+}
+
+func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) *contracts.Envelope {
+	envelope, data := packer.initEnvelope(logRecord)
+	attributes := logRecord.Attributes()
+
+	if packer.config.CustomEventsEnabled && isEventData(attributes) {
+		packer.handleEventData(envelope, data, logRecord)
+	} else {
+		packer.handleMessageData(envelope, data, logRecord, resource, instrumentationScope)
+	}
 
 	return envelope
 }
@@ -79,9 +115,10 @@ func (packer *logPacker) toAiSeverityLevel(sn plog.SeverityNumber) contracts.Sev
 	}
 }
 
-func newLogPacker(logger *zap.Logger) *logPacker {
+func newLogPacker(logger *zap.Logger, config *Config) *logPacker {
 	packer := &logPacker{
 		logger: logger,
+		config: config,
 	}
 	return packer
 }
@@ -96,4 +133,18 @@ func timestampFromLogRecord(lr plog.LogRecord) pcommon.Timestamp {
 	}
 
 	return pcommon.NewTimestampFromTime(timeNow())
+}
+
+func hasOneOfKeys(attrMap pcommon.Map, keys ...string) bool {
+	for _, key := range keys {
+		_, exists := attrMap.Get(key)
+		if exists {
+			return true
+		}
+	}
+	return false
+}
+
+func isEventData(attrMap pcommon.Map) bool {
+	return hasOneOfKeys(attrMap, attributeMicrosoftCustomEventName, attributeApplicationInsightsEventMarkerAttribute)
 }
