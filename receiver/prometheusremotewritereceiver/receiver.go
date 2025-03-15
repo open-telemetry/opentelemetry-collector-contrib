@@ -24,8 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -152,8 +150,6 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	// No "proto=" parameter found, assume v1.
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
-
-type Ident = identity.Metric
 
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
