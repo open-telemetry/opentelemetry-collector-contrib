@@ -28,6 +28,10 @@ type fakeClient struct {
 	NodeInformer       cache.SharedInformer
 	Namespaces         map[string]*kube.Namespace
 	Nodes              map[string]*kube.Node
+	Deployments        map[string]*kube.Deployment
+	StatefulSets       map[string]*kube.StatefulSet
+	DaemonSets         map[string]*kube.DaemonSet
+	Jobs               map[string]*kube.Job
 	StopCh             chan struct{}
 }
 
@@ -37,7 +41,7 @@ func selectors() (labels.Selector, fields.Selector) {
 }
 
 // newFakeClient instantiates a new FakeClient object and satisfies the ClientProvider type
-func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet, _ bool, _ time.Duration) (kube.Client, error) {
+func newFakeClient(_ component.TelemetrySettings, _ k8sconfig.APIConfig, rules kube.ExtractionRules, filters kube.Filters, associations []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
 	cs := fake.NewSimpleClientset()
 
 	ls, fs := selectors()
@@ -69,6 +73,26 @@ func (f *fakeClient) GetNamespace(namespace string) (*kube.Namespace, bool) {
 func (f *fakeClient) GetNode(nodeName string) (*kube.Node, bool) {
 	node, ok := f.Nodes[nodeName]
 	return node, ok
+}
+
+func (f *fakeClient) GetDeployment(deploymentName string) (*kube.Deployment, bool) {
+	d, ok := f.Deployments[deploymentName]
+	return d, ok
+}
+
+func (f *fakeClient) GetStatefulSet(statefulsetUID string) (*kube.StatefulSet, bool) {
+	s, ok := f.StatefulSets[statefulsetUID]
+	return s, ok
+}
+
+func (f *fakeClient) GetDaemonSet(daemonsetUID string) (*kube.DaemonSet, bool) {
+	s, ok := f.DaemonSets[daemonsetUID]
+	return s, ok
+}
+
+func (f *fakeClient) GetJob(jobUID string) (*kube.Job, bool) {
+	j, ok := f.Jobs[jobUID]
+	return j, ok
 }
 
 // Start is a noop for FakeClient.
