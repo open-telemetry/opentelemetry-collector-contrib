@@ -40,7 +40,9 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -66,6 +68,8 @@ var (
 
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
+
+	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
 )
 
 const (
@@ -387,18 +391,23 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
+	_, span := s.getTracer().Start(context.Background(), "GetBootstrapInfo")
+	defer span.End()
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
 		return err
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
 		return err
 	}
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
@@ -429,13 +438,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
-						// TODO: Consider whether to attempt restarting the Collector.
-						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
-								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
+								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
 								attr.Value.GetStringValue(),
-								s.persistentState.InstanceID.String())
+								s.persistentState.InstanceID.String(),
+								errNonMatchingInstanceUID,
+							)
 							return response
 						}
 						instanceIDSeen = true
@@ -480,6 +489,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 	}.toServerSettings())
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
 		return err
 	}
 
@@ -496,10 +506,12 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
 	if err = cmd.Start(context.Background()); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
@@ -512,11 +524,33 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	select {
 	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
-			return errors.New("collector connected but never responded with an AgentDescription message")
+			msg := "collector connected but never responded with an AgentDescription message"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		} else {
-			return errors.New("collector's OpAMP client never connected to the Supervisor")
+			msg := "collector's OpAMP client never connected to the Supervisor"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		}
 	case err = <-done:
+		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
+		if errors.Is(err, errNonMatchingInstanceUID) {
+			// TODO this will not work yet as the opAmp client currently is created after getting the agent Description from the message
+			// to be able to report the health before that, we need to init the opAmp client with the expected agent description (i.e. instance ID)
+			// and update the agent description containing the identifying attributes in a later step
+			if err2 := s.opampClient.SetHealth(&protobufs.ComponentHealth{
+				Healthy:            false,
+				LastError:          err.Error(),
+				Status:             "",
+				StatusTimeUnixNano: 0,
+			}); err2 != nil {
+				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err2))
+			}
+		}
+		if err != nil {
+			span.SetStatus(codes.Error, err.Error())
+		}
+		span.SetStatus(codes.Ok, "")
 		return err
 	}
 }
@@ -1632,6 +1666,10 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func (s *Supervisor) getTracer() trace.Tracer {
+	return s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
 }
 
 // The default koanf behavior is to override lists in the config.
