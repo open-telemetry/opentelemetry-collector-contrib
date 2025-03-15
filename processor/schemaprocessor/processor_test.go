@@ -25,11 +25,12 @@ type dummySchemaProvider struct {
 }
 
 func (m *dummySchemaProvider) Retrieve(_ context.Context, _ string) (string, error) {
+	transformations := strings.ReplaceAll(m.transformations, "\t", "    ")
 	data := fmt.Sprintf(`
 file_format: 1.1.0
 schema_url: http://opentelemetry.io/schemas/1.9.0
-versions:
-  %s`, m.transformations)
+versions:%s`, transformations)
+
 	data = strings.TrimSpace(data)
 	return data, nil
 }
