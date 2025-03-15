@@ -14,3 +14,6 @@ sqlserver/named:
       enabled: true
     server.address:
       enabled: true
+  query_sample:
+    enabled: true
+    max_result_per_query: 1450

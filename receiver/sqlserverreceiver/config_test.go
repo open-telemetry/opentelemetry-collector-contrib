@@ -122,6 +122,10 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
+		expected.QuerySample = QuerySample{
+			EnableQuerySample: true,
+			MaxResultPerQuery: 1450,
+		}
 
 		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
