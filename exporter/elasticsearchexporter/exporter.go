@@ -583,6 +583,9 @@ func (e *elasticsearchExporter) pushProfileRecord(
 			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
 			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
+		case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
+			// These regular indices have a low write-frequency and can share the executablesSession.
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		default:
 			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		}
