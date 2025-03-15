@@ -2,7 +2,7 @@ name: 'Update contrib to the latest core source'
 on:
   workflow_dispatch:
   schedule:
-    - cron: "27 8 * * 1" # Run at 08:27 UTC on Mondays.
+    - cron: "27 8 * * 5" # Run at 08:27 UTC on Fridays.
 
 jobs:
   update-otel:
