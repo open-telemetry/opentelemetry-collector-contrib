@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -396,7 +397,6 @@ func isExtraScrapeMetrics(m pmetric.Metric) bool {
 }
 
 type (
-	metricTypeComparator           func(*testing.T, pmetric.Metric)
 	numberPointComparator          func(*testing.T, pmetric.NumberDataPoint)
 	histogramPointComparator       func(*testing.T, pmetric.HistogramDataPoint)
 	summaryPointComparator         func(*testing.T, pmetric.SummaryDataPoint)
@@ -410,19 +410,30 @@ type dataPointExpectation struct {
 	exponentialHistogramComparator []exponentialHistogramComparator
 }
 
-type testExpectation func(*testing.T, pmetric.ResourceMetrics)
+type metricChecker func(*testing.T, pmetric.Metric)
 
-func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation) {
-	doCompareNormalized(t, name, want, got, expectations, false)
+type metricExpectation struct {
+	name                  string
+	mtype                 pmetric.MetricType
+	munit                 string
+	dataPointExpectations []dataPointExpectation
+	extraExpectation      metricChecker
 }
 
-func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, expectations []testExpectation, normalizedNames bool) {
+// doCompare is a helper function to compare the expected metrics with the actual metrics
+// name is the test name
+// want is the map of expected attributes
+// got is the actual metrics
+// metricExpections is the list of expected metrics, exluding the internal scrape metrics
+func doCompare(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, metricExpectations []metricExpectation) {
+	doCompareNormalized(t, name, want, got, metricExpectations, false)
+}
+
+func doCompareNormalized(t *testing.T, name string, want pcommon.Map, got pmetric.ResourceMetrics, metricExpectations []metricExpectation, normalizedNames bool) {
 	t.Run(name, func(t *testing.T) {
 		assert.Equal(t, expectedScrapeMetricCount, countScrapeMetricsRM(got, normalizedNames))
 		assertExpectedAttributes(t, want, got)
-		for _, e := range expectations {
-			e(t, got)
-		}
+		assertExpectedMetrics(t, metricExpectations, got, normalizedNames, false)
 	})
 }
 
@@ -437,75 +448,154 @@ func assertExpectedAttributes(t *testing.T, want pcommon.Map, got pmetric.Resour
 	}
 }
 
-func assertMetricPresent(name string, metricTypeExpectations metricTypeComparator, metricUnitExpectations metricTypeComparator, dataPointExpectations []dataPointExpectation) testExpectation {
-	return func(t *testing.T, rm pmetric.ResourceMetrics) {
-		allMetrics := getMetrics(rm)
-		var present bool
-		for _, m := range allMetrics {
-			if name != m.Name() {
+func assertExpectedMetrics(t *testing.T, metricExpectations []metricExpectation, got pmetric.ResourceMetrics, normalizedNames bool, existsOnly bool) {
+	var defaultExpectations []metricExpectation
+	switch {
+	case existsOnly:
+	case normalizedNames:
+		defaultExpectations = []metricExpectation{
+			{
+				"scrape_duration",
+				pmetric.MetricTypeGauge,
+				"s",
+				nil,
+				nil,
+			},
+			{
+				"scrape_samples_post_metric_relabeling",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_samples_scraped",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_series_added",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"up",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+		}
+	case !normalizedNames:
+		defaultExpectations = []metricExpectation{
+			{
+				"scrape_duration_seconds",
+				pmetric.MetricTypeGauge,
+				"s",
+				nil,
+				nil,
+			},
+			{
+				"scrape_samples_post_metric_relabeling",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_samples_scraped",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"scrape_series_added",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+			{
+				"up",
+				pmetric.MetricTypeGauge,
+				"",
+				nil,
+				nil,
+			},
+		}
+	}
+
+	metricExpectations = append(defaultExpectations, metricExpectations...)
+
+	allMetrics := getMetrics(got)
+	for _, me := range metricExpectations {
+		id := fmt.Sprintf("name '%s' type '%s' unit '%s'", me.name, me.mtype.String(), me.munit)
+		pos := -1
+		for k, m := range allMetrics {
+			if me.name != m.Name() || me.mtype != m.Type() || me.munit != m.Unit() {
 				continue
 			}
 
-			present = true
-			metricTypeExpectations(t, m)
-			metricUnitExpectations(t, m)
-			for i, de := range dataPointExpectations {
+			require.Equal(t, -1, pos, "metric %s is not unique", id)
+			pos = k
+
+			for i, de := range me.dataPointExpectations {
 				switch m.Type() {
 				case pmetric.MetricTypeGauge:
 					for _, npc := range de.numberPointComparator {
-						require.Len(t, dataPointExpectations, m.Gauge().DataPoints().Len(), "Expected number of data-points in Gauge metric '%s' does not match to testdata", name)
+						require.Len(t, me.dataPointExpectations, m.Gauge().DataPoints().Len(), "Expected number of data-points in Gauge metric '%s' does not match to testdata", id)
 						npc(t, m.Gauge().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSum:
 					for _, npc := range de.numberPointComparator {
-						require.Len(t, dataPointExpectations, m.Sum().DataPoints().Len(), "Expected number of data-points in Sum metric '%s' does not match to testdata", name)
+						require.Len(t, me.dataPointExpectations, m.Sum().DataPoints().Len(), "Expected number of data-points in Sum metric '%s' does not match to testdata", id)
 						npc(t, m.Sum().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeHistogram:
 					for _, hpc := range de.histogramPointComparator {
-						require.Len(t, dataPointExpectations, m.Histogram().DataPoints().Len(), "Expected number of data-points in Histogram metric '%s' does not match to testdata", name)
+						require.Len(t, me.dataPointExpectations, m.Histogram().DataPoints().Len(), "Expected number of data-points in Histogram metric '%s' does not match to testdata", id)
 						hpc(t, m.Histogram().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeSummary:
 					for _, spc := range de.summaryPointComparator {
-						require.Len(t, dataPointExpectations, m.Summary().DataPoints().Len(), "Expected number of data-points in Summary metric '%s' does not match to testdata", name)
+						require.Len(t, me.dataPointExpectations, m.Summary().DataPoints().Len(), "Expected number of data-points in Summary metric '%s' does not match to testdata", id)
 						spc(t, m.Summary().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeExponentialHistogram:
 					for _, ehc := range de.exponentialHistogramComparator {
-						require.Len(t, dataPointExpectations, m.ExponentialHistogram().DataPoints().Len(), "Expected number of data-points in Exponential Histogram metric '%s' does not match to testdata", name)
+						require.Len(t, me.dataPointExpectations, m.ExponentialHistogram().DataPoints().Len(), "Expected number of data-points in Exponential Histogram metric '%s' does not match to testdata", id)
 						ehc(t, m.ExponentialHistogram().DataPoints().At(i))
 					}
 				case pmetric.MetricTypeEmpty:
 				}
 			}
+
+			if me.extraExpectation != nil {
+				me.extraExpectation(t, m)
+			}
 		}
-		require.True(t, present, "expected metric '%s' is not present", name)
+		require.GreaterOrEqual(t, pos, 0, "expected metric %s is not present", id)
+		allMetrics = append(allMetrics[:pos], allMetrics[pos+1:]...)
 	}
+
+	if existsOnly {
+		return
+	}
+
+	remainingMetrics := []string{}
+	for _, m := range allMetrics {
+		remainingMetrics = append(remainingMetrics, fmt.Sprintf("%s(%s,%s)", m.Name(), m.Type().String(), m.Unit()))
+	}
+
+	require.Empty(t, allMetrics, "not all metrics were validated: %v", strings.Join(remainingMetrics, ", "))
 }
 
-func assertMetricAbsent(name string) testExpectation {
-	return func(t *testing.T, rm pmetric.ResourceMetrics) {
-		allMetrics := getMetrics(rm)
-		for _, m := range allMetrics {
-			assert.NotEqual(t, name, m.Name(), "Metric is present, but was expected absent")
-		}
-	}
-}
-
-func compareMetricType(typ pmetric.MetricType) metricTypeComparator {
-	return func(t *testing.T, metric pmetric.Metric) {
-		assert.Equal(t, typ.String(), metric.Type().String(), "Metric type does not match")
-	}
-}
-
-func compareMetricUnit(unit string) metricTypeComparator {
-	return func(t *testing.T, metric pmetric.Metric) {
-		assert.Equal(t, unit, metric.Unit(), "Metric unit does not match")
-	}
-}
-
-func compareMetricIsMonotonic(isMonotonic bool) metricTypeComparator {
+func compareMetricIsMonotonic(isMonotonic bool) metricChecker {
 	return func(t *testing.T, metric pmetric.Metric) {
 		assert.Equal(t, pmetric.MetricTypeSum.String(), metric.Type().String(), "IsMonotonic only exists for sums")
 		assert.Equal(t, isMonotonic, metric.Sum().IsMonotonic(), "IsMonotonic does not match")

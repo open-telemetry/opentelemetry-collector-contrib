@@ -99,47 +99,51 @@ func TestScrapeViaProtobuf(t *testing.T) {
 	}
 	prometheusMetricFamilyToProtoBuf(t, buffer, mf)
 
-	expectations := []testExpectation{
-		assertMetricPresent(
+	expectations := []metricExpectation{
+		{
 			"test_counter",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{{
 				numberPointComparator: []numberPointComparator{
 					compareDoubleValue(1234),
 				},
 			}},
-		),
-		assertMetricPresent(
+			nil,
+		},
+		{
 			"test_gauge",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{{
 				numberPointComparator: []numberPointComparator{
 					compareDoubleValue(400.8),
 				},
 			}},
-		),
-		assertMetricPresent(
+			nil,
+		},
+		{
 			"test_summary",
-			compareMetricType(pmetric.MetricTypeSummary),
-			compareMetricUnit(""),
+			pmetric.MetricTypeSummary,
+			"",
 			[]dataPointExpectation{{
 				summaryPointComparator: []summaryPointComparator{
 					compareSummary(1213, 456, [][]float64{{0.5, 789}, {0.9, 1011}}),
 				},
 			}},
-		),
-		assertMetricPresent(
+			nil,
+		},
+		{
 			"test_histogram",
-			compareMetricType(pmetric.MetricTypeHistogram),
-			compareMetricUnit(""),
+			pmetric.MetricTypeHistogram,
+			"",
 			[]dataPointExpectation{{
 				histogramPointComparator: []histogramPointComparator{
 					compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 				},
 			}},
-		),
+			nil,
+		},
 	}
 
 	targets := []*testData{
@@ -262,68 +266,71 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 	testCases := map[string]struct {
 		mutCfg                 func(*PromConfig)
 		enableNativeHistograms bool
-		expected               []testExpectation
+		expected               []metricExpectation
 	}{
 		"feature enabled scrape classic off": {
 			enableNativeHistograms: true,
-			expected: []testExpectation{
-				assertMetricPresent( // Scrape classic only histograms as is.
+			expected: []metricExpectation{
+				{ // Scrape classic only histograms as is.
 					"test_classic_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				assertMetricPresent( // Only scrape native buckets from mixed histograms.
+					nil,
+				},
+				{ // Only scrape native buckets from mixed histograms.
 					"test_mixed_histogram",
-					compareMetricType(pmetric.MetricTypeExponentialHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeExponentialHistogram,
+					"",
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
 						},
 					}},
-				),
-				assertMetricPresent( // Scrape native only histograms as is.
+					nil,
+				},
+				{ // Scrape native only histograms as is.
 					"test_native_histogram",
-					compareMetricType(pmetric.MetricTypeExponentialHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeExponentialHistogram,
+					"",
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
-				),
+					nil,
+				},
 			},
 		},
 		"feature disabled scrape classic off": {
 			enableNativeHistograms: false,
-			expected: []testExpectation{
-				assertMetricPresent( // Scrape classic only histograms as is.
+			expected: []metricExpectation{
+				{ // Scrape classic only histograms as is.
 					"test_classic_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				assertMetricPresent( // Fallback to scraping classic histograms if feature is off.
+					nil,
+				},
+				{ // Fallback to scraping classic histograms if feature is off.
 					"test_mixed_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				// When the native histograms feature is off, no native histograms are scraped.
-				assertMetricAbsent("test_native_histogram"),
+					nil,
+				},
 			},
 		},
 		"feature enabled scrape classic on": {
@@ -333,37 +340,40 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				}
 			},
 			enableNativeHistograms: true,
-			expected: []testExpectation{
-				assertMetricPresent( // Scrape classic only histograms as is.
+			expected: []metricExpectation{
+				{ // Scrape classic only histograms as is.
 					"test_classic_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				assertMetricPresent( // Only scrape classic buckets from mixed histograms.
+					nil,
+				},
+				{ // Only scrape classic buckets from mixed histograms.
 					"test_mixed_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				assertMetricPresent( // Scrape native only histograms as is.
+					nil,
+				},
+				{ // Scrape native only histograms as is.
 					"test_native_histogram",
-					compareMetricType(pmetric.MetricTypeExponentialHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeExponentialHistogram,
+					"",
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
 						},
 					}},
-				),
+					nil,
+				},
 			},
 		},
 		"feature disabled scrape classic on": {
@@ -373,29 +383,29 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 				}
 			},
 			enableNativeHistograms: false,
-			expected: []testExpectation{
-				assertMetricPresent( // Scrape classic only histograms as is.
+			expected: []metricExpectation{
+				{ // Scrape classic only histograms as is.
 					"test_classic_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				assertMetricPresent( // Only scrape classic buckets from mixed histograms.
+					nil,
+				},
+				{ // Only scrape classic buckets from mixed histograms.
 					"test_mixed_histogram",
-					compareMetricType(pmetric.MetricTypeHistogram),
-					compareMetricUnit(""),
+					pmetric.MetricTypeHistogram,
+					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
 						},
 					}},
-				),
-				// When the native histograms feature is off, no native histograms are scraped.
-				assertMetricAbsent("test_native_histogram"),
+					nil,
+				},
 			},
 		},
 	}
@@ -498,30 +508,46 @@ func TestStaleExponentialHistogram(t *testing.T) {
 	}
 	buffer2 := prometheusMetricFamilyToProtoBuf(t, nil, mf)
 
-	expectations1 := []testExpectation{
-		assertMetricPresent(
+	expectations1 := []metricExpectation{
+		{
+			"test_counter",
+			pmetric.MetricTypeSum,
+			"",
+			nil,
+			nil,
+		},
+		{
 			"test_native_histogram",
-			compareMetricType(pmetric.MetricTypeExponentialHistogram),
-			compareMetricUnit(""),
+			pmetric.MetricTypeExponentialHistogram,
+			"",
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
 					compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 1}),
 				},
 			}},
-		),
+			nil,
+		},
 	}
 
-	expectations2 := []testExpectation{
-		assertMetricPresent(
+	expectations2 := []metricExpectation{
+		{
+			"test_counter",
+			pmetric.MetricTypeSum,
+			"",
+			nil,
+			nil,
+		},
+		{
 			"test_native_histogram",
-			compareMetricType(pmetric.MetricTypeExponentialHistogram),
-			compareMetricUnit(""),
+			pmetric.MetricTypeExponentialHistogram,
+			"",
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
 					assertExponentialHistogramPointFlagNoRecordedValue(),
 				},
 			}},
-		),
+			nil,
+		},
 	}
 
 	targets := []*testData{
@@ -577,17 +603,18 @@ func TestFloatCounterHistogram(t *testing.T) {
 	}
 	buffer := prometheusMetricFamilyToProtoBuf(t, nil, nativeHistogram)
 
-	expectations1 := []testExpectation{
-		assertMetricPresent(
+	expectations1 := []metricExpectation{
+		{
 			"test_native_histogram",
-			compareMetricType(pmetric.MetricTypeExponentialHistogram),
-			compareMetricUnit(""),
+			pmetric.MetricTypeExponentialHistogram,
+			"",
 			[]dataPointExpectation{{
 				exponentialHistogramComparator: []exponentialHistogramComparator{
 					compareExponentialHistogram(-1, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 0, 3}),
 				},
 			}},
-		),
+			nil,
+		},
 	}
 
 	targets := []*testData{

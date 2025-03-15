@@ -60,10 +60,11 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 
 	metrics1 := m1.ScopeMetrics().At(0).Metrics()
 	ts1 := getTS(metrics1)
-	e1 := []testExpectation{
-		assertMetricPresent("http_connected",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit(""),
+	e1 := []metricExpectation{
+		{
+			"http_connected",
+			pmetric.MetricTypeSum,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -79,10 +80,13 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
-		assertMetricPresent("foo_gauge_total",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit(""),
+			},
+			nil,
+		},
+		{
+			"foo_gauge_total",
+			pmetric.MetricTypeGauge,
+			"",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -98,10 +102,13 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
-		assertMetricPresent("http_connection_duration",
-			compareMetricType(pmetric.MetricTypeSum),
-			compareMetricUnit("s"),
+			},
+			nil,
+		},
+		{
+			"http_connection_duration",
+			pmetric.MetricTypeSum,
+			"s",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -117,10 +124,13 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
-		assertMetricPresent("foo_gauge",
-			compareMetricType(pmetric.MetricTypeGauge),
-			compareMetricUnit("s"),
+			},
+			nil,
+		},
+		{
+			"foo_gauge",
+			pmetric.MetricTypeGauge,
+			"s",
 			[]dataPointExpectation{
 				{
 					numberPointComparator: []numberPointComparator{
@@ -136,7 +146,9 @@ func verifyNormalizeMetric(t *testing.T, td *testData, resourceMetrics []pmetric
 						compareAttributes(map[string]string{"method": "get", "port": "6380"}),
 					},
 				},
-			}),
+			},
+			nil,
+		},
 	}
 	doCompareNormalized(t, "scrape-metricNormalize-1", wantAttributes, m1, e1, true)
 }
