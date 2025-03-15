@@ -5,8 +5,6 @@ package kafkametricsreceiver
 
 import (
 	"context"
-	"errors"
-	"regexp"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -14,213 +12,107 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
-func TestConsumerShutdown(t *testing.T) {
-	client := newMockClient()
-	client.closed = false
-	client.close = nil
-	client.Mock.
-		On("Close").Return(nil).
-		On("Closed").Return(false)
-	scraper := consumerScraper{
-		client: client,
-	}
-	_ = scraper.shutdown(context.Background())
-	client.AssertExpectations(t)
+func TestConsumerScraper_StartShutdown(t *testing.T) {
+	testScraperStartShutdown(t, func(f1 newSaramaClientFunc, f2 newSaramaClusterAdminClientFunc) (scraper.Metrics, error) {
+		return newConsumerScraper(Config{}, receivertest.NewNopSettings(metadata.Type), f1, f2)
+	})
 }
 
-func TestConsumerShutdown_closed(t *testing.T) {
-	client := newMockClient()
-	client.closed = true
-	client.Mock.
-		On("Closed").Return(true)
-	scraper := consumerScraper{
-		client: client,
-	}
-	_ = scraper.shutdown(context.Background())
-	client.AssertExpectations(t)
+func TestNewConsumerScraper_InvalidTopicMatch(t *testing.T) {
+	scraper, err := newConsumerScraper(
+		Config{TopicMatch: "["},
+		receivertest.NewNopSettings(metadata.Type),
+		mockNewSaramaClient, mockNewClusterAdmin,
+	)
+	assert.EqualError(t, err, "failed to compile topic filter: error parsing regexp: missing closing ]: `[`")
+	assert.Nil(t, scraper)
 }
 
-func TestConsumerScraper_createConsumerScraper(t *testing.T) {
-	sc := sarama.NewConfig()
-	newSaramaClient = mockNewSaramaClient
-	newClusterAdmin = mockNewClusterAdmin
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, cs)
+func TestNewConsumerScraper_InvalidGroupMatch(t *testing.T) {
+	scraper, err := newConsumerScraper(
+		Config{GroupMatch: "["},
+		receivertest.NewNopSettings(metadata.Type),
+		mockNewSaramaClient, mockNewClusterAdmin,
+	)
+	assert.EqualError(t, err, "failed to compile group filter: error parsing regexp: missing closing ]: `[`")
+	assert.Nil(t, scraper)
 }
 
-func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, errors.New("new client failed")
-	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, cs)
-	_, err = cs.ScrapeMetrics(context.Background())
-	assert.Error(t, err)
+func TestConsumerScraper_ScrapeMetrics(t *testing.T) {
+	mockClient := newMockClient()
+	mockAdminClient := newMockClusterAdmin()
+	scraper := newTestConsumerScraper(t, *createDefaultConfig().(*Config), mockClient, mockAdminClient)
+
+	md, err := scraper.ScrapeMetrics(context.Background())
+	require.NoError(t, err)
+	assert.NotZero(t, md.DataPointCount())
+	// TODO check the metric contents
 }
 
-func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		return nil, errors.New("new client failed")
-	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, cs)
-	err = cs.Shutdown(context.Background())
-	assert.NoError(t, err)
+func TestConsumerScraper_ScrapeMetrics_Errors(t *testing.T) {
+	mockClient := newMockClient()
+	mockAdminClient := newMockClusterAdmin()
+	scraper := newTestConsumerScraper(t, *createDefaultConfig().(*Config), mockClient, mockAdminClient)
+
+	// Trigger failure to scrape offsets, which results in a partial error.
+	mockClient.offset = -1
+	mockAdminClient.consumerGroupOffsets = nil
+	_, err := scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "mock offset error; mock consumer group offset error")
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+
+	// Trigger failure to scrape partitions, which results in a partial error.
+	mockClient.partitions = nil
+	mockAdminClient.consumerGroupOffsets = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "mock partition error; mock consumer group offset error")
+	assert.True(t, scrapererror.IsPartialScrapeError(err))
+
+	// Trigger failure to describe consumer groups
+	mockAdminClient.consumerGroupDescriptions = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "error describing consumer groups")
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
+
+	// Trigger failure to list topics
+	mockAdminClient.topics = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "error getting topics")
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
+
+	// Trigger failure to list consumer groups
+	mockAdminClient.consumerGroups = nil
+	_, err = scraper.ScrapeMetrics(context.Background())
+	assert.EqualError(t, err, "error getting consumer groups")
+	assert.False(t, scrapererror.IsPartialScrapeError(err))
 }
 
-func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
-		client := newMockClient()
-		client.Mock.
-			On("Close").Return(nil)
-		return client, nil
-	}
-	newClusterAdmin = func([]string, *sarama.Config) (sarama.ClusterAdmin, error) {
-		return nil, errors.New("new cluster admin failed")
-	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, cs)
-	_, err = cs.ScrapeMetrics(context.Background())
-	assert.Error(t, err)
-}
+func newTestConsumerScraper(
+	tb testing.TB, config Config,
+	mockClient sarama.Client, mockAdminClient sarama.ClusterAdmin,
+) scraper.Metrics {
+	scraper, err := newConsumerScraper(
+		config, receivertest.NewNopSettings(metadata.Type),
+		func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
+			return mockClient, nil
+		},
+		func(sarama.Client) (sarama.ClusterAdmin, error) {
+			return mockAdminClient, nil
+		},
+	)
+	require.NoError(tb, err)
 
-func TestConsumerScraperStart(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
-	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.NoError(t, err)
-	assert.NotNil(t, cs)
-	err = cs.Start(context.Background(), nil)
-	assert.NoError(t, err)
-}
-
-func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
-	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{
-		TopicMatch: "[",
-	}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.Error(t, err)
-	assert.Nil(t, cs)
-}
-
-func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T) {
-	newSaramaClient = mockNewSaramaClient
-	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{
-		GroupMatch: "[",
-	}, sc, receivertest.NewNopSettings(metadata.Type))
-	assert.Error(t, err)
-	assert.Nil(t, cs)
-}
-
-func TestConsumerScraper_scrape(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	cs := consumerScraper{
-		client:       newMockClient(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		clusterAdmin: newMockClusterAdmin(),
-		topicFilter:  filter,
-		groupFilter:  filter,
-	}
-	require.NoError(t, cs.start(context.Background(), componenttest.NewNopHost()))
-	md, err := cs.scrape(context.Background())
-	assert.NoError(t, err)
-	assert.NotNil(t, md)
-}
-
-func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	clusterAdmin := newMockClusterAdmin()
-	client := newMockClient()
-	clusterAdmin.topics = nil
-	cs := consumerScraper{
-		client:       client,
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		clusterAdmin: clusterAdmin,
-		topicFilter:  filter,
-		groupFilter:  filter,
-	}
-	_, err := cs.scrape(context.Background())
-	assert.Error(t, err)
-}
-
-func TestConsumerScraper_scrape_handlesListConsumerGroupError(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	clusterAdmin := newMockClusterAdmin()
-	clusterAdmin.consumerGroups = nil
-	cs := consumerScraper{
-		client:       newMockClient(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		clusterAdmin: clusterAdmin,
-		topicFilter:  filter,
-		groupFilter:  filter,
-	}
-	_, err := cs.scrape(context.Background())
-	assert.Error(t, err)
-}
-
-func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	clusterAdmin := newMockClusterAdmin()
-	clusterAdmin.consumerGroupDescriptions = nil
-	cs := consumerScraper{
-		client:       newMockClient(),
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		clusterAdmin: clusterAdmin,
-		topicFilter:  filter,
-		groupFilter:  filter,
-	}
-	_, err := cs.scrape(context.Background())
-	assert.Error(t, err)
-}
-
-func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	clusterAdmin := newMockClusterAdmin()
-	client := newMockClient()
-	client.offset = -1
-	clusterAdmin.consumerGroupOffsets = nil
-	cs := consumerScraper{
-		client:       client,
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		groupFilter:  filter,
-		topicFilter:  filter,
-		clusterAdmin: clusterAdmin,
-	}
-	require.NoError(t, cs.start(context.Background(), componenttest.NewNopHost()))
-	_, err := cs.scrape(context.Background())
-	assert.Error(t, err)
-}
-
-func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
-	filter := regexp.MustCompile(defaultGroupMatch)
-	clusterAdmin := newMockClusterAdmin()
-	client := newMockClient()
-	client.partitions = nil
-	clusterAdmin.consumerGroupOffsets = nil
-	cs := consumerScraper{
-		client:       client,
-		settings:     receivertest.NewNopSettings(metadata.Type),
-		groupFilter:  filter,
-		topicFilter:  filter,
-		clusterAdmin: clusterAdmin,
-	}
-	require.NoError(t, cs.start(context.Background(), componenttest.NewNopHost()))
-	_, err := cs.scrape(context.Background())
-	assert.Error(t, err)
+	err = scraper.Start(context.Background(), componenttest.NewNopHost())
+	require.NoError(tb, err)
+	tb.Cleanup(func() {
+		assert.NoError(tb, scraper.Shutdown(context.Background()))
+	})
+	return scraper
 }

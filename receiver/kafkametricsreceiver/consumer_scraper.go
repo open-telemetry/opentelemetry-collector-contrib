@@ -10,60 +10,55 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
-	"go.uber.org/multierr"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
 type consumerScraper struct {
-	client       sarama.Client
-	settings     receiver.Settings
-	groupFilter  *regexp.Regexp
-	topicFilter  *regexp.Regexp
-	clusterAdmin sarama.ClusterAdmin
-	saramaConfig *sarama.Config
-	config       Config
-	mb           *metadata.MetricsBuilder
+	kafkaScraper
+	groupFilter *regexp.Regexp
+	topicFilter *regexp.Regexp
 }
 
-func (s *consumerScraper) start(_ context.Context, _ component.Host) error {
-	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings)
-	return nil
-}
-
-func (s *consumerScraper) shutdown(_ context.Context) error {
-	if s.client != nil && !s.client.Closed() {
-		return s.client.Close()
+func newConsumerScraper(
+	cfg Config,
+	settings receiver.Settings,
+	newSaramaClient newSaramaClientFunc,
+	newSaramaClusterAdminClient newSaramaClusterAdminClientFunc,
+) (scraper.Metrics, error) {
+	groupFilter, err := regexp.Compile(cfg.GroupMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile group filter: %w", err)
 	}
-	return nil
+	topicFilter, err := regexp.Compile(cfg.TopicMatch)
+	if err != nil {
+		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
+	}
+	s := consumerScraper{
+		kafkaScraper: kafkaScraper{
+			settings:                    settings,
+			config:                      cfg,
+			mb:                          metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
+			newSaramaClient:             newSaramaClient,
+			newSaramaClusterAdminClient: newSaramaClusterAdminClient,
+		},
+		groupFilter: groupFilter,
+		topicFilter: topicFilter,
+	}
+	return scraper.NewMetrics(
+		s.scrape,
+		scraper.WithStart(s.start),
+		scraper.WithShutdown(s.shutdown),
+	)
 }
 
 func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
-		if err != nil {
-			return pmetric.Metrics{}, fmt.Errorf("failed to create client in consumer scraper: %w", err)
-		}
-		s.client = client
-	}
-
-	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
-		if err != nil {
-			if s.client != nil {
-				_ = s.client.Close()
-			}
-			return pmetric.Metrics{}, fmt.Errorf("failed to create cluster admin in consumer scraper: %w", err)
-		}
-		s.clusterAdmin = admin
-	}
-
-	cgs, listErr := s.clusterAdmin.ListConsumerGroups()
+	cgs, listErr := s.adminClient.ListConsumerGroups()
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
 	}
@@ -75,7 +70,7 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	allTopics, listErr := s.clusterAdmin.ListTopics()
+	allTopics, listErr := s.adminClient.ListTopics()
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
 	}
@@ -86,30 +81,31 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 			matchedTopics[t] = d
 		}
 	}
-	var scrapeError error
 	// partitionIds in matchedTopics
 	topicPartitions := map[string][]int32{}
 	// currentOffset for each partition in matchedTopics
 	topicPartitionOffset := map[string]map[int32]int64{}
+
+	scrapeErrors := scrapererror.ScrapeErrors{}
 	for topic := range matchedTopics {
 		topicPartitionOffset[topic] = map[int32]int64{}
 		partitions, err := s.client.Partitions(topic)
 		if err != nil {
-			scrapeError = multierr.Append(scrapeError, err)
+			scrapeErrors.AddPartial(1, err)
 			continue
 		}
 		for _, p := range partitions {
 			var offset int64
 			offset, err = s.client.GetOffset(topic, p, sarama.OffsetNewest)
 			if err != nil {
-				scrapeError = multierr.Append(scrapeError, err)
+				scrapeErrors.AddPartial(1, err)
 				continue
 			}
 			topicPartitions[topic] = append(topicPartitions[topic], p)
 			topicPartitionOffset[topic][p] = offset
 		}
 	}
-	consumerGroups, listErr := s.clusterAdmin.DescribeConsumerGroups(matchedGrpIDs)
+	consumerGroups, listErr := s.adminClient.DescribeConsumerGroups(matchedGrpIDs)
 	if listErr != nil {
 		return pmetric.Metrics{}, listErr
 	}
@@ -119,9 +115,9 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	for _, group := range consumerGroups {
 		s.mb.RecordKafkaConsumerGroupMembersDataPoint(now, int64(len(group.Members)), group.GroupId)
 
-		groupOffsetFetchResponse, err := s.clusterAdmin.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
+		groupOffsetFetchResponse, err := s.adminClient.ListConsumerGroupOffsets(group.GroupId, topicPartitions)
 		if err != nil {
-			scrapeError = multierr.Append(scrapeError, err)
+			scrapeErrors.AddPartial(1, err)
 			continue
 		}
 
@@ -163,30 +159,5 @@ func (s *consumerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	rb := s.mb.NewResourceBuilder()
 	rb.SetKafkaClusterAlias(s.config.ClusterAlias)
 
-	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeError
-}
-
-func createConsumerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings,
-) (scraper.Metrics, error) {
-	groupFilter, err := regexp.Compile(cfg.GroupMatch)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile group_match: %w", err)
-	}
-	topicFilter, err := regexp.Compile(cfg.TopicMatch)
-	if err != nil {
-		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
-	}
-	s := consumerScraper{
-		settings:     settings,
-		groupFilter:  groupFilter,
-		topicFilter:  topicFilter,
-		config:       cfg,
-		saramaConfig: saramaConfig,
-	}
-	return scraper.NewMetrics(
-		s.scrape,
-		scraper.WithStart(s.start),
-		scraper.WithShutdown(s.shutdown),
-	)
+	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }

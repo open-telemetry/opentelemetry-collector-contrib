@@ -1,0 +1,28 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: log retention time (s) of a broker.
+            gauge:
+              dataPoints:
+                - asInt: "604800"
+                  attributes:
+                    - key: broker
+                      value:
+                        stringValue: "-1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: kafka.broker.log_retention_period
+            unit: s
+          - description: Number of brokers in the cluster.
+            name: kafka.brokers
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "1"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: '{brokers}'
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
+          version: latest

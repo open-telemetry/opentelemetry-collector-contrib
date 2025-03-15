@@ -4,11 +4,15 @@
 package kafkametricsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver"
 
 import (
+	"context"
 	"errors"
 	"strconv"
+	"sync"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/mock"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 const (
@@ -26,22 +30,17 @@ const (
 )
 
 var (
-	newSaramaClient = sarama.NewClient
-	newClusterAdmin = sarama.NewClusterAdmin
-)
-
-var (
 	testTopics     = []string{testTopic}
 	testPartitions = []int32{1}
 	testReplicas   = []int32{1}
 	testBrokers    = make([]*sarama.Broker, 1)
 )
 
-func mockNewSaramaClient([]string, *sarama.Config) (sarama.Client, error) {
+func mockNewSaramaClient(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 	return newMockClient(), nil
 }
 
-func mockNewClusterAdmin([]string, *sarama.Config) (sarama.ClusterAdmin, error) {
+func mockNewClusterAdmin(sarama.Client) (sarama.ClusterAdmin, error) {
 	return newMockClusterAdmin(), nil
 }
 
@@ -49,24 +48,31 @@ type mockSaramaClient struct {
 	mock.Mock
 	sarama.Client
 
-	close          error
-	closed         bool
+	closeErr       error
 	brokers        []*sarama.Broker
 	topics         []string
 	partitions     []int32
 	offset         int64
 	replicas       []int32
 	inSyncReplicas []int32
-}
 
-func (s *mockSaramaClient) Closed() bool {
-	s.Called()
-	return s.closed
+	mu        sync.Mutex
+	closeChan chan struct{}
+	closed    bool
 }
 
 func (s *mockSaramaClient) Close() error {
-	s.Called()
-	return s.close
+	if s.closeErr != nil {
+		return s.closeErr
+	}
+	s.mu.Lock()
+	defer s.mu.Unlock()
+	if s.closed {
+		return sarama.ErrClosedClient
+	}
+	s.closed = true
+	close(s.closeChan)
+	return nil
 }
 
 func (s *mockSaramaClient) Brokers() []*sarama.Broker {
@@ -111,7 +117,7 @@ func (s *mockSaramaClient) InSyncReplicas(string, int32) ([]int32, error) {
 
 func newMockClient() *mockSaramaClient {
 	client := new(mockSaramaClient)
-	client.close = nil
+	client.closeErr = nil
 	r := sarama.NewBroker(testBroker)
 
 	testBrokers[0] = r
@@ -122,6 +128,13 @@ func newMockClient() *mockSaramaClient {
 	client.topics = testTopics
 	client.inSyncReplicas = testReplicas
 	client.replicas = testReplicas
+
+	// Spawn a goroutine that will exit when Close
+	// is called. If Close is not called, then this
+	// goroutine will leak and fail the tests.
+	closeChan := make(chan struct{})
+	go func() { <-closeChan }()
+	client.closeChan = closeChan
 
 	return client
 }
