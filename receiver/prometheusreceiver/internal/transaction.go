@@ -41,12 +41,23 @@ type resourceKey struct {
 	job      string
 	instance string
 }
+
+// The name of the metric family doesn't include magic suffixes (e.g. _bucket),
+// so for a classic histgram and a native histogram of the same family, the
+// metric family will be the same. To be able to tell them apart, we need to
+// store whether the metric is a native histogram or not.
+type metricFamilyKey struct {
+	isExponentialHistogram bool
+	name                   string
+}
+
 type transaction struct {
 	isNew                  bool
 	trimSuffixes           bool
 	enableNativeHistograms bool
+	addingNativeHistogram  bool // true if the last sample was a native histogram.
 	ctx                    context.Context
-	families               map[resourceKey]map[scopeID]map[string]*metricFamily
+	families               map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily
 	mc                     scrape.MetricMetadataStore
 	sink                   consumer.Metrics
 	externalLabels         labels.Labels
@@ -79,7 +90,7 @@ func newTransaction(
 ) *transaction {
 	return &transaction{
 		ctx:                    ctx,
-		families:               make(map[resourceKey]map[scopeID]map[string]*metricFamily),
+		families:               make(map[resourceKey]map[scopeID]map[metricFamilyKey]*metricFamily),
 		isNew:                  true,
 		trimSuffixes:           trimSuffixes,
 		enableNativeHistograms: enableNativeHistograms,
@@ -97,6 +108,8 @@ func newTransaction(
 
 // Append always returns 0 to disable label caching.
 func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, val float64) (storage.SeriesRef, error) {
+	t.addingNativeHistogram = false
+
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -157,14 +170,15 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 		return 0, nil
 	}
 
-	curMF, existing := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
+	scope := getScopeID(ls)
 
-	if t.enableNativeHistograms && curMF.mtype == pmetric.MetricTypeExponentialHistogram {
-		// If a histogram has both classic and native version, the native histogram is scraped
-		// first. Getting a float sample for the same series means that `scrape_classic_histogram`
-		// is set to true in the scrape config. In this case, we should ignore the native histogram.
-		curMF.mtype = pmetric.MetricTypeHistogram
+	if t.enableNativeHistograms && value.IsStaleNaN(val) {
+		if t.detectAndStoreNativeHistogramStaleness(atMs, rKey, scope, metricName, ls) {
+			return 0, nil
+		}
 	}
+
+	curMF, existing := t.getOrCreateMetricFamily(*rKey, scope, metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	err = curMF.addSeries(seriesRef, metricName, ls, atMs, val)
@@ -190,26 +204,64 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	return 0, nil // never return errors, as that fails the whole scrape
 }
 
+// detectAndStoreNativeHistogramStaleness returns true if it detects
+// and stores a native histogram staleness marker.
+func (t *transaction) detectAndStoreNativeHistogramStaleness(atMs int64, key *resourceKey, scope scopeID, metricName string, ls labels.Labels) bool {
+	// Detect the special case of stale native histogram series.
+	// Currently Prometheus does not store the histogram type in
+	// its staleness tracker.
+	md, ok := t.mc.GetMetadata(metricName)
+	if !ok {
+		// Native histograms always have metadata.
+		return false
+	}
+	if md.Type != model.MetricTypeHistogram {
+		// Not a histogram.
+		return false
+	}
+	if md.Metric != metricName {
+		// Not a native histogram because it has magic suffixes (e.g. _bucket).
+		return false
+	}
+	// Store the staleness marker as a native histogram.
+	t.addingNativeHistogram = true
+
+	curMF, _ := t.getOrCreateMetricFamily(*key, scope, metricName)
+	seriesRef := t.getSeriesRef(ls, curMF.mtype)
+
+	_ = curMF.addExponentialHistogramSeries(seriesRef, metricName, ls, atMs, &histogram.Histogram{Sum: math.Float64frombits(value.StaleNaN)}, nil)
+	// ignore errors here, this is best effort.
+
+	return true
+}
+
 // getOrCreateMetricFamily returns the metric family for the given metric name and scope,
 // and true if an existing family was found.
 func (t *transaction) getOrCreateMetricFamily(key resourceKey, scope scopeID, mn string) (*metricFamily, bool) {
 	if _, ok := t.families[key]; !ok {
-		t.families[key] = make(map[scopeID]map[string]*metricFamily)
+		t.families[key] = make(map[scopeID]map[metricFamilyKey]*metricFamily)
 	}
 	if _, ok := t.families[key][scope]; !ok {
-		t.families[key][scope] = make(map[string]*metricFamily)
+		t.families[key][scope] = make(map[metricFamilyKey]*metricFamily)
 	}
 
-	curMf, ok := t.families[key][scope][mn]
+	mfKey := metricFamilyKey{isExponentialHistogram: t.addingNativeHistogram, name: mn}
+
+	curMf, ok := t.families[key][scope][mfKey]
+
 	if !ok {
 		fn := mn
 		if _, ok := t.mc.GetMetadata(mn); !ok {
 			fn = normalizeMetricName(mn)
 		}
-		mf, ok := t.families[key][scope][fn]
+		fnKey := metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: fn}
+		mf, ok := t.families[key][scope][fnKey]
 		if !ok || !mf.includesMetric(mn) {
 			curMf = newMetricFamily(mn, t.mc, t.logger)
-			t.families[key][scope][curMf.name] = curMf
+			if curMf.mtype == pmetric.MetricTypeHistogram && mfKey.isExponentialHistogram {
+				curMf.mtype = pmetric.MetricTypeExponentialHistogram
+			}
+			t.families[key][scope][metricFamilyKey{isExponentialHistogram: mfKey.isExponentialHistogram, name: curMf.name}] = curMf
 			return curMf, false
 		}
 		curMf = mf
@@ -257,6 +309,8 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	default:
 	}
 
+	t.addingNativeHistogram = true
+
 	if t.externalLabels.Len() != 0 {
 		b := labels.NewBuilder(ls)
 		t.externalLabels.Range(func(l labels.Label) {
@@ -286,13 +340,7 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 	// The `up`, `target_info`, `otel_scope_info` metrics should never generate native histograms,
 	// thus we don't check for them here as opposed to the Append function.
 
-	curMF, existing := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
-	if !existing {
-		curMF.mtype = pmetric.MetricTypeExponentialHistogram
-	} else if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
-		// Already scraped as classic histogram.
-		return 0, nil
-	}
+	curMF, _ := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
 
 	if h != nil && h.CounterResetHint == histogram.GaugeType || fh != nil && fh.CounterResetHint == histogram.GaugeType {
 		t.logger.Warn("dropping unsupported gauge histogram datapoint", zap.String("metric_name", metricName), zap.Any("labels", ls))
@@ -307,14 +355,16 @@ func (t *transaction) AppendHistogram(_ storage.SeriesRef, ls labels.Labels, atM
 }
 
 func (t *transaction) AppendCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
-	return t.setCreationTimestamp(ls, atMs, ctMs, false)
+	t.addingNativeHistogram = false
+	return t.setCreationTimestamp(ls, atMs, ctMs)
 }
 
 func (t *transaction) AppendHistogramCTZeroSample(_ storage.SeriesRef, ls labels.Labels, atMs, ctMs int64, _ *histogram.Histogram, _ *histogram.FloatHistogram) (storage.SeriesRef, error) {
-	return t.setCreationTimestamp(ls, atMs, ctMs, true)
+	t.addingNativeHistogram = true
+	return t.setCreationTimestamp(ls, atMs, ctMs)
 }
 
-func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, histogram bool) (storage.SeriesRef, error) {
+func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64) (storage.SeriesRef, error) {
 	select {
 	case <-t.ctx.Done():
 		return 0, errTransactionAborted
@@ -347,16 +397,7 @@ func (t *transaction) setCreationTimestamp(ls labels.Labels, atMs, ctMs int64, h
 		return 0, errMetricNameNotFound
 	}
 
-	curMF, existing := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
-
-	if histogram {
-		if !existing {
-			curMF.mtype = pmetric.MetricTypeExponentialHistogram
-		} else if curMF.mtype != pmetric.MetricTypeExponentialHistogram {
-			// Already scraped as classic histogram.
-			return 0, nil
-		}
-	}
+	curMF, _ := t.getOrCreateMetricFamily(*rKey, getScopeID(ls), metricName)
 
 	seriesRef := t.getSeriesRef(ls, curMF.mtype)
 	curMF.addCreationTimestamp(seriesRef, ls, atMs, ctMs)
@@ -543,6 +584,7 @@ func (t *transaction) UpdateMetadata(_ storage.SeriesRef, _ labels.Labels, _ met
 }
 
 func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
+	t.addingNativeHistogram = false
 	if resource, ok := t.nodeResources[key]; ok {
 		attrs := resource.Attributes()
 		ls.Range(func(lbl labels.Label) {
@@ -555,6 +597,7 @@ func (t *transaction) AddTargetInfo(key resourceKey, ls labels.Labels) {
 }
 
 func (t *transaction) addScopeInfo(key resourceKey, ls labels.Labels) {
+	t.addingNativeHistogram = false
 	attrs := pcommon.NewMap()
 	scope := scopeID{}
 	ls.Range(func(lbl labels.Label) {

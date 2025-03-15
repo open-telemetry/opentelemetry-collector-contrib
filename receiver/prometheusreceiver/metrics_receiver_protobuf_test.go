@@ -352,13 +352,24 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					}},
 					nil,
 				},
-				{ // Only scrape classic buckets from mixed histograms.
+				{ // Scrape both classic and native buckets from mixed histograms.
 					"test_mixed_histogram",
 					pmetric.MetricTypeHistogram,
 					"",
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
+						},
+					}},
+					nil,
+				},
+				{ // Scrape both classic and native buckets from mixed histograms.
+					"test_mixed_histogram",
+					pmetric.MetricTypeExponentialHistogram,
+					"",
+					[]dataPointExpectation{{
+						exponentialHistogramComparator: []exponentialHistogramComparator{
+							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
 						},
 					}},
 					nil,
