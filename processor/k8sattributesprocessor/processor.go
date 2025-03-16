@@ -33,6 +33,9 @@ type kubernetesprocessor struct {
 	telemetrySettings      component.TelemetrySettings
 	logger                 *zap.Logger
 	apiConfig              k8sconfig.APIConfig
+	k8sClientProvider      kube.APIClientsetProvider
+	kcProvider             kube.ClientProvider
+	informerProviders      *kube.InformerProviders
 	kc                     kube.Client
 	passthroughMode        bool
 	rules                  kube.ExtractionRules
@@ -44,11 +47,24 @@ type kubernetesprocessor struct {
 }
 
 func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, kubeClient kube.ClientProvider) error {
-	if kubeClient == nil {
-		kubeClient = kube.New
+	if kp.informerProviders == nil {
+		k8sClient, err := kp.k8sClientProvider(kp.apiConfig)
+		if err != nil {
+			return err
+		}
+		kp.informerProviders = kube.NewDefaultInformerProviders(k8sClient)
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(
+			set,
+			kp.rules,
+			kp.filters,
+			kp.podAssociations,
+			kp.podIgnore,
+			kp.informerProviders,
+			kp.waitForMetadata,
+			kp.waitForMetadataTimeout,
+		)
 		if err != nil {
 			return err
 		}
@@ -58,6 +74,14 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 }
 
 func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) error {
+	if kp.k8sClientProvider == nil {
+		kp.k8sClientProvider = k8sconfig.MakeClient
+	}
+
+	if kp.kcProvider == nil {
+		kp.kcProvider = kube.New
+	}
+
 	allOptions := append(createProcessorOpts(kp.cfg), kp.options...)
 
 	for _, opt := range allOptions {
@@ -70,7 +94,7 @@ func (kp *kubernetesprocessor) Start(_ context.Context, host component.Host) err
 
 	// This might have been set by an option already
 	if kp.kc == nil {
-		err := kp.initKubeClient(kp.telemetrySettings, kubeClientProvider)
+		err := kp.initKubeClient(kp.telemetrySettings, kp.kcProvider)
 		if err != nil {
 			kp.logger.Error("Could not initialize kube client", zap.Error(err))
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
