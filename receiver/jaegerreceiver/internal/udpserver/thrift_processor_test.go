@@ -112,11 +112,11 @@ type fakeAgentHandler struct {
 	batches []*jaeger.Batch
 }
 
-func (*fakeAgentHandler) EmitZipkinBatch(_ context.Context, _spans []*zipkincore.Span) (_err error) {
+func (*fakeAgentHandler) EmitZipkinBatch(_ context.Context, _ []*zipkincore.Span) error {
 	return errors.ErrUnsupported
 }
 
-func (h *fakeAgentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) (_err error) {
+func (h *fakeAgentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) error {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 	h.batches = append(h.batches, batch)
