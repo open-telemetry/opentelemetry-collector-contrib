@@ -1177,6 +1177,20 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }
 
+func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{})
+
+	s := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+}
+
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	// Create a temporary directory to store the test config file.
 	tempDir := t.TempDir()
