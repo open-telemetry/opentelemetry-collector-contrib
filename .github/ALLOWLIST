@@ -38,7 +38,6 @@ receiver/elasticsearchreceiver
 receiver/memcachedreceiver
 receiver/mysqlreceiver
 receiver/postgresqlreceiver
-receiver/rabbitmqreceiver
 receiver/zookeeperreceiver
 scraper/zookeeperscraper
 

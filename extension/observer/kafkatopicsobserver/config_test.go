@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/kafkatopicsobserver/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -38,10 +38,10 @@ func TestLoadConfig(t *testing.T) {
 				ProtocolVersion:                      "3.7.0",
 				Brokers:                              []string{"1.2.3.4:9092", "2.3.4.5:9092"},
 				TopicRegex:                           "^topic[0-9]$",
-				TopicsSyncInterval:                   5 * time.Second,
+				TopicsSyncInterval:                   100 * time.Millisecond,
 				ResolveCanonicalBootstrapServersOnly: false,
-				Authentication: kafka.Authentication{
-					PlainText: &kafka.PlainTextConfig{
+				Authentication: configkafka.AuthenticationConfig{
+					PlainText: &configkafka.PlainTextConfig{
 						Username: "fooUser",
 						Password: "fooPassword",
 					},

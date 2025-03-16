@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -44,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 				InitialOffset:                        "latest",
 				SessionTimeout:                       10 * time.Second,
 				HeartbeatInterval:                    3 * time.Second,
-				Authentication: kafka.Authentication{
+				Authentication: configkafka.AuthenticationConfig{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
@@ -83,7 +83,7 @@ func TestLoadConfig(t *testing.T) {
 				InitialOffset:     "earliest",
 				SessionTimeout:    45 * time.Second,
 				HeartbeatInterval: 15 * time.Second,
-				Authentication: kafka.Authentication{
+				Authentication: configkafka.AuthenticationConfig{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
