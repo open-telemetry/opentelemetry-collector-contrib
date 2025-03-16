@@ -116,7 +116,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			onConnectionCloseFunc(conn)
 		}
 	}
-	handler, _, err := s.Attach(server.Settings{
+	handler, connContext, err := s.Attach(server.Settings{
 		Callbacks: types.Callbacks{
 			OnConnecting: connectingCallback(callbacks),
 		},
@@ -125,6 +125,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/opamp", handler)
 	httpSrv := httptest.NewUnstartedServer(mux)
+	httpSrv.Config.ConnContext = connContext
 
 	shutdown := func() {
 		if !didShutdown.Load() {
