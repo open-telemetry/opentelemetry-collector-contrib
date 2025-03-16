@@ -36,12 +36,15 @@ type Config struct {
 	TLS configtls.ClientConfig `mapstructure:"tls,omitempty"`
 
 	MetricsBuilderConfig metadata.MetricsBuilderConfig `mapstructure:",squash"`
+
+	ClusterInfoEnabled bool `mapstructure:"cluster_info_enabled"`
 }
 
 // configInfo holds configuration information to be used as resource/metrics attributes.
 type configInfo struct {
-	Address string
-	Port    string
+	Address            string
+	Port               string
+	ClusterInfoEnabled bool
 }
 
 func newConfigInfo(cfg *Config) (configInfo, error) {
@@ -49,5 +52,5 @@ func newConfigInfo(cfg *Config) (configInfo, error) {
 	if err != nil {
 		return configInfo{}, fmt.Errorf("invalid endpoint %q: %w", cfg.Endpoint, err)
 	}
-	return configInfo{Address: address, Port: port}, nil
+	return configInfo{Address: address, Port: port, ClusterInfoEnabled: cfg.ClusterInfoEnabled}, nil
 }
