@@ -12,8 +12,6 @@ import (
 
 	"github.com/apache/thrift/lib/go/thrift"
 	"go.uber.org/zap"
-
-	"github.com/jaegertracing/jaeger/cmd/agent/app/customtransport"
 )
 
 // ThriftProcessor is a server that processes spans using a TBuffered Server
@@ -48,7 +46,7 @@ func NewThriftProcessor(
 	}
 	protocolPool := &sync.Pool{
 		New: func() any {
-			trans := &customtransport.TBufferedReadTransport{}
+			trans := &TBufferedReadTransport{}
 			return factory.GetProtocol(trans)
 		},
 	}
