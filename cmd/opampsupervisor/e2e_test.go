@@ -1178,10 +1178,15 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 }
 
 func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
+	connected := atomic.Bool{}
 	initialServer := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		types.ConnectionCallbacks{})
+		types.ConnectionCallbacks{
+			OnConnected: func(ctx context.Context, conn types.Connection) {
+				connected.Store(true)
+			},
+		})
 
 	s := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
 
@@ -1189,6 +1194,7 @@ func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
 	defer s.Shutdown()
 
 	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
