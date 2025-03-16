@@ -36,8 +36,7 @@ func (p *GitlabPipelineEvent) setTimeStamps(span ptrace.Span, startTime string, 
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-// This type is not exported from the Gitlab SDK
-// Build represents a job in a pipeline event
+// Build represents a job in a pipeline event (the type is not exported from the Gitlab SDK)
 type GitlabPipelineJobEvent struct {
 	ID             int               `json:"id"`
 	Stage          string            `json:"stage"`
