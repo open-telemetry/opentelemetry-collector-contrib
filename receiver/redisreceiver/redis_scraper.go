@@ -85,9 +85,9 @@ func (rs *redisScraper) Scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	if rs.configInfo.ClusterInfoEnabled {
-		clusterInf, err := rs.redisSvc.clusterInfo()
-		if err != nil {
-			return pmetric.Metrics{}, err
+		clusterInf, errClsInf := rs.redisSvc.clusterInfo()
+		if errClsInf != nil {
+			return pmetric.Metrics{}, errClsInf
 		}
 		for k, v := range clusterInf {
 			inf[k] = v
