@@ -14,13 +14,12 @@ import (
 	"time"
 
 	"github.com/apache/thrift/lib/go/thrift"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.uber.org/zap/zaptest"
-
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/zipkincore"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver/thriftudp"
 )
@@ -113,11 +112,11 @@ type fakeAgentHandler struct {
 	batches []*jaeger.Batch
 }
 
-func (*fakeAgentHandler) EmitZipkinBatch(ctx context.Context, spans []*zipkincore.Span) (_err error) {
+func (*fakeAgentHandler) EmitZipkinBatch(_ context.Context, _spans []*zipkincore.Span) (_err error) {
 	return errors.ErrUnsupported
 }
 
-func (h *fakeAgentHandler) EmitBatch(ctx context.Context, batch *jaeger.Batch) (_err error) {
+func (h *fakeAgentHandler) EmitBatch(_ context.Context, batch *jaeger.Batch) (_err error) {
 	h.mux.Lock()
 	defer h.mux.Unlock()
 	h.batches = append(h.batches, batch)

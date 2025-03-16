@@ -90,7 +90,7 @@ func (s *ThriftProcessor) Stop() {
 func (s *ThriftProcessor) processBuffer() {
 	for buf := range s.server.DataChan() {
 		protocol := s.protocolPool.Get().(thrift.TProtocol)
-		buf.WriteTo(protocol.Transport())
+		_, _ = buf.WriteTo(protocol.Transport()) // writes to memory transport don't fail
 		s.logger.Debug("Span(s) received by the agent", zap.Int("bytes-received", buf.Len()))
 
 		// NB: oddly, thrift-gen/agent/agent.go:L156 does this: `return true, thrift.WrapTException(err2)`

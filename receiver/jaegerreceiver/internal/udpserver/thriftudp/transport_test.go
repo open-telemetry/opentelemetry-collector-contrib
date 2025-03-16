@@ -211,7 +211,8 @@ func TestFlushErrors(t *testing.T) {
 		require.NoError(t, err)
 		trans.conn.Close()
 
-		trans.Write([]byte{1, 2, 3, 4})
+		_, err = trans.Write([]byte{1, 2, 3, 4})
+		require.NoError(t, err)
 		err = trans.Flush(context.Background())
 		require.Error(t, err, "Flush with data should fail")
 	})
@@ -224,7 +225,8 @@ func TestResetInFlush(t *testing.T) {
 	trans, err := NewTUDPClientTransport(conn.LocalAddr().String(), "")
 	require.NoError(t, err)
 
-	trans.Write([]byte("some nonsense"))
+	_, err = trans.Write([]byte("some nonsense"))
+	require.NoError(t, err)
 	trans.conn.Close() // close the transport's connection via back door
 
 	err = trans.Flush(context.Background())

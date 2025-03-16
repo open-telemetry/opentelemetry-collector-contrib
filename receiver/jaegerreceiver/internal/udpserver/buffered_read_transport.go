@@ -50,7 +50,6 @@ func (p *TBufferedReadTransport) Read(buf []byte) (int, error) {
 
 // RemainingBytes returns the number of bytes left to be read from the readBuf
 func (p *TBufferedReadTransport) RemainingBytes() uint64 {
-	//nolint: gosec // G115
 	return uint64(p.readBuf.Len())
 }
 
