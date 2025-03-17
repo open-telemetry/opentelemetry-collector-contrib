@@ -533,7 +533,6 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			return errors.New(msg)
 		}
 	case err = <-done:
-		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 		if errors.Is(err, errNonMatchingInstanceUID) {
 			// try to report the issue to the OpAMP server
 			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
@@ -553,6 +552,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 			}
 		}
 		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 			span.SetStatus(codes.Error, err.Error())
 		} else {
 			span.SetStatus(codes.Ok, "")
@@ -1675,7 +1675,8 @@ func (s *Supervisor) findRandomPort() (int, error) {
 }
 
 func (s *Supervisor) getTracer() trace.Tracer {
-	return s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
+	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
+	return tracer
 }
 
 // The default koanf behavior is to override lists in the config.

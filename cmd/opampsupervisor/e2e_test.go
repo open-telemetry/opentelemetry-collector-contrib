@@ -14,6 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+	"go.opentelemetry.io/otel/codes"
 	"io"
 	"log"
 	"net"
@@ -1893,17 +1894,18 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		})
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
-	telemetryPort, err := findRandomPort()
+	_, err = findRandomPort()
 	require.Nil(t, err)
-	backend := testbed.NewOTLPHTTPDataReceiver(telemetryPort)
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
 	mockBackend := testbed.NewMockBackend(outputPath, backend)
+	mockBackend.EnableRecording()
 	require.NoError(t, mockBackend.Start())
 
 	s := newSupervisor(t,
 		"emit_telemetry",
 		map[string]string{
 			"url":          server.addr,
-			"telemetryUrl": fmt.Sprintf("127.0.0.1:%d", telemetryPort),
+			"telemetryUrl": fmt.Sprintf("localhost:%d", 4318),
 		},
 	)
 
@@ -1929,7 +1931,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 			}
 		}
 
-		// By default the Collector should report its name and version
+		// By default, the Collector should report its name and version
 		// from the component.BuildInfo struct built into the Collector
 		// binary.
 		return agentName == command && agentVersion == version
@@ -1938,4 +1940,14 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
 		require.Len(collect, mockBackend.ReceivedTraces, 1)
 	}, 10*time.Second, 250*time.Millisecond)
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
+	require.True(t, ok)
+	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	require.Equal(t, codes.Ok, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status())
 }
