@@ -55,7 +55,7 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
-				return true
+				continue
 			}
 
 			event.Properties = append(event.Properties, &sfxpb.Property{
