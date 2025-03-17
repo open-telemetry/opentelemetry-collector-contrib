@@ -3,10 +3,12 @@ type: carbon
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [aboguszewski-sumo]
+    active: []
+    emeritus: [aboguszewski-sumo]
+    seeking_new: true
 
 # TODO: Update the exporter to pass the tests
 tests:
