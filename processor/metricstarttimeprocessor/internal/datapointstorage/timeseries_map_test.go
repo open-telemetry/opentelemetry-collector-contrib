@@ -268,6 +268,27 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 			},
 			expectedReset: true,
 		},
+		{
+			name: "Zero Bucket Count",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.Histogram = pmetric.NewHistogramDataPoint()
+				tsi.Histogram.SetCount(10)
+				tsi.Histogram.SetSum(50)
+				tsi.Histogram.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				tsi.Histogram.BucketCounts().FromRaw([]uint64{1, 2, 3, 4})
+				return tsi
+			},
+			setupH: func() pmetric.HistogramDataPoint {
+				h := pmetric.NewHistogramDataPoint()
+				h.SetCount(0)
+				h.SetSum(60)
+				h.ExplicitBounds().FromRaw([]float64{1, 2, 3})
+				h.BucketCounts().FromRaw([]uint64{1, 1, 3, 4})
+				return h
+			},
+			expectedReset: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -436,6 +457,23 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 			},
 			expectedReset: true,
 		},
+		{
+			name: "Reset on zero count",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
+				tsi.ExponentialHistogram.SetCount(10)
+				tsi.ExponentialHistogram.SetSum(50)
+				return tsi
+			},
+			setupEh: func() pmetric.ExponentialHistogramDataPoint {
+				eh := pmetric.NewExponentialHistogramDataPoint()
+				eh.SetCount(0)
+				eh.SetSum(60)
+				return eh
+			},
+			expectedReset: true,
+		},
 	}
 
 	for _, tt := range tests {
@@ -504,6 +542,23 @@ func TestTimeseriesInfo_IsResetSummary(t *testing.T) {
 				return s
 			},
 			expectedReset: false,
+		},
+		{
+			name: "Reset on zero count",
+			setupTsi: func() *TimeseriesInfo {
+				tsi := &TimeseriesInfo{}
+				tsi.Summary = pmetric.NewSummaryDataPoint()
+				tsi.Summary.SetCount(10)
+				tsi.Summary.SetSum(50)
+				return tsi
+			},
+			setupS: func() pmetric.SummaryDataPoint {
+				s := pmetric.NewSummaryDataPoint()
+				s.SetCount(0)
+				s.SetSum(60)
+				return s
+			},
+			expectedReset: true,
 		},
 	}
 
