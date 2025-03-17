@@ -76,4 +76,4 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
 
-replace go.opentelemetry.io/collector/extension/auth => go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250313100724-0885401136ff
+replace go.opentelemetry.io/collector/extension/auth v0.121.1-0.20250313100724-0885401136ff => go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250313100724-0885401136ff
