@@ -483,12 +483,15 @@ Available Converters:
 - [IsString](#isstring)
 - [Len](#len)
 - [Log](#log)
+- [IsValidLuhn](#isvalidluhn)
 - [MD5](#md5)
 - [Microseconds](#microseconds)
 - [Milliseconds](#milliseconds)
 - [Minute](#minute)
 - [Minutes](#minutes)
 - [Month](#month)
+- [Murmur3Hash](#murmur3hash)
+- [Murmur3Hash128](#murmur3hash128)
 - [Nanosecond](#nanosecond)
 - [Nanoseconds](#nanoseconds)
 - [Now](#now)
@@ -1255,6 +1258,21 @@ Examples:
 
 - `Int(Log(span.attributes["duration_ms"])`
 
+### IsValidLuhn
+
+`IsValidLuhn(value)`
+
+The `IsValidLuhn` converter returns a `boolean` value that indicates whether the value is a valid identification number,
+such as a credit card number according to the [Luhn algorithm](https://en.wikipedia.org/wiki/Luhn_algorithm).
+
+The value must either be a `string` consisting of digits only, or an `integer` number. If it is neither, an error will be returned.
+
+Examples:
+
+- `IsValidLuhn(span.attributes["credit_card_number"])`
+
+- `IsValidLuhn("17893729974")`
+
 ### MD5
 
 `MD5(value)`
@@ -1344,6 +1362,34 @@ The returned type is `int64`.
 Examples:
 
 - `Month(Now())`
+
+### Murmur3Hash
+
+`Murmur3Hash(target)`
+
+The `Murmur3Hash` Converter converts the `target` string to a hexadecimal string in little-endian of the 32-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash(attributes["order.productId"])`
+
+### Murmur3Hash128
+
+`Murmur3Hash128(target)`
+
+The `Murmur3Hash128` Converter converts the `target` string to a hexadecimal string in little-endian of the 128-bit Murmur3 hash.
+
+`target` is a Getter that returns a string.
+
+The returned type is `string`.
+
+Examples:
+
+- `Murmur3Hash128(attributes["order.productId"])`
 
 ### Nanosecond
 
