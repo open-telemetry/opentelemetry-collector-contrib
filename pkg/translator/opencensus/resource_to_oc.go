@@ -89,7 +89,7 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 		case occonventions.AttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
-				return true
+				continue
 			}
 			ts := timestamppb.New(t)
 			getProcessIdentifier(ocNode).StartTimestamp = ts

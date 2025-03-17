@@ -468,7 +468,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 				actualValue:   nil,
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
-			return true
+			continue
 		}
 		switch sentVal.Type() {
 		case pcommon.ValueTypeMap:

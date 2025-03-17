@@ -40,14 +40,14 @@ func (f fields) string() string {
 		// and are added to the payload either as special HTTP headers or as resources
 		// attributes.
 		if k == attributeKeySourceCategory || k == attributeKeySourceHost || k == attributeKeySourceName {
-			return true
+			continue
 		}
 
 		sv := v.AsString()
 
 		// Skip empty field
 		if len(sv) == 0 {
-			return true
+			continue
 		}
 
 		key := []byte(k)

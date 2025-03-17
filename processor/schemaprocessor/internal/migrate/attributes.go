@@ -63,7 +63,7 @@ func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error
 			//       entry's value, not the existing value.
 			if _, overridden := updated[k]; overridden {
 				errs = multierr.Append(errs, fmt.Errorf("value %q already exists", k))
-				return true
+				continue
 			}
 		}
 		v.CopyTo(results.PutEmpty(k))
