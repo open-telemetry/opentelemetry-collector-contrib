@@ -7,7 +7,7 @@ change_type: enhancement
 component: hostmetricsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Added the `system.linux.memory.dirty` and `system.linux.memory.dirty.page.count` metrics.
+note: Added the `system.linux.memory.dirty` and `system.memory.page_size` metrics.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38672]

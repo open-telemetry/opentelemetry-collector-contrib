@@ -79,6 +79,7 @@ func (s *memoryScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.recordMemoryUtilizationMetric(now, memInfo)
 		s.recordMemoryLimitMetric(now, memInfo)
 		s.recordSystemSpecificMetrics(now, memInfo)
+		s.recordMemoryPageSizeMetric(now)
 	}
 
 	return s.mb.Emit(), nil
