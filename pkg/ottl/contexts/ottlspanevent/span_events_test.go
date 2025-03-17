@@ -5,6 +5,7 @@ package ottlspanevent
 
 import (
 	"context"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -15,7 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspanevent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -436,10 +439,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			cacheGetter := func(_ TransformContext) pcommon.Map {
 				return testCache
 			}
-			pep := pathExpressionParser{
-				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
-			}
-			accessor, err := pep.parsePath(tt.path)
+
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			spanEvent, span, il, resource := createTelemetry()
@@ -529,10 +530,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -580,8 +580,7 @@ func Test_setAndGetEventIndex(t *testing.T) {
 				tCtx = NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans())
 			}
 
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(&pathtest.Path[TransformContext]{
+			accessor, err := pathExpressionParser(getCache)(&pathtest.Path[TransformContext]{
 				N: "event_index",
 			})
 			assert.NoError(t, err)
@@ -594,6 +593,34 @@ func Test_setAndGetEventIndex(t *testing.T) {
 			}
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, got)
+		})
+	}
+}
+
+func TestHigherContextCacheAccessError(t *testing.T) {
+	higherContexts := []string{
+		ctxresource.Name,
+		ctxscope.Name,
+		ctxscope.LegacyName,
+		ctxspan.Name,
+	}
+	for _, higherContext := range higherContexts {
+		t.Run(higherContext, func(t *testing.T) {
+			path := &pathtest.Path[TransformContext]{
+				N: "cache",
+				C: higherContext,
+				KeySlice: []ottl.Key[TransformContext]{
+					&pathtest.Key[TransformContext]{
+						S: ottltest.Strp("key"),
+					},
+				},
+				FullPath: fmt.Sprintf("%s.cache[key]", higherContext),
+			}
+
+			_, err := pathExpressionParser(getCache)(path)
+			require.Error(t, err)
+			expectError := fmt.Sprintf(`replace "%s.cache[key]" with "spanevent.cache[key]"`, higherContext)
+			require.Contains(t, err.Error(), expectError)
 		})
 	}
 }

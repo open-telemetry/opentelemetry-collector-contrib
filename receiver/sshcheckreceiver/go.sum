@@ -82,6 +82,8 @@ go.opentelemetry.io/collector/extension v1.27.1-0.20250313100724-0885401136ff h1
 go.opentelemetry.io/collector/extension v1.27.1-0.20250313100724-0885401136ff/go.mod h1:biTLxkq0qkWRT+6s28Xl5YAm5pY4FMo0pi0BXlejdjE=
 go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250313100724-0885401136ff h1:tJdY1+OMRx+f0vfiAMVPb0JSfY+1JhGBghF2BBbMJDM=
 go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250313100724-0885401136ff/go.mod h1:ONdbR1D+Nbs8ipBvb1SgcU+pe1iqSqRSHR+peyrZJak=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.1-0.20250313100724-0885401136ff h1:Dzt2i3KwNj8oBKv4dYGg/f/7uIf+cHYb+z3azbMuufU=
+go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.121.1-0.20250313100724-0885401136ff/go.mod h1:pUm9NcgHb4+j+Lx8oDjiXYrEX1TUDKun1JHLdXVEZmI=
 go.opentelemetry.io/collector/featuregate v1.27.1-0.20250313100724-0885401136ff h1:3NCI7FVb2ocLhcahFI88Vnn9EbWJbd7xLbDGBTTkRUQ=
 go.opentelemetry.io/collector/featuregate v1.27.1-0.20250313100724-0885401136ff/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/filter v0.121.1-0.20250313100724-0885401136ff h1:AHdlqIsT4VXDLhuzeiiYTeJkQkfbG33tcdUT20LcnII=
