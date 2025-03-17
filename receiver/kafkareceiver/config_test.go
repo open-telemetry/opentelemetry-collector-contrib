@@ -11,12 +11,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -43,7 +44,7 @@ func TestLoadConfig(t *testing.T) {
 				InitialOffset:                        "latest",
 				SessionTimeout:                       10 * time.Second,
 				HeartbeatInterval:                    3 * time.Second,
-				Authentication: kafka.Authentication{
+				Authentication: configkafka.AuthenticationConfig{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
@@ -66,6 +67,9 @@ func TestLoadConfig(t *testing.T) {
 				MinFetchSize:     1,
 				DefaultFetchSize: 1048576,
 				MaxFetchSize:     0,
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
 			},
 		},
 		{
@@ -79,7 +83,7 @@ func TestLoadConfig(t *testing.T) {
 				InitialOffset:     "earliest",
 				SessionTimeout:    45 * time.Second,
 				HeartbeatInterval: 15 * time.Second,
-				Authentication: kafka.Authentication{
+				Authentication: configkafka.AuthenticationConfig{
 					TLS: &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
@@ -102,6 +106,13 @@ func TestLoadConfig(t *testing.T) {
 				MinFetchSize:     1,
 				DefaultFetchSize: 1048576,
 				MaxFetchSize:     0,
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled:         true,
+					InitialInterval: 1 * time.Second,
+					MaxInterval:     10 * time.Second,
+					MaxElapsedTime:  1 * time.Minute,
+					Multiplier:      1.5,
+				},
 			},
 		},
 	}

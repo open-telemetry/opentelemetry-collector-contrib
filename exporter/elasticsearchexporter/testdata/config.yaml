@@ -8,6 +8,12 @@ elasticsearch/trace:
   headers:
     myheader: test
   traces_index: trace_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   pipeline: mypipeline
   user: elastic
   password: search
@@ -26,6 +32,12 @@ elasticsearch/metric:
     insecure: false
   endpoints: [http://localhost:9200]
   metrics_index: my_metric_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -49,6 +61,12 @@ elasticsearch/log:
     insecure: false
   endpoints: [http://localhost:9200]
   logs_index: my_log_index
+  traces_dynamic_index:
+    enabled: false
+  logs_dynamic_index:
+    enabled: false
+  metrics_dynamic_index:
+    enabled: false
   timeout: 2m
   headers:
     myheader: test
@@ -89,3 +107,15 @@ elasticsearch/compression_none:
 elasticsearch/compression_gzip:
   endpoint: https://elastic.example.com:9200
   compression: gzip
+elasticsearch/batcher_minmax_size_items:
+  endpoint: https://elastic.example.com:9200
+  batcher:
+    min_size_items: 100
+    max_size_items: 200
+elasticsearch/batcher_minmax_size:
+  endpoint: https://elastic.example.com:9200
+  batcher:
+    min_size: 100
+    max_size: 200
+    #min_size_items: 300 # min_size is set, does not carry over
+    #max_size_items: 400 # max_size is set, does not carry over
