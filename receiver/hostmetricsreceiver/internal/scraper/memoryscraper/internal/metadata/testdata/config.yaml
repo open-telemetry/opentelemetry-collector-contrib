@@ -3,6 +3,10 @@ all_set:
   metrics:
     system.linux.memory.available:
       enabled: true
+    system.linux.memory.dirty:
+      enabled: true
+    system.linux.memory.dirty.page.count:
+      enabled: true
     system.memory.limit:
       enabled: true
     system.memory.usage:
@@ -12,6 +16,10 @@ all_set:
 none_set:
   metrics:
     system.linux.memory.available:
+      enabled: false
+    system.linux.memory.dirty:
+      enabled: false
+    system.linux.memory.dirty.page.count:
       enabled: false
     system.memory.limit:
       enabled: false

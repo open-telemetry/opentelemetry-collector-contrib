@@ -52,3 +52,21 @@ metrics:
       value_type: int
       aggregation_temporality: cumulative
       monotonic: false
+
+  system.linux.memory.dirty:
+    enabled: false
+    description: The amount of dirty memory according to `/proc/meminfo`.
+    unit: By
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false
+
+  system.linux.memory.dirty.page.count:
+    enabled: false
+    description: The amount of dirty memory according to `/proc/meminfo` divided by the configured page size.
+    unit: "{pages}"
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: false

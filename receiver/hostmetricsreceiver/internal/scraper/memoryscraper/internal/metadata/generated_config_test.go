@@ -25,10 +25,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "all_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: MetricConfig{Enabled: true},
-					SystemMemoryLimit:          MetricConfig{Enabled: true},
-					SystemMemoryUsage:          MetricConfig{Enabled: true},
-					SystemMemoryUtilization:    MetricConfig{Enabled: true},
+					SystemLinuxMemoryAvailable:      MetricConfig{Enabled: true},
+					SystemLinuxMemoryDirty:          MetricConfig{Enabled: true},
+					SystemLinuxMemoryDirtyPageCount: MetricConfig{Enabled: true},
+					SystemMemoryLimit:               MetricConfig{Enabled: true},
+					SystemMemoryUsage:               MetricConfig{Enabled: true},
+					SystemMemoryUtilization:         MetricConfig{Enabled: true},
 				},
 			},
 		},
@@ -36,10 +38,12 @@ func TestMetricsBuilderConfig(t *testing.T) {
 			name: "none_set",
 			want: MetricsBuilderConfig{
 				Metrics: MetricsConfig{
-					SystemLinuxMemoryAvailable: MetricConfig{Enabled: false},
-					SystemMemoryLimit:          MetricConfig{Enabled: false},
-					SystemMemoryUsage:          MetricConfig{Enabled: false},
-					SystemMemoryUtilization:    MetricConfig{Enabled: false},
+					SystemLinuxMemoryAvailable:      MetricConfig{Enabled: false},
+					SystemLinuxMemoryDirty:          MetricConfig{Enabled: false},
+					SystemLinuxMemoryDirtyPageCount: MetricConfig{Enabled: false},
+					SystemMemoryLimit:               MetricConfig{Enabled: false},
+					SystemMemoryUsage:               MetricConfig{Enabled: false},
+					SystemMemoryUtilization:         MetricConfig{Enabled: false},
 				},
 			},
 		},

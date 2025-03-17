@@ -44,6 +44,22 @@ An estimate of how much memory is available for starting new applications, witho
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
+### system.linux.memory.dirty
+
+The amount of dirty memory according to `/proc/meminfo`.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| By | Sum | Int | Cumulative | false |
+
+### system.linux.memory.dirty.page.count
+
+The amount of dirty memory according to `/proc/meminfo` divided by the configured page size.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {pages} | Sum | Int | Cumulative | false |
+
 ### system.memory.limit
 
 Total bytes of memory available.
