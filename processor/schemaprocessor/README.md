@@ -16,7 +16,7 @@ The processor works by using a set of target schema URLs that are used to match 
 On a match, the processor will fetch the schema translation file (if not cached) set by the incoming signal and apply the transformations
 required to export as the target semantic convention version.
 
-Furthermore, it is also possible for organisations and vendors to publish their own semantic conventions and be used by this processor, 
+Furthermore, it is also possible for organisations and vendors to publish their own semantic conventions and be used by this processor,
 be sure to follow [schema overview](https://opentelemetry.io/docs/reference/specification/schemas/overview/) for all the details.
 
 ## Caching Schema Translation Files
@@ -40,10 +40,9 @@ The final path in the schema URL _MUST_ be the schema version and the preceding 
 
 Targets define a set of schema URLs with a schema identifier that will be used to translate any schema URL that matches the target URL to that version.
 In the event that the processor matches a signal to a target, the processor will translate the signal from the published one to the defined identifier;
-for example using the configuration below, a signal published with the `https://opentelemetry.io/schemas/1.8.0` schema will be translated 
+for example using the configuration below, a signal published with the `https://opentelemetry.io/schemas/1.8.0` schema will be translated
 by the collector to the `https//opentelemetry.io/schemas/1.6.1` schema.
 Within the schema targets, no duplicate schema families are allowed and will report an error if detected.
-
 
 # Example
 
@@ -51,12 +50,75 @@ Within the schema targets, no duplicate schema families are allowed and will rep
 processors:
   schema:
     prefetch:
-    - https://opentelemetry.io/schemas/1.9.0
+      - https://opentelemetry.io/schemas/1.9.0
     targets:
-    - https://opentelemetry.io/schemas/1.6.1
-    - http://example.com/telemetry/schemas/1.0.1
+      - https://opentelemetry.io/schemas/1.6.1
+      - http://example.com/telemetry/schemas/1.0.1
 ```
 
 For more complete examples, please refer to [config.yml](./testdata/config.yml).
 
 There's a rough design/overview of the processor in the [DESIGN.md](./DESIGN.md) file.
+
+## Why use Schema Processor?
+
+Consider a typical setup of OpenTemetry Collector to process traces.
+The collector receives traces from multiple services. The collector uses a spanmetrics connector to compute RED metrics.
+The spanmetrics connector computes RED metrics on four dimensions: service and `http.method`, `http.status_code`, and deployment environment. When we use attribute names in the collector configuration or in any of the backends, we implicitly assume that all services produce telemetry with the same semantic conventions.
+
+However, semantic conventions naturally evolve over time. Consider a scenario where deployment environment was originally provided under the attribute `deployment.environment`, but a newer version (e.g., 1.27) updates it to `deployment.environment.name`. Such changes create a tight coupling between the instrumentation in services, the collector configuration, and backend processing, making the entire telemetry pipeline brittle and difficult to update incrementally.
+
+```yaml
+receivers:
+  otlp:
+    protocols:
+      grpc:
+exporter:
+  otlp:
+    endpoint: "localhost:4317"
+processors:
+  probabilistic_sampler:
+    hash_seed: 22
+    sampling_percentage: 15
+    sampling_priority: priority
+connectors:
+  spanmetrics:
+    dimensions:
+      - name: http.method
+      - name: http.status_code
+      - name: service.name
+      - name: deployment.environment
+service:
+  pipelines:
+    traces/red:
+      receivers: [otlp]
+      exporters: [spanmetrics]
+    traces/sampled:
+      receivers: [otlp]
+      processors: [probabilistic_sampler]
+      exporters: [otlp]
+    metrics:
+      receivers: [spanmetrics]
+      exporters: [otlp]
+```
+
+![collector pipeline](./images/collector-pipeline.png)
+
+It is the problem that the schema processor aims to solve. By using the schema processor as first processor in the collector pipeline, we can match the incoming telemetry signals with target version. The collector configuration can use semantics from the target semantic version.
+
+```yaml
+processors:
+  schema:
+    targets:
+      - https://opentelemetry.io/schemas/1.26.0
+```
+
+![collector pipeline with schema processor](./images/collector-pipeline-with-schema-processor.png)
+
+## When/Where to use Schema Processor
+
+The Schema Processor should be used in the collector when there are multiple services involved and the configurations expected by the collector configuration use attribute names from a specific semantic convention version.
+
+Isolating and transforming incoming data at the very start of the processing pipeline decouples the service owners from the collector configuration. This means that individual services can upgrade or adjust their telemetry outputs without forcing simultaneous changes to the collector setup.
+
+Schema processor should not be used to downgrade the incoming telemetry signals for more than 3 last versions. We recommend customer to update collector configuration and any other backend configuration at regular intervals to ensure they are using last 3 releases of semantic conventions

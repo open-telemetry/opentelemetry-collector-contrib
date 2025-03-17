@@ -24,7 +24,7 @@ jobs:
     if: ${{ github.event_name == 'pull_request' }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       - name: Did windows files changed
@@ -41,15 +41,15 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && ((contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') || needs.windows-file-changed.outputs.changed == 'true') }}
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-mod-cache
         timeout-minutes: 25
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~\go\pkg\mod
@@ -63,7 +63,7 @@ jobs:
       - name: Build Collector
         run: make otelcontribcol
       - name: Upload Collector Binary
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
         with:
           name: collector-binary
           path: ./bin/*
@@ -77,15 +77,15 @@ jobs:
     if: ${{ github.actor != 'dependabot[bot]' && (contains(github.event.pull_request.labels.*.name, 'Run Windows') || github.event_name == 'push' || github.event_name == 'merge_group') }}
     needs: [collector-build]
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-mod-cache
         timeout-minutes: 25
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~\go\pkg\mod
@@ -95,7 +95,7 @@ jobs:
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Download Collector Binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
         with:
           name: collector-binary
           path: bin/
@@ -114,14 +114,14 @@ jobs:
     needs: [collector-build]
     steps:
       - name: Checkout Repo
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: Setup Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "~1.23.7"
           cache: false
       - name: Cache Go
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         env:
           cache-name: cache-go-modules
         with:
@@ -133,7 +133,7 @@ jobs:
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Download Collector Binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
         with:
           name: collector-binary
           path: bin/
