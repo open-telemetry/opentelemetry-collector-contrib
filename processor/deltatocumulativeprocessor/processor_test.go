@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/processor"
@@ -62,8 +63,8 @@ func TestProcessor(t *testing.T) {
 			ctx := context.Background()
 			cfg := config(t, file("config.yaml"))
 
-			st := setup(t, cfg)
-			proc, sink := st.proc, st.sink
+			sink := new(consumertest.MetricsSink)
+			proc, tel := setup(t, cfg, sink)
 
 			stages, _ := filepath.Glob(file("*.test"))
 			for _, file := range stages {
@@ -80,7 +81,7 @@ func TestProcessor(t *testing.T) {
 					t.Fatal(diff)
 				}
 
-				if err := sdktest.Test(stage.Sdk, st.tel.reader); err != nil {
+				if err := sdktest.Test(stage.Sdk, tel.reader); err != nil {
 					t.Fatal(err)
 				}
 			}
@@ -101,10 +102,8 @@ func config(t *testing.T, file string) *Config {
 	return cfg
 }
 
-func setup(tb testing.TB, cfg *Config) State {
+func setup(tb testing.TB, cfg *Config, next consumer.Metrics) (processor.Metrics, testTelemetry) {
 	tb.Helper()
-
-	next := &consumertest.MetricsSink{}
 	if cfg == nil {
 		cfg = &Config{MaxStale: 0, MaxStreams: math.MaxInt}
 	}
@@ -121,18 +120,7 @@ func setup(tb testing.TB, cfg *Config) State {
 	)
 	require.NoError(tb, err)
 
-	return State{
-		proc: proc,
-		sink: next,
-		tel:  tt,
-	}
-}
-
-type State struct {
-	proc processor.Metrics
-	sink *consumertest.MetricsSink
-
-	tel testTelemetry
+	return proc, tt
 }
 
 func unmarshalMetrics(data []byte, into *pmetric.Metrics) error {
