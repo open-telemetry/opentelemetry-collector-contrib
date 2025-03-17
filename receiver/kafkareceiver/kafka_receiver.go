@@ -161,7 +161,7 @@ func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup
 			return nil, err
 		}
 	}
-	if err := kafka.ConfigureAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
+	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
 		return nil, err
 	}
 	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)

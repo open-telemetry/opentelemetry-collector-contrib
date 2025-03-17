@@ -14,7 +14,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -23,7 +22,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
@@ -109,38 +107,6 @@ func TestLogsExporter_encoding_extension(t *testing.T) {
 	err := texp.start(context.Background(), &testComponentHost{})
 	assert.Error(t, err)
 	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
-}
-
-func TestNewExporter_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: Metadata{
-			Full: false,
-		},
-		Producer: Producer{
-			Compression: "none",
-		},
-	}
-	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, texp)
-	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-	mexp := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, mexp)
-	err = mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-	lexp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, lexp)
-	err = lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
 }
 
 func TestNewExporter_err_compression(t *testing.T) {

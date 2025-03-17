@@ -8,11 +8,10 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/extensionauth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 )
 
 type mockHost struct {
@@ -21,11 +20,9 @@ type mockHost struct {
 }
 
 func TestAllTCPClientSettings(t *testing.T) {
-	client, err := extensionauth.NewClient()
-	require.NoError(t, err)
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): client,
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
