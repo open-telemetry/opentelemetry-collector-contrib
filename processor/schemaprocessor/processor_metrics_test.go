@@ -5,13 +5,17 @@ package schemaprocessor
 
 import (
 	"context"
+	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func TestMetrics_RenameAttributes(t *testing.T) {
+func TestMetrics_Rename(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
@@ -24,79 +28,13 @@ func TestMetrics_RenameAttributes(t *testing.T) {
 		{
 			name: "one_version_downgrade",
 			in: func() pmetric.Metrics {
-				in := pmetric.NewMetrics()
-				in.ResourceMetrics().AppendEmpty()
-				in.ResourceMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
-				in.ResourceMetrics().At(0).Resource().Attributes().PutStr("new.resource.name", "test-cluster")
-				in.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
-
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
-				// Sum metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("new.sum.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Gauge metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("new.gauge.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetEmptyGauge()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Histogram metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("new.histogram.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetEmptyHistogram()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Summary metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("new.summary.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetEmptySummary()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
+				in, err := golden.ReadMetrics(filepath.Join("testdata", "new-metric.yaml"))
+				assert.NoError(t, err, "Failed to read input metrics")
 				return in
 			}(),
 			out: func() pmetric.Metrics {
-				out := pmetric.NewMetrics()
-				out.ResourceMetrics().AppendEmpty()
-				out.ResourceMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
-				out.ResourceMetrics().At(0).Resource().Attributes().PutStr("old.resource.name", "test-cluster")
-
-				out.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
-				// Sum metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("old.sum.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Gauge metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("old.gauge.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetEmptyGauge()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Histogram metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("old.histogram.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetEmptyHistogram()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Summary metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("old.summary.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetEmptySummary()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
+				out, err := golden.ReadMetrics(filepath.Join("testdata", "old-metric.yaml"))
+				assert.NoError(t, err, "Failed to read expected output metrics")
 				return out
 			}(),
 			transformations: `
@@ -123,79 +61,13 @@ func TestMetrics_RenameAttributes(t *testing.T) {
 		{
 			name: "one_version_upgrade",
 			in: func() pmetric.Metrics {
-				in := pmetric.NewMetrics()
-				in.ResourceMetrics().AppendEmpty()
-				in.ResourceMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
-				in.ResourceMetrics().At(0).Resource().Attributes().PutStr("old.resource.name", "test-cluster")
-				in.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
-
-				// Sum metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.8.0")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("old.sum.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Gauge metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("old.gauge.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetEmptyGauge()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Histogram metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("old.histogram.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetEmptyHistogram()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
-				// Summary metric
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("old.summary.metric")
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetEmptySummary()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().AppendEmpty()
-				in.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("old.attr.name", "test-cluster")
-
+				in, err := golden.ReadMetrics(filepath.Join("testdata", "old-metric.yaml"))
+				assert.NoError(t, err, "Failed to read input metrics")
 				return in
 			}(),
 			out: func() pmetric.Metrics {
-				out := pmetric.NewMetrics()
-				out.ResourceMetrics().AppendEmpty()
-				out.ResourceMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
-				out.ResourceMetrics().At(0).Resource().Attributes().PutStr("new.resource.name", "test-cluster")
-				out.ResourceMetrics().At(0).ScopeMetrics().AppendEmpty()
-
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).SetSchemaUrl("http://opentelemetry.io/schemas/1.9.0")
-				// Sum metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("new.sum.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Gauge metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("new.gauge.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetEmptyGauge()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).Gauge().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Histogram metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("new.histogram.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetEmptyHistogram()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).Histogram().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
-				// Summary metric
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("new.summary.metric")
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetEmptySummary()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().AppendEmpty()
-				out.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).Summary().DataPoints().At(0).Attributes().PutStr("new.attr.name", "test-cluster")
-
+				out, err := golden.ReadMetrics(filepath.Join("testdata", "new-metric.yaml"))
+				assert.NoError(t, err, "Failed to read expected output metrics")
 				return out
 			}(),
 			transformations: `
@@ -229,7 +101,8 @@ func TestMetrics_RenameAttributes(t *testing.T) {
 			if err != nil {
 				t.Errorf("Error while processing metrics: %v", err)
 			}
-			assert.Equal(t, tt.out, out, "Metrics transformation failed")
+			require.NoError(t, pmetrictest.CompareMetrics(tt.out, out, pmetrictest.IgnoreStartTimestamp(),
+				pmetrictest.IgnoreTimestamp()))
 		})
 	}
 }
