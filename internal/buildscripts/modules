@@ -5,10 +5,11 @@ beta_modules=(
   "go.opentelemetry.io/collector/internal/memorylimiter"
   "go.opentelemetry.io/collector/internal/fanoutconsumer"
   "go.opentelemetry.io/collector/internal/sharedcomponent"
+  "go.opentelemetry.io/collector/internal/telemetry"
   "go.opentelemetry.io/collector/cmd/builder"
   "go.opentelemetry.io/collector/cmd/mdatagen"
-  "go.opentelemetry.io/collector/component/componenttest"
   "go.opentelemetry.io/collector/component/componentstatus"
+  "go.opentelemetry.io/collector/component/componenttest"
   "go.opentelemetry.io/collector/config/configauth"
   "go.opentelemetry.io/collector/config/configgrpc"
   "go.opentelemetry.io/collector/config/confighttp"
@@ -32,6 +33,8 @@ beta_modules=(
   "go.opentelemetry.io/collector/exporter/xexporter"
   "go.opentelemetry.io/collector/extension/extensionauth"
   "go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
+  "go.opentelemetry.io/collector/extension/auth"
+  "go.opentelemetry.io/collector/extension/auth/authtest"
   "go.opentelemetry.io/collector/extension/extensioncapabilities"
   "go.opentelemetry.io/collector/extension/extensiontest"
   "go.opentelemetry.io/collector/extension/zpagesextension"
@@ -59,12 +62,12 @@ beta_modules=(
   "go.opentelemetry.io/collector/scraper/scrapertest"
   "go.opentelemetry.io/collector/semconv"
   "go.opentelemetry.io/collector/service"
+  "go.opentelemetry.io/collector/service/hostcapabilities"
   "go.opentelemetry.io/collector/filter"
 )
 
 stable_modules=(
   "go.opentelemetry.io/collector/client"
-  "go.opentelemetry.io/collector/consumer"
   "go.opentelemetry.io/collector/featuregate"
   "go.opentelemetry.io/collector/pdata"
   "go.opentelemetry.io/collector/component"
@@ -79,5 +82,6 @@ stable_modules=(
   "go.opentelemetry.io/collector/config/configretry"
   "go.opentelemetry.io/collector/config/configtls"
   "go.opentelemetry.io/collector/config/confignet"
+  "go.opentelemetry.io/collector/consumer"
   "go.opentelemetry.io/collector/extension"
 )
