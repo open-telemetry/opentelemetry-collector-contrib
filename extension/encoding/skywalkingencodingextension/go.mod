@@ -5,11 +5,11 @@ go 1.23.0
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking v0.121.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.27.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/component v1.27.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250313100724-0885401136ff
-	go.opentelemetry.io/collector/extension v1.27.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/extension v1.27.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/extension/extensiontest v0.121.1-0.20250313100724-0885401136ff
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250316222041-da4512d625a4
 	google.golang.org/protobuf v1.36.5
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
