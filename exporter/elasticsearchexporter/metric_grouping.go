@@ -80,10 +80,10 @@ func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...strin
 	for k, v := range m.All() {
 		switch k {
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
-			return true
+			continue
 		}
 		if slices.Contains(extra, k) {
-			return true
+			continue
 		}
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)

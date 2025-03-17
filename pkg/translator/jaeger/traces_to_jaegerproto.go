@@ -99,7 +99,7 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) 
 
 	for key, attr := range attrs.All() {
 		if key == conventions.AttributeServiceName {
-			return true
+			continue
 		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
 

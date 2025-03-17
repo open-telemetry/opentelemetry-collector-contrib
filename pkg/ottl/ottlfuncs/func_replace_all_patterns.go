@@ -69,7 +69,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					if !fn.IsEmpty() {
 						updatedString, err := applyOptReplaceFunction(ctx, tCtx, compiledPattern, fn, originalValue.Str(), replacementVal, replacementFormat)
 						if err != nil {
-							return false
+							break
 						}
 						updated.PutStr(key, updatedString)
 					} else {
@@ -84,7 +84,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					if !fn.IsEmpty() {
 						updatedString, err := applyOptReplaceFunction(ctx, tCtx, compiledPattern, fn, key, replacementVal, replacementFormat)
 						if err != nil {
-							return false
+							break
 						}
 						updated.PutStr(key, updatedString)
 					} else {

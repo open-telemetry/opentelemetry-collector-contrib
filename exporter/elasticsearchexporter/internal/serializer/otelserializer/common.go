@@ -60,10 +60,10 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	for k, val := range attributes.All() {
 		switch k {
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace, elasticsearch.MappingHintsAttrKey, elasticsearch.DocumentIDAttributeName, elasticsearch.DocumentPipelineAttributeName, elasticsearch.IndexAttributeName:
-			return true
+			continue
 		}
 		if isGeoAttribute(k, val) {
-			return true
+			continue
 		}
 		_ = v.OnKey(k)
 		serializer.WriteValue(v, val, stringifyMapValues)
@@ -110,25 +110,20 @@ func writeGeolocationAttributes(v *json.Visitor, attributes pcommon.Map) {
 	}
 	for key, val := range attributes.All() {
 		if val.Type() != pcommon.ValueTypeDouble {
-			return true
+			continue
 		}
 
 		if key == lonKey {
 			setLon("", val.Double())
-			return true
 		} else if key == latKey {
 			setLat("", val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
 			prefix := namespace + "."
 			setLon(prefix, val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
 			prefix := namespace + "."
 			setLat(prefix, val.Double())
-			return true
 		}
-
 	}
 
 	for prefix, geo := range prefixToGeo {

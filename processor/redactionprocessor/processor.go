@@ -210,7 +210,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		if _, ignored := s.ignoreList[k]; ignored {
 			ignoring = append(ignoring, k)
 			// Skip to the next attribute
-			return true
+			continue
 		}
 
 		// Make a list of attribute keys to redact
@@ -218,7 +218,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 			if _, allowed := s.allowList[k]; !allowed {
 				toDelete = append(toDelete, k)
 				// Skip to the next attribute
-				return true
+				continue
 			}
 		}
 
@@ -227,7 +227,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 		for _, compiledRE := range s.allowRegexList {
 			if match := compiledRE.MatchString(strVal); match {
 				allowed = append(allowed, k)
-				return true
+				continue
 			}
 		}
 
@@ -237,7 +237,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 				toBlock = append(toBlock, k)
 				maskedValue := s.maskValue(strVal, regexp.MustCompile(".*"))
 				value.SetStr(maskedValue)
-				return true
+				continue
 			}
 		}
 

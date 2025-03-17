@@ -464,19 +464,18 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		if ecsKey, exists := conversionMap[k]; exists {
 			if ecsKey == "" {
 				// Skip the conversion for this k.
-				return true
+				continue
 			}
 
 			document.AddAttribute(ecsKey, v)
 			if preserve := preserveMap[k]; preserve {
 				document.AddAttribute(k, v)
 			}
-			return true
+			continue
 		}
 
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
-
 	}
 }
 
