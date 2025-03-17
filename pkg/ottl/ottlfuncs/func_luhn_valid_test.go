@@ -44,7 +44,7 @@ func Test_Luhn(t *testing.T) {
 			expected: true,
 		},
 		{
-			name:     "invalid number",
+			name:     "invalid number string",
 			value:    "17893729975",
 			expected: false,
 		},

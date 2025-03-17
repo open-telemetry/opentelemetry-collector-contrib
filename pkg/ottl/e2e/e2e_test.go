@@ -746,7 +746,7 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["test"], IsValidLuhn("17893729975"))`,
+			statement: `set(attributes["test"], IsValidLuhn(17893729975))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutBool("test", false)
 			},
