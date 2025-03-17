@@ -51,10 +51,6 @@ func (fe *faroExporter) start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-// func (fe *faroExporter) export(ctx context.Context, fp []*faro.Payload) error {
-// 	return nil
-// }
-
 func (fe *faroExporter) ConsumeTraces(_ context.Context, _ ptrace.Traces) error {
 	return nil
 }
