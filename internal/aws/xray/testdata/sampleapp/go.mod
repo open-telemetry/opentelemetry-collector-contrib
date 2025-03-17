@@ -5,6 +5,7 @@ go 1.23.0
 require (
 	github.com/aws/aws-sdk-go v1.55.6
 	github.com/aws/aws-xray-sdk-go v1.8.5
+	github.com/aws/aws-xray-sdk-go/v2 v2.0.0
 )
 
 require (

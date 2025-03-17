@@ -2,7 +2,10 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xr
 
 go 1.23.0
 
-require github.com/aws/aws-xray-sdk-go v1.8.5
+require (
+	github.com/aws/aws-xray-sdk-go v1.8.5
+	github.com/aws/aws-xray-sdk-go/v2 v2.0.0
+)
 
 require (
 	github.com/andybalholm/brotli v1.1.0 // indirect
