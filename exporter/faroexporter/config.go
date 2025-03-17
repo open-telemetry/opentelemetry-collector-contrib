@@ -19,7 +19,6 @@ type Config struct {
 	confighttp.ClientConfig    `mapstructure:",squash"`
 	exporterhelper.QueueConfig `mapstructure:"sending_queue"`
 	RetryConfig                configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	FaroEndpoint               string                    `mapstructure:"faro_endpoint"`
 }
 
 var (
