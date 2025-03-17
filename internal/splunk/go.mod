@@ -6,7 +6,7 @@ require (
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/exporter v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/semconv v0.121.1-0.20250316222041-da4512d625a4
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
@@ -28,13 +28,13 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rogpeppe/go-internal v1.13.1 // indirect
-	go.opentelemetry.io/collector/component v1.27.0 // indirect
-	go.opentelemetry.io/collector/config/configretry v1.27.0 // indirect
-	go.opentelemetry.io/collector/confmap v1.27.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.27.0 // indirect
-	go.opentelemetry.io/collector/extension v1.27.0 // indirect
+	go.opentelemetry.io/collector/component v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
+	go.opentelemetry.io/collector/config/configretry v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
+	go.opentelemetry.io/collector/confmap v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
+	go.opentelemetry.io/collector/extension v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.121.1-0.20250316222041-da4512d625a4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250316222041-da4512d625a4 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250316222041-da4512d625a4 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

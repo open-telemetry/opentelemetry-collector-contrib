@@ -7,12 +7,12 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.27.0
+	go.opentelemetry.io/collector/component v1.27.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/confmap v1.27.0
-	go.opentelemetry.io/collector/consumer v1.27.0
+	go.opentelemetry.io/collector/confmap v1.27.1-0.20250317133802-83e4ea0ba39a
+	go.opentelemetry.io/collector/consumer v1.27.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/pdata v1.27.0
+	go.opentelemetry.io/collector/pdata v1.27.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/receiver v0.121.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/scraper v0.121.1-0.20250316222041-da4512d625a4
@@ -43,7 +43,7 @@ require (
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.121.1-0.20250316222041-da4512d625a4 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.121.1-0.20250316222041-da4512d625a4 // indirect
-	go.opentelemetry.io/collector/featuregate v1.27.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250317133802-83e4ea0ba39a // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.121.1-0.20250316222041-da4512d625a4 // indirect
 	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250316222041-da4512d625a4 // indirect
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.0.0-20250316222041-da4512d625a4 // indirect
