@@ -14,7 +14,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	"io"
 	"log"
 	"net"
@@ -1899,6 +1899,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
 	mockBackend := testbed.NewMockBackend(outputPath, backend)
 	mockBackend.EnableRecording()
+	defer mockBackend.Stop()
 	require.NoError(t, mockBackend.Start())
 
 	s := newSupervisor(t,
@@ -1949,5 +1950,5 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
 	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-	require.Equal(t, codes.Ok, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status())
+	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 }
