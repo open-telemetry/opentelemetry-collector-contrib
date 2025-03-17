@@ -587,8 +587,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 				e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
 				errs = append(errs, err)
 			}
-			return true
-		})
+		}
 
 		for key := range datapointAttributes {
 			vtPair := datapointAttributes[key]
@@ -622,7 +621,7 @@ func (e *kineticaMetricsExporter) createExponentialHistogramRecord(resAttr pcomm
 			kiExpHistogramRecord.exemplars = append(kiExpHistogramRecord.exemplars, sumDatapointExemplar)
 
 			// Handle Exemplar attribute
-			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range exemplar.FilteredAttributes().All() {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
 				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
@@ -797,8 +796,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 				e.logger.Debug("Invalid histogram record attribute value", zap.String("Error", err.Error()))
 				errs = append(errs, err)
 			}
-			return true
-		})
+		}
 
 		for key := range datapointAttributes {
 			vtPair := datapointAttributes[key]
@@ -832,7 +830,7 @@ func (e *kineticaMetricsExporter) createHistogramRecord(resAttr pcommon.Map, _ s
 			kiHistogramRecord.exemplars = append(kiHistogramRecord.exemplars, histogramDatapointExemplar)
 
 			// Handle Exemplar attribute
-			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range exemplar.FilteredAttributes().All() {
 				if k == "" {
 					e.logger.Debug("Histogram record attribute key is empty")
 				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
@@ -1011,8 +1009,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 				e.logger.Debug("Invalid sum record attribute value", zap.String("Error", err.Error()))
 				errs = append(errs, err)
 			}
-			return true
-		})
+		}
 
 		for key := range sumDatapointAttributes {
 			vtPair := sumDatapointAttributes[key]
@@ -1046,7 +1043,7 @@ func (e *kineticaMetricsExporter) createSumRecord(resAttr pcommon.Map, _ string,
 			kiSumRecord.exemplars = append(kiSumRecord.exemplars, sumDatapointExemplar)
 
 			// Handle Exemplar attribute
-			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range exemplar.FilteredAttributes().All() {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
 				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {
@@ -1204,8 +1201,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 				e.logger.Debug("Invalid gauge record attribute value", zap.String("Error", err.Error()))
 				errs = append(errs, err)
 			}
-			return true
-		})
+		}
 
 		for key := range gaugeDatapointAttributes {
 			vtPair := gaugeDatapointAttributes[key]
@@ -1239,7 +1235,7 @@ func (e *kineticaMetricsExporter) createGaugeRecord(resAttr pcommon.Map, _ strin
 			kiGaugeRecord.exemplars = append(kiGaugeRecord.exemplars, gaugeDatapointExemplar)
 
 			// Handle Exemplar attribute
-			exemplar.FilteredAttributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range exemplar.FilteredAttributes().All() {
 				if k == "" {
 					e.logger.Debug("Sum record attribute key is empty")
 				} else if v, err := attributeValueToKineticaFieldValue(v); err == nil {

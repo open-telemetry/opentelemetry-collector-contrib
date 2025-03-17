@@ -6,7 +6,6 @@ package metricsgenerationprocessor // import "github.com/open-telemetry/opentele
 import (
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 )

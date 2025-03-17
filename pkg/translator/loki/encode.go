@@ -100,8 +100,7 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 
 	for k, v := range lr.Attributes().All() {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
-		return true
-	})
+	}
 
 	for k, v := range res.Attributes().All() {
 		// todo handle maps, slices
@@ -116,7 +115,7 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 		if scopeVersion != "" {
 			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
 		}
-		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range scope.Attributes().All() {
 			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("instrumentation_scope_attribute_%s", k), v)...)
 		}
 	}

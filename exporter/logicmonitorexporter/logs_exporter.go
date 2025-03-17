@@ -78,10 +78,9 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 
 				for key, value := range log.Attributes().All() {
 					logMetadataMap[key] = value.AsRaw()
-					return true
-				})
+				}
 
-				resourceLog.Resource().Attributes().Range(func(key string, value pcommon.Value) bool {
+				for key, value := range resourceLog.Resource().Attributes().All() {
 					if key == hostname {
 						resourceMapperMap[hostnameProperty] = value.AsRaw()
 					}
