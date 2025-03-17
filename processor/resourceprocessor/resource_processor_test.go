@@ -204,11 +204,10 @@ func compareProfileAttributes(t *testing.T, expected pprofile.Profiles, got ppro
 		expectedResourceProfile := expected.ResourceProfiles().At(i)
 		gotResourceProfile := got.ResourceProfiles().At(i)
 
-		expectedResourceProfile.Resource().Attributes().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range expectedResourceProfile.Resource().Attributes().All() {
 			get, ok := gotResourceProfile.Resource().Attributes().Get(k)
 			require.True(t, ok)
 			require.Equal(t, v, get)
-			return true
-		})
+		}
 	}
 }

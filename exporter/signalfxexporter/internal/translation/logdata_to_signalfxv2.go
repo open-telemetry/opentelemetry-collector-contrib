@@ -51,7 +51,7 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 	}
 
 	if mapVal, ok := attrs.Get(splunk.SFxEventPropertiesKey); ok && mapVal.Type() == pcommon.ValueTypeMap {
-		mapVal.Map().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range mapVal.Map().All() {
 			val, err := attributeValToPropertyVal(v)
 			if err != nil {
 				logger.Debug("Failed to convert log record property value to SignalFx property value", zap.Error(err), zap.String("key", k))
@@ -62,8 +62,7 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 				Key:   k,
 				Value: val,
 			})
-			return true
-		})
+		}
 	}
 
 	// keep a record of Resource attributes to add as dimensions

@@ -169,10 +169,9 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// Now check the value we want to copy. If it is a map, we should merge both maps.
 			// Else, just place the value under the key "".
 			if v.Type() == pcommon.ValueTypeMap {
-				v.Map().Range(func(k string, val pcommon.Value) bool {
+				for k, val := range v.Map().All() {
 					val.CopyTo(prevValue.Map().PutEmpty(k))
-					return true
-				})
+				}
 			} else {
 				v.CopyTo(prevValue.Map().PutEmpty(""))
 			}

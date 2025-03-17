@@ -145,10 +145,9 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	})
 
 	fields := map[string]any{}
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		fields[k] = v.AsString()
-		return true
-	})
+	}
 	attributeBuffer, _ := json.Marshal(fields)
 	contentsBuffer = append(contentsBuffer, sls.LogContent{
 		Key:   proto.String(slsLogAttribute),

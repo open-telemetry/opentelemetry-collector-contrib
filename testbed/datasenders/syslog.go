@@ -99,12 +99,11 @@ func (f *SyslogWriter) Send(lr plog.LogRecord) error {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", lr.SpanID()))
 	}
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		if v.Str() != "" {
 			sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
 		}
-		return true
-	})
+	}
 	msg := fmt.Sprintf("<166>1 %s 127.0.0.1 - - - [test@12345 %s] %s\n", ts, strings.TrimSpace(sdid.String()), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)

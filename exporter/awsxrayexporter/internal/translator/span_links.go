@@ -29,10 +29,9 @@ func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]
 		if link.Attributes().Len() > 0 {
 			spanLinkData.Attributes = make(map[string]any)
 
-			link.Attributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range link.Attributes().All() {
 				spanLinkData.Attributes[k] = v.AsRaw()
-				return true
-			})
+			}
 		}
 
 		spanLinkDataArray = append(spanLinkDataArray, spanLinkData)

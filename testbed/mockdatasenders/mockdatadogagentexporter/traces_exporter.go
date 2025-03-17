@@ -63,10 +63,9 @@ func (dd *ddExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 					Meta:     map[string]string{},
 					Type:     "custom",
 				}
-				span.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range span.Attributes().All() {
 					newSpan.GetMeta()[k] = v.AsString()
-					return true
-				})
+				}
 				var traceIDBytes [16]byte
 				var spanIDBytes [8]byte
 				var parentIDBytes [8]byte

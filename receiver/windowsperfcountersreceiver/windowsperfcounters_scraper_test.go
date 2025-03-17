@@ -554,14 +554,13 @@ func TestScrape(t *testing.T) {
 							expectedAttributeLen++
 						}
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
-						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
 								return true
 							}
 							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
-							return true
-						})
+						}
 					}
 					curMetricsNum++
 				}

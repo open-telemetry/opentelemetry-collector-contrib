@@ -76,7 +76,7 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 				resourceMapperMap := make(map[string]any)
 				log := logs.At(k)
 
-				log.Attributes().Range(func(key string, value pcommon.Value) bool {
+				for key, value := range log.Attributes().All() {
 					logMetadataMap[key] = value.AsRaw()
 					return true
 				})
@@ -86,8 +86,7 @@ func (e *logExporter) PushLogData(ctx context.Context, lg plog.Logs) error {
 						resourceMapperMap[hostnameProperty] = value.AsRaw()
 					}
 					resourceMapperMap[key] = value.AsRaw()
-					return true
-				})
+				}
 
 				e.settings.Logger.Debug("Sending log data", zap.String("body", log.Body().Str()), zap.Any("resourcemap", resourceMapperMap), zap.Any("metadatamap", logMetadataMap))
 				payload = append(payload, translator.ConvertToLMLogInput(log.Body().AsRaw(), timestampFromLogRecord(log).String(), resourceMapperMap, logMetadataMap))

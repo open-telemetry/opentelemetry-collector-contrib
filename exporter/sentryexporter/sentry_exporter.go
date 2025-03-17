@@ -167,15 +167,14 @@ func convertEventsToSentryExceptions(eventList *[]*sentry.Event, events ptrace.S
 			continue
 		}
 		var exceptionMessage, exceptionType string
-		event.Attributes().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range event.Attributes().All() {
 			switch k {
 			case conventions.AttributeExceptionMessage:
 				exceptionMessage = v.Str()
 			case conventions.AttributeExceptionType:
 				exceptionType = v.Str()
 			}
-			return true
-		})
+		}
 		if exceptionMessage == "" && exceptionType == "" {
 			// `At least one of the following sets of attributes is required:
 			// - exception.type

@@ -119,11 +119,10 @@ func generateMetricFromMatchingAttributes(metric1 pmetric.Metric, metric2 pmetri
 					metric1DP.CopyTo(newDP)
 					newDP.SetDoubleValue(val)
 
-					metric2DP.Attributes().Range(func(k string, v pcommon.Value) bool {
+					for k, v := range metric2DP.Attributes().All() {
 						v.CopyTo(newDP.Attributes().PutEmpty(k))
 						// Always return true to ensure iteration over all attributes
-						return true
-					})
+					}
 				}
 			}
 		}
@@ -145,14 +144,13 @@ func dataPointValue(dp pmetric.NumberDataPoint) float64 {
 
 func dataPointAttributesMatch(dp1, dp2 pmetric.NumberDataPoint) bool {
 	attributesMatch := true
-	dp1.Attributes().Range(func(key string, dp1Val pcommon.Value) bool {
+	for key, dp1Val := range dp1.Attributes().All() {
 		dp1Val.Type()
 		if dp2Val, keyExists := dp2.Attributes().Get(key); keyExists && dp1Val.AsRaw() != dp2Val.AsRaw() {
 			attributesMatch = false
 			return false
 		}
-		return true
-	})
+	}
 
 	return attributesMatch
 }

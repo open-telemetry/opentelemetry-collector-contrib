@@ -127,10 +127,9 @@ func mapLogRecordToLogService(lr plog.LogRecord,
 	clsLog.Contents = make([]*cls.Log_Content, 0, preAllocCount+len(resourceContents)+len(instrumentationLibraryContents))
 
 	fields := map[string]any{}
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		fields[k] = v.AsString()
-		return true
-	})
+	}
 	attributeBuffer, err := json.Marshal(fields)
 	if err != nil {
 		return nil

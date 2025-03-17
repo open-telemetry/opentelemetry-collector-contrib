@@ -62,7 +62,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 	index := config.Index
 	commonFields := map[string]any{}
 
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range res.Attributes().All() {
 		switch k {
 		case hostKey:
 			host = v.Str()
@@ -77,8 +77,7 @@ func mapMetricToSplunkEvent(res pcommon.Resource, m pmetric.Metric, config *Conf
 		default:
 			commonFields[k] = v.AsString()
 		}
-		return true
-	})
+	}
 	metricFieldName := splunkMetricValue + ":" + m.Name()
 	//exhaustive:enforce
 	switch m.Type() {

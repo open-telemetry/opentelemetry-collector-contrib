@@ -144,7 +144,7 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pcommon.Value) bool {
+	for k, val := range res.Attributes().All() {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
 			return true
@@ -154,8 +154,7 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 			Key:   k,
 			Value: val.AsString(),
 		})
-		return true
-	})
+	}
 
 	return dims
 }
