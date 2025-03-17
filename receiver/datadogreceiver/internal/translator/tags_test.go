@@ -71,16 +71,15 @@ func TestGetMetricAttributes(t *testing.T) {
 			attrs := tagsToAttributes(c.tags, c.host, pool)
 
 			assert.Equal(t, c.expectedResourceAttrs.Len(), attrs.resource.Len())
-			for k, _ := range c.expectedResourceAttrs.All() {
+			for k := range c.expectedResourceAttrs.All() {
 				ev, _ := c.expectedResourceAttrs.Get(k)
 				av, ok := attrs.resource.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, ev, av)
-				return true
-			})
+			}
 
 			assert.Equal(t, c.expectedScopeAttrs.Len(), attrs.scope.Len())
-			for k, _ := range c.expectedScopeAttrs.All() {
+			for k := range c.expectedScopeAttrs.All() {
 				ev, _ := c.expectedScopeAttrs.Get(k)
 				av, ok := attrs.scope.Get(k)
 				assert.True(t, ok)
@@ -88,7 +87,7 @@ func TestGetMetricAttributes(t *testing.T) {
 			}
 
 			assert.Equal(t, c.expectedDpAttrs.Len(), attrs.dp.Len())
-			c.expectedDpAttrs.Range(func(k string, _ pcommon.Value) bool {
+			for k := range c.expectedDpAttrs.All() {
 				ev, _ := c.expectedDpAttrs.Get(k)
 				av, ok := attrs.dp.Get(k)
 				assert.True(t, ok)

@@ -203,7 +203,6 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 							p.last.expo.LoadAndDelete(id)
 							p.stale.Delete(id)
 						}
-
 					}
 				}
 			}

@@ -30,7 +30,6 @@ func convertLogRecordToJSON(log plog.LogRecord, attributes pcommon.Map) map[stri
 	// Add merged attributed to each json log
 	for k, v := range attributes.All() {
 		jsonLog[k] = v.AsRaw()
-
 	}
 
 	switch log.Body().Type() {

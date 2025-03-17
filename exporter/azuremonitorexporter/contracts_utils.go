@@ -19,7 +19,6 @@ func applyResourcesToDataProperties(dataProperties map[string]string, resourceAt
 	// Copy all the resource labels into the base data properties. Resource values are always strings
 	for k, v := range resourceAttributes.All() {
 		dataProperties[k] = v.Str()
-
 	}
 }
 
@@ -65,6 +64,5 @@ func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]st
 func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
 	for k, v := range attributeMap.All() {
 		properties[k] = v.AsString()
-
 	}
 }

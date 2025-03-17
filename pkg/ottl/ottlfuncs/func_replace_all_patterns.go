@@ -95,7 +95,6 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			}
-
 		}
 		updated.MoveTo(val)
 		return nil, nil

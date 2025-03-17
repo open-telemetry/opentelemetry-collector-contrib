@@ -255,7 +255,6 @@ func attrsValue(attrs pcommon.Map) map[string]any {
 	out := make(map[string]any, attrs.Len())
 	for k, v := range attrs.All() {
 		out[k] = v.AsRaw()
-
 	}
 	return out
 }

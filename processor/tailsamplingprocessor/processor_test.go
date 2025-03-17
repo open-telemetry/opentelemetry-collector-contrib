@@ -388,9 +388,8 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 	// if the number of traces on the map matches the expected value.
 	cnt := 0
 	tsp := sp.(*tailSamplingSpanProcessor)
-	for _, _ := range tsp.idToTrace.All() {
+	for range tsp.idToTrace.All() {
 		cnt++
-
 	}
 	require.Equal(t, maxSize, cnt, "Incorrect traces count on idToTrace")
 }

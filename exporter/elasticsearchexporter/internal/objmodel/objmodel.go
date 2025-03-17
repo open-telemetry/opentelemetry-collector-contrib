@@ -564,7 +564,6 @@ func arrFromAttributes(aa pcommon.Slice) []Value {
 func appendAttributeFields(fields []field, path string, am pcommon.Map) []field {
 	for k, val := range am.All() {
 		fields = appendAttributeValue(fields, path, k, val)
-
 	}
 	return fields
 }

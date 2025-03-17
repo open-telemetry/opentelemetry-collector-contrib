@@ -652,7 +652,6 @@ func otlpKeyValueListToMap(kvList pcommon.Map) map[string]any {
 		default:
 			m[k] = fmt.Sprintf("<invalid map value> %v", v)
 		}
-
 	}
 	return m
 }

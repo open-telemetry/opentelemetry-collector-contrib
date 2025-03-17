@@ -143,7 +143,6 @@ func resourceToMetricLabels(labels *KeyValues, resource pcommon.Resource) {
 	attrs := resource.Attributes()
 	for k, v := range attrs.All() {
 		labels.Append(k, v.AsString())
-
 	}
 }
 
@@ -154,7 +153,6 @@ func numberMetricsToLogs(name string, data pmetric.NumberDataPointSlice, default
 		labels := defaultLabels.Clone()
 		for k, v := range attributeMap.All() {
 			labels.Append(k, v.AsString())
-
 		}
 		switch dataPoint.ValueType() {
 		case pmetric.NumberDataPointValueTypeInt:
@@ -185,7 +183,6 @@ func doubleHistogramMetricsToLogs(name string, data pmetric.HistogramDataPointSl
 		labels := defaultLabels.Clone()
 		for k, v := range attributeMap.All() {
 			labels.Append(k, v.AsString())
-
 		}
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
 			labels,
@@ -232,7 +229,6 @@ func doubleSummaryMetricsToLogs(name string, data pmetric.SummaryDataPointSlice,
 		labels := defaultLabels.Clone()
 		for k, v := range attributeMap.All() {
 			labels.Append(k, v.AsString())
-
 		}
 		logs = append(logs, newMetricLogFromRaw(name+"_sum",
 			labels,

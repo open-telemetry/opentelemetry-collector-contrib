@@ -264,7 +264,7 @@ hello!!world  `, nil
 			assert.NoError(t, expected.FromRaw(tt.expected))
 
 			assert.Equal(t, expected.Len(), actual.Len())
-			for k, _ := range expected.All() {
+			for k := range expected.All() {
 				ev, _ := expected.Get(k)
 				av, ok := actual.Get(k)
 				assert.True(t, ok)

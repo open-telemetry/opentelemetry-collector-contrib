@@ -153,7 +153,6 @@ func buildReferenceResource(originResource pcommon.Resource, requiredAttributes 
 	originResource.Attributes().CopyTo(referenceResource.Attributes())
 	for k, v := range requiredAttributes.All() {
 		v.CopyTo(referenceResource.Attributes().PutEmpty(k))
-
 	}
 	return referenceResource
 }

@@ -27,9 +27,8 @@ func TestSortAttributes(t *testing.T) {
 	// Verify the sorted keys
 	expectedKeys := []string{"age", "isStudent", "location", "name"}
 	actualKeys := []string{}
-	for key, _ := range mp.All() {
+	for key := range mp.All() {
 		actualKeys = append(actualKeys, key)
-
 	}
 
 	// Check if the keys are sorted correctly

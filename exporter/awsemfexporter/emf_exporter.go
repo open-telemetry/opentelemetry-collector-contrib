@@ -14,7 +14,6 @@ import (
 	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -105,7 +104,6 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 		if am.Len() > 0 {
 			for k, v := range am.All() {
 				labels[k] = v.Str()
-
 			}
 		}
 	}

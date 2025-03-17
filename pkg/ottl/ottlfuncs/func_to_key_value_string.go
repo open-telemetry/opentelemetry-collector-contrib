@@ -86,8 +86,7 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 				key string
 				val pcommon.Value
 			}{key: k, val: v})
-			return true
-		})
+		}
 		gosort.Slice(keyValues, func(i, j int) bool {
 			return keyValues[i].key < keyValues[j].key
 		})
@@ -97,9 +96,8 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 			kvStrings = append(kvStrings, buildKVString(kv.key, kv.val, delimiter, pairDelimiter))
 		}
 	} else {
-		target.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range target.All() {
 			kvStrings = append(kvStrings, buildKVString(k, v, delimiter, pairDelimiter))
-
 		}
 	}
 

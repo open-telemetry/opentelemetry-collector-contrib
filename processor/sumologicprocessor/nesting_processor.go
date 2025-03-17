@@ -125,7 +125,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		// If key is not on allow list or is on deny list, skip translating it.
 		if !proc.shouldTranslateKey(k) {
 			v.CopyTo(newMap.PutEmpty(k))
-			return true
+			break
 		}
 
 		keys := strings.Split(k, proc.separator)
@@ -134,7 +134,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// set map[""] = v and return
 			newVal := newMap.PutEmpty(k)
 			v.CopyTo(newVal)
-			return true
+			break
 		}
 
 		prevValue := pcommon.NewValueMap()
@@ -259,8 +259,8 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 			keySuffix := proc.squashAttribute(v)
 			key = proc.squashKey(k, keySuffix)
 			val = v
-			return false
-		})
+			break
+		}
 
 		val.CopyTo(value)
 		return key
@@ -268,7 +268,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 
 	// This map doesn't get squashed, but its content might have keys replaced.
 	newMap := pcommon.NewMap()
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		keySuffix := proc.squashAttribute(v)
 		// If "" was returned, the value was not a one-element map and did not get squashed.
 		if keySuffix == "" {

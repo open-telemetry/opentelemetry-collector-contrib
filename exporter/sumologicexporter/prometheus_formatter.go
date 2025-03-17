@@ -55,12 +55,11 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 	attr.CopyTo(mergedAttributes)
 	for k, v := range labels.All() {
 		mergedAttributes.PutStr(k, v.AsString())
-		return true
-	})
+	}
 	length := mergedAttributes.Len()
 
 	returnValue := make([]string, 0, length)
-	mergedAttributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range mergedAttributes.All() {
 		key := f.sanitizeKeyBytes([]byte(k))
 		value := f.sanitizeValue(v.AsString())
 
@@ -68,7 +67,6 @@ func (f *prometheusFormatter) tags2String(attr pcommon.Map, labels pcommon.Map) 
 			returnValue,
 			formatKeyValuePair(key, value),
 		)
-
 	}
 
 	return prometheusTags(stringsJoinAndSurround(returnValue, ",", "{", "}"))
@@ -243,7 +241,6 @@ func (f *prometheusFormatter) mergeAttributes(attributes pcommon.Map, additional
 	attributes.CopyTo(mergedAttributes)
 	for k, v := range additionalAttributes.All() {
 		v.CopyTo(mergedAttributes.PutEmpty(k))
-
 	}
 	return mergedAttributes
 }

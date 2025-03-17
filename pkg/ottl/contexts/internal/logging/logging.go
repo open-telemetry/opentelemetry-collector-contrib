@@ -62,7 +62,6 @@ func (m Map) MarshalLogObject(encoder zapcore.ObjectEncoder) error {
 		case pcommon.ValueTypeBytes:
 			encoder.AddByteString(k, v.Bytes().AsRaw())
 		}
-
 	}
 	return nil
 }

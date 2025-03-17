@@ -108,6 +108,5 @@ func joinAttributeMaps(from, to pcommon.Map) {
 	to.EnsureCapacity(from.Len() + to.Len())
 	for k, v := range from.All() {
 		v.CopyTo(to.PutEmpty(k))
-
 	}
 }

@@ -511,7 +511,6 @@ func createLabels(attributes pcommon.Map, instrLibName string) map[string]string
 	labels := make(map[string]string, attributes.Len()+1)
 	for k, v := range attributes.All() {
 		labels[k] = v.AsString()
-
 	}
 
 	// Add OTel instrumentation lib name as an additional label if it is defined

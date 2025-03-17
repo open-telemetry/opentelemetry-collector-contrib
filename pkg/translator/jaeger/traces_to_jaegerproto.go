@@ -113,7 +113,6 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 	}
 	for key, attr := range attrs.All() {
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-
 	}
 	return dest
 }

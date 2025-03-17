@@ -122,7 +122,6 @@ func attributesToMapString(attributes pcommon.Map) map[string]string {
 	m := make(map[string]string, attributes.Len())
 	for k, v := range attributes.All() {
 		m[k] = v.AsString()
-
 	}
 	return m
 }

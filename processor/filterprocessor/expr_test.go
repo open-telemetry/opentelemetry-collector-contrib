@@ -111,7 +111,6 @@ func assertFiltered(t *testing.T, lm pcommon.Map) {
 		if k == filteredAttrKey {
 			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
-
 	}
 }
 

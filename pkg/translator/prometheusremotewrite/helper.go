@@ -135,7 +135,6 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		if !slices.Contains(ignoreAttrs, key) {
 			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
 		}
-
 	}
 	sort.Stable(ByLabelName(labels))
 

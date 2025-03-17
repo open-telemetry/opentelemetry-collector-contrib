@@ -333,7 +333,6 @@ func attrMapToString(m pcommon.Map) string {
 	out := ""
 	for k, v := range m.All() {
 		out += "[" + k + "=" + v.Str() + "]"
-
 	}
 	return out
 }

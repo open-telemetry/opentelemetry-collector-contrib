@@ -388,7 +388,6 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 		case pcommon.ValueTypeSlice:
 		case pcommon.ValueTypeBytes:
 		}
-
 	}
 
 	return tags

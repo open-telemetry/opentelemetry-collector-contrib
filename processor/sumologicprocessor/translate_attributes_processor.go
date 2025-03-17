@@ -106,7 +106,6 @@ func translateAttributes(attributes pcommon.Map) {
 				value.CopyTo(result.PutEmpty(otKey))
 			}
 		}
-
 	}
 
 	result.CopyTo(attributes)

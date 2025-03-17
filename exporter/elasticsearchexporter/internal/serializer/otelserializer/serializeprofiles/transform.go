@@ -425,6 +425,5 @@ func newHostMetadata(resource pcommon.Resource, scope pcommon.InstrumentationSco
 func addEventHostData(data map[string]string, attrs pcommon.Map) {
 	for k, v := range attrs.All() {
 		data[k] = v.AsString()
-
 	}
 }

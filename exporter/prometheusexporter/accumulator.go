@@ -322,7 +322,6 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 	attrs := make([]string, 0, attributes.Len())
 	for k, v := range attributes.All() {
 		attrs = append(attrs, k+"*"+v.AsString())
-
 	}
 	sort.Strings(attrs)
 	b.WriteString("*" + strings.Join(attrs, "*"))

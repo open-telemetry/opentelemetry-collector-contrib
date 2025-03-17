@@ -74,7 +74,6 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 		if _, ok := attrs.Get(k); !ok {
 			v.CopyTo(resourceAttrsForDimensions.PutEmpty(k))
 		}
-
 	}
 
 	addDimension := func(k string, v pcommon.Value) bool {

@@ -160,9 +160,8 @@ func (gap *groupByAttrsProcessor) processMetrics(ctx context.Context, md pmetric
 }
 
 func deleteAttributes(attrsForRemoval, targetAttrs pcommon.Map) {
-	for key, _ := range attrsForRemoval.All() {
+	for key := range attrsForRemoval.All() {
 		targetAttrs.Remove(key)
-
 	}
 }
 

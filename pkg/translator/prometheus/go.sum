@@ -42,10 +42,10 @@ github.com/yuin/goldmark v1.1.27/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9de
 github.com/yuin/goldmark v1.2.1/go.mod h1:3hX8gzYuyVAZsxl0MRgGTJEmQBFcNTphYh9decYSb74=
 go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJySYA=
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
-go.opentelemetry.io/collector/featuregate v1.27.1-0.20250316222041-da4512d625a4 h1:fJDvBg68HQ5gChKJAkJqWvxa9lvTMddTd0ykRZTGCzI=
-go.opentelemetry.io/collector/featuregate v1.27.1-0.20250316222041-da4512d625a4/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
-go.opentelemetry.io/collector/pdata v1.27.1-0.20250316222041-da4512d625a4 h1:snTW8xT8qV51tFCnhrZLgp9BLv3gj1VW7maw29aS6rI=
-go.opentelemetry.io/collector/pdata v1.27.1-0.20250316222041-da4512d625a4/go.mod h1:asKE8MD/4SOKz1mCrGdAz4VO2U2HUNg8A6094uK7pq0=
+go.opentelemetry.io/collector/featuregate v1.27.1-0.20250317133802-83e4ea0ba39a h1:BlHzrw4Lc75X4W9qJgK4mpM6s061efOqyCIVKzH1seA=
+go.opentelemetry.io/collector/featuregate v1.27.1-0.20250317133802-83e4ea0ba39a/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
+go.opentelemetry.io/collector/pdata v1.27.1-0.20250317133802-83e4ea0ba39a h1:njm5pjrWdPF1dgyvnXyf1huUzuj25muj5j4N2+E4A9k=
+go.opentelemetry.io/collector/pdata v1.27.1-0.20250317133802-83e4ea0ba39a/go.mod h1:asKE8MD/4SOKz1mCrGdAz4VO2U2HUNg8A6094uK7pq0=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
 go.opentelemetry.io/otel v1.34.0/go.mod h1:OWFPOQ+h4G8xpyjgqo4SxJYdDQ/qmRH+wivy7zzx9oI=
 go.opentelemetry.io/otel/metric v1.34.0 h1:+eTR3U0MyfWjRDhmFMxe2SsW64QrZ84AOhvqS7Y+PoQ=

@@ -240,7 +240,6 @@ func attributeMapToStringMap(attrMap pcommon.Map) map[string]string {
 	rawMap := make(map[string]string)
 	for k, v := range attrMap.All() {
 		rawMap[k] = v.AsString()
-
 	}
 	return rawMap
 }
@@ -264,7 +263,6 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 
 	for k, v := range attrs.All() {
 		zTags[k] = v.AsString()
-
 	}
 
 	serviceName = extractZipkinServiceName(zTags)

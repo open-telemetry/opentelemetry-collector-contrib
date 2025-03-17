@@ -64,9 +64,8 @@ func sortMetrics(ms pmetric.Metrics) {
 func sortAttributeMap(mp pcommon.Map) {
 	tempMap := pcommon.NewMap()
 	keys := []string{}
-	for key, _ := range mp.All() {
+	for key := range mp.All() {
 		keys = append(keys, key)
-
 	}
 	sort.Strings(keys)
 	for _, k := range keys {
@@ -167,11 +166,9 @@ func compareMaps(a, b pcommon.Map) int {
 	var aKeys, bKeys []string
 	for k, v := range a.All() {
 		aKeys = append(aKeys, fmt.Sprintf("%s: %v", k, v.AsString()))
-		return true
-	})
-	b.Range(func(k string, v pcommon.Value) bool {
+	}
+	for k, v := range b.All() {
 		bKeys = append(bKeys, fmt.Sprintf("%s: %v", k, v.AsString()))
-
 	}
 
 	for i := 0; i < len(aKeys); i++ {

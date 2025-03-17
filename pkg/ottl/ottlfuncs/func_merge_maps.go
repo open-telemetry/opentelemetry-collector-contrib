@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"go.opentelemetry.io/collector/pdata/pcommon"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -65,8 +63,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 					tv := targetMap.PutEmpty(k)
 					v.CopyTo(tv)
 				}
-				return true
-			})
+			}
 		case UPDATE:
 			for k, v := range valueMap.All() {
 				if tv, ok := targetMap.Get(k); ok {
@@ -74,10 +71,9 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.PMapGetter[K], stra
 				}
 			}
 		case UPSERT:
-			valueMap.Range(func(k string, v pcommon.Value) bool {
+			for k, v := range valueMap.All() {
 				tv := targetMap.PutEmpty(k)
 				v.CopyTo(tv)
-
 			}
 		default:
 			return nil, fmt.Errorf("unknown strategy, %v", strategy)

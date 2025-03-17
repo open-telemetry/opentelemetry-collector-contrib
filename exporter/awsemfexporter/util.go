@@ -167,7 +167,6 @@ func attrMaptoStringMap(attrMap pcommon.Map) map[string]string {
 
 	for k, v := range attrMap.All() {
 		strMap[k] = v.AsString()
-
 	}
 	return strMap
 }

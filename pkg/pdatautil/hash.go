@@ -130,9 +130,8 @@ func (hw *hashWriter) writeMapHash(m pcommon.Map) {
 	// on the first call due to it being cleared of any added keys at then end of the function.
 	nextIndex := len(hw.keysBuf)
 
-	for k, _ := range m.All() {
+	for k := range m.All() {
 		hw.keysBuf = append(hw.keysBuf, k)
-
 	}
 
 	// Get only the newly added keys from the buffer by slicing the buffer from nextIndex to the end
