@@ -19,7 +19,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 	assert.Equal(t,
 		&Config{
-			Traces: TracesConfig{
+			Traces: datadogconfig.TracesConnectorConfig{
 				TracesConfig: datadogconfig.TracesConfig{
 					IgnoreResources:        []string{},
 					PeerServiceAggregation: true,
