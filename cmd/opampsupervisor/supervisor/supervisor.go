@@ -535,22 +535,28 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	case err = <-done:
 		s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
 		if errors.Is(err, errNonMatchingInstanceUID) {
-			// TODO this will not work yet as the opAmp client currently is created after getting the agent Description from the message
-			// to be able to report the health before that, we need to init the opAmp client with the expected agent description (i.e. instance ID)
-			// and update the agent description containing the identifying attributes in a later step
-			if err2 := s.opampClient.SetHealth(&protobufs.ComponentHealth{
-				Healthy:            false,
-				LastError:          err.Error(),
-				Status:             "",
-				StatusTimeUnixNano: 0,
-			}); err2 != nil {
-				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err2))
+			// try to report the issue to the OpAMP server
+			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
+				defer func(s *Supervisor) {
+					if stopErr := s.stopOpAMPClient(); stopErr != nil {
+						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
+					}
+				}(s)
+				if healthErr := s.opampClient.SetHealth(&protobufs.ComponentHealth{
+					Healthy:   false,
+					LastError: err.Error(),
+				}); healthErr != nil {
+					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+				}
+			} else {
+				s.telemetrySettings.Logger.Error("Could not start OpAMP client to report health to server", zap.Error(startOpAMPErr))
 			}
 		}
 		if err != nil {
 			span.SetStatus(codes.Error, err.Error())
+		} else {
+			span.SetStatus(codes.Ok, "")
 		}
-		span.SetStatus(codes.Ok, "")
 		return err
 	}
 }
