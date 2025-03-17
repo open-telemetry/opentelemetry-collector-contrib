@@ -65,7 +65,7 @@ func TestFilterDimensions(t *testing.T) {
 				},
 				cfg: DimensionsConfig{
 					Enabled: to.Ptr(true),
-					Overrides: map[string]map[string][]string{
+					Overrides: NestedListAlias{
 						"rt1": {
 							"m1": {
 								"foo",
