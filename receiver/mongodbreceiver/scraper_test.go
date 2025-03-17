@@ -41,6 +41,14 @@ func TestScraperLifecycle(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 
+	/*
+		NOTE:
+		setting direct connection to true because originally, the scraper tests only ONE mongodb instance.
+		added in routing logic to detect multiple mongodb instances which takes longer than 2 milliseconds.
+		since this test is testing for lifecycle (start and shutting down ONE instance).
+	*/
+	cfg.DirectConnection = true
+
 	scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 	require.NoError(t, scraper.shutdown(context.Background()))
@@ -95,6 +103,11 @@ var (
 				"failed to collect metric mongodb.operation.repl.count with attribute(s) update: could not find key for metric",
 				"failed to collect metric mongodb.health: could not find key for metric",
 				"failed to collect metric mongodb.uptime: could not find key for metric",
+				"failed to collect metric mongodb.active.reads: could not find key for metric",
+				"failed to collect metric mongodb.active.writes: could not find key for metric",
+				"failed to collect metric mongodb.flushes.rate: could not find key for metric",
+				"failed to collect metric mongodb.page_faults: could not find key for metric",
+				"failed to collect metric mongodb.wtcache.bytes.read: could not find key for metric",
 			}, "; "))
 	errAllClientFailedFetch = errors.New(
 		strings.Join(

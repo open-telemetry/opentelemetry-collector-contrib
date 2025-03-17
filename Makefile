@@ -44,7 +44,7 @@ INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) 
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CMD_MODS_0 := $(shell find ./cmd/[a-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
 CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
-OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) ) $(ROOT_DIR)
+OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
 
 CGO_MODS := ./receiver/hostmetricsreceiver
@@ -155,11 +155,11 @@ gotest-with-cover:
 
 .PHONY: gotest-with-junit
 gotest-with-junit:
-	@$(MAKE) for-all-target TARGET="test-with-junit"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit"
 
 .PHONY: gotest-with-junit-and-cover
 gotest-with-junit-and-cover:
-	@$(MAKE) for-all-target TARGET="test-with-junit-and-cover"
+	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
 
 .PHONY: gobuildtest
 gobuildtest:
@@ -300,9 +300,6 @@ for-integration-target: $(INTEGRATION_MODS)
 .PHONY: for-cgo-target
 for-cgo-target: $(CGO_MODS)
 
-.PHONY: for-generated-target
-for-generated-target: $(GENERATED_MODS)
-
 # Debugging target, which helps to quickly determine whether for-all-target is working or not.
 .PHONY: all-pwd
 all-pwd:
@@ -413,6 +410,18 @@ telemetrygenlite:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
 
+MODULES="internal/buildscripts/modules"
+.PHONY: update-core-modules
+update-core-module-list:
+	BETA_LINE=$$(grep -n '  beta:' $(CORE_VERSIONS) | cut -d : -f 1); \
+	(\
+		echo -e '#!/bin/bash\n\nbeta_modules=('; \
+		tail -n +$$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')\n\nstable_modules=('; \
+		head -n $$BETA_LINE $(CORE_VERSIONS) | sed -En 's/^      - (.+)$$/  "\1"/p'; \
+		echo -e ')' \
+	) > $(MODULES);
+
 # helper function to update the core packages in builder-config.yaml
 # input parameters are
 # $(1) = path/to/versions.yaml (where it greps the relevant packages)
@@ -444,13 +453,14 @@ update-otel:$(MULTIMOD)
 	# Make sure cmd/otelcontribcol/go.mod and cmd/oteltestbedcol/go.mod are present
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash $(OTEL_STABLE_VERSION)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m stable --commit-hash "$(OTEL_STABLE_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update stable modules" ; \
-	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash $(OTEL_VERSION)
+	$(MULTIMOD) sync -s=true -o ../opentelemetry-collector -m beta --commit-hash "$(OTEL_VERSION)"
 	git add . && git commit -s -m "[chore] multimod update beta modules" ; \
 	$(MAKE) gotidy
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/otelcontribcol/go.mod,./cmd/otelcontribcol/builder-config.yaml)
 	$(call updatehelper,$(CORE_VERSIONS),./cmd/oteltestbedcol/go.mod,./cmd/oteltestbedcol/builder-config.yaml)
+	$(MAKE) -B install-tools
 	$(MAKE) genotelcontribcol
 	$(MAKE) genoteltestbedcol
 	$(MAKE) generate
@@ -479,7 +489,6 @@ otel-from-lib:
 
 .PHONY: build-examples
 build-examples:
-	docker compose -f examples/demo/docker-compose.yaml build
 	cd examples/secure-tracing/certs && $(MAKE) clean && $(MAKE) all && docker compose -f ../docker-compose.yaml build
 	docker compose -f exporter/splunkhecexporter/example/docker-compose.yml build
 
@@ -501,8 +510,8 @@ checkmetadata: $(CHECKFILE)
 	$(CHECKFILE) --project-path $(CURDIR) --component-rel-path $(COMP_REL_PATH) --module-name $(MOD_NAME) --file-name "metadata.yaml"
 
 .PHONY: checkapi
-checkapi:
-	$(GOCMD) run cmd/checkapi/main.go .
+checkapi: $(CHECKAPI)
+	$(CHECKAPI) -folder .
 
 .PHONY: kind-ready
 kind-ready:

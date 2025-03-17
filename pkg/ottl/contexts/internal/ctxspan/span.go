@@ -15,12 +15,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
@@ -110,8 +110,6 @@ func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetS
 			}
 		}
 		return accessStatus[K](), nil
-	case "cache":
-		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
@@ -139,7 +137,7 @@ func accessStringTraceID[K Context]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ctxutil.ParseTraceID(str)
+				id, err := ctxcommon.ParseTraceID(str)
 				if err != nil {
 					return err
 				}
@@ -172,7 +170,7 @@ func accessStringSpanID[K Context]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ctxutil.ParseSpanID(str)
+				id, err := ctxcommon.ParseSpanID(str)
 				if err != nil {
 					return err
 				}
@@ -257,7 +255,7 @@ func accessStringParentSpanID[K Context]() ottl.StandardGetSetter[K] {
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if str, ok := val.(string); ok {
-				id, err := ctxutil.ParseSpanID(str)
+				id, err := ctxcommon.ParseSpanID(str)
 				if err != nil {
 					return err
 				}
@@ -420,10 +418,7 @@ func accessAttributes[K Context]() ottl.StandardGetSetter[K] {
 			return tCtx.GetSpan().Attributes(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if attrs, ok := val.(pcommon.Map); ok {
-				attrs.CopyTo(tCtx.GetSpan().Attributes())
-			}
-			return nil
+			return ctxutil.SetMap(tCtx.GetSpan().Attributes(), val)
 		},
 	}
 }

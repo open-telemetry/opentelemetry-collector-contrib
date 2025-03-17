@@ -223,6 +223,41 @@ func TestRecombineProcess(t *testing.T) {
 			},
 		},
 		{
+			"crio_standalone_with_auto_detection_and_metadata_from_rotated_file_path",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169-10:00 stdout F standalone crio line which is awesome!`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log.20250219-233547",
+					},
+				},
+			},
+			[]*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log.20250219-233547",
+					},
+					Body: "standalone crio line which is awesome!",
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.FixedZone("", -10*60*60)),
+				},
+			},
+		},
+		{
 			"containerd_standalone_with_auto_detection_and_metadata_from_file_path",
 			func() (operator.Operator, error) {
 				cfg := NewConfigWithID("test_id")
@@ -244,6 +279,41 @@ func TestRecombineProcess(t *testing.T) {
 						"log.iostream":    "stdout",
 						"logtag":          "F",
 						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log",
+					},
+					Resource: map[string]any{
+						"k8s.pod.name":                "kube-scheduler-kind-control-plane",
+						"k8s.pod.uid":                 "49cc7c1fd3702c40b2686ea7486091d3",
+						"k8s.container.name":          "kube-scheduler44",
+						"k8s.container.restart_count": "1",
+						"k8s.namespace.name":          "some",
+					},
+					Body:      "standalone containerd line which is awesome!",
+					Timestamp: time.Date(2024, time.April, 13, 7, 59, 37, 505201169, time.UTC),
+				},
+			},
+		},
+		{
+			"containerd_standalone_with_auto_detection_and_metadata_from_rotated_file_path",
+			func() (operator.Operator, error) {
+				cfg := NewConfigWithID("test_id")
+				cfg.AddMetadataFromFilePath = true
+				set := componenttest.NewNopTelemetrySettings()
+				return cfg.Build(set)
+			},
+			[]*entry.Entry{
+				{
+					Body: `2024-04-13T07:59:37.505201169Z stdout F standalone containerd line which is awesome!`,
+					Attributes: map[string]any{
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log.20250219-233547",
+					},
+				},
+			},
+			[]*entry.Entry{
+				{
+					Attributes: map[string]any{
+						"log.iostream":    "stdout",
+						"logtag":          "F",
+						attrs.LogFilePath: "/var/log/pods/some_kube-scheduler-kind-control-plane_49cc7c1fd3702c40b2686ea7486091d3/kube-scheduler44/1.log.20250219-233547",
 					},
 					Resource: map[string]any{
 						"k8s.pod.name":                "kube-scheduler-kind-control-plane",

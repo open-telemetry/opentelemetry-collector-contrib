@@ -8,12 +8,11 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -73,6 +72,17 @@ func TestPathGetSetter(t *testing.T) {
 			newVal: newAttrs,
 			modified: func(is pcommon.InstrumentationScope) {
 				newAttrs.CopyTo(is.Attributes())
+			},
+		},
+		{
+			name: "attributes raw map",
+			path: &pathtest.Path[*testContext]{
+				N: "attributes",
+			},
+			orig:   refIS.Attributes(),
+			newVal: newAttrs.AsRaw(),
+			modified: func(is pcommon.InstrumentationScope) {
+				_ = is.Attributes().FromRaw(newAttrs.AsRaw())
 			},
 		},
 		{
@@ -353,7 +363,7 @@ func TestPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := ctxscope.PathGetSetter[*testContext](tt.path.Context(), tt.path)
+			accessor, err := ctxscope.PathGetSetter[*testContext](tt.path)
 			assert.NoError(t, err)
 
 			is := createInstrumentationScope()
@@ -371,23 +381,6 @@ func TestPathGetSetter(t *testing.T) {
 			assert.Equal(t, expectedIS, is)
 		})
 	}
-}
-
-func TestScopePathGetSetterCacheAccessError(t *testing.T) {
-	path := &pathtest.Path[*testContext]{
-		N: "cache",
-		C: "instrumentation_scope",
-		KeySlice: []ottl.Key[*testContext]{
-			&pathtest.Key[*testContext]{
-				S: ottltest.Strp("key"),
-			},
-		},
-		FullPath: "instrumentation_scope.cache[key]",
-	}
-
-	_, err := ctxscope.PathGetSetter[*testContext]("metric", path)
-	require.Error(t, err)
-	require.Contains(t, err.Error(), `replace "instrumentation_scope.cache[key]" with "metric.cache[key]"`)
 }
 
 func createInstrumentationScope() pcommon.InstrumentationScope {
@@ -445,7 +438,7 @@ func (t *TestSchemaURLItem) SetSchemaUrl(v string) {
 
 //revive:enable:var-naming
 
-func createSchemaURLItem() ctxutil.SchemaURLItem {
+func createSchemaURLItem() ctxcommon.SchemaURLItem {
 	return &TestSchemaURLItem{
 		schemaURL: "schema_url",
 	}
@@ -453,14 +446,14 @@ func createSchemaURLItem() ctxutil.SchemaURLItem {
 
 type testContext struct {
 	is            pcommon.InstrumentationScope
-	schemaURLItem ctxutil.SchemaURLItem
+	schemaURLItem ctxcommon.SchemaURLItem
 }
 
 func (r *testContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return r.is
 }
 
-func (r *testContext) GetScopeSchemaURLItem() ctxutil.SchemaURLItem {
+func (r *testContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return r.schemaURLItem
 }
 
