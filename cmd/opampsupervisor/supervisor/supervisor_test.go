@@ -176,7 +176,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	s := Supervisor{
 		telemetrySettings:            newNopTelemetrySettings(),
 		persistentState:              &persistentState{},
-		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
+		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}, Agent: config.Agent{ConfigFiles: []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"}}},
 		pidProvider:                  staticPIDProvider(1234),
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
