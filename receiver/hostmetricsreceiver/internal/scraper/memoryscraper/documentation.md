@@ -52,14 +52,6 @@ The amount of dirty memory according to `/proc/meminfo`.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
 
-### system.linux.memory.dirty.page.count
-
-The amount of dirty memory according to `/proc/meminfo` divided by the configured page size.
-
-| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
-| ---- | ----------- | ---------- | ----------------------- | --------- |
-| {pages} | Sum | Int | Cumulative | false |
-
 ### system.memory.limit
 
 Total bytes of memory available.
@@ -67,6 +59,14 @@ Total bytes of memory available.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | By | Sum | Int | Cumulative | false |
+
+### system.memory.page_size
+
+A constant value for the system's configured page size.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By | Gauge | Int |
 
 ### system.memory.utilization
 

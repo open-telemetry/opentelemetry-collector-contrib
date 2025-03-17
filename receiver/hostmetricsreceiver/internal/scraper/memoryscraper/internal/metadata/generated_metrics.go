@@ -160,57 +160,6 @@ func newMetricSystemLinuxMemoryDirty(cfg MetricConfig) metricSystemLinuxMemoryDi
 	return m
 }
 
-type metricSystemLinuxMemoryDirtyPageCount struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills system.linux.memory.dirty.page.count metric with initial data.
-func (m *metricSystemLinuxMemoryDirtyPageCount) init() {
-	m.data.SetName("system.linux.memory.dirty.page.count")
-	m.data.SetDescription("The amount of dirty memory according to `/proc/meminfo` divided by the configured page size.")
-	m.data.SetUnit("{pages}")
-	m.data.SetEmptySum()
-	m.data.Sum().SetIsMonotonic(false)
-	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
-}
-
-func (m *metricSystemLinuxMemoryDirtyPageCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Sum().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricSystemLinuxMemoryDirtyPageCount) updateCapacity() {
-	if m.data.Sum().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Sum().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricSystemLinuxMemoryDirtyPageCount) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricSystemLinuxMemoryDirtyPageCount(cfg MetricConfig) metricSystemLinuxMemoryDirtyPageCount {
-	m := metricSystemLinuxMemoryDirtyPageCount{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricSystemMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -255,6 +204,55 @@ func (m *metricSystemMemoryLimit) emit(metrics pmetric.MetricSlice) {
 
 func newMetricSystemMemoryLimit(cfg MetricConfig) metricSystemMemoryLimit {
 	m := metricSystemMemoryLimit{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricSystemMemoryPageSize struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills system.memory.page_size metric with initial data.
+func (m *metricSystemMemoryPageSize) init() {
+	m.data.SetName("system.memory.page_size")
+	m.data.SetDescription("A constant value for the system's configured page size.")
+	m.data.SetUnit("By")
+	m.data.SetEmptyGauge()
+}
+
+func (m *metricSystemMemoryPageSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSystemMemoryPageSize) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSystemMemoryPageSize) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSystemMemoryPageSize(cfg MetricConfig) metricSystemMemoryPageSize {
+	m := metricSystemMemoryPageSize{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -369,17 +367,17 @@ func newMetricSystemMemoryUtilization(cfg MetricConfig) metricSystemMemoryUtiliz
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
-	config                                MetricsBuilderConfig // config of the metrics builder.
-	startTime                             pcommon.Timestamp    // start time that will be applied to all recorded data points.
-	metricsCapacity                       int                  // maximum observed number of metrics per resource.
-	metricsBuffer                         pmetric.Metrics      // accumulates metrics data before emitting.
-	buildInfo                             component.BuildInfo  // contains version information.
-	metricSystemLinuxMemoryAvailable      metricSystemLinuxMemoryAvailable
-	metricSystemLinuxMemoryDirty          metricSystemLinuxMemoryDirty
-	metricSystemLinuxMemoryDirtyPageCount metricSystemLinuxMemoryDirtyPageCount
-	metricSystemMemoryLimit               metricSystemMemoryLimit
-	metricSystemMemoryUsage               metricSystemMemoryUsage
-	metricSystemMemoryUtilization         metricSystemMemoryUtilization
+	config                           MetricsBuilderConfig // config of the metrics builder.
+	startTime                        pcommon.Timestamp    // start time that will be applied to all recorded data points.
+	metricsCapacity                  int                  // maximum observed number of metrics per resource.
+	metricsBuffer                    pmetric.Metrics      // accumulates metrics data before emitting.
+	buildInfo                        component.BuildInfo  // contains version information.
+	metricSystemLinuxMemoryAvailable metricSystemLinuxMemoryAvailable
+	metricSystemLinuxMemoryDirty     metricSystemLinuxMemoryDirty
+	metricSystemMemoryLimit          metricSystemMemoryLimit
+	metricSystemMemoryPageSize       metricSystemMemoryPageSize
+	metricSystemMemoryUsage          metricSystemMemoryUsage
+	metricSystemMemoryUtilization    metricSystemMemoryUtilization
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -401,16 +399,16 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings scraper.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
-		config:                                mbc,
-		startTime:                             pcommon.NewTimestampFromTime(time.Now()),
-		metricsBuffer:                         pmetric.NewMetrics(),
-		buildInfo:                             settings.BuildInfo,
-		metricSystemLinuxMemoryAvailable:      newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
-		metricSystemLinuxMemoryDirty:          newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
-		metricSystemLinuxMemoryDirtyPageCount: newMetricSystemLinuxMemoryDirtyPageCount(mbc.Metrics.SystemLinuxMemoryDirtyPageCount),
-		metricSystemMemoryLimit:               newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
-		metricSystemMemoryUsage:               newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
-		metricSystemMemoryUtilization:         newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
+		config:                           mbc,
+		startTime:                        pcommon.NewTimestampFromTime(time.Now()),
+		metricsBuffer:                    pmetric.NewMetrics(),
+		buildInfo:                        settings.BuildInfo,
+		metricSystemLinuxMemoryAvailable: newMetricSystemLinuxMemoryAvailable(mbc.Metrics.SystemLinuxMemoryAvailable),
+		metricSystemLinuxMemoryDirty:     newMetricSystemLinuxMemoryDirty(mbc.Metrics.SystemLinuxMemoryDirty),
+		metricSystemMemoryLimit:          newMetricSystemMemoryLimit(mbc.Metrics.SystemMemoryLimit),
+		metricSystemMemoryPageSize:       newMetricSystemMemoryPageSize(mbc.Metrics.SystemMemoryPageSize),
+		metricSystemMemoryUsage:          newMetricSystemMemoryUsage(mbc.Metrics.SystemMemoryUsage),
+		metricSystemMemoryUtilization:    newMetricSystemMemoryUtilization(mbc.Metrics.SystemMemoryUtilization),
 	}
 
 	for _, op := range options {
@@ -479,8 +477,8 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemLinuxMemoryAvailable.emit(ils.Metrics())
 	mb.metricSystemLinuxMemoryDirty.emit(ils.Metrics())
-	mb.metricSystemLinuxMemoryDirtyPageCount.emit(ils.Metrics())
 	mb.metricSystemMemoryLimit.emit(ils.Metrics())
+	mb.metricSystemMemoryPageSize.emit(ils.Metrics())
 	mb.metricSystemMemoryUsage.emit(ils.Metrics())
 	mb.metricSystemMemoryUtilization.emit(ils.Metrics())
 
@@ -514,14 +512,14 @@ func (mb *MetricsBuilder) RecordSystemLinuxMemoryDirtyDataPoint(ts pcommon.Times
 	mb.metricSystemLinuxMemoryDirty.recordDataPoint(mb.startTime, ts, val)
 }
 
-// RecordSystemLinuxMemoryDirtyPageCountDataPoint adds a data point to system.linux.memory.dirty.page.count metric.
-func (mb *MetricsBuilder) RecordSystemLinuxMemoryDirtyPageCountDataPoint(ts pcommon.Timestamp, val int64) {
-	mb.metricSystemLinuxMemoryDirtyPageCount.recordDataPoint(mb.startTime, ts, val)
-}
-
 // RecordSystemMemoryLimitDataPoint adds a data point to system.memory.limit metric.
 func (mb *MetricsBuilder) RecordSystemMemoryLimitDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricSystemMemoryLimit.recordDataPoint(mb.startTime, ts, val)
+}
+
+// RecordSystemMemoryPageSizeDataPoint adds a data point to system.memory.page_size metric.
+func (mb *MetricsBuilder) RecordSystemMemoryPageSizeDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSystemMemoryPageSize.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordSystemMemoryUsageDataPoint adds a data point to system.memory.usage metric.

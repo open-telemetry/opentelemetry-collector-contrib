@@ -38,18 +38,14 @@ func (s *memoryScraper) recordLinuxMemoryAvailableMetric(now pcommon.Timestamp, 
 	s.mb.RecordSystemLinuxMemoryAvailableDataPoint(now, int64(memInfo.Available))
 }
 
-func (s *memoryScraper) recordLinuxMemoryDirtyMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
+func (s *memoryScraper) recordLinuxMemoryDirtyMetric(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	// This value is collected from /proc/meminfo and converted from kB to bytes in gopsutil:
 	// https://github.com/shirou/gopsutil/blob/d8750909ba41f2de9750c90a6d2074c68dfc677e/mem/mem_linux.go#L148
 	dirtyBytes := int64(memInfo.Dirty)
 	s.mb.RecordSystemLinuxMemoryDirtyDataPoint(now, dirtyBytes)
-	// The original kB number from /proc/meminfo is a calculation of the number of dirty pages
-	// converted to kB based on the PAGE_SIZE.
-	// https://gist.github.com/braydonk/78ff4581be2056c0b3e77b471088258a
-	s.mb.RecordSystemLinuxMemoryDirtyPageCountDataPoint(now, dirtyBytes/pageSize)
 }
 
 func (s *memoryScraper) recordSystemSpecificMetrics(now pcommon.Timestamp, memInfo *mem.VirtualMemoryStat) {
 	s.recordLinuxMemoryAvailableMetric(now, memInfo)
-	s.recordLinuxMemoryDirtyMetrics(now, memInfo)
+	s.recordLinuxMemoryDirtyMetric(now, memInfo)
 }
