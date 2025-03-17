@@ -169,11 +169,8 @@ func prepareBenchmark(
 	cfg.esCfg.Mapping.Mode = mappingMode
 	cfg.esCfg.Endpoints = []string{receiver.endpoint}
 	cfg.esCfg.LogsIndex = TestLogsIndex
-	cfg.esCfg.LogsDynamicIndex.Enabled = false
 	cfg.esCfg.MetricsIndex = TestMetricsIndex
-	cfg.esCfg.MetricsDynamicIndex.Enabled = false
 	cfg.esCfg.TracesIndex = TestTracesIndex
-	cfg.esCfg.TracesDynamicIndex.Enabled = false
 	cfg.esCfg.Flush.Interval = 10 * time.Millisecond
 	cfg.esCfg.NumWorkers = 1
 
