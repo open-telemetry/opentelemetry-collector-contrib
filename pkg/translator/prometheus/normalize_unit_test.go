@@ -32,6 +32,7 @@ func TestBuildCompliantMainUnit(t *testing.T) {
 	require.Equal(t, "percent", BuildCompliantMainUnit(createGauge("active_directory.ds.name_cache.hit_rate", "%").Unit()))
 	require.Equal(t, "", BuildCompliantMainUnit(createGauge("system.cpu.utilization", "1").Unit()))
 }
+
 func TestBuildCompliantPerUnit(t *testing.T) {
 	require.Equal(t, "", BuildCompliantPerUnit(createGauge("system.filesystem.usage", "By").Unit()))
 	require.Equal(t, "", BuildCompliantPerUnit(createGauge("redis.latest_fork", "us").Unit()))
