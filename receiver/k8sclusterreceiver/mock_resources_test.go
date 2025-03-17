@@ -29,6 +29,9 @@ func createPods(t *testing.T, client *fake.Clientset, numPods int) []*corev1.Pod
 				Name:      strconv.Itoa(i),
 				Namespace: "test",
 			},
+			Spec: corev1.PodSpec{
+				NodeName: "test-node",
+			},
 		}
 
 		createdPod, err := client.CoreV1().Pods(p.Namespace).Create(context.Background(), p, v1.CreateOptions{})
