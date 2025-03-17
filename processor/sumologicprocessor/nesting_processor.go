@@ -121,7 +121,7 @@ func (proc *NestingProcessor) processTraces(traces ptrace.Traces) error {
 func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 	newMap := pcommon.NewMap()
 
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		// If key is not on allow list or is on deny list, skip translating it.
 		if !proc.shouldTranslateKey(k) {
 			v.CopyTo(newMap.PutEmpty(k))
@@ -181,8 +181,8 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		}
 
 		nextMap.CopyTo(newMap)
-		return true
-	})
+
+	}
 
 	if proc.squashSingleValues {
 		newMap = proc.squash(newMap)
@@ -255,7 +255,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		key := ""
 		val := pcommon.NewValueEmpty()
 		// This will iterate only over one value (the only one)
-		m.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range m.All() {
 			keySuffix := proc.squashAttribute(v)
 			key = proc.squashKey(k, keySuffix)
 			val = v
@@ -277,8 +277,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 			v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
 		}
 
-		return true
-	})
+	}
 	newMap.CopyTo(value.Map())
 
 	return ""

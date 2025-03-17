@@ -373,7 +373,7 @@ func generateTagsFromResource(resource pcommon.Resource) map[string]string {
 func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 	tags := make(map[string]string)
 
-	attrs.Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range attrs.All() {
 		switch attr.Type() {
 		case pcommon.ValueTypeStr:
 			tags[key] = attr.Str()
@@ -388,8 +388,8 @@ func generateTagsFromAttributes(attrs pcommon.Map) map[string]string {
 		case pcommon.ValueTypeSlice:
 		case pcommon.ValueTypeBytes:
 		}
-		return true
-	})
+
+	}
 
 	return tags
 }

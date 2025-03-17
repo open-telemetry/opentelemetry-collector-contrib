@@ -57,12 +57,12 @@ func Test_extractPatterns(t *testing.T) {
 			tt.want(expected)
 
 			assert.Equal(t, expected.Len(), resultMap.Len())
-			expected.Range(func(k string, _ pcommon.Value) bool {
+			for k, _ := range expected.All() {
 				ev, _ := expected.Get(k)
 				av, _ := resultMap.Get(k)
 				assert.Equal(t, ev, av)
-				return true
-			})
+
+			}
 		})
 	}
 }

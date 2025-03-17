@@ -81,7 +81,7 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 		}
 
 		// Sort by keys
-		target.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range target.All() {
 			keyValues = append(keyValues, struct {
 				key string
 				val pcommon.Value
@@ -99,8 +99,8 @@ func convertMapToKV(target pcommon.Map, delimiter string, pairDelimiter string, 
 	} else {
 		target.Range(func(k string, v pcommon.Value) bool {
 			kvStrings = append(kvStrings, buildKVString(k, v, delimiter, pairDelimiter))
-			return true
-		})
+
+		}
 	}
 
 	return strings.Join(kvStrings, pairDelimiter)

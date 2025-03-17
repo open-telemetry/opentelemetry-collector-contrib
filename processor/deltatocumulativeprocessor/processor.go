@@ -196,15 +196,15 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 					return
 				case <-tick.C:
 					now := time.Now()
-					p.stale.Range(func(id identity.Stream, last time.Time) bool {
+					for id, last := range p.stale.All() {
 						if now.Sub(last) > p.cfg.MaxStale {
 							p.last.nums.LoadAndDelete(id)
 							p.last.hist.LoadAndDelete(id)
 							p.last.expo.LoadAndDelete(id)
 							p.stale.Delete(id)
 						}
-						return true
-					})
+
+					}
 				}
 			}
 		}()

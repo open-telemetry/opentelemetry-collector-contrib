@@ -205,7 +205,7 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 	// This sequence satisfies these performance constraints:
 	// - Only range through all attributes once
 	// - Don't mask any values if the whole attribute is slated for deletion
-	attributes.Range(func(k string, value pcommon.Value) bool {
+	for k, value := range attributes.All() {
 		// don't delete or redact the attribute if it should be ignored
 		if _, ignored := s.ignoreList[k]; ignored {
 			ignoring = append(ignoring, k)
@@ -255,8 +255,8 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 				strVal = maskedValue
 			}
 		}
-		return true
-	})
+
+	}
 
 	// Delete the attributes on the redaction list
 	for _, k := range toDelete {

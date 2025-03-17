@@ -151,9 +151,9 @@ func matchingScopeMetrics(rm pmetric.ResourceMetrics, library pcommon.Instrument
 func buildReferenceResource(originResource pcommon.Resource, requiredAttributes pcommon.Map) pcommon.Resource {
 	referenceResource := pcommon.NewResource()
 	originResource.Attributes().CopyTo(referenceResource.Attributes())
-	requiredAttributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range requiredAttributes.All() {
 		v.CopyTo(referenceResource.Attributes().PutEmpty(k))
-		return true
-	})
+
+	}
 	return referenceResource
 }

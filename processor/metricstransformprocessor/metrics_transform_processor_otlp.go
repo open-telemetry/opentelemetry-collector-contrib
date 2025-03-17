@@ -385,12 +385,12 @@ func canBeCombined(metrics []pmetric.Metric) error {
 func metricAttributeKeys(metric pmetric.Metric) map[string]struct{} {
 	attrKeys := map[string]struct{}{}
 	rangeDataPointAttributes(metric, func(attrs pcommon.Map) bool {
-		attrs.Range(func(k string, _ pcommon.Value) bool {
+		for k, _ := range attrs.All() {
 			attrKeys[k] = struct{}{}
 			return true
 		})
-		return true
-	})
+
+	}
 	return attrKeys
 }
 

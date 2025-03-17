@@ -247,10 +247,10 @@ func copyEventWithoutValues(event *splunk.Event) *splunk.Event {
 }
 
 func populateAttributes(fields map[string]any, attributeMap pcommon.Map) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		fields[k] = v.AsString()
-		return true
-	})
+
+	}
 }
 
 func cloneMap(fields map[string]any) map[string]any {

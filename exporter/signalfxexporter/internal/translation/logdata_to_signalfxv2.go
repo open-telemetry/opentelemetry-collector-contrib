@@ -69,13 +69,13 @@ func convertLogRecord(lr plog.LogRecord, resourceAttrs pcommon.Map, logger *zap.
 	// keep a record of Resource attributes to add as dimensions
 	// so as not to modify LogRecord attributes
 	resourceAttrsForDimensions := pcommon.NewMap()
-	resourceAttrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resourceAttrs.All() {
 		// LogRecord attribute takes priority
 		if _, ok := attrs.Get(k); !ok {
 			v.CopyTo(resourceAttrsForDimensions.PutEmpty(k))
 		}
-		return true
-	})
+
+	}
 
 	addDimension := func(k string, v pcommon.Value) bool {
 		// Skip internal attributes

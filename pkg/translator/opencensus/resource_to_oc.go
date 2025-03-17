@@ -76,7 +76,7 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 	ocNode := &occommon.Node{}
 	ocResource := &ocresource.Resource{}
 	labels := make(map[string]string, attrs.Len())
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		val := v.AsString()
 
 		switch k {
@@ -112,8 +112,8 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 			// Not a special attribute, put it into resource labels
 			labels[k] = val
 		}
-		return true
-	})
+
+	}
 	ocResource.Labels = labels
 
 	// If resource type is missing, try to infer it

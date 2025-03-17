@@ -84,13 +84,13 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 	}
 
 	fields := map[string]any{}
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
 			return true
 		}
 		fields[k] = v.AsString()
-		return true
-	})
+
+	}
 	attributeBuffer, _ := json.Marshal(fields)
 	logContents[2] = &sls.LogContent{
 		Key:   proto.String(slsLogResource),

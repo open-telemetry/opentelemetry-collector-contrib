@@ -62,7 +62,7 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 		}
 		updated := pcommon.NewMap()
 		updated.EnsureCapacity(val.Len())
-		val.Range(func(key string, originalValue pcommon.Value) bool {
+		for key, originalValue := range val.All() {
 			switch mode {
 			case modeValue:
 				if originalValue.Type() == pcommon.ValueTypeStr && compiledPattern.MatchString(originalValue.Str()) {
@@ -95,8 +95,8 @@ func replaceAllPatterns[K any](target ottl.PMapGetter[K], mode string, regexPatt
 					originalValue.CopyTo(updated.PutEmpty(key))
 				}
 			}
-			return true
-		})
+
+		}
 		updated.MoveTo(val)
 		return nil, nil
 	}, nil
