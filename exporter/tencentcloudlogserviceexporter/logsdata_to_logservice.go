@@ -75,10 +75,9 @@ func resourceToLogContents(resource pcommon.Resource) []*cls.Log_Content {
 	fields := map[string]any{}
 	for k, v := range attrs.All() {
 		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
-			return true
+			continue
 		}
 		fields[k] = v.AsString()
-
 	}
 	attributeBuffer, err := json.Marshal(fields)
 	if err != nil {

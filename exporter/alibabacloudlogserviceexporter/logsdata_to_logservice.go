@@ -89,7 +89,6 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 			continue
 		}
 		fields[k] = v.AsString()
-
 	}
 	attributeBuffer, _ := json.Marshal(fields)
 	logContents[2] = &sls.LogContent{

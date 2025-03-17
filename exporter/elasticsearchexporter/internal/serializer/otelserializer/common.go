@@ -67,7 +67,6 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 		}
 		_ = v.OnKey(k)
 		serializer.WriteValue(v, val, stringifyMapValues)
-
 	}
 	writeGeolocationAttributes(v, attributes)
 	_ = v.OnObjectFinished()

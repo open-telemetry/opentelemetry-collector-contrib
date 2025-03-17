@@ -112,7 +112,6 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 			// Not a special attribute, put it into resource labels
 			labels[k] = val
 		}
-
 	}
 	ocResource.Labels = labels
 

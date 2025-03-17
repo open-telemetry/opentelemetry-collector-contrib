@@ -270,7 +270,6 @@ func attributesToDimensions(attributes pcommon.Map, extraDims []*sfxpb.Dimension
 		dimensionsValue[pos].Value = v.AsString()
 		dimensions = append(dimensions, &dimensionsValue[pos])
 		pos++
-
 	}
 	return dimensions
 }

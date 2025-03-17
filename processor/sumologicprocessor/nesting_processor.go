@@ -181,7 +181,6 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		}
 
 		nextMap.CopyTo(newMap)
-
 	}
 
 	if proc.squashSingleValues {
@@ -276,7 +275,6 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		} else {
 			v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
 		}
-
 	}
 	newMap.CopyTo(value.Map())
 

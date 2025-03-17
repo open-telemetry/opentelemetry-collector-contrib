@@ -255,7 +255,6 @@ func (s *redaction) processAttrs(_ context.Context, attributes pcommon.Map) {
 				strVal = maskedValue
 			}
 		}
-
 	}
 
 	// Delete the attributes on the redaction list

@@ -25,7 +25,6 @@ func writeMap(v *json.Visitor, m pcommon.Map, stringifyMapValues bool) {
 	for k, val := range m.All() {
 		_ = v.OnKey(k)
 		WriteValue(v, val, stringifyMapValues)
-
 	}
 	_ = v.OnObjectFinished()
 }

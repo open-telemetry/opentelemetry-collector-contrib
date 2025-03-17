@@ -67,7 +67,6 @@ func (a *AttributeChangeSet) Do(ss StateSelector, attrs pcommon.Map) (errs error
 			}
 		}
 		v.CopyTo(results.PutEmpty(k))
-
 	}
 	results.CopyTo(attrs)
 	return errs

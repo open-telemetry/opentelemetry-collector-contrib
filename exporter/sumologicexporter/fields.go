@@ -64,7 +64,6 @@ func (f fields) string() string {
 			returnValue,
 			sb.String(),
 		)
-
 	}
 	slices.Sort(returnValue)
 

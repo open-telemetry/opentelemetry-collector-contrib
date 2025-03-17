@@ -347,7 +347,6 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 			}
 
 			labelsFromAttributes = append(labelsFromAttributes, promLabel)
-
 		}
 		if exemplarRunes <= maxExemplarRunes {
 			// only append filtered attributes if it does not cause exemplar

@@ -252,7 +252,6 @@ func TestAccumulateMetrics(t *testing.T) {
 			for k, v := range vLabels.All() {
 				r, _ := m2Labels.Get(k)
 				require.Equal(t, r, v)
-
 			}
 			require.Equal(t, m2Labels.Len(), vLabels.Len())
 			require.Equal(t, m2Value, vValue)
@@ -365,7 +364,6 @@ func TestAccumulateDeltaToCumulative(t *testing.T) {
 			for k, v := range vLabels.All() {
 				r, _ := mLabels.Get(k)
 				require.Equal(t, r, v)
-
 			}
 			require.Equal(t, mLabels.Len(), vLabels.Len())
 			require.Equal(t, mValue, vValue)

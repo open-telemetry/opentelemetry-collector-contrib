@@ -407,7 +407,6 @@ func attributeValuesToOC(labels pcommon.Map, labelKeys *labelKeysAndType) []*ocm
 		// Update label value
 		labelValue.Value = v.AsString()
 		labelValue.HasValue = true
-
 	}
 
 	return labelValues

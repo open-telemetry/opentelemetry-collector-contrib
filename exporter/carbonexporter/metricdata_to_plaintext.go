@@ -268,7 +268,6 @@ func buildPath(name string, attributes pcommon.Map) string {
 		buf.WriteString(sanitizeTagKey(k))
 		buf.WriteString(tagKeyValueSeparator)
 		buf.WriteString(value)
-
 	}
 
 	return buf.String()

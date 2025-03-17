@@ -29,7 +29,6 @@ func requireResourceAttributes(t *testing.T, attrs, expectedAttrs pcommon.Map) {
 		av, ok := attrs.Get(k)
 		require.True(t, ok)
 		require.Equal(t, ev, av)
-
 	}
 }
 

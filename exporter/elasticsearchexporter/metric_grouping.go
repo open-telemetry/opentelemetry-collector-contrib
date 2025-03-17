@@ -87,7 +87,6 @@ func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...strin
 		}
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
-
 	}
 }
 
@@ -95,7 +94,6 @@ func mapHash(hasher hash.Hash, m pcommon.Map) {
 	for k, v := range m.All() {
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
-
 	}
 }
 

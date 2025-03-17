@@ -187,7 +187,6 @@ func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, a
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
-
 	}
 }
 

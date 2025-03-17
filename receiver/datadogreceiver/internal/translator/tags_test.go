@@ -92,7 +92,6 @@ func TestGetMetricAttributes(t *testing.T) {
 				av, ok := attrs.dp.Get(k)
 				assert.True(t, ok)
 				assert.Equal(t, ev, av)
-
 			}
 		})
 	}

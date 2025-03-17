@@ -476,7 +476,6 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
 		}
-
 	}
 }
 

@@ -122,7 +122,6 @@ func lessAttributes(a, b pcommon.Map) bool {
 			res = true
 			return false
 		}
-
 	}
 	return res
 }

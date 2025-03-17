@@ -736,7 +736,6 @@ func assertAttributesCopiedToProperties(
 		case pcommon.ValueTypeDouble:
 			assert.Equal(t, strconv.FormatFloat(v.Double(), 'f', -1, 64), p)
 		}
-
 	}
 }
 

@@ -126,7 +126,6 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 				ev, _ := expected.Get(k)
 				av, _ := resultMap.Get(k)
 				assert.Equal(t, ev, av)
-
 			}
 		})
 	}

@@ -558,7 +558,6 @@ func copyAndMapAttributes(
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
-
 	}
 }
 

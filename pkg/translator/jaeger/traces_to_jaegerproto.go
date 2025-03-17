@@ -102,7 +102,6 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) 
 			continue
 		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-
 	}
 	return dest
 }

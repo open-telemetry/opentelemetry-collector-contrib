@@ -83,7 +83,6 @@ func getAttributesSignature(m pcommon.Map) AttributeHash {
 		if value != "" {
 			clearedMap.PutStr(k, value)
 		}
-
 	}
 	return pdatautil.MapHash(clearedMap)
 }

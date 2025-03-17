@@ -133,7 +133,6 @@ func getAttributesSignature(m pcommon.Map) [16]byte {
 		if value != "" {
 			clearedMap.PutStr(k, value)
 		}
-
 	}
 	return pdatautil.MapHash(clearedMap)
 }

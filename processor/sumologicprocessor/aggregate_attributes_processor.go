@@ -136,7 +136,6 @@ func (proc *aggregateAttributesProcessor) processAttributes(attributes pcommon.M
 				} else {
 					value.CopyTo(newMap.PutEmpty(key))
 				}
-
 			}
 			newMap.CopyTo(attributes)
 		}

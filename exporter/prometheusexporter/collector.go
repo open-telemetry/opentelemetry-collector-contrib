@@ -127,7 +127,6 @@ func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricTy
 	for k, v := range attributes.All() {
 		keys = append(keys, prometheustranslator.NormalizeLabel(k))
 		values = append(values, v.AsString())
-
 	}
 
 	if job, ok := extractJob(resourceAttrs); ok {
@@ -355,7 +354,6 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			} else {
 				labels[finalKey] = v.AsString()
 			}
-
 		}
 
 		// Map service.name + service.namespace to job

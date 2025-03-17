@@ -47,7 +47,6 @@ func TruncateAll[K any](target ottl.PMapGetter[K], limit int64) (ottl.ExprFunc[K
 			if int64(len(stringVal)) > limit {
 				value.SetStr(stringVal[:limit])
 			}
-
 		}
 		// TODO: Write log when truncation is performed
 		// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9730

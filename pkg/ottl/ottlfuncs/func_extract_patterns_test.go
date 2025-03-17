@@ -61,7 +61,6 @@ func Test_extractPatterns(t *testing.T) {
 				ev, _ := expected.Get(k)
 				av, _ := resultMap.Get(k)
 				assert.Equal(t, ev, av)
-
 			}
 		})
 	}

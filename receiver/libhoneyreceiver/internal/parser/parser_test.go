@@ -162,7 +162,6 @@ func verifyAttributes(t *testing.T, expected, actual pcommon.Map) {
 		assert.True(t, ok, "missing attribute %s", k)
 		assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
 		assert.Equal(t, v, got, "wrong value for attribute %s", k)
-
 	}
 }
 
