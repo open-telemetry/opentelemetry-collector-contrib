@@ -7,13 +7,13 @@ require (
 	github.com/SermoDigital/jose v0.9.2-0.20180104203859-803625baeddc
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.27.1-0.20250317133802-83e4ea0ba39a
-	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/config/configopaque v1.27.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/confmap v1.27.1-0.20250317133802-83e4ea0ba39a
-	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250317133802-83e4ea0ba39a
 	go.opentelemetry.io/collector/extension v1.27.1-0.20250317133802-83e4ea0ba39a
-	go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/extension/extensiontest v0.121.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250317133802-83e4ea0ba39a
+	go.opentelemetry.io/collector/extension/extensiontest v0.121.1-0.20250317133802-83e4ea0ba39a
 	go.uber.org/multierr v1.11.0
 	google.golang.org/grpc v1.71.0
 )
