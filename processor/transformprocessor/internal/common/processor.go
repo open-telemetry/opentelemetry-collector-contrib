@@ -175,12 +175,12 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext[ottlresource.TransformContext, R](ottlresource.ContextName, &rp, parseResourceContextStatements)(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithStatementConverter[ottlresource.TransformContext, R](parseResourceContextStatements))(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext[ottlscope.TransformContext, R](ottlscope.ContextName, &sp, parseScopeContextStatements)(pc)
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithStatementConverter[ottlscope.TransformContext, R](parseScopeContextStatements))(pc)
 		if err != nil {
 			return err
 		}
@@ -191,8 +191,6 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 
 func parseResourceContextStatements[R any](
 	pc *ottl.ParserCollection[R],
-	_ *ottl.Parser[ottlresource.TransformContext],
-	_ string,
 	statements ottl.StatementsGetter,
 	parsedStatements []*ottl.Statement[ottlresource.TransformContext],
 ) (R, error) {
@@ -219,8 +217,6 @@ func parseResourceContextStatements[R any](
 
 func parseScopeContextStatements[R any](
 	pc *ottl.ParserCollection[R],
-	_ *ottl.Parser[ottlscope.TransformContext],
-	_ string,
 	statements ottl.StatementsGetter,
 	parsedStatements []*ottl.Statement[ottlscope.TransformContext],
 ) (R, error) {
