@@ -14,15 +14,15 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
 	github.com/yusufpapurcu/wmi v1.2.4
-	go.opentelemetry.io/collector/component v1.27.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/component v1.27.0
 	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/confmap v1.27.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/confmap v1.27.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/consumer v1.27.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/consumer v1.27.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/featuregate v1.27.0
 	go.opentelemetry.io/collector/filter v0.121.1-0.20250316222041-da4512d625a4
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250316222041-da4512d625a4
+	go.opentelemetry.io/collector/pdata v1.27.0
 	go.opentelemetry.io/collector/pipeline v0.121.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/receiver v0.121.1-0.20250316222041-da4512d625a4
 	go.opentelemetry.io/collector/receiver/receivertest v0.121.1-0.20250316222041-da4512d625a4
