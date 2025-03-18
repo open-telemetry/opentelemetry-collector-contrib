@@ -181,7 +181,7 @@ func TestScrapeCacheAndDiff(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.EnableTopQueryCollection = true
+	cfg.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, false)
@@ -336,11 +336,11 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
 	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	cfg.EnableTopQueryCollection = true
+	cfg.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, false)
-	cfg.EnableTopQueryCollection = true
+	cfg.Enabled = true
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)
@@ -394,11 +394,11 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 	cfg.Password = "password"
 	cfg.Port = 1433
 	cfg.Server = "0.0.0.0"
-	cfg.EnableTopQueryCollection = true
+	cfg.Enabled = true
 	assert.NoError(t, cfg.Validate())
 
 	enableAllScraperMetrics(cfg, false)
-	cfg.EnableTopQueryCollection = true
+	cfg.Enabled = true
 
 	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
 	assert.NotNil(t, scrapers)

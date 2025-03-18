@@ -13,15 +13,15 @@ import (
 )
 
 type TopQueryCollection struct {
-	// EnableTopQueryCollection enables the collection of the top queries by the execution time.
+	// Enabled enables the collection of the top queries by the execution time.
 	// It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval.
 	// The query statement will also be reported, hence, it is not ideal to send it as a metric. Hence
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
-	EnableTopQueryCollection bool `mapstructure:"enabled"`
-	LookbackTime             uint `mapstructure:"lookback_time"`
-	MaxQuerySampleCount      uint `mapstructure:"max_query_sample_count"`
-	TopQueryCount            uint `mapstructure:"top_query_count"`
+	Enabled             bool `mapstructure:"enabled"`
+	LookbackTime        uint `mapstructure:"lookback_time"`
+	MaxQuerySampleCount uint `mapstructure:"max_query_sample_count"`
+	TopQueryCount       uint `mapstructure:"top_query_count"`
 }
 
 // Config defines configuration for a sqlserver receiver.

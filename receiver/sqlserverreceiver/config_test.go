@@ -145,7 +145,7 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
-		expected.EnableTopQueryCollection = true
+		expected.Enabled = true
 		expected.LookbackTime = 60
 		expected.TopQueryCount = 200
 		expected.TopQueryCollection.MaxQuerySampleCount = 1000

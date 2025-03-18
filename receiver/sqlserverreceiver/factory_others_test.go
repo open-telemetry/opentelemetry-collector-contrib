@@ -90,7 +90,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.EnableTopQueryCollection = true
+				cfg.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)

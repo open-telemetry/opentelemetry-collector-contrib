@@ -42,10 +42,10 @@ func TestFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					TopQueryCollection: TopQueryCollection{
-						EnableTopQueryCollection: false,
-						LookbackTime:             uint(2 * 10),
-						MaxQuerySampleCount:      1000,
-						TopQueryCount:            200,
+						Enabled:             false,
+						LookbackTime:        uint(2 * 10),
+						MaxQuerySampleCount: 1000,
+						TopQueryCount:       200,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
@@ -196,7 +196,7 @@ func TestFactory(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.EnableTopQueryCollection = true
+				cfg.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
