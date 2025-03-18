@@ -80,8 +80,6 @@ connector/roundrobinconnector
 connector/servicegraphconnector
 connector/signaltometricsconnector
 connector/sumconnector
-examples/demo/client
-examples/demo/server
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter
 internal/aws/awsutil
@@ -106,6 +104,7 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
 exporter/fileexporter

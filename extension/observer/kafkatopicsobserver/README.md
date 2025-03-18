@@ -19,13 +19,15 @@ provided regex. If any change in available topics matching the regex is detected
 
 The following settings are required:
 
-- `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
+- `topic_regex` regex pattern of the topic name to subscribe to.
 
 The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
-- `topic_regex` regex pattern of the topic name to subscribe to.
+- `protocol_version` (default = 2.1.0): Kafka protocol version e.g. 2.0.0
+- `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with.
+- `topics_sync_interval` (default 5s)
 - `auth`
     - `plain_text`
         - `username`: The username to use.
@@ -56,3 +58,8 @@ The following settings can be optionally configured:
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
+- `metadata`
+  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `retry`
+    - `max` (default = 3): The number of retries to get metadata
+    - `backoff` (default = 250ms): How long to wait between metadata retries
