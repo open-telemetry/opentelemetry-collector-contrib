@@ -556,7 +556,7 @@ func TestScrape(t *testing.T) {
 						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
-								return true
+								continue
 							}
 							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
 						}
