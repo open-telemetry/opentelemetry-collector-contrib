@@ -76,6 +76,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 | AcceptsOtherConnectionSettings | ✅                                                                               |
 | AcceptsRestartCommand          | ✅                                                                               |
 | ReportsHealth                  | ⚠️                                                                               |
+| ReportsStatus                  | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38729> |
 | ReportsRemoteConfig            | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079> |
 | ReportsAvailableComponents     | ✅                                                                               |
 
