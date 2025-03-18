@@ -46,6 +46,8 @@ func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		default:
+			// Ignoring any errors here to keep same behavior as the legacy implementation
+			// based on the `process.ProcessesWithContext` from the `gopsutil` package.
 			p, _ := process.NewProcess(int32(pe32.ProcessID))
 			if p != nil {
 				wrappedProcess := wrappedProcessHandle{
@@ -75,8 +77,6 @@ func getGopsutilProcessHandlesLegacy(ctx context.Context) (processHandles, error
 	for i, p := range processes {
 		wrapped[i] = wrappedProcessHandle{
 			Process:           p,
-			parentPid:         -1,
-			initialNumThreads: -1,
 		}
 	}
 
