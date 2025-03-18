@@ -174,6 +174,19 @@ func TestTranslateV2(t *testing.T) {
 			expectError: "unit ref 3 is out of bounds of symbolsTable",
 		},
 		{
+			name: "HelpRef bigger than symbols length",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, HelpRef: 3},
+						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: "help ref 3 is out of bounds of symbolsTable",
+		},
+		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
 			expectedMetrics: func() pmetric.Metrics {
