@@ -28,7 +28,8 @@ var defaultContextInferPriority = []string{
 // contextInferrer is an interface used to infer the OTTL context from statements.
 type contextInferrer interface {
 	// infer returns the OTTL context inferred from the given statements.
-	infer(statements []string) (string, error)
+	inferStatements(statements []string) (string, error)
+	inferConditions(conditions []string) (string, error)
 }
 
 type priorityContextInferrer struct {
@@ -80,8 +81,63 @@ func withContextInferrerPriorities(priorities []string) priorityContextInferrerO
 		c.contextPriority = contextPriority
 	}
 }
+func (s *priorityContextInferrer) inferConditions(conditions []string) (inferredContext string, err error) {
+	s.telemetrySettings.Logger.Debug("Inferring context from conditions",
+		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
+		zap.Any("priority", s.contextPriority),
+		zap.Strings("conditions", conditions),
+	)
 
-func (s *priorityContextInferrer) infer(statements []string) (inferredContext string, err error) {
+	defer func() {
+		if inferredContext != "" {
+			s.telemetrySettings.Logger.Debug(fmt.Sprintf(`Inferred context: "%s"`, inferredContext))
+		} else {
+			s.telemetrySettings.Logger.Debug("Unable to infer context from conditions")
+		}
+	}()
+
+	requiredFunctions := map[string]struct{}{}
+	requiredEnums := map[enumSymbol]struct{}{}
+
+	var inferredContextPriority int
+	for _, condition := range conditions {
+		parsed, err := parseCondition(condition)
+		if err != nil {
+			return "", err
+		}
+
+		conditionPaths, conditionFunctions, conditionEnums := s.getParsedConditionHints(parsed)
+		for _, p := range conditionPaths {
+			candidate := p.Context
+			candidatePriority, ok := s.contextPriority[candidate]
+			if !ok {
+				candidatePriority = math.MaxInt
+			}
+			if inferredContext == "" || candidatePriority < inferredContextPriority {
+				inferredContext = candidate
+				inferredContextPriority = candidatePriority
+			}
+		}
+		for function := range conditionFunctions {
+			requiredFunctions[function] = struct{}{}
+		}
+		for enum := range conditionEnums {
+			requiredEnums[enum] = struct{}{}
+		}
+	}
+	// No inferred context or nothing left to verify.
+	if inferredContext == "" || (len(requiredFunctions) == 0 && len(requiredEnums) == 0) {
+		s.telemetrySettings.Logger.Debug("No context candidate found in the conditions")
+		return inferredContext, nil
+	}
+	ok := s.validateContextCandidate(inferredContext, requiredFunctions, requiredEnums)
+	if ok {
+		return inferredContext, nil
+	}
+	return s.inferFromLowerContexts(inferredContext, requiredFunctions, requiredEnums), nil
+}
+
+func (s *priorityContextInferrer) inferStatements(statements []string) (inferredContext string, err error) {
 	s.telemetrySettings.Logger.Debug("Inferring context from statements",
 		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
 		zap.Any("priority", s.contextPriority),
@@ -211,6 +267,15 @@ func (s *priorityContextInferrer) sortContextCandidates(candidates []string) {
 		}
 		return cmp.Compare(lp, rp)
 	})
+}
+
+// getParsedConditionHints extracts all path, function names (editor and converter), and enumSymbol
+// from the given parsed statements. These values are used by the context inferrer as hints to
+// select a context in which the function/enum are supported.
+func (s *priorityContextInferrer) getParsedConditionHints(parsed *booleanExpression) ([]path, map[string]struct{}, map[enumSymbol]struct{}) {
+	visitor := newGrammarContextInferrerVisitor()
+	parsed.accept(&visitor)
+	return visitor.paths, visitor.functions, visitor.enumsSymbols
 }
 
 // getParsedStatementHints extracts all path, function names (editor and converter), and enumSymbol
