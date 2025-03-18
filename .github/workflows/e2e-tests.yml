@@ -26,7 +26,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -57,7 +57,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -72,7 +72,7 @@ jobs:
         if: steps.go-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Download Collector Binary
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4
         with:
           name: collector-binary
           path: bin/
@@ -89,7 +89,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -137,7 +137,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -162,7 +162,7 @@ jobs:
         run: |
           kubectl get csr -o=jsonpath='{range.items[?(@.spec.signerName=="kubernetes.io/kubelet-serving")]}{.metadata.name}{" "}{end}' | xargs kubectl certificate approve
       - name: Download artifact
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4
         with:
           name: otelcontribcol
           path: /tmp

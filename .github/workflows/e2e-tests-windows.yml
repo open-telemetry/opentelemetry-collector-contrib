@@ -44,7 +44,7 @@ jobs:
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -80,7 +80,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.24.1"
           cache: false
       - name: Cache Go
         id: go-mod-cache
@@ -95,7 +95,7 @@ jobs:
         if: steps.go-mod-cache.outputs.cache-hit != 'true'
         run: make -j2 gomoddownload
       - name: Download Collector Binary
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4
         with:
           name: collector-binary
           path: bin/
@@ -118,7 +118,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "~1.23.7"
+          go-version: "~1.24.0"
           cache: false
       - name: Cache Go
         uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
@@ -133,7 +133,7 @@ jobs:
         run: |
           & ${{ github.workspace }}\.github\workflows\scripts\win-required-ports.ps1
       - name: Download Collector Binary
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@b14cf4c92620c250e1c074ab0a5800e37df86765 # v4
         with:
           name: collector-binary
           path: bin/
