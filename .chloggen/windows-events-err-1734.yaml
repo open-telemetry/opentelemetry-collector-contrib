@@ -16,8 +16,9 @@ issues: [38149]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  Whenever large events were read in by the windows event log receiver / stanza input operator for windows,
-  The collector would fail with error RPC_S_INVALID_BOUND (1734). This can be solved by reducing max reads and retrying.
+  Whenever large events were read in by the Windows event log receiver, via the stanza input operator,
+  the collector would fail with error RPC_S_INVALID_BOUND (1734). Now the operator tries to workaround
+  this issue by reducing the number of events read on each attempt.
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
 # Optional: The change log or logs in which this entry should be included.
