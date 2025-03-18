@@ -642,7 +642,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 	}
 
 	if storeResource {
-		resource.Attributes().Range(func(key string, value pcommon.Value) bool {
+		for key, value := range resource.Attributes().All() {
 			key = "otel.resource." + key
 			annoVal := annotationValue(value)
 			indexed := indexAllAttrs || indexedKeys[key]
@@ -655,8 +655,7 @@ func makeXRayAttributes(attributes map[string]pcommon.Value, resource pcommon.Re
 					defaultMetadata[key] = metaVal
 				}
 			}
-			return true
-		})
+		}
 	}
 
 	if indexAllAttrs {

@@ -161,6 +161,19 @@ func TestTranslateV2(t *testing.T) {
 			expectError: `duplicate label "__name__" in labels`,
 		},
 		{
+			name: "UnitRef bigger than symbols length",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: "unit ref 3 is out of bounds of symbolsTable",
+		},
+		{
 			name:    "valid request",
 			request: writeV2RequestFixture,
 			expectedMetrics: func() pmetric.Metrics {
@@ -175,13 +188,17 @@ func TestTranslateV2(t *testing.T) {
 				// Since we don't define the labels otel_scope_name and otel_scope_version, the default values coming from the receiver settings will be used.
 				sm1.Scope().SetName("OpenTelemetry Collector")
 				sm1.Scope().SetVersion("latest")
-				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				metrics1 := sm1.Metrics().AppendEmpty()
+				metrics1.SetName("test_metric1")
+				metrics1.SetUnit("")
+
+				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp1.SetDoubleValue(1.0)
 				dp1.Attributes().PutStr("d", "e")
 				dp1.Attributes().PutStr("foo", "bar")
 
-				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp2 := metrics1.Gauge().DataPoints().AppendEmpty()
 				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
 				dp2.SetDoubleValue(2.0)
 				dp2.Attributes().PutStr("d", "e")
@@ -195,7 +212,11 @@ func TestTranslateV2(t *testing.T) {
 				sm2 := rm2.ScopeMetrics().AppendEmpty()
 				sm2.Scope().SetName("OpenTelemetry Collector")
 				sm2.Scope().SetVersion("latest")
-				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				metrics2 := sm2.Metrics().AppendEmpty()
+				metrics2.SetName("test_metric1")
+				metrics2.SetUnit("")
+
+				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(2.0)
 				dp3.Attributes().PutStr("d", "e")
@@ -249,13 +270,16 @@ func TestTranslateV2(t *testing.T) {
 				sm1 := rm1.ScopeMetrics().AppendEmpty()
 				sm1.Scope().SetName("scope1")
 				sm1.Scope().SetVersion("v1")
+				metrics1 := sm1.Metrics().AppendEmpty()
+				metrics1.SetName("test_metric")
+				metrics1.SetUnit("")
 
-				dp1 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp1.SetDoubleValue(1.0)
 				dp1.Attributes().PutStr("d", "e")
 
-				dp2 := sm1.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp2 := metrics1.Gauge().DataPoints().AppendEmpty()
 				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
 				dp2.SetDoubleValue(2.0)
 				dp2.Attributes().PutStr("d", "e")
@@ -263,8 +287,11 @@ func TestTranslateV2(t *testing.T) {
 				sm2 := rm1.ScopeMetrics().AppendEmpty()
 				sm2.Scope().SetName("scope2")
 				sm2.Scope().SetVersion("v2")
+				metrics2 := sm2.Metrics().AppendEmpty()
+				metrics2.SetName("test_metric")
+				metrics2.SetUnit("")
 
-				dp3 := sm2.Metrics().AppendEmpty().SetEmptyGauge().DataPoints().AppendEmpty()
+				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(3.0)
 				dp3.Attributes().PutStr("foo", "bar")
@@ -272,6 +299,79 @@ func TestTranslateV2(t *testing.T) {
 				return expected
 			}(),
 			expectedStats: remote.WriteResponseStats{},
+		},
+		{
+			name: "separate timeseries - same labels - should be same datapointslice",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"d", "e", // 11, 12
+					"foo", "bar", // 13, 14
+					"f", "g", // 15, 16
+					"seconds", "milliseconds", // 17, 18
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					},
+					{
+						// Unit changed, so it should be a different metric.
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14},
+						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes1 := rm1.Resource().Attributes()
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
+
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName("scope1")
+				sm1.Scope().SetVersion("v1")
+
+				// Expected to have 2 metrics and 3 data points.
+				// The first metric should have 2 data points.
+				// The second metric should have 1 data point.
+				metrics1 := sm1.Metrics().AppendEmpty()
+				metrics1.SetName("test_metric")
+				metrics1.SetUnit("seconds")
+				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp1.SetDoubleValue(1.0)
+				dp1.Attributes().PutStr("d", "e")
+
+				dp2 := metrics1.Gauge().DataPoints().AppendEmpty()
+				dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+				dp2.SetDoubleValue(2.0)
+				dp2.Attributes().PutStr("d", "e")
+
+				metrics2 := sm1.Metrics().AppendEmpty()
+				metrics2.SetName("test_metric")
+				metrics2.SetUnit("milliseconds")
+				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
+				dp3.SetDoubleValue(3.0)
+				dp3.Attributes().PutStr("foo", "bar")
+
+				return expected
+			}(),
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

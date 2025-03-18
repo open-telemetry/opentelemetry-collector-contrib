@@ -199,7 +199,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 			// Remove opencensus resource type from actual. This will be added during translation.
 			actual.Attributes().Remove(occonventions.AttributeResourceType)
 			assert.Equal(t, expected.Attributes().Len(), actual.Attributes().Len())
-			expected.Attributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range expected.Attributes().All() {
 				a, ok := actual.Attributes().Get(k)
 				assert.True(t, ok)
 				switch v.Type() {
@@ -214,8 +214,7 @@ func TestResourceToOCAndBack(t *testing.T) {
 				default:
 					assert.Equal(t, v, a)
 				}
-				return true
-			})
+			}
 		})
 	}
 }

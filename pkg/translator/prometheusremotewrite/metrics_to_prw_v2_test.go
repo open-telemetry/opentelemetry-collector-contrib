@@ -16,12 +16,11 @@ import (
 
 func TestFromMetricsV2(t *testing.T) {
 	settings := Settings{
-		Namespace:           "",
-		ExternalLabels:      nil,
-		DisableTargetInfo:   false,
-		ExportCreatedMetric: false,
-		AddMetricSuffixes:   false,
-		SendMetadata:        false,
+		Namespace:         "",
+		ExternalLabels:    nil,
+		DisableTargetInfo: false,
+		AddMetricSuffixes: false,
+		SendMetadata:      false,
 	}
 
 	ts := uint64(time.Now().UnixNano())
