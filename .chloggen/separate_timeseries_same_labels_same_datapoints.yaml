@@ -7,7 +7,7 @@ change_type: enhancement
 component: prometheusremotewritereciever
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add support for timeseries with the same labels and name/unitRef metric Metadata.
+note: Separate timeseries with the same labels are now translated into the same OTLP metric.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37791]
