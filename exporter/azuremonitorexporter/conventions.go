@@ -16,8 +16,10 @@ import (
 
 const (
 	// TODO replace with convention.* values once/if available
-	attributeOtelStatusCode        string = "otel.status_code"
-	attributeOtelStatusDescription string = "otel.status_description"
+	attributeOtelStatusCode                          string = "otel.status_code"
+	attributeOtelStatusDescription                   string = "otel.status_description"
+	attributeMicrosoftCustomEventName                string = "microsoft.custom_event.name"
+	attributeApplicationInsightsEventMarkerAttribute string = "APPLICATION_INSIGHTS_EVENT_MARKER_ATTRIBUTE"
 )
 
 // NetworkAttributes is the set of known network attributes
