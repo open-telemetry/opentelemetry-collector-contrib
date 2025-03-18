@@ -253,10 +253,9 @@ func newSample(dp pmetric.NumberDataPoint) BMCHelixOMSample {
 func extractResourceAttributes(resource pcommon.Resource) map[string]string {
 	attributes := make(map[string]string)
 
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resource.Attributes().All() {
 		attributes[k] = v.AsString()
-		return true
-	})
+	}
 
 	return attributes
 }

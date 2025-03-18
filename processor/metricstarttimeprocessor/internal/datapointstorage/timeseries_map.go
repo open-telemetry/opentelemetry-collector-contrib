@@ -78,13 +78,12 @@ func (tsm *TimeseriesMap) Get(metric pmetric.Metric, kv pcommon.Map) (*Timeserie
 func getAttributesSignature(m pcommon.Map) AttributeHash {
 	// TODO(#38621): Investigate whether we should treat empty labels differently.
 	clearedMap := pcommon.NewMap()
-	m.Range(func(k string, attrValue pcommon.Value) bool {
+	for k, attrValue := range m.All() {
 		value := attrValue.Str()
 		if value != "" {
 			clearedMap.PutStr(k, value)
 		}
-		return true
-	})
+	}
 	return pdatautil.MapHash(clearedMap)
 }
 
