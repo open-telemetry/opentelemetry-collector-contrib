@@ -160,6 +160,20 @@ func TestTranslateV2(t *testing.T) {
 			},
 			expectError: `duplicate label "__name__" in labels`,
 		},
+		// Expected error if the unit was bigger than the number of symbols.
+		{
+			name: "unit bigger than symbols",
+			request: &writev2.Request{
+				Symbols: []string{"", "__name__", "test"},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 3},
+						LabelsRefs: []uint32{1, 2},
+					},
+				},
+			},
+			expectError: "unit ref 3 is out of bounds",
+		},
 		{
 			name:    "valid request",
 			request: writeV2RequestFixture,

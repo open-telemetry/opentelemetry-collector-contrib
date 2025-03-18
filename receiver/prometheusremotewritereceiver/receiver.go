@@ -197,11 +197,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
 		metricName := ls.Get(labels.MetricName)
-		unit := ""
 		// TODO: Like UnitRef, we should assign the HelpRef to the metric.
-		if ts.Metadata.UnitRef > 0 && ts.Metadata.UnitRef < uint32(len(req.Symbols)) {
-			unit = req.Symbols[ts.Metadata.UnitRef]
+		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds", ts.Metadata.UnitRef))
+			continue
 		}
+		unit := req.Symbols[ts.Metadata.UnitRef]
 
 		resourceID := identity.OfResource(rm.Resource())
 		// Temporary approach to generate the metric key.
