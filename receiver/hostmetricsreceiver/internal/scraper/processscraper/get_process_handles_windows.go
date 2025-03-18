@@ -76,7 +76,7 @@ func getGopsutilProcessHandlesLegacy(ctx context.Context) (processHandles, error
 	wrapped := make([]wrappedProcessHandle, len(processes))
 	for i, p := range processes {
 		wrapped[i] = wrappedProcessHandle{
-			Process:           p,
+			Process: p,
 		}
 	}
 
