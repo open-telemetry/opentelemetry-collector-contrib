@@ -37,33 +37,33 @@ func (c ChangeList) Do(ss migrate.StateSelector, signal any) error {
 				if err := thisMigrator.Do(ss, span); err != nil {
 					return err
 				}
-			} else {
-				return fmt.Errorf("span Transformer %T can't act on %T", thisMigrator, signal)
+				continue
 			}
+			return fmt.Errorf("span Transformer %T can't act on %T", thisMigrator, signal)
 		case transformer.Transformer[pmetric.Metric]:
 			if metric, ok := signal.(pmetric.Metric); ok {
 				if err := thisMigrator.Do(ss, metric); err != nil {
 					return err
 				}
-			} else {
-				return fmt.Errorf("metric Transformer %T can't act on %T", thisMigrator, signal)
+				continue
 			}
+			return fmt.Errorf("metric Transformer %T can't act on %T", thisMigrator, signal)
 		case transformer.Transformer[plog.LogRecord]:
 			if log, ok := signal.(plog.LogRecord); ok {
 				if err := thisMigrator.Do(ss, log); err != nil {
 					return err
 				}
-			} else {
-				return fmt.Errorf("log Transformer %T can't act on %T", thisMigrator, signal)
+				continue
 			}
+			return fmt.Errorf("log Transformer %T can't act on %T", thisMigrator, signal)
 		case transformer.Transformer[pcommon.Resource]:
 			if resource, ok := signal.(pcommon.Resource); ok {
 				if err := thisMigrator.Do(ss, resource); err != nil {
 					return err
 				}
-			} else {
-				return fmt.Errorf("resource Transformer %T can't act on %T", thisMigrator, signal)
+				continue
 			}
+			return fmt.Errorf("resource Transformer %T can't act on %T", thisMigrator, signal)
 		case transformer.AllAttributes:
 			if err := thisMigrator.Do(ss, signal); err != nil {
 				return err
