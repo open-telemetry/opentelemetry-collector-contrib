@@ -201,9 +201,9 @@ func (i *Input) read(ctx context.Context) {
 	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
 
 	// Update the current max reads if it changed
-	if actualMaxReads < i.currentMaxReads {
+	if err == nil && actualMaxReads < i.currentMaxReads {
 		i.currentMaxReads = actualMaxReads
-		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reducing batch size", zap.Int("current batch size", i.currentMaxReads), zap.Int("original batch size", i.maxReads))
+		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
 	}
 
 	if err != nil {
