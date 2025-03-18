@@ -268,9 +268,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addCounterGaugeDatapoints(metric.Gauge().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addCounterGaugeDatapoints(metric.Sum().DataPoints(), ls, ts)
+			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
 			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
@@ -300,9 +300,9 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-// addDatapoints adds the labels to the datapoints attributes.
+// addNumberDatapoints adds the labels to the datapoints attributes.
 // TODO: We're still not handling the StartTimestamp.
-func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
@@ -329,13 +329,6 @@ func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ wr
 
 func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
 	// TODO: Implement this function
-}
-
-// addCounterGaugeDatapoints deal with the counter and gauge datapoints. Both have the same structure.
-// The difference is that the counter is monotonic and the gauge is not.
-func addCounterGaugeDatapoints(dp pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
-	// TODO: Implement this function
-	addDatapoints(dp, ls, ts)
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
