@@ -83,6 +83,8 @@ all_set:
       enabled: true
     splunk.typing.queue.ratio:
       enabled: true
+    splunkenterprise.error:
+      enabled: true
 none_set:
   metrics:
     splunk.aggregation.queue.ratio:
@@ -166,4 +168,6 @@ none_set:
     splunk.server.searchartifacts.scheduled:
       enabled: false
     splunk.typing.queue.ratio:
+      enabled: false
+    splunkenterprise.error:
       enabled: false

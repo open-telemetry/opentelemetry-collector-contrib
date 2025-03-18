@@ -2110,6 +2110,57 @@ func newMetricSplunkTypingQueueRatio(cfg MetricConfig) metricSplunkTypingQueueRa
 	return m
 }
 
+type metricSplunkenterpriseError struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunkenterprise.error metric with initial data.
+func (m *metricSplunkenterpriseError) init() {
+	m.data.SetName("splunkenterprise.error")
+	m.data.SetDescription("Increments every time a splunkenterprisereceiver scrape contains errors.")
+	m.data.SetUnit("{error}")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(true)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+}
+
+func (m *metricSplunkenterpriseError) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkenterpriseError) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkenterpriseError) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkenterpriseError(cfg MetricConfig) metricSplunkenterpriseError {
+	m := metricSplunkenterpriseError{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 // MetricsBuilder provides an interface for scrapers to report metrics while taking care of all the transformations
 // required to produce metric representation defined in metadata and user config.
 type MetricsBuilder struct {
@@ -2159,6 +2210,7 @@ type MetricsBuilder struct {
 	metricSplunkServerSearchartifactsSavedsearches    metricSplunkServerSearchartifactsSavedsearches
 	metricSplunkServerSearchartifactsScheduled        metricSplunkServerSearchartifactsScheduled
 	metricSplunkTypingQueueRatio                      metricSplunkTypingQueueRatio
+	metricSplunkenterpriseError                       metricSplunkenterpriseError
 }
 
 // MetricBuilderOption applies changes to default metrics builder.
@@ -2225,6 +2277,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkServerSearchartifactsSavedsearches:    newMetricSplunkServerSearchartifactsSavedsearches(mbc.Metrics.SplunkServerSearchartifactsSavedsearches),
 		metricSplunkServerSearchartifactsScheduled:        newMetricSplunkServerSearchartifactsScheduled(mbc.Metrics.SplunkServerSearchartifactsScheduled),
 		metricSplunkTypingQueueRatio:                      newMetricSplunkTypingQueueRatio(mbc.Metrics.SplunkTypingQueueRatio),
+		metricSplunkenterpriseError:                       newMetricSplunkenterpriseError(mbc.Metrics.SplunkenterpriseError),
 	}
 
 	for _, op := range options {
@@ -2331,6 +2384,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkServerSearchartifactsSavedsearches.emit(ils.Metrics())
 	mb.metricSplunkServerSearchartifactsScheduled.emit(ils.Metrics())
 	mb.metricSplunkTypingQueueRatio.emit(ils.Metrics())
+	mb.metricSplunkenterpriseError.emit(ils.Metrics())
 
 	for _, op := range options {
 		op.apply(rm)
@@ -2555,6 +2609,11 @@ func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsScheduledDataPoint(ts
 // RecordSplunkTypingQueueRatioDataPoint adds a data point to splunk.typing.queue.ratio metric.
 func (mb *MetricsBuilder) RecordSplunkTypingQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
 	mb.metricSplunkTypingQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkenterpriseErrorDataPoint adds a data point to splunkenterprise.error metric.
+func (mb *MetricsBuilder) RecordSplunkenterpriseErrorDataPoint(ts pcommon.Timestamp, val int64) {
+	mb.metricSplunkenterpriseError.recordDataPoint(mb.startTime, ts, val)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

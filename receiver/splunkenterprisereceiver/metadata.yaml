@@ -359,6 +359,14 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.feature, splunk.feature.health]
+  splunkenterprise.error:
+    description: Increments every time a splunkenterprisereceiver scrape contains errors.
+    enabled: false
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    unit: "{error}"
 
 tests:
   config:

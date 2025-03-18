@@ -27,10 +27,11 @@ import (
 var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
-	splunkClient *splunkEntClient
-	settings     component.TelemetrySettings
-	conf         *Config
-	mb           *metadata.MetricsBuilder
+	splunkClient  *splunkEntClient
+	settings      component.TelemetrySettings
+	conf          *Config
+	mb            *metadata.MetricsBuilder
+	failedScrapes int64
 }
 
 func newSplunkMetricsScraper(params receiver.Settings, cfg *Config) splunkScraper {
@@ -78,6 +79,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errOut := make(chan *scrapererror.ScrapeErrors)
 	var errs *scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
+
 	metricScrapes := []func(context.Context, pcommon.Timestamp, chan error){
 		s.scrapeLicenseUsageByIndex,
 		s.scrapeIndexThroughput,
@@ -126,7 +128,13 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	wg.Wait()
 	close(errChan)
 	errs = <-errOut
-	return s.mb.Emit(), errs.Combine()
+	combinedErrs := errs.Combine()
+	if combinedErrs != nil {
+		s.settings.Logger.Error(fmt.Sprintf("Scrape errors: %v", combinedErrs.Error()))
+		s.failedScrapes++
+		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes)
+	}
+	return s.mb.Emit(), nil
 }
 
 // Each metric has its own scrape function associated with it

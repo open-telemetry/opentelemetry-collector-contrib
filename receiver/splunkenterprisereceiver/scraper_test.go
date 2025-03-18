@@ -90,6 +90,7 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
+	metricsettings.Metrics.SplunkenterpriseError.Enabled = true
 
 	cfg := &Config{
 		IdxEndpoint: confighttp.ClientConfig{
