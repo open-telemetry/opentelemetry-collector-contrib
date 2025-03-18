@@ -13,8 +13,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"io"
 	"log"
 	"net"
@@ -30,6 +28,10 @@ import (
 	"testing"
 	"text/template"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
