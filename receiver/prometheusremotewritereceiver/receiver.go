@@ -9,6 +9,7 @@ import (
 	"io"
 	"net/http"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/cespare/xxhash/v2"
@@ -43,6 +44,7 @@ type prometheusRemoteWriteReceiver struct {
 
 	config *Config
 	server *http.Server
+	wg     sync.WaitGroup
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -59,7 +61,9 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 		return fmt.Errorf("failed to create prometheus remote-write listener: %w", err)
 	}
 
+	prw.wg.Add(1)
 	go func() {
+		defer prw.wg.Done()
 		if err := prw.server.Serve(listener); err != nil && !errors.Is(err, http.ErrServerClosed) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(fmt.Errorf("error starting prometheus remote-write receiver: %w", err)))
 		}
@@ -71,7 +75,13 @@ func (prw *prometheusRemoteWriteReceiver) Shutdown(ctx context.Context) error {
 	if prw.server == nil {
 		return nil
 	}
-	return prw.server.Shutdown(ctx)
+	err := prw.server.Shutdown(ctx)
+	if err == nil {
+		// Only wait if Shutdown returns successfully,
+		// otherwise we may block indefinitely.
+		prw.wg.Wait()
+	}
+	return err
 }
 
 func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *http.Request) {
