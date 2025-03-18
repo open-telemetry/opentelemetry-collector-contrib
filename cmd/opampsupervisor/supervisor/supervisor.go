@@ -10,6 +10,8 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/codes"
+	"go.opentelemetry.io/otel/trace"
 	"net"
 	"net/http"
 	"net/url"
@@ -303,13 +305,17 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 }
 
 func (s *Supervisor) Start() error {
+	ctx, span := s.getTracer().Start(context.Background(), "Start")
+	defer span.End()
 	var err error
 	s.persistentState, err = loadOrCreatePersistentState(s.persistentStateFilePath())
 	if err != nil {
+		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
 
-	if err = s.getBootstrapInfo(); err != nil {
+	if err = s.getBootstrapInfo(ctx); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get bootstrap info from the Collector: %s", err.Error()))
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
@@ -317,6 +323,7 @@ func (s *Supervisor) Start() error {
 	if healthCheckPort == 0 {
 		healthCheckPort, err = s.findRandomPort()
 		if err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not find port for health check: %s", err.Error()))
 			return fmt.Errorf("could not find port for health check: %w", err)
 		}
 	}
@@ -328,11 +335,13 @@ func (s *Supervisor) Start() error {
 
 	err = s.loadAndWriteInitialMergedConfig()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed loading initial config: %s", err.Error()))
 		return fmt.Errorf("failed loading initial config: %w", err)
 	}
 
-	if err = s.startOpAMP(); err != nil {
-		return fmt.Errorf("cannot start OpAMP client: %w", err)
+	if err = s.startOpAMP(ctx); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Cannot start OpAMP: %s", err.Error()))
+		return fmt.Errorf("cannot start OpAMP: %w", err)
 	}
 
 	s.commander, err = commander.NewCommander(
@@ -342,6 +351,7 @@ func (s *Supervisor) Start() error {
 		"--config", s.agentConfigFilePath(),
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not create commander: %s", err.Error()))
 		return err
 	}
 
@@ -359,6 +369,7 @@ func (s *Supervisor) Start() error {
 		s.forwardCustomMessagesToServerLoop()
 	}()
 
+	span.SetStatus(codes.Ok, "")
 	return nil
 }
 
@@ -386,7 +397,9 @@ func (s *Supervisor) createTemplates() error {
 // an OpAMP extension, obtains the agent description, then
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
-func (s *Supervisor) getBootstrapInfo() (err error) {
+func (s *Supervisor) getBootstrapInfo(ctx context.Context) (err error) {
+	ctx, span := s.getTracer().Start(ctx, "GetBootstrapInfo")
+	defer span.End()
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
 		return err
@@ -521,28 +534,32 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	}
 }
 
-func (s *Supervisor) startOpAMP() error {
-	if err := s.startOpAMPClient(); err != nil {
+func (s *Supervisor) startOpAMP(ctx context.Context) error {
+	if err := s.startOpAMPClient(ctx); err != nil {
 		return err
 	}
 
-	if err := s.startOpAMPServer(); err != nil {
+	if err := s.startOpAMPServer(ctx); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-func (s *Supervisor) startOpAMPClient() error {
+func (s *Supervisor) startOpAMPClient(ctx context.Context) error {
+	ctx, span := s.getTracer().Start(ctx, "StartOpAMPClient")
+	defer span.End()
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
 	parsedURL, err := url.Parse(s.config.Server.Endpoint)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not parse server endpoint: %s", err.Error()))
 		return fmt.Errorf("parse server endpoint: %w", err)
 	}
 	if parsedURL.Scheme == "wss" || parsedURL.Scheme == "https" {
 		tlsConfig, err = s.config.Server.TLSSetting.LoadTLSConfig(context.Background())
 		if err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not load TLS config: %s", err.Error()))
 			return err
 		}
 	}
@@ -553,6 +570,7 @@ func (s *Supervisor) startOpAMPClient() error {
 	case "http", "https":
 		s.opampClient = client.NewHTTP(logger)
 	default:
+		span.SetStatus(codes.Error, fmt.Sprintf("Unsupported scheme in server endpoint: %q", parsedURL.Scheme))
 		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
@@ -596,24 +614,29 @@ func (s *Supervisor) startOpAMPClient() error {
 	}
 	ad := s.agentDescription.Load().(*protobufs.AgentDescription)
 	if err = s.opampClient.SetAgentDescription(ad); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not set agent description: %s", err.Error()))
 		return err
 	}
 
 	if err = s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false}); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not set health: %s", err.Error()))
 		return err
 	}
 
 	if ac, ok := s.availableComponents.Load().(*protobufs.AvailableComponents); ok && ac != nil {
 		if err = s.opampClient.SetAvailableComponents(ac); err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Could not set available components: %s", err.Error()))
 			return err
 		}
 	}
 
 	s.telemetrySettings.Logger.Debug("Starting OpAMP client...")
 	if err = s.opampClient.Start(context.Background(), settings); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP client: %s", err.Error()))
 		return err
 	}
 	s.telemetrySettings.Logger.Debug("OpAMP client started.")
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
@@ -624,12 +647,15 @@ func (s *Supervisor) startOpAMPClient() error {
 // matched to the Collector's process, but may be restarted
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
-func (s *Supervisor) startOpAMPServer() error {
+func (s *Supervisor) startOpAMPServer(ctx context.Context) error {
+	ctx, span := s.getTracer().Start(ctx, "StartOpAMPServer")
+	defer span.End()
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
 	var err error
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor OpAMP server port: %s", err.Error()))
 		return err
 	}
 
@@ -650,10 +676,12 @@ func (s *Supervisor) startOpAMPServer() error {
 		},
 	}.toServerSettings())
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start supervisor OpAMP server: %s", err.Error()))
 		return err
 	}
 
 	s.telemetrySettings.Logger.Debug("OpAMP server started.")
+	span.SetStatus(codes.Ok, "")
 
 	return nil
 }
@@ -848,12 +876,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 	// update the OpAMP server config
 	s.config.Server = newServerConfig
 
-	if err := s.startOpAMPClient(); err != nil {
+	if err := s.startOpAMPClient(nil); err != nil {
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
 		// revert the OpAMP server config
 		s.config.Server = oldServerConfig
 		// start the OpAMP client with the old settings
-		if err := s.startOpAMPClient(); err != nil {
+		if err := s.startOpAMPClient(nil); err != nil {
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
 			return err
 		}
@@ -1488,14 +1516,16 @@ func (s *Supervisor) reportConfigStatus(status protobufs.RemoteConfigStatuses, e
 }
 
 func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
+	ctx, span := s.getTracer().Start(ctx, "HandleOpAMPServerMessage")
+	defer span.End()
 	configChanged := false
 
 	if msg.AgentIdentification != nil {
-		configChanged = s.processAgentIdentificationMessage(msg.AgentIdentification) || configChanged
+		configChanged = s.processAgentIdentificationMessage(ctx, msg.AgentIdentification) || configChanged
 	}
 
 	if msg.RemoteConfig != nil {
-		configChanged = s.processRemoteConfigMessage(msg.RemoteConfig) || configChanged
+		configChanged = s.processRemoteConfigMessage(ctx, msg.RemoteConfig) || configChanged
 	}
 
 	if msg.OwnMetricsConnSettings != nil || msg.OwnTracesConnSettings != nil || msg.OwnLogsConnSettings != nil {
@@ -1508,6 +1538,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 	// Update the agent config if any messages have touched the config
 	if configChanged {
+		span.AddEvent("ConfigChanged")
 		err := s.opampClient.UpdateEffectiveConfig(ctx)
 		if err != nil {
 			s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
@@ -1547,11 +1578,16 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 			}
 		}
 	}
+
+	span.SetStatus(codes.Ok, "")
 }
 
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
-func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
+func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protobufs.AgentRemoteConfig) bool {
+	ctx, span := s.getTracer().Start(ctx, "ProcessRemoteConfigMessage")
+	defer span.End()
 	if err := s.saveLastReceivedConfig(msg); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not save last received remote config", zap.Error(err))
 	}
 
@@ -1561,27 +1597,36 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	var err error
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
 	} else {
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
+	span.SetStatus(codes.Ok, "")
 	return configChanged
 }
 
 // processOwnTelemetryConnSettingsMessage processes a TelemetryConnectionSettings message, returning true if the agent config has changed.
 func (s *Supervisor) processOwnTelemetryConnSettingsMessage(ctx context.Context, msg *protobufs.ConnectionSettingsOffers) bool {
+	ctx, span := s.getTracer().Start(ctx, "ProcessOwnTelemetryConnSettingsMessage")
+	defer span.End()
 	if err := s.saveLastReceivedOwnTelemetrySettings(msg, lastRecvOwnTelemetryConfigFile); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received own telemetry settings: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Could not save last received own telemetry settings", zap.Error(err))
 	}
+	span.SetStatus(codes.Ok, "")
 	return s.setupOwnTelemetry(ctx, msg)
 }
 
 // processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.
-func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdentification) bool {
+func (s *Supervisor) processAgentIdentificationMessage(ctx context.Context, msg *protobufs.AgentIdentification) bool {
+	ctx, span := s.getTracer().Start(ctx, "ProcessAgentIdentificationMessage")
+	defer span.End()
 	newInstanceID, err := uuid.FromBytes(msg.NewInstanceUid)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to parse instance UUID: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Failed to parse instance UUID", zap.Error(err))
 		return false
 	}
@@ -1592,20 +1637,25 @@ func (s *Supervisor) processAgentIdentificationMessage(msg *protobufs.AgentIdent
 
 	err = s.persistentState.SetInstanceID(newInstanceID)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to persist new instance ID %s, instance ID will revert on restart: %s", newInstanceID.String(), err.Error()))
 		s.telemetrySettings.Logger.Error("Failed to persist new instance ID, instance ID will revert on restart.", zap.String("new_id", newInstanceID.String()), zap.Error(err))
 	}
 
 	err = s.opampClient.SetAgentDescription(s.agentDescription.Load().(*protobufs.AgentDescription))
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to send agent description to OpAMP server: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Failed to send agent description to OpAMP server")
 	}
 
 	// Need to recalculate the Agent config so that the new agent identification is included in it.
 	configChanged, err := s.composeMergedConfig(s.remoteConfig)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config with new instance ID: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config with new instance ID", zap.Error(err))
 		return false
 	}
+
+	span.SetStatus(codes.Ok, "")
 
 	return configChanged
 }
@@ -1639,6 +1689,11 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func (s *Supervisor) getTracer() trace.Tracer {
+	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
+	return tracer
 }
 
 // The default koanf behavior is to override lists in the config.
