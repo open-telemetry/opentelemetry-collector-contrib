@@ -257,6 +257,7 @@ receiver/jmxreceiver/                                            @open-telemetry
 receiver/journaldreceiver/                                       @open-telemetry/collector-contrib-approvers @sumo-drosiek @djaglowski
 receiver/k8sclusterreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @povilasv @ChrsMark
 receiver/k8seventsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
+receiver/k8slogreceiver/                                         @open-telemetry/collector-contrib-approvers @h0cheung @TylerHelmuth
 receiver/k8sobjectsreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth @ChrsMark
 receiver/kafkametricsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax
 receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw
