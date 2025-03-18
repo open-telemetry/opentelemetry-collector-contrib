@@ -553,13 +553,12 @@ func copyAndMapAttributes(
 	properties map[string]string,
 	mappingFunc func(k string, v pcommon.Value),
 ) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		setAttributeValueAsProperty(k, v, properties)
 		if mappingFunc != nil {
 			mappingFunc(k, v)
 		}
-		return true
-	})
+	}
 }
 
 // Copies all attributes to either properties or measurements without any kind of mapping to a known set of attributes

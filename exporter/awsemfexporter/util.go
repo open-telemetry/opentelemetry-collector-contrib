@@ -165,9 +165,8 @@ func unixNanoToMilliseconds(timestamp pcommon.Timestamp) int64 {
 func attrMaptoStringMap(attrMap pcommon.Map) map[string]string {
 	strMap := make(map[string]string, attrMap.Len())
 
-	attrMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrMap.All() {
 		strMap[k] = v.AsString()
-		return true
-	})
+	}
 	return strMap
 }
