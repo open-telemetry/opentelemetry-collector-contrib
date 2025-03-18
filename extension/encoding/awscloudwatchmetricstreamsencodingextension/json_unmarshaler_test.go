@@ -11,12 +11,11 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
 func TestValidateMetric(t *testing.T) {
@@ -134,7 +133,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			record:         joinMetricsFromFile(t, filesDirectory, []string{"invalid_metric.json"}),
 			expectedErrStr: "invalid cloudwatch metric at index 0: cloudwatch metric is missing value",
 		},
-		"valid_record_multiple_metrics": {
+		"invalid_record_multiple_metrics": {
 			// test a record with multiple
 			// metrics: some invalid, some
 			// valid
@@ -143,8 +142,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 				"invalid_metric.json",
 				"valid_metric.json",
 			}),
-			metricExpectedFilename: "valid_record_multiple_metric_expected.yaml",
-			expectedErrStr:         "invalid cloudwatch metric at index 1: cloudwatch metric is missing value",
+			expectedErrStr: "invalid cloudwatch metric at index 1: cloudwatch metric is missing value",
 		},
 		"invalid_json_struct": {
 			record: []byte("invalid"),
@@ -164,9 +162,6 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			metrics, err := unmarshalerCW.UnmarshalMetrics(test.record)
 			if test.expectedErrStr != "" {
 				require.EqualError(t, err, test.expectedErrStr)
-			}
-
-			if test.metricExpectedFilename == "" {
 				return
 			}
 

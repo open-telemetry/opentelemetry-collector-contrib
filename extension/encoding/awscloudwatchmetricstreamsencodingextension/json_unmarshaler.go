@@ -140,26 +140,31 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 		var cwMetric cloudwatchMetric
 		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
 			errs = append(errs, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err))
+			byResource = map[resourceKey]map[metricKey]pmetric.Metric{} // free the memory
 			continue
 		}
 		if err := validateMetric(cwMetric); err != nil {
 			errs = append(errs, fmt.Errorf("invalid cloudwatch metric at index %d: %w", datumIndex, err))
+			byResource = map[resourceKey]map[metricKey]pmetric.Metric{} // free the memory
 			continue
 		}
 
-		c.addMetricToResource(byResource, cwMetric)
+		if len(errs) == 0 {
+			// only add the metric if there are
+			// no errors so far
+			c.addMetricToResource(byResource, cwMetric)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
 		errs = append(errs, fmt.Errorf("error scanning for newline-delimited JSON: %w", err))
 	}
 
-	var finalErr error
 	if len(errs) > 0 {
-		finalErr = errors.Join(errs...)
+		return pmetric.Metrics{}, errors.Join(errs...)
 	}
 
-	return c.createMetrics(byResource), finalErr
+	return c.createMetrics(byResource), nil
 }
 
 // addMetricToResource adds a new cloudwatchMetric to the
