@@ -456,7 +456,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 	if c.Rules.PodName {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
-	if c.Rules.OperatorRules.Enabled {
+	if c.Rules.RecommendedRules.Enabled {
 		serviceNames[conventions.AttributeK8SPodName] = pod.Name
 	}
 
@@ -493,7 +493,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.OperatorRules.Enabled {
+		c.Rules.CronJobName || c.Rules.RecommendedRules.Enabled {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -503,7 +503,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
 				if c.Rules.DeploymentName {
@@ -512,7 +512,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 						tags[conventions.AttributeK8SDeploymentName] = name
 					}
 				}
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					name := c.deploymentName(ref)
 					if name != "" {
 						serviceNames[conventions.AttributeK8SDeploymentName] = name
@@ -532,7 +532,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.DaemonSetName {
 					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					serviceNames[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
 			case "StatefulSet":
@@ -542,18 +542,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.StatefulSetName {
 					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					serviceNames[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
-				if c.Rules.CronJobName || c.Rules.OperatorRules.Enabled {
+				if c.Rules.CronJobName || c.Rules.RecommendedRules.Enabled {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
 						name := parts[1]
 						if c.Rules.CronJobName {
 							tags[conventions.AttributeK8SCronJobName] = name
 						}
-						if c.Rules.OperatorRules.Enabled {
+						if c.Rules.RecommendedRules.Enabled {
 							serviceNames[conventions.AttributeK8SCronJobName] = name
 						}
 					}
@@ -564,7 +564,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.JobName {
 					tags[conventions.AttributeK8SJobName] = ref.Name
 				}
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					serviceNames[conventions.AttributeK8SJobName] = ref.Name
 				}
 			}
@@ -664,7 +664,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.OperatorRules.Enabled {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.RecommendedRules.Enabled {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -761,7 +761,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.OperatorRules.Enabled {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.RecommendedRules.Enabled {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			name, tag, err := parseNameAndTagFromImage(spec.Image)
@@ -775,7 +775,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			}
 			serviceVersion, err := parseServiceVersionFromImage(spec.Image)
 			if err == nil {
-				if c.Rules.OperatorRules.Enabled {
+				if c.Rules.RecommendedRules.Enabled {
 					container.ServiceVersion = serviceVersion
 				}
 			}
@@ -793,7 +793,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		if c.Rules.ContainerName {
 			container.Name = containerName
 		}
-		if c.Rules.OperatorRules.Enabled {
+		if c.Rules.RecommendedRules.Enabled {
 			container.ServiceInstanceID = operatorServiceInstanceID(pod, containerName)
 			container.ServiceName = containerName
 		}
@@ -1133,7 +1133,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
-		rules.OperatorRules.Enabled
+		rules.RecommendedRules.Enabled
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {

@@ -192,7 +192,7 @@ func createProcessorOpts(cfg component.Config) []option {
 	opts = append(opts, withExtractMetadata(oCfg.Extract.Metadata...))
 	opts = append(opts, withExtractLabels(oCfg.Extract.Labels...))
 	opts = append(opts, withExtractAnnotations(oCfg.Extract.Annotations...))
-	opts = append(opts, withOperatorExtractRules(oCfg.Extract.OperatorRules))
+	opts = append(opts, withAutomaticRules(oCfg.Extract.AutomaticRules))
 
 	// filters
 	opts = append(opts, withFilterNode(oCfg.Filter.Node, oCfg.Filter.NodeFromEnvVar))

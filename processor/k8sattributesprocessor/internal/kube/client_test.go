@@ -702,8 +702,8 @@ func TestExtractionRules(t *testing.T) {
 		},
 	}
 
-	operatorRules := ExtractionRules{
-		OperatorRules: OperatorRules{
+	automaticRules := ExtractionRules{
+		RecommendedRules: AntomaticRules{
 			Enabled: true,
 			Labels:  true,
 		},
@@ -976,7 +976,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		{
 			name:       "operator-rules-builtin",
-			rules:      operatorRules,
+			rules:      automaticRules,
 			attributes: map[string]string{
 				// tested in operator-container-level-attributes below
 			},
@@ -984,7 +984,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		{
 			name:  "operator-rules-label-values",
-			rules: operatorRules,
+			rules: automaticRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/name":    "label-service",
 				"app.kubernetes.io/version": "label-version",
@@ -996,7 +996,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		{
 			name:  "operator-rules-label-values-instance",
-			rules: operatorRules,
+			rules: automaticRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/instance": "instance-service",
 				"app.kubernetes.io/name":     "label-service",
@@ -1009,7 +1009,7 @@ func TestExtractionRules(t *testing.T) {
 		},
 		{
 			name:  "operator-rules-annotation-override",
-			rules: operatorRules,
+			rules: automaticRules,
 			additionalAnnotations: map[string]string{
 				"resource.opentelemetry.io/service.instance.id": "annotation-id",
 				"resource.opentelemetry.io/service.version":     "annotation-version",
@@ -1632,7 +1632,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "operator-container-level-attributes",
 			rules: ExtractionRules{
-				OperatorRules: OperatorRules{Enabled: true},
+				RecommendedRules: AntomaticRules{Enabled: true},
 			},
 			pod: &pod,
 			want: PodContainers{
@@ -2144,6 +2144,54 @@ func TestWaitForMetadata(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+		})
+	}
+}
+
+func Test_parseServiceVersionFromImage(t *testing.T) {
+	tests := []struct {
+		name  string
+		image string
+		want  string
+	}{
+		{
+			name:  "no version",
+			image: "img",
+		},
+		{
+			name:  "with tag",
+			image: "img:1",
+			want:  "1",
+		},
+		{
+			name:  "with tag and digest",
+			image: "img:1@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+			want:  "1@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+		},
+		{
+			name:  "with digest",
+			image: "img@sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+			want:  "sha256:232a180dbcbcfa7250917507f3827d88a9ae89bb1cdd8fe3ac4db7b764ebb25a",
+		},
+		{
+			name:  "with registry",
+			image: "registry.io/img",
+		},
+		{
+			name:  "with port",
+			image: "registry.io:8080/img",
+		},
+		{
+			name:  "latest",
+			image: "img:latest",
+			want:  "latest",
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			got, _ := parseServiceVersionFromImage(tt.image)
+			// error is just for debugging
+			assert.Equalf(t, tt.want, got, "parseServiceVersionFromImage(%v)", tt.image)
 		})
 	}
 }
