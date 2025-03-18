@@ -81,7 +81,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisClusterSlotsAssigned: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisCmdCalls: MetricConfig{
 			Enabled: false,

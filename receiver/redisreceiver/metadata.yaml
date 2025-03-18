@@ -345,15 +345,6 @@ metrics:
       value_type: int
     attributes: [db]
 
-  redis.cluster.slots_assigned:
-    enabled: true
-    description: "Number of slots which are associated to some node"
-    unit: "{slots}"
-    gauge:
-      value_type: int
-      monotonic: false
-      aggregation_temporality: cumulative
-
   # below are all disabled by default
   redis.replication.replica_offset:
     enabled: false
@@ -361,6 +352,15 @@ metrics:
     unit: "By"
     gauge:
       value_type: int
+
+  redis.cluster.slots_assigned:
+    enabled: false
+    description: "Number of slots which are associated to some node"
+    unit: "{slots}"
+    gauge:
+      value_type: int
+      monotonic: false
+      aggregation_temporality: cumulative
 
 tests:
   config:

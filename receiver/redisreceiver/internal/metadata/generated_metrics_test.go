@@ -84,7 +84,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClusterSlotsAssignedDataPoint(ts, 1)
 
