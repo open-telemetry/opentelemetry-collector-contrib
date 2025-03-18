@@ -12,19 +12,16 @@ import (
 )
 
 type AutomaticRules struct {
-	Enabled bool `mapstructure:"enabled"`
-	Labels  bool `mapstructure:"labels"`
+	Enabled            bool     `mapstructure:"enabled"`
+	Labels             bool     `mapstructure:"well_known_labels"`
+	AnnotationPrefixes []string `mapstructure:"annotation_prefixes"`
+	Exclude            []string `mapstructure:"exclude"`
 }
 
-var OperatorAnnotationRule = FieldExtractionRule{
-	Name:                 "$1",
-	KeyRegex:             regexp.MustCompile(`^resource.opentelemetry.io/(.+)$`),
-	HasKeyRegexReference: true,
-	From:                 MetadataFromPod,
-}
+const DefaultAnnotationPrefix = "resource.opentelemetry.io/"
 
-// OperatorLabelRules has rules where the last entry wins
-var OperatorLabelRules = []FieldExtractionRule{
+// AutomaticLabelRules has rules where the last entry wins
+var AutomaticLabelRules = []FieldExtractionRule{
 	{
 		Name: "service.name",
 		Key:  "app.kubernetes.io/name",
@@ -52,7 +49,16 @@ var serviceNamePrecedence = []string{
 	conventions.AttributeK8SPodName,
 }
 
-func OperatorServiceName(containerName string, names map[string]string) string {
+func AutomaticAnnotationRule(prefix string) FieldExtractionRule {
+	return FieldExtractionRule{
+		Name:                 "$1",
+		KeyRegex:             regexp.MustCompile(`^` + prefix + `(.+)$`),
+		HasKeyRegexReference: true,
+		From:                 MetadataFromPod,
+	}
+}
+
+func AutomaticServiceName(containerName string, names map[string]string) string {
 	for _, k := range serviceNamePrecedence {
 		if v, ok := names[k]; ok {
 			return v
@@ -61,7 +67,7 @@ func OperatorServiceName(containerName string, names map[string]string) string {
 	return containerName
 }
 
-func operatorServiceInstanceID(pod *v1.Pod, containerName string) string {
+func automaticServiceInstanceID(pod *v1.Pod, containerName string) string {
 	resNames := []string{pod.Namespace, pod.Name, containerName}
 	return strings.Join(resNames, ".")
 }

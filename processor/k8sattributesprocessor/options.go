@@ -202,9 +202,15 @@ func withAutomaticRules(rules kube.AutomaticRules) option {
 	return func(p *kubernetesprocessor) error {
 		if rules.Enabled {
 			p.rules.AutomaticRules = rules
-			p.rules.Annotations = append(p.rules.Annotations, kube.OperatorAnnotationRule)
+			prefixes := rules.AnnotationPrefixes
+			if len(prefixes) == 0 {
+				prefixes = []string{kube.DefaultAnnotationPrefix}
+			}
+			for _, prefix := range prefixes {
+				p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(prefix))
+			}
 			if rules.Labels {
-				p.rules.Labels = append(p.rules.Labels, kube.OperatorLabelRules...)
+				p.rules.Labels = append(p.rules.Labels, kube.AutomaticLabelRules...)
 			}
 		}
 		return nil

@@ -707,8 +707,8 @@ func TestExtractionRules(t *testing.T) {
 			Enabled: true,
 			Labels:  true,
 		},
-		Annotations: []FieldExtractionRule{OperatorAnnotationRule},
-		Labels:      OperatorLabelRules,
+		Annotations: []FieldExtractionRule{AutomaticAnnotationRule(DefaultAnnotationPrefix)},
+		Labels:      AutomaticLabelRules,
 	}
 
 	testCases := []struct {
@@ -1046,7 +1046,7 @@ func TestExtractionRules(t *testing.T) {
 
 			assert.Equal(t, tc.attributes, p.Attributes)
 			if tc.serviceName != "" {
-				assert.Equal(t, tc.serviceName, OperatorServiceName("containerName", p.ServiceNames))
+				assert.Equal(t, tc.serviceName, AutomaticServiceName("containerName", p.ServiceNames))
 			}
 		})
 	}
