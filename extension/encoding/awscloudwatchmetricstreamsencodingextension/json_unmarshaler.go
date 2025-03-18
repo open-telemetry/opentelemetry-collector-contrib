@@ -131,6 +131,7 @@ type metricKey struct {
 }
 
 func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
+	var errs []error
 	byResource := make(map[resourceKey]map[metricKey]pmetric.Metric)
 
 	// Multiple metrics in each record separated by newline character
@@ -138,17 +139,23 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
 		var cwMetric cloudwatchMetric
 		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
-			return pmetric.Metrics{}, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err)
+			errs = append(errs, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err))
+			continue
 		}
 		if err := validateMetric(cwMetric); err != nil {
-			return pmetric.Metrics{}, fmt.Errorf("invalid cloudwatch metric at index %d: %w", datumIndex, err)
+			errs = append(errs, fmt.Errorf("invalid cloudwatch metric at index %d: %w", datumIndex, err))
+			continue
 		}
 
 		c.addMetricToResource(byResource, cwMetric)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return pmetric.Metrics{}, fmt.Errorf("error scanning for newline-delimited JSON: %w", err)
+		errs = append(errs, fmt.Errorf("error scanning for newline-delimited JSON: %w", err))
+	}
+
+	if len(errs) > 0 {
+		return pmetric.Metrics{}, errors.Join(errs...)
 	}
 
 	return c.createMetrics(byResource), nil

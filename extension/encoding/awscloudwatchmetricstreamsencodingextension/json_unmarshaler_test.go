@@ -133,7 +133,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			record:         joinMetricsFromFile(t, filesDirectory, []string{"invalid_metric.json"}),
 			expectedErrStr: "invalid cloudwatch metric at index 0: cloudwatch metric is missing value",
 		},
-		"valid_record_multiple_metrics": {
+		"invalid_record_multiple_metrics": {
 			// test a record with multiple
 			// metrics: some invalid, some
 			// valid
