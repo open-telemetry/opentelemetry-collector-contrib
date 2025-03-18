@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	cloud.google.com/go/logging v1.13.0
-	cloud.google.com/go/pubsub v1.47.0
+	cloud.google.com/go/pubsub v1.48.0
 	github.com/google/go-cmp v0.7.0
 	github.com/googleapis/gax-go/v2 v2.14.1
 	github.com/iancoleman/strcase v0.3.0
@@ -30,18 +30,18 @@ require (
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/api v0.225.0
-	google.golang.org/genproto v0.0.0-20250122153221-138b5a5a4fd4
-	google.golang.org/genproto/googleapis/api v0.0.0-20250124145028-65684f501c47
+	google.golang.org/genproto v0.0.0-20250303144028-a0af3efb3deb
+	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb
 	google.golang.org/grpc v1.71.0
 	google.golang.org/protobuf v1.36.5
 )
 
 require (
-	cloud.google.com/go v0.118.1 // indirect
+	cloud.google.com/go v0.119.0 // indirect
 	cloud.google.com/go/auth v0.15.0 // indirect
 	cloud.google.com/go/auth/oauth2adapt v0.2.7 // indirect
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
-	cloud.google.com/go/iam v1.3.1 // indirect
+	cloud.google.com/go/iam v1.4.1 // indirect
 	cloud.google.com/go/longrunning v0.6.4 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.2-0.20180830191138-d8f796af33cc // indirect
