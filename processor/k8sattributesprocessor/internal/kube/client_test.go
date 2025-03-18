@@ -703,7 +703,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		RecommendedRules: AntomaticRules{
+		AutomaticRules: AutomaticRules{
 			Enabled: true,
 			Labels:  true,
 		},
@@ -1632,7 +1632,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "operator-container-level-attributes",
 			rules: ExtractionRules{
-				RecommendedRules: AntomaticRules{Enabled: true},
+				AutomaticRules: AutomaticRules{Enabled: true},
 			},
 			pod: &pod,
 			want: PodContainers{

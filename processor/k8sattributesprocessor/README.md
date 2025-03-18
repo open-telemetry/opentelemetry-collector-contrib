@@ -277,6 +277,7 @@ k8sattributes/2:
         from: pod
     automatic_attributes:
       # Apply the operator rules - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
+      enabled: true
       well_known_labels: true # default is false
       annotation_prefixes: ["foo/"] # default is ["resource.opentelemetry.io/"] - use empty list to disable
       exclude: ["service.version"] # default is empty list
