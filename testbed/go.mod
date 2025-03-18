@@ -84,15 +84,15 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.144 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.12 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.13 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.12 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.12 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.13 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.36.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
