@@ -198,10 +198,10 @@ func withExtractMetadata(fields ...string) option {
 	}
 }
 
-func withAutomaticRules(rules *kube.AntomaticRules) option {
+func withAutomaticRules(rules kube.AutomaticRules) option {
 	return func(p *kubernetesprocessor) error {
-		if rules != nil {
-			p.rules.RecommendedRules = rules
+		if rules.Enabled {
+			p.rules.AutomaticRules = rules
 			p.rules.Annotations = append(p.rules.Annotations, kube.OperatorAnnotationRule)
 			if rules.Labels {
 				p.rules.Labels = append(p.rules.Labels, kube.OperatorLabelRules...)

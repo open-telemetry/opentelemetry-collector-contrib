@@ -7,12 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/distribution/reference"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
 
-	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -26,6 +26,7 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
@@ -465,7 +466,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 	if c.Rules.PodName {
 		tags[conventions.AttributeK8SPodName] = pod.Name
 	}
-	if c.Rules.RecommendedRules.Enabled {
+	if c.Rules.AutomaticRules.Enabled {
 		serviceNames[conventions.AttributeK8SPodName] = pod.Name
 	}
 
@@ -506,7 +507,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.RecommendedRules.Enabled {
+		c.Rules.CronJobName || c.Rules.AutomaticRules.Enabled {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -516,19 +517,20 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.RecommendedRules.Enabled {
+				if c.Rules.AutomaticRules.Enabled {
 					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.DeploymentName {
-					name := c.deploymentName(ref)
-					if name != "" {
-						tags[conventions.AttributeK8SDeploymentName] = name
-					}
-				}
-				if c.Rules.RecommendedRules.Enabled {
-					name := c.deploymentName(ref)
-					if name != "" {
-						serviceNames[conventions.AttributeK8SDeploymentName] = name
+				if c.Rules.DeploymentName || c.Rules.AutomaticRules.Enabled {
+					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
+						name := replicaset.Deployment.Name
+						if name != "" {
+							if c.Rules.DeploymentName {
+								tags[conventions.AttributeK8SDeploymentName] = name
+							}
+							if c.Rules.AutomaticRules.Enabled {
+								serviceNames[conventions.AttributeK8SDeploymentName] = name
+							}
+						}
 					}
 				}
 				if c.Rules.DeploymentUID {
@@ -545,7 +547,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.DaemonSetName {
 					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
-				if c.Rules.RecommendedRules.Enabled {
+				if c.Rules.AutomaticRules.Enabled {
 					serviceNames[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
 			case "StatefulSet":
@@ -555,18 +557,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.StatefulSetName {
 					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
-				if c.Rules.RecommendedRules.Enabled {
+				if c.Rules.AutomaticRules.Enabled {
 					serviceNames[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
-				if c.Rules.CronJobName || c.Rules.RecommendedRules.Enabled {
+				if c.Rules.CronJobName || c.Rules.AutomaticRules.Enabled {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
 						name := parts[1]
 						if c.Rules.CronJobName {
 							tags[conventions.AttributeK8SCronJobName] = name
 						}
-						if c.Rules.RecommendedRules.Enabled {
+						if c.Rules.AutomaticRules.Enabled {
 							serviceNames[conventions.AttributeK8SCronJobName] = name
 						}
 					}
@@ -577,7 +579,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.JobName {
 					tags[conventions.AttributeK8SJobName] = ref.Name
 				}
-				if c.Rules.RecommendedRules.Enabled {
+				if c.Rules.AutomaticRules.Enabled {
 					serviceNames[conventions.AttributeK8SJobName] = ref.Name
 				}
 			}
@@ -604,15 +606,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
 	return tags, serviceNames
-}
-
-func (c *WatchClient) deploymentName(ref meta_v1.OwnerReference) string {
-	if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
-		if replicaset.Deployment.Name != "" {
-			return replicaset.Deployment.Name
-		}
-	}
-	return ""
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
@@ -677,7 +670,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.RecommendedRules.Enabled {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.AutomaticRules.Enabled {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -708,30 +701,6 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	}
 
 	return &transformedPod
-}
-
-// parseNameAndTagFromImage parses the image name and tag for differently-formatted image names.
-// returns "latest" as the default if tag not present. also checks if the image contains a digest.
-// if it does, no latest tag is assumed.
-func parseNameAndTagFromImage(image string) (name, tag string, err error) {
-	ref, err := reference.Parse(image)
-	if err != nil {
-		return
-	}
-	namedRef, ok := ref.(reference.Named)
-	if !ok {
-		return "", "", cannotRetrieveImage
-	}
-	name = namedRef.Name()
-	if taggedRef, ok := namedRef.(reference.Tagged); ok {
-		tag = taggedRef.Tag()
-	}
-	if tag == "" {
-		if digestedRef, ok := namedRef.(reference.Digested); !ok || digestedRef.String() == "" {
-			tag = "latest"
-		}
-	}
-	return
 }
 
 // parseServiceVersionFromImage parses the service version for differently-formatted image names
@@ -774,25 +743,24 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.RecommendedRules.Enabled {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.AutomaticRules.Enabled {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			name, tag, err := parseNameAndTagFromImage(spec.Image)
+			imageRef, err := dcommon.ParseImageName(spec.Image)
 			if err == nil {
 				if c.Rules.ContainerImageName {
-					container.ImageName = name
+					container.ImageName = imageRef.Repository
 				}
 				if c.Rules.ContainerImageTag {
-					container.ImageTag = tag
+					container.ImageTag = imageRef.Tag
+				}
+				serviceVersion, err := parseServiceVersionFromImage(spec.Image)
+				if err == nil {
+					if c.Rules.AutomaticRules.Enabled {
+						container.ServiceVersion = serviceVersion
+					}
 				}
 			}
-			serviceVersion, err := parseServiceVersionFromImage(spec.Image)
-			if err == nil {
-				if c.Rules.RecommendedRules.Enabled {
-					container.ServiceVersion = serviceVersion
-				}
-			}
-
 			containers.ByName[spec.Name] = container
 		}
 	}
@@ -806,7 +774,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		if c.Rules.ContainerName {
 			container.Name = containerName
 		}
-		if c.Rules.RecommendedRules.Enabled {
+		if c.Rules.AutomaticRules.Enabled {
 			container.ServiceInstanceID = operatorServiceInstanceID(pod, containerName)
 			container.ServiceName = containerName
 		}
@@ -1146,7 +1114,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
-		rules.RecommendedRules.Enabled
+		rules.AutomaticRules.Enabled
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
