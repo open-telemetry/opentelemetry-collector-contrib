@@ -1733,6 +1733,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"container2-id-456": {
 						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
@@ -1762,6 +1763,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"container2": {
 						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},

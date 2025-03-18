@@ -16,6 +16,7 @@ import (
 	"github.com/tg123/go-htpasswd"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	creds "google.golang.org/grpc/credentials"
 )
@@ -27,7 +28,7 @@ var (
 	errInvalidFormat       = errors.New("invalid authorization format")
 )
 
-func newClientAuthExtension(cfg *Config) extensionauth.Client {
+func newClientAuthExtension(cfg *Config) *basicAuthClient {
 	return &basicAuthClient{clientAuth: cfg.ClientAuth}
 }
 
@@ -201,7 +202,11 @@ func (b *basicAuthRoundTripper) RoundTrip(request *http.Request) (*http.Response
 	return b.base.RoundTrip(newRequest)
 }
 
-var _ extensionauth.Client = (*basicAuthClient)(nil)
+var (
+	_ extension.Extension      = (*basicAuthClient)(nil)
+	_ extensionauth.HTTPClient = (*basicAuthClient)(nil)
+	_ extensionauth.GRPCClient = (*basicAuthClient)(nil)
+)
 
 type basicAuthClient struct {
 	component.StartFunc

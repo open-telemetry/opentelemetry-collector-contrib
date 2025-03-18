@@ -116,7 +116,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			onConnectionCloseFunc(conn)
 		}
 	}
-	handler, _, err := s.Attach(server.Settings{
+	handler, connContext, err := s.Attach(server.Settings{
 		Callbacks: types.Callbacks{
 			OnConnecting: connectingCallback(callbacks),
 		},
@@ -125,6 +125,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/opamp", handler)
 	httpSrv := httptest.NewUnstartedServer(mux)
+	httpSrv.Config.ConnContext = connContext
 
 	shutdown := func() {
 		if !didShutdown.Load() {
@@ -1175,6 +1176,26 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	require.Eventually(t, func() bool {
 		return connectedToNewServer.Load() == true
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
+}
+
+func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
+	connected := atomic.Bool{}
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnConnected: func(ctx context.Context, conn types.Connection) {
+				connected.Store(true)
+			},
+		})
+
+	s := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
 }
 
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
