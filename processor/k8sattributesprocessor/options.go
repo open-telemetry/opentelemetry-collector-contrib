@@ -210,7 +210,11 @@ func withAutomaticRules(rules kube.AutomaticRules) option {
 				p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(prefix))
 			}
 			if rules.Labels {
-				p.rules.Labels = append(p.rules.Labels, kube.AutomaticLabelRules...)
+				for _, rule := range kube.AutomaticLabelRules {
+					if rules.IsEnabled(rule.Name) {
+						p.rules.Labels = append(p.rules.Labels, rule)
+					}
+				}
 			}
 		}
 		return nil
