@@ -16,17 +16,17 @@ jobs:
     runs-on: ubuntu-24.04
     if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependency-major-update') && (github.actor == 'renovate[bot]' || contains(github.event.pull_request.labels.*.name, 'renovatebot')) }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           ref: ${{ github.head_ref }}
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/go/bin
@@ -47,6 +47,6 @@ jobs:
           git diff --exit-code || (git add . && git commit -m "go mod tidy, make genotelcontribcol and make genoteltestbedcol" && git push)
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
-      - uses: actions-ecosystem/action-remove-labels@v1
+      - uses: actions-ecosystem/action-remove-labels@2ce5d41b4b6aa8503e285553f75ed56e0a40bae0 # v1
         with:
           labels: renovatebot
