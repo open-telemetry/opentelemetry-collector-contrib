@@ -2,7 +2,7 @@ version: "3"
 services:
 
   otel-collector:
-    image: otel/opentelemetry-collector-contrib:0.121.0
+    image: otel/opentelemetry-collector-contrib:0.122.0
     container_name: otel
     command: ["--config=/etc/otel-collector-config.yml"]
     volumes:
