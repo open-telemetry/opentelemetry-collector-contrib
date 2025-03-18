@@ -5,15 +5,15 @@ go 1.23.0
 require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tg123/go-htpasswd v1.2.3
-	go.opentelemetry.io/collector/client v1.27.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/component v1.27.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/config/configopaque v1.27.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/confmap v1.27.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/extension v1.27.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/extension/extensionauth v0.121.1-0.20250317165851-432d92d8b366
-	go.opentelemetry.io/collector/extension/extensiontest v0.121.1-0.20250317165851-432d92d8b366
+	go.opentelemetry.io/collector/client v1.28.0
+	go.opentelemetry.io/collector/component v1.28.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.0
+	go.opentelemetry.io/collector/config/configopaque v1.28.0
+	go.opentelemetry.io/collector/confmap v1.28.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.122.0
+	go.opentelemetry.io/collector/extension v1.28.0
+	go.opentelemetry.io/collector/extension/extensionauth v0.122.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.122.0
 	go.uber.org/goleak v1.3.0
 	google.golang.org/grpc v1.71.0
 )
@@ -34,8 +34,8 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250317165851-432d92d8b366 // indirect
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250317165851-432d92d8b366 // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.28.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
