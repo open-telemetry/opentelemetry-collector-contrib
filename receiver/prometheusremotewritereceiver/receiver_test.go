@@ -314,6 +314,7 @@ func TestTranslateV2(t *testing.T) {
 						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
 					},
 					{
+						// Unit changed, so it should be a different metric.
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14},
 						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},

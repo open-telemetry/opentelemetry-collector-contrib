@@ -204,11 +204,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Temporary approach to generate the metric key.
 		// TODO: Replace this with a proper hashing function.
 		metricKey := fmt.Sprintf("%d:%s:%s:%s:%s:%d",
-			hashedLabels,     // Resource identity
-			scopeName,        // Scope name
-			scopeVersion,     // Scope version
-			metricName,       // Metric name
-			unit,             // Unit
+			hashedLabels, // Resource identity
+			scopeName,    // Scope name
+			scopeVersion, // Scope version
+			metricName,   // Metric name
+			unit,         // Unit
+			// TODO: add helpRef as part of the key
 			ts.Metadata.Type) // Metric type
 
 		var scope pmetric.ScopeMetrics
