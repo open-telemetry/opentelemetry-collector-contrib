@@ -206,14 +206,14 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		resourceID := identity.OfResource(rm.Resource())
 		// Temporary approach to generate the metric key.
 		// TODO: Replace this with a proper hashing function.
+		// The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
 		metricKey := fmt.Sprintf("%s:%s:%s:%s:%s:%d",
 			resourceID.String(), // Resource identity
 			scopeName,           // Scope name
 			scopeVersion,        // Scope version
 			metricName,          // Metric name
 			unit,                // Unit
-			// TODO: add helpRef as part of the key
-			ts.Metadata.Type) // Metric type
+			ts.Metadata.Type)    // Metric type
 
 		var scope pmetric.ScopeMetrics
 		var foundScope bool
