@@ -15,13 +15,12 @@ import (
 
 // Subscription is a subscription to a windows eventlog channel.
 type Subscription struct {
-	handle           uintptr
-	Server           string
-	startAt          string
-	sessionHandle    uintptr
-	channel          string
-	bookmark         Bookmark
-	batchSizeReduced bool
+	handle        uintptr
+	Server        string
+	startAt       string
+	sessionHandle uintptr
+	channel       string
+	bookmark      Bookmark
 }
 
 // Open will open the subscription handle.
@@ -75,62 +74,55 @@ func (s *Subscription) Close() error {
 
 var (
 	errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
-	ErrBatchSizeReduced          = errors.New("batch size reduced due to RPC_S_INVALID_BOUND error")
 )
 
-// Read will read events from the subscription.
-func (s *Subscription) Read(maxReads int) ([]Event, error) {
+func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 	if s.handle == 0 {
-		return nil, errSubscriptionHandleNotOpen
+		return nil, 0, errSubscriptionHandleNotOpen
 	}
 
 	if maxReads < 1 {
-		return nil, fmt.Errorf("max reads must be greater than 0")
+		return nil, 0, fmt.Errorf("max reads must be greater than 0")
 	}
 
-	events, err := s.readWithRetry(maxReads)
-	if s.batchSizeReduced {
-		s.batchSizeReduced = false
-		return events, ErrBatchSizeReduced
-	}
+	events, actualMaxReads, err := s.readWithRetry(maxReads, maxReads)
 
 	if err != nil {
-		return nil, err
+		return nil, 0, err
 	}
 
-	return events, nil
+	return events, actualMaxReads, nil
 }
 
 // readWithRetry will read events from the subscription with dynamic batch sizing if the RPC_S_INVALID_BOUND error occurs.
-func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
+func (s *Subscription) readWithRetry(maxReads, originalMaxReads int) ([]Event, int, error) {
 	eventHandles := make([]uintptr, maxReads)
 	var eventsRead uint32
 
 	err := evtNext(s.handle, uint32(maxReads), &eventHandles[0], 0, 0, &eventsRead)
 
 	if errors.Is(err, ErrorInvalidOperation) && eventsRead == 0 {
-		return nil, nil
+		return nil, maxReads, nil
 	}
 
 	if errors.Is(err, windows.RPC_S_INVALID_BOUND) {
 		// close current subscription
 		if closeErr := s.Close(); closeErr != nil {
-			return nil, fmt.Errorf("failed to close subscription during recovery: %w", closeErr)
+			return nil, maxReads, fmt.Errorf("failed to close subscription during recovery: %w", closeErr)
 		}
 
 		// reopen subscription with the same parameters
 		if openErr := s.Open(s.startAt, s.sessionHandle, s.channel, s.bookmark); openErr != nil {
-			return nil, fmt.Errorf("failed to reopen subscription during recovery: %w", openErr)
+			return nil, maxReads, fmt.Errorf("failed to reopen subscription during recovery: %w", openErr)
 		}
 
 		// retry with half the batch size
 		newMaxReads := max(maxReads/2, 1)
-		s.batchSizeReduced = true
-		return s.readWithRetry(newMaxReads)
+		return s.readWithRetry(newMaxReads, originalMaxReads)
 	}
 
 	if err != nil && !errors.Is(err, windows.ERROR_NO_MORE_ITEMS) {
-		return nil, err
+		return nil, maxReads, err
 	}
 
 	events := make([]Event, 0, eventsRead)
@@ -138,7 +130,8 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, error) {
 		event := NewEvent(eventHandle)
 		events = append(events, event)
 	}
-	return events, nil
+	fmt.Println(len(events))
+	return events, maxReads, nil
 }
 
 // createFlags will create the necessary subscription flags from the supplied arguments.
