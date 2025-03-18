@@ -440,11 +440,10 @@ func getMatchingKeys(regexp *regexp.Regexp, attrs pcommon.Map) []string {
 		return keys
 	}
 
-	attrs.Range(func(k string, _ pcommon.Value) bool {
+	for k := range attrs.All() {
 		if regexp.MatchString(k) {
 			keys = append(keys, k)
 		}
-		return true
-	})
+	}
 	return keys
 }

@@ -15,7 +15,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
@@ -25,12 +24,7 @@ import (
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxspan.Name
 
-var (
-	_ ctxresource.Context     = (*TransformContext)(nil)
-	_ ctxscope.Context        = (*TransformContext)(nil)
-	_ ctxspan.Context         = (*TransformContext)(nil)
-	_ zapcore.ObjectMarshaler = (*TransformContext)(nil)
-)
+var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
 
 type TransformContext struct {
 	span                 ptrace.Span
@@ -95,35 +89,6 @@ func (tCtx TransformContext) GetScopeSchemaURLItem() ctxcommon.SchemaURLItem {
 	return tCtx.scopeSpans
 }
 
-func getCache(tCtx TransformContext) pcommon.Map {
-	return tCtx.cache
-}
-
-type pathExpressionParser struct {
-	telemetrySettings component.TelemetrySettings
-	cacheGetSetter    ottl.PathExpressionParser[TransformContext]
-}
-
-func NewParser(functions map[string]ottl.Factory[TransformContext], telemetrySettings component.TelemetrySettings, options ...ottl.Option[TransformContext]) (ottl.Parser[TransformContext], error) {
-	pep := pathExpressionParser{
-		telemetrySettings: telemetrySettings,
-		cacheGetSetter:    ctxcache.PathExpressionParser[TransformContext](getCache),
-	}
-	p, err := ottl.NewParser[TransformContext](
-		functions,
-		pep.parsePath,
-		telemetrySettings,
-		ottl.WithEnumParser[TransformContext](parseEnum),
-	)
-	if err != nil {
-		return ottl.Parser[TransformContext]{}, err
-	}
-	for _, opt := range options {
-		opt(&p)
-	}
-	return p, nil
-}
-
 // EnablePathContextNames enables the support to path's context names on statements.
 // When this option is configured, all statement's paths must have a valid context prefix,
 // otherwise an error is reported.
@@ -171,6 +136,20 @@ func NewConditionSequence(conditions []*ottl.Condition[TransformContext], teleme
 	return c
 }
 
+func NewParser(
+	functions map[string]ottl.Factory[TransformContext],
+	telemetrySettings component.TelemetrySettings,
+	options ...ottl.Option[TransformContext],
+) (ottl.Parser[TransformContext], error) {
+	return ctxcommon.NewParser(
+		functions,
+		telemetrySettings,
+		pathExpressionParser(getCache),
+		parseEnum,
+		options...,
+	)
+}
+
 func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	if val != nil {
 		if enum, ok := ctxspan.SymbolTable[*val]; ok {
@@ -181,38 +160,19 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 	return nil, fmt.Errorf("enum symbol not provided")
 }
 
-func (pep *pathExpressionParser) parsePath(path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
-	if path == nil {
-		return nil, ctxerror.New("nil", "nil", ctxspan.Name, ctxspan.DocRef)
-	}
-	// Higher contexts parsing
-	if path.Context() != "" && path.Context() != ctxspan.Name {
-		return pep.parseHigherContextPath(path.Context(), path)
-	}
-	// Backward compatibility with paths without context
-	if path.Context() == "" && (path.Name() == ctxresource.Name || path.Name() == ctxscope.LegacyName) {
-		return pep.parseHigherContextPath(path.Name(), path.Next())
-	}
-
-	switch path.Name() {
-	case "cache":
-		return pep.cacheGetSetter(path)
-	default:
-		return ctxspan.PathGetSetter[TransformContext](ctxspan.Name, path)
-	}
+func getCache(tCtx TransformContext) pcommon.Map {
+	return tCtx.cache
 }
 
-func (pep *pathExpressionParser) parseHigherContextPath(context string, path ottl.Path[TransformContext]) (ottl.GetSetter[TransformContext], error) {
-	switch context {
-	case ctxresource.Name:
-		return ctxresource.PathGetSetter[TransformContext](ctxspan.Name, path)
-	case ctxscope.LegacyName:
-		return ctxscope.PathGetSetter[TransformContext](ctxspan.Name, path)
-	default:
-		var fullPath string
-		if path != nil {
-			fullPath = path.String()
-		}
-		return nil, ctxerror.New(context, fullPath, ctxspan.Name, ctxspan.DocRef)
-	}
+func pathExpressionParser(cacheGetter ctxcache.Getter[TransformContext]) ottl.PathExpressionParser[TransformContext] {
+	return ctxcommon.PathExpressionParser(
+		ctxspan.Name,
+		ctxspan.DocRef,
+		cacheGetter,
+		map[string]ottl.PathExpressionParser[TransformContext]{
+			ctxresource.Name:    ctxresource.PathGetSetter[TransformContext],
+			ctxscope.Name:       ctxscope.PathGetSetter[TransformContext],
+			ctxscope.LegacyName: ctxscope.PathGetSetter[TransformContext],
+			ctxspan.Name:        ctxspan.PathGetSetter[TransformContext],
+		})
 }
