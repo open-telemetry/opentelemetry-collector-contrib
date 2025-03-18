@@ -118,8 +118,37 @@ func addDoubleGauge(metrics pmetric.MetricSlice, metricName string, value float6
 	attributes.CopyTo(doublePt.Attributes())
 }
 
-func convertTimestamp(sec float64) pcommon.Timestamp {
-	return pcommon.Timestamp(sec * 1e9)
+/*
+	Splunk HEC timestamps can be in nanoseconds, microseconds, milliseconds, and seconds epoch.
+	Example:
+		- 1234567890
+		- 1234567890123
+		- 1234567890123456
+		- 1234567890123456789
+
+	The format can also be <second>.<sub-second>.
+	Example:
+		- 1234567890.000
+		- 1234567890.123
+		- 1234567890.123456
+		- 1234567890.123456789
+*/
+
+func convertTimestamp(t float64) pcommon.Timestamp {
+	if t >= 10_000_000_000_000_000 {
+		// nano
+		return pcommon.Timestamp(t)
+	}
+	if t >= 10_000_000_000_000 {
+		// micro
+		return pcommon.Timestamp(t * 1e3)
+	}
+	if t >= 10_000_000_000 {
+		// milli
+		return pcommon.Timestamp(t * 1e6)
+	}
+	// second
+	return pcommon.Timestamp(t * 1e9)
 }
 
 // Extract dimensions from the Splunk event fields to populate metric data point attributes.
