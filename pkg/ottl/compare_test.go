@@ -8,6 +8,7 @@ import (
 	"testing"
 
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 // Our types are bool, int, float, string, Bytes, nil, so we compare all types in both directions.
@@ -24,6 +25,13 @@ var (
 	i64b = int64(2)
 	f64a = float64(1)
 	f64b = float64(2)
+
+	m1 = map[string]any{
+		"test": true,
+	}
+	m2 = map[string]any{
+		"test": false,
+	}
 )
 
 type testA struct {
@@ -41,6 +49,12 @@ type testB struct {
 // every other basic type, and includes a pretty good set of tests on the pointers to all the
 // basic types as well.
 func Test_compare(t *testing.T) {
+	pm1 := pcommon.NewMap()
+	pm1.PutBool("test", true)
+
+	pm2 := pcommon.NewMap()
+	pm2.PutBool("test", false)
+
 	tests := []struct {
 		name string
 		a    any
@@ -100,6 +114,15 @@ func Test_compare(t *testing.T) {
 		{"non-prim, diff type", testA{"hi"}, testB{"hi"}, []bool{false, true, false, false, false, false}},
 		{"non-prim, int type", testA{"hi"}, 5, []bool{false, true, false, false, false, false}},
 		{"int, non-prim", 5, testA{"hi"}, []bool{false, true, false, false, false, false}},
+
+		{"maps diff", m1, m2, []bool{false, true, false, false, false, false}},
+		{"maps same", m1, m1, []bool{true, false, false, false, false, false}},
+		{"pmaps diff", pm1, pm2, []bool{false, true, false, false, false, false}},
+		{"pmaps same", pm1, pm1, []bool{true, false, false, false, false, false}},
+		{"mixed maps diff", m1, pm2, []bool{false, true, false, false, false, false}},
+		{"mixed maps same", m1, pm1, []bool{true, false, false, false, false, false}},
+		{"map and other type", m1, sa, []bool{false, true, false, false, false, false}},
+		{"pmap and other type", pm1, sa, []bool{false, true, false, false, false, false}},
 	}
 	ops := []compareOp{eq, ne, lt, lte, gte, gt}
 	for _, tt := range tests {
