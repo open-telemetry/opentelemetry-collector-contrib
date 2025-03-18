@@ -209,7 +209,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		metricName := ls.Get(labels.MetricName)
 		// TODO: Like UnitRef, we should assign the HelpRef to the metric.
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds", ts.Metadata.UnitRef))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue
 		}
 		unit := req.Symbols[ts.Metadata.UnitRef]

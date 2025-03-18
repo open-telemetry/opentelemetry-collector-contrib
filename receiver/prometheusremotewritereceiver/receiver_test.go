@@ -171,7 +171,7 @@ func TestTranslateV2(t *testing.T) {
 					},
 				},
 			},
-			expectError: "unit ref 3 is out of bounds",
+			expectError: "unit ref 3 is out of bounds of symbolsTable",
 		},
 		{
 			name:    "valid request",
