@@ -72,9 +72,7 @@ func (s *Subscription) Close() error {
 	return nil
 }
 
-var (
-	errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
-)
+var errSubscriptionHandleNotOpen = errors.New("subscription handle is not open")
 
 func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 	if s.handle == 0 {
@@ -85,8 +83,7 @@ func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 		return nil, 0, fmt.Errorf("max reads must be greater than 0")
 	}
 
-	events, actualMaxReads, err := s.readWithRetry(maxReads, maxReads)
-
+	events, actualMaxReads, err := s.readWithRetry(maxReads)
 	if err != nil {
 		return nil, 0, err
 	}
@@ -95,7 +92,7 @@ func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 }
 
 // readWithRetry will read events from the subscription with dynamic batch sizing if the RPC_S_INVALID_BOUND error occurs.
-func (s *Subscription) readWithRetry(maxReads, originalMaxReads int) ([]Event, int, error) {
+func (s *Subscription) readWithRetry(maxReads int) ([]Event, int, error) {
 	eventHandles := make([]uintptr, maxReads)
 	var eventsRead uint32
 
@@ -118,7 +115,7 @@ func (s *Subscription) readWithRetry(maxReads, originalMaxReads int) ([]Event, i
 
 		// retry with half the batch size
 		newMaxReads := max(maxReads/2, 1)
-		return s.readWithRetry(newMaxReads, originalMaxReads)
+		return s.readWithRetry(newMaxReads)
 	}
 
 	if err != nil && !errors.Is(err, windows.ERROR_NO_MORE_ITEMS) {
@@ -130,7 +127,7 @@ func (s *Subscription) readWithRetry(maxReads, originalMaxReads int) ([]Event, i
 		event := NewEvent(eventHandle)
 		events = append(events, event)
 	}
-	fmt.Println(len(events))
+
 	return events, maxReads, nil
 }
 
