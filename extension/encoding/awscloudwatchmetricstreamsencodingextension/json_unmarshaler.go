@@ -154,11 +154,12 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 		errs = append(errs, fmt.Errorf("error scanning for newline-delimited JSON: %w", err))
 	}
 
+	var finalErr error
 	if len(errs) > 0 {
-		return pmetric.Metrics{}, errors.Join(errs...)
+		finalErr = errors.Join(errs...)
 	}
 
-	return c.createMetrics(byResource), nil
+	return c.createMetrics(byResource), finalErr
 }
 
 // addMetricToResource adds a new cloudwatchMetric to the
