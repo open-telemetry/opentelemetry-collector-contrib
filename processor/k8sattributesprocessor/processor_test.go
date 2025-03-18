@@ -864,9 +864,10 @@ func TestAddNamespaceLabels(t *testing.T) {
 	m.assertBatchesLen(1)
 	m.assertResourceObjectLen(0)
 	m.assertResource(0, func(res pcommon.Resource) {
-		assert.Equal(t, 2, res.Attributes().Len())
+		assert.Equal(t, 3, res.Attributes().Len())
 		assertResourceHasStringAttribute(t, res, "k8s.pod.ip", podIP)
 		assertResourceHasStringAttribute(t, res, "nslabel", "1")
+		assertResourceHasStringAttribute(t, res, "service.namespace", "namespace-1")
 	})
 }
 
@@ -1099,7 +1100,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "operator-explicit-values-win",
+			name: "automatic-explicit-values-win",
 			op: func(kp *kubernetesprocessor) {
 				kp.podAssociations = []kube.Association{
 					{
