@@ -241,10 +241,9 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 	// TODO currently we do not have the build info containing the version available to set semconv.AttributeServiceVersion
 
 	var attrs []telemetryconfig.AttributeNameValue
-	pcommonRes.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range pcommonRes.Attributes().All() {
 		attrs = append(attrs, telemetryconfig.AttributeNameValue{Name: k, Value: v.Str()})
-		return true
-	})
+	}
 
 	sch := semconv.SchemaURL
 
@@ -534,8 +533,6 @@ func (s *Supervisor) startOpAMP() error {
 }
 
 func (s *Supervisor) startOpAMPClient() error {
-	s.opampClient = client.NewWebSocket(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-client"))
-
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
 	parsedURL, err := url.Parse(s.config.Server.Endpoint)
@@ -547,6 +544,15 @@ func (s *Supervisor) startOpAMPClient() error {
 		if err != nil {
 			return err
 		}
+	}
+	logger := newLoggerFromZap(s.telemetrySettings.Logger, "opamp-client")
+	switch parsedURL.Scheme {
+	case "ws", "wss":
+		s.opampClient = client.NewWebSocket(logger)
+	case "http", "https":
+		s.opampClient = client.NewHTTP(logger)
+	default:
+		return fmt.Errorf("unsupported scheme in server endpoint: %q", parsedURL.Scheme)
 	}
 
 	s.telemetrySettings.Logger.Debug("Connecting to OpAMP server...", zap.String("endpoint", s.config.Server.Endpoint), zap.Any("headers", s.config.Server.Headers))

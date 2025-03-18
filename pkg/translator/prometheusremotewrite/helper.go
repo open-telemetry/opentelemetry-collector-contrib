@@ -131,12 +131,11 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 	labels := make([]prompb.Label, 0, maxLabelCount)
 	// XXX: Should we always drop service namespace/service name/service instance ID from the labels
 	// (as they get mapped to other Prometheus labels)?
-	attributes.Range(func(key string, value pcommon.Value) bool {
+	for key, value := range attributes.All() {
 		if !slices.Contains(ignoreAttrs, key) {
 			labels = append(labels, prompb.Label{Name: key, Value: value.AsString()})
 		}
-		return true
-	})
+	}
 	sort.Stable(ByLabelName(labels))
 
 	for _, label := range labels {
@@ -339,7 +338,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 
 		attrs := exemplar.FilteredAttributes()
 		labelsFromAttributes := make([]prompb.Label, 0, attrs.Len())
-		attrs.Range(func(key string, value pcommon.Value) bool {
+		for key, value := range attrs.All() {
 			val := value.AsString()
 			exemplarRunes += utf8.RuneCountInString(key) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
@@ -348,9 +347,7 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 			}
 
 			labelsFromAttributes = append(labelsFromAttributes, promLabel)
-
-			return true
-		})
+		}
 		if exemplarRunes <= maxExemplarRunes {
 			// only append filtered attributes if it does not cause exemplar
 			// labels to exceed the max number of runes
