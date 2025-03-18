@@ -13,13 +13,14 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/client-go/kubernetes/fake"
 )
 
-var endpointsArray = []runtime.Object{
-	&v1.Endpoints{
+var endpointSlicesArray = []runtime.Object{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "guestbook",
 			GenerateName:    "",
@@ -35,63 +36,52 @@ var endpointsArray = []runtime.Object{
 				"app": "guestbook",
 			},
 		},
-		Subsets: []v1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []v1.EndpointAddress{
-					{
-						IP:       "192.168.122.125",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "guestbook-qjqnz",
-							UID:             "9ca74e86-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550311",
-							FieldPath:       "",
-						},
-					},
-					{
-						IP:       "192.168.176.235",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-153-1.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "guestbook-92wmq",
-							UID:             "9ca662bb-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550313",
-							FieldPath:       "",
-						},
-					},
-					{
-						IP:       "192.168.251.65",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "guestbook-qbdv8",
-							UID:             "9ca76fd6-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550319",
-							FieldPath:       "",
-						},
-					},
+				Addresses: []string{"192.168.122.125"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "guestbook-qjqnz",
+					UID:             "9ca74e86-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550311",
+					FieldPath:       "",
 				},
-				Ports: []v1.EndpointPort{
-					{
-						Name:     "",
-						Port:     3000,
-						Protocol: "TCP",
-					},
+			},
+			{
+				Addresses: []string{"192.168.176.235"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-153-1.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "guestbook-92wmq",
+					UID:             "9ca662bb-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550313",
+					FieldPath:       "",
+				},
+			},
+			{
+				Addresses: []string{"192.168.251.65"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "guestbook-qbdv8",
+					UID:             "9ca76fd6-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550319",
+					FieldPath:       "",
 				},
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kubernetes",
 			GenerateName:    "",
@@ -104,29 +94,13 @@ var endpointsArray = []runtime.Object{
 				Time: time.Now(),
 			},
 		},
-		Subsets: []v1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []v1.EndpointAddress{
-					{
-						IP:       "192.168.174.242",
-						Hostname: "",
-					},
-					{
-						IP:       "192.168.82.3",
-						Hostname: "",
-					},
-				},
-				Ports: []v1.EndpointPort{
-					{
-						Name:     "https",
-						Port:     443,
-						Protocol: "TCP",
-					},
-				},
+				Addresses: []string{"192.168.174.242", "192.168.82.3"},
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "redis-master",
 			GenerateName:    "",
@@ -143,35 +117,24 @@ var endpointsArray = []runtime.Object{
 				"role": "master",
 			},
 		},
-		Subsets: []v1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []v1.EndpointAddress{
-					{
-						IP:       "192.168.108.68",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "redis-master-rh2bd",
-							UID:             "5d7825f3-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550097",
-							FieldPath:       "",
-						},
-					},
-				},
-				Ports: []v1.EndpointPort{
-					{
-						Name:     "",
-						Port:     6379,
-						Protocol: "TCP",
-					},
+				Addresses: []string{"192.168.108.68"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "redis-master-rh2bd",
+					UID:             "5d7825f3-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550097",
+					FieldPath:       "",
 				},
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "redis-slave",
 			GenerateName:    "",
@@ -188,63 +151,52 @@ var endpointsArray = []runtime.Object{
 				"role": "slave",
 			},
 		},
-		Subsets: []v1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []v1.EndpointAddress{
-					{
-						IP:       "192.168.186.217",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-153-1.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "redis-slave-mdjsj",
-							UID:             "8137c74b-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550223",
-							FieldPath:       "",
-						},
-					},
-					{
-						IP:       "192.168.68.108",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "default",
-							Name:            "redis-slave-gtd5x",
-							UID:             "813878c3-5573-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "1550226",
-							FieldPath:       "",
-						},
-					},
-					{
-						IP:       "192.168.68.109",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "",
-							Name:            "",
-							UID:             "813878c3-5573-11e9-b47e-077b8b31cbd9",
-							APIVersion:      "",
-							ResourceVersion: "1550226",
-							FieldPath:       "",
-						},
-					},
+				Addresses: []string{"192.168.186.217"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-153-1.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "redis-slave-mdjsj",
+					UID:             "8137c74b-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550226",
+					FieldPath:       "",
 				},
-				Ports: []v1.EndpointPort{
-					{
-						Name:     "",
-						Port:     6379,
-						Protocol: "TCP",
-					},
+			},
+			{
+				Addresses: []string{"192.168.68.108"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "default",
+					Name:            "redis-slave-gtd5x",
+					UID:             "813878c3-5573-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "1550226",
+					FieldPath:       "",
+				},
+			},
+			{
+				Addresses: []string{"192.168.68.109"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-76-61.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "",
+					Name:            "",
+					UID:             "813878c3-5573-11e9-b47e-077b8b31cbd9",
+					APIVersion:      "",
+					ResourceVersion: "1550226",
+					FieldPath:       "",
 				},
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-controller-manager",
 			GenerateName:    "",
@@ -261,7 +213,7 @@ var endpointsArray = []runtime.Object{
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-dns",
 			GenerateName:    "",
@@ -280,54 +232,38 @@ var endpointsArray = []runtime.Object{
 				"kubernetes.io/name":            "CoreDNS",
 			},
 		},
-		Subsets: []v1.EndpointSubset{
+		Endpoints: []discoveryv1.Endpoint{
 			{
-				Addresses: []v1.EndpointAddress{
-					{
-						IP:       "192.168.212.227",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "kube-system",
-							Name:            "coredns-7554568866-26jdf",
-							UID:             "503e1eae-4c0a-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "5842",
-							FieldPath:       "",
-						},
-					},
-					{
-						IP:       "192.168.222.250",
-						Hostname: "",
-						NodeName: aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
-						TargetRef: &v1.ObjectReference{
-							Kind:            "Pod",
-							Namespace:       "kube-system",
-							Name:            "coredns-7554568866-shwn6",
-							UID:             "503f9b07-4c0a-11e9-b47e-066a7a20bac8",
-							APIVersion:      "",
-							ResourceVersion: "5839",
-							FieldPath:       "",
-						},
-					},
+				Addresses: []string{"192.168.212.227"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "kube-system",
+					Name:            "coredns-7554568866-26jdf",
+					UID:             "503e1eae-4c0a-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "5842",
+					FieldPath:       "",
 				},
-				Ports: []v1.EndpointPort{
-					{
-						Name:     "dns",
-						Port:     53,
-						Protocol: "UDP",
-					},
-					{
-						Name:     "dns-tcp",
-						Port:     53,
-						Protocol: "TCP",
-					},
+			},
+			{
+				Addresses: []string{"192.168.222.250"},
+				Hostname:  aws.String(""),
+				NodeName:  aws.String("ip-192-168-200-63.eu-west-1.compute.internal"),
+				TargetRef: &v1.ObjectReference{
+					Kind:            "Pod",
+					Namespace:       "kube-system",
+					Name:            "coredns-7554568866-shwn6",
+					UID:             "503f9b07-4c0a-11e9-b47e-066a7a20bac8",
+					APIVersion:      "",
+					ResourceVersion: "5839",
+					FieldPath:       "",
 				},
 			},
 		},
 	},
-	&v1.Endpoints{
+	&discoveryv1.EndpointSlice{
 		ObjectMeta: metav1.ObjectMeta{
 			Name:            "kube-scheduler",
 			GenerateName:    "",
@@ -359,11 +295,11 @@ func setUpEndpointClient() (*epClient, chan struct{}) {
 func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 	defer close(stopChan)
-	arrays := make([]any, len(endpointsArray))
+	arrays := make([]any, len(endpointSlicesArray))
 	for i := range arrays {
-		arrays[i] = endpointsArray[i]
+		arrays[i] = endpointSlicesArray[i]
 	}
-	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointSlicesArray), ""))
 
 	expectedMap := map[string][]string{
 		"namespace:default,podName:redis-master-rh2bd":           {"redis-master"},
@@ -383,7 +319,7 @@ func TestEpClient_PodKeyToServiceNames(t *testing.T) {
 func TestEpClient_ServiceNameToPodNum(t *testing.T) {
 	client, stopChan := setUpEndpointClient()
 
-	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointsArray), ""))
+	assert.NoError(t, client.store.Replace(convertToInterfaceArray(endpointSlicesArray), ""))
 
 	expectedMap := map[Service]int{
 		NewService("redis-slave", "default"):  2,
@@ -413,7 +349,7 @@ func TestNewEndpointClient(t *testing.T) {
 	setKubeConfigPath(t)
 	setOption := epSyncCheckerOption(&mockReflectorSyncChecker{})
 
-	fakeClientSet := fake.NewSimpleClientset(endpointsArray...)
+	fakeClientSet := fake.NewSimpleClientset(endpointSlicesArray...)
 	client := newEpClient(fakeClientSet, zap.NewNop(), setOption)
 	assert.NotNil(t, client)
 	client.shutdown()

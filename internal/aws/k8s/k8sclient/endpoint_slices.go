@@ -9,7 +9,7 @@ import (
 	"sync"
 
 	"go.uber.org/zap"
-	v1 "k8s.io/api/core/v1"
+	discoveryv1 "k8s.io/api/discovery/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/watch"
@@ -132,8 +132,8 @@ func newEpClient(clientSet kubernetes.Interface, logger *zap.Logger, options ...
 	}
 
 	c.store = NewObjStore(transformFuncEndpoint, logger)
-	lw := c.createEndpointListWatch(clientSet, metav1.NamespaceAll)
-	reflector := cache.NewReflector(lw, &v1.Endpoints{}, c.store, 0)
+	lw := c.createEndpointSlicesListWatch(clientSet, metav1.NamespaceAll)
+	reflector := cache.NewReflector(lw, &discoveryv1.EndpointSlice{}, c.store, 0)
 
 	go reflector.Run(c.stopChan)
 
@@ -151,25 +151,23 @@ func (c *epClient) shutdown() {
 }
 
 func transformFuncEndpoint(obj any) (any, error) {
-	endpoint, ok := obj.(*v1.Endpoints)
+	endpointSlice, ok := obj.(*discoveryv1.EndpointSlice)
 	if !ok {
 		return nil, fmt.Errorf("input obj %v is not Endpoint type", obj)
 	}
 	info := new(endpointInfo)
-	info.name = endpoint.Name
-	info.namespace = endpoint.Namespace
+	info.name = endpointSlice.Name
+	info.namespace = endpointSlice.Namespace
 	info.podKeyList = []string{}
-	if subsets := endpoint.Subsets; subsets != nil {
-		for _, subset := range subsets {
-			if addresses := subset.Addresses; addresses != nil {
-				for _, address := range addresses {
-					if targetRef := address.TargetRef; targetRef != nil && targetRef.Kind == typePod {
-						podKey := k8sutil.CreatePodKey(targetRef.Namespace, targetRef.Name)
-						if podKey == "" {
-							continue
-						}
-						info.podKeyList = append(info.podKeyList, podKey)
+	if endpoints := endpointSlice.Endpoints; endpoints != nil {
+		for _, endpoint := range endpoints {
+			if addresses := endpoint.Addresses; addresses != nil {
+				if targetRef := endpoint.TargetRef; targetRef != nil && targetRef.Kind == typePod {
+					podKey := k8sutil.CreatePodKey(targetRef.Namespace, targetRef.Name)
+					if podKey == "" {
+						continue
 					}
+					info.podKeyList = append(info.podKeyList, podKey)
 				}
 			}
 		}
@@ -177,14 +175,14 @@ func transformFuncEndpoint(obj any) (any, error) {
 	return info, nil
 }
 
-func (c *epClient) createEndpointListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
+func (c *epClient) createEndpointSlicesListWatch(client kubernetes.Interface, ns string) cache.ListerWatcher {
 	ctx := context.Background()
 	return &cache.ListWatch{
 		ListFunc: func(opts metav1.ListOptions) (runtime.Object, error) {
-			return client.CoreV1().Endpoints(ns).List(ctx, opts)
+			return client.DiscoveryV1().EndpointSlices(ns).List(ctx, opts)
 		},
 		WatchFunc: func(opts metav1.ListOptions) (watch.Interface, error) {
-			return client.CoreV1().Endpoints(ns).Watch(ctx, opts)
+			return client.DiscoveryV1().EndpointSlices(ns).Watch(ctx, opts)
 		},
 	}
 }
