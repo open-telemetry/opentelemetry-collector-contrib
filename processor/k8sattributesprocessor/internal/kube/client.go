@@ -762,7 +762,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			container.Name = containerName
 		}
 		if c.Rules.AutomaticRules.Enabled {
-			container.ServiceInstanceID = operatorServiceInstanceID(pod, containerName)
+			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
 			container.ServiceName = containerName
 		}
 		containerID := apiStatus.ContainerID
