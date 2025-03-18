@@ -257,13 +257,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			addDatapoints(metric.Gauge().DataPoints(), ls, ts)
+			addCounterGaugeDatapoints(metric.Gauge().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			addDatapoints(metric.Sum().DataPoints(), ls, ts)
+			addCounterGaugeDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			// TODO: Implement histogram to summary conversion
+			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			// TODO: Implement histogram to summary conversion
+			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
@@ -310,6 +310,21 @@ func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts
 			attributes.PutStr(l.Name, l.Value)
 		}
 	}
+}
+
+func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+// addCounterGaugeDatapoints deal with the counter and gauge datapoints. Both have the same structure.
+// The difference is that the counter is monotonic and the gauge is not.
+func addCounterGaugeDatapoints(dp pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	// TODO: Implement this function
+	addDatapoints(dp, ls, ts)
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
