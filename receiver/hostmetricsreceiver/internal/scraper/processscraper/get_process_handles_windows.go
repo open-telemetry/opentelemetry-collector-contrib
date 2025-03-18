@@ -16,9 +16,9 @@ import (
 )
 
 var useLegacyGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
-	"receiver.hostmetricsreceiver.useLegacyGetProcessHandles",
+	"hostmetrics.process.useLegacyGetProcesses",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("If enabled, the scraper will use the legacy implementation of getGopsutilProcessHandles."),
+	featuregate.WithRegisterDescription("If enabled, the scraper will use the legacy implementation to retrieve process handles."),
 )
 
 func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
