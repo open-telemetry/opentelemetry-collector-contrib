@@ -103,7 +103,7 @@ func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]stri
 		out["log"] = lr.Body().Str()
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			out[k] = v.Str()
@@ -116,8 +116,7 @@ func (f *FluentLogsForwarder) convertLogToMap(lr plog.LogRecord) map[string]stri
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 
 	return out
 }
@@ -128,7 +127,7 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 	}
 	rec["log"] = lr.Body().Str()
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		switch v.Type() {
 		case pcommon.ValueTypeStr:
 			rec[k] = v.Str()
@@ -141,8 +140,7 @@ func (f *FluentLogsForwarder) convertLogToJSON(lr plog.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 	b, err := json.Marshal(rec)
 	if err != nil {
 		panic("failed to write log: " + err.Error())

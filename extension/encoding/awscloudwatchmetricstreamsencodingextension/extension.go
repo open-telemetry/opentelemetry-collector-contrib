@@ -5,26 +5,40 @@ package awscloudwatchmetricstreamsencodingextension // import "github.com/open-t
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 )
 
+var errEmptyRecord = errors.New("0 metrics were extracted from the record")
+
 var _ encoding.MetricsUnmarshalerExtension = (*encodingExtension)(nil)
 
 type encodingExtension struct {
-	pmetric.Unmarshaler
+	unmarshaler pmetric.Unmarshaler
+	format      string
 }
 
-func newExtension(cfg *Config) (*encodingExtension, error) {
+func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
 	case formatJSON:
-		return &encodingExtension{Unmarshaler: formatJSONUnmarshaler{}}, nil
+		return &encodingExtension{
+			unmarshaler: &formatJSONUnmarshaler{
+				buildInfo: settings.BuildInfo,
+				logger:    settings.Logger,
+			},
+			format: formatJSON,
+		}, nil
 	case formatOpenTelemetry10:
-		return &encodingExtension{Unmarshaler: formatOpenTelemetry10Unmarshaler{}}, nil
+		return &encodingExtension{
+			unmarshaler: &formatOpenTelemetry10Unmarshaler{},
+			format:      formatOpenTelemetry10,
+		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
 		// so we'll only get here if we haven't handled a valid
@@ -41,16 +55,10 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-type formatJSONUnmarshaler struct{}
-
-func (formatJSONUnmarshaler) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
-	// TODO implement
-	return pmetric.Metrics{}, fmt.Errorf("UnmarshalMetrics unimplemented for format %q", formatJSON)
-}
-
-type formatOpenTelemetry10Unmarshaler struct{}
-
-func (formatOpenTelemetry10Unmarshaler) UnmarshalMetrics([]byte) (pmetric.Metrics, error) {
-	// TODO implement
-	return pmetric.Metrics{}, fmt.Errorf("UnmarshalMetrics unimplemented for format %q", formatOpenTelemetry10)
+func (e *encodingExtension) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
+	metrics, err := e.unmarshaler.UnmarshalMetrics(record)
+	if err != nil {
+		return pmetric.Metrics{}, fmt.Errorf("failed to unmarshal metrics as '%s' format: %w", e.format, err)
+	}
+	return metrics, nil
 }

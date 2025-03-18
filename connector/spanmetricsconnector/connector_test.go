@@ -285,7 +285,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 		notInSpanAttrName0:     pcommon.NewValueStr("defaultNotInSpanAttrVal"),
 		regionResourceAttrName: pcommon.NewValueStr(sampleRegion),
 	}
-	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range dp.Attributes().All() {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
@@ -301,8 +301,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
-		return true
-	})
+	}
 	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/name/kind should be a unique metric.
@@ -464,19 +463,19 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 		ResourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
-			{stringAttrName, nil},
-			{intAttrName, nil},
-			{doubleAttrName, nil},
-			{boolAttrName, nil},
-			{mapAttrName, nil},
-			{arrayAttrName, nil},
-			{nullAttrName, defaultNullValue},
+			{Name: stringAttrName, Default: nil},
+			{Name: intAttrName, Default: nil},
+			{Name: doubleAttrName, Default: nil},
+			{Name: boolAttrName, Default: nil},
+			{Name: mapAttrName, Default: nil},
+			{Name: arrayAttrName, Default: nil},
+			{Name: nullAttrName, Default: defaultNullValue},
 			// Add a default value for an attribute that doesn't exist in a span
-			{notInSpanAttrName0, stringp("defaultNotInSpanAttrVal")},
+			{Name: notInSpanAttrName0, Default: stringp("defaultNotInSpanAttrVal")},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
-			{notInSpanAttrName1, nil},
+			{Name: notInSpanAttrName1, Default: nil},
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
-			{regionResourceAttrName, nil},
+			{Name: regionResourceAttrName, Default: nil},
 		},
 		Events:               eventsConfig(),
 		MetricsExpiration:    expiration,

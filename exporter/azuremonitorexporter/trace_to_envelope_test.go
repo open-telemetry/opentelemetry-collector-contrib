@@ -722,7 +722,7 @@ func assertAttributesCopiedToProperties(
 	attributeMap pcommon.Map,
 	properties map[string]string,
 ) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		p, exists := properties[k]
 		assert.True(t, exists)
 
@@ -736,8 +736,7 @@ func assertAttributesCopiedToProperties(
 		case pcommon.ValueTypeDouble:
 			assert.Equal(t, strconv.FormatFloat(v.Double(), 'f', -1, 64), p)
 		}
-		return true
-	})
+	}
 }
 
 /*

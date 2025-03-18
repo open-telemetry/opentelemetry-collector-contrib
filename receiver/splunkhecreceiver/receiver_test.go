@@ -251,7 +251,7 @@ func Test_splunkhecReceiver_handleReq(t *testing.T) {
 		{
 			name: "metric_msg_accepted",
 			req: func() *http.Request {
-				msgBytes, err := json.Marshal(buildSplunkHecMetricsMsg(3, 4, 3))
+				msgBytes, err := json.Marshal(buildSplunkHecMetricsMsg("metric", 3, 4, 3))
 				require.NoError(t, err)
 				req := httptest.NewRequest(http.MethodPost, "http://localhost/foo", bytes.NewReader(msgBytes))
 				return req
@@ -368,7 +368,7 @@ func Test_consumer_err(t *testing.T) {
 
 func Test_consumer_err_metrics(t *testing.T) {
 	currentTime := float64(time.Now().UnixNano()) / 1e6
-	splunkMsg := buildSplunkHecMetricsMsg(currentTime, 13, 2)
+	splunkMsg := buildSplunkHecMetricsMsg("metric", currentTime, 13, 2)
 	assert.True(t, splunkMsg.IsMetric())
 	config := createDefaultConfig().(*Config)
 	config.Endpoint = "localhost:0" // Actually not creating the endpoint\
@@ -570,7 +570,7 @@ func Test_splunkhecReceiver_AccessTokenPassthrough(t *testing.T) {
 			currentTime := float64(time.Now().UnixNano()) / 1e6
 			var splunkhecMsg *splunk.Event
 			if tt.metric {
-				splunkhecMsg = buildSplunkHecMetricsMsg(currentTime, 1.0, 3)
+				splunkhecMsg = buildSplunkHecMetricsMsg("metric", currentTime, 1.0, 3)
 			} else {
 				splunkhecMsg = buildSplunkHecMsg(currentTime, 3)
 			}
@@ -738,18 +738,33 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 		name       string
 		index      string
 		sourcetype string
+		event      string
 	}{
 		{
-			name: "No index, no source type",
+			name:  "No index, no source type",
+			event: "metric",
 		},
 		{
 			name:  "Index, no source type",
 			index: "myindex",
+			event: "metric",
 		},
 		{
 			name:       "Index and source type",
 			index:      "myindex",
 			sourcetype: "source:type",
+			event:      "metric",
+		},
+		{
+			name:  "empty event",
+			event: "",
+		},
+		{
+			name:  "any value event",
+			event: "some event",
+		},
+		{
+			name: "nil event",
 		},
 	}
 
@@ -786,7 +801,7 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 			rcv.metricsConsumer = exporter
 
 			currentTime := float64(time.Now().UnixNano()) / 1e6
-			splunkhecMsg := buildSplunkHecMetricsMsg(currentTime, 42, 3)
+			splunkhecMsg := buildSplunkHecMetricsMsg(tt.event, currentTime, 42, 3)
 			splunkhecMsg.Index = tt.index
 			splunkhecMsg.SourceType = tt.sourcetype
 			msgBytes, _ := json.Marshal(splunkhecMsg)
@@ -834,10 +849,10 @@ func Test_Metrics_splunkhecReceiver_IndexSourceTypePassthrough(t *testing.T) {
 	}
 }
 
-func buildSplunkHecMetricsMsg(time float64, value int64, dimensions uint) *splunk.Event {
+func buildSplunkHecMetricsMsg(event any, time float64, value int64, dimensions uint) *splunk.Event {
 	ev := &splunk.Event{
 		Time:  time,
-		Event: "metric",
+		Event: event,
 		Fields: map[string]any{
 			"metric_name:foo": value,
 		},
