@@ -19,7 +19,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/tidwall/gjson"
-	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
@@ -2030,38 +2029,7 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
-func TestExporter_MappingModeMetadata(t *testing.T) {
-	otelContext := client.NewContext(context.Background(), client.Info{
-		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
-	})
-	ecsContext := client.NewContext(context.Background(), client.Info{
-		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"ecs"}}),
-	})
-	noneContext := client.NewContext(context.Background(), client.Info{
-		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
-	})
-
-	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-	resourceLog.Resource().Attributes().PutStr("k", "v")
-	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopeLog.LogRecords().AppendEmpty()
-	logs.MarkReadOnly()
-
-	metrics := pmetric.NewMetrics()
-	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-	resourceMetrics.Resource().Attributes().PutStr("k", "v")
-	metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetName("metric.foo")
-	metric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(123)
-	metrics.MarkReadOnly()
-
-	traces := ptrace.NewTraces()
-	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr("k", "v")
-	resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	traces.MarkReadOnly()
-
+func TestExporter_MappingModeResourceAttribute(t *testing.T) {
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
 		cfg.Mapping.Mode = "otel"
@@ -2083,22 +2051,22 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 	}
 
 	testcases := []struct {
-		name      string
-		ctx       context.Context
-		check     func(_ *testing.T, doc []byte, signal string)
-		expectErr string
+		name        string
+		mappingMode string
+		check       func(_ *testing.T, doc []byte, signal string)
+		expectErr   string
 	}{{
-		name:  "otel",
-		ctx:   otelContext,
-		check: checkOTelResource,
+		name:        "otel",
+		mappingMode: "otel",
+		check:       checkOTelResource,
 	}, {
-		name:  "ecs",
-		ctx:   ecsContext,
-		check: checkECSResource,
+		name:        "ecs",
+		mappingMode: "ecs",
+		check:       checkECSResource,
 	}, {
-		name:      "bodymap",
-		ctx:       noneContext,
-		expectErr: `unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		name:        "bodymap",
+		mappingMode: "none",
+		expectErr:   `unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
 	}}
 
 	t.Run("logs", func(t *testing.T) {
@@ -2110,7 +2078,14 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes)
-				err := exporter.ConsumeLogs(tc.ctx, logs)
+				logs := plog.NewLogs()
+				resourceLog := logs.ResourceLogs().AppendEmpty()
+				resourceLog.Resource().Attributes().PutStr("k", "v")
+				resourceLog.Resource().Attributes().PutStr("elasticsearch.mapping.mode", tc.mappingMode)
+				scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+				scopeLog.LogRecords().AppendEmpty()
+				logs.MarkReadOnly()
+				err := exporter.ConsumeLogs(context.Background(), logs)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
 					return
@@ -2130,7 +2105,15 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes)
-				err := exporter.ConsumeMetrics(tc.ctx, metrics)
+				metrics := pmetric.NewMetrics()
+				resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+				resourceMetrics.Resource().Attributes().PutStr("k", "v")
+				resourceMetrics.Resource().Attributes().PutStr("elasticsearch.mapping.mode", tc.mappingMode)
+				metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
+				metric.SetName("metric.foo")
+				metric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(123)
+				metrics.MarkReadOnly()
+				err := exporter.ConsumeMetrics(context.Background(), metrics)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
 					return
@@ -2145,7 +2128,9 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 		// Profiles are only supported by otel mode, so just verify that
 		// the metadata is picked up and an invalid mode is rejected.
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
-		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
+		profiles := pprofile.NewProfiles()
+		profiles.ResourceProfiles().AppendEmpty().Resource().Attributes().PutStr("elasticsearch.mapping.mode", "none")
+		err := exporter.ConsumeProfiles(context.Background(), profiles)
 		assert.EqualError(t, err,
 			`unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
 		)
@@ -2159,7 +2144,13 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return itemsAllOK(docs)
 				})
 				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes)
-				err := exporter.ConsumeTraces(tc.ctx, traces)
+				traces := ptrace.NewTraces()
+				resourceSpans := traces.ResourceSpans().AppendEmpty()
+				resourceSpans.Resource().Attributes().PutStr("k", "v")
+				resourceSpans.Resource().Attributes().PutStr("elasticsearch.mapping.mode", tc.mappingMode)
+				resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
+				traces.MarkReadOnly()
+				err := exporter.ConsumeTraces(context.Background(), traces)
 				if tc.expectErr != "" {
 					require.EqualError(t, err, tc.expectErr)
 					return
