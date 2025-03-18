@@ -81,6 +81,7 @@ func withContextInferrerPriorities(priorities []string) priorityContextInferrerO
 		c.contextPriority = contextPriority
 	}
 }
+
 func (s *priorityContextInferrer) inferConditions(conditions []string) (inferredContext string, err error) {
 	s.telemetrySettings.Logger.Debug("Inferring context from conditions",
 		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
