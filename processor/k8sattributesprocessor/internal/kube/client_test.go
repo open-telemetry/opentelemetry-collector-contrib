@@ -5,6 +5,7 @@ package kube
 
 import (
 	"fmt"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"regexp"
 	"testing"
 	"time"
@@ -975,15 +976,15 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:       "operator-rules-builtin",
+			name:       "automatic-rules-builtin",
 			rules:      automaticRules,
 			attributes: map[string]string{
-				// tested in operator-container-level-attributes below
+				// tested in automatic-container-level-attributes below
 			},
 			serviceName: "auth-service",
 		},
 		{
-			name:  "operator-rules-label-values",
+			name:  "automatic-rules-label-values",
 			rules: automaticRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/name":    "label-service",
@@ -995,7 +996,7 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:  "operator-rules-label-values-instance",
+			name:  "automatic-rules-label-values-instance",
 			rules: automaticRules,
 			additionalLabels: map[string]string{
 				"app.kubernetes.io/instance": "instance-service",
@@ -1008,7 +1009,7 @@ func TestExtractionRules(t *testing.T) {
 			},
 		},
 		{
-			name:  "operator-rules-annotation-override",
+			name:  "automatic-rules-annotation-override",
 			rules: automaticRules,
 			additionalAnnotations: map[string]string{
 				"resource.opentelemetry.io/service.instance.id": "annotation-id",
@@ -1630,7 +1631,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want:  PodContainers{ByID: map[string]*Container{}, ByName: map[string]*Container{}},
 		},
 		{
-			name: "operator-container-level-attributes",
+			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
 				AutomaticRules: AutomaticRules{Enabled: true},
 			},
@@ -1646,6 +1647,30 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1", ServiceVersion: "0.1.0"},
 					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2", ServiceVersion: "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
 					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3", ServiceVersion: "1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d"},
+					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+			},
+		},
+		{
+			name: "automatic-container-level-attributes-with-exclude",
+			rules: ExtractionRules{
+				AutomaticRules: AutomaticRules{
+					Enabled: true,
+					Exclude: []string{conventions.AttributeServiceVersion},
+				},
+			},
+			pod: &pod,
+			want: PodContainers{
+				ByID: map[string]*Container{
+					"container1-id-123":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3"},
+					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
+				},
+				ByName: map[string]*Container{
+					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1"},
+					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
+					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3"},
 					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
 				},
 			},
