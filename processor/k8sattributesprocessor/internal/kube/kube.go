@@ -246,7 +246,7 @@ type ExtractionRules struct {
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
 
-	OperatorRules OperatorRules
+	RecommendedRules *AntomaticRules
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
@@ -269,7 +269,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return rules.OperatorRules.Enabled
+	return rules.RecommendedRules.Enabled
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields
