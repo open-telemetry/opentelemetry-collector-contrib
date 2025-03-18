@@ -172,12 +172,11 @@ func Test_ParseJSON(t *testing.T) {
 				expected := pcommon.NewMap()
 				tt.wantMap(expected)
 				assert.Equal(t, expected.Len(), resultMap.Len())
-				expected.Range(func(k string, _ pcommon.Value) bool {
+				for k := range expected.All() {
 					ev, _ := expected.Get(k)
 					av, _ := resultMap.Get(k)
 					assert.Equal(t, ev, av)
-					return true
-				})
+				}
 			} else if tt.wantSlice != nil {
 				resultSlice, ok := result.(pcommon.Slice)
 				require.True(t, ok)

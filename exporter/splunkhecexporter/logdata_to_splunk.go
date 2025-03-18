@@ -85,7 +85,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		fields[severityNumberKey] = lr.SeverityNumber()
 	}
 
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range res.Attributes().All() {
 		switch k {
 		case hostKey:
 			host = v.Str()
@@ -100,9 +100,8 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		default:
 			mergeValue(fields, k, v.AsRaw())
 		}
-		return true
-	})
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	}
+	for k, v := range lr.Attributes().All() {
 		switch k {
 		case hostKey:
 			host = v.Str()
@@ -117,8 +116,7 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		default:
 			mergeValue(fields, k, v.AsRaw())
 		}
-		return true
-	})
+	}
 
 	return &splunk.Event{
 		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),

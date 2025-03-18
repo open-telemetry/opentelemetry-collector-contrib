@@ -56,9 +56,6 @@ func Test_NewPRWExporter(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
@@ -151,9 +148,6 @@ func Test_Start(t *testing.T) {
 		ExternalLabels:    map[string]string{},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
-		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
 		},
 	}
 	buildInfo := component.BuildInfo{
@@ -497,7 +491,7 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "intSum_case",
 			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 4,
+			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -719,9 +713,6 @@ func Test_PushMetrics(t *testing.T) {
 						MaxBatchSizeBytes: 3000000,
 						RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: 1},
 						TargetInfo: &TargetInfo{
-							Enabled: true,
-						},
-						CreatedMetric: &CreatedMetric{
 							Enabled: true,
 						},
 						BackOffConfig: retrySettings,
@@ -947,9 +938,6 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		},
 		TargetInfo: &TargetInfo{
 			Enabled: true,
-		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
 		},
 	}
 
@@ -1309,7 +1297,6 @@ func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
 		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
 		BackOffConfig:     retrySettings,
 		TargetInfo:        &TargetInfo{Enabled: true},
-		CreatedMetric:     &CreatedMetric{Enabled: false},
 	}
 	exporter, err := newPRWExporter(cfg, set)
 	require.NoError(b, err)
