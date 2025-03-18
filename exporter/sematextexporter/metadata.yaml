@@ -3,10 +3,11 @@ type: sematext
 status:
   class: exporter
   stability:
-    development: [metrics,logs]
+    unmaintained: [metrics,logs]
   distributions: []
   codeowners:
-    active: [AkhigbeEromo]
+    active: []
+    emeritus: [AkhigbeEromo]
 
 tests:
   expect_consumer_error: true

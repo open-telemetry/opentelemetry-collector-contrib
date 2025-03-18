@@ -32,6 +32,7 @@ internal/common
 exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
+exporter/sematextexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
 receiver/carbonreceiver
