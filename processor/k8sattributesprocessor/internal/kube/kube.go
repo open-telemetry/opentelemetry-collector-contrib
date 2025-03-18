@@ -5,6 +5,7 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"regexp"
 	"time"
 
@@ -269,7 +270,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return rules.AutomaticRules.Enabled
+	return rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName)
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

@@ -171,6 +171,11 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 		for key, val := range attrsToAdd {
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
+
+		kp.rules.AutomaticRules.IsEnabled(conventions.AttributeServiceNamespace)
+		{
+			resource.Attributes().PutStr(conventions.AttributeServiceNamespace, namespace)
+		}
 	}
 
 	nodeName := getNodeName(pod, resource.Attributes())

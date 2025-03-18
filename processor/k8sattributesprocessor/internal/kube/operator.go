@@ -4,6 +4,7 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
+	"golang.org/x/exp/slices"
 	"regexp"
 	"strings"
 
@@ -16,6 +17,17 @@ type AutomaticRules struct {
 	Labels             bool     `mapstructure:"well_known_labels"`
 	AnnotationPrefixes []string `mapstructure:"annotation_prefixes"`
 	Exclude            []string `mapstructure:"exclude"`
+}
+
+func (r *AutomaticRules) IsEnabled(key string) bool {
+	b := r.Enabled && !slices.Contains(r.Exclude, key)
+	return b
+}
+
+func (r *AutomaticRules) NeedContainer() bool {
+	return r.IsEnabled(conventions.AttributeServiceName) ||
+		r.IsEnabled(conventions.AttributeServiceInstanceID) ||
+		r.IsEnabled(conventions.AttributeServiceVersion)
 }
 
 const DefaultAnnotationPrefix = "resource.opentelemetry.io/"
