@@ -167,7 +167,7 @@ type ExtractConfig struct {
 	// documentation for more details.
 	Labels []FieldExtractConfig `mapstructure:"labels"`
 
-	OperatorRules kube.OperatorRules `mapstructure:"operator_rules"`
+	AutomaticRules *kube.AntomaticRules `mapstructure:"automatic_attributes"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
