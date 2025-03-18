@@ -207,12 +207,18 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
 		metricName := ls.Get(labels.MetricName)
-		// TODO: Like UnitRef, we should assign the HelpRef to the metric.
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue
 		}
+
+		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+			continue
+		}
+
 		unit := req.Symbols[ts.Metadata.UnitRef]
+		description := req.Symbols[ts.Metadata.HelpRef]
 
 		resourceID := identity.OfResource(rm.Resource())
 		// Temporary approach to generate the metric key.
@@ -248,6 +254,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			metric = scope.Metrics().AppendEmpty()
 			metric.SetName(metricName)
 			metric.SetUnit(unit)
+			metric.SetDescription(description)
 
 			switch ts.Metadata.Type {
 			case writev2.Metadata_METRIC_TYPE_GAUGE:
@@ -263,6 +270,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			}
 
 			metricCache[metricKey] = metric
+		}
+
+		// When the new description is longer than the existing one, we should update the metric description.
+		// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
+		if len(metric.Description()) < len(description) {
+			metric.SetDescription(description)
 		}
 
 		// Otherwise, we append the samples to the existing metric.

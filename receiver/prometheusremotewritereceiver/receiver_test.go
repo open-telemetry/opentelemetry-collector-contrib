@@ -191,6 +191,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric1")
 				metrics1.SetUnit("")
+				metrics1.SetDescription("")
 
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -215,6 +216,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics2 := sm2.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric1")
 				metrics2.SetUnit("")
+				metrics2.SetDescription("")
 
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
@@ -273,6 +275,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric")
 				metrics1.SetUnit("")
+				metrics1.SetDescription("")
 
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
@@ -290,6 +293,7 @@ func TestTranslateV2(t *testing.T) {
 				metrics2 := sm2.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
 				metrics2.SetUnit("")
+				metrics1.SetDescription("")
 
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
@@ -314,21 +318,27 @@ func TestTranslateV2(t *testing.T) {
 					"foo", "bar", // 13, 14
 					"f", "g", // 15, 16
 					"seconds", "milliseconds", // 17, 18
+					"small desc", "longer description", // 19, 20
 				},
 				Timeseries: []writev2.TimeSeries{
+					// The only difference between ts 0 and 1 is the value assigned in the HelpRef. According to the spec
+					// Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model,
+					// the HelpRef(description) field is not considered an identifying property.
+					// This means that if you have two metrics with the same name, unit, scope, and resource attributes but different description values, they are still considered to be the same
+					// But, between them, the longer description should be used.
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17, HelpRef: 19},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
 					},
 					{
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 17, HelpRef: 20},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 						Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
 					},
 					{
 						// Unit changed, so it should be a different metric.
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE, UnitRef: 18, HelpRef: 19},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 13, 14},
 						Samples:    []writev2.Sample{{Value: 3, Timestamp: 3}},
 					},
@@ -352,6 +362,8 @@ func TestTranslateV2(t *testing.T) {
 				metrics1 := sm1.Metrics().AppendEmpty()
 				metrics1.SetName("test_metric")
 				metrics1.SetUnit("seconds")
+				metrics1.SetDescription("longer description")
+
 				dp1 := metrics1.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 				dp1.SetDoubleValue(1.0)
@@ -365,6 +377,8 @@ func TestTranslateV2(t *testing.T) {
 				metrics2 := sm1.Metrics().AppendEmpty()
 				metrics2.SetName("test_metric")
 				metrics2.SetUnit("milliseconds")
+				metrics2.SetDescription("small desc")
+
 				dp3 := metrics2.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp3.SetTimestamp(pcommon.Timestamp(3 * int64(time.Millisecond)))
 				dp3.SetDoubleValue(3.0)
