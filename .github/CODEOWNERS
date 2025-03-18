@@ -63,7 +63,7 @@ exporter/googlecloudpubsubexporter/                              @open-telemetry
 exporter/googlemanagedprometheusexporter/                        @open-telemetry/collector-contrib-approvers @aabmass @dashpole @braydonk @jsuereth @psx95 @ridwanmsharif
 exporter/honeycombmarkerexporter/                                @open-telemetry/collector-contrib-approvers @TylerHelmuth @fchikwekwe
 exporter/influxdbexporter/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
-exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+exporter/kafkaexporter/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw
 exporter/loadbalancingexporter/                                  @open-telemetry/collector-contrib-approvers @jpkrohling
 exporter/logicmonitorexporter/                                   @open-telemetry/collector-contrib-approvers @bogdandrutu @khyatigandhi6 @avadhut123pisal
 exporter/logzioexporter/                                         @open-telemetry/collector-contrib-approvers @yotamloe
@@ -138,7 +138,7 @@ internal/exp/metrics/                                            @open-telemetry
 internal/filter/                                                 @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/grpcutil/                                               @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3 @lquerel
 internal/k8sconfig/                                              @open-telemetry/collector-contrib-approvers @dmitryax
-internal/kafka/                                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+internal/kafka/                                                  @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw
 internal/kubelet/                                                @open-telemetry/collector-contrib-approvers @dmitryax
 internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/otelarrow/                                              @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
@@ -259,7 +259,7 @@ receiver/k8sclusterreceiver/                                     @open-telemetry
 receiver/k8seventsreceiver/                                      @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
 receiver/k8sobjectsreceiver/                                     @open-telemetry/collector-contrib-approvers @dmitryax @hvaghani221 @TylerHelmuth @ChrsMark
 receiver/kafkametricsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax
-receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
+receiver/kafkareceiver/                                          @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy @axw
 receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
 receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
