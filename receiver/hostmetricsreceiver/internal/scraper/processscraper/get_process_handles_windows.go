@@ -15,14 +15,14 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-var useLegacyGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
-	"hostmetrics.process.useLegacyGetProcesses",
-	featuregate.StageAlpha,
-	featuregate.WithRegisterDescription("If enabled, the scraper will use the legacy implementation to retrieve process handles."),
+var useNewGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
+	"hostmetrics.process.OnWindowsUseNewGetProcesses",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
 )
 
 func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
-	if useLegacyGetProcessHandles.IsEnabled() {
+	if !useNewGetProcessHandles.IsEnabled() {
 		return getGopsutilProcessHandlesLegacy(ctx)
 	}
 

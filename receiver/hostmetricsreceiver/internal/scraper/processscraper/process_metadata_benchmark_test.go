@@ -53,10 +53,10 @@ func BenchmarkGetProcessMetadata(b *testing.B) {
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
 			// Set feature gate value
-			previousValue := useLegacyGetProcessHandles.IsEnabled()
-			require.NoError(b, featuregate.GlobalRegistry().Set(useLegacyGetProcessHandles.ID(), bm.useLegacy))
+			previousValue := useNewGetProcessHandles.IsEnabled()
+			require.NoError(b, featuregate.GlobalRegistry().Set(useNewGetProcessHandles.ID(), !bm.useLegacy))
 			defer func() {
-				require.NoError(b, featuregate.GlobalRegistry().Set(useLegacyGetProcessHandles.ID(), previousValue))
+				require.NoError(b, featuregate.GlobalRegistry().Set(useNewGetProcessHandles.ID(), previousValue))
 			}()
 			scraper.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled = bm.parentPidEnabled
 
