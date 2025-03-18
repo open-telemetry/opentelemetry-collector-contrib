@@ -6,7 +6,6 @@ server:
     insecure_skip_verify: true
     # For more TLS settings see config/configtls.ClientConfig
     insecure: true
-    #cert_file: /Users/florian.bacher/go/src/github.com/open-telemetry/opamp-go/internal/certs/server_certs/server.cert.pem
 
 capabilities:
   reports_effective_config: true
