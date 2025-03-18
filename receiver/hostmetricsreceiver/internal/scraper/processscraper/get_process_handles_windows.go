@@ -11,10 +11,21 @@ import (
 	"unsafe"
 
 	"github.com/shirou/gopsutil/v4/process"
+	"go.opentelemetry.io/collector/featuregate"
 	"golang.org/x/sys/windows"
 )
 
-func getProcessHandlesInternalNew(ctx context.Context) (processHandles, error) {
+var useLegacyGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
+	"receiver.hostmetricsreceiver.useLegacyGetProcessHandles",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("If enabled, the scraper will use the legacy implementation of getGopsutilProcessHandles."),
+)
+
+func getGopsutilProcessHandles(ctx context.Context) (processHandles, error) {
+	if useLegacyGetProcessHandles.IsEnabled() {
+		return getGopsutilProcessHandlesLegacy(ctx)
+	}
+
 	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return nil, fmt.Errorf("could not create snapshot: %w", err)
@@ -38,9 +49,10 @@ func getProcessHandlesInternalNew(ctx context.Context) (processHandles, error) {
 			p, _ := process.NewProcess(int32(pe32.ProcessID))
 			if p != nil {
 				wrappedProcess := wrappedProcessHandle{
-					Process: p,
-					ppid:    int32(pe32.ParentProcessID),
-					threads: int32(pe32.Threads),
+					Process:           p,
+					parentPid:         int32(pe32.ParentProcessID),
+					initialNumThreads: int32(pe32.Threads),
+					flags:             flagParentPidSet | flagUseInitialNumThreadsOnce,
 				}
 				wrappedProcesses = append(wrappedProcesses, wrappedProcess)
 			}
@@ -52,4 +64,21 @@ func getProcessHandlesInternalNew(ctx context.Context) (processHandles, error) {
 	}
 
 	return &gopsProcessHandles{handles: wrappedProcesses}, nil
+}
+
+func getGopsutilProcessHandlesLegacy(ctx context.Context) (processHandles, error) {
+	processes, err := process.ProcessesWithContext(ctx)
+	if err != nil {
+		return nil, err
+	}
+	wrapped := make([]wrappedProcessHandle, len(processes))
+	for i, p := range processes {
+		wrapped[i] = wrappedProcessHandle{
+			Process:           p,
+			parentPid:         -1,
+			initialNumThreads: -1,
+		}
+	}
+
+	return &gopsProcessHandles{handles: wrapped}, nil
 }

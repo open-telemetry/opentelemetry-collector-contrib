@@ -9,6 +9,8 @@ import (
 	"context"
 	"testing"
 
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/scraper"
 )
 
@@ -17,7 +19,6 @@ func BenchmarkGetProcessMetadata(b *testing.B) {
 	config := &Config{
 		MuteProcessExeError:  true,
 		MuteProcessNameError: true,
-		ExcludeParentPid:     true,
 		MuteProcessAllErrors: true, // Only way to pass the benchmark
 	}
 
@@ -28,33 +29,36 @@ func BenchmarkGetProcessMetadata(b *testing.B) {
 
 	benchmarks := []struct {
 		name             string
-		getFunc          func(context.Context) (processHandles, error)
-		excludeParentPid bool
+		useLegacy        bool
+		parentPidEnabled bool
 	}{
 		{
-			name:    "Old-IncludeParentPid",
-			getFunc: getProcessHandlesInternal,
+			name: "New-ExcludeParentPid",
 		},
 		{
-			name:    "New-IncludeParentPid",
-			getFunc: getProcessHandlesInternalNew,
+			name:      "Old-ExcludeParentPid",
+			useLegacy: true,
 		},
 		{
-			name:             "Old-ExcludeParentPid",
-			getFunc:          getProcessHandlesInternal,
-			excludeParentPid: true,
+			name:             "New-IncludeParentPid",
+			parentPidEnabled: true,
 		},
 		{
-			name:             "New-ExcludeParentPid",
-			getFunc:          getProcessHandlesInternalNew,
-			excludeParentPid: true,
+			name:             "Old-IncludeParentPid",
+			parentPidEnabled: true,
+			useLegacy:        true,
 		},
 	}
 
 	for _, bm := range benchmarks {
 		b.Run(bm.name, func(b *testing.B) {
-			scraper.getProcessHandles = bm.getFunc
-			scraper.config.ExcludeParentPid = bm.excludeParentPid
+			// Set feature gate value
+			previousValue := useLegacyGetProcessHandles.IsEnabled()
+			require.NoError(b, featuregate.GlobalRegistry().Set(useLegacyGetProcessHandles.ID(), bm.useLegacy))
+			defer func() {
+				require.NoError(b, featuregate.GlobalRegistry().Set(useLegacyGetProcessHandles.ID(), previousValue))
+			}()
+			scraper.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled = bm.parentPidEnabled
 
 			for i := 0; i < b.N; i++ {
 				_, err := scraper.getProcessMetadata(ctx)
