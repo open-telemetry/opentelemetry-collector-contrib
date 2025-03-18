@@ -8,9 +8,9 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.121.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/component/componenttest v0.121.1-0.20250317165851-432d92d8b366
+	go.opentelemetry.io/collector/component/componenttest v0.122.0
 	go.opentelemetry.io/collector/confmap v1.28.0
-	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250317165851-432d92d8b366
+	go.opentelemetry.io/collector/confmap/xconfmap v0.122.0
 	go.opentelemetry.io/collector/extension v1.28.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
