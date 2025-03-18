@@ -66,7 +66,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 | OpAMP capability               | Status                                                                           |
 |--------------------------------|----------------------------------------------------------------------------------|
 | AcceptsRemoteConfig            | ✅                                                                               |
-| ReportsEffectiveConfig         | ⚠️                                                                                |
+| ReportsEffectiveConfig         | ⚠️                                                                               |
 | AcceptsPackages                | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34734> |
 | ReportsPackageStatuses         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38727> |
 | ReportsOwnTraces               | ✅                                                                               |
@@ -75,7 +75,7 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 | AcceptsOpAMPConnectionSettings | ✅                                                                               |
 | AcceptsOtherConnectionSettings | ✅                                                                               |
 | AcceptsRestartCommand          | ✅                                                                               |
-| ReportsHealth                  | ⚠️                                                                                |
+| ReportsHealth                  | ⚠️                                                                               |
 | ReportsRemoteConfig            | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21079> |
 | ReportsAvailableComponents     | ✅                                                                               |
 
