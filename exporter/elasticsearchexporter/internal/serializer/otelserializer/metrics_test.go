@@ -33,7 +33,8 @@ func TestSerializeMetricsConflict(t *testing.T) {
 
 	var validationErrors []error
 	var buf bytes.Buffer
-	_, err := SerializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
+	ser := New()
+	_, err := ser.SerializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
 	if err != nil {
 		t.Errorf("Metrics() error = %v", err)
 	}

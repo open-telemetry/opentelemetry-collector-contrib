@@ -185,7 +185,8 @@ func TestSerializeLog(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			err := SerializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
+			ser := New()
+			err := ser.SerializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Log() error = %v, wantErr %v", err, tt.wantErr)
 			}
