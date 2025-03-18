@@ -146,7 +146,6 @@ func dataPointAttributesMatch(dp1, dp2 pmetric.NumberDataPoint) bool {
 	for key, dp1Val := range dp1.Attributes().All() {
 		dp1Val.Type()
 		if dp2Val, keyExists := dp2.Attributes().Get(key); keyExists && dp1Val.AsRaw() != dp2Val.AsRaw() {
-			attributesMatch = false
 			return false
 		}
 	}
