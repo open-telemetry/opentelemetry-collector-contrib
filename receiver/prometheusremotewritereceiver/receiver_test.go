@@ -160,9 +160,8 @@ func TestTranslateV2(t *testing.T) {
 			},
 			expectError: `duplicate label "__name__" in labels`,
 		},
-		// Expected error if the unit was bigger than the number of symbols.
 		{
-			name: "unit bigger than symbols",
+			name: "UnitRef bigger than symbols length",
 			request: &writev2.Request{
 				Symbols: []string{"", "__name__", "test"},
 				Timeseries: []writev2.TimeSeries{
