@@ -24,7 +24,7 @@ func createMetricsTranslator() *MetricsTranslator {
 }
 
 func requireResourceAttributes(t *testing.T, attrs, expectedAttrs pcommon.Map) {
-	for k, _ := range expectedAttrs.All() {
+	for k := range expectedAttrs.All() {
 		ev, _ := expectedAttrs.Get(k)
 		av, ok := attrs.Get(k)
 		require.True(t, ok)

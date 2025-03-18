@@ -149,7 +149,7 @@ func collectLabelKeysSummaryDataPoints(dhdp pmetric.SummaryDataPointSlice, keySe
 }
 
 func addLabelKeys(keySet map[string]struct{}, attributes pcommon.Map) {
-	for k, _ := range attributes.All() {
+	for k := range attributes.All() {
 		keySet[k] = struct{}{}
 	}
 }

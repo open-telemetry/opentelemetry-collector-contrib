@@ -64,7 +64,7 @@ func sortMetrics(ms pmetric.Metrics) {
 func sortAttributeMap(mp pcommon.Map) {
 	tempMap := pcommon.NewMap()
 	keys := []string{}
-	for key, _ := range mp.All() {
+	for key := range mp.All() {
 		keys = append(keys, key)
 	}
 	sort.Strings(keys)

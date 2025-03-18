@@ -122,7 +122,7 @@ func Test_extractGrokPatterns_patterns(t *testing.T) {
 			expected := pcommon.NewMap()
 			tt.want(expected)
 
-			for k, _ := range expected.All() {
+			for k := range expected.All() {
 				ev, _ := expected.Get(k)
 				av, _ := resultMap.Get(k)
 				assert.Equal(t, ev, av)
