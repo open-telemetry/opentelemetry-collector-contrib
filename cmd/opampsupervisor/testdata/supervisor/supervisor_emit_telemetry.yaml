@@ -1,11 +1,5 @@
 server:
-  endpoint: ws://127.0.0.1:4320/v1/opamp
-  tls:
-    # Disable verification to test locally.
-    # Don't do this in production.
-    insecure_skip_verify: true
-    # For more TLS settings see config/configtls.ClientConfig
-    insecure: true
+  endpoint: ws://{{.url}}/v1/opamp
 
 capabilities:
   reports_effective_config: true
@@ -15,12 +9,13 @@ capabilities:
   reports_health: true
   accepts_remote_config: true
   reports_remote_config: true
-
-agent:
-  executable: ../../bin/otelcontribcol_darwin_arm64
+  accepts_restart_command: true
 
 storage:
-  directory: .
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
 
 telemetry:
   traces:
@@ -29,7 +24,7 @@ telemetry:
           exporter:
             otlp:
               protocol: http/protobuf
-              endpoint: http://localhost:4318
+              endpoint: http://{{.telemetryUrl}}
   logs:
     level: debug
     processors:
@@ -37,4 +32,4 @@ telemetry:
           exporter:
             otlp:
               protocol: http/protobuf
-              endpoint: http://localhost:4318
+              endpoint: http://{{.telemetryUrl}}
