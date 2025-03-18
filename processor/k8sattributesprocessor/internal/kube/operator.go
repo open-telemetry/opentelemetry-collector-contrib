@@ -11,7 +11,7 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type AntomaticRules struct {
+type AutomaticRules struct {
 	Enabled bool `mapstructure:"enabled"`
 	Labels  bool `mapstructure:"labels"`
 }

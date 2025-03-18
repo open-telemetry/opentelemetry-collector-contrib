@@ -1403,7 +1403,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				t,
 				NewFactory().CreateDefaultConfig(),
 				nil,
-				withAutomaticRules(kube.AntomaticRules{
+				withAutomaticRules(kube.AutomaticRules{
 					Enabled: true,
 					Labels:  true,
 				}),
