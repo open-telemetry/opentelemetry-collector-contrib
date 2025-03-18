@@ -24,6 +24,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -201,14 +203,15 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			unit = req.Symbols[ts.Metadata.UnitRef]
 		}
 
+		resourceID := identity.OfResource(rm.Resource())
 		// Temporary approach to generate the metric key.
 		// TODO: Replace this with a proper hashing function.
-		metricKey := fmt.Sprintf("%d:%s:%s:%s:%s:%d",
-			hashedLabels, // Resource identity
-			scopeName,    // Scope name
-			scopeVersion, // Scope version
-			metricName,   // Metric name
-			unit,         // Unit
+		metricKey := fmt.Sprintf("%s:%s:%s:%s:%s:%d",
+			resourceID.String(), // Resource identity
+			scopeName,           // Scope name
+			scopeVersion,        // Scope version
+			metricName,          // Metric name
+			unit,                // Unit
 			// TODO: add helpRef as part of the key
 			ts.Metadata.Type) // Metric type
 
