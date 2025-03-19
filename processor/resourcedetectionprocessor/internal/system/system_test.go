@@ -152,6 +152,7 @@ func allEnabledConfig() metadata.ResourceAttributesConfig {
 	cfg.HostIP.Enabled = true
 	cfg.HostMac.Enabled = true
 	cfg.OsDescription.Enabled = true
+	cfg.OsVersion.Enabled = true
 	return cfg
 }
 
@@ -205,9 +206,8 @@ func TestFallbackHostname(t *testing.T) {
 	mdHostname.AssertNotCalled(t, "HostIPs")
 
 	expected := map[string]any{
-		conventions.AttributeHostName:  "hostname",
-		conventions.AttributeOSType:    "darwin",
-		conventions.AttributeOSVersion: "22.04.2 LTS (Jammy Jellyfish)",
+		conventions.AttributeHostName: "hostname",
+		conventions.AttributeOSType:   "darwin",
 	}
 
 	assert.Equal(t, expected, res.Attributes().AsRaw())

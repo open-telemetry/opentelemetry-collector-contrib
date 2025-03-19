@@ -22,7 +22,7 @@ resource_attributes:
   os.version:
     description: The os.version
     type: string
-    enabled: true
+    enabled: false
   host.arch:
     description: The host.arch
     type: string

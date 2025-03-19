@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 14, res.Attributes().Len())
 			case "none_set":
@@ -109,7 +109,7 @@ func TestResourceBuilder(t *testing.T) {
 				assert.EqualValues(t, "os.type-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("os.version")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "os.version-val", val.Str())
 			}

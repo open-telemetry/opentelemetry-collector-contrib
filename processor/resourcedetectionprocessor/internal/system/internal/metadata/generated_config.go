@@ -85,7 +85,7 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		OsVersion: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }
