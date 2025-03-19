@@ -22,6 +22,8 @@ type Config struct {
 	Metrics    map[string]MetricInfo `mapstructure:"metrics"`
 	DataPoints map[string]MetricInfo `mapstructure:"datapoints"`
 	Logs       map[string]MetricInfo `mapstructure:"logs"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // MetricInfo for a data type
@@ -30,11 +32,15 @@ type MetricInfo struct {
 	Conditions      []string          `mapstructure:"conditions"`
 	Attributes      []AttributeConfig `mapstructure:"attributes"`
 	SourceAttribute string            `mapstructure:"source_attribute"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AttributeConfig struct {
 	Key          string `mapstructure:"key"`
 	DefaultValue any    `mapstructure:"default_value"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() (combinedErrors error) {

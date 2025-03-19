@@ -427,22 +427,13 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			return
 		}
 
-		if msg.Event == nil {
-			r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
-			return
-		}
-
-		if msg.Event == "" {
-			r.failRequest(resp, http.StatusBadRequest, eventBlankRespBody, nil)
-			return
-		}
-
 		for _, v := range msg.Fields {
 			if !isFlatJSONField(v) {
 				r.failRequest(resp, http.StatusBadRequest, []byte(fmt.Sprintf(responseErrHandlingIndexedFields, len(events)+len(metricEvents))), nil)
 				return
 			}
 		}
+
 		if msg.IsMetric() {
 			if r.metricsConsumer == nil {
 				r.failRequest(resp, http.StatusBadRequest, errUnsupportedMetricEvent, err)
@@ -450,6 +441,16 @@ func (r *splunkReceiver) handleReq(resp http.ResponseWriter, req *http.Request) 
 			}
 			metricEvents = append(metricEvents, &msg)
 		} else {
+			if msg.Event == nil {
+				r.failRequest(resp, http.StatusBadRequest, eventRequiredRespBody, nil)
+				return
+			}
+
+			if msg.Event == "" {
+				r.failRequest(resp, http.StatusBadRequest, eventBlankRespBody, nil)
+				return
+			}
+
 			if r.logsConsumer == nil {
 				r.failRequest(resp, http.StatusBadRequest, errUnsupportedLogEvent, err)
 				return

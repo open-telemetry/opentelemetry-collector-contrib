@@ -1,0 +1,16 @@
+kafka: {}
+kafka/full:
+  session_timeout: 5s
+  heartbeat_interval: 2s
+  group_id: throng
+  initial_offset: earliest
+  autocommit:
+    enable: false
+    interval: 10m
+  min_fetch_size: 10
+  default_fetch_size: 1024
+  max_fetch_size: 4096
+
+# Invalid configurations
+kafka/invalid_initial_offset:
+  initial_offset: middle

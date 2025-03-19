@@ -39,8 +39,10 @@ The following settings are required:
     - `from_context`: The header value is looked up from the request metadata,
       such as HTTP headers, using the property value as the key (likely a header
       name).
+    - `from_attribute`: The header value is taken from the request's authentication data,
+      may include attributes like `subject` and `membership`.
 
-The `value` and `from_context,default_value` properties are mutually exclusive.
+The `value`,`from_context,default_value` and `from_attribute,default_value` properties are mutually exclusive.
 
 In order for `from_context` to work, other components in the pipeline also need to be configured appropriately:
 * If a [batch processor][batch-processor] is present in the pipeline, it must be configured to [preserve client metadata][batch-processor-preserve-metadata]. 

@@ -14,54 +14,76 @@ import (
 )
 
 type routeTestCase struct {
-	name      string
-	mode      MappingMode
-	scopeName string
-	want      elasticsearch.Index
+	name        string
+	mode        MappingMode
+	scopeName   string
+	recordAttrs map[string]any
+	want        elasticsearch.Index
 }
 
 func createRouteTests(dsType string) []routeTestCase {
-	renderWantRoute := func(dsType, dsDataset string, mode MappingMode) elasticsearch.Index {
+	renderWantRoute := func(dsType, dsDataset, dsNamespace string, mode MappingMode) elasticsearch.Index {
 		if mode == MappingOTel {
 			dsDataset += ".otel"
 		}
-		return elasticsearch.NewDataStreamIndex(dsType, dsDataset, defaultDataStreamNamespace)
+		return elasticsearch.NewDataStreamIndex(dsType, dsDataset, dsNamespace)
 	}
 
 	return []routeTestCase{
 		{
 			name: "default",
 			mode: MappingNone,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, MappingNone),
+			want: renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingNone),
 		},
 		{
 			name: "otel",
 			mode: MappingOTel,
-			want: renderWantRoute(dsType, defaultDataStreamDataset, MappingOTel),
+			want: renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
 		},
 		{
 			name:      "default with receiver scope name",
 			mode:      MappingNone,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
-			want:      renderWantRoute(dsType, "hostmetricsreceiver", MappingNone),
+			want:      renderWantRoute(dsType, "hostmetricsreceiver", defaultDataStreamNamespace, MappingNone),
 		},
 		{
 			name:      "otel with receiver scope name",
 			mode:      MappingOTel,
 			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper",
-			want:      renderWantRoute(dsType, "hostmetricsreceiver", MappingOTel),
+			want:      renderWantRoute(dsType, "hostmetricsreceiver", defaultDataStreamNamespace, MappingOTel),
 		},
 		{
 			name:      "default with non-receiver scope name",
 			mode:      MappingNone,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, MappingNone),
+			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingNone),
 		},
 		{
 			name:      "otel with non-receiver scope name",
 			mode:      MappingOTel,
 			scopeName: "some_other_scope_name",
-			want:      renderWantRoute(dsType, defaultDataStreamDataset, MappingOTel),
+			want:      renderWantRoute(dsType, defaultDataStreamDataset, defaultDataStreamNamespace, MappingOTel),
+		},
+		{
+			name:      "otel with elasticsearch.index",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"elasticsearch.index": "my-index",
+			},
+			want: elasticsearch.Index{
+				Index: "my-index",
+			},
+		},
+		{
+			name:      "otel with data_stream attrs",
+			mode:      MappingOTel,
+			scopeName: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/should/be/ignored",
+			recordAttrs: map[string]any{
+				"data_stream.dataset":   "foo",
+				"data_stream.namespace": "bar",
+			},
+			want: renderWantRoute(dsType, "foo", "bar", MappingOTel),
 		},
 	}
 }
@@ -75,7 +97,10 @@ func TestRouteLogRecord(t *testing.T) {
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 
-			ds, err := router.routeLogRecord(pcommon.NewResource(), scope, pcommon.NewMap())
+			recordAttrMap := pcommon.NewMap()
+			fillAttributeMap(recordAttrMap, tc.recordAttrs)
+
+			ds, err := router.routeLogRecord(pcommon.NewResource(), scope, recordAttrMap)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})
@@ -119,7 +144,10 @@ func TestRouteDataPoint(t *testing.T) {
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 
-			ds, err := router.routeDataPoint(pcommon.NewResource(), scope, pcommon.NewMap())
+			recordAttrMap := pcommon.NewMap()
+			fillAttributeMap(recordAttrMap, tc.recordAttrs)
+
+			ds, err := router.routeDataPoint(pcommon.NewResource(), scope, recordAttrMap)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})
@@ -135,7 +163,10 @@ func TestRouteSpan(t *testing.T) {
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(tc.scopeName)
 
-			ds, err := router.routeSpan(pcommon.NewResource(), scope, pcommon.NewMap())
+			recordAttrMap := pcommon.NewMap()
+			fillAttributeMap(recordAttrMap, tc.recordAttrs)
+
+			ds, err := router.routeSpan(pcommon.NewResource(), scope, recordAttrMap)
 			require.NoError(t, err)
 			assert.Equal(t, tc.want, ds)
 		})

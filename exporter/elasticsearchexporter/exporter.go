@@ -30,7 +30,6 @@ type elasticsearchExporter struct {
 	set                 exporter.Settings
 	config              *Config
 	index               string
-	dynamicIndex        bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
@@ -38,19 +37,13 @@ type elasticsearchExporter struct {
 	bufferPool          *pool.BufferPool
 }
 
-func newExporter(
-	cfg *Config,
-	set exporter.Settings,
-	index string,
-	dynamicIndex bool,
-) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
-		dynamicIndex:        dynamicIndex,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
@@ -77,7 +70,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -147,13 +140,14 @@ func (e *elasticsearchExporter) pushLogRecord(
 
 	buf := e.bufferPool.NewPooledBuffer()
 	docID := e.extractDocumentIDAttribute(record.Attributes())
+	pipeline := e.extractDocumentPipelineAttribute(record.Attributes())
 	if err := encoder.encodeLog(ec, record, index, buf.Buffer); err != nil {
 		buf.Recycle()
 		return fmt.Errorf("failed to encode log event: %w", err)
 	}
 
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, docID, buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, docID, pipeline, buf, nil, docappender.ActionCreate)
 }
 
 type dataPointsGroup struct {
@@ -176,7 +170,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -309,7 +303,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 				errs = append(errs, err)
 				continue
 			}
-			if err := session.Add(ctx, index.Index, "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
+			if err := session.Add(ctx, index.Index, "", "", buf, dynamicTemplates, docappender.ActionCreate); err != nil {
 				// not recycling after Add returns an error as we don't know if it's already recycled
 				if cerr := ctx.Err(); cerr != nil {
 					return cerr
@@ -339,7 +333,8 @@ func (e *elasticsearchExporter) pushTraceData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
+	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -378,7 +373,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, router, encoder, ec, span, spanEvent, session); err != nil {
+					if err := e.pushSpanEvent(ctx, spanEventRouter, encoder, ec, span, spanEvent, session); err != nil {
 						errs = append(errs, err)
 					}
 				}
@@ -414,7 +409,7 @@ func (e *elasticsearchExporter) pushTraceRecord(
 		return fmt.Errorf("failed to encode trace record: %w", err)
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) pushSpanEvent(
@@ -437,7 +432,7 @@ func (e *elasticsearchExporter) pushSpanEvent(
 		return err
 	}
 	// not recycling after Add returns an error as we don't know if it's already recycled
-	return bulkIndexerSession.Add(ctx, index.Index, "", buf, nil, docappender.ActionCreate)
+	return bulkIndexerSession.Add(ctx, index.Index, "", "", buf, nil, docappender.ActionCreate)
 }
 
 func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string {
@@ -446,6 +441,18 @@ func (e *elasticsearchExporter) extractDocumentIDAttribute(m pcommon.Map) string
 	}
 
 	v, ok := m.Get(elasticsearch.DocumentIDAttributeName)
+	if !ok {
+		return ""
+	}
+	return v.AsString()
+}
+
+func (e *elasticsearchExporter) extractDocumentPipelineAttribute(m pcommon.Map) string {
+	if !e.config.LogsDynamicPipeline.Enabled {
+		return ""
+	}
+
+	v, ok := m.Get(elasticsearch.DocumentPipelineAttributeName)
 	if !ok {
 		return ""
 	}
@@ -569,15 +576,15 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
 		switch index {
 		case otelserializer.StackTraceIndex:
-			return stackTracesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.StackFrameIndex:
-			return stackFramesSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.AllEventsIndex:
-			return eventsSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		case otelserializer.ExecutablesIndex:
-			return executablesSession.Add(ctx, index, docID, buf, nil, docappender.ActionUpdate)
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
 		default:
-			return defaultSession.Add(ctx, index, docID, buf, nil, docappender.ActionCreate)
+			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 		}
 	})
 }

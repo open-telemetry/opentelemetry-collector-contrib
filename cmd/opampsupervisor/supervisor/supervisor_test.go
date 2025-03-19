@@ -25,10 +25,12 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 const configTemplate = `
@@ -91,6 +93,12 @@ telemetry:
               endpoint: http://localhost:14317
   logs:
     level: info
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: https://backend:4317
 `
 
 func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor {
@@ -119,6 +127,14 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 	return cfg
 }
 
+func newNopTelemetrySettings() telemetrySettings {
+	return telemetrySettings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.NewNop(),
+		},
+	}
+}
+
 func Test_NewSupervisor(t *testing.T) {
 	cfg := setupSupervisorConfig(t, configTemplate)
 	supervisor, err := NewSupervisor(zap.L(), cfg)
@@ -135,6 +151,7 @@ func Test_NewSupervisorWithTelemetrySettings(t *testing.T) {
 	require.NotNil(t, supervisor.telemetrySettings.MeterProvider)
 	require.NotNil(t, supervisor.telemetrySettings.TracerProvider)
 	require.NotNil(t, supervisor.telemetrySettings.Logger)
+	require.NotNil(t, supervisor.telemetrySettings.loggerProvider)
 
 	supervisor.Shutdown()
 }
@@ -157,9 +174,7 @@ func Test_NewSupervisorFailedStorageCreation(t *testing.T) {
 func Test_composeEffectiveConfig(t *testing.T) {
 	acceptsRemoteConfig := true
 	s := Supervisor{
-		telemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
-		},
+		telemetrySettings:            newNopTelemetrySettings(),
 		persistentState:              &persistentState{},
 		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
 		pidProvider:                  staticPIDProvider(1234),
@@ -230,9 +245,7 @@ func Test_onMessage(t *testing.T) {
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -261,9 +274,7 @@ func Test_onMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -310,9 +321,7 @@ func Test_onMessage(t *testing.T) {
 		agentConnAtomic.Store(agentConn)
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -355,9 +364,7 @@ func Test_onMessage(t *testing.T) {
 		agentConnAtomic.Store(agentConn)
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -394,9 +401,7 @@ func Test_onMessage(t *testing.T) {
 		initialID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		newID := uuid.MustParse("018fef3f-14a8-73ef-b63e-3b96b146ea38")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -504,10 +509,8 @@ service:
 		configStorageDir := t.TempDir()
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
-			pidProvider: staticPIDProvider(88888),
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
 				Storage: config.Storage{
 					Directory: configStorageDir,
@@ -606,10 +609,8 @@ service:
 		configStorageDir := t.TempDir()
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
-			pidProvider: staticPIDProvider(88888),
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       staticPIDProvider(88888),
 			config: config.Supervisor{
 				Storage: config.Storage{
 					Directory: configStorageDir,
@@ -676,10 +677,8 @@ service:
 		configStorageDir := t.TempDir()
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
-			pidProvider: defaultPIDProvider{},
+			telemetrySettings: newNopTelemetrySettings(),
+			pidProvider:       defaultPIDProvider{},
 			config: config.Supervisor{
 				Storage: config.Storage{
 					Directory: configStorageDir,
@@ -738,9 +737,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -793,9 +790,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -825,9 +820,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -867,9 +860,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -909,9 +900,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 
 		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			pidProvider:                  defaultPIDProvider{},
 			config:                       config.Supervisor{},
 			hasNewConfig:                 make(chan struct{}, 1),
@@ -1162,9 +1151,7 @@ func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 	testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
 	t.Run("No DestinationEndpoint set", func(t *testing.T) {
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			cfgState:                     &atomic.Value{},
 			persistentState:              &persistentState{InstanceID: testUUID},
@@ -1197,9 +1184,7 @@ func TestSupervisor_setupOwnTelemetry(t *testing.T) {
 	})
 	t.Run("DestinationEndpoint set - enable own metrics", func(t *testing.T) {
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings:            newNopTelemetrySettings(),
 			agentConfigOwnMetricsSection: &atomic.Value{},
 			cfgState:                     &atomic.Value{},
 			persistentState:              &persistentState{InstanceID: testUUID},
@@ -1387,9 +1372,7 @@ service:
 		require.NoError(t, os.WriteFile(filepath.Join(configDir, lastRecvOwnTelemetryConfigFile), marshalledOwnTelemetryCfg, 0o600))
 
 		s := Supervisor{
-			telemetrySettings: component.TelemetrySettings{
-				Logger: zap.NewNop(),
-			},
+			telemetrySettings: newNopTelemetrySettings(),
 			config: config.Supervisor{
 				Capabilities: config.Capabilities{
 					AcceptsRemoteConfig: true,
@@ -1556,4 +1539,75 @@ capabilities:
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
 		require.NoError(t, os.RemoveAll(tmpDir))
 	})
+}
+
+func TestSupervisor_exportLogsWithSDK(t *testing.T) {
+	template := `
+server:
+  endpoint: ws://localhost/v1/opamp
+  tls:
+    insecure: true
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+storage:
+  directory: %s
+
+agent:
+  executable: %s
+
+telemetry:
+  logs:
+    level: info
+    processors:
+      - batch:
+          exporter:
+            otlp:
+              protocol: http/protobuf
+              endpoint: http://127.0.0.1:4318
+`
+
+	cfg := setupSupervisorConfig(t, template)
+	supervisor, err := NewSupervisor(zap.NewNop(), cfg)
+	require.NoError(t, err)
+
+	path := filepath.Join(t.TempDir(), "output.txt")
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
+	mockBackend := testbed.NewMockBackend(path, backend)
+	err = mockBackend.Start()
+	require.NoError(t, err)
+
+	mockBackend.EnableRecording()
+	supervisor.telemetrySettings.Logger.Info("test log")
+
+	require.Eventually(t, func() bool {
+		return len(mockBackend.GetReceivedLogs()) > 0
+	}, 5*time.Second, 1*time.Second)
+
+	mockBackend.Stop()
+
+	receivedLogs := mockBackend.GetReceivedLogs()
+	require.Len(t, receivedLogs, 1)
+	l := mockBackend.ReceivedLogs[0]
+	require.Equal(t, 1, l.ResourceLogs().Len())
+	l.ResourceLogs().RemoveIf(func(rl plog.ResourceLogs) bool {
+		require.Equal(t, 1, rl.ScopeLogs().Len())
+		rl.ScopeLogs().RemoveIf(func(sl plog.ScopeLogs) bool {
+			require.Equal(t, 1, sl.LogRecords().Len())
+			sl.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
+				assert.Equal(t, "test log", lr.Body().Str())
+				return false
+			})
+			return false
+		})
+		return false
+	})
+
+	supervisor.Shutdown()
 }
