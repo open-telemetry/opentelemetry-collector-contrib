@@ -17,7 +17,7 @@ import (
 )
 
 func TestNewSigv4Extension(t *testing.T) {
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}}
 
 	sa := newSigv4Extension(cfg, "awsSDKInfo", zap.NewNop())
 	assert.Equal(t, cfg.Region, sa.cfg.Region)
@@ -30,7 +30,7 @@ func TestRoundTripper(t *testing.T) {
 
 	base := (http.RoundTripper)(http.DefaultTransport.(*http.Transport).Clone())
 	awsSDKInfo := "awsSDKInfo"
-	cfg := &Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
+	cfg := &Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider}
 
 	sa := newSigv4Extension(cfg, awsSDKInfo, zap.NewNop())
 	assert.NotNil(t, sa)
@@ -56,14 +56,14 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 	}{
 		{
 			"success_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{STSRegion: "region"}},
 			"AccessKeyID",
 			"SecretAccessKey",
 			false,
 		},
 		{
 			"failure_case_without_role",
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{STSRegion: "region"}},
 			"",
 			"",
 			true,
@@ -100,12 +100,12 @@ func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
 	}{
 		{
 			"valid_token",
-			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::123456789012:role/my_role", TokenFile: "testdata/token_file"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/token_file"}},
 			false,
 		},
 		{
 			"missing_token_file",
-			&Config{Region: "region", Service: "service", AssumeRoleWithWebIdentity: &AssumeRoleWithWebIdentity{ARN: "arn:aws:iam::123456789012:role/my_role", TokenFile: "testdata/no_token_file"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/no_token_file"}},
 			true,
 		},
 	}

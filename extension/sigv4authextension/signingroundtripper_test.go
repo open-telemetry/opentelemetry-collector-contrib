@@ -45,7 +45,7 @@ func TestRoundTrip(t *testing.T) {
 			"error_round_tripper",
 			errorRoundTripper,
 			true,
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}, credsProvider: awsCredsProvider},
 		},
 		{
 			"error_invalid_credsProvider",
@@ -147,14 +147,14 @@ func TestInferServiceAndRegion(t *testing.T) {
 		{
 			"no_match_with_config",
 			req4,
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 			"service",
 			"region",
 		},
 		{
 			"match_with_config",
 			req5,
-			&Config{Region: "region", Service: "service", AssumeRole: &AssumeRole{ARN: "rolearn", STSRegion: "region"}},
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "rolearn", STSRegion: "region"}},
 			"service",
 			"region",
 		},
