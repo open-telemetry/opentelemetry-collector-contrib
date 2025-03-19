@@ -8,10 +8,10 @@ require (
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/extension/googleclientauthextension v0.51.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componenttest v0.122.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/extension v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/extension/extensiontest v0.122.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.uber.org/goleak v1.3.0
 )
 
