@@ -107,7 +107,10 @@ func (s *priorityContextInferrer) inferFromStatements(statements []string) (infe
 	})
 }
 
-func (s *priorityContextInferrer) innerInfer(ottls []string, hinter func(string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error)) (inferredContext string, err error) {
+// hinterFunc is used by the innerInfer function to generate the hints (paths, functions, enums, etc.) for the given OTTL.
+type hinterFunc func(string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error)
+
+func (s *priorityContextInferrer) innerInfer(ottls []string, hinter hinterFunc) (inferredContext string, err error) {
 	s.telemetrySettings.Logger.Debug("Inferring context from OTTL",
 		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
 		zap.Any("priority", s.contextPriority),
