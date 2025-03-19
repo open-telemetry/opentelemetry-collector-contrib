@@ -32,7 +32,7 @@ The configuration fields are as follows:
 
 ## Assume Role
 
-Example:
+### Example Configuration:
 
 ```yaml
 extensions:
