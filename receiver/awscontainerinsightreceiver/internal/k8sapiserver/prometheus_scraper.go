@@ -29,7 +29,8 @@ const (
 	caFile             = "/var/run/secrets/kubernetes.io/serviceaccount/ca.crt"
 	collectionInterval = 60 * time.Second
 	// needs to start with "containerInsightsKubeAPIServerScraper" for histogram deltas in the emf exporter
-	jobName = "containerInsightsKubeAPIServerScraper"
+	jobName                        = "containerInsightsKubeAPIServerScraper"
+	serviceAccountTokenDefaultPath = "/var/run/secrets/kubernetes.io/serviceaccount/token" // #nosec
 )
 
 var controlPlaneMetricAllowList = []string{
@@ -72,7 +73,6 @@ type PrometheusScraperOpts struct {
 	Host                component.Host
 	ClusterNameProvider clusterNameProvider
 	LeaderElection      *LeaderElection
-	BearerToken         string
 }
 
 func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error) {
@@ -100,6 +100,10 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 			TLSConfig: configutil.TLSConfig{
 				CAFile:             caFile,
 				InsecureSkipVerify: false,
+			},
+			Authorization: &configutil.Authorization{
+				Type:            "Bearer",
+				CredentialsFile: serviceAccountTokenDefaultPath,
 			},
 		},
 		ScrapeInterval:  model.Duration(collectionInterval),
@@ -143,12 +147,6 @@ func NewPrometheusScraper(opts PrometheusScraperOpts) (*PrometheusScraper, error
 				Action: relabel.LabelDrop,
 			},
 		},
-	}
-
-	if opts.BearerToken != "" {
-		scrapeConfig.HTTPClientConfig.BearerToken = configutil.Secret(opts.BearerToken)
-	} else {
-		opts.TelemetrySettings.Logger.Warn("bearer token is not set, control plane metrics will not be published")
 	}
 
 	promConfig := prometheusreceiver.Config{
