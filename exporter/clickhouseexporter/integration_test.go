@@ -300,7 +300,6 @@ func verifyGaugeMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsSpanID:   []string{"0102030000000000"},
 		ExemplarsValue:    []float64{54},
 	}
-	time.Sleep(1 * time.Second)
 	err := db.Get(&actualGauge, "select * from default.otel_metrics_gauge")
 	require.NoError(t, err)
 	require.Equal(t, expectGauge, actualGauge)
