@@ -32,12 +32,24 @@ type mockFailingContextInferrer struct {
 	err error
 }
 
-func (r *mockFailingContextInferrer) inferStatements(_ []string) (string, error) {
+func (r *mockFailingContextInferrer) inferFromStatements(_ []string) (string, error) {
 	return "", r.err
 }
 
-func (r *mockFailingContextInferrer) inferConditions(_ []string) (string, error) {
+func (r *mockFailingContextInferrer) inferFromConditions(_ []string) (string, error) {
 	return "", r.err
+}
+
+type mockStaticContextInferrer struct {
+	value string
+}
+
+func (r *mockStaticContextInferrer) inferFromStatements(_ []string) (string, error) {
+	return r.value, nil
+}
+
+func (r *mockStaticContextInferrer) inferFromConditions(_ []string) (string, error) {
+	return r.value, nil
 }
 
 type mockSetArguments[K any] struct {
@@ -308,12 +320,13 @@ func Test_ParseStatements_UnknownContextError(t *testing.T) {
 		WithParserCollectionContext("te", mockParser(t, WithPathContextNames[any]([]string{"te"})), WithStatementConverter(newNopParsedStatementsConverter[any]())),
 	)
 	require.NoError(t, err)
+	pc.contextInferrer = &mockStaticContextInferrer{"foo"}
 
 	statements := mockGetter{values: []string{`set(foo.attributes["bar"], "foo")`}}
 	_, err = pc.ParseStatements(statements)
 
-	assert.ErrorContains(t, err, `path's first segment must be a valid context name: ["bar" "te"]`)
-	assert.ErrorContains(t, err, "unable to infer context")
+	assert.ErrorContains(t, err, `context "foo" inferred from the statements`)
+	assert.ErrorContains(t, err, "is not a supported context")
 }
 
 func Test_ParseStatements_ParseStatementsError(t *testing.T) {
@@ -478,11 +491,12 @@ func Test_ParseConditions_MultipleContexts_Success(t *testing.T) {
 func Test_ParseConditions_NoContextInferredError(t *testing.T) {
 	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)
+	pc.contextInferrer = &mockStaticContextInferrer{""}
 
 	conditions := mockGetter{values: []string{`bar.attributes["bar"] == "foo"`}}
 	_, err = pc.ParseConditions(conditions)
 
-	assert.ErrorContains(t, err, "is not a supported context")
+	assert.ErrorContains(t, err, "unable to infer context from conditions")
 }
 
 func Test_ParseConditions_ContextInferenceError(t *testing.T) {

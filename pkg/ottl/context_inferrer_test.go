@@ -146,7 +146,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 				tt.candidates,
 				withContextInferrerPriorities(tt.priority),
 			)
-			inferredContext, err := inferrer.inferStatements(tt.statements)
+			inferredContext, err := inferrer.inferFromStatements(tt.statements)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
@@ -262,7 +262,7 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 				tt.candidates,
 				withContextInferrerPriorities(tt.priority),
 			)
-			inferredContext, err := inferrer.inferConditions(tt.conditions)
+			inferredContext, err := inferrer.inferFromConditions(tt.conditions)
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})
@@ -272,7 +272,7 @@ func Test_NewPriorityContextInferrer_InferConditions(t *testing.T) {
 func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{})
 	statements := []string{"set(foo.field,"}
-	_, err := inferrer.inferStatements(statements)
+	_, err := inferrer.inferFromStatements(statements)
 	require.ErrorContains(t, err, "unexpected token")
 }
 

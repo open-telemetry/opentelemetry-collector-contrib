@@ -27,9 +27,10 @@ var defaultContextInferPriority = []string{
 
 // contextInferrer is an interface used to infer the OTTL context from statements.
 type contextInferrer interface {
-	// infer returns the OTTL context inferred from the given statements.
-	inferStatements(statements []string) (string, error)
-	inferConditions(conditions []string) (string, error)
+	// inferFromStatements returns the OTTL context inferred from the given statements.
+	inferFromStatements(statements []string) (string, error)
+	// inferFromConditions returns the OTTL context inferred from the given conditions.
+	inferFromConditions(conditions []string) (string, error)
 }
 
 type priorityContextInferrer struct {
@@ -82,67 +83,35 @@ func withContextInferrerPriorities(priorities []string) priorityContextInferrerO
 	}
 }
 
-func (s *priorityContextInferrer) inferConditions(conditions []string) (inferredContext string, err error) {
-	s.telemetrySettings.Logger.Debug("Inferring context from conditions",
-		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
-		zap.Any("priority", s.contextPriority),
-		zap.Strings("conditions", conditions),
-	)
-
-	defer func() {
-		if inferredContext != "" {
-			s.telemetrySettings.Logger.Debug(fmt.Sprintf(`Inferred context: "%s"`, inferredContext))
-		} else {
-			s.telemetrySettings.Logger.Debug("Unable to infer context from conditions")
-		}
-	}()
-
-	requiredFunctions := map[string]struct{}{}
-	requiredEnums := map[enumSymbol]struct{}{}
-
-	var inferredContextPriority int
-	for _, condition := range conditions {
+func (s *priorityContextInferrer) inferFromConditions(conditions []string) (inferredContext string, err error) {
+	return s.innerInfer(conditions, func(condition string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
 		parsed, err := parseCondition(condition)
 		if err != nil {
-			return "", err
+			return nil, nil, nil, err
 		}
 
 		conditionPaths, conditionFunctions, conditionEnums := s.getParsedConditionHints(parsed)
-		for _, p := range conditionPaths {
-			candidate := p.Context
-			candidatePriority, ok := s.contextPriority[candidate]
-			if !ok {
-				candidatePriority = math.MaxInt
-			}
-			if inferredContext == "" || candidatePriority < inferredContextPriority {
-				inferredContext = candidate
-				inferredContextPriority = candidatePriority
-			}
-		}
-		for function := range conditionFunctions {
-			requiredFunctions[function] = struct{}{}
-		}
-		for enum := range conditionEnums {
-			requiredEnums[enum] = struct{}{}
-		}
-	}
-	// No inferred context or nothing left to verify.
-	if inferredContext == "" || (len(requiredFunctions) == 0 && len(requiredEnums) == 0) {
-		s.telemetrySettings.Logger.Debug("No context candidate found in the conditions")
-		return inferredContext, nil
-	}
-	ok := s.validateContextCandidate(inferredContext, requiredFunctions, requiredEnums)
-	if ok {
-		return inferredContext, nil
-	}
-	return s.inferFromLowerContexts(inferredContext, requiredFunctions, requiredEnums), nil
+		return conditionPaths, conditionFunctions, conditionEnums, nil
+	})
 }
 
-func (s *priorityContextInferrer) inferStatements(statements []string) (inferredContext string, err error) {
-	s.telemetrySettings.Logger.Debug("Inferring context from statements",
+func (s *priorityContextInferrer) inferFromStatements(statements []string) (inferredContext string, err error) {
+	return s.innerInfer(statements, func(statement string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
+		parsed, err := parseStatement(statement)
+		if err != nil {
+			return nil, nil, nil, err
+		}
+
+		statementPaths, statementFunctions, statementEnums := s.getParsedStatementHints(parsed)
+		return statementPaths, statementFunctions, statementEnums, nil
+	})
+}
+
+func (s *priorityContextInferrer) innerInfer(ottls []string, hinter func(string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error)) (inferredContext string, err error) {
+	s.telemetrySettings.Logger.Debug("Inferring context from OTTL",
 		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
 		zap.Any("priority", s.contextPriority),
-		zap.Strings("statements", statements),
+		zap.Strings("values", ottls),
 	)
 
 	defer func() {
@@ -157,14 +126,12 @@ func (s *priorityContextInferrer) inferStatements(statements []string) (inferred
 	requiredEnums := map[enumSymbol]struct{}{}
 
 	var inferredContextPriority int
-	for _, statement := range statements {
-		parsed, err := parseStatement(statement)
+	for _, ottl := range ottls {
+		ottlPaths, ottlFunctions, ottlEnums, err := hinter(ottl)
 		if err != nil {
 			return "", err
 		}
-
-		statementPaths, statementFunctions, statementEnums := s.getParsedStatementHints(parsed)
-		for _, p := range statementPaths {
+		for _, p := range ottlPaths {
 			candidate := p.Context
 			candidatePriority, ok := s.contextPriority[candidate]
 			if !ok {
@@ -175,16 +142,16 @@ func (s *priorityContextInferrer) inferStatements(statements []string) (inferred
 				inferredContextPriority = candidatePriority
 			}
 		}
-		for function := range statementFunctions {
+		for function := range ottlFunctions {
 			requiredFunctions[function] = struct{}{}
 		}
-		for enum := range statementEnums {
+		for enum := range ottlEnums {
 			requiredEnums[enum] = struct{}{}
 		}
 	}
 	// No inferred context or nothing left to verify.
 	if inferredContext == "" || (len(requiredFunctions) == 0 && len(requiredEnums) == 0) {
-		s.telemetrySettings.Logger.Debug("No context candidate found in the statements")
+		s.telemetrySettings.Logger.Debug("No context candidate found in the ottls")
 		return inferredContext, nil
 	}
 	ok := s.validateContextCandidate(inferredContext, requiredFunctions, requiredEnums)

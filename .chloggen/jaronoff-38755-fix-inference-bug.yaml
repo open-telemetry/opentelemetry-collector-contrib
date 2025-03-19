@@ -7,7 +7,7 @@ change_type: bug_fix
 component: pkg/ottl
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Fixes a bug that was preventing ParseConditions from working because it was trying to infer context from statements.
+note: Fix the `ottl.ParserCollection` to properly infer the OTTL context when using the `ParseConditions` function.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38755]
@@ -24,4 +24,4 @@ subtext:
 # Include 'user' if the change is relevant to end users.
 # Include 'api' if there is a change to a library API.
 # Default: '[user]'
-change_logs: []
+change_logs: [api]
