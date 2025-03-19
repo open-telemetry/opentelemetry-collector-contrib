@@ -509,10 +509,9 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 // and optionally adds in the OTel instrumentation library name
 func createLabels(attributes pcommon.Map, instrLibName string) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		labels[k] = v.AsString()
-		return true
-	})
+	}
 
 	// Add OTel instrumentation lib name as an additional label if it is defined
 	if instrLibName != "" {

@@ -24,26 +24,24 @@ var (
 func CustomMonitoredResourceMapping(r pcommon.Resource) *monitoredrespb.MonitoredResource {
 	var monitoredResourceType string
 	monitoredResourceLabels := make(map[string]string)
-	r.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range r.Attributes().All() {
 		if k == mappingKey {
 			monitoredResourceType = v.AsString()
-			return false
+			break
 		}
-		return true
-	})
+	}
 
 	if monitoredResourceType == "" {
 		return collector.DefaultConfig().MetricConfig.MapMonitoredResource(r)
 	}
 
 	prefix := monitoredResourceLabelPrefix + monitoredResourceType + "."
-	r.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range r.Attributes().All() {
 		// Extract the monitored resource label by separating it from the prefix.
 		if len(k) > len(prefix) && k[:len(prefix)] == prefix {
 			monitoredResourceLabels[k[len(prefix):]] = v.AsString()
 		}
-		return true
-	})
+	}
 
 	return &monitoredrespb.MonitoredResource{
 		Type:   monitoredResourceType,

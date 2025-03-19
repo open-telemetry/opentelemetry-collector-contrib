@@ -46,7 +46,7 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 - `awscloudwatchencodingextension`: Introduce new encoding extension for AWS CloudWatch Metric Streams (#37870)
 - `azureblobexporter`: implementation of azure blob exporter (#34319)
-- `faroreceiver`: Introduce a new receiver to recieve faro data (#19180)
+- `faroreceiver`: Introduce a new receiver to receive faro data (#19180)
 - `kafkatopicsobserver`: Change stability level of kafkatopicsobserver to alpha (#37665)
 - `datadogsemanticsprocessor`: Add datadogsemanticsprocessor, which transforms OpenTelemetry semantic conventions to Datadog semantic conventions (#35304)
 - `pprofreceiver`: Introduce a new receiver to report pprof profiles (#38260)

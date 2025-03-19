@@ -183,12 +183,11 @@ func randFloat64Arr(size int) []float64 {
 }
 
 func assertResourceContainsAttributes(t *testing.T, resource pcommon.Resource, attributeMap pcommon.Map) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		rv, found := resource.Attributes().Get(k)
 		assert.True(t, found)
 		assert.Equal(t, v, rv)
-		return true
-	})
+	}
 }
 
 // The "complex" use case has following input data:

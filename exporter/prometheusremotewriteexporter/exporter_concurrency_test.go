@@ -109,9 +109,6 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 		BackOffConfig: retrySettings,
 	}
 
