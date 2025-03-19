@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
@@ -35,8 +36,7 @@ type elasticsearchExporter struct {
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
-
-	encoders map[MappingMode]documentEncoder
+	encoders            sync.Map
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
@@ -50,7 +50,6 @@ func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearc
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
-		encoders:            map[MappingMode]documentEncoder{},
 	}
 }
 
@@ -69,17 +68,12 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
-	if enc, ok := e.encoders[m]; ok {
-		return enc, nil
-	}
-
-	enc, err := newEncoder(m)
+	nEnc, err := newEncoder(m)
 	if err != nil {
 		return nil, err
 	}
-
-	e.encoders[m] = enc
-	return enc, nil
+	enc, _ := e.encoders.LoadOrStore(m, nEnc)
+	return enc.(documentEncoder), nil
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
