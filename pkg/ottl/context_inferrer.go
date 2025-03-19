@@ -84,33 +84,17 @@ func withContextInferrerPriorities(priorities []string) priorityContextInferrerO
 }
 
 func (s *priorityContextInferrer) inferFromConditions(conditions []string) (inferredContext string, err error) {
-	return s.innerInfer(conditions, func(condition string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
-		parsed, err := parseCondition(condition)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		conditionPaths, conditionFunctions, conditionEnums := s.getParsedConditionHints(parsed)
-		return conditionPaths, conditionFunctions, conditionEnums, nil
-	})
+	return s.infer(conditions, s.getConditionHints)
 }
 
 func (s *priorityContextInferrer) inferFromStatements(statements []string) (inferredContext string, err error) {
-	return s.innerInfer(statements, func(statement string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
-		parsed, err := parseStatement(statement)
-		if err != nil {
-			return nil, nil, nil, err
-		}
-
-		statementPaths, statementFunctions, statementEnums := s.getParsedStatementHints(parsed)
-		return statementPaths, statementFunctions, statementEnums, nil
-	})
+	return s.infer(statements, s.getStatementHints)
 }
 
-// hinterFunc is used by the innerInfer function to generate the hints (paths, functions, enums, etc.) for the given OTTL.
+// hinterFunc is used by the infer function to generate the hints (paths, functions, enums, etc.) for the given OTTL.
 type hinterFunc func(string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error)
 
-func (s *priorityContextInferrer) innerInfer(ottls []string, hinter hinterFunc) (inferredContext string, err error) {
+func (s *priorityContextInferrer) infer(ottls []string, hinter hinterFunc) (inferredContext string, err error) {
 	s.telemetrySettings.Logger.Debug("Inferring context from OTTL",
 		zap.Strings("candidates", maps.Keys(s.contextCandidate)),
 		zap.Any("priority", s.contextPriority),
@@ -240,25 +224,34 @@ func (s *priorityContextInferrer) sortContextCandidates(candidates []string) {
 	})
 }
 
-// getParsedConditionHints extracts all path, function names (editor and converter), and enumSymbol
+// getConditionHints extracts all path, function names (editor and converter), and enumSymbol
 // from the given parsed statements. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
-func (s *priorityContextInferrer) getParsedConditionHints(parsed *booleanExpression) ([]path, map[string]struct{}, map[enumSymbol]struct{}) {
+func (s *priorityContextInferrer) getConditionHints(condition string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
+	parsed, err := parseCondition(condition)
+	if err != nil {
+		return nil, nil, nil, err
+	}
+
 	visitor := newGrammarContextInferrerVisitor()
 	parsed.accept(&visitor)
-	return visitor.paths, visitor.functions, visitor.enumsSymbols
+	return visitor.paths, visitor.functions, visitor.enumsSymbols, nil
 }
 
-// getParsedStatementHints extracts all path, function names (editor and converter), and enumSymbol
+// getStatementHints extracts all path, function names (editor and converter), and enumSymbol
 // from the given parsed statements. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
-func (s *priorityContextInferrer) getParsedStatementHints(parsed *parsedStatement) ([]path, map[string]struct{}, map[enumSymbol]struct{}) {
+func (s *priorityContextInferrer) getStatementHints(statement string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
+	parsed, err := parseStatement(statement)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	visitor := newGrammarContextInferrerVisitor()
 	parsed.Editor.accept(&visitor)
 	if parsed.WhereClause != nil {
 		parsed.WhereClause.accept(&visitor)
 	}
-	return visitor.paths, visitor.functions, visitor.enumsSymbols
+	return visitor.paths, visitor.functions, visitor.enumsSymbols, nil
 }
 
 // priorityContextInferrerHintsVisitor is a grammarVisitor implementation that collects
