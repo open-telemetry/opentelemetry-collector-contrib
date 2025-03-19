@@ -7,11 +7,12 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/distribution/reference"
 	"regexp"
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/distribution/reference"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
