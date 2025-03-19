@@ -10,6 +10,7 @@ import (
 	_ "embed"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/otel/attribute"
 	"net"
 	"net/http"
 	"net/url"
@@ -723,6 +724,9 @@ func (s *Supervisor) startOpAMPServer(ctx context.Context) error {
 }
 
 func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+	ctx, span := s.getTracer().Start(context.Background(), "HandleAgentOpAMPMessage")
+	defer span.End()
+
 	s.agentConn.Store(conn)
 
 	s.telemetrySettings.Logger.Debug("Received OpAMP message from the agent")
@@ -731,22 +735,28 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.EffectiveConfig != nil {
+		span.AddEvent("Received effectiveConfig")
 		if cfg, ok := message.EffectiveConfig.GetConfigMap().GetConfigMap()[""]; ok {
 			s.telemetrySettings.Logger.Debug("Received effective config from agent")
 			s.effectiveConfig.Store(string(cfg.Body))
-			err := s.opampClient.UpdateEffectiveConfig(context.Background())
+			err := s.opampClient.UpdateEffectiveConfig(ctx)
 			if err != nil {
+				span.SetStatus(codes.Error, fmt.Sprintf("Could not update effective config: %s", err.Error()))
 				s.telemetrySettings.Logger.Error("The OpAMP client failed to update the effective config", zap.Error(err))
 			}
 		} else {
-			s.telemetrySettings.Logger.Error("Got effective config message, but the instance config was not present. Ignoring effective config.")
+			msg := "Got effective config message, but the instance config was not present. Ignoring effective config."
+			span.SetStatus(codes.Error, msg)
+			s.telemetrySettings.Logger.Error(msg)
 		}
 	}
 
 	// Proxy client capabilities to server
 	if message.CustomCapabilities != nil {
+		span.AddEvent("Received customCapabilities")
 		err := s.opampClient.SetCustomCapabilities(message.CustomCapabilities)
 		if err != nil {
+			span.SetStatus(codes.Error, fmt.Sprintf("Failed to send custom capabilities to OpAMP server: %s", err.Error()))
 			s.telemetrySettings.Logger.Error("Failed to send custom capabilities to OpAMP server")
 		}
 	}
@@ -765,6 +775,10 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	}
 
 	if message.Health != nil {
+		span.AddEvent("Received health", trace.WithAttributes(attribute.KeyValue{
+			Key:   "health",
+			Value: attribute.BoolValue(message.Health.Healthy),
+		}))
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient = message.Health
 	}
