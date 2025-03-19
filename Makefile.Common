@@ -84,12 +84,12 @@ TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subte
 BUILD_TYPE?=release
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC_CMD := find . -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
+ALL_SRC_AND_DOC_CMD := find . -type f \( \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) -and \( -not -path '*/third_party/*' \) \) | sort
 
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
 # All source code and .sh files (evaluated when used)
-ALL_SRC_AND_SHELL_CMD := find . -type f -iname "*.go" -o -iname "*.sh" -not -path '**/third_party/*' | sort
+ALL_SRC_AND_SHELL_CMD := find . -type f \( \( -name "*.go" -o -name "*.sh" \) -and \( -not -path '*/third_party/*' \) \) | sort
 
 pwd:
 	@pwd
