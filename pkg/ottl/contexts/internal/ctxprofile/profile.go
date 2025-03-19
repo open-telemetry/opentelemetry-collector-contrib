@@ -142,11 +142,11 @@ func accessLocationTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessLocationIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().LocationIndices(), nil
+			return tCtx.GetProfile().LocationIndices().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pcommon.Int32Slice); ok {
-				v.CopyTo(tCtx.GetProfile().LocationIndices())
+			if v, ok := val.([]int32); ok {
+				tCtx.GetProfile().LocationIndices().FromRaw(v)
 			}
 			return nil
 		},
@@ -212,11 +212,11 @@ func accessLinkTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessStringTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().StringTable(), nil
+			return tCtx.GetProfile().StringTable().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pcommon.StringSlice); ok {
-				v.CopyTo(tCtx.GetProfile().StringTable())
+			if v, ok := val.([]string); ok {
+				tCtx.GetProfile().StringTable().FromRaw(v)
 			}
 			return nil
 		},
@@ -310,11 +310,11 @@ func accessPeriod[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessCommentStringIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().CommentStrindices(), nil
+			return tCtx.GetProfile().CommentStrindices().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pcommon.Int32Slice); ok {
-				v.CopyTo(tCtx.GetProfile().CommentStrindices())
+			if v, ok := val.([]int32); ok {
+				tCtx.GetProfile().CommentStrindices().FromRaw(v)
 			}
 			return nil
 		},
@@ -371,11 +371,11 @@ func accessStringProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessAttributeIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().AttributeIndices(), nil
+			return tCtx.GetProfile().AttributeIndices().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pcommon.Int32Slice); ok {
-				v.CopyTo(tCtx.GetProfile().AttributeIndices())
+			if v, ok := val.([]int32); ok {
+				tCtx.GetProfile().AttributeIndices().FromRaw(v)
 			}
 			return nil
 		},

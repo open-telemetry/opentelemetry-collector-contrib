@@ -39,7 +39,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "location_indices",
-			val:  createInt32Slice(5),
+			val:  []int32{5},
 		},
 		{
 			path: "function_table",
@@ -59,7 +59,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "string_table",
-			val:  createStringSlice(),
+			val:  []string{"", "string"},
 		},
 		{
 			path: "time_unix_nano",
@@ -87,7 +87,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "comment_string_indices",
-			val:  createInt32Slice(345),
+			val:  []int32{345},
 		},
 		{
 			path: "default_sample_type_string_index",
@@ -103,7 +103,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "attribute_indices",
-			val:  createInt32Slice(567),
+			val:  []int32{567},
 		},
 		{
 			path: "dropped_attributes_count",
