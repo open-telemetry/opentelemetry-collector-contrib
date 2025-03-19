@@ -249,7 +249,7 @@ receiver/hostmetricsreceiver/internal/scraper/processesscraper/  @open-telemetry
 receiver/hostmetricsreceiver/internal/scraper/processscraper/    @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/hostmetricsreceiver/internal/scraper/systemscraper/     @open-telemetry/collector-contrib-approvers @dmitryax @braydonk
 receiver/httpcheckreceiver/                                      @open-telemetry/collector-contrib-approvers @codeboten @VenuEmmadi
-receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @heitorganzeli @narcis96 @mwear
+receiver/huaweicloudcesreceiver/                                 @open-telemetry/collector-contrib-approvers @narcis96 @mwear
 receiver/iisreceiver/                                            @open-telemetry/collector-contrib-approvers @Mrod1598 @pjanotti
 receiver/influxdbreceiver/                                       @open-telemetry/collector-contrib-approvers @jacobmarble
 receiver/jaegerreceiver/                                         @open-telemetry/collector-contrib-approvers @yurishkuro
