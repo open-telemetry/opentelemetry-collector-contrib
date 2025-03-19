@@ -1253,7 +1253,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 			effectiveConfig: &atomic.Value{},
 			cfgState:        &atomic.Value{},
 		}
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(nil)
 
 		assert.Empty(t, got.ConfigMap.ConfigMap[""].Body)
 	})
@@ -1266,7 +1266,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 		s.effectiveConfig.Store("effective")
 		s.cfgState.Store("merged")
 
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(nil)
 
 		assert.Equal(t, []byte("effective"), got.ConfigMap.ConfigMap[""].Body)
 	})
@@ -1278,7 +1278,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 
 		s.cfgState.Store(&configState{mergedConfig: "merged"})
 
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(nil)
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
 	})
