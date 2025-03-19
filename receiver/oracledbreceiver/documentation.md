@@ -291,7 +291,7 @@ Number of physical writes
 
 ### oracledb.physical_writes_direct
 
-Number of writes directly from disk, bypassing the buffer cache
+Number of writes directly to disk, bypassing the buffer cache
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
