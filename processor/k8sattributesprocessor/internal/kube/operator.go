@@ -7,9 +7,8 @@ import (
 	"regexp"
 	"strings"
 
-	"golang.org/x/exp/slices"
-
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
 )
 
