@@ -62,9 +62,9 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
 			actual := string(docs[0].Document)
-			assert.Equal(t, expected, actual)
+			assert.JSONEq(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
@@ -229,6 +229,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
+			cfg.LogsIndex = "index"
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
 		})
@@ -251,6 +252,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
+			cfg.LogsIndex = "index"
 			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
@@ -308,41 +310,36 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+		index := "someindex"
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				"elasticsearch.index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch.index": "ignored",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 		mustSendLogs(t, exporter, logs)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -358,7 +355,6 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "none"
-			cfg.LogsDynamicIndex.Enabled = true
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
@@ -376,55 +372,26 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
+	t.Run("publish with logstash index format enabled", func(t *testing.T) {
+		index := "someindex"
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), "not-used-index")
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), index)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogstashFormat.Enabled = true
-			cfg.LogsIndex = "not-used-index"
-		})
-		mustSendLogs(t, exporter, newLogsWithAttributes(nil, nil, nil))
-
-		rec.WaitItems(1)
-	})
-
-	t.Run("publish with logstash index format enabled and dynamic index enabled", func(t *testing.T) {
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
-
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
 			nil,
-			map[string]any{
-				indexPrefix: prefix,
-			},
+			nil,
 		))
 		rec.WaitItems(1)
 	})
@@ -495,7 +462,6 @@ func TestExporterLogs(t *testing.T) {
 			})
 
 			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-				cfg.LogsDynamicIndex.Enabled = true
 				cfg.Mapping.Mode = "otel"
 			})
 			recordAttrs := map[string]any{
@@ -951,36 +917,34 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
+		index := "someindex"
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			expected := "resource.prefix-metrics.index-resource.suffix"
-			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
-			cfg.Mapping.Mode = "ecs"
+			cfg.Mapping.Mode = "otel"
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				indexSuffix: "-data.point.suffix",
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: "resource.prefix-",
-				indexSuffix: "-resource.suffix",
+				"elasticsearch.index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch.index": "ignored",
 			},
 		)
-		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
-		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -995,7 +959,6 @@ func TestExporterMetrics(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributes(
@@ -1614,7 +1577,6 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 
@@ -1747,49 +1709,42 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+		index := "someindex"
+		eventIndex := "some-event-index"
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, create["_index"].(string))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributes(
+		traces := newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				"elasticsearch.index": "ignored",
 			},
-		))
+			map[string]any{
+				"elasticsearch.index": "ignored",
+			},
+		)
+		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		event.Attributes().PutStr("elasticsearch.index", eventIndex)
+		mustSendTraces(t, exporter, traces)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(2)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
+		eventDoc := docs[1]
+		assert.Equal(t, eventIndex, actionJSONToIndex(t, eventDoc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(eventDoc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -1806,7 +1761,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "none"
-			cfg.TracesDynamicIndex.Enabled = true
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
@@ -1822,7 +1776,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash format index", func(t *testing.T) {
+	t.Run("publish with logstash format index, default traces index", func(t *testing.T) {
 		var defaultCfg Config
 
 		rec := newBulkRecorder()
@@ -1836,7 +1790,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogstashFormat.Enabled = true
-			cfg.TracesIndex = "not-used-index"
 			defaultCfg = *cfg
 		})
 
@@ -1845,38 +1798,28 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash format index and dynamic index enabled", func(t *testing.T) {
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+	t.Run("publish with logstash format index", func(t *testing.T) {
+		index := "someindex"
 
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), index)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
 			nil,
-			map[string]any{
-				indexPrefix: prefix,
-			},
+			nil,
 		))
 		rec.WaitItems(1)
 	})
@@ -1889,7 +1832,6 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesDynamicIndex.Enabled = true
 			cfg.Mapping.Mode = "otel"
 		})
 
@@ -1948,6 +1890,79 @@ func TestExporterTraces(t *testing.T) {
 		}
 
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("otel mode span event routing", func(t *testing.T) {
+		for _, tc := range []struct {
+			name           string
+			config         func(cfg *Config)
+			spanEventAttrs map[string]any
+			wantIndex      string
+		}{
+			{
+				name:      "default",
+				wantIndex: "logs-generic.otel-default",
+			},
+			{
+				name: "static index config",
+				config: func(cfg *Config) {
+					cfg.LogsIndex = "someindex"
+					cfg.MetricsIndex = "ignored"
+					cfg.TracesIndex = "ignored"
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic elasticsearch.index",
+				spanEventAttrs: map[string]any{
+					"elasticsearch.index": "someindex",
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic data_stream.*",
+				spanEventAttrs: map[string]any{
+					"data_stream.dataset":   "foo",
+					"data_stream.namespace": "bar",
+				},
+				wantIndex: "logs-foo.otel-bar",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				configs := []func(cfg *Config){
+					func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+					},
+				}
+				if tc.config != nil {
+					configs = append(configs, tc.config)
+				}
+
+				exporter := newTestTracesExporter(t, server.URL, configs...)
+
+				traces := newTracesWithAttributes(nil, nil, nil)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("some_event_name")
+				fillAttributeMap(spanEvent.Attributes(), tc.spanEventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(2)
+				var spanEventDocs []itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDocs = append(spanEventDocs, doc)
+					}
+				}
+				require.Len(t, spanEventDocs, 1)
+				assert.Equal(t, tc.wantIndex, gjson.GetBytes(spanEventDocs[0].Action, "create._index").Str)
+			})
+		}
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {

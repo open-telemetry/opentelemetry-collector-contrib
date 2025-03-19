@@ -459,25 +459,24 @@ func encodeAttributesECSMode(document *objmodel.Document, attrs pcommon.Map, con
 		return
 	}
 
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		// If ECS key is found for current k in conversion map, use it.
 		if ecsKey, exists := conversionMap[k]; exists {
 			if ecsKey == "" {
 				// Skip the conversion for this k.
-				return true
+				continue
 			}
 
 			document.AddAttribute(ecsKey, v)
 			if preserve := preserveMap[k]; preserve {
 				document.AddAttribute(k, v)
 			}
-			return true
+			continue
 		}
 
 		// Otherwise, add key at top level with attribute name as-is.
 		document.AddAttribute(k, v)
-		return true
-	})
+	}
 }
 
 func encodeLogAgentNameECSMode(document *objmodel.Document, resource pcommon.Resource) {

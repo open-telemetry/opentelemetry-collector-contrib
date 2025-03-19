@@ -158,19 +158,14 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retrySettings:     cfg.BackOffConfig,
 		retryOnHTTP429:    retryOn429FeatureGate.IsEnabled(),
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
-			AddMetricSuffixes:   cfg.AddMetricSuffixes,
-			SendMetadata:        cfg.SendMetadata,
+			Namespace:         cfg.Namespace,
+			ExternalLabels:    sanitizedLabels,
+			DisableTargetInfo: !cfg.TargetInfo.Enabled,
+			AddMetricSuffixes: cfg.AddMetricSuffixes,
+			SendMetadata:      cfg.SendMetadata,
 		},
 		telemetry:      telemetry,
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
-	}
-
-	if prwe.exporterSettings.ExportCreatedMetric {
-		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
 	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)

@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: probabilisticsampler
-note: Logs priority sampling behavior applies only when the priority attribute is present.
-issues: [38468]
-subtext:
-change_logs: [user]
