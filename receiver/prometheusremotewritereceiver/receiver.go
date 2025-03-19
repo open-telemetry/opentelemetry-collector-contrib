@@ -108,7 +108,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
-
+	
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
@@ -163,11 +163,14 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
+var interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
 //
 //nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
+	fmt.Printf("debug len interRequestCache: %d\n", len(interRequestCache))
 	var (
 		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
@@ -177,15 +180,19 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
-		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+		// intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		// TODO: use the appropriate hash function.
 		metricCache = make(map[string]pmetric.Metric)
+		// target_info metric in the context of OpenTelemetry (OTLP) to Prometheus conversion
+		// is used to supply additional resource attributes to distinguish metrics from different Prometheus endpoints.
+		// targetInfo = make(map[string]string)
 	)
 
+	fmt.Printf("debug len timeseries: %d\n", len(req.Timeseries))
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-		if !ls.Has(labels.MetricName) {
+		if !ls.Has(labels.MetricName) && ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_INFO {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
@@ -193,16 +200,45 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		// If it is a metric of type INFO, we use its labels as attributes of the resource
+		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_INFO {
+			var rm pmetric.ResourceMetrics
+			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+
+			// Seach or create the ResourceMetrics
+			if existingRM, ok := interRequestCache[hashedLabels]; ok {
+				rm = existingRM
+			} else {
+				rm = otelMetrics.ResourceMetrics().AppendEmpty()
+			}
+
+			// Add all labels as resource attributes
+			attrs := rm.Resource().Attributes()
+			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
+
+			// Add the remaining labels as resource attributes
+			for _, l := range ls {
+				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
+					// Convert the label name to the resource attribute format
+					attrKey := strings.ReplaceAll(l.Name, "_", ".")
+					attrs.PutStr(attrKey, l.Value)
+				}
+			}
+			interRequestCache[hashedLabels] = rm
+			continue
+		}
+
+		// For the rest of the metrics, continue with the normal processing
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		intraCacheEntry, ok := intraRequestCache[hashedLabels]
+		existingRM, ok := interRequestCache[hashedLabels]
 		if ok {
-			// We found the same time series in the same request, so we should append to the same OTLP metric.
-			rm = intraCacheEntry
+			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			intraRequestCache[hashedLabels] = rm
+			interRequestCache[hashedLabels] = rm
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)

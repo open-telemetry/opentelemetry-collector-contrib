@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -419,4 +420,202 @@ func TestTranslateV2(t *testing.T) {
 			assert.Equal(t, tc.expectedStats, stats)
 		})
 	}
+}
+
+func TestTargetInfo(t *testing.T) {
+	testCases := []struct {
+		name            string
+		request         *writev2.Request
+		expectedMetrics pmetric.Metrics
+	}{
+		{
+			name: "service with target_info metric",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"machine_type", "n1-standard-1", // 5, 6
+					"cloud_provider", "gcp", // 7, 8
+					"region", "us-central1", // 9, 10
+					"datacenter", "sdc", // 11, 12
+					"__name__", "normal_metric", // 13, 14
+					"d", "e", // 15, 16
+				},
+				Timeseries: []writev2.TimeSeries{
+					// Generating 2 metrics, one is a type info and the other is a normal gauge.
+					// The type info metric should be translated just contains the resource attributes.
+					// The normal_metric should be translated as usual.
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{13, 14, 1, 2, 3, 4, 15, 16},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine.type", "n1-standard-1")
+				attrs.PutStr("cloud.provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+				attrs.PutStr("datacenter", "sdc")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("d", "e")
+
+				return metrics
+			}(),
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			prwReceiver := setupMetricsReceiver(t)
+			metrics, _, err := prwReceiver.translateV2(context.Background(), tc.request)
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
+		})
+	}
+}
+
+func TestTargetInfoWithMultipleRequests(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+	w := httptest.NewRecorder()
+
+	firstRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"machine_type", "n1-standard-1", // 5, 6
+			"cloud_provider", "gcp", // 7, 8
+			"region", "us-central1", // 9, 10
+			"__name__", "normal_metric", // 11, 12
+			"d", "e", // 13, 14
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			},
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{11, 12, 1, 2, 3, 4, 13, 14},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	// Primeira requisição
+	data1, err := proto.Marshal(firstRequest)
+	assert.NoError(t, err)
+
+	compressed1 := snappy.Encode(nil, data1)
+
+	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(compressed1))
+	req1.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	req1.Header.Set("Content-Encoding", "snappy")
+
+	prwReceiver.handlePRW(w, req1)
+	resp1 := w.Result()
+	body, err := io.ReadAll(resp1.Body)
+	defer resp1.Body.Close()
+	assert.NoError(t, err)
+	assert.Equal(t, http.StatusNoContent, resp1.StatusCode, string(body))
+	// // Reset o recorder para a segunda requisição
+	// w = httptest.NewRecorder()
+
+	// secondRequest := &writev2.Request{
+	// 	Symbols: []string{
+	// 		"",
+	// 		"job", "production/service_a", // 1, 2
+	// 		"instance", "host1", // 3, 4
+	// 		"__name__", "another_metric", // 5, 6
+	// 		"foo", "bar", // 7, 8
+	// 	},
+	// 	Timeseries: []writev2.TimeSeries{
+	// 		{
+	// 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+	// 			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+	// 			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+	// 		},
+	// 	},
+	// }
+
+	// // Segunda requisição
+	// data2, err := proto.Marshal(secondRequest)
+	// assert.NoError(t, err)
+	// compressed2 := snappy.Encode(nil, data2) // Usando nil para que o Encode aloque um novo slice
+
+	// req2 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(compressed2))
+	// req2.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	// req2.Header.Set("Content-Encoding", "snappy")
+
+	// prwReceiver.handlePRW(w, req2)
+	// resp2 := w.Result()
+	// assert.Equal(t, http.StatusNoContent, resp2.StatusCode)
+
+	// // Verifica o resultado esperado após as duas requisições
+	// expectedMetrics := func() pmetric.Metrics {
+	// 	metrics := pmetric.NewMetrics()
+
+	// 	rm := metrics.ResourceMetrics().AppendEmpty()
+	// 	attrs := rm.Resource().Attributes()
+	// 	attrs.PutStr("service.namespace", "production")
+	// 	attrs.PutStr("service.name", "service_a")
+	// 	attrs.PutStr("service.instance.id", "host1")
+	// 	attrs.PutStr("machine.type", "n1-standard-1")
+	// 	attrs.PutStr("cloud.provider", "gcp")
+	// 	attrs.PutStr("region", "us-central1")
+
+	// 	sm := rm.ScopeMetrics().AppendEmpty()
+	// 	sm.Scope().SetName("OpenTelemetry Collector")
+	// 	sm.Scope().SetVersion("latest")
+
+	// 	m1 := sm.Metrics().AppendEmpty()
+	// 	m1.SetName("normal_metric")
+	// 	m1.SetUnit("")
+	// 	m1.SetDescription("")
+	// 	dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+	// 	dp1.SetDoubleValue(1.0)
+	// 	dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+	// 	dp1.Attributes().PutStr("d", "e")
+
+	// 	m2 := sm.Metrics().AppendEmpty()
+	// 	m2.SetName("another_metric")
+	// 	m2.SetUnit("")
+	// 	m2.SetDescription("")
+	// 	dp2 := m2.SetEmptyGauge().DataPoints().AppendEmpty()
+	// 	dp2.SetDoubleValue(2.0)
+	// 	dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+	// 	dp2.Attributes().PutStr("foo", "bar")
+
+	// 	return metrics
+	// }()
+
+	// // Verifica se as métricas foram processadas corretamente
+	// metrics, _, err := prwReceiver.translateV2(context.Background(), secondRequest)
+	// assert.NoError(t, err)
+	// assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
 }
