@@ -16,10 +16,10 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6
-	go.opentelemetry.io/collector/component v1.28.0
-	go.opentelemetry.io/collector/component/componenttest v0.122.0
-	go.opentelemetry.io/collector/pdata v1.28.0
-	go.opentelemetry.io/collector/semconv v0.122.0
+	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/semconv v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
