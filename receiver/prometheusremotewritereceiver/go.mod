@@ -9,16 +9,16 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.120.1
 	github.com/prometheus/prometheus v0.301.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/component/componentstatus v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/config/confighttp v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/confmap v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/consumer/consumertest v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/receiver v0.120.1-0.20250221111745-6de29ce16921
-	go.opentelemetry.io/collector/receiver/receivertest v0.120.1-0.20250221111745-6de29ce16921
+	go.opentelemetry.io/collector/component v1.28.0
+	go.opentelemetry.io/collector/component/componentstatus v0.122.0
+	go.opentelemetry.io/collector/component/componenttest v0.122.0
+	go.opentelemetry.io/collector/config/confighttp v0.122.0
+	go.opentelemetry.io/collector/confmap v1.28.0
+	go.opentelemetry.io/collector/consumer v1.28.0
+	go.opentelemetry.io/collector/consumer/consumertest v0.122.0
+	go.opentelemetry.io/collector/pdata v1.28.0
+	go.opentelemetry.io/collector/receiver v1.28.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.122.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -49,6 +49,7 @@ require (
 	github.com/googleapis/enterprise-certificate-proxy v0.3.4 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/jpillora/backoff v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
@@ -63,7 +64,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
 	github.com/mwitkow/go-conntrack v0.0.0-20190716064945-2f068394615f // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.120.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.122.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
@@ -123,5 +124,3 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor => ../../processor/deltatocumulativeprocessor
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics

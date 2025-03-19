@@ -29,6 +29,10 @@ import (
 	"text/template"
 	"time"
 
+	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
+
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -116,7 +120,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 			onConnectionCloseFunc(conn)
 		}
 	}
-	handler, _, err := s.Attach(server.Settings{
+	handler, connContext, err := s.Attach(server.Settings{
 		Callbacks: types.Callbacks{
 			OnConnecting: connectingCallback(callbacks),
 		},
@@ -125,6 +129,7 @@ func newUnstartedOpAMPServer(t *testing.T, connectingCallback onConnectingFuncFa
 	mux := http.NewServeMux()
 	mux.HandleFunc("/v1/opamp", handler)
 	httpSrv := httptest.NewUnstartedServer(mux)
+	httpSrv.Config.ConnContext = connContext
 
 	shutdown := func() {
 		if !didShutdown.Load() {
@@ -324,6 +329,93 @@ func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
 	require.True(t, connected.Load(), "Supervisor failed to connect")
+}
+
+func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
+	storageDir := t.TempDir()
+
+	// create remote config to check agent's health
+	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
+	cfg, hash, healthcheckPort := createHealthCheckCollectorConf(t)
+	remoteConfigProto := &protobufs.AgentRemoteConfig{
+		Config: &protobufs.AgentConfigMap{
+			ConfigMap: map[string]*protobufs.AgentConfigFile{
+				"": {Body: cfg.Bytes()},
+			},
+		},
+		ConfigHash: hash,
+	}
+	marshalledRemoteConfig, err := proto.Marshal(remoteConfigProto)
+	require.NoError(t, err)
+
+	require.NoError(t, os.WriteFile(remoteConfigFilePath, marshalledRemoteConfig, 0o600))
+
+	// create server
+	var agentConfig atomic.Value
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.EffectiveConfig != nil {
+					config := message.EffectiveConfig.ConfigMap.ConfigMap[""]
+					if config != nil {
+						agentConfig.Store(string(config.Body))
+					}
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	// create input and output log files for checking the config passed via config_files param
+	inputFile, err := os.CreateTemp(storageDir, "input.log")
+	require.NoError(t, err)
+	t.Cleanup(func() { inputFile.Close() })
+
+	outputFile, err := os.CreateTemp(storageDir, "output.log")
+	require.NoError(t, err)
+	t.Cleanup(func() { outputFile.Close() })
+
+	// fill env variables passed via parameters which are used in the collector config passed via config_files param
+	s := newSupervisor(t, "exec_config", map[string]string{
+		"url":           server.addr,
+		"storage_dir":   storageDir,
+		"inputLogFile":  inputFile.Name(),
+		"outputLogFile": outputFile.Name(),
+	})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	// check health
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed healthcheck: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// check that collector uses filelog receiver and file exporter from config passed via config_files param
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 20*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
 func TestSupervisorStartsWithNoOpAMPServer(t *testing.T) {
@@ -596,6 +688,104 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		// binary.
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
+}
+
+func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {
+	agentDescription := atomic.Value{}
+	availableComponents := atomic.Value{}
+
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "reports_available_components", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				response := &protobufs.ServerToAgent{}
+				if message.AvailableComponents != nil {
+					availableComponents.Store(message.AvailableComponents)
+
+					if message.GetAvailableComponents().GetComponents() == nil {
+						response.Flags = uint64(protobufs.ServerToAgentFlags_ServerToAgentFlags_ReportAvailableComponents)
+					}
+				}
+
+				return response
+			},
+		})
+
+	s := newSupervisor(t, "reports_available_components", map[string]string{"url": server.addr})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		ac, ok := availableComponents.Load().(*protobufs.AvailableComponents)
+		if !ok {
+			return false
+		}
+
+		if ac.GetComponents() == nil {
+			return false
+		}
+
+		require.Len(t, ac.GetComponents(), 5) // connectors, exporters, extensions, processors, receivers
+		require.NotNil(t, ac.GetComponents()["extensions"])
+		require.NotNil(t, ac.GetComponents()["extensions"].GetSubComponentMap())
+		require.NotNil(t, ac.GetComponents()["extensions"].GetSubComponentMap()["opamp"])
+
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		if !ok {
+			return false
+		}
+
+		var agentName, agentVersion string
+		identAttr := ad.IdentifyingAttributes
+		for _, attr := range identAttr {
+			switch attr.Key {
+			case semconv.AttributeServiceName:
+				agentName = attr.Value.GetStringValue()
+			case semconv.AttributeServiceVersion:
+				agentVersion = attr.Value.GetStringValue()
+			}
+		}
+
+		// By default the Collector should report its name and version
+		// from the component.BuildInfo struct built into the Collector
+		// binary.
+		return agentName == command && agentVersion == version
+	}, 10*time.Second, 250*time.Millisecond)
 }
 
 func TestSupervisorReportsEffectiveConfig(t *testing.T) {
@@ -992,6 +1182,26 @@ func TestSupervisorOpAMPConnectionSettings(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Collector did not connect to new OpAMP server")
 }
 
+func TestSupervisorOpAMPWithHTTPEndpoint(t *testing.T) {
+	connected := atomic.Bool{}
+	initialServer := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnConnected: func(ctx context.Context, conn types.Connection) {
+				connected.Store(true)
+			},
+		})
+
+	s := newSupervisor(t, "http", map[string]string{"url": initialServer.addr})
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(initialServer.supervisorConnected, true)
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+}
+
 func TestSupervisorRestartsWithLastReceivedConfig(t *testing.T) {
 	// Create a temporary directory to store the test config file.
 	tempDir := t.TempDir()
@@ -1359,7 +1569,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 	}, 3*time.Second, 250*time.Millisecond)
 }
 
-type LogEntry struct {
+type logEntry struct {
 	Level  string `json:"level"`
 	Logger string `json:"logger"`
 }
@@ -1426,7 +1636,7 @@ func TestSupervisorLogging(t *testing.T) {
 	seenCollectorLog := false
 	for scanner.Scan() {
 		line := scanner.Bytes()
-		var log LogEntry
+		var log logEntry
 		err := json.Unmarshal(line, &log)
 		require.NoError(t, err)
 
@@ -1661,4 +1871,107 @@ func findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
+	agentDescription := atomic.Value{}
+
+	// Load the Supervisor config so we can get the location of
+	// the Collector that will be run.
+	var cfg config.Supervisor
+	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
+	k := koanf.New("::")
+	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+	require.NoError(t, err)
+	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+		Tag: "mapstructure",
+	})
+	require.NoError(t, err)
+
+	// Get the binary name and version from the Collector binary
+	// using the `components` command that prints a YAML-encoded
+	// map of information about the Collector build. Some of this
+	// information will be used as defaults for the telemetry
+	// attributes.
+	agentPath := cfg.Agent.Executable
+	componentsInfo, err := exec.Command(agentPath, "components").Output()
+	require.NoError(t, err)
+	k = koanf.New("::")
+	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+	require.NoError(t, err)
+	buildinfo := k.StringMap("buildinfo")
+	command := buildinfo["command"]
+	version := buildinfo["version"]
+
+	server := newOpAMPServer(
+		t,
+		defaultConnectingHandler,
+		types.ConnectionCallbacks{
+			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+				if message.AgentDescription != nil {
+					agentDescription.Store(message.AgentDescription)
+				}
+
+				return &protobufs.ServerToAgent{}
+			},
+		})
+
+	outputPath := filepath.Join(t.TempDir(), "output.txt")
+	_, err = findRandomPort()
+	require.Nil(t, err)
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
+	mockBackend := testbed.NewMockBackend(outputPath, backend)
+	mockBackend.EnableRecording()
+	defer mockBackend.Stop()
+	require.NoError(t, mockBackend.Start())
+
+	s := newSupervisor(t,
+		"emit_telemetry",
+		map[string]string{
+			"url":          server.addr,
+			"telemetryUrl": fmt.Sprintf("localhost:%d", 4318),
+		},
+	)
+
+	require.Nil(t, s.Start())
+	defer s.Shutdown()
+
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.Eventually(t, func() bool {
+		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+		if !ok {
+			return false
+		}
+
+		var agentName, agentVersion string
+		identAttr := ad.IdentifyingAttributes
+		for _, attr := range identAttr {
+			switch attr.Key {
+			case semconv.AttributeServiceName:
+				agentName = attr.Value.GetStringValue()
+			case semconv.AttributeServiceVersion:
+				agentVersion = attr.Value.GetStringValue()
+			}
+		}
+
+		// By default, the Collector should report its name and version
+		// from the component.BuildInfo struct built into the Collector
+		// binary.
+		return agentName == command && agentVersion == version
+	}, 5*time.Second, 250*time.Millisecond)
+
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		require.Len(collect, mockBackend.ReceivedTraces, 1)
+	}, 10*time.Second, 250*time.Millisecond)
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
+	gotServiceName, ok := mockBackend.ReceivedTraces[0].ResourceSpans().At(0).Resource().Attributes().Get(semconv.AttributeServiceName)
+	require.True(t, ok)
+	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
+
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
+	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 }

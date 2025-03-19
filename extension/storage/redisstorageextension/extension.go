@@ -99,18 +99,26 @@ func (rc redisClient) Close(_ context.Context) error {
 
 // GetClient returns a storage client for an individual component
 func (rs *redisStorage) GetClient(_ context.Context, kind component.Kind, ent component.ID, name string) (storage.Client, error) {
-	var rawName string
-	if name == "" {
-		rawName = fmt.Sprintf("%s_%s_%s", kindString(kind), ent.Type(), ent.Name())
-	} else {
-		rawName = fmt.Sprintf("%s_%s_%s_%s", kindString(kind), ent.Type(), ent.Name(), name)
-	}
-
 	return redisClient{
 		client:     rs.client,
-		prefix:     rawName,
+		prefix:     rs.getPrefix(ent, kindString(kind), name),
 		expiration: rs.cfg.Expiration,
 	}, nil
+}
+
+func (rs *redisStorage) getPrefix(ent component.ID, kind, name string) string {
+	var prefix string
+	if name == "" {
+		prefix = fmt.Sprintf("%s_%s_%s", kind, ent.Type(), ent.Name())
+	} else {
+		prefix = fmt.Sprintf("%s_%s_%s_%s", kind, ent.Type(), ent.Name(), name)
+	}
+
+	if rs.cfg.Prefix != "" {
+		prefix = fmt.Sprintf("%s_%s", prefix, rs.cfg.Prefix)
+	}
+
+	return prefix
 }
 
 func kindString(k component.Kind) string {

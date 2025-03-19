@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -582,7 +582,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -675,7 +675,7 @@ func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Componen
 	return h.exts
 }
 
-func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) auth.Server {
+func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) extension.Extension {
 	ctrl := gomock.NewController(t)
 	as := mock.NewMockServer(ctrl)
 	as.EXPECT().Authenticate(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(authFunc)
@@ -695,7 +695,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg.GRPC.Auth = &configauth.Authentication{
 		AuthenticatorID: authID,
 	}
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -762,7 +762,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 

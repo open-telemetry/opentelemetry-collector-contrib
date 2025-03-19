@@ -16,7 +16,7 @@ var (
 
 // Clock where Now() always returns a greater value than the previous return value
 type AlwaysIncreasingClock struct {
-	clockwork.FakeClock
+	*clockwork.FakeClock
 }
 
 func NewAlwaysIncreasingClock() AlwaysIncreasingClock {

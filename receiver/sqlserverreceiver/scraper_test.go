@@ -43,6 +43,25 @@ func enableAllScraperMetrics(cfg *Config) {
 	cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled = true
 
 	cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled = true
+
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTableCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverReplicaDataRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseExecutionErrors.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbSpace.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseFullScanRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverIndexSearchRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLockTimeoutRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLoginRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverLogoutRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDeadlockRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionMirrorWriteRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryGrantsPendingCount.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverPageLookupRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverTransactionDelay.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = true
+	cfg.MetricsBuilderConfig.Metrics.SqlserverMemoryUsage.Enabled = true
 }
 
 func TestEmptyScrape(t *testing.T) {

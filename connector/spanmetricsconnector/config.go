@@ -29,6 +29,8 @@ var defaultDeltaTimestampCacheSize = 1000
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines the configuration options for spanmetricsconnector.
@@ -91,6 +93,8 @@ type HistogramConfig struct {
 	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExemplarsConfig struct {

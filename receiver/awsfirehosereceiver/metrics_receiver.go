@@ -10,19 +10,23 @@ import (
 	"io"
 	"net/http"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/otlpmetricstream"
 )
 
-const defaultMetricsRecordType = cwmetricstream.TypeStr
+const defaultMetricsEncoding = cwmetricstream.TypeStr
 
 // The metricsConsumer implements the firehoseConsumer
 // to use a metrics consumer and unmarshaler.
 type metricsConsumer struct {
+	config   *Config
+	settings receiver.Settings
 	// consumer passes the translated metrics on to the
 	// next consumer.
 	consumer consumer.Metrics
@@ -38,21 +42,12 @@ var _ firehoseConsumer = (*metricsConsumer)(nil)
 func newMetricsReceiver(
 	config *Config,
 	set receiver.Settings,
-	unmarshalers map[string]pmetric.Unmarshaler,
 	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	recordType := config.RecordType
-	if recordType == "" {
-		recordType = defaultMetricsRecordType
-	}
-	configuredUnmarshaler := unmarshalers[recordType]
-	if configuredUnmarshaler == nil {
-		return nil, fmt.Errorf("%w: recordType = %s", errUnrecognizedRecordType, recordType)
-	}
-
 	c := &metricsConsumer{
-		consumer:    nextConsumer,
-		unmarshaler: configuredUnmarshaler,
+		config:   config,
+		settings: set,
+		consumer: nextConsumer,
 	}
 	return &firehoseReceiver{
 		settings: set,
@@ -61,10 +56,34 @@ func newMetricsReceiver(
 	}, nil
 }
 
-// Consume uses the configured unmarshaler to deserialize the records into a
-// single pmetric.Metrics. If there are common attributes available, then it will
-// attach those to each of the pcommon.Resources. It will send the final result
-// to the next consumer.
+func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
+	encoding := c.config.Encoding
+	if encoding == "" {
+		encoding = c.config.RecordType
+		if encoding == "" {
+			encoding = defaultMetricsEncoding
+		}
+	}
+	switch encoding {
+	case cwmetricstream.TypeStr:
+		// TODO: make cwmetrics an encoding extension
+		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+	case otlpmetricstream.TypeStr:
+		// TODO: make otlp_v1 an encoding extension
+		c.unmarshaler = otlpmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+	default:
+		unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics")
+		if err != nil {
+			return fmt.Errorf("failed to load encoding extension: %w", err)
+		}
+		c.unmarshaler = unmarshaler
+	}
+	return nil
+}
+
+// Consume uses the configured unmarshaler to deserialize each record,
+// with each resulting pmetric.Metrics being sent to the next consumer
+// as they are unmarshalled.
 func (c *metricsConsumer) Consume(ctx context.Context, nextRecord nextRecordFunc, commonAttributes map[string]string) (int, error) {
 	for {
 		record, err := nextRecord()

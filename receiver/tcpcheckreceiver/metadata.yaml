@@ -1,0 +1,44 @@
+type: tcpcheck
+
+status:
+  class: receiver
+  stability:
+    alpha: [metrics]
+  distributions: [contrib]
+  codeowners:
+    active: [atoulme, michael-burt, chengchuanpeng]
+
+resource_attributes:
+
+attributes:
+  error.code:
+    description: Error code recorded during check
+    type: string
+  tcpcheck.endpoint:
+    description: TCP endpoint
+    type: string
+
+metrics:
+  tcpcheck.duration:
+    description: Measures the duration of TCP connection.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: ms
+    attributes: [tcpcheck.endpoint]
+  tcpcheck.status:
+    description: 1 if the TCP client successfully connected, otherwise 0.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "1"
+    attributes: [tcpcheck.endpoint]
+  tcpcheck.error:
+    description: Records errors occurring during TCP check.
+    enabled: true
+    sum:
+      value_type: int
+      aggregation_temporality: cumulative
+      monotonic: true
+    unit: "{error}"
+    attributes: [tcpcheck.endpoint, error.code]

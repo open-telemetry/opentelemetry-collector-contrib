@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth/authtest"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"golang.org/x/crypto/ssh"
 )
 
@@ -24,7 +24,7 @@ type mockHost struct {
 func TestAllSSHClientSettings(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -127,7 +127,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 func Test_Client_Dial(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 
@@ -201,7 +201,7 @@ func Test_Client_Dial(t *testing.T) {
 func Test_Client_ToSFTPClient(t *testing.T) {
 	host := &mockHost{
 		ext: map[component.ID]extension.Extension{
-			component.MustNewID("testauth"): &authtest.MockClient{},
+			component.MustNewID("testauth"): extensionauthtest.NewNopClient(),
 		},
 	}
 

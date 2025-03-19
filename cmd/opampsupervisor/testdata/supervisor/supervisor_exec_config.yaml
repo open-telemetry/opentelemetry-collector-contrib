@@ -1,0 +1,21 @@
+server:
+  endpoint: ws://{{.url}}/v1/opamp
+
+capabilities:
+  reports_effective_config: true
+  reports_own_metrics: true
+  reports_health: true
+  accepts_remote_config: true
+  reports_remote_config: true
+  accepts_restart_command: true
+
+storage:
+  directory: '{{.storage_dir}}'
+
+agent:
+  executable: ../../bin/otelcontribcol_{{.goos}}_{{.goarch}}{{.extension}}
+  config_files: 
+    - './testdata/collector/simple_pipeline_env.yaml'
+  env:
+    OUT_FILE: '{{.outputLogFile}}'
+    IN_FILE: '{{.inputLogFile}}'

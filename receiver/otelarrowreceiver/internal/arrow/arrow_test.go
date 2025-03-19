@@ -27,7 +27,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configgrpc"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -366,8 +366,8 @@ func (ctc *commonTestCase) newOOMConsumer() arrowRecord.ConsumerAPI {
 	return mock
 }
 
-func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *auth.Server)) {
-	var authServer auth.Server
+func (ctc *commonTestCase) start(newConsumer func() arrowRecord.ConsumerAPI, bq admission2.Queue, opts ...func(*configgrpc.ServerConfig, *extensionauth.Server)) {
+	var authServer extensionauth.Server
 	var gsettings configgrpc.ServerConfig
 	for _, gf := range opts {
 		gf(&gsettings, &authServer)
@@ -882,7 +882,7 @@ func testReceiverHeaders(t *testing.T, includeMeta bool) {
 
 	ctc.stream.EXPECT().Send(gomock.Any()).Times(len(expectData)).Return(nil)
 
-	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, _ *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, _ *extensionauth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 	})
 
@@ -1243,7 +1243,7 @@ func testReceiverAuthHeaders(t *testing.T, includeMeta bool, dataAuth bool) {
 	})
 
 	var authCall *gomock.Call
-	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, authPtr *auth.Server) {
+	ctc.start(ctc.newRealConsumer, defaultBQ(), func(gsettings *configgrpc.ServerConfig, authPtr *extensionauth.Server) {
 		gsettings.IncludeMetadata = includeMeta
 
 		as := mock.NewMockServer(ctc.ctrl)

@@ -92,5 +92,5 @@ resourceMetrics:
                     bucketCounts: [3,7,5,0,0]
 
 -- telemetry --
-updown otelcol_deltatocumulative.streams.tracked.linear:
+updown otelcol_deltatocumulative_streams_tracked:
 - int: 2

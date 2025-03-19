@@ -107,7 +107,7 @@ func TestDetect(t *testing.T) {
 			p, err := f.CreateResourceProvider(processortest.NewNopSettings(metadata.Type), time.Second, tt.attributes, &mockDetectorConfig{}, mockDetectorTypes...)
 			require.NoError(t, err)
 
-			got, _, err := p.Get(context.Background(), http.DefaultClient)
+			got, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
 			require.NoError(t, err)
 
 			assert.Equal(t, tt.expectedResource, got.Attributes().AsRaw())
@@ -133,21 +133,7 @@ func TestDetectResource_DetectorFactoryError(t *testing.T) {
 	require.EqualError(t, err, fmt.Sprintf("failed creating detector type %q: %v", mockDetectorKey, "creation failed"))
 }
 
-func TestDetectResource_Error(t *testing.T) {
-	md1 := &MockDetector{}
-	res := pcommon.NewResource()
-	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res, nil)
-
-	md2 := &MockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
-
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
-	_, _, err := p.Get(context.Background(), http.DefaultClient)
-	require.NoError(t, err)
-}
-
-func TestDetectResource_Error_PropagationEnabled(t *testing.T) {
+func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	err := featuregate.GlobalRegistry().Set(allowErrorPropagationFeatureGate.ID(), true)
 	assert.NoError(t, err)
 	defer func() {
@@ -155,16 +141,38 @@ func TestDetectResource_Error_PropagationEnabled(t *testing.T) {
 	}()
 
 	md1 := &MockDetector{}
-	res := pcommon.NewResource()
-	require.NoError(t, res.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
-	md1.On("Detect").Return(res, nil)
+	md1.On("Detect").Return(pcommon.NewResource(), fmt.Errorf("err1"))
 
 	md2 := &MockDetector{}
-	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
 
 	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
-	_, _, err = p.Get(context.Background(), http.DefaultClient)
+
+	var cancel context.CancelFunc
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+
+	_, _, err = p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
 	require.Error(t, err)
+	require.Contains(t, err.Error(), "err1")
+	require.Contains(t, err.Error(), "err2")
+}
+
+func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T) {
+	md1 := &MockDetector{}
+	md1.On("Detect").Return(pcommon.NewResource(), fmt.Errorf("err1"))
+
+	md2 := &MockDetector{}
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
+
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
+
+	var cancel context.CancelFunc
+	ctx, cancel := context.WithTimeout(context.TODO(), 3*time.Second)
+	defer cancel()
+
+	_, _, err := p.Get(ctx, &http.Client{Timeout: 10 * time.Second})
+	require.NoError(t, err)
 }
 
 func TestMergeResource(t *testing.T) {
@@ -230,12 +238,9 @@ func TestDetectResource_Parallel(t *testing.T) {
 	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"a": "11", "c": "3"}))
 	md2.On("Detect").Return(res2, nil)
 
-	md3 := NewMockParallelDetector()
-	md3.On("Detect").Return(pcommon.NewResource(), errors.New("an error"))
-
 	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
 
-	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2, md3)
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
 
 	// call p.Get multiple times
 	wg := &sync.WaitGroup{}
@@ -243,7 +248,7 @@ func TestDetectResource_Parallel(t *testing.T) {
 	for i := 0; i < iterations; i++ {
 		go func() {
 			defer wg.Done()
-			detected, _, err := p.Get(context.Background(), http.DefaultClient)
+			detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 10 * time.Second})
 			assert.NoError(t, err)
 			assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
 		}()
@@ -255,13 +260,36 @@ func TestDetectResource_Parallel(t *testing.T) {
 	// detector.Detect should only be called once, so we only need to notify each channel once
 	md1.ch <- struct{}{}
 	md2.ch <- struct{}{}
-	md3.ch <- struct{}{}
 
 	// then wait until all goroutines are finished, and ensure p.Detect was only called once
 	wg.Wait()
 	md1.AssertNumberOfCalls(t, "Detect", 1)
 	md2.AssertNumberOfCalls(t, "Detect", 1)
-	md3.AssertNumberOfCalls(t, "Detect", 1)
+}
+
+func TestDetectResource_Reconnect(t *testing.T) {
+	md1 := &MockDetector{}
+	res1 := pcommon.NewResource()
+	require.NoError(t, res1.Attributes().FromRaw(map[string]any{"a": "1", "b": "2"}))
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("connection error1")).Twice()
+	md1.On("Detect").Return(res1, nil)
+
+	md2 := &MockDetector{}
+	res2 := pcommon.NewResource()
+	require.NoError(t, res2.Attributes().FromRaw(map[string]any{"c": "3"}))
+	md2.On("Detect").Return(pcommon.NewResource(), errors.New("connection error2")).Once()
+	md2.On("Detect").Return(res2, nil)
+
+	expectedResourceAttrs := map[string]any{"a": "1", "b": "2", "c": "3"}
+
+	p := NewResourceProvider(zap.NewNop(), time.Second, nil, md1, md2)
+
+	detected, _, err := p.Get(context.Background(), &http.Client{Timeout: 15 * time.Second})
+	assert.NoError(t, err)
+	assert.Equal(t, expectedResourceAttrs, detected.Attributes().AsRaw())
+
+	md1.AssertNumberOfCalls(t, "Detect", 3) // 2 errors + 1 success
+	md2.AssertNumberOfCalls(t, "Detect", 2) // 1 error + 1 success
 }
 
 func TestFilterAttributes_Match(t *testing.T) {

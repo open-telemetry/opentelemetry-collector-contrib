@@ -228,6 +228,13 @@ var (
 	}
 )
 
+type NestedListAlias = map[string]map[string][]string
+
+type DimensionsConfig struct {
+	Enabled   *bool           `mapstructure:"enabled"`
+	Overrides NestedListAlias `mapstructure:"overrides"`
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig    `mapstructure:",squash"`
@@ -241,11 +248,13 @@ type Config struct {
 	FederatedTokenFile                string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
+	Metrics                           NestedListAlias               `mapstructure:"metrics"`
 	CacheResources                    float64                       `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 }
 
 const (

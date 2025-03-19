@@ -13,6 +13,7 @@ import (
 	"time"
 
 	_ "github.com/go-sql-driver/mysql" // for register database driver
+	"github.com/google/uuid"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
@@ -27,17 +28,16 @@ type commonExporter struct {
 	logger   *zap.Logger
 	cfg      *Config
 	timeZone *time.Location
+	reporter *progressReporter
 }
 
-func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings) *commonExporter {
-	// There won't be an error because it's already been validated in the Config.Validate method.
-	timeZone, _ := cfg.timeZone()
-
+func newExporter(logger *zap.Logger, cfg *Config, set component.TelemetrySettings, reporterName string) *commonExporter {
 	return &commonExporter{
 		TelemetrySettings: set,
 		logger:            logger,
 		cfg:               cfg,
-		timeZone:          timeZone,
+		timeZone:          cfg.timeLocation,
+		reporter:          newProgressReporter(reporterName, cfg.LogProgressInterval, logger),
 	}
 }
 
@@ -66,14 +66,29 @@ type streamLoadResponse struct {
 }
 
 func (r *streamLoadResponse) success() bool {
-	return r.Status == "Success" || r.Status == "Publish Timeout"
+	return r.Status == "Success" || r.Status == "Publish Timeout" || r.Status == "Label Already Exists"
+}
+
+func (r *streamLoadResponse) duplication() bool {
+	return r.Status == "Label Already Exists"
 }
 
 func streamLoadURL(address string, db string, table string) string {
 	return address + "/api/" + db + "/" + table + "/_stream_load"
 }
 
-func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []byte) (*http.Request, error) {
+func generateLabel(cfg *Config, table string) string {
+	return fmt.Sprintf(
+		"%s_%s_%s_%s_%s",
+		cfg.LabelPrefix,
+		cfg.Database,
+		table,
+		time.Now().In(cfg.timeLocation).Format("20060102150405"),
+		uuid.New().String(),
+	)
+}
+
+func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []byte, label string) (*http.Request, error) {
 	url := streamLoadURL(cfg.Endpoint, cfg.Database, table)
 	req, err := http.NewRequestWithContext(ctx, http.MethodPut, url, bytes.NewBuffer(data))
 	if err != nil {
@@ -83,6 +98,10 @@ func streamLoadRequest(ctx context.Context, cfg *Config, table string, data []by
 	req.Header.Set("format", "json")
 	req.Header.Set("Expect", "100-continue")
 	req.Header.Set("read_json_by_line", "true")
+	groupCommit := string(cfg.Headers["group_commit"])
+	if groupCommit == "" || groupCommit == "off_mode" {
+		req.Header.Set("label", label)
+	}
 	if cfg.ClientConfig.Timeout != 0 {
 		req.Header.Set("timeout", fmt.Sprintf("%d", cfg.ClientConfig.Timeout/time.Second))
 	}

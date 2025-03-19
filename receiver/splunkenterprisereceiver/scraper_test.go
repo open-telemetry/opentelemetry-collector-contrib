@@ -16,7 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -114,7 +114,7 @@ func TestScraper(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
 		},
 	}
 

@@ -72,7 +72,7 @@ func (a *Aggregator[K]) Aggregate(
 		}
 		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
 	case md.Sum != nil:
-		raw, _, err := md.Sum.Value.Execute(ctx, tCtx)
+		raw, err := md.Sum.Value.Eval(ctx, tCtx)
 		if err != nil {
 			return fmt.Errorf("failed to execute OTTL value for sum: %w", err)
 		}
@@ -237,7 +237,7 @@ func (a *Aggregator[K]) getResourceID(resourceAttrs pcommon.Map) [16]byte {
 // value is missing.
 func getValueCount[K any](
 	ctx context.Context, tCtx K,
-	valueExpr, countExpr *ottl.Statement[K],
+	valueExpr, countExpr *ottl.ValueExpression[K],
 	defaultCount int64,
 ) (float64, int64, error) {
 	val, err := getDoubleFromOTTL(ctx, tCtx, valueExpr)
@@ -257,12 +257,12 @@ func getValueCount[K any](
 func getIntFromOTTL[K any](
 	ctx context.Context,
 	tCtx K,
-	s *ottl.Statement[K],
+	s *ottl.ValueExpression[K],
 ) (int64, error) {
 	if s == nil {
 		return 0, nil
 	}
-	raw, _, err := s.Execute(ctx, tCtx)
+	raw, err := s.Eval(ctx, tCtx)
 	if err != nil {
 		return 0, err
 	}
@@ -282,12 +282,12 @@ func getIntFromOTTL[K any](
 func getDoubleFromOTTL[K any](
 	ctx context.Context,
 	tCtx K,
-	s *ottl.Statement[K],
+	s *ottl.ValueExpression[K],
 ) (float64, error) {
 	if s == nil {
 		return 0, nil
 	}
-	raw, _, err := s.Execute(ctx, tCtx)
+	raw, err := s.Eval(ctx, tCtx)
 	if err != nil {
 		return 0, err
 	}

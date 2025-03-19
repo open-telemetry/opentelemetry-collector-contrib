@@ -94,8 +94,9 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      false,
 					FlushTimeout: 200 * time.Millisecond,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 8192,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 8192,
 					},
 				},
 			},
@@ -158,8 +159,9 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      true,
 					FlushTimeout: 3 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 8888,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 8888,
 					},
 				},
 			},
@@ -340,7 +342,7 @@ func TestCreateExportersWithBatcher(t *testing.T) {
 	cfg.AppName = "test-app"
 	cfg.BatcherConfig.Enabled = true
 	cfg.BatcherConfig.FlushTimeout = 1 * time.Second
-	cfg.BatcherConfig.MinSizeItems = 100
+	cfg.BatcherConfig.MinSize = 100
 
 	// Test traces exporter
 	t.Run("traces_with_batcher", func(t *testing.T) {

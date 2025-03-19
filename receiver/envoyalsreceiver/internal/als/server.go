@@ -18,6 +18,8 @@ import (
 const (
 	apiVersionAttr = "api_version"
 	apiVersionVal  = "v3"
+	nodeAttr       = "node"
+	logNameAttr    = "log_name"
 	logTypeAttr    = "log_type"
 	httpTypeVal    = "http"
 	tcpTypeVal     = "tcp"
@@ -62,8 +64,17 @@ func toLogs(data *alsv3.StreamAccessLogsMessage) plog.Logs {
 	logs := plog.NewLogs()
 
 	rls := logs.ResourceLogs().AppendEmpty()
-	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
+	identifier := data.GetIdentifier()
+	if identifier != nil {
+		if identifier.Node != nil {
+			rls.Resource().Attributes().PutStr(nodeAttr, identifier.Node.String())
+		}
+		if identifier.LogName != "" {
+			rls.Resource().Attributes().PutStr(logNameAttr, identifier.LogName)
+		}
+	}
 
+	logSlice := rls.ScopeLogs().AppendEmpty().LogRecords()
 	httpLogs := data.GetHttpLogs()
 	if httpLogs != nil {
 		for _, httpLog := range httpLogs.LogEntry {

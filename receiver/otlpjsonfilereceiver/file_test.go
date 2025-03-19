@@ -304,3 +304,56 @@ func TestFileMixedSignals(t *testing.T) {
 	err = pr.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
+
+func TestEmptyLine(t *testing.T) {
+	tempFolder := t.TempDir()
+	factory := NewFactory()
+	cfg := createDefaultConfig().(*Config)
+	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.Config.StartAt = "beginning"
+	cs := receivertest.NewNopSettings(metadata.Type)
+	t.Run("metrics receiver", func(t *testing.T) {
+		ms := new(consumertest.MetricsSink)
+		mr, err := factory.CreateMetrics(context.Background(), cs, cfg, ms)
+		assert.NoError(t, err)
+		err = mr.Start(context.Background(), nil)
+		assert.NoError(t, err)
+		defer func() {
+			assert.NoError(t, mr.Shutdown(context.Background()))
+		}()
+		err = os.WriteFile(filepath.Join(tempFolder, "metrics.json"), []byte{'\n', '\n'}, 0o600)
+		assert.NoError(t, err)
+		time.Sleep(1 * time.Second)
+		require.Empty(t, ms.AllMetrics())
+	})
+
+	t.Run("trace receiver", func(t *testing.T) {
+		ts := new(consumertest.TracesSink)
+		tr, err := factory.CreateTraces(context.Background(), cs, cfg, ts)
+		assert.NoError(t, err)
+		err = tr.Start(context.Background(), nil)
+		assert.NoError(t, err)
+		defer func() {
+			assert.NoError(t, tr.Shutdown(context.Background()))
+		}()
+		err = os.WriteFile(filepath.Join(tempFolder, "traces.json"), []byte{'\n', '\n'}, 0o600)
+		assert.NoError(t, err)
+		time.Sleep(1 * time.Second)
+		require.Empty(t, ts.AllTraces())
+	})
+
+	t.Run("log receiver", func(t *testing.T) {
+		ls := new(consumertest.LogsSink)
+		lr, err := factory.CreateLogs(context.Background(), cs, cfg, ls)
+		assert.NoError(t, err)
+		err = lr.Start(context.Background(), nil)
+		assert.NoError(t, err)
+		defer func() {
+			assert.NoError(t, lr.Shutdown(context.Background()))
+		}()
+		err = os.WriteFile(filepath.Join(tempFolder, "logs.json"), []byte{'\n', '\n'}, 0o600)
+		assert.NoError(t, err)
+		time.Sleep(1 * time.Second)
+		require.Empty(t, ls.AllLogs())
+	})
+}

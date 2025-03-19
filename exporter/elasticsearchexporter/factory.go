@@ -8,7 +8,9 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"compress/gzip"
 	"context"
+	"maps"
 	"net/http"
+	"slices"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,12 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	defaultLogsIndex    = "logs-generic-default"
-	defaultMetricsIndex = "metrics-generic-default"
-	defaultTracesIndex  = "traces-generic-default"
-)
+var defaultBatcherMinSizeItems = 5000
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
@@ -55,19 +52,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		LogsIndex:     defaultLogsIndex,
-		LogsDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
-		MetricsIndex: defaultMetricsIndex,
-		MetricsDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
-		TracesIndex: defaultTracesIndex,
-		TracesDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
 		LogsDynamicID: DynamicIDSettings{
+			Enabled: false,
+		},
+		LogsDynamicPipeline: DynamicPipelineSettings{
 			Enabled: false,
 		},
 		Retry: RetrySettings{
@@ -80,7 +68,8 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode: "none",
+			Mode:         "otel",
+			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
 			Enabled:         false,
@@ -92,12 +81,12 @@ func createDefaultConfig() component.Config {
 			LogResponseBody: false,
 		},
 		Batcher: BatcherConfig{
-			FlushTimeout: 30 * time.Second,
-			MinSizeConfig: exporterbatcher.MinSizeConfig{
-				MinSizeItems: 5000,
-			},
-			MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-				MaxSizeItems: 0,
+			Config: exporterbatcher.Config{
+				FlushTimeout: 30 * time.Second,
+				SizeConfig: exporterbatcher.SizeConfig{
+					Sizer:   exporterbatcher.SizerTypeItems,
+					MinSize: defaultBatcherMinSizeItems,
+				},
 			},
 		},
 		Flush: FlushSettings{
@@ -119,7 +108,7 @@ func createLogsExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -138,7 +127,7 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.MetricsIndex)
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -156,7 +145,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.TracesIndex)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -179,7 +168,7 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, "", false)
+	exporter := newExporter(cf, set, "")
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,
@@ -201,14 +190,8 @@ func exporterhelperOptions(
 		exporterhelper.WithShutdown(shutdown),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
-	if cfg.Batcher.Enabled != nil {
-		batcherConfig := exporterbatcher.Config{
-			Enabled:       *cfg.Batcher.Enabled,
-			FlushTimeout:  cfg.Batcher.FlushTimeout,
-			MinSizeConfig: cfg.Batcher.MinSizeConfig,
-			MaxSizeConfig: cfg.Batcher.MaxSizeConfig,
-		}
-		opts = append(opts, exporterhelper.WithBatcher(batcherConfig))
+	if cfg.Batcher.enabledSet {
+		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config))
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//

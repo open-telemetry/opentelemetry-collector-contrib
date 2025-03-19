@@ -7,6 +7,7 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configretry"
 )
 
 type TelemetryConfig struct {
@@ -15,9 +16,14 @@ type TelemetryConfig struct {
 	Traces  string `mapstructure:"traces"`
 }
 
+type Encodings struct {
+	Logs    *component.ID `mapstructure:"logs"`
+	Metrics *component.ID `mapstructure:"metrics"`
+	Traces  *component.ID `mapstructure:"traces"`
+}
+
 type (
 	Container TelemetryConfig
-	BlobName  TelemetryConfig
 )
 
 type BlobNameFormat struct {
@@ -56,13 +62,23 @@ const (
 
 // Config contains the main configuration options for the azure storage blob exporter
 type Config struct {
-	URL            string          `mapstructure:"url"`
-	Container      *Container      `mapstructure:"container"`
-	Auth           *Authentication `mapstructure:"auth"`
+	// URL is the endpoint to the azure storage account. This is only required until there is an azure auth extension in the future.
+	URL string `mapstructure:"url"`
+
+	// A container organizes a set of blobs, similar to a directory in a file system.
+	Container *Container      `mapstructure:"container"`
+	Auth      *Authentication `mapstructure:"auth"`
+
+	// BlobNameFormat is the format of the blob name. It controls the uploaded blob name, e.g. "2006/01/02/metrics_15_04_05.json"
 	BlobNameFormat *BlobNameFormat `mapstructure:"blob_name_format"`
-	FormatType     string          `mapstructure:"format"`
-	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding *component.ID `mapstructure:"encoding"`
+
+	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
+	FormatType string `mapstructure:"format"`
+
+	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
+	Encodings *Encodings `mapstructure:"encodings"`
+
+	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 }
 
 func (c *Config) Validate() error {

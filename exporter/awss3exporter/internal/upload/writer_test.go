@@ -27,6 +27,7 @@ func TestNewS3Manager(t *testing.T) {
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
 		"STANDARD",
+		"private",
 	)
 
 	assert.NotNil(t, sm, "Must have a valid client returned")
@@ -139,12 +140,12 @@ func TestS3ManagerUpload(t *testing.T) {
 			sm := NewS3Manager(
 				"my-bucket",
 				&PartitionKeyBuilder{
-					PartitionPrefix:     "telemetry",
-					PartitionTruncation: "minute",
-					FilePrefix:          "signal-data-",
-					Metadata:            "noop",
-					FileFormat:          "metrics",
-					Compression:         tc.compression,
+					PartitionPrefix: "telemetry",
+					PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+					FilePrefix:      "signal-data-",
+					Metadata:        "noop",
+					FileFormat:      "metrics",
+					Compression:     tc.compression,
 					UniqueKeyFunc: func() string {
 						return "random"
 					},
@@ -154,6 +155,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					Region:       "local",
 				}),
 				"STANDARD_IA",
+				"private",
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used

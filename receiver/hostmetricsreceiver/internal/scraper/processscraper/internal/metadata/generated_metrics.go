@@ -1022,7 +1022,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricProcessContextSwitches.emit(ils.Metrics())

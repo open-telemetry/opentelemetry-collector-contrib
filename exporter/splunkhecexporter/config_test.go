@@ -96,11 +96,10 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      true,
 					FlushTimeout: time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 1,
-					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 1,
+						MaxSize: 10,
 					},
 				},
 				OtelAttrsToHec: splunk.HecToOtelAttrs{
