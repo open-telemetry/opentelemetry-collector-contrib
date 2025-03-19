@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 const (
@@ -74,56 +75,6 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 				return nil, err
 			}
 		}
-<<<<<<< HEAD
-<<<<<<< HEAD
-		switch strategy {
-		case INSERT:
-			for k, v := range valueMap.All() {
-				if _, ok := targetMap.Get(k); !ok {
-					tv := targetMap.PutEmpty(k)
-					v.CopyTo(tv)
-				}
-			}
-		case UPDATE:
-			for k, v := range valueMap.All() {
-				if tv, ok := targetMap.Get(k); ok {
-					v.CopyTo(tv)
-				}
-			}
-		case UPSERT:
-			for k, v := range valueMap.All() {
-				tv := targetMap.PutEmpty(k)
-				v.CopyTo(tv)
-			}
-		default:
-			return nil, fmt.Errorf("unknown strategy, %v", strategy)
-=======
-		for _, valueMap := range valueMapSlice {
-			switch strategy {
-			case INSERT:
-				valueMap.Range(func(k string, v pcommon.Value) bool {
-					if _, ok := targetMap.Get(k); !ok {
-						tv := targetMap.PutEmpty(k)
-						v.CopyTo(tv)
-					}
-					return true
-				})
-			case UPDATE:
-				valueMap.Range(func(k string, v pcommon.Value) bool {
-					if tv, ok := targetMap.Get(k); ok {
-						v.CopyTo(tv)
-					}
-					return true
-				})
-			case UPSERT:
-				valueMap.Range(func(k string, v pcommon.Value) bool {
-					tv := targetMap.PutEmpty(k)
-					v.CopyTo(tv)
-					return true
-				})
-			default:
-				return nil, fmt.Errorf("unknown strategy, %v", strategy)
-=======
 
 		if !sources.IsEmpty() {
 			valueMapSlice, err := sources.Get().Get(ctx, tCtx)
@@ -135,9 +86,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 				if err := merge(mergeStrategy, &val, &targetMap); err != nil {
 					return nil, err
 				}
->>>>>>> 78269a3ddd (support mapSlice in separate optional parameter)
 			}
->>>>>>> bf4f61282b ([pkg/ottl] support merging multiple maps via merge_maps() function)
 		}
 
 		return nil, nil
@@ -147,26 +96,23 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 func merge(strategy string, source *pcommon.Map, target *pcommon.Map) error {
 	switch strategy {
 	case INSERT:
-		source.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range source.All() {
 			if _, ok := target.Get(k); !ok {
 				tv := target.PutEmpty(k)
 				v.CopyTo(tv)
 			}
-			return true
-		})
+		}
 	case UPDATE:
-		source.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range source.All() {
 			if tv, ok := target.Get(k); ok {
 				v.CopyTo(tv)
 			}
-			return true
-		})
+		}
 	case UPSERT:
-		source.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range source.All() {
 			tv := target.PutEmpty(k)
 			v.CopyTo(tv)
-			return true
-		})
+		}
 	default:
 		return fmt.Errorf("unknown strategy, %v", strategy)
 	}
