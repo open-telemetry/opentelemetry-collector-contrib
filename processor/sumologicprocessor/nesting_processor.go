@@ -121,11 +121,11 @@ func (proc *NestingProcessor) processTraces(traces ptrace.Traces) error {
 func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 	newMap := pcommon.NewMap()
 
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		// If key is not on allow list or is on deny list, skip translating it.
 		if !proc.shouldTranslateKey(k) {
 			v.CopyTo(newMap.PutEmpty(k))
-			return true
+			continue
 		}
 
 		keys := strings.Split(k, proc.separator)
@@ -134,7 +134,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// set map[""] = v and return
 			newVal := newMap.PutEmpty(k)
 			v.CopyTo(newVal)
-			return true
+			continue
 		}
 
 		prevValue := pcommon.NewValueMap()
@@ -169,10 +169,9 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 			// Now check the value we want to copy. If it is a map, we should merge both maps.
 			// Else, just place the value under the key "".
 			if v.Type() == pcommon.ValueTypeMap {
-				v.Map().Range(func(k string, val pcommon.Value) bool {
+				for k, val := range v.Map().All() {
 					val.CopyTo(prevValue.Map().PutEmpty(k))
-					return true
-				})
+				}
 			} else {
 				v.CopyTo(prevValue.Map().PutEmpty(""))
 			}
@@ -181,8 +180,7 @@ func (proc *NestingProcessor) processAttributes(attributes pcommon.Map) error {
 		}
 
 		nextMap.CopyTo(newMap)
-		return true
-	})
+	}
 
 	if proc.squashSingleValues {
 		newMap = proc.squash(newMap)
@@ -255,12 +253,11 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		key := ""
 		val := pcommon.NewValueEmpty()
 		// This will iterate only over one value (the only one)
-		m.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range m.All() {
 			keySuffix := proc.squashAttribute(v)
 			key = proc.squashKey(k, keySuffix)
 			val = v
-			return false
-		})
+		}
 
 		val.CopyTo(value)
 		return key
@@ -268,7 +265,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 
 	// This map doesn't get squashed, but its content might have keys replaced.
 	newMap := pcommon.NewMap()
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		keySuffix := proc.squashAttribute(v)
 		// If "" was returned, the value was not a one-element map and did not get squashed.
 		if keySuffix == "" {
@@ -276,9 +273,7 @@ func (proc *NestingProcessor) squashAttribute(value pcommon.Value) string {
 		} else {
 			v.CopyTo(newMap.PutEmpty(proc.squashKey(k, keySuffix)))
 		}
-
-		return true
-	})
+	}
 	newMap.CopyTo(value.Map())
 
 	return ""

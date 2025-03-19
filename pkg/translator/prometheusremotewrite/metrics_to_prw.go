@@ -18,12 +18,11 @@ import (
 )
 
 type Settings struct {
-	Namespace           string
-	ExternalLabels      map[string]string
-	DisableTargetInfo   bool
-	ExportCreatedMetric bool
-	AddMetricSuffixes   bool
-	SendMetadata        bool
+	Namespace         string
+	ExternalLabels    map[string]string
+	DisableTargetInfo bool
+	AddMetricSuffixes bool
+	SendMetadata      bool
 }
 
 // FromMetrics converts pmetric.Metrics to Prometheus remote write format.

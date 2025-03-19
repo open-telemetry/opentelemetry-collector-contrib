@@ -47,11 +47,6 @@ type Config struct {
 	// TargetInfo allows customizing the target_info metric
 	TargetInfo *TargetInfo `mapstructure:"target_info,omitempty"`
 
-	// CreatedMetric allows customizing creation of _created metrics
-	// Deprecated[0.114.0]: The feature doesn't provide the expected behavior. Use Prometheus remote-write v2 to enable sending Created Timestamps.
-	// This feature is planned to be removed in v0.116.0
-	CreatedMetric *CreatedMetric `mapstructure:"export_created_metric,omitempty"`
-
 	// AddMetricSuffixes controls whether unit and type suffixes are added to metrics on export
 	AddMetricSuffixes bool `mapstructure:"add_metric_suffixes"`
 
@@ -109,11 +104,6 @@ func (cfg *Config) Validate() error {
 	if cfg.TargetInfo == nil {
 		cfg.TargetInfo = &TargetInfo{
 			Enabled: true,
-		}
-	}
-	if cfg.CreatedMetric == nil {
-		cfg.CreatedMetric = &CreatedMetric{
-			Enabled: false,
 		}
 	}
 	if cfg.MaxBatchSizeBytes < 0 {

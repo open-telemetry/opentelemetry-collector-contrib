@@ -15,7 +15,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 )
@@ -105,10 +104,9 @@ func (m *mezmoExporter) logDataToMezmo(ld plog.Logs) error {
 					attrs["span.id"] = hex.EncodeToString(spanID[:])
 				}
 
-				log.Attributes().Range(func(k string, v pcommon.Value) bool {
+				for k, v := range log.Attributes().All() {
 					attrs[k] = truncateString(v.Str(), maxMetaDataSize)
-					return true
-				})
+				}
 
 				s, _ := log.Attributes().Get("appname")
 				app := s.Str()
