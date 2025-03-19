@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -511,72 +510,56 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 			"machine_type", "n1-standard-1", // 5, 6
 			"cloud_provider", "gcp", // 7, 8
 			"region", "us-central1", // 9, 10
-			"__name__", "normal_metric", // 11, 12
-			"d", "e", // 13, 14
 		},
 		Timeseries: []writev2.TimeSeries{
 			{
 				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
 				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
 			},
-			{
-				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-				LabelsRefs: []uint32{11, 12, 1, 2, 3, 4, 13, 14},
-				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
-			},
 		},
 	}
 
-	// Primeira requisição
-	data1, err := proto.Marshal(firstRequest)
+	buf := proto.NewBuffer(nil)
+	err := buf.Marshal(firstRequest)
 	assert.NoError(t, err)
 
-	compressed1 := snappy.Encode(nil, data1)
-
-	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(compressed1))
+	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(buf.Bytes()))
 	req1.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
 	req1.Header.Set("Content-Encoding", "snappy")
 
 	prwReceiver.handlePRW(w, req1)
 	resp1 := w.Result()
-	body, err := io.ReadAll(resp1.Body)
-	defer resp1.Body.Close()
+	assert.Equal(t, http.StatusNoContent, resp1.StatusCode)
+
+	secondRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"__name__", "normal_metric", // 5, 6
+			"foo", "bar", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+			},
+		},
+	}
+
+	buf2 := proto.NewBuffer(nil)
+	err = buf2.Marshal(secondRequest)
 	assert.NoError(t, err)
-	assert.Equal(t, http.StatusNoContent, resp1.StatusCode, string(body))
-	// // Reset o recorder para a segunda requisição
-	// w = httptest.NewRecorder()
 
-	// secondRequest := &writev2.Request{
-	// 	Symbols: []string{
-	// 		"",
-	// 		"job", "production/service_a", // 1, 2
-	// 		"instance", "host1", // 3, 4
-	// 		"__name__", "another_metric", // 5, 6
-	// 		"foo", "bar", // 7, 8
-	// 	},
-	// 	Timeseries: []writev2.TimeSeries{
-	// 		{
-	// 			Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-	// 			LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
-	// 			Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
-	// 		},
-	// 	},
-	// }
+	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(buf2.Bytes()))
+	req2.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	req2.Header.Set("Content-Encoding", "snappy")
+	w = httptest.NewRecorder()
+	prwReceiver.handlePRW(w, req2)
+	resp2 := w.Result()
+	assert.Equal(t, http.StatusNoContent, resp2.StatusCode)
 
-	// // Segunda requisição
-	// data2, err := proto.Marshal(secondRequest)
-	// assert.NoError(t, err)
-	// compressed2 := snappy.Encode(nil, data2) // Usando nil para que o Encode aloque um novo slice
-
-	// req2 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(compressed2))
-	// req2.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
-	// req2.Header.Set("Content-Encoding", "snappy")
-
-	// prwReceiver.handlePRW(w, req2)
-	// resp2 := w.Result()
-	// assert.Equal(t, http.StatusNoContent, resp2.StatusCode)
-
-	// // Verifica o resultado esperado após as duas requisições
 	// expectedMetrics := func() pmetric.Metrics {
 	// 	metrics := pmetric.NewMetrics()
 
@@ -602,20 +585,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	// 	dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
 	// 	dp1.Attributes().PutStr("d", "e")
 
-	// 	m2 := sm.Metrics().AppendEmpty()
-	// 	m2.SetName("another_metric")
-	// 	m2.SetUnit("")
-	// 	m2.SetDescription("")
-	// 	dp2 := m2.SetEmptyGauge().DataPoints().AppendEmpty()
-	// 	dp2.SetDoubleValue(2.0)
-	// 	dp2.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
-	// 	dp2.Attributes().PutStr("foo", "bar")
-
 	// 	return metrics
 	// }()
-
-	// // Verifica se as métricas foram processadas corretamente
-	// metrics, _, err := prwReceiver.translateV2(context.Background(), secondRequest)
-	// assert.NoError(t, err)
-	// assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
 }

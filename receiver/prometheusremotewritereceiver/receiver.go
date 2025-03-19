@@ -108,7 +108,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	// After parsing the content-type header, the next step would be to handle content-encoding.
 	// Luckly confighttp's Server has middleware that already decompress the request body for us.
-	
+
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
 		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
@@ -170,7 +170,6 @@ var interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 //
 //nolint:unparam
 func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *writev2.Request) (pmetric.Metrics, promremote.WriteResponseStats, error) {
-	fmt.Printf("debug len interRequestCache: %d\n", len(interRequestCache))
 	var (
 		badRequestErrors error
 		otelMetrics      = pmetric.NewMetrics()
@@ -184,12 +183,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		// TODO: use the appropriate hash function.
 		metricCache = make(map[string]pmetric.Metric)
-		// target_info metric in the context of OpenTelemetry (OTLP) to Prometheus conversion
-		// is used to supply additional resource attributes to distinguish metrics from different Prometheus endpoints.
-		// targetInfo = make(map[string]string)
 	)
 
-	fmt.Printf("debug len timeseries: %d\n", len(req.Timeseries))
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
 		if !ls.Has(labels.MetricName) && ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_INFO {
@@ -206,7 +201,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			// Seach or create the ResourceMetrics
+			// search or create the ResourceMetrics
 			if existingRM, ok := interRequestCache[hashedLabels]; ok {
 				rm = existingRM
 			} else {
