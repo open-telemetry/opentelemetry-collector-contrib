@@ -459,6 +459,58 @@ func TestGroupMetricsByResource(t *testing.T) {
 	assert.EqualValues(t, metrics, md)
 }
 
+func TestConvertTimestamp(t *testing.T) {
+	t.Parallel()
+	tests := []struct {
+		name     string
+		time     float64
+		expected pcommon.Timestamp
+	}{
+		{
+			name: "nanoseconds",
+			time: 1234567890123456789,
+			// not exact because of floating point accuracy
+			expected: pcommon.Timestamp(1234567890123456768),
+		},
+		{
+			name:     "microseconds",
+			time:     1234567890123456,
+			expected: pcommon.Timestamp(1234567890123456000),
+		},
+		{
+			name:     "milliseconds",
+			time:     1234567890456,
+			expected: pcommon.Timestamp(1234567890456000000),
+		},
+		{
+			name:     "seconds",
+			time:     1234567890,
+			expected: pcommon.Timestamp(1234567890000000000),
+		},
+		{
+			name: "dot nanoseconds",
+			time: 1234567890.123456789,
+			// not exact because of floating point accuracy
+			expected: pcommon.Timestamp(1234567890123456768),
+		},
+		{
+			name:     "dot microseconds",
+			time:     1234567890.123456,
+			expected: pcommon.Timestamp(1234567890123456000),
+		},
+		{
+			name:     "dot milliseconds",
+			time:     1234567890.456,
+			expected: pcommon.Timestamp(1234567890456000000),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			assert.Equal(t, tt.expected, convertTimestamp(tt.time))
+		})
+	}
+}
+
 func buildDefaultMetricsData(time int64) pmetric.Metrics {
 	metrics := pmetric.NewMetrics()
 	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
