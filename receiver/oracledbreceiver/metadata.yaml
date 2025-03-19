@@ -137,7 +137,7 @@ metrics:
       input_type: string
     unit: "{writes}"
   oracledb.physical_writes_direct:
-    description: Number of writes directly from disk, bypassing the buffer cache
+    description: Number of writes directly to disk, bypassing the buffer cache
     enabled: false
     sum:
       aggregation_temporality: cumulative
