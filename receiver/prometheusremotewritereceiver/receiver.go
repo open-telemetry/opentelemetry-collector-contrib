@@ -337,47 +337,42 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 }
 
 func addSummaryDatapoints(datapoints pmetric.SummaryDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
-	dp := datapoints.AppendEmpty()
-
-	dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
-
-	attributes := dp.Attributes()
-	for _, l := range ls {
-		if l.Name == "instance" || l.Name == "job" || // São atributos de resource
-			l.Name == labels.MetricName || // É o nome da métrica
-			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // São atributos de scope
-			continue
-		}
-		attributes.PutStr(l.Name, l.Value)
-	}
-
-	// count represents the total number of measurements or observations that have been aggregated into the summary metric.
-	var count uint64
-	// sum represents the sum of all the values of the measurements or observations.
-	var sum float64
-	// The quantileValues slice contains the values of the quantiles for the summary metric.
-	var quantileValues []float64
-	// The quantiles slice contains the possible quantile values for the summary metric.
-	var quantiles []float64
-
 	for _, sample := range ts.Samples {
-		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
+		dp := datapoints.AppendEmpty()
 
-		if quantileStr := ls.Get("quantile"); quantileStr != "" {
-			// Accordinly to the specification, Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#summaries-1
-			// A label denoted as "quantile" defines the quantile value. It's value is a stringfield float point between 0.0 and 1.0.
-			if quantile, err := strconv.ParseFloat(quantileStr, 64); err == nil {
-				quantiles = append(quantiles, quantile)
-				quantileValues = append(quantileValues, sample.Value)
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
+		attributes := dp.Attributes()
+		for _, l := range ls {
+			if l.Name == "instance" || l.Name == "job" ||
+				l.Name == labels.MetricName ||
+				l.Name == "otel_scope_name" ||
+				l.Name == "otel_scope_version" ||
+				// quantile, {metricName}_count, {metricName}_sum are not part of the labels. They are part of the samples.
+				l.Name == "quantile" ||
+				strings.HasSuffix(l.Name, "_count") ||
+				strings.HasSuffix(l.Name, "_sum") {
+				continue
 			}
-			continue
+			attributes.PutStr(l.Name, l.Value)
 		}
 
+		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
+		if quantileStr := ls.Get("quantile"); quantileStr != "" {
+			if quantile, err := strconv.ParseFloat(quantileStr, 64); err == nil {
+				qnt := dp.QuantileValues().AppendEmpty()
+				qnt.SetQuantile(quantile)
+				qnt.SetValue(sample.Value)
+			}
+		}
+
+		// count represents the total number of measurements or observations that have been aggregated into the summary metric.
+		var count uint64
+		// sum represents the sum of all the values of the measurements or observations.
+		var sum float64
 		metricName := ls.Get(labels.MetricName)
-		// TODO: validate if the count and sum should be read from the labels or from the samples.
+		// TODO: validate if the count and sum should be read from the labels or from other place.
 		countTemp := ls.Get(metricName + "_count")
 		sumTemp := ls.Get(metricName + "_sum")
-
 		c, err := strconv.ParseUint(countTemp, 10, 64)
 		if err == nil {
 			count = c
@@ -388,18 +383,12 @@ func addSummaryDatapoints(datapoints pmetric.SummaryDataPointSlice, ls labels.La
 			sum = s
 		}
 
+		// Documentation says: "{name}_sum metric denoting the sum field of the summary,
+		// reported only if the sum is positive and monotonic." Should I check if it's positive and monotonic?
+		dp.SetCount(count)
+		dp.SetSum(sum)
 	}
 
-	// Documentation says: "{name}_sum metric denoting the sum field of the summary, reported only if the sum is positive and monotonic." Should I check if it's positive and monotonic?
-	dp.SetCount(count)
-	dp.SetSum(sum)
-
-	qSlice := dp.QuantileValues()
-	for i := range quantiles {
-		qv := qSlice.AppendEmpty()
-		qv.SetQuantile(quantiles[i])
-		qv.SetValue(quantileValues[i])
-	}
 }
 
 func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {

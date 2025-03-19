@@ -406,6 +406,60 @@ func TestTranslateV2(t *testing.T) {
 				return expected
 			}(),
 		},
+		{
+			name: "summary metric valid request",
+			request: &writev2.Request{
+				Symbols: []string{"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"d", "e", // 11, 12
+					"test_metric_sum", "100", // 13, 14
+					"test_metric_count", "200", // 15, 16
+					"quantile", "0.5", // 17, 18
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_SUMMARY},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18},
+						Samples: []writev2.Sample{
+							{Value: 1, Timestamp: 1},
+						},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				expected := pmetric.NewMetrics()
+				rm1 := expected.ResourceMetrics().AppendEmpty()
+				rmAttributes1 := rm1.Resource().Attributes()
+				rmAttributes1.PutStr("service.namespace", "service-x")
+				rmAttributes1.PutStr("service.name", "test")
+				rmAttributes1.PutStr("service.instance.id", "107cn001")
+
+				sm1 := rm1.ScopeMetrics().AppendEmpty()
+				sm1.Scope().SetName("scope1")
+				sm1.Scope().SetVersion("v1")
+
+				metrics1 := sm1.Metrics().AppendEmpty()
+				metrics1.SetName("test_metric")
+				metrics1.SetUnit("")
+				metrics1.SetDescription("")
+
+				dp1 := metrics1.SetEmptySummary().DataPoints().AppendEmpty()
+				dp1.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp1.Attributes().PutStr("d", "e")
+				dp1.SetCount(200)
+				dp1.SetSum(100)
+
+				qnt1 := dp1.QuantileValues().AppendEmpty()
+				qnt1.SetQuantile(0.5)
+				qnt1.SetValue(1.0)
+
+				return expected
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
