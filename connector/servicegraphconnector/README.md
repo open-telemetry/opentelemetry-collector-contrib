@@ -139,7 +139,7 @@ The following settings can be optionally configured:
 - `virtual_node_extra_label`: adds an extra label `virtual_node` with an optional value of `client` or `server`, indicating which node is the uninstrumented one.
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
-  - Default: Metrics are flushed on every received batch of traces.
+  - Default: `60s`
 - `database_name_attribute`: the attribute name used to identify the database name from span attributes.
   - Default: `db.name`
 

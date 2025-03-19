@@ -3,7 +3,7 @@ type: tlscheck
 status:
   class: receiver
   stability:
-    development: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
     active: [atoulme, michael-burt]

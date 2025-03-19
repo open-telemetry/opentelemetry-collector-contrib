@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -35,7 +35,7 @@ func TestLoadConfig(t *testing.T) {
 		ProtocolVersion:  "2.0.0",
 		TopicMatch:       "test_\\w+",
 		GroupMatch:       "test_\\w+",
-		Authentication: kafka.Authentication{
+		Authentication: configkafka.AuthenticationConfig{
 			TLS: &configtls.ClientConfig{
 				Config: configtls.Config{
 					CAFile:   "ca.pem",

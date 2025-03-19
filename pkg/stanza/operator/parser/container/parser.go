@@ -30,7 +30,7 @@ const (
 	dockerPattern       = "^\\{"
 	crioPattern         = "^(?P<time>[^ Z]+) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
 	containerdPattern   = "^(?P<time>[^ ^Z]+Z) (?P<stream>stdout|stderr) (?P<logtag>[^ ]*) ?(?P<log>.*)$"
-	logpathPattern      = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log$"
+	logpathPattern      = "^.*(\\/|\\\\)(?P<namespace>[^_]+)_(?P<pod_name>[^_]+)_(?P<uid>[a-f0-9\\-]+)(\\/|\\\\)(?P<container_name>[^\\._]+)(\\/|\\\\)(?P<restart_count>\\d+)\\.log(\\.\\d{8}-\\d{6})?$"
 	logPathField        = attrs.LogFilePath
 	crioTimeLayout      = "2006-01-02T15:04:05.999999999Z07:00"
 	goTimeLayout        = "2006-01-02T15:04:05.999Z"
@@ -62,7 +62,7 @@ type Parser struct {
 	recombineParser         operator.Operator
 	format                  string
 	addMetadataFromFilepath bool
-	criLogEmitter           *helper.LogEmitter
+	criLogEmitter           *helper.BatchingLogEmitter
 	asyncConsumerStarted    bool
 	criConsumerStartOnce    sync.Once
 	criConsumers            *sync.WaitGroup

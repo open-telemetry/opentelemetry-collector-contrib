@@ -53,7 +53,7 @@ func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
 
 func (exporter *azureMonitorExporter) consumeLogs(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
-	logPacker := newLogPacker(exporter.logger)
+	logPacker := newLogPacker(exporter.logger, exporter.config)
 
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()
@@ -122,8 +122,6 @@ func (v *traceVisitor) visit(
 		v.exporter.transportChannel.Send(envelope)
 	}
 
-	// Flush the transport channel to force the telemetry to be sent
-	v.exporter.transportChannel.Flush()
 	v.processed++
 
 	return true
@@ -137,5 +135,11 @@ func (exporter *azureMonitorExporter) consumeTraces(_ context.Context, traceData
 
 	visitor := &traceVisitor{exporter: exporter}
 	accept(traceData, visitor)
+
+	// Flush the transport channel to force the telemetry to be sent
+	if visitor.processed > 0 {
+		exporter.transportChannel.Flush()
+	}
+
 	return visitor.err
 }

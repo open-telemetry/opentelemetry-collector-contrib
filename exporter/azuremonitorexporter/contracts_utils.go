@@ -17,10 +17,9 @@ const (
 // Applies resource attributes values to data properties
 func applyResourcesToDataProperties(dataProperties map[string]string, resourceAttributes pcommon.Map) {
 	// Copy all the resource labels into the base data properties. Resource values are always strings
-	resourceAttributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resourceAttributes.All() {
 		dataProperties[k] = v.Str()
-		return true
-	})
+	}
 }
 
 // Sets important ai.cloud.* tags on the envelope
@@ -63,8 +62,7 @@ func applyInstrumentationScopeValueToDataProperties(dataProperties map[string]st
 
 // Applies attributes as Application Insights properties
 func setAttributesAsProperties(attributeMap pcommon.Map, properties map[string]string) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		properties[k] = v.AsString()
-		return true
-	})
+	}
 }

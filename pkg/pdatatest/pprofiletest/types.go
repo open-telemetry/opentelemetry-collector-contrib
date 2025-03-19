@@ -194,8 +194,9 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 		panic("length of profile.sample_type must be equal to the length of sample.value")
 	}
 	psa := pp.Sample().AppendEmpty()
-	psa.SetLocationsStartIndex(int32(pp.LocationTable().Len()))
+	psa.SetLocationsStartIndex(int32(pp.LocationIndices().Len()))
 	for _, loc := range sa.Locations {
+		pp.LocationIndices().Append(int32(pp.LocationIndices().Len()))
 		ploc := pp.LocationTable().AppendEmpty()
 		if loc.Mapping != nil {
 			loc.Mapping.Transform(pp)
@@ -212,7 +213,7 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 			ploc.AttributeIndices().Append(at.Transform(pp))
 		}
 	}
-	psa.SetLocationsLength(int32(pp.LocationTable().Len()) - psa.LocationsStartIndex())
+	psa.SetLocationsLength(int32(pp.LocationIndices().Len()) - psa.LocationsStartIndex())
 	psa.Value().FromRaw(sa.Value)
 	for _, at := range sa.Attributes {
 		psa.AttributeIndices().Append(at.Transform(pp))

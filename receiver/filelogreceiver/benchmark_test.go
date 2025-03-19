@@ -13,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/file"
@@ -20,7 +21,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver/internal/testutil"
 )
 
-func BenchmarkReadSingleStaticFile(b *testing.B) {
+func BenchmarkReadSingleStaticFileWithBatchingLogEmitter(b *testing.B) {
+	require.NoError(b, featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", false))
+	for n := range 6 {
+		numLines := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {
+			benchmarkReadSingleStaticFile(b, numLines)
+		})
+	}
+}
+
+func BenchmarkReadSingleStaticFileWithSynchronousLogEmitter(b *testing.B) {
+	require.NoError(b, featuregate.GlobalRegistry().Set("stanza.synchronousLogEmitter", true))
 	for n := range 6 {
 		numLines := int(math.Pow(10, float64(n)))
 		b.Run(fmt.Sprintf("%d-lines", numLines), func(b *testing.B) {

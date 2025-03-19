@@ -10,6 +10,7 @@ import (
 	"errors"
 	"io"
 	"net/http"
+	"regexp"
 	"sync"
 	"time"
 
@@ -27,7 +28,6 @@ import (
 
 var (
 	errNilLogsConsumer       = errors.New("missing a logs consumer")
-	errMissingEndpoint       = errors.New("missing a receiver endpoint")
 	errInvalidRequestMethod  = errors.New("invalid method. Valid method is POST")
 	errInvalidEncodingType   = errors.New("invalid encoding type")
 	errEmptyResponseBody     = errors.New("request body content length is zero")
@@ -37,13 +37,14 @@ var (
 const healthyResponse = `{"text": "Webhookevent receiver is healthy"}`
 
 type eventReceiver struct {
-	settings    receiver.Settings
-	cfg         *Config
-	logConsumer consumer.Logs
-	server      *http.Server
-	shutdownWG  sync.WaitGroup
-	obsrecv     *receiverhelper.ObsReport
-	gzipPool    *sync.Pool
+	settings            receiver.Settings
+	cfg                 *Config
+	logConsumer         consumer.Logs
+	server              *http.Server
+	shutdownWG          sync.WaitGroup
+	obsrecv             *receiverhelper.ObsReport
+	gzipPool            *sync.Pool
+	includeHeadersRegex *regexp.Regexp
 }
 
 func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -51,8 +52,13 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 		return nil, errNilLogsConsumer
 	}
 
-	if cfg.Endpoint == "" {
-		return nil, errMissingEndpoint
+	if err := cfg.Validate(); err != nil {
+		return nil, err
+	}
+	var includeHeaderRegex *regexp.Regexp
+	if cfg.HeaderAttributeRegex != "" {
+		// Valdiate() call above has already ensured this will compile
+		includeHeaderRegex, _ = regexp.Compile(cfg.HeaderAttributeRegex)
 	}
 
 	transport := "http"
@@ -71,11 +77,12 @@ func newLogsReceiver(params receiver.Settings, cfg Config, consumer consumer.Log
 
 	// create eventReceiver instance
 	er := &eventReceiver{
-		settings:    params,
-		cfg:         &cfg,
-		logConsumer: consumer,
-		obsrecv:     obsrecv,
-		gzipPool:    &sync.Pool{New: func() any { return new(gzip.Reader) }},
+		settings:            params,
+		cfg:                 &cfg,
+		logConsumer:         consumer,
+		obsrecv:             obsrecv,
+		gzipPool:            &sync.Pool{New: func() any { return new(gzip.Reader) }},
+		includeHeadersRegex: includeHeaderRegex,
 	}
 
 	return er, nil
@@ -191,7 +198,7 @@ func (er *eventReceiver) handleReq(w http.ResponseWriter, r *http.Request, _ htt
 
 	// send body into a scanner and then convert the request body into a log
 	sc := bufio.NewScanner(bodyReader)
-	ld, numLogs := reqToLog(sc, r.URL.Query(), er.cfg, er.settings)
+	ld, numLogs := er.reqToLog(sc, r.Header, r.URL.Query())
 	consumerErr := er.logConsumer.ConsumeLogs(ctx, ld)
 
 	_ = bodyReader.Close()

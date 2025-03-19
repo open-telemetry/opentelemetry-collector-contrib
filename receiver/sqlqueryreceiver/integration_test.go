@@ -713,6 +713,7 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = MySQL.Driver
 				rCfg.DataSource = MySQL.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, MySQL.Port)))
+				rCfg.MaxOpenConn = 5
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre order by genre desc",

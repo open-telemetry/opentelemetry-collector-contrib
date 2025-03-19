@@ -1932,7 +1932,6 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 						Conditions: []string{fmt.Sprintf(`%s.cache["test"] == ""`, ctx)},
 					},
 				},
-				wantErrorWith: fmt.Sprintf(`segment "%s" from path "%[1]s.cache[test]" is not a valid path`, ctx),
 			},
 		}
 	}

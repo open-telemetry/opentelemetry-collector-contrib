@@ -10,14 +10,12 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -44,20 +42,6 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	if assert.Error(t, err) {
 		assert.Equal(t, expectedError, err)
 	}
-}
-
-func TestNewReceiver_invalid_auth_error(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.Authentication = kafka.Authentication{
-		TLS: &configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile: "/invalid",
-			},
-		},
-	}
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
-	assert.ErrorContains(t, err, "failed to load TLS config")
-	assert.Nil(t, r)
 }
 
 func TestNewReceiver_refresh_frequency(t *testing.T) {

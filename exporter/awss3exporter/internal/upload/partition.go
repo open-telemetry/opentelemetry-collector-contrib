@@ -34,9 +34,9 @@ type PartitionKeyBuilder struct {
 	// Expected to be one of "metrics", "traces", or "logs"
 	Metadata string
 	// Compression defines algorithm used on the
-	// body before uploaded.
+	// body before upload.
 	Compression configcompression.Type
-	// UniqueKeyFunc allows for overwritting the default behavior of
+	// UniqueKeyFunc allows for overwriting the default behavior of
 	// generating a new unique string to avoid collisions on file upload
 	// across many different instances.
 	//
