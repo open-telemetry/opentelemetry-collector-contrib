@@ -89,7 +89,7 @@ ALL_SRC_AND_DOC_CMD := find . -name "*.md" -o -name "*.go" -o -name "*.yaml" -no
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
 
 # All source code and .sh files (evaluated when used)
-ALL_SRC_AND_SHELL = $(shell find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort)
+ALL_SRC_AND_SHELL_CMD := find . -type f -iname "*.go" -o -iname "*.sh" -not -path '**/third_party/*' | sort
 
 pwd:
 	@pwd
@@ -159,7 +159,7 @@ benchmark: $(GOTESTSUM)
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
-	@ADDLICENSEOUT=$$(for f in $(ALL_SRC_AND_SHELL); do \
+	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
 	if [ "$$ADDLICENSEOUT" ]; then \
@@ -172,9 +172,13 @@ addlicense: $(ADDLICENSE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
-	@licRes=$$(for f in $(ALL_SRC_AND_SHELL); do \
-		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
-		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
+	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
+        if awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+            continue; \
+        fi; \
+        if awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+            continue; \
+        fi; \
 		$(ADDLICENSE_CMD) -check "$$f" 2>&1 || echo "$$f"; \
 		done); \
 	if [ -n "$${licRes}" ]; then \
@@ -219,26 +223,13 @@ toolchain:
 	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-misspell: $(TOOLS_BIN_DIR)/misspell
-	@echo "running $(MISSPELL)"
-	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
-else
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
-endif
 
 .PHONY: misspell-correction
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
-else
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
-endif
 
 .PHONY: moddownload
 moddownload:
