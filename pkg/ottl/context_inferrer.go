@@ -225,7 +225,7 @@ func (s *priorityContextInferrer) sortContextCandidates(candidates []string) {
 }
 
 // getConditionHints extracts all path, function names (editor and converter), and enumSymbol
-// from the given parsed statements. These values are used by the context inferrer as hints to
+// from the given condition. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
 func (s *priorityContextInferrer) getConditionHints(condition string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
 	parsed, err := parseCondition(condition)
@@ -239,7 +239,7 @@ func (s *priorityContextInferrer) getConditionHints(condition string) ([]path, m
 }
 
 // getStatementHints extracts all path, function names (editor and converter), and enumSymbol
-// from the given parsed statements. These values are used by the context inferrer as hints to
+// from the given statement. These values are used by the context inferrer as hints to
 // select a context in which the function/enum are supported.
 func (s *priorityContextInferrer) getStatementHints(statement string) ([]path, map[string]struct{}, map[enumSymbol]struct{}, error) {
 	parsed, err := parseStatement(statement)
