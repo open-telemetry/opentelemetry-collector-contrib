@@ -14,7 +14,7 @@ jobs:
       go_sources: ${{ steps.changed-source.outputs.go_sources }}
       go_tests: ${{ steps.changed-test.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
       - name: Get changed files
@@ -44,8 +44,8 @@ jobs:
         run: |
           echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
           echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
@@ -53,7 +53,7 @@ jobs:
       - name: Try to restore go-cache
         id: go-cache
         timeout-minutes: 25
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/go/bin
