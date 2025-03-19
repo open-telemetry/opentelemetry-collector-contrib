@@ -173,12 +173,12 @@ addlicense: $(ADDLICENSE)
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
 	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
-        if awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
-            continue; \
-        fi; \
-        if awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
-            continue; \
-        fi; \
+		if awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+			continue; \
+		fi; \
+		if awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+			continue; \
+		fi; \
 		$(ADDLICENSE_CMD) -check "$$f" 2>&1 || echo "$$f"; \
 		done); \
 	if [ -n "$${licRes}" ]; then \
