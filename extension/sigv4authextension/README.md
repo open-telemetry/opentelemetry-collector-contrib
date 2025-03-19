@@ -20,11 +20,7 @@ The configuration fields are as follows:
 * `assume_role`: **Optional**. Specifies the configuration needed to assume a role
   * `arn`: The Amazon Resource Name (ARN) of a role to assume
   * `session_name`: **Optional**. The name of a role session
-  * `sts_region`: The AWS region where STS is used to assumed the configured role
-    * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
-* `assume_role_with_web_identity`: **Optional**. Specifies the configuration needed to assume a role with web identity
-  * `arn`: The Amazon Resource Name (ARN) of a role to assume - this must have a trust policy to allow it to be assumed
-  * `token_file`: The path to the file containing the JWT token to be excahanged
+  * `web_identity_token_file`: The path to the file containing the JWT token to be exchanged
   * `sts_region`: The AWS region where STS is used to assumed the configured role
     * Note that if a role is intended to be assumed, and `sts_region` is not provided, then `sts_region` will default to the value for `region` if `region` is provided
 * `region`: **Optional**. The AWS region for the service you are exporting to for AWS Sigv4. This is differentiated from `sts_region` to handle cross region authentication
@@ -72,7 +68,7 @@ service:
 
 ## Assume Role with Web Identity
 
-Configuring `assume_role_with_web_identity` will cause the sigv4auth extension to exchange the token in the specified `token_file` for AWS credentials. This is especially useful for authenticating from on-prem systems other cloud providers via OIDC to publish telemetry to an AWS destination (e.g. Amazon Managed Prometheus).
+Configuring `web_identity_token_file` will cause the sigv4auth extension to exchange the token in the specified `web_identity_token_file` for AWS credentials. This is especially useful for authenticating from on-prem systems other cloud providers via OIDC to publish telemetry to an AWS destination (e.g. Amazon Managed Prometheus).
 
 ### Prerequisites:
 
@@ -83,9 +79,9 @@ To utilize Assume Role with Web Identity with the sigv4 extension, an AWS IAM ro
 ```yaml
 extensions:
   sigv4auth:
-    assume_role_with_web_identity:
+    assume_role:
       arn: "arn:aws:iam::123456789012:role/aws-service-role/access"
-      token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
+      web_identity_token_file: "/var/run/secrets/kubernetes.io/serviceaccount/token"
 
 receivers:
   hostmetrics:
