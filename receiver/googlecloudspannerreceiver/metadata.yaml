@@ -6,8 +6,8 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [dashpole, dsimil, KiranmayiB, harishbohara11]
-    emeritus: [architjugran, varunraiko]
+    active: [dashpole, dsimil, KiranmayiB]
+    emeritus: [architjugran, varunraiko, harishbohara11]
 tests:
   config:
   goleak:
