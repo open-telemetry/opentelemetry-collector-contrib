@@ -73,9 +73,13 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			logger:   logger,
 		}, nil
 	case k8sconfig.AuthTypeServiceAccount:
+		caCertPath := svcAcctCACertPath
+		if cfg.CAFile != "" {
+			caCertPath = cfg.CAFile
+		}
 		return &saClientProvider{
 			endpoint:           endpoint,
-			caCertPath:         svcAcctCACertPath,
+			caCertPath:         caCertPath,
 			tokenPath:          svcAcctTokenPath,
 			insecureSkipVerify: cfg.InsecureSkipVerify,
 			logger:             logger,
@@ -117,13 +121,16 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 		authConf.TLSClientConfig.CAData = nil
 		authConf.TLSClientConfig.Insecure = true
 	}
-
+	if p.cfg.CAFile != "" {
+		p.logger.Debug("Kubeconfig Client Provider will use custom CA cert", zap.String("CAfile Path", p.cfg.CAFile))
+	}
 	client, err := rest.HTTPClientFor(authConf)
 	if err != nil {
 		return nil, err
 	}
 
 	joinPath, err := url.JoinPath(authConf.Host, "/api/v1/nodes/", p.endpoint, "/proxy/")
+
 	if err != nil {
 		return nil, err
 	}

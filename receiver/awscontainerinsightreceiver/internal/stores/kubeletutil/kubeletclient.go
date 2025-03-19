@@ -6,7 +6,9 @@ package kubeletutil // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
+	"go.opentelemetry.io/collector/config/configtls"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -18,10 +20,18 @@ import (
 
 var kubeletNewClientProvider = kubelet.NewClientProvider
 
+const kubeletCAPath = "/etc/kubernetes/kubelet-ca.crt"
+
 type KubeletClient struct {
 	KubeIP     string
 	Port       string
 	restClient kubelet.Client
+}
+
+func isFileExist(filePath string) bool {
+	// assumes file does not exist on ANY kind of error
+	_, err := os.Stat(filePath)
+	return err == nil
 }
 
 func NewKubeletClient(kubeIP string, port string, clientConfig *kubelet.ClientConfig, logger *zap.Logger) (*KubeletClient, error) {
@@ -93,19 +103,29 @@ func (k *KubeletClient) Summary(logger *zap.Logger) (*stats.Summary, error) {
 }
 
 func ClientConfig(kubeConfigPath string, isSystemd bool) *kubelet.ClientConfig {
-	if !isSystemd {
-		return &kubelet.ClientConfig{
-			APIConfig: k8sconfig.APIConfig{
-				AuthType: k8sconfig.AuthTypeServiceAccount,
-			},
-		}
-	}
 	if kubeConfigPath != "" {
 		// use kube-config for authentication
 		return &kubelet.ClientConfig{
 			APIConfig: k8sconfig.APIConfig{
 				AuthType:       k8sconfig.AuthTypeKubeConfig,
 				KubeConfigPath: kubeConfigPath,
+			},
+		}
+	}
+	if isFileExist(kubeletCAPath) {
+		// check if kubeletca is available
+		return &kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: k8sconfig.AuthTypeServiceAccount,
+			},
+			Config: configtls.Config{CAFile: kubeletCAPath},
+		}
+	}
+	if !isSystemd {
+		// use service account if kubelet ca or kubeconfig don't exist
+		return &kubelet.ClientConfig{
+			APIConfig: k8sconfig.APIConfig{
+				AuthType: k8sconfig.AuthTypeServiceAccount,
 			},
 		}
 	}
