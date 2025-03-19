@@ -5,9 +5,10 @@ package kube // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"regexp"
 	"time"
+
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"go.opentelemetry.io/collector/component"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
