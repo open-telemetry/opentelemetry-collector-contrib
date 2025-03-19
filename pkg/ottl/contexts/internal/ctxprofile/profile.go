@@ -49,6 +49,8 @@ func PathGetSetter[K ProfileContext](path ottl.Path[K]) (ottl.GetSetter[K], erro
 		return accessTimeUnixNano[K](), nil
 	case "time":
 		return accessTime[K](), nil
+	case "duration_unix_nano":
+		return accessDurationUnixNano[K](), nil
 	case "duration":
 		return accessDuration[K](), nil
 	case "period_type":
@@ -243,6 +245,20 @@ func accessTime[K ProfileContext]() ottl.StandardGetSetter[K] {
 		Setter: func(_ context.Context, tCtx K, val any) error {
 			if i, ok := val.(time.Time); ok {
 				tCtx.GetProfile().SetTime(pcommon.NewTimestampFromTime(i))
+			}
+			return nil
+		},
+	}
+}
+
+func accessDurationUnixNano[K ProfileContext]() ottl.StandardGetSetter[K] {
+	return ottl.StandardGetSetter[K]{
+		Getter: func(_ context.Context, tCtx K) (any, error) {
+			return tCtx.GetProfile().Duration().AsTime().UnixNano(), nil
+		},
+		Setter: func(_ context.Context, tCtx K, val any) error {
+			if t, ok := val.(int64); ok {
+				tCtx.GetProfile().SetDuration(pcommon.NewTimestampFromTime(time.Unix(0, t)))
 			}
 			return nil
 		},

@@ -70,6 +70,10 @@ func TestPathGetSetter(t *testing.T) {
 			val:  time.Now().UTC(),
 		},
 		{
+			path: "duration_unix_nano",
+			val:  int64(10000),
+		},
+		{
 			path: "duration",
 			val:  time.Now().UTC(),
 		},
