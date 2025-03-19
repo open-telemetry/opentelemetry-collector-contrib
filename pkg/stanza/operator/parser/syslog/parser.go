@@ -36,6 +36,10 @@ type Parser struct {
 	maxOctets                    int
 }
 
+func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return p.ProcessBatchWith(ctx, entries, p.Process)
+}
+
 // Process will parse an entry field as syslog.
 func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 	// if pri header is missing and this is an expected behavior then facility and severity values should be skipped.

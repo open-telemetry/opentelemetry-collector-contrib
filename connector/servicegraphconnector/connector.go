@@ -49,6 +49,8 @@ var (
 	}
 
 	defaultDatabaseNameAttribute = semconv.AttributeDBName
+
+	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )
 
 type metricSeries struct {
@@ -117,6 +119,12 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 		pConfig.DatabaseNameAttribute = defaultDatabaseNameAttribute
 	}
 
+	if pConfig.MetricsFlushInterval == nil {
+		pConfig.MetricsFlushInterval = &defaultMetricsFlushInterval
+	} else if pConfig.MetricsFlushInterval.Nanoseconds() <= 0 {
+		set.Logger.Warn("MetricsFlushInterval is set to 0, metrics will be flushed on every received batch of traces")
+	}
+
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set)
 	if err != nil {
 		return nil, err
@@ -146,7 +154,7 @@ func newConnector(set component.TelemetrySettings, config component.Config, next
 func (p *serviceGraphConnector) Start(_ context.Context, _ component.Host) error {
 	p.store = store.NewStore(p.config.Store.TTL, p.config.Store.MaxItems, p.onComplete, p.onExpire)
 
-	go p.metricFlushLoop(p.config.MetricsFlushInterval)
+	go p.metricFlushLoop(*p.config.MetricsFlushInterval)
 
 	go p.cacheLoop(p.config.CacheLoop)
 
@@ -207,7 +215,7 @@ func (p *serviceGraphConnector) ConsumeTraces(ctx context.Context, td ptrace.Tra
 	}
 
 	// If metricsFlushInterval is not set, flush metrics immediately.
-	if p.config.MetricsFlushInterval <= 0 {
+	if *p.config.MetricsFlushInterval <= 0 {
 		if err := p.flushMetrics(ctx); err != nil {
 			// Not return error here to avoid impacting traces.
 			p.logger.Error("failed to flush metrics", zap.Error(err))

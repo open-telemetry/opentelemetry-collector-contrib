@@ -7,7 +7,6 @@ import (
 	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/otel/schema/v1.0/ast"
 )
 
 type set = map[string]struct{}
@@ -21,7 +20,7 @@ type MultiConditionalAttributeSet struct {
 
 type MultiConditionalAttributeSetSlice []*MultiConditionalAttributeSet
 
-func NewMultiConditionalAttributeSet[Match ValueMatch](mappings ast.AttributeMap, matches map[string][]Match) MultiConditionalAttributeSet {
+func NewMultiConditionalAttributeSet[Match ValueMatch](mappings map[string]string, matches map[string][]Match) MultiConditionalAttributeSet {
 	keysToPossibleValues := make(map[string]set)
 	for k, values := range matches {
 		on := make(map[string]struct{})

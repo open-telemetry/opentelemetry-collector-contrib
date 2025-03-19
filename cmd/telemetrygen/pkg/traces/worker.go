@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/propagation"
-	semconv "go.opentelemetry.io/otel/semconv/v1.4.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"golang.org/x/time/rate"
@@ -55,8 +55,8 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 		}
 
 		ctx, sp := tracer.Start(context.Background(), "lets-go", trace.WithAttributes(
-			semconv.NetPeerIPKey.String(fakeIP),
-			semconv.PeerServiceKey.String("telemetrygen-server"),
+			semconv.NetSockPeerAddr(fakeIP),
+			semconv.PeerService("telemetrygen-server"),
 		),
 			trace.WithSpanKind(trace.SpanKindClient),
 			trace.WithTimestamp(spanStart),
@@ -83,8 +83,8 @@ func (w worker) simulateTraces(telemetryAttributes []attribute.KeyValue) {
 			}
 
 			_, child := tracer.Start(childCtx, "okey-dokey-"+strconv.Itoa(j), trace.WithAttributes(
-				semconv.NetPeerIPKey.String(fakeIP),
-				semconv.PeerServiceKey.String("telemetrygen-client"),
+				semconv.NetSockPeerAddr(fakeIP),
+				semconv.PeerService("telemetrygen-client"),
 			),
 				trace.WithSpanKind(trace.SpanKindServer),
 				trace.WithTimestamp(spanStart),

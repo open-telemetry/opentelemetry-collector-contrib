@@ -11,10 +11,11 @@ import (
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/attribute"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 )
 
 var (
-	errFormatOTLPAttributes       = fmt.Errorf("value should be of the format key=\"value\"")
+	errFormatOTLPAttributes       = fmt.Errorf("value should be in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>")
 	errDoubleQuotesOTLPAttributes = fmt.Errorf("value should be a string wrapped in double quotes")
 )
 
@@ -45,6 +46,10 @@ func (v *KeyValue) Set(s string) error {
 		(*v)[kv[0]] = false
 		return nil
 	}
+	if intVal, err := strconv.Atoi(val); err == nil {
+		(*v)[kv[0]] = intVal
+		return nil
+	}
 	if len(val) < 2 || !strings.HasPrefix(val, "\"") || !strings.HasSuffix(val, "\"") {
 		return errDoubleQuotesOTLPAttributes
 	}
@@ -72,6 +77,7 @@ type Config struct {
 	HTTPPath            string
 	Headers             KeyValue
 	ResourceAttributes  KeyValue
+	ServiceName         string
 	TelemetryAttributes KeyValue
 
 	// OTLP TLS configuration
@@ -102,6 +108,8 @@ func (c *Config) Endpoint() string {
 func (c *Config) GetAttributes() []attribute.KeyValue {
 	var attributes []attribute.KeyValue
 
+	// may be overridden by `--otlp-attributes service.name="foo"`
+	attributes = append(attributes, semconv.ServiceNameKey.String(c.ServiceName))
 	if len(c.ResourceAttributes) > 0 {
 		for k, t := range c.ResourceAttributes {
 			switch v := t.(type) {
@@ -109,6 +117,8 @@ func (c *Config) GetAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.String(k, v))
 			case bool:
 				attributes = append(attributes, attribute.Bool(k, v))
+			case int:
+				attributes = append(attributes, attribute.Int(k, v))
 			}
 		}
 	}
@@ -125,6 +135,8 @@ func (c *Config) GetTelemetryAttributes() []attribute.KeyValue {
 				attributes = append(attributes, attribute.String(k, v))
 			case bool:
 				attributes = append(attributes, attribute.Bool(k, v))
+			case int:
+				attributes = append(attributes, attribute.Int(k, v))
 			}
 		}
 	}
@@ -158,21 +170,21 @@ func (c *Config) CommonFlags(fs *pflag.FlagSet) {
 	fs.BoolVar(&c.InsecureSkipVerify, "otlp-insecure-skip-verify", c.InsecureSkipVerify, "Whether a client verifies the server's certificate chain and host name")
 	fs.BoolVar(&c.UseHTTP, "otlp-http", c.UseHTTP, "Whether to use HTTP exporter rather than a gRPC one")
 
+	fs.StringVar(&c.ServiceName, "service", c.ServiceName, "Service name to use")
+
 	// custom headers
 	fs.Var(&c.Headers, "otlp-header", "Custom header to be passed along with each OTLP request. The value is expected in the format key=\"value\". "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
 		`Flag may be repeated to set multiple headers (e.g --otlp-header key1=\"value1\" --otlp-header key2=\"value2\")`)
 
 	// custom resource attributes
-	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom resource attributes to use. The value is expected in the format key=\"value\". "+
-		"You can use key=true or key=false. to set boolean attribute."+
+	fs.Var(&c.ResourceAttributes, "otlp-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
+		`Flag may be repeated to set multiple attributes (e.g --otlp-attributes key1=\"value1\" --otlp-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
 
-	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in the format key=\"value\". "+
-		"You can use key=true or key=false. to set boolean attribute."+
+	fs.Var(&c.TelemetryAttributes, "telemetry-attributes", "Custom telemetry attributes to use. The value is expected in one of the following formats: key=\"value\", key=true, key=false, or key=<integer>. "+
 		"Note you may need to escape the quotes when using the tool from a cli. "+
-		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true)`)
+		`Flag may be repeated to set multiple attributes (e.g --telemetry-attributes key1=\"value1\" --telemetry-attributes key2=\"value2\" --telemetry-attributes key3=true --telemetry-attributes key4=123)`)
 
 	// TLS CA configuration
 	fs.StringVar(&c.CaFile, "ca-cert", c.CaFile, "Trusted Certificate Authority to verify server certificate")
@@ -198,6 +210,7 @@ func (c *Config) SetDefaults() {
 	c.HTTPPath = ""
 	c.Headers = make(KeyValue)
 	c.ResourceAttributes = make(KeyValue)
+	c.ServiceName = "telemetrygen"
 	c.TelemetryAttributes = make(KeyValue)
 	c.CaFile = ""
 	c.ClientAuth.Enabled = false

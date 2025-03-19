@@ -131,7 +131,7 @@ func TestScraper_Scrape(t *testing.T) {
 
 			scrpr := oracleScraper{
 				logger: zap.NewNop(),
-				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings()),
+				mb:     metadata.NewMetricsBuilder(cfg, receivertest.NewNopSettings(metadata.Type)),
 				dbProviderFunc: func() (*sql.DB, error) {
 					return nil, nil
 				},

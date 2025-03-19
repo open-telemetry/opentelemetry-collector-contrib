@@ -98,13 +98,11 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 		id := component.NewIDWithName(metadata.Type, fmt.Sprintf("query-%d: %s", i, query))
 
 		sqlServerScraper := newSQLServerScraper(id, query,
-			cfg.InstanceName,
-			cfg.ControllerConfig,
-			params.Logger,
 			sqlquery.TelemetryConfig{},
 			dbProviderFunc,
 			sqlquery.NewDbClient,
-			metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params))
+			params,
+			cfg)
 
 		scrapers = append(scrapers, sqlServerScraper)
 	}

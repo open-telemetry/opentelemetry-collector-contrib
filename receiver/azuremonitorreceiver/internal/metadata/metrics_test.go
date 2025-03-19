@@ -41,7 +41,7 @@ func TestMetricsBuilder(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(Type)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadConfig(t, test.name), settings)
 

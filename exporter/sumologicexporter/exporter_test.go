@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pipeline"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
 )
 
 func logRecordsToLogs(records []plog.LogRecord) plog.Logs {
@@ -81,7 +83,7 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 	cfg.ClientConfig.Endpoint = testServer.URL
 	cfg.ClientConfig.Auth = nil
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	require.NoError(t, exp.start(context.Background(), componenttest.NewNopHost()))
@@ -244,7 +246,7 @@ func TestInvalidHTTPClient(t *testing.T) {
 	}
 	exp, err := initExporter(&Config{
 		ClientConfig: clientConfig,
-	}, exportertest.NewNopSettings())
+	}, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
 
 	assert.EqualError(t,
@@ -508,7 +510,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	cfg := createConfig()
 	cfg.ClientConfig.Endpoint = testServer.URL
 
-	exp, err := initExporter(cfg, exportertest.NewNopSettings())
+	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)
 	require.NoError(b, exp.start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -642,6 +644,54 @@ func TestGetSignalURL(t *testing.T) {
 			} else {
 				require.NoError(t, err)
 			}
+			require.Equal(t, testCase.expected, actual)
+		})
+	}
+}
+
+func TestNChars(t *testing.T) {
+	s := nchars('*', 10)
+	require.Equal(t, "**********", s)
+	s = nchars(' ', 2)
+	require.Equal(t, "  ", s)
+}
+
+func TestSanitizeURL(t *testing.T) {
+	testCases := []struct {
+		description string
+		urlString   string
+		expected    string
+	}{
+		{
+			description: "sanitized logs url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxxx/v1/logs",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/*****/v1/logs",
+		},
+		{
+			description: "sanitized metrics url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/metrics",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/metrics",
+		},
+		{
+			description: "sanitized traces url",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/otlp/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/otlp/******/v1/traces",
+		},
+		{
+			description: "no sanitization required",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/xxxx==/v1/traces",
+		},
+		{
+			description: "no sanitization required with otlp/ appearing after v1/",
+			urlString:   "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+			expected:    "https://collectors.au.sumologic.com/receiver/v1/v1/xxxx==/otlp/traces",
+		},
+	}
+	for _, tC := range testCases {
+		testCase := tC
+		t.Run(tC.description, func(t *testing.T) {
+			actual := sanitizeURL(testCase.urlString)
 			require.Equal(t, testCase.expected, actual)
 		})
 	}

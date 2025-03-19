@@ -54,13 +54,10 @@ func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	return oCfg
 }
 
-func buildExporterSettings(params exporter.Settings, endpoint string) exporter.Settings {
+func buildExporterSettings(typ component.Type, params exporter.Settings, endpoint string) exporter.Settings {
 	// Override child exporter ID to segregate metrics from loadbalancing top level
-	childName := endpoint
-	if params.ID.Name() != "" {
-		childName = fmt.Sprintf("%s_%s", params.ID.Name(), childName)
-	}
-	params.ID = component.NewIDWithName(params.ID.Type(), childName)
+	childName := fmt.Sprintf("%s_%s", params.ID, endpoint)
+	params.ID = component.NewIDWithName(typ, childName)
 	// Add "endpoint" attribute to child exporter logger to segregate logs from loadbalancing top level
 	params.Logger = params.Logger.With(zap.String(zapEndpointKey, endpoint))
 

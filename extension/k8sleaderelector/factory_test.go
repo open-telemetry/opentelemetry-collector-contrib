@@ -71,7 +71,7 @@ func TestNewFactory(t *testing.T) {
 				f := NewFactory()
 				_, err := f.Create(
 					context.Background(),
-					extensiontest.NewNopSettingsWithType(f.Type()),
+					extensiontest.NewNopSettings(f.Type()),
 					cfg,
 				)
 				require.NoError(t, err)

@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	"go.uber.org/zap"
 )
 
 func TestPushLogData(t *testing.T) {
@@ -29,7 +30,8 @@ func TestPushLogData(t *testing.T) {
 	err = config.Validate()
 	require.NoError(t, err)
 
-	exporter := newLogsExporter(nil, config, componenttest.NewNopTelemetrySettings())
+	logger := zap.NewNop()
+	exporter := newLogsExporter(logger, config, componenttest.NewNopTelemetrySettings())
 
 	ctx := context.Background()
 

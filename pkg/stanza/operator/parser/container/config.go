@@ -79,7 +79,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		criConsumers:            &wg,
 	}
 
-	cLogEmitter := helper.NewLogEmitter(set, p.consumeEntries)
+	cLogEmitter := helper.NewBatchingLogEmitter(set, p.consumeEntries)
 	p.criLogEmitter = cLogEmitter
 	recombineParser, err := createRecombine(set, c, cLogEmitter)
 	if err != nil {
@@ -100,7 +100,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 //	max_log_size: 102400
 //	source_identifier: attributes["log.file.path"]
 //	type: recombine
-func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.LogEmitter) (operator.Operator, error) {
+func createRecombine(set component.TelemetrySettings, c Config, cLogEmitter *helper.BatchingLogEmitter) (operator.Operator, error) {
 	recombineParserCfg := createRecombineConfig(c)
 	recombineParser, err := recombineParserCfg.Build(set)
 	if err != nil {

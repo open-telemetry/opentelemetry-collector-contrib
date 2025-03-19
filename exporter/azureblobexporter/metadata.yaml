@@ -1,0 +1,16 @@
+type: azureblob
+scope_name: otelcol/azureblobexporter
+
+status:
+  class: exporter
+  stability:
+    development: [traces, metrics, logs]
+  codeowners:
+    active: [hgaol]
+
+tests:
+  config:
+  expect_consumer_error: true
+  skip_lifecycle: true
+  goleak:
+    skip: true

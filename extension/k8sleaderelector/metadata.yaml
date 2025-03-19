@@ -3,7 +3,7 @@ type: k8s_leader_elector
 status:
   class: extension
   stability:
-    development: [extension]
+    alpha: [extension]
   distributions: []
   codeowners:
     active: [dmitryax, rakesh-garimella]

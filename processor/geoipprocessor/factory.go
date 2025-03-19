@@ -21,10 +21,13 @@ import (
 
 var (
 	processorCapabilities = consumer.Capabilities{MutatesData: true}
-	// defaultResourceAttributes holds a list of default resource attribute keys.
+	// defaultAttributes holds a list of default resource attribute keys.
 	// These keys are used to identify an IP address attribute associated with the resource.
-	defaultResourceAttributes = []attribute.Key{
-		semconv.SourceAddressKey, // This key represents the standard source address attribute as defined in the OpenTelemetry semantic conventions.
+	defaultAttributes = []attribute.Key{
+		// The client attributes are in use by the HTTP semantic conventions
+		semconv.ClientAddressKey,
+		// The source attributes are used when there is no client/server relationship between the two sides, or when that relationship is unknown
+		semconv.SourceAddressKey,
 	}
 )
 
@@ -52,7 +55,8 @@ func getProviderFactory(key string) (provider.GeoIPProviderFactory, bool) {
 // createDefaultConfig returns a default configuration for the processor.
 func createDefaultConfig() component.Config {
 	return &Config{
-		Context: resource,
+		Context:    resource,
+		Attributes: defaultAttributes,
 	}
 }
 
@@ -88,7 +92,7 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -97,7 +101,7 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processTraces, processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
@@ -106,5 +110,5 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, defaultResourceAttributes, providers, set).processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processLogs, processorhelper.WithCapabilities(processorCapabilities))
 }

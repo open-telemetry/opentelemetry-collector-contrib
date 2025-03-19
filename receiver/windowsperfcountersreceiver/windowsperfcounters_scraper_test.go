@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -214,9 +213,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			scraper := newScraper(cfg, settings)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			if test.startErr == "" {
-				require.Equal(t, 0, obs.Len())
-			} else {
+			if test.startErr != "" {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
 				assert.Equal(t, zapcore.WarnLevel, log.Level)
@@ -225,6 +222,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				assert.EqualError(t, log.Context[0].Interface.(error), test.startErr)
 				return
 			}
+			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -555,14 +553,13 @@ func TestScrape(t *testing.T) {
 							expectedAttributeLen++
 						}
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
-						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
-								return true
+								continue
 							}
 							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
-							return true
-						})
+						}
 					}
 					curMetricsNum++
 				}

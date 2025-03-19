@@ -4,11 +4,10 @@
 package azuremonitorreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver"
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 	"regexp"
-	"sort"
+	"slices"
 	"strings"
 	"sync"
 	"time"
@@ -57,6 +56,8 @@ const (
 	attributeResourceType  = "type"
 	metadataPrefix         = "metadata_"
 	tagPrefix              = "tags_"
+	truncateTimeGrain      = time.Minute
+	filterAllAggregations  = "*"
 )
 
 type azureResource struct {
@@ -64,11 +65,13 @@ type azureResource struct {
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
 	metricsDefinitionsUpdated time.Time
 	tags                      map[string]*string
+	resourceType              *string
 }
 
 type metricsCompositeKey struct {
-	dimensions string // comma separated sorted dimensions
-	timeGrain  string
+	dimensions   string // comma separated sorted dimensions
+	aggregations string // comma separated sorted aggregations
+	timeGrain    string
 }
 
 type azureResourceMetrics struct {
@@ -77,6 +80,16 @@ type azureResourceMetrics struct {
 }
 
 type void struct{}
+
+type timeNowIface interface {
+	Now() time.Time
+}
+
+type timeWrapper struct{}
+
+func (*timeWrapper) Now() time.Time {
+	return time.Now()
+}
 
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
@@ -91,6 +104,7 @@ func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
 		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
 		mutex:                           &sync.Mutex{},
+		time:                            &timeWrapper{},
 	}
 }
 
@@ -115,6 +129,7 @@ type azureScraper struct {
 	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
 	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
 	mutex                           *sync.Mutex
+	time                            timeNowIface
 }
 
 type armClient interface {
@@ -281,8 +296,9 @@ func (s *azureScraper) getResources(ctx context.Context) {
 					attributes[attributeLocation] = resource.Location
 				}
 				s.resources[*resource.ID] = &azureResource{
-					attributes: attributes,
-					tags:       resource.Tags,
+					attributes:   attributes,
+					tags:         resource.Tags,
+					resourceType: resource.Type,
 				}
 			}
 			delete(existingResources, *resource.ID)
@@ -337,21 +353,20 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 		}
 
 		for _, v := range nextResult.Value {
-			timeGrain := *v.MetricAvailabilities[0].TimeGrain
-			name := *v.Name.Value
-			compositeKey := metricsCompositeKey{timeGrain: timeGrain}
-
-			if len(v.Dimensions) > 0 {
-				var dimensionsSlice []string
-				for _, dimension := range v.Dimensions {
-					if len(strings.TrimSpace(*dimension.Value)) > 0 {
-						dimensionsSlice = append(dimensionsSlice, *dimension.Value)
-					}
-				}
-				sort.Strings(dimensionsSlice)
-				compositeKey.dimensions = strings.Join(dimensionsSlice, ",")
+			metricName := *v.Name.Value
+			metricAggregations := getMetricAggregations(*v.Namespace, metricName, s.cfg.Metrics)
+			if len(metricAggregations) == 0 {
+				continue
 			}
-			s.storeMetricsDefinition(resourceID, name, compositeKey)
+
+			timeGrain := *v.MetricAvailabilities[0].TimeGrain
+			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[resourceID].resourceType, metricName)
+			compositeKey := metricsCompositeKey{
+				timeGrain:    timeGrain,
+				dimensions:   serializeDimensions(dimensions),
+				aggregations: strings.Join(metricAggregations, ","),
+			}
+			s.storeMetricsDefinition(resourceID, metricName, compositeKey)
 		}
 	}
 	s.resources[resourceID].metricsDefinitionsUpdated = time.Now()
@@ -369,12 +384,13 @@ func (s *azureScraper) storeMetricsDefinition(resourceID, name string, composite
 
 func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
 	res := *s.resources[resourceID]
+	updatedAt := s.time.Now().Truncate(truncateTimeGrain)
 
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
-		if time.Since(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
+		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
 			continue
 		}
-		metricsByGrain.metricsValuesUpdated = time.Now()
+		metricsByGrain.metricsValuesUpdated = updatedAt
 
 		start := 0
 
@@ -388,6 +404,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 				metricsByGrain.metrics,
 				compositeKey.dimensions,
 				compositeKey.timeGrain,
+				compositeKey.aggregations,
 				start,
 				end,
 				s.cfg.MaximumNumberOfRecordsPerResource,
@@ -435,34 +452,19 @@ func getResourceMetricsValuesRequestOptions(
 	metrics []string,
 	dimensionsStr string,
 	timeGrain string,
+	aggregationsStr string,
 	start int,
 	end int,
 	top int32,
 ) armmonitor.MetricsClientListOptions {
-	resType := strings.Join(metrics[start:end], ",")
-	filter := armmonitor.MetricsClientListOptions{
-		Metricnames: &resType,
+	return armmonitor.MetricsClientListOptions{
+		Metricnames: to.Ptr(strings.Join(metrics[start:end], ",")),
 		Interval:    to.Ptr(timeGrain),
 		Timespan:    to.Ptr(timeGrain),
-		Aggregation: to.Ptr(strings.Join(aggregations, ",")),
+		Aggregation: to.Ptr(aggregationsStr),
 		Top:         to.Ptr(top),
+		Filter:      buildDimensionsFilter(dimensionsStr),
 	}
-
-	if len(dimensionsStr) > 0 {
-		var dimensionsFilter bytes.Buffer
-		dimensions := strings.Split(dimensionsStr, ",")
-		for i, dimension := range dimensions {
-			dimensionsFilter.WriteString(dimension)
-			dimensionsFilter.WriteString(" eq '*' ")
-			if i < len(dimensions)-1 {
-				dimensionsFilter.WriteString(" and ")
-			}
-		}
-		dimensionFilterString := dimensionsFilter.String()
-		filter.Filter = &dimensionFilterString
-	}
-
-	return filter
 }
 
 func (s *azureScraper) processTimeseriesData(
@@ -499,4 +501,50 @@ func (s *azureScraper) processTimeseriesData(
 			)
 		}
 	}
+}
+
+func getMetricAggregations(metricNamespace, metricName string, filters NestedListAlias) []string {
+	// default behavior when no metric filters specified: pass all metrics with all aggregations
+	if len(filters) == 0 {
+		return aggregations
+	}
+
+	metricsFilters, ok := mapFindInsensitive(filters, metricNamespace)
+	// metric namespace not found or it's empty: pass all metrics from the namespace
+	if !ok || len(metricsFilters) == 0 {
+		return aggregations
+	}
+
+	aggregationsFilters, ok := mapFindInsensitive(metricsFilters, metricName)
+	// if target metric is absent in metrics map: filter out metric
+	if !ok {
+		return []string{}
+	}
+	// allow all aggregations if others are not specified
+	if len(aggregationsFilters) == 0 || slices.Contains(aggregationsFilters, filterAllAggregations) {
+		return aggregations
+	}
+
+	// collect known supported aggregations
+	out := []string{}
+	for _, filter := range aggregationsFilters {
+		for _, aggregation := range aggregations {
+			if strings.EqualFold(aggregation, filter) {
+				out = append(out, aggregation)
+			}
+		}
+	}
+
+	return out
+}
+
+func mapFindInsensitive[T any](m map[string]T, key string) (T, bool) {
+	for k, v := range m {
+		if strings.EqualFold(key, k) {
+			return v, true
+		}
+	}
+
+	var got T
+	return got, false
 }

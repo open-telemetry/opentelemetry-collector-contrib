@@ -167,10 +167,10 @@ func TestValidate(t *testing.T) {
 					ReadBufferSize:      100,
 					WriteBufferSize:     200,
 					Timeout:             10 * time.Second,
-					IdleConnTimeout:     &idleConnTimeout,
-					MaxIdleConns:        &maxIdleConn,
-					MaxIdleConnsPerHost: &maxIdleConnPerHost,
-					MaxConnsPerHost:     &maxConnPerHost,
+					IdleConnTimeout:     idleConnTimeout,
+					MaxIdleConns:        maxIdleConn,
+					MaxIdleConnsPerHost: maxIdleConnPerHost,
+					MaxConnsPerHost:     maxConnPerHost,
 					DisableKeepAlives:   true,
 					TLSSetting:          configtls.ClientConfig{InsecureSkipVerify: true},
 				},
@@ -224,10 +224,10 @@ func TestUnmarshal(t *testing.T) {
 	cfgWithHTTPConfigs.ReadBufferSize = 100
 	cfgWithHTTPConfigs.WriteBufferSize = 200
 	cfgWithHTTPConfigs.Timeout = 10 * time.Second
-	cfgWithHTTPConfigs.MaxIdleConns = &maxIdleConn
-	cfgWithHTTPConfigs.MaxIdleConnsPerHost = &maxIdleConnPerHost
-	cfgWithHTTPConfigs.MaxConnsPerHost = &maxConnPerHost
-	cfgWithHTTPConfigs.IdleConnTimeout = &idleConnTimeout
+	cfgWithHTTPConfigs.MaxIdleConns = maxIdleConn
+	cfgWithHTTPConfigs.MaxIdleConnsPerHost = maxIdleConnPerHost
+	cfgWithHTTPConfigs.MaxConnsPerHost = maxConnPerHost
+	cfgWithHTTPConfigs.IdleConnTimeout = idleConnTimeout
 	cfgWithHTTPConfigs.DisableKeepAlives = true
 	cfgWithHTTPConfigs.TLSSetting.InsecureSkipVerify = true
 	cfgWithHTTPConfigs.warnings = nil

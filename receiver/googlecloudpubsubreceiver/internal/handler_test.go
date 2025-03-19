@@ -43,7 +43,7 @@ func TestCancelStream(t *testing.T) {
 	})
 	assert.NoError(t, err)
 
-	settings := receivertest.NewNopSettings()
+	settings := receivertest.NewNopSettings(metadata.Type)
 	telemetryBuilder, _ := metadata.NewTelemetryBuilder(settings.TelemetrySettings)
 
 	client, err := pubsub.NewSubscriberClient(ctx, copts...)

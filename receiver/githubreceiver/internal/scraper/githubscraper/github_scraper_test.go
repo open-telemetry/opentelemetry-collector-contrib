@@ -165,7 +165,7 @@ func TestScrape(t *testing.T) {
 
 			cfg := &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()}
 
-			ghs := newGitHubScraper(receivertest.NewNopSettings(), cfg)
+			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
 			ghs.cfg.ClientConfig.Endpoint = server.URL
 

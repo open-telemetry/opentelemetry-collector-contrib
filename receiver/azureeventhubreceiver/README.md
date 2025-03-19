@@ -34,6 +34,7 @@ Default: ""
 
 ### offset (Optional)
 The offset at which to start watching the event hub. If empty, it starts with the latest offset.
+Only applicable when `partition` is set.
 
 Default: ""
 

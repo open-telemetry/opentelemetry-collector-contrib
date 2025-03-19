@@ -31,6 +31,8 @@ import (
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 )
 
 func TestNewExporter(t *testing.T) {
@@ -66,7 +68,7 @@ func TestNewExporter(t *testing.T) {
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
 
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -85,6 +87,61 @@ func TestNewExporter(t *testing.T) {
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
 	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+}
+
+func TestNewExporter_Serializer(t *testing.T) {
+	require.NoError(t, enableMetricExportSerializer())
+	defer require.NoError(t, enableNativeMetricExport())
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &Config{
+		API: APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: HistogramConfig{
+				Mode:             HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: SumConfig{
+				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+			HostnameSource: HostnameSourceFirstResource,
+		},
+	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	var err error
+	params.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
@@ -391,7 +448,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -401,20 +458,18 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				nil,
 				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {
@@ -476,7 +531,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	f := NewFactory()
 
 	// The client should have been created correctly
@@ -837,7 +892,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 			acfg := traceconfig.New()
 			exp, err := newMetricsExporter(
 				context.Background(),
-				exportertest.NewNopSettings(),
+				exportertest.NewNopSettings(metadata.Type),
 				newTestConfig(t, server.URL, tt.hostTags, tt.histogramMode),
 				acfg,
 				&once,
@@ -847,20 +902,18 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				nil,
 				gatewayUsage,
 			)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			exp.getPushTime = func() uint64 { return 0 }
 			err = exp.PushMetricsData(context.Background(), tt.metrics)
-			if tt.expectedErr == nil {
-				assert.NoError(t, err, "unexpected error")
-			} else {
+			if tt.expectedErr != nil {
 				assert.Equal(t, tt.expectedErr, err, "expected error doesn't match")
 				return
 			}
+			assert.NoError(t, err, "unexpected error")
 			if len(tt.expectedSeries) == 0 {
 				assert.Nil(t, seriesRecorder.ByteBody)
 			} else {
@@ -949,6 +1002,9 @@ func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMo
 	return &Config{
 		HostMetadata: HostMetadataConfig{
 			Tags: hostTags,
+		},
+		TagsConfig: TagsConfig{
+			Hostname: "test-host",
 		},
 		Metrics: MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{

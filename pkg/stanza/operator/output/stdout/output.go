@@ -6,6 +6,7 @@ package stdout // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"sync"
 
 	"go.uber.org/zap"
@@ -19,6 +20,14 @@ type Output struct {
 	helper.OutputOperator
 	encoder *json.Encoder
 	mux     sync.Mutex
+}
+
+func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	var errs []error
+	for i := range entries {
+		errs = append(errs, o.Process(ctx, entries[i]))
+	}
+	return errors.Join(errs...)
 }
 
 // Process will log entries received.

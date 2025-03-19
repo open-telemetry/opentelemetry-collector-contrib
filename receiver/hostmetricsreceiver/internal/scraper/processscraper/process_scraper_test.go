@@ -108,7 +108,7 @@ func TestScrape(t *testing.T) {
 			}
 			ctx := context.WithValue(context.Background(), common.EnvKey, envMap)
 			ctx = clock.Context(ctx, clock.NewMock(time.Unix(200, 0)))
-			scraper, err := newProcessScraper(scrapertest.NewNopSettings(), cfg)
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), cfg)
 			if test.mutateScraper != nil {
 				test.mutateScraper(scraper)
 			}
@@ -389,11 +389,11 @@ func getMetricSlice(t *testing.T, rm pmetric.ResourceMetrics) pmetric.MetricSlic
 func TestScrapeMetrics_NewError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	_, err := newProcessScraper(scrapertest.NewNopSettings(), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Include: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process include filters:", err.Error())
 
-	_, err = newProcessScraper(scrapertest.NewNopSettings(), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	_, err = newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{Exclude: MatchConfig{Names: []string{"test"}}, MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	require.Error(t, err)
 	require.Regexp(t, "^error creating process exclude filters:", err.Error())
 }
@@ -401,7 +401,7 @@ func TestScrapeMetrics_NewError(t *testing.T) {
 func TestScrapeMetrics_GetProcessesError(t *testing.T) {
 	skipTestOnUnsupportedOS(t)
 
-	scraper, err := newProcessScraper(scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
+	scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig()})
 	require.NoError(t, err, "Failed to create process scraper: %v", err)
 
 	scraper.getProcessHandles = func(context.Context) (processHandles, error) { return nil, errors.New("err1") }
@@ -684,7 +684,7 @@ func TestScrapeMetrics_Filtered(t *testing.T) {
 				}
 			}
 
-			scraper, err := newProcessScraper(scrapertest.NewNopSettings(), config)
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -910,7 +910,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				metricsBuilderConfig.Metrics.ProcessDiskIo.Enabled = false
 			}
 
-			scraper, err := newProcessScraper(scrapertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsBuilderConfig})
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsBuilderConfig})
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -1189,7 +1189,7 @@ func TestScrapeMetrics_MuteErrorFlags(t *testing.T) {
 				config.MuteProcessUserError = test.muteProcessUserError
 				config.MuteProcessAllErrors = test.muteProcessAllErrors
 			}
-			scraper, err := newProcessScraper(scrapertest.NewNopSettings(), config)
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -1261,7 +1261,7 @@ func TestScrapeMetrics_DontCheckDisabledMetrics(t *testing.T) {
 	t.Run("Metrics don't log errors when disabled", func(t *testing.T) {
 		config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
 
-		scraper, err := newProcessScraper(scrapertest.NewNopSettings(), config)
+		scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 		require.NoError(t, err, "Failed to create process scraper: %v", err)
 		err = scraper.start(context.Background(), componenttest.NewNopHost())
 		require.NoError(t, err, "Failed to initialize process scraper: %v", err)
@@ -1331,7 +1331,7 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 
 			config := &Config{MetricsBuilderConfig: metricsBuilderConfig}
 
-			scraper, err := newProcessScraper(scrapertest.NewNopSettings(), config)
+			scraper, err := newProcessScraper(scrapertest.NewNopSettings(metadata.Type), config)
 			require.NoError(t, err, "Failed to create process scraper: %v", err)
 			err = scraper.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err, "Failed to initialize process scraper: %v", err)

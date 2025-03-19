@@ -128,13 +128,12 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 // Create a unique string signature for attributes values sorted by attribute keys.
 func getAttributesSignature(m pcommon.Map) [16]byte {
 	clearedMap := pcommon.NewMap()
-	m.Range(func(k string, attrValue pcommon.Value) bool {
+	for k, attrValue := range m.All() {
 		value := attrValue.Str()
 		if value != "" {
 			clearedMap.PutStr(k, value)
 		}
-		return true
-	})
+	}
 	return pdatautil.MapHash(clearedMap)
 }
 
@@ -260,6 +259,9 @@ func NewInitialPointAdjuster(logger *zap.Logger, gcInterval time.Duration, useCr
 // AdjustMetrics takes a sequence of metrics and adjust their start times based on the initial and
 // previous points in the timeseriesMap.
 func (a *initialPointAdjuster) AdjustMetrics(metrics pmetric.Metrics) error {
+	if removeStartTimeAdjustment.IsEnabled() {
+		return nil
+	}
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 		_, found := rm.Resource().Attributes().Get(semconv.AttributeServiceName)

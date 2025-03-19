@@ -616,7 +616,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -640,7 +640,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -664,7 +664,7 @@ func TestE2E_NamespacedRBAC(t *testing.T) {
 				"k8s.container.name":           newExpectedValue(equal, "telemetrygen"),
 				"container.image.name":         newExpectedValue(equal, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen"),
 				"container.image.repo_digests": newExpectedValue(regex, "ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:[0-9a-fA-f]{64}"),
-				"container.image.tag":          newExpectedValue(shouldnotexist, ""),
+				"container.image.tag":          newExpectedValue(equal, "latest"),
 				"container.id":                 newExpectedValue(exist, ""),
 			},
 		},
@@ -1731,13 +1731,13 @@ func startUpSinks(t *testing.T, mc *consumertest.MetricsSink, tc *consumertest.T
 	cfg.HTTP = nil
 	cfg.GRPC.NetAddr.Endpoint = "0.0.0.0:4317"
 
-	_, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, mc)
+	_, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, mc)
 	require.NoError(t, err, "failed creating metrics receiver")
-	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, tc)
+	_, err = f.CreateTraces(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, tc)
 	require.NoError(t, err, "failed creating traces receiver")
-	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, lc)
+	_, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, lc)
 	require.NoError(t, err, "failed creating logs receiver")
-	rcvr, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(), cfg, pc)
+	rcvr, err := f.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, pc)
 	require.NoError(t, err, "failed creating profiles receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 	return func() {

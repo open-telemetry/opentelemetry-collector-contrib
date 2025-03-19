@@ -137,7 +137,3 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 	}
 	c.unique[timeSeriesSignature(lbls)] = &ts
 }
-
-// TODO: implement this function.
-func (c *prometheusConverterV2) addTimeSeriesIfNeeded(_ []prompb.Label, _ pcommon.Timestamp, _ pcommon.Timestamp) {
-}

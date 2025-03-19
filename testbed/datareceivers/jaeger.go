@@ -37,7 +37,7 @@ func (jr *jaegerDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 		NetAddr: confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", jr.Port), Transport: confignet.TransportTypeTCP},
 	}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	jr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {
 		return err

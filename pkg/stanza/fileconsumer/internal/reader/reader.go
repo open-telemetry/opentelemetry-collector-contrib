@@ -16,7 +16,6 @@ import (
 	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/header"
@@ -55,6 +54,7 @@ type Reader struct {
 	includeFileRecordNum   bool
 	compression            string
 	acquireFSLock          bool
+	maxBatchSize           int
 }
 
 // ReadToEnd will read until the end of the file
@@ -85,9 +85,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 				r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
 			}
 			return
-		} else {
-			r.reader = gzipReader
 		}
+		r.reader = gzipReader
 		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
 		// we need to set the offset to the end of the file.
 		defer func() {
@@ -188,6 +187,8 @@ func (r *Reader) readContents(ctx context.Context) {
 
 	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
 
+	tokenBodies := make([][]byte, r.maxBatchSize)
+	numTokensBatched := 0
 	// Iterate over the contents of the file.
 	for {
 		select {
@@ -203,27 +204,38 @@ func (r *Reader) readContents(ctx context.Context) {
 			} else if r.deleteAtEOF {
 				r.delete()
 			}
+
+			if numTokensBatched > 0 {
+				err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+				if err != nil {
+					r.set.Logger.Error("failed to emit token", zap.Error(err))
+				}
+				r.Offset = s.Pos()
+			}
 			return
 		}
 
-		token, err := r.decoder.Bytes(s.Bytes())
+		var err error
+		tokenBodies[numTokensBatched], err = r.decoder.Bytes(s.Bytes())
 		if err != nil {
 			r.set.Logger.Error("failed to decode token", zap.Error(err))
 			r.Offset = s.Pos() // move past the bad token or we may be stuck
 			continue
 		}
+		numTokensBatched++
 
 		if r.includeFileRecordNum {
 			r.RecordNum++
-			r.FileAttributes[attrs.LogFileRecordNumber] = r.RecordNum
 		}
 
-		err = r.emitFunc(ctx, emit.NewToken(token, r.FileAttributes))
-		if err != nil {
-			r.set.Logger.Error("failed to process token", zap.Error(err))
+		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
+			err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
+			if err != nil {
+				r.set.Logger.Error("failed to emit token", zap.Error(err))
+			}
+			numTokensBatched = 0
+			r.Offset = s.Pos()
 		}
-
-		r.Offset = s.Pos()
 	}
 }
 

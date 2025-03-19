@@ -12,3 +12,7 @@ status:
 tests:
   config:
     endpoints: [http://localhost:9200]
+    mapping:
+      # Set mapping mode to otel, since the default ("none") does
+      # not support all signals.
+      mode: otel

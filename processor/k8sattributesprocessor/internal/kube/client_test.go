@@ -1358,7 +1358,7 @@ func TestFilters(t *testing.T) {
 		}, {
 			name: "labels-and-fields",
 			filters: Filters{
-				Labels: []FieldFilter{
+				Labels: []LabelFilter{
 					{
 						Key:   "k1",
 						Value: "v1",
@@ -1733,6 +1733,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"container2-id-456": {
 						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
@@ -1762,6 +1763,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					},
 					"container2": {
 						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
@@ -1841,24 +1843,69 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 	tests := []struct {
 		name    string
 		filters Filters
+		wantErr bool
 	}{
 		{
 			name: "label/invalid-op",
 			filters: Filters{
-				Labels: []FieldFilter{{Op: "invalid-op"}},
+				Labels: []LabelFilter{{Op: "invalid-op"}},
 			},
+			wantErr: true,
+		},
+		{
+			name: "label/equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Equals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/not-equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotEquals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/exists",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Exists}},
+			},
+		},
+		{
+			name: "label/does-not-exist",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.DoesNotExist}},
+			},
+		},
+		{
+			name: "label/in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.In}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "label/not-in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotIn}},
+			},
+			wantErr: true,
 		},
 		{
 			name: "fields/invalid-op",
 			filters: Filters{
 				Fields: []FieldFilter{{Op: selection.Exists}},
 			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := selectorsFromFilters(tt.filters)
-			assert.Error(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

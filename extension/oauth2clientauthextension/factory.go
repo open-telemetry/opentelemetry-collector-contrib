@@ -9,7 +9,6 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
-	"go.opentelemetry.io/collector/extension/auth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension/internal/metadata"
 )
@@ -31,13 +30,5 @@ func createDefaultConfig() component.Config {
 }
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	ca, err := newClientAuthenticator(cfg.(*Config), set.Logger)
-	if err != nil {
-		return nil, err
-	}
-
-	return auth.NewClient(
-		auth.WithClientRoundTripper(ca.roundTripper),
-		auth.WithClientPerRPCCredentials(ca.perRPCCredentials),
-	), nil
+	return newClientAuthenticator(cfg.(*Config), set.Logger)
 }

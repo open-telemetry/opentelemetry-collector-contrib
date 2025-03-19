@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
@@ -241,7 +242,7 @@ func TestTracesToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateTracesToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -421,7 +422,7 @@ func TestMetricsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateMetricsToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -597,7 +598,7 @@ func TestLogsToMetrics(t *testing.T) {
 			factory := NewFactory()
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
-				connectortest.NewNopSettings(), tc.cfg, sink)
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)

@@ -186,11 +186,11 @@ func (mp *MetricsProducer) updateEntityInformation(labels map[string]string, met
 	hostname, found := resourceAttrs[conventions.AttributeHostName]
 	if !found || hostname == "" {
 		// Fallback to metric attributes if not found or empty in resource attributes
-		if maybeHostname, ok := dpAttributes[conventions.AttributeHostName].(string); ok && maybeHostname != "" {
-			hostname = maybeHostname
-		} else {
+		maybeHostname, ok := dpAttributes[conventions.AttributeHostName].(string)
+		if !ok || maybeHostname == "" {
 			return fmt.Errorf("the hostname is required for the BMC Helix Operations Management payload but not set for metric %s. Metric datapoint will be skipped", metricName)
 		}
+		hostname = maybeHostname
 	}
 
 	// Add the hostname as a label (required for BMC Helix Operations Management payload)
@@ -253,10 +253,9 @@ func newSample(dp pmetric.NumberDataPoint) BMCHelixOMSample {
 func extractResourceAttributes(resource pcommon.Resource) map[string]string {
 	attributes := make(map[string]string)
 
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resource.Attributes().All() {
 		attributes[k] = v.AsString()
-		return true
-	})
+	}
 
 	return attributes
 }

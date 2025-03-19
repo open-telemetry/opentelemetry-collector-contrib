@@ -15,9 +15,10 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-var creationSet = receivertest.NewNopSettings()
+var creationSet = receivertest.NewNopSettings(metadata.Type)
 
 type mockConfig struct{}
 

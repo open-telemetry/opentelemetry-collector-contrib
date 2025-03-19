@@ -19,6 +19,17 @@ The resource detection processor can be used to detect resource information from
 in a format that conforms to the [OpenTelemetry resource semantic conventions](https://github.com/open-telemetry/semantic-conventions/tree/main/docs/resource), and append or
 override the resource value in telemetry data with this information.
 
+> **Note**
+>
+> If a configured resource detector fails in some way, the error it returns to the processor will be logged, and the collector will continue to run. This behavior is configurable using a feature gate, however the error behavior of each independent resource detector may vary.
+>
+> This feature can be controlled with [feature gate](https://github.com/open-telemetry/opentelemetry-collector/tree/main/featuregate) `processor.resourcedetection.propagateerrors`. It is currently disabled by default (alpha stage).
+>
+>  Example of how to enable it:
+> ```shell-session
+> $ otelcol --config=config.yaml --feature-gates=processor.resourcedetection.propagateerrors
+> ```
+
 ## Supported detectors
 
 ### Environment Variable
@@ -468,6 +479,10 @@ rules:
     resources: ["configmaps"]
     resourceNames: ["kubeadm-config"]
     verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
+    verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
@@ -598,8 +613,16 @@ Example:
 ```yaml
 processors:
   resourcedetection/dynatrace:
+    override: false
     detectors: [dynatrace]
 ```
+
+It is strongly recommended to use the `override: false` configuration option, to prevent the detector from overwriting
+existing resource attributes.
+If the Dynatrace host entity identifier attribute `dt.entity.host` or `host.name` are already present on incoming data as it is sent from
+other sources to the collector, then these describe the monitored entity in the best way.
+Overriding these with the collector's own identifier would instead make the telemetry appear as if it was coming from the collector
+or the collector's host instead, which might be inaccurate.
 
 ## Configuration
 

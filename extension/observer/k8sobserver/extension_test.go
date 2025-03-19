@@ -35,7 +35,7 @@ func TestNewExtension(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	ext, err := newObserver(config, extensiontest.NewNopSettingsWithType(factory.Type()))
+	ext, err := newObserver(config, extensiontest.NewNopSettings(factory.Type()))
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -46,7 +46,7 @@ func TestExtensionObserveServices(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -135,7 +135,7 @@ func TestExtensionObservePods(t *testing.T) {
 	config := factory.CreateDefaultConfig().(*Config)
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -219,7 +219,7 @@ func TestExtensionObserveNodes(t *testing.T) {
 	config.ObservePods = false // avoid causing data race when multiple test cases running in the same process using podListerWatcher
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -320,7 +320,7 @@ func TestExtensionObserveIngresses(t *testing.T) {
 	config.ObserveIngresses = true
 	mockServiceHost(t, config)
 
-	set := extensiontest.NewNopSettingsWithType(factory.Type())
+	set := extensiontest.NewNopSettings(factory.Type())
 	set.ID = component.NewID(metadata.Type)
 	ext, err := newObserver(config, set)
 	require.NoError(t, err)
@@ -396,4 +396,5 @@ func TestExtensionObserveIngresses(t *testing.T) {
 	}, sink.removed[0])
 
 	require.NoError(t, ext.Shutdown(context.Background()))
+	obs.StopListAndWatch()
 }

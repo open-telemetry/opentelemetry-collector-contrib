@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/types"
 	"k8s.io/client-go/kubernetes/fake"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -54,9 +55,9 @@ func TestClusterName(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.testName, func(t *testing.T) {
 			kubeadmP := &kubeadmProvider{
-				kubeadmClient:      client,
-				configMapName:      tt.CMname,
-				configMapNamespace: tt.CMnamespace,
+				kubeadmClient:       client,
+				configMapName:       tt.CMname,
+				kubeSystemNamespace: tt.CMnamespace,
 			}
 			clusterName, err := kubeadmP.ClusterName(context.Background())
 			if tt.errMsg != "" {
@@ -64,6 +65,47 @@ func TestClusterName(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.Equal(t, clusterName, tt.clusterName)
+			}
+		})
+	}
+}
+
+func TestClusterUID(t *testing.T) {
+	client := fake.NewSimpleClientset()
+	err := setupNamespace(client)
+	assert.NoError(t, err)
+
+	tests := []struct {
+		testName    string
+		CMnamespace string
+		clusterUID  string
+		errMsg      string
+	}{
+		{
+			testName:    "valid",
+			CMnamespace: "ns",
+			clusterUID:  "uid",
+			errMsg:      "",
+		},
+		{
+			testName:    "ns not found",
+			CMnamespace: "ns2",
+			errMsg:      "failed to fetch Namespace ns2 from K8s API: namespaces \"ns2\" not found",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.testName, func(t *testing.T) {
+			kubeadmP := &kubeadmProvider{
+				kubeadmClient:       client,
+				kubeSystemNamespace: tt.CMnamespace,
+			}
+			clusterName, err := kubeadmP.ClusterUID(context.Background())
+			if tt.errMsg != "" {
+				assert.EqualError(t, err, tt.errMsg)
+			} else {
+				assert.NoError(t, err)
+				assert.Equal(t, tt.clusterUID, clusterName)
 			}
 		})
 	}
@@ -80,6 +122,20 @@ func setupConfigMap(client *fake.Clientset) error {
 		},
 	}
 	_, err := client.CoreV1().ConfigMaps("ns").Create(context.Background(), cm, metav1.CreateOptions{})
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func setupNamespace(client *fake.Clientset) error {
+	ns := &corev1.Namespace{
+		ObjectMeta: metav1.ObjectMeta{
+			UID:  types.UID("uid"),
+			Name: "ns",
+		},
+	}
+	_, err := client.CoreV1().Namespaces().Create(context.Background(), ns, metav1.CreateOptions{})
 	if err != nil {
 		return err
 	}

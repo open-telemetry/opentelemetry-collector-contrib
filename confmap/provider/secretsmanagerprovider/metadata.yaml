@@ -1,3 +1,9 @@
+type: secretsmanager
+
 status:
+  class: provider
+  stability:
+    alpha: [provider]
+  distributions: [contrib]
   codeowners:
     active: [driverpt, atoulme]

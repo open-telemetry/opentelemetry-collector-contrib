@@ -1,3 +1,9 @@
+type: aes
+
 status:
+  class: provider
+  stability:
+    alpha: [provider]
+  distributions: [contrib]
   codeowners:
     active: [djaglowski, shazlehu]

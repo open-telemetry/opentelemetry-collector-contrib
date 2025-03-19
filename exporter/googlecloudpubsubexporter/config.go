@@ -10,6 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
+	"go.uber.org/multierr"
 )
 
 var topicMatcher = regexp.MustCompile(`^projects/[a-z][a-z0-9\-]*/topics/`)
@@ -34,6 +35,8 @@ type Config struct {
 	Compression string `mapstructure:"compression"`
 	// Watermark defines the watermark (the ce-time attribute on the message) behavior
 	Watermark WatermarkConfig `mapstructure:"watermark"`
+	// Ordering configures the ordering keys
+	Ordering OrderingConfig `mapstructure:"ordering"`
 }
 
 // WatermarkConfig customizes the behavior of the watermark
@@ -46,15 +49,27 @@ type WatermarkConfig struct {
 	AllowedDrift time.Duration `mapstructure:"allowed_drift"`
 }
 
+// OrderingConfig customizes the behavior of the ordering
+type OrderingConfig struct {
+	// Enabled indicates if ordering is enabled
+	Enabled bool `mapstructure:"enabled"`
+	// FromResourceAttribute is a resource attribute that will be used as the ordering key.
+	FromResourceAttribute string `mapstructure:"from_resource_attribute"`
+	// RemoveResourceAttribute indicates if the ordering key should be removed from the resource attributes.
+	RemoveResourceAttribute bool `mapstructure:"remove_resource_attribute"`
+}
+
 func (config *Config) Validate() error {
+	var errors error
 	if !topicMatcher.MatchString(config.Topic) {
-		return fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic)
+		errors = multierr.Append(errors, fmt.Errorf("topic '%s' is not a valid format, use 'projects/<project_id>/topics/<name>'", config.Topic))
 	}
-	_, err := config.parseCompression()
-	if err != nil {
-		return err
+	if _, err := config.parseCompression(); err != nil {
+		errors = multierr.Append(errors, err)
 	}
-	return config.Watermark.validate()
+	errors = multierr.Append(errors, config.Watermark.validate())
+	errors = multierr.Append(errors, config.Ordering.validate())
+	return errors
 }
 
 func (config *WatermarkConfig) validate() error {
@@ -63,6 +78,13 @@ func (config *WatermarkConfig) validate() error {
 	}
 	_, err := config.parseWatermarkBehavior()
 	return err
+}
+
+func (cfg *OrderingConfig) validate() error {
+	if cfg.Enabled && cfg.FromResourceAttribute == "" {
+		return fmt.Errorf("'from_resource_attribute' is required if ordering is enabled")
+	}
+	return nil
 }
 
 func (config *Config) parseCompression() (compression, error) {

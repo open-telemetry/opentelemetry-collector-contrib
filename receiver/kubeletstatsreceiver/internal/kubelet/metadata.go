@@ -34,14 +34,14 @@ var supportedLabels = map[MetadataLabel]bool{
 func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
 	labelsFound := map[MetadataLabel]bool{}
 	for _, label := range labels {
-		if _, supported := supportedLabels[label]; supported {
-			if _, duplicate := labelsFound[label]; duplicate {
-				return fmt.Errorf("duplicate metadata label: %q", label)
-			}
-			labelsFound[label] = true
-		} else {
+		_, supported := supportedLabels[label]
+		if !supported {
 			return fmt.Errorf("label %q is not supported", label)
 		}
+		if _, duplicate := labelsFound[label]; duplicate {
+			return fmt.Errorf("duplicate metadata label: %q", label)
+		}
+		labelsFound[label] = true
 	}
 	return nil
 }

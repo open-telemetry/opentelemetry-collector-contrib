@@ -230,7 +230,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 	origPod := pods[0]
 	updatedPod := getUpdatedPod(origPod)
 
-	rw := newResourceWatcher(receivertest.NewNopSettings(), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
+	rw := newResourceWatcher(receivertest.NewNopSettings(metadata.Type), &Config{MetadataCollectionInterval: 2 * time.Hour}, metadata.NewStore())
 	rw.entityLogConsumer = logsConsumer
 
 	step1 := time.Now()
@@ -331,7 +331,8 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "container.id",
 					ResourceID:    "container-id",
 					Metadata: map[string]string{
-						"container.status": "running",
+						"container.status":             "running",
+						"container.creation_timestamp": "0001-01-01T01:01:01Z",
 					},
 				},
 			},
@@ -537,11 +538,38 @@ func TestObjMetadata(t *testing.T) {
 				},
 			},
 		},
+		{
+			name:          "Namespace metadata",
+			metadataStore: metadata.NewStore(),
+			resource: &corev1.Namespace{
+				ObjectMeta: metav1.ObjectMeta{
+					UID:               types.UID("test-namespace-uid"),
+					Name:              "test-namespace",
+					Namespace:         "default",
+					CreationTimestamp: metav1.Time{Time: time.Now()},
+				},
+				Status: corev1.NamespaceStatus{
+					Phase: corev1.NamespaceActive,
+				},
+			},
+			want: map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
+				experimentalmetricmetadata.ResourceID("test-namespace-uid"): {
+					EntityType:    "k8s.namespace",
+					ResourceIDKey: "k8s.namespace.uid",
+					ResourceID:    "test-namespace-uid",
+					Metadata: map[string]string{
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.namespace.phase":              "active",
+						"k8s.namespace.creation_timestamp": time.Now().Format(time.RFC3339),
+					},
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
-		set := receivertest.NewNopSettings()
+		set := receivertest.NewNopSettings(metadata.Type)
 		set.TelemetrySettings.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &resourceWatcher{metadataStore: tt.metadataStore}

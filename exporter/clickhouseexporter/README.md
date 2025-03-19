@@ -290,6 +290,11 @@ Connection options:
 - `compress` (default = lz4): Controls the compression algorithm. Valid options: `none` (disabled), `zstd`, `lz4` (default), `gzip`, `deflate`, `br`, `true` (lz4). Ignored if `compress` is set in the `endpoint` or `connection_params`.
 - `async_insert` (default = true): Enables [async inserts](https://clickhouse.com/docs/en/optimize/asynchronous-inserts). Ignored if async inserts are configured in the `endpoint` or `connection_params`. Async inserts may still be overridden server-side.
 
+Additional DSN features:
+
+The underlying `clickhouse-go` module offers additional configuration. These can be set in the exporter's `endpoint` or `connection_params` config values.
+- `client_info_product` Must be in `productName/version` format with comma separated entries. By default the exporter will append its binary build information. You can use this information to track the origin of `INSERT` statements in the `system.query_log` table.
+
 ClickHouse tables:
 
 - `logs_table_name` (default = otel_logs): The table name for logs.

@@ -39,13 +39,12 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		t.Skip("skipping test on Windows, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/17574")
 	}
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	addr, doneReceiverFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneReceiverFn()
 
 	n := 20
@@ -63,13 +62,12 @@ func TestEnsureRecordedMetrics(t *testing.T) {
 }
 
 func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	n := 20
@@ -86,16 +84,16 @@ func TestEnsureRecordedMetrics_zeroLengthSpansSender(t *testing.T) {
 }
 
 func TestExportSpanLinkingMaintainsParentLink(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(receiverID)
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
 
-	otel.SetTracerProvider(tt.TelemetrySettings().TracerProvider)
+	tel := tt.NewTelemetrySettings()
+	otel.SetTracerProvider(tel.TracerProvider)
 	defer otel.SetTracerProvider(nooptrace.NewTracerProvider())
 
-	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()})
+	port, doneFn := ocReceiverOnGRPCServer(t, consumertest.NewNop(), receiver.Settings{ID: receiverID, TelemetrySettings: tel, BuildInfo: component.NewDefaultBuildInfo()})
 	defer doneFn()
 
 	traceSvcClient, traceSvcDoneFn, err := makeTraceServiceClient(port)
@@ -148,7 +146,7 @@ func flush(traceSvcDoneFn func()) {
 	<-time.After(40 * time.Millisecond)
 }
 
-func assertReceiverTraces(t *testing.T, tt componenttest.TestTelemetry, id component.ID, accepted, refused int64) {
+func assertReceiverTraces(t *testing.T, tt *componenttest.Telemetry, id component.ID, accepted, refused int64) {
 	got, err := tt.GetMetric("otelcol_receiver_accepted_spans")
 	assert.NoError(t, err)
 	metricdatatest.AssertEqual(t,

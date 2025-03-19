@@ -1,0 +1,24 @@
+resourceMetrics:
+  - resource: {}
+    scopeMetrics:
+      - metrics:
+          - description: Records errors occurring during TCP check.
+            name: tcpcheck.error
+            sum:
+              dataPoints:
+                - asInt: 1
+                  attributes:
+                    - key: tcpcheck.endpoint
+                      value:
+                        stringValue: 127.0.0.1:9999
+                    - key: error.code
+                      value:
+                        stringValue: "dial tcp 127.0.0.1:9999: connect: connection refused"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              aggregationTemporality: AGGREGATION_TEMPORALITY_CUMULATIVE
+              isMonotonic: true
+            unit: "{error}"
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
+          version: latest

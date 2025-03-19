@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
@@ -38,7 +40,7 @@ func BenchmarkLogsConsumer_cwlogs(b *testing.B) {
 				config.Endpoint = "localhost:0"
 				r, err := createLogsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)
@@ -93,7 +95,7 @@ func BenchmarkMetricsConsumer_cwmetrics(b *testing.B) {
 				config.Endpoint = "localhost:0"
 				r, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					config,
 					consumertest.NewNop(),
 				)

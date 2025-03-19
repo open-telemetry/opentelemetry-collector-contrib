@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 func FuzzConsumeLogs(f *testing.F) {
@@ -20,7 +22,7 @@ func FuzzConsumeLogs(f *testing.F) {
 			return
 		}
 		sink := new(consumertest.LogsSink)
-		set := processortest.NewNopSettings()
+		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
 		lp, err := newProcessor(cfg, sink, set)
 		if err != nil {

@@ -51,9 +51,9 @@ func TestLoadConfig(t *testing.T) {
 	}
 	clientConfig.HTTP2PingTimeout = 10 * time.Second
 	clientConfig.HTTP2ReadIdleTimeout = 10 * time.Second
-	clientConfig.MaxIdleConns = &hundred
-	clientConfig.MaxIdleConnsPerHost = &hundred
-	clientConfig.IdleConnTimeout = &idleConnTimeout
+	clientConfig.MaxIdleConns = hundred
+	clientConfig.MaxIdleConnsPerHost = hundred
+	clientConfig.IdleConnTimeout = idleConnTimeout
 
 	tests := []struct {
 		id       component.ID
@@ -96,11 +96,10 @@ func TestLoadConfig(t *testing.T) {
 				BatcherConfig: exporterbatcher.Config{
 					Enabled:      true,
 					FlushTimeout: time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 1,
-					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 10,
+					SizeConfig: exporterbatcher.SizeConfig{
+						Sizer:   exporterbatcher.SizerTypeItems,
+						MinSize: 1,
+						MaxSize: 10,
 					},
 				},
 				OtelAttrsToHec: splunk.HecToOtelAttrs{

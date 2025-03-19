@@ -228,8 +228,8 @@ When submitting a component to the community, consider breaking it down into sep
   * Please also run:
     - `make generate`
     - `make genotelcontribcol`
-  * The component's tests must also be added as a part of its respective `component_type_tests.go` file in the `cmd/otelcontribcol` directory.
-  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector#alpha).
+ 
+  * The component must be enabled only after sufficient testing and only when it meets [`Alpha` stability requirements](https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha).
 * Once your component has reached `Alpha` stability, you may also submit a PR to the [OpenTelemetry Collector Releases](https://github.com/open-telemetry/opentelemetry-collector-releases) repository to include your component in future releases of the OpenTelemetry Collector `contrib` distribution.
 * Once a new component has been added to the executable:
   * Please add the component

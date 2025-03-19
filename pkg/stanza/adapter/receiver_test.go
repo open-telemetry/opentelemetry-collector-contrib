@@ -6,6 +6,7 @@ package adapter
 import (
 	"context"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sync/atomic"
@@ -39,7 +40,7 @@ func TestStart(t *testing.T) {
 
 	logsReceiver, err := factory.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(factory.Type()),
 		factory.CreateDefaultConfig(),
 		mockConsumer,
 	)
@@ -66,7 +67,7 @@ func TestHandleStartError(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*TestConfig)
 	cfg.Input = NewUnstartableConfig()
 
-	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
+	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = receiver.Start(context.Background(), componenttest.NewNopHost())
@@ -77,7 +78,7 @@ func TestHandleConsume(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -104,7 +105,7 @@ func TestHandleConsumeRetry(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.Enabled = true
 	cfg.(*TestConfig).BaseConfig.RetryOnFailure.InitialInterval = 10 * time.Millisecond
-	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), cfg, mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	require.NoError(t, logsReceiver.Start(context.Background(), componenttest.NewNopHost()))
@@ -126,7 +127,7 @@ func TestShutdownFlush(t *testing.T) {
 	mockConsumer := &consumertest.LogsSink{}
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
-	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(), factory.CreateDefaultConfig(), mockConsumer)
+	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), factory.CreateDefaultConfig(), mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
 	err = logsReceiver.Start(context.Background(), componenttest.NewNopHost())
@@ -164,46 +165,41 @@ func TestShutdownFlush(t *testing.T) {
 	)
 }
 
-func BenchmarkReceiver(b *testing.B) {
-	b.Run(
-		"1 Log entry per iteration",
-		func(b *testing.B) {
-			benchmarkReceiver(b, 1)
-		},
-	)
-	b.Run(
-		"10 Log entries per iteration",
-		func(b *testing.B) {
-			benchmarkReceiver(b, 10)
-		},
-	)
-	b.Run(
-		"100 Log entries per iteration",
-		func(b *testing.B) {
-			benchmarkReceiver(b, 100)
-		},
-	)
-	b.Run(
-		"1_000 Log entries per iteration",
-		func(b *testing.B) {
-			benchmarkReceiver(b, 1_000)
-		},
-	)
-	b.Run(
-		"10_000 Log entries per iteration",
-		func(b *testing.B) {
-			benchmarkReceiver(b, 10_000)
-		},
-	)
+func BenchmarkReceiverWithBatchingLogEmitter(b *testing.B) {
+	for n := range 6 {
+		logEntries := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d logs", logEntries), func(b *testing.B) {
+			benchmarkReceiver(b, logEntries, false, true)
+		})
+	}
 }
 
-func benchmarkReceiver(b *testing.B, logsPerIteration int) {
+func BenchmarkReceiverWithSynchronousLogEmitter(b *testing.B) {
+	for n := range 6 {
+		logEntries := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d logs", logEntries), func(b *testing.B) {
+			benchmarkReceiver(b, logEntries, false, false)
+		})
+	}
+}
+
+func BenchmarkReceiverWithSynchronousLogEmitterAndBatchingInput(b *testing.B) {
+	for n := range 6 {
+		logEntries := int(math.Pow(10, float64(n)))
+		b.Run(fmt.Sprintf("%d logs", logEntries), func(b *testing.B) {
+			benchmarkReceiver(b, logEntries, true, false)
+		})
+	}
+}
+
+func benchmarkReceiver(b *testing.B, logsPerIteration int, batchingInput, batchingLogEmitter bool) {
 	iterationComplete := make(chan struct{})
 	nextIteration := make(chan struct{})
 
 	inputBuilder := &testInputBuilder{
 		numberOfLogEntries: logsPerIteration,
 		nextIteration:      nextIteration,
+		produceBatches:     batchingInput,
 	}
 	inputCfg := operator.Config{
 		Builder: inputBuilder,
@@ -215,7 +211,7 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 		"test",
 	)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(component.MustNewType("foolog"))})
 	require.NoError(b, err)
 
 	mockConsumer := &testConsumer{
@@ -230,7 +226,12 @@ func benchmarkReceiver(b *testing.B, logsPerIteration int) {
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	var emitter helper.LogEmitter
+	if batchingLogEmitter {
+		emitter = helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
+	} else {
+		emitter = helper.NewSynchronousLogEmitter(set, rcv.consumeEntries)
+	}
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -291,7 +292,7 @@ pipeline:
 		"test",
 	)
 
-	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings()})
+	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(component.MustNewType("foolog"))})
 	require.NoError(b, err)
 
 	mockConsumer := &testConsumer{
@@ -306,7 +307,7 @@ pipeline:
 	}
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, rcv.consumeEntries)
+	emitter := helper.NewBatchingLogEmitter(set, rcv.consumeEntries)
 	defer func() {
 		require.NoError(b, emitter.Stop())
 	}()
@@ -368,7 +369,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	require.NoError(b, yaml.Unmarshal([]byte(pipelineYaml), &operatorCfgs))
 
 	set := componenttest.NewNopTelemetrySettings()
-	emitter := helper.NewLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
+	emitter := helper.NewBatchingLogEmitter(set, func(_ context.Context, entries []*entry.Entry) {
 		for _, e := range entries {
 			convert(e)
 		}
@@ -407,6 +408,7 @@ const testInputOperatorTypeStr = "test_input"
 type testInputBuilder struct {
 	numberOfLogEntries int
 	nextIteration      chan struct{}
+	produceBatches     bool
 }
 
 func (t *testInputBuilder) ID() string {
@@ -427,6 +429,7 @@ func (t *testInputBuilder) Build(settings component.TelemetrySettings) (operator
 	return &testInputOperator{
 		InputOperator:      inputOperator,
 		numberOfLogEntries: t.numberOfLogEntries,
+		produceBatches:     t.produceBatches,
 		nextIteration:      t.nextIteration,
 	}, nil
 }
@@ -438,6 +441,7 @@ var _ operator.Operator = &testInputOperator{}
 type testInputOperator struct {
 	helper.InputOperator
 	numberOfLogEntries int
+	produceBatches     bool
 	nextIteration      chan struct{}
 	cancelFunc         context.CancelFunc
 }
@@ -455,20 +459,28 @@ func (t *testInputOperator) Start(_ operator.Persister) error {
 	t.cancelFunc = cancelFunc
 
 	e := complexEntry()
-	go func() {
+	go func(writeBatches bool) {
 		for {
 			select {
 			case <-t.nextIteration:
-				for i := 0; i < t.numberOfLogEntries; i++ {
-					_ = t.Write(context.Background(), e)
+				if writeBatches {
+					for i := 0; i < t.numberOfLogEntries; i += len(entries) {
+						_ = t.WriteBatch(context.Background(), entries)
+					}
+				} else {
+					for i := 0; i < t.numberOfLogEntries; i++ {
+						_ = t.Write(context.Background(), e)
+					}
 				}
 			case <-ctx.Done():
 				return
 			}
 		}
-	}()
+	}(t.produceBatches)
 	return nil
 }
+
+var entries = complexEntriesForNDifferentHosts(100, 4)
 
 func (t *testInputOperator) Stop() error {
 	t.cancelFunc()

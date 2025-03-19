@@ -21,17 +21,19 @@ NOTE: OpenTelemetry Logging support is experimental, hence this exporter is subj
 
 The following settings are required:
 
-- `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically. 
+- `log_group_name`: The group name of the CloudWatch Logs. If it does not exist it will be created automatically.
 - `log_stream_name`: The stream name of the CloudWatch Logs. If it does not exist it will be created automatically.
 
 The following settings can be optionally configured:
 
 - `region`: The AWS region where the log stream is in. Region must be specified if it is not already set in the default credential chain.
 - `endpoint`: The CloudWatch Logs service endpoint which the requests are forwarded to. [See the CloudWatch Logs endpoints](https://docs.aws.amazon.com/general/latest/gr/cwl_region.html) for a list.
-- `log_retention`: LogRetention is the option to set the log retention policy for only newly created CloudWatch Log Groups. Defaults to Never Expire if not specified or set to 0.  Possible values for retention in days are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653. 
-- `tags`: Tags is the option to set tags for the CloudWatch Log Group. If specified, please add at most 50 tags. Input is a string to string map like so: { 'key': 'value' }. Keys must be between 1-128 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`(alphanumerics, whitespace, and _.:/=+-!). Values must be between 1-256 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$`(alphanumerics, whitespace, and _.:/=+-!).  [Link to tagging restrictions](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=Required%3A%20Yes-,tags,-The%20key%2Dvalue)
+- `log_retention`: LogRetention is the option to set the log retention policy for only newly created CloudWatch Log Groups. Defaults to Never Expire if not specified or set to 0. Possible values for retention in days are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653.
+- `tags`: Tags is the option to set tags for the CloudWatch Log Group. If specified, please add at most 50 tags. Input is a string to string map like so: { 'key': 'value' }. Keys must be between 1-128 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$`(alphanumerics, whitespace, and _.:/=+-!). Values must be between 1-256 characters and follow the regex pattern: `^([\p{L}\p{Z}\p{N}_.:/=+\-@]\*)$`(alphanumerics, whitespace, and \_.:/=+-!). [Link to tagging restrictions](https://docs.aws.amazon.com/AmazonCloudWatchLogs/latest/APIReference/API_CreateLogGroup.html#:~:text=Required%3A%20Yes-,tags,-The%20key%2Dvalue)
 - `raw_log`: Boolean default false. If set to true, only the log message will be exported to CloudWatch Logs. This needs to be set to true for [EMF logs](https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch_Embedded_Metric_Format_Specification.html).
-- `sending_queue`: [Parameters for the sending queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), where you can control parallelism and the size of the sending buffer. Obs.: this component will always have a sending queue enabled. 
+- `role_arn`: IAM role to upload logs to a different account.
+- `external_id`: Shared identitier used when assuming an IAM role in an external AWS account. [See AWS IAM Guide](https://docs.aws.amazon.com/IAM/latest/UserGuide/id_roles_common-scenarios_third-party.html#id_roles_third-party_external-id)
+- `sending_queue`: [Parameters for the sending queue](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), where you can control parallelism and the size of the sending buffer. Obs.: this component will always have a sending queue enabled.
   - `num_consumers`: Number of consumers that will consume from the sending queue. This parameter controls how many consumers will consume from the sending queue in parallel.
   - `queue_size`: Maximum number of batches kept in memory before dropping; ignored if enabled is false
 
@@ -57,15 +59,38 @@ exporters:
     region: "us-east-1"
     endpoint: "logs.us-east-1.amazonaws.com"
     log_retention: 365
-    tags: { 'sampleKey': 'sampleValue'}
+    tags: { "sampleKey": "sampleValue" }
 ```
 
-## Additional Notes 
+## Additional Notes
 
 - If the log group and/or log stream are specified in an EMF log, that EMF log will be exported to that log group and/or log stream (i.e. ignores the log group and log stream defined in the configuration)
   - The log group and log stream will also be created automatically if they do not already exist.
-  - Example of an EMF log with log group and log stream: 
+  - Example of an EMF log with log group and log stream:
+
 ```json
-  {"_aws":{"Timestamp":1574109732004,"LogGroupName":"Foo", "LogStreamName": "Bar", "CloudWatchMetrics":[{"Namespace":"MyApp","Dimensions":[["Operation"]],"Metrics":[{"Name":"ProcessingLatency","Unit":"Milliseconds","StorageResolution":60}]}]},"Operation":"Aggregator","ProcessingLatency":100}
-  ```
+{
+  "_aws": {
+    "Timestamp": 1574109732004,
+    "LogGroupName": "Foo",
+    "LogStreamName": "Bar",
+    "CloudWatchMetrics": [
+      {
+        "Namespace": "MyApp",
+        "Dimensions": [["Operation"]],
+        "Metrics": [
+          {
+            "Name": "ProcessingLatency",
+            "Unit": "Milliseconds",
+            "StorageResolution": 60
+          }
+        ]
+      }
+    ]
+  },
+  "Operation": "Aggregator",
+  "ProcessingLatency": 100
+}
+```
+
 - Resource ARNs (Amazon Resource Name (ARN) of the AWS resource running the collector) are currently not supported with the CloudWatch Logs Exporter.

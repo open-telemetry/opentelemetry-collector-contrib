@@ -17,6 +17,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -103,7 +104,7 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
@@ -203,7 +204,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			session, err := bulkIndexer.StartSession(context.Background())
 			require.NoError(t, err)
 
-			assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(0), bulkIndexer.stats.docsIndexed.Load())
@@ -234,6 +235,14 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			config: Config{
 				NumWorkers:   1,
 				ClientConfig: confighttp.ClientConfig{Compression: "gzip"},
+				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
+			},
+		},
+		{
+			name: "compression gzip - level 5",
+			config: Config{
+				NumWorkers:   1,
+				ClientConfig: confighttp.ClientConfig{Compression: "gzip", CompressionParams: configcompression.CompressionParams{Level: 5}},
 				Flush:        FlushSettings{Interval: time.Hour, Bytes: 1e+8},
 			},
 		},
@@ -282,7 +291,7 @@ func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Clie
 	session, err := bulkIndexer.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
@@ -309,7 +318,7 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	session, err := bi.StartSession(context.Background())
 	require.NoError(t, err)
 
-	assert.NoError(t, session.Add(context.Background(), "foo", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
 	assert.NoError(t, bi.Close(context.Background()))
 }

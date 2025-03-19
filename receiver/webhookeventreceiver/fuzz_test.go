@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/webhookeventreceiver/internal/metadata"
 )
 
 func FuzzHandleReq(f *testing.F) {
@@ -27,7 +29,7 @@ func FuzzHandleReq(f *testing.F) {
 		}
 
 		consumer := consumertest.NewNop()
-		receiver, err := newLogsReceiver(receivertest.NewNopSettings(), Config{ServerConfig: confighttp.ServerConfig{
+		receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), Config{ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8080",
 		}}, consumer)
 		if err != nil {

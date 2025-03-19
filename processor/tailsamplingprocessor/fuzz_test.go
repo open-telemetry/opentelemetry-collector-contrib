@@ -10,6 +10,8 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor/internal/metadata"
 )
 
 func FuzzConsumeTraces(f *testing.F) {
@@ -20,7 +22,7 @@ func FuzzConsumeTraces(f *testing.F) {
 			return
 		}
 		sink := new(consumertest.TracesSink)
-		set := processortest.NewNopSettings()
+		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
 		tsp, err := newTracesProcessor(context.Background(), set, sink, *cfg)
 		if err != nil {

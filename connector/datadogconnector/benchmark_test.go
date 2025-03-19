@@ -16,6 +16,8 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector/internal/metadata"
 )
 
 func genTrace() ptrace.Traces {
@@ -62,7 +64,7 @@ func benchmarkPeerTags(b *testing.B) {
 	cfg.Traces.TraceBuffer = 0
 
 	factory := NewFactory()
-	creationParams := connectortest.NewNopSettings()
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	metricsSink := &consumertest.MetricsSink{}
 
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)

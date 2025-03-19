@@ -37,7 +37,7 @@ func (sr *SapmDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ cons
 		},
 	}
 	var err error
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(sapmreceiver.NewFactory().Type())
 	sr.receiver, err = sapmreceiver.NewFactory().CreateTraces(context.Background(), params, &sapmCfg, tc)
 	if err != nil {
 		return err

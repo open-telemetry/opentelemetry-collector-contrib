@@ -1,0 +1,15 @@
+receivers:
+  filelog:
+    include: 
+      - ${IN_FILE}
+    start_at: "beginning"
+
+exporters:
+  file:
+    path: ${OUT_FILE}
+
+service:
+  pipelines:
+    logs:
+      receivers: [filelog]
+      exporters: [file]
