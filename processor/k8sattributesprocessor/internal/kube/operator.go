@@ -4,9 +4,10 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
-	"golang.org/x/exp/slices"
 	"regexp"
 	"strings"
+
+	"golang.org/x/exp/slices"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	v1 "k8s.io/api/core/v1"

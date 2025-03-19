@@ -5,10 +5,11 @@ package kube
 
 import (
 	"fmt"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"regexp"
 	"testing"
 	"time"
+
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
