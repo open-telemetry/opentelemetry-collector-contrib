@@ -544,7 +544,7 @@ func (s *Supervisor) getBootstrapInfo(ctx context.Context) (err error) {
 	case err = <-done:
 		if errors.Is(err, errNonMatchingInstanceUID) {
 			// try to report the issue to the OpAMP server
-			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
+			if startOpAMPErr := s.startOpAMPClient(context.Background()); startOpAMPErr == nil {
 				defer func(s *Supervisor) {
 					if stopErr := s.stopOpAMPClient(); stopErr != nil {
 						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
@@ -1074,7 +1074,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg(ctx context.Context) *protobufs.EffectiveConfig {
-	ctx, span := s.getTracer().Start(ctx, "CreateEffectiveConfigMsg")
+	ctx, span := s.getTracer().Start(ctx, "CreateEffectiveConfig")
 	defer span.End()
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
