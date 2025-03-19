@@ -1082,7 +1082,7 @@ type metricOracledbPhysicalWritesDirect struct {
 // init fills oracledb.physical_writes_direct metric with initial data.
 func (m *metricOracledbPhysicalWritesDirect) init() {
 	m.data.SetName("oracledb.physical_writes_direct")
-	m.data.SetDescription("Number of writes directly from disk, bypassing the buffer cache")
+	m.data.SetDescription("Number of writes directly to disk, bypassing the buffer cache")
 	m.data.SetUnit("{writes}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(true)

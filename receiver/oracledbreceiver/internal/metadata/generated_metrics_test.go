@@ -500,7 +500,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["oracledb.physical_writes_direct"] = true
 					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "Number of writes directly from disk, bypassing the buffer cache", ms.At(i).Description())
+					assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", ms.At(i).Description())
 					assert.Equal(t, "{writes}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
