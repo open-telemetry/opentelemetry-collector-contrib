@@ -25,6 +25,7 @@ The following settings are optional:
 - `auth` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
+- `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
 - `cache_resources` (default = 86400): List of resources will be cached for the provided amount of time in seconds.
 - `cache_resources_definitions` (default = 86400): List of metrics definitions will be cached for the provided amount of time in seconds.
 - `maximum_number_of_metrics_in_a_call` (default = 20): Maximum number of metrics to fetch in per API call, current limit in Azure is 20 (as of 03/27/2023).
@@ -49,6 +50,26 @@ Authenticating using workload identities requires following additional settings:
 Authenticating using managed identities has the following optional settings:
 
 - `client_id`
+
+### Filtering metrics
+
+The `metrics` configuration setting is designed to limit scraping to specific metrics and their particular aggregations. It accepts a nested map where the key of the top-level is the Azure Metric Namespace, the key of the nested map is an Azure Metric Name, and the map values are a list of aggregation methods (e.g., Average, Minimum, Maximum, Total, Count). Additionally, the metric map value can be an empty array or an array with one element `*` (asterisk). In this case, the scraper will fetch all supported aggregations for a metric. The letter case of the Namespaces, Metric names, and Aggregations does not affect the functionality.
+
+Scraping limited metrics and aggregations:
+
+```yaml
+receivers:
+  azuremonitor:
+    resource_groups:
+      - ${resource_groups}
+    services:
+      - Microsoft.EventHub/namespaces
+      - Microsoft.AAD/DomainServices # scraper will fetch all metrics from this namespace since there are no limits under the "metrics" option
+    metrics:
+      "microsoft.eventhub/namespaces": # scraper will fetch only the metrics listed below:
+        IncomingMessages: [total]     # metric IncomingMessages with aggregation "Total"
+        NamespaceCpuUsage: [*]        # metric NamespaceCpuUsage with all known aggregations
+```
 
 ### Example Configurations
 
@@ -104,6 +125,7 @@ receivers:
 ```
 
 Overriding dimensions for a particular metric:
+
 ```yaml
 receivers:
   azuremonitor:
@@ -118,7 +140,6 @@ receivers:
           # Ref: https://learn.microsoft.com/en-us/azure/azure-monitor/reference/supported-metrics/microsoft-network-azurefirewalls-metrics
           "NetworkRuleHit": [Reason, Status]
 ```
-
 
 ## Metrics
 

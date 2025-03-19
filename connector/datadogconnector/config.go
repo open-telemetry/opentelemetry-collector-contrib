@@ -14,12 +14,8 @@ var _ component.Config = (*Config)(nil)
 // Config defines configuration for the Datadog connector.
 type Config struct {
 	// Traces defines the Traces specific configuration
-	Traces TracesConfig `mapstructure:"traces"`
+	Traces datadogconfig.TracesConnectorConfig `mapstructure:"traces"`
 }
-
-// Deprecated: [v0.110.0] Use `datadog.TracesConnectorConfig` instead.
-// TracesConfig defines the traces specific configuration options
-type TracesConfig = datadogconfig.TracesConnectorConfig
 
 // Validate checks if the configuration is valid
 func (c *Config) Validate() error {

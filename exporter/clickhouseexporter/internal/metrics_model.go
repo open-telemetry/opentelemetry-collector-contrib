@@ -170,9 +170,9 @@ func getValue(intValue int64, floatValue float64, dataType any) float64 {
 
 func AttributesToMap(attributes pcommon.Map) column.IterableOrderedMap {
 	return orderedmap.CollectN(func(yield func(string, string) bool) {
-		attributes.Range(func(k string, v pcommon.Value) bool {
-			return yield(k, v.AsString())
-		})
+		for k, v := range attributes.All() {
+			yield(k, v.AsString())
+		}
 	}, attributes.Len())
 }
 

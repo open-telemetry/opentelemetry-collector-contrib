@@ -1,0 +1,46 @@
+receivers:
+  nop:
+
+processors:
+  nop:
+
+exporters:
+  faro:
+    endpoint: https://faro.example.com/collect
+    timeout: 10s
+    headers:
+      X-API-Key: "my-api-key"
+
+  faro/with_queue_settings:
+    endpoint: https://faro.example.com/collect
+    sending_queue:
+      enabled: true
+      num_consumers: 2
+      queue_size: 10
+
+  faro/with_retry_settings:
+    endpoint: https://faro.example.com/collect
+    retry_on_failure:
+      enabled: true
+      initial_interval: 10s
+      max_interval: 60s
+      max_elapsed_time: 10m
+
+  faro/with_compression:
+    endpoint: https://faro.example.com/collect
+    compression: gzip
+
+service:
+  pipelines:
+    traces:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [faro]
+    metrics:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [faro]
+    logs:
+      receivers: [nop]
+      processors: [nop]
+      exporters: [faro] 

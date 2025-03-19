@@ -5,7 +5,6 @@ package awscloudwatchmetricstreamsencodingextension
 
 import (
 	"encoding/binary"
-	"errors"
 	"path/filepath"
 	"testing"
 
@@ -49,7 +48,7 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 	tests := map[string]struct {
 		record                  []byte
 		expectedMetricsFilename string
-		expectedErr             error
+		expectedErrStr          string
 	}{
 		"valid_record_single_metric": {
 			record:                  getRecordFromFiles(t, []string{filepath.Join(filesDirectory, "valid_metric.yaml")}),
@@ -62,22 +61,25 @@ func TestUnmarshalOpenTelemetryMetrics(t *testing.T) {
 			}),
 			expectedMetricsFilename: filepath.Join(filesDirectory, "valid_metric_multiple_expected.yaml"),
 		},
-		"invalid_record_empty": {
-			record:      []byte{},
-			expectedErr: errEmptyRecord,
+		"empty_record": {
+			record:                  []byte{},
+			expectedMetricsFilename: filepath.Join(filesDirectory, "empty_expected.yaml"),
 		},
 		"invalid_record_no_metrics": {
-			record:      []byte{1, 2, 3},
-			expectedErr: errors.New("unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)"),
+			record:         []byte{1, 2, 3},
+			expectedErrStr: "unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)",
+		},
+		"record_out_of_bounds": {
+			record:         []byte("a"),
+			expectedErrStr: "index out of bounds: length prefix exceeds available bytes in record",
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			result, err := unmarshaler.UnmarshalMetrics(test.record)
-			if test.expectedErr != nil {
-				require.Error(t, err)
-				require.EqualError(t, test.expectedErr, err.Error())
+			if test.expectedErrStr != "" {
+				require.EqualError(t, err, test.expectedErrStr)
 				return
 			}
 

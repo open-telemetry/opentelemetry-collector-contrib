@@ -77,28 +77,24 @@ func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcom
 // mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
 func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		switch k {
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
-			return true
+			continue
 		}
 		if slices.Contains(extra, k) {
-			return true
+			continue
 		}
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
-
-		return true
-	})
+	}
 }
 
 func mapHash(hasher hash.Hash, m pcommon.Map) {
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		hasher.Write([]byte(k))
 		valueHash(hasher, v)
-
-		return true
-	})
+	}
 }
 
 func valueHash(h hash.Hash, v pcommon.Value) {

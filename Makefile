@@ -114,6 +114,31 @@ stability-tests: otelcontribcol
 	@echo Stability tests are disabled until we have a stable performance environment.
 	@echo To enable the tests replace this echo by $(MAKE) -C testbed run-stability-tests
 
+.PHONY: genlabels
+genlabels:
+	@echo "Generating path-to-label mappings..."
+	@echo "# This file is auto-generated. Do not edit manually." > .github/component_labels.txt
+	@grep -E '^[A-Za-z0-9/]' .github/CODEOWNERS | \
+		awk '{ print $$1 }' | \
+		sed -E 's%(.+)/$$%\1%' | \
+		while read -r COMPONENT; do \
+			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%'); \
+			if (( $${#LABEL_NAME} > 50 )); then \
+				OIFS=$${IFS}; \
+				IFS='/'; \
+				for SEGMENT in $${COMPONENT}; do \
+					r="/$${SEGMENT}\$$"; \
+					if [[ "$${COMPONENT}" =~ $${r} ]]; then \
+						break; \
+					fi; \
+					LABEL_NAME=$$(echo "$${LABEL_NAME}" | sed -E "s%^(.+)$${SEGMENT}\$$%\1%"); \
+				done; \
+				IFS=$${OIFS}; \
+			fi; \
+			echo "$${COMPONENT} $${LABEL_NAME}" >> .github/component_labels.txt; \
+		done
+	@echo "Labels generated and saved to .github/component_labels.txt"
+
 .PHONY: gogci
 gogci:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="gci"
@@ -348,6 +373,7 @@ gendistributions: $(GITHUBGEN)
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
+	$(MAKE) genlabels
 
 FILENAME?=$(shell git branch --show-current)
 .PHONY: chlog-new

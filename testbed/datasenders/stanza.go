@@ -91,7 +91,7 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		sb.WriteString(lr.Body().Str())
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		sb.WriteString(" ")
 		sb.WriteString(k)
 		sb.WriteString("=")
@@ -107,8 +107,7 @@ func (f *FileLogWriter) convertLogToTextLine(lr plog.LogRecord) []byte {
 		default:
 			panic("missing case")
 		}
-		return true
-	})
+	}
 
 	return []byte(sb.String())
 }

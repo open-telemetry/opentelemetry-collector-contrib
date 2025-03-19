@@ -265,13 +265,12 @@ func attributesToDimensions(attributes pcommon.Map, extraDims []*sfxpb.Dimension
 	}
 	dimensionsValue := make([]sfxpb.Dimension, attributes.Len())
 	pos := 0
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		dimensionsValue[pos].Key = k
 		dimensionsValue[pos].Value = v.AsString()
 		dimensions = append(dimensions, &dimensionsValue[pos])
 		pos++
-		return true
-	})
+	}
 	return dimensions
 }
 
