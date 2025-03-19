@@ -88,7 +88,7 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
 
-var cannotRetrieveImage = errors.New("cannot retrieve image name")
+var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
 // New initializes a new k8s Client.
 func New(
@@ -714,7 +714,7 @@ func parseServiceVersionFromImage(image string) (string, error) {
 
 	namedRef, ok := ref.(reference.Named)
 	if !ok {
-		return "", cannotRetrieveImage
+		return "", errCannotRetrieveImage
 	}
 	var tag, digest string
 	if taggedRef, ok := namedRef.(reference.Tagged); ok {
@@ -733,7 +733,7 @@ func parseServiceVersionFromImage(image string) (string, error) {
 		return tag, nil
 	}
 
-	return "", cannotRetrieveImage
+	return "", errCannotRetrieveImage
 }
 
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
