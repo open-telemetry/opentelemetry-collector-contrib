@@ -8,9 +8,8 @@ import (
 	"regexp"
 	"time"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-
 	"go.opentelemetry.io/collector/component"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
