@@ -14,17 +14,17 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
 	github.com/yusufpapurcu/wmi v1.2.4
-	go.opentelemetry.io/collector/component v1.28.0
+	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/component/componenttest v0.122.0
-	go.opentelemetry.io/collector/confmap v1.28.0
+	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/confmap/xconfmap v0.122.0
-	go.opentelemetry.io/collector/consumer v1.28.0
+	go.opentelemetry.io/collector/consumer v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.0
-	go.opentelemetry.io/collector/featuregate v1.28.0
+	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/filter v0.122.0
-	go.opentelemetry.io/collector/pdata v1.28.0
+	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/pipeline v0.122.0
-	go.opentelemetry.io/collector/receiver v1.28.0
+	go.opentelemetry.io/collector/receiver v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/receiver/receivertest v0.122.0
 	go.opentelemetry.io/collector/scraper v0.122.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.122.0
