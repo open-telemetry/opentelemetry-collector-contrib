@@ -40,19 +40,19 @@ type Config struct {
 	// NumWorkers configures the number of workers publishing bulk requests.
 	NumWorkers int `mapstructure:"num_workers"`
 
-	// This setting is required when logging pipelines used.
-	LogsIndex string `mapstructure:"logs_index"`
-	// fall back to pure LogsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	// LogsIndex configures the static index used for document routing for logs.
+	// It should be empty if dynamic document routing is preferred.
+	LogsIndex        string              `mapstructure:"logs_index"`
 	LogsDynamicIndex DynamicIndexSetting `mapstructure:"logs_dynamic_index"`
 
-	// This setting is required when the exporter is used in a metrics pipeline.
-	MetricsIndex string `mapstructure:"metrics_index"`
-	// fall back to pure MetricsIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource attributes
+	// MetricsIndex configures the static index used for document routing for metrics.
+	// It should be empty if dynamic document routing is preferred.
+	MetricsIndex        string              `mapstructure:"metrics_index"`
 	MetricsDynamicIndex DynamicIndexSetting `mapstructure:"metrics_dynamic_index"`
 
-	// This setting is required when traces pipelines used.
-	TracesIndex string `mapstructure:"traces_index"`
-	// fall back to pure TracesIndex, if 'elasticsearch.index.prefix' or 'elasticsearch.index.suffix' are not found in resource or attribute (prio: resource > attribute)
+	// TracesIndex configures the static index used for document routing for metrics.
+	// It should be empty if dynamic document routing is preferred.
+	TracesIndex        string              `mapstructure:"traces_index"`
 	TracesDynamicIndex DynamicIndexSetting `mapstructure:"traces_dynamic_index"`
 
 	// LogsDynamicID configures whether log record attribute `elasticsearch.document_id` is set as the document ID in ES.
@@ -121,6 +121,9 @@ type LogstashFormatSettings struct {
 }
 
 type DynamicIndexSetting struct {
+	// Enabled enables dynamic index routing.
+	//
+	// Deprecated: [v0.122.0] This config is now ignored. Dynamic index routing is always done by default.
 	Enabled bool `mapstructure:"enabled"`
 }
 
@@ -288,6 +291,16 @@ func (cfg *Config) Validate() error {
 		return errors.New("retry::max_retries should be non-negative")
 	}
 
+	if cfg.LogsIndex != "" && cfg.LogsDynamicIndex.Enabled {
+		return errors.New("must not specify both logs_index and logs_dynamic_index; logs_index should be empty unless all documents should be sent to the same index")
+	}
+	if cfg.MetricsIndex != "" && cfg.MetricsDynamicIndex.Enabled {
+		return errors.New("must not specify both metrics_index and metrics_dynamic_index; metrics_index should be empty unless all documents should be sent to the same index")
+	}
+	if cfg.TracesIndex != "" && cfg.TracesDynamicIndex.Enabled {
+		return errors.New("must not specify both traces_index and traces_dynamic_index; traces_index should be empty unless all documents should be sent to the same index")
+	}
+
 	return nil
 }
 
@@ -396,5 +409,14 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 		cfg.Retry.MaxRetries = cfg.Retry.MaxRequests - 1
 		// Do not set cfg.Retry.Enabled = false if cfg.Retry.MaxRequest = 1 to avoid breaking change on behavior
 		logger.Warn("retry::max_requests has been deprecated, and will be removed in a future version. Use retry::max_retries instead.")
+	}
+	if cfg.LogsDynamicIndex.Enabled {
+		logger.Warn("logs_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
+	}
+	if cfg.MetricsDynamicIndex.Enabled {
+		logger.Warn("metrics_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
+	}
+	if cfg.TracesDynamicIndex.Enabled {
+		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
 	}
 }
