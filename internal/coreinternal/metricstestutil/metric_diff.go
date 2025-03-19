@@ -331,9 +331,8 @@ func diffValues(
 
 func attrMapToString(m pcommon.Map) string {
 	out := ""
-	m.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range m.All() {
 		out += "[" + k + "=" + v.Str() + "]"
-		return true
-	})
+	}
 	return out
 }

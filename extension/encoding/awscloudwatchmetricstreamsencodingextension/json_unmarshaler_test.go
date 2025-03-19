@@ -4,6 +4,7 @@
 package awscloudwatchmetricstreamsencodingextension
 
 import (
+	"bufio"
 	"bytes"
 	"encoding/json"
 	"os"
@@ -12,7 +13,6 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
@@ -119,48 +119,54 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 
 	filesDirectory := "testdata/json"
 	tests := map[string]struct {
-		files                  []string
+		record                 []byte
 		metricExpectedFilename string
-		expectedErr            error
+		expectedErrStr         string
 	}{
 		"valid_record_single_metric": {
 			// test a record with a single metric
-			files:                  []string{"valid_metric.json"},
+			record:                 joinMetricsFromFile(t, filesDirectory, []string{"valid_metric.json"}),
 			metricExpectedFilename: "valid_record_single_metric_expected.yaml",
 		},
 		"invalid_record": {
 			// test a record with one invalid metric
-			files:       []string{"invalid_metric.json"},
-			expectedErr: errEmptyRecord,
+			record:         joinMetricsFromFile(t, filesDirectory, []string{"invalid_metric.json"}),
+			expectedErrStr: "invalid cloudwatch metric at index 0: cloudwatch metric is missing value",
 		},
-		"valid_record_multiple_metrics": {
+		"invalid_record_multiple_metrics": {
 			// test a record with multiple
 			// metrics: some invalid, some
 			// valid
-			files: []string{
+			record: joinMetricsFromFile(t, filesDirectory, []string{
 				"valid_metric.json",
 				"invalid_metric.json",
 				"valid_metric.json",
-				"invalid_metric.json",
-			},
-			metricExpectedFilename: "valid_record_multiple_metrics_expected.yaml",
+			}),
+			expectedErrStr: "invalid cloudwatch metric at index 1: cloudwatch metric is missing value",
+		},
+		"invalid_json_struct": {
+			record: []byte("invalid"),
+			expectedErrStr: "error unmarshaling datum at index 0: readObjectStart: " +
+				"expect { or n, but found i, error found in #1 byte of ...|invalid|...," +
+				" bigger context ...|invalid|...",
+		},
+		"scanner_error": {
+			record:         bytes.Repeat([]byte("test"), bufio.MaxScanTokenSize+1),
+			expectedErrStr: "error scanning for newline-delimited JSON: bufio.Scanner: token too long",
 		},
 	}
 
-	unmarshalerCW := &formatJSONUnmarshaler{component.BuildInfo{}, zap.NewNop()}
+	unmarshalerCW := &formatJSONUnmarshaler{component.BuildInfo{}}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			record := joinMetricsFromFile(t, filesDirectory, test.files)
-
-			metrics, err := unmarshalerCW.UnmarshalMetrics(record)
-			if test.expectedErr != nil {
-				require.Equal(t, test.expectedErr, err)
+			metrics, err := unmarshalerCW.UnmarshalMetrics(test.record)
+			if test.expectedErrStr != "" {
+				require.EqualError(t, err, test.expectedErrStr)
 				return
 			}
 
 			expectedMetrics, err := golden.ReadMetrics(filepath.Join(filesDirectory, test.metricExpectedFilename))
 			require.NoError(t, err)
-
 			require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, metrics))
 		})
 	}

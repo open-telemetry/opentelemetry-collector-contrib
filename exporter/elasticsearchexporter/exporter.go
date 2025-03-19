@@ -30,7 +30,6 @@ type elasticsearchExporter struct {
 	set                 exporter.Settings
 	config              *Config
 	index               string
-	dynamicIndex        bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
@@ -38,19 +37,13 @@ type elasticsearchExporter struct {
 	bufferPool          *pool.BufferPool
 }
 
-func newExporter(
-	cfg *Config,
-	set exporter.Settings,
-	index string,
-	dynamicIndex bool,
-) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
-		dynamicIndex:        dynamicIndex,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
@@ -77,7 +70,7 @@ func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) 
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -177,7 +170,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
@@ -340,7 +333,8 @@ func (e *elasticsearchExporter) pushTraceData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
+	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
 	encoder, err := newEncoder(mappingMode)
 	if err != nil {
 		return err
@@ -379,7 +373,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, router, encoder, ec, span, spanEvent, session); err != nil {
+					if err := e.pushSpanEvent(ctx, spanEventRouter, encoder, ec, span, spanEvent, session); err != nil {
 						errs = append(errs, err)
 					}
 				}

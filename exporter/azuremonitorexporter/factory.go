@@ -46,11 +46,12 @@ type factory struct {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		MaxBatchSize:      1024,
-		MaxBatchInterval:  10 * time.Second,
-		SpanEventsEnabled: false,
-		QueueSettings:     exporterhelper.NewDefaultQueueConfig(),
-		ShutdownTimeout:   1 * time.Second,
+		MaxBatchSize:        1024,
+		MaxBatchInterval:    10 * time.Second,
+		SpanEventsEnabled:   false,
+		QueueSettings:       exporterhelper.NewDefaultQueueConfig(),
+		ShutdownTimeout:     1 * time.Second,
+		CustomEventsEnabled: false,
 	}
 }
 

@@ -157,13 +157,12 @@ func TestToPdata(t *testing.T) {
 
 // Helper function to verify attributes
 func verifyAttributes(t *testing.T, expected, actual pcommon.Map) {
-	expected.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range expected.All() {
 		got, ok := actual.Get(k)
 		assert.True(t, ok, "missing attribute %s", k)
 		assert.Equal(t, v.Type(), got.Type(), "wrong type for attribute %s", k)
 		assert.Equal(t, v, got, "wrong value for attribute %s", k)
-		return true
-	})
+	}
 }
 
 func TestAddSpanEventsToSpan(t *testing.T) {

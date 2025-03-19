@@ -28,7 +28,7 @@ func NewCollectorInstanceInfo(
 	set component.TelemetrySettings,
 ) *CollectorInstanceInfo {
 	var info CollectorInstanceInfo
-	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range set.Resource.Attributes().All() {
 		switch k {
 		case semconv.AttributeServiceInstanceID:
 			if str := v.Str(); str != "" {
@@ -46,8 +46,7 @@ func NewCollectorInstanceInfo(
 				info.size++
 			}
 		}
-		return true
-	})
+	}
 	return &info
 }
 

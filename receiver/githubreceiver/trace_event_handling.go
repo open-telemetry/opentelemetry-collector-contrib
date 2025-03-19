@@ -214,7 +214,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 
 	span.Status().SetMessage(event.GetWorkflowJob().GetConclusion())
 
-	return parentSpanID, nil
+	return jobSpanID, nil
 }
 
 // newJobSpanId creates a deterministic Job Span ID based on the provided runID,

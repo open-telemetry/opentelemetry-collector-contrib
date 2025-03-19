@@ -4,7 +4,6 @@
 package translator // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/translator"
 
 import (
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
@@ -29,10 +28,9 @@ func makeSpanLinks(links ptrace.SpanLinkSlice, skipTimestampValidation bool) ([]
 		if link.Attributes().Len() > 0 {
 			spanLinkData.Attributes = make(map[string]any)
 
-			link.Attributes().Range(func(k string, v pcommon.Value) bool {
+			for k, v := range link.Attributes().All() {
 				spanLinkData.Attributes[k] = v.AsRaw()
-				return true
-			})
+			}
 		}
 
 		spanLinkDataArray = append(spanLinkDataArray, spanLinkData)

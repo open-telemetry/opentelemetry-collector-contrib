@@ -13,9 +13,9 @@ jobs:
     env:
       VERSION: v0.10.0
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - name: shellcheck workflow-scripts
-        uses: ludeeus/action-shellcheck@2.0.0
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         env:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:
@@ -23,7 +23,7 @@ jobs:
           severity: warning
           version: ${{ env.VERSION }}
       - name: shellcheck buildscripts
-        uses: ludeeus/action-shellcheck@2.0.0
+        uses: ludeeus/action-shellcheck@00cae500b08a931fb5698e11e79bfbd38e612a38 # 2.0.0
         env:
           SHELLCHECK_OPTS: -x -e SC2059 -e SC2086
         with:

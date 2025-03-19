@@ -6,7 +6,7 @@ status:
     beta: [traces, metrics, logs]
   distributions: [contrib]
   codeowners:
-    active: [aabmass, dashpole, jsuereth, punya, psx95]
+    active: [aabmass, dashpole, braydonk, jsuereth, psx95, ridwanmsharif]
 
 tests:
   skip_lifecycle: true

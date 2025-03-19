@@ -7,8 +7,6 @@ import "go.opentelemetry.io/collector/pdata/pcommon"
 
 // dynamic index attribute key constants
 const (
-	indexPrefix                   = "elasticsearch.index.prefix"
-	indexSuffix                   = "elasticsearch.index.suffix"
 	defaultDataStreamDataset      = "generic"
 	defaultDataStreamNamespace    = "default"
 	defaultDataStreamTypeLogs     = "logs"

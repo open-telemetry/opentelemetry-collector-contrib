@@ -63,13 +63,11 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
 				TracesIndex: "trace_index",
 				TracesDynamicIndex: DynamicIndexSetting{
@@ -145,11 +143,9 @@ func TestConfig(t *testing.T) {
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
@@ -219,15 +215,13 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				MetricsIndex: "my_metric_index",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},

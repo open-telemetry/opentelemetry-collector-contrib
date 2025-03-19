@@ -42,7 +42,7 @@ signaltometrics:
     - name: span.count
       description: Count of spans
       sum:
-        value: Int(AbsoluteCount()) # Count of total spans represented by each span
+        value: Int(AdjustedCount()) # Count of total spans represented by each span
   datapoints:
     - name: datapoint.count
       description: Count of datapoints

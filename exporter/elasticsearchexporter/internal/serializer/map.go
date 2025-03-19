@@ -22,11 +22,10 @@ func Map(m pcommon.Map, buf *bytes.Buffer) {
 
 func writeMap(v *json.Visitor, m pcommon.Map, stringifyMapValues bool) {
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	m.Range(func(k string, val pcommon.Value) bool {
+	for k, val := range m.All() {
 		_ = v.OnKey(k)
 		WriteValue(v, val, stringifyMapValues)
-		return true
-	})
+	}
 	_ = v.OnObjectFinished()
 }
 

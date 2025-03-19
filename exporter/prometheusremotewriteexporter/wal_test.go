@@ -166,8 +166,7 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
 		},
-		TargetInfo:    &TargetInfo{},    // Declared just to avoid nil pointer dereference.
-		CreatedMetric: &CreatedMetric{}, // Declared just to avoid nil pointer dereference.
+		TargetInfo: &TargetInfo{}, // Declared just to avoid nil pointer dereference.
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",

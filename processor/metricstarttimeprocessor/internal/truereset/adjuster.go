@@ -109,7 +109,7 @@ func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, cu
 			continue
 		}
 
-		if currentDist.Count() < tsi.Histogram.Count() || currentDist.Sum() < tsi.Histogram.Sum() {
+		if tsi.IsResetHistogram(currentDist) {
 			// reset re-initialize everything.
 			currentDist.CopyTo(tsi.Histogram)
 			continue
@@ -146,7 +146,7 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timese
 			continue
 		}
 
-		if currentDist.Count() < tsi.ExponentialHistogram.Count() || currentDist.Sum() < tsi.ExponentialHistogram.Sum() {
+		if tsi.IsResetExponentialHistogram(currentDist) {
 			// reset re-initialize everything.
 			currentDist.CopyTo(tsi.ExponentialHistogram)
 			continue
@@ -177,7 +177,7 @@ func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current 
 			continue
 		}
 
-		if currentSum.DoubleValue() < tsi.Number.DoubleValue() {
+		if tsi.IsResetSum(currentSum) {
 			// reset re-initialize everything.
 			currentSum.CopyTo(tsi.Number)
 			continue
@@ -209,12 +209,7 @@ func (a *Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, curr
 			continue
 		}
 
-		if (currentSummary.Count() != 0 &&
-			tsi.Summary.Count() != 0 &&
-			currentSummary.Count() < tsi.Summary.Count()) ||
-			(currentSummary.Sum() != 0 &&
-				tsi.Summary.Sum() != 0 &&
-				currentSummary.Sum() < tsi.Summary.Sum()) {
+		if tsi.IsResetSummary(currentSummary) {
 			// reset re-initialize everything.
 			currentSummary.CopyTo(tsi.Summary)
 			continue

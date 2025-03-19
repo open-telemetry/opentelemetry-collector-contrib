@@ -26,13 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	defaultLogsIndex    = "logs-generic-default"
-	defaultMetricsIndex = "metrics-generic-default"
-	defaultTracesIndex  = "traces-generic-default"
-)
-
 var defaultBatcherMinSizeItems = 5000
 
 // NewFactory creates a factory for Elastic exporter.
@@ -59,18 +52,6 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		LogsIndex:     defaultLogsIndex,
-		LogsDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
-		MetricsIndex: defaultMetricsIndex,
-		MetricsDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
-		TracesIndex: defaultTracesIndex,
-		TracesDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
 		LogsDynamicID: DynamicIDSettings{
 			Enabled: false,
 		},
@@ -127,7 +108,7 @@ func createLogsExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.LogsIndex)
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -146,7 +127,7 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.MetricsIndex)
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -164,7 +145,7 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+	exporter := newExporter(cf, set, cf.TracesIndex)
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -187,7 +168,7 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, "", false)
+	exporter := newExporter(cf, set, "")
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,

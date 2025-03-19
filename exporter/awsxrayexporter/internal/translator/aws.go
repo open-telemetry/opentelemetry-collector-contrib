@@ -57,7 +57,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 	)
 
 	filtered := make(map[string]pcommon.Value)
-	resource.Attributes().Range(func(key string, value pcommon.Value) bool {
+	for key, value := range resource.Attributes().All() {
 		switch key {
 		case conventionsv112.AttributeCloudProvider:
 			cloud = value.Str()
@@ -112,8 +112,7 @@ func makeAws(attributes map[string]pcommon.Value, resource pcommon.Resource, log
 		case conventionsv112.AttributeAWSLogGroupARNs:
 			logGroupArns = normalizeToSlice(value)
 		}
-		return true
-	})
+	}
 
 	if awsOperation, ok := attributes[awsxray.AWSOperationAttribute]; ok {
 		operation = awsOperation.Str()
