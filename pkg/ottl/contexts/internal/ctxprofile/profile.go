@@ -413,11 +413,11 @@ func accessOriginalPayloadFormat[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessOriginalPayload[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().OriginalPayload(), nil
+			return tCtx.GetProfile().OriginalPayload().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.(pcommon.ByteSlice); ok {
-				v.CopyTo(tCtx.GetProfile().OriginalPayload())
+			if v, ok := val.([]byte); ok {
+				tCtx.GetProfile().OriginalPayload().FromRaw(v)
 			}
 			return nil
 		},

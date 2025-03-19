@@ -45,7 +45,7 @@ The following paths are supported.
 | profile.attribute_indices                | the attribute indices of the profile being processed                                                                                               | []int32                                                                 |
 | profile.dropped_attributes_count         | the dropped attributes count of the profile being processed                                                                                        | int64                                                                   |
 | profile.original_payload_format          | the original payload format of the profile being processed                                                                                         | string                                                                  |
-| profile.original_payload                 | the original payload of the profile being processed                                                                                                | pcommon.ByteSlice                                                       |
+| profile.original_payload                 | the original payload of the profile being processed                                                                                                | []byte                                                                  |
 
 ## Enums
 

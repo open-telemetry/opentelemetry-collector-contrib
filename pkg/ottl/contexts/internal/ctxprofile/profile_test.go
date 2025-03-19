@@ -115,7 +115,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "original_payload",
-			val:  createByteSlice(),
+			val:  []byte{1, 2, 3},
 		},
 	}
 
@@ -270,12 +270,6 @@ func createLink() pprofile.Link {
 	return link
 }
 
-func createStringSlice() pcommon.StringSlice {
-	sl := pcommon.NewStringSlice()
-	sl.Append("string")
-	return sl
-}
-
 func createProfileID() pprofile.ProfileID {
 	return [16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}
 }
@@ -288,16 +282,4 @@ func createSample() pprofile.Sample {
 	sample.TimestampsUnixNano().Append(4)
 	sample.Value().Append(5)
 	return sample
-}
-
-func createByteSlice() pcommon.ByteSlice {
-	sl := pcommon.NewByteSlice()
-	sl.Append(1, 2, 3)
-	return sl
-}
-
-func createInt32Slice(n int32) pcommon.Int32Slice {
-	sl := pcommon.NewInt32Slice()
-	sl.Append(n)
-	return sl
 }
