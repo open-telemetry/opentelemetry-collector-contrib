@@ -13,7 +13,6 @@ import (
 	"time"
 
 	"github.com/distribution/reference"
-
 	"go.opentelemetry.io/collector/component"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
