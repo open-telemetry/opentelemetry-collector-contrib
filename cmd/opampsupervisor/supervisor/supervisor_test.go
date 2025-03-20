@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"go.opentelemetry.io/otel/trace/noop"
 	"net"
 	"os"
 	"path/filepath"
@@ -130,7 +131,8 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 func newNopTelemetrySettings() telemetrySettings {
 	return telemetrySettings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:         zap.NewNop(),
+			TracerProvider: noop.NewTracerProvider(),
 		},
 	}
 }
