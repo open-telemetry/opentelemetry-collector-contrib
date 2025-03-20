@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -144,11 +145,8 @@ func (f *FileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
 
-func NewLocalFileStorageExtension() map[string]string {
-	tempDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		panic("failed to create temp storage dir")
-	}
+func NewLocalFileStorageExtension(t *testing.T) map[string]string {
+	tempDir := t.TempDir()
 
 	return map[string]string{
 		"file_storage": fmt.Sprintf(`

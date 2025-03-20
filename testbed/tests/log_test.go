@@ -65,7 +65,7 @@ func TestLog10kDPS(t *testing.T) {
 				ExpectedMaxCPU: 50,
 				ExpectedMaxRAM: 120,
 			},
-			extensions: datasenders.NewLocalFileStorageExtension(),
+			extensions: datasenders.NewLocalFileStorageExtension(t),
 		},
 		{
 			name:     "kubernetes containers",

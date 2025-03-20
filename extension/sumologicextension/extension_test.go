@@ -126,9 +126,7 @@ func TestBasicStart(t *testing.T) {
 	}())
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = "collector_name"
@@ -198,7 +196,7 @@ func TestStoreCredentials(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("dir does not exist", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+		dir, err := os.MkdirTemp(t.TempDir(), "otelcol-sumo-store-credentials-test-*")
 		require.NoError(t, err)
 		t.Cleanup(func() { os.RemoveAll(dir) })
 
@@ -340,9 +338,7 @@ func TestStoreCredentials_PreexistingCredentialsAreUsed(t *testing.T) {
 	logger, err := zap.NewDevelopment()
 	require.NoError(t, err)
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 	t.Logf("Using dir: %s", dir)
 
 	store, err := credentials.NewLocalFsStore(
@@ -699,9 +695,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -718,9 +712,7 @@ func TestCollectorSendsBasicAuthHeadersOnRegistration(t *testing.T) {
 func TestCollectorCheckingCredentialsFoundInLocalStorage(t *testing.T) {
 	t.Parallel()
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cStore, err := credentials.NewLocalFsStore(
 		credentials.WithCredentialsDirectory(dir),
