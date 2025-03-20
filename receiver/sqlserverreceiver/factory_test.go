@@ -8,6 +8,7 @@ import (
 	"testing"
 	"time"
 
+	lru "github.com/hashicorp/golang-lru/v2"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -18,7 +19,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
-func TestCreateMetrics(t *testing.T) {
+func TestFactory(t *testing.T) {
 	testCases := []struct {
 		desc     string
 		testFunc func(*testing.T)
@@ -39,6 +40,12 @@ func TestCreateMetrics(t *testing.T) {
 					ControllerConfig: scraperhelper.ControllerConfig{
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
+					},
+					TopQueryCollection: TopQueryCollection{
+						Enabled:             false,
+						LookbackTime:        uint(2 * 10),
+						MaxQuerySampleCount: 1000,
+						TopQueryCount:       200,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}
@@ -78,7 +85,7 @@ func TestCreateMetrics(t *testing.T) {
 			},
 		},
 		{
-			desc: "Test direct connection",
+			desc: "[metrics] Test direct connection",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
 				cfg := factory.CreateDefaultConfig().(*Config)
@@ -134,9 +141,110 @@ func TestCreateMetrics(t *testing.T) {
 				require.NoError(t, r.Shutdown(context.Background()))
 			},
 		},
+		// Test cases for logs
+		{
+			desc: "creates a new factory and CreateLogs returns error with incorrect config",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				_, err := factory.CreateLogs(
+					context.Background(),
+					receivertest.NewNopSettings(metadata.Type),
+					nil,
+					consumertest.NewNop())
+				require.ErrorIs(t, err, errConfigNotSQLServer)
+			},
+		},
+		{
+			desc: "creates a new factory and CreateLogs returns no error",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig()
+				r, err := factory.CreateLogs(
+					context.Background(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg.(*Config))
+				require.Empty(t, scrapers)
+				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(context.Background()))
+			},
+		},
+		{
+			desc: "[logs] Test direct connection",
+			testFunc: func(t *testing.T) {
+				factory := NewFactory()
+				cfg := factory.CreateDefaultConfig().(*Config)
+				cfg.Username = "sa"
+				cfg.Password = "password"
+				cfg.Server = "0.0.0.0"
+				cfg.Port = 1433
+				require.NoError(t, cfg.Validate())
+				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
+
+				require.True(t, directDBConnectionEnabled(cfg))
+				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
+
+				params := receivertest.NewNopSettings(metadata.Type)
+				scrapers, err := setupLogsScrapers(params, cfg)
+				require.NoError(t, err)
+				require.Empty(t, scrapers)
+
+				sqlScrapers := setupSQLServerLogsScrapers(params, cfg)
+				require.Empty(t, sqlScrapers)
+
+				cfg.InstanceName = "instanceName"
+				cfg.Enabled = true
+				scrapers, err = setupLogsScrapers(params, cfg)
+				require.NoError(t, err)
+				require.NotEmpty(t, scrapers)
+
+				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
+				require.NotEmpty(t, sqlScrapers)
+
+				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
+				require.NoError(t, err)
+
+				databaseTopQueryScraperFound := false
+				for _, scraper := range sqlScrapers {
+					if scraper.sqlQuery == q {
+						databaseTopQueryScraperFound = true
+						break
+					}
+				}
+
+				require.True(t, databaseTopQueryScraperFound)
+
+				r, err := factory.CreateLogs(
+					context.Background(),
+					receivertest.NewNopSettings(metadata.Type),
+					cfg,
+					consumertest.NewNop(),
+				)
+				require.NoError(t, err)
+				require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+				require.NoError(t, r.Shutdown(context.Background()))
+			},
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, tc.testFunc)
 	}
+}
+
+func TestNewCache(t *testing.T) {
+	var cache *lru.Cache[string, int64]
+	// even when size is less than 0, cache should be created with size 1.
+	// Also noticed that the cache returned would never be nil, only
+	// cache.lru could be nil, which is invisible to us. So we can
+	// test the cache.Values() method to check if the cache is created.
+	cache = newCache(10)
+	require.NotNil(t, cache.Values())
+	cache = newCache(-1)
+	require.NotNil(t, cache.Values())
+	cache = newCache(0)
+	require.NotNil(t, cache.Values())
 }
