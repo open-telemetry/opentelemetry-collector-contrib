@@ -106,6 +106,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 
 			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
 			require.NoError(t, err)
+			actual = strings.ReplaceAll(actual, "\r\n", "\n")
 			require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(actual))
 		})
 	}
