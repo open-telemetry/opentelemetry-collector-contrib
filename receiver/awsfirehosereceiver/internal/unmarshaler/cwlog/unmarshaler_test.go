@@ -38,7 +38,7 @@ func TestUnmarshal(t *testing.T) {
 		"WithSingleRecord": {
 			filename:               "single_record",
 			wantResourceCount:      1,
-			wantLogCount:           1,
+			wantLogCount:           2,
 			wantResourceLogGroups:  [][]string{{"test"}},
 			wantResourceLogStreams: [][]string{{"test"}},
 		},
