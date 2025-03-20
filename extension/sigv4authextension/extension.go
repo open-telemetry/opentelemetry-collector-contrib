@@ -94,7 +94,7 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 	)
 	_, err := tokenRetriever.GetIdentityToken()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to retrieve token file: %w", err)
 	}
 
 	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
