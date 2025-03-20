@@ -37,15 +37,15 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 	}
 }
 
-func (e encodingExtension) Start(_ context.Context, _ component.Host) error {
+func (*encodingExtension) Start(_ context.Context, _ component.Host) error {
 	return nil
 }
 
-func (e encodingExtension) Shutdown(_ context.Context) error {
+func (*encodingExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	logs, err := e.unmarshaler.UnmarshalLogs(buf)
 	if err != nil {
 		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
