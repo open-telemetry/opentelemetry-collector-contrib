@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer/consumertest"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/internal/metadata"
@@ -46,7 +47,9 @@ func TestPrometheusAPIServer(t *testing.T) {
 				{code: 200, data: metricSet, useOpenMetrics: false},
 			},
 			normalizedName: false,
-			validateFunc:   verifyMetrics,
+			validateFunc: func(t *testing.T, td *testData, result []pmetric.ResourceMetrics) {
+				verifyMetrics(t, td, result, false)
+			},
 		},
 	}
 
