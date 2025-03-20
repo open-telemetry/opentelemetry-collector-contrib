@@ -8,5 +8,4 @@ import (
 )
 
 func TestValidateConfig(t *testing.T) {
-
 }
