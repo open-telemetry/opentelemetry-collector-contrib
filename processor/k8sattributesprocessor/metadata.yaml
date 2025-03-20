@@ -213,21 +213,21 @@ telemetry:
         value_type: int
         monotonic: true
     otelsvc_k8s_deployment_updated:
-      enabled: true
+      enabled: false
       description: Number of deployment update events received
       unit: "1"
       sum:
         value_type: int
         monotonic: true
     otelsvc_k8s_deployment_added:
-      enabled: true
+      enabled: false
       description: Number of deployment add events received
       unit: "1"
       sum:
         value_type: int
         monotonic: true
     otelsvc_k8s_deployment_deleted:
-      enabled: true
+      enabled: false
       description: Number of deployment delete events received
       unit: "1"
       sum:
