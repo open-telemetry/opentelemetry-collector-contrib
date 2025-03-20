@@ -5,7 +5,7 @@ package windowsservicereceiver // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowsservicereceiver/internal/metadata"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 // Config defines configuration for windowsservice receiver.
@@ -17,4 +17,6 @@ type Config struct {
 }
 
 // Validate checks the receiver configuration is valid
-func (cfg *Config) Validate() error { return nil }
+func (cfg *Config) Validate() error {
+	return nil
+}
