@@ -36,9 +36,81 @@
 
 The following telemetry is emitted by this component.
 
+### otelcol_otelsvc_k8s_daemonset_added
+
+Number of daemonset add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_daemonset_deleted
+
+Number of daemonset delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_daemonset_updated
+
+Number of daemonset update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_deployment_added
+
+Number of deployment add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_deployment_deleted
+
+Number of deployment delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_deployment_updated
+
+Number of deployment update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
 ### otelcol_otelsvc_k8s_ip_lookup_miss
 
 Number of times pod by IP lookup failed.
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_job_added
+
+Number of job add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_job_deleted
+
+Number of job delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_job_updated
+
+Number of job update events received
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
@@ -143,6 +215,30 @@ Number of ReplicaSet delete events received
 ### otelcol_otelsvc_k8s_replicaset_updated
 
 Number of ReplicaSet update events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_added
+
+Number of statefulset add events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_deleted
+
+Number of statefulset delete events received
+
+| Unit | Metric Type | Value Type | Monotonic |
+| ---- | ----------- | ---------- | --------- |
+| 1 | Sum | Int | true |
+
+### otelcol_otelsvc_k8s_statefulset_updated
+
+Number of statefulset update events received
 
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |

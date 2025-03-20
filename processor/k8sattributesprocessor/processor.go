@@ -48,7 +48,7 @@ func (kp *kubernetesprocessor) initKubeClient(set component.TelemetrySettings, k
 		kubeClient = kube.New
 	}
 	if !kp.passthroughMode {
-		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, nil, nil, nil, kp.waitForMetadata, kp.waitForMetadataTimeout)
+		kc, err := kubeClient(set, kp.apiConfig, kp.rules, kp.filters, kp.podAssociations, kp.podIgnore, nil, kube.InformersFactoryList{}, kp.waitForMetadata, kp.waitForMetadataTimeout)
 		if err != nil {
 			return err
 		}
@@ -184,6 +184,38 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), conventions.AttributeK8SNodeUID, nodeUID)
 		}
 	}
+
+	deployment := getDeploymentName(pod, resource.Attributes())
+	if deployment != "" {
+		attrsToAdd := kp.getAttributesForPodsDeployment(deployment)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	statefulset := getStatefulSetUID(pod, resource.Attributes())
+	if statefulset != "" {
+		attrsToAdd := kp.getAttributesForPodsStatefulSet(statefulset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	daemonset := getDaemonSetUID(pod, resource.Attributes())
+	if daemonset != "" {
+		attrsToAdd := kp.getAttributesForPodsDaemonSet(daemonset)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
+
+	job := getJobUID(pod, resource.Attributes())
+	if job != "" {
+		attrsToAdd := kp.getAttributesForPodsJob(job)
+		for key, val := range attrsToAdd {
+			setResourceAttribute(resource.Attributes(), key, val)
+		}
+	}
 }
 
 func setResourceAttribute(attributes pcommon.Map, key string, val string) {
@@ -205,6 +237,34 @@ func getNodeName(pod *kube.Pod, resAttrs pcommon.Map) string {
 		return pod.NodeName
 	}
 	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SNodeName)
+}
+
+func getDeploymentName(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DeploymentName != "" {
+		return pod.DeploymentName
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SDeploymentName)
+}
+
+func getStatefulSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.StatefulSetUID != "" {
+		return pod.StatefulSetUID
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SStatefulSetName)
+}
+
+func getDaemonSetUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.DaemonSetUID != "" {
+		return pod.DaemonSetUID
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SDaemonSetName)
+}
+
+func getJobUID(pod *kube.Pod, resAttrs pcommon.Map) string {
+	if pod != nil && pod.JobUID != "" {
+		return pod.JobUID
+	}
+	return stringAttributeFromMap(resAttrs, conventions.AttributeK8SJobName)
 }
 
 // addContainerAttributes looks if pod has any container identifiers and adds additional container attributes
@@ -291,6 +351,38 @@ func (kp *kubernetesprocessor) getAttributesForPodsNode(nodeName string) map[str
 		return nil
 	}
 	return node.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsDeployment(deploymentName string) map[string]string {
+	d, ok := kp.kc.GetDeployment(deploymentName)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsStatefulSet(statefulsetUID string) map[string]string {
+	d, ok := kp.kc.GetStatefulSet(statefulsetUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsDaemonSet(daemonsetUID string) map[string]string {
+	d, ok := kp.kc.GetDaemonSet(daemonsetUID)
+	if !ok {
+		return nil
+	}
+	return d.Attributes
+}
+
+func (kp *kubernetesprocessor) getAttributesForPodsJob(jobUID string) map[string]string {
+	j, ok := kp.kc.GetJob(jobUID)
+	if !ok {
+		return nil
+	}
+	return j.Attributes
 }
 
 func (kp *kubernetesprocessor) getUIDForPodsNode(nodeName string) string {
