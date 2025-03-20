@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeDatabaseStatus specifies the a value database.status attribute.
+// AttributeDatabaseStatus specifies the value database.status attribute.
 type AttributeDatabaseStatus int
 
 const (
@@ -56,7 +56,7 @@ var MapAttributeDatabaseStatus = map[string]AttributeDatabaseStatus{
 	"offline":          AttributeDatabaseStatusOffline,
 }
 
-// AttributeDirection specifies the a value direction attribute.
+// AttributeDirection specifies the value direction attribute.
 type AttributeDirection int
 
 const (
@@ -82,7 +82,7 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
-// AttributePageOperations specifies the a value page.operations attribute.
+// AttributePageOperations specifies the value page.operations attribute.
 type AttributePageOperations int
 
 const (
@@ -108,7 +108,7 @@ var MapAttributePageOperations = map[string]AttributePageOperations{
 	"write": AttributePageOperationsWrite,
 }
 
-// AttributeReplicaDirection specifies the a value replica.direction attribute.
+// AttributeReplicaDirection specifies the value replica.direction attribute.
 type AttributeReplicaDirection int
 
 const (
@@ -134,7 +134,7 @@ var MapAttributeReplicaDirection = map[string]AttributeReplicaDirection{
 	"receive":  AttributeReplicaDirectionReceive,
 }
 
-// AttributeTableState specifies the a value table.state attribute.
+// AttributeTableState specifies the value table.state attribute.
 type AttributeTableState int
 
 const (
@@ -160,7 +160,7 @@ var MapAttributeTableState = map[string]AttributeTableState{
 	"inactive": AttributeTableStateInactive,
 }
 
-// AttributeTableStatus specifies the a value table.status attribute.
+// AttributeTableStatus specifies the value table.status attribute.
 type AttributeTableStatus int
 
 const (
@@ -186,7 +186,7 @@ var MapAttributeTableStatus = map[string]AttributeTableStatus{
 	"permanent": AttributeTableStatusPermanent,
 }
 
-// AttributeTempdbState specifies the a value tempdb.state attribute.
+// AttributeTempdbState specifies the value tempdb.state attribute.
 type AttributeTempdbState int
 
 const (
@@ -2537,7 +2537,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	if !mbc.ResourceAttributes.ServerAddress.enabledSetByUser {
 		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `server.address`: This attribute will be enabled by default starting in release v0.121.0.")
@@ -2694,7 +2693,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSqlserverBatchRequestRate.emit(ils.Metrics())
