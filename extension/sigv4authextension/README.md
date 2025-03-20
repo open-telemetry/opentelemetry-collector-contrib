@@ -68,7 +68,7 @@ service:
 
 ## Assume Role with Web Identity
 
-Configuring `web_identity_token_file` will cause the sigv4auth extension to exchange the token in the specified `web_identity_token_file` for AWS credentials. This is especially useful for authenticating from on-prem systems other cloud providers via OIDC to publish telemetry to an AWS destination (e.g. Amazon Managed Prometheus).
+Configuring `web_identity_token_file` will cause the sigv4auth extension to exchange the token in the specified `web_identity_token_file` for AWS credentials. This is especially useful for authenticating from on-prem systems or other cloud providers via OIDC to publish telemetry to an AWS destination (e.g. Amazon Managed Prometheus).
 
 ### Prerequisites:
 
