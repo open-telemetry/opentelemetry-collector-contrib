@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
@@ -53,9 +52,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				Metadata: kafkaexporter.Metadata{
+				Metadata: configkafka.MetadataConfig{
 					Full: true,
-					Retry: kafkaexporter.MetadataRetry{
+					Retry: configkafka.MetadataRetryConfig{
 						Max:     10,
 						Backoff: time.Second * 5,
 					},
@@ -92,9 +91,9 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				Metadata: kafkaexporter.Metadata{
+				Metadata: configkafka.MetadataConfig{
 					Full: true,
-					Retry: kafkaexporter.MetadataRetry{
+					Retry: configkafka.MetadataRetryConfig{
 						Max:     10,
 						Backoff: time.Second * 5,
 					},
