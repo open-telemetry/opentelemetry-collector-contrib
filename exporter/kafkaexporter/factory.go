@@ -5,9 +5,7 @@ package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"time"
 
-	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -15,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 const (
@@ -22,22 +21,6 @@ const (
 	defaultMetricsTopic = "otlp_metrics"
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
-	defaultBroker       = "localhost:9092"
-	defaultClientID     = "sarama"
-	// default from sarama.NewConfig()
-	defaultMetadataRetryMax = 3
-	// default from sarama.NewConfig()
-	defaultMetadataRetryBackoff = time.Millisecond * 250
-	// default from sarama.NewConfig()
-	defaultMetadataFull = true
-	// default max.message.bytes for the producer
-	defaultProducerMaxMessageBytes = 1000000
-	// default required_acks for the producer
-	defaultProducerRequiredAcks = sarama.WaitForLocal
-	// default from sarama.NewConfig()
-	defaultCompression = "none"
-	// default from sarama.NewConfig()
-	defaultFluxMaxMessages = 0
 	// partitioning metrics by resource attributes is disabled by default
 	defaultPartitionMetricsByResourceAttributesEnabled = false
 	// partitioning logs by resource attributes is disabled by default
@@ -67,26 +50,13 @@ func createDefaultConfig() component.Config {
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
-		Brokers:         []string{defaultBroker},
-		ClientID:        defaultClientID,
+		ClientConfig:    configkafka.NewDefaultClientConfig(),
+		Producer:        configkafka.NewDefaultProducerConfig(),
 		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
 		Topic:                                "",
 		Encoding:                             defaultEncoding,
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
-		Metadata: Metadata{
-			Full: defaultMetadataFull,
-			Retry: MetadataRetry{
-				Max:     defaultMetadataRetryMax,
-				Backoff: defaultMetadataRetryBackoff,
-			},
-		},
-		Producer: Producer{
-			MaxMessageBytes:  defaultProducerMaxMessageBytes,
-			RequiredAcks:     defaultProducerRequiredAcks,
-			Compression:      defaultCompression,
-			FlushMaxMessages: defaultFluxMaxMessages,
-		},
 	}
 }
 

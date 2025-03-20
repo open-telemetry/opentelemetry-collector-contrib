@@ -359,10 +359,9 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		v.CopyTo(dp.Attributes().PutEmpty(k))
-		return true
-	})
+	}
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))
 

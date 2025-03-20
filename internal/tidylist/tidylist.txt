@@ -150,6 +150,7 @@ extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+extension/encoding/awslogsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -259,6 +260,7 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
+receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
