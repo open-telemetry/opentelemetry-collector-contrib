@@ -39,7 +39,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "location_indices",
-			val:  []int32{5},
+			val:  []int64{5},
 		},
 		{
 			path: "function_table",
@@ -87,7 +87,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "comment_string_indices",
-			val:  []int32{345},
+			val:  []int64{345},
 		},
 		{
 			path: "default_sample_type_string_index",
@@ -103,7 +103,7 @@ func TestPathGetSetter(t *testing.T) {
 		},
 		{
 			path: "attribute_indices",
-			val:  []int32{567},
+			val:  []int64{567},
 		},
 		{
 			path: "dropped_attributes_count",

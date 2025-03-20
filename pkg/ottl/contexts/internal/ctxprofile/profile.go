@@ -142,11 +142,11 @@ func accessLocationTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessLocationIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().LocationIndices().AsRaw(), nil
+			return toInt64Array(tCtx.GetProfile().LocationIndices()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int32); ok {
-				tCtx.GetProfile().LocationIndices().FromRaw(v)
+			if v, ok := val.([]int64); ok {
+				fromInt64Array(v).CopyTo(tCtx.GetProfile().LocationIndices())
 			}
 			return nil
 		},
@@ -310,11 +310,11 @@ func accessPeriod[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessCommentStringIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().CommentStrindices().AsRaw(), nil
+			return toInt64Array(tCtx.GetProfile().CommentStrindices()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int32); ok {
-				tCtx.GetProfile().CommentStrindices().FromRaw(v)
+			if v, ok := val.([]int64); ok {
+				fromInt64Array(v).CopyTo(tCtx.GetProfile().CommentStrindices())
 			}
 			return nil
 		},
@@ -371,11 +371,11 @@ func accessStringProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessAttributeIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return tCtx.GetProfile().AttributeIndices().AsRaw(), nil
+			return toInt64Array(tCtx.GetProfile().AttributeIndices()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int32); ok {
-				tCtx.GetProfile().AttributeIndices().FromRaw(v)
+			if v, ok := val.([]int64); ok {
+				fromInt64Array(v).CopyTo(tCtx.GetProfile().AttributeIndices())
 			}
 			return nil
 		},
@@ -422,4 +422,20 @@ func accessOriginalPayload[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return nil
 		},
 	}
+}
+
+func toInt64Array(in pcommon.Int32Slice) []int64 {
+	out := make([]int64, 0, in.Len())
+	for _, v := range in.AsRaw() {
+		out = append(out, int64(v))
+	}
+	return out
+}
+
+func fromInt64Array(in []int64) pcommon.Int32Slice {
+	out := pcommon.NewInt32Slice()
+	for _, v := range in {
+		out.Append(int32(v))
+	}
+	return out
 }
