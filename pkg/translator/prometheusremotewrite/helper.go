@@ -284,12 +284,6 @@ func (c *prometheusConverter) addHistogramDataPoints(dataPoints pmetric.Histogra
 
 		bucketBounds = append(bucketBounds, bucketBoundsData{ts: ts, bound: math.Inf(1)})
 		c.addExemplars(pt, bucketBounds)
-
-		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
-			labels := createLabels(baseName+createdSuffix, baseLabels)
-			c.addTimeSeriesIfNeeded(labels, startTimestamp, pt.Timestamp())
-		}
 	}
 }
 
@@ -440,12 +434,6 @@ func (c *prometheusConverter) addSummaryDataPoints(dataPoints pmetric.SummaryDat
 			qtlabels := createLabels(baseName, baseLabels, quantileStr, percentileStr)
 			c.addSample(quantile, qtlabels)
 		}
-
-		startTimestamp := pt.StartTimestamp()
-		if settings.ExportCreatedMetric && startTimestamp != 0 && !exportCreatedMetricGate.IsEnabled() {
-			createdLabels := createLabels(baseName+createdSuffix, baseLabels)
-			c.addTimeSeriesIfNeeded(createdLabels, startTimestamp, pt.Timestamp())
-		}
 	}
 }
 
@@ -500,22 +488,6 @@ func (c *prometheusConverter) getOrCreateTimeSeries(lbls []prompb.Label) (*promp
 	}
 	c.unique[h] = ts
 	return ts, true
-}
-
-// addTimeSeriesIfNeeded adds a corresponding time series if it doesn't already exist.
-// If the time series doesn't already exist, it gets added with startTimestamp for its value and timestamp for its timestamp,
-// both converted to milliseconds.
-func (c *prometheusConverter) addTimeSeriesIfNeeded(lbls []prompb.Label, startTimestamp pcommon.Timestamp, timestamp pcommon.Timestamp) {
-	ts, created := c.getOrCreateTimeSeries(lbls)
-	if created {
-		ts.Samples = []prompb.Sample{
-			{
-				// convert ns to ms
-				Value:     float64(convertTimeStamp(startTimestamp)),
-				Timestamp: convertTimeStamp(timestamp),
-			},
-		}
-	}
 }
 
 // addResourceTargetInfo converts the resource to the target info metric.

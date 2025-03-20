@@ -6,6 +6,7 @@ package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-
 // Contains code common to both trace and metrics exporters
 
 import (
+	"encoding/json"
 	"errors"
 	"net/url"
 	"strconv"
@@ -30,6 +31,7 @@ const (
 	faasSpanType      spanType = 5
 
 	exceptionSpanEventName string = "exception"
+	msLinks                string = "_MS.links"
 )
 
 var (
@@ -39,6 +41,11 @@ var (
 
 // Used to identify the type of a received Span
 type spanType int8
+
+type msLink struct {
+	OperationID string `json:"operation_Id"`
+	ID          string `json:"id"`
+}
 
 // Transforms a tuple of pcommon.Resource, pcommon.InstrumentationScope, ptrace.Span into one or more of AppInsights contracts.Envelope
 // This is the only method that should be targeted in the unit tests
@@ -115,6 +122,7 @@ func spanToEnvelopes(
 	applyInstrumentationScopeValueToDataProperties(dataProperties, instrumentationScope)
 	applyCloudTagsToEnvelope(envelope, resourceAttributes)
 	applyInternalSdkVersionTagToEnvelope(envelope)
+	applyLinksToDataProperties(dataProperties, span.Links(), logger)
 
 	// Sanitize the base data, the envelope and envelope tags
 	sanitize(dataSanitizeFunc, logger)
@@ -171,6 +179,30 @@ func spanToEnvelopes(
 	}
 
 	return envelopes, nil
+}
+
+func applyLinksToDataProperties(dataProperties map[string]string, spanLinkSlice ptrace.SpanLinkSlice, logger *zap.Logger) {
+	if spanLinkSlice.Len() == 0 {
+		return
+	}
+
+	links := make([]msLink, 0, spanLinkSlice.Len())
+
+	for i := 0; i < spanLinkSlice.Len(); i++ {
+		link := spanLinkSlice.At(i)
+		links = append(links, msLink{
+			OperationID: traceutil.TraceIDToHexOrEmptyString(link.TraceID()),
+			ID:          traceutil.SpanIDToHexOrEmptyString(link.SpanID()),
+		})
+	}
+
+	if len(links) > 0 {
+		if jsonBytes, err := json.Marshal(links); err == nil {
+			dataProperties[msLinks] = string(jsonBytes)
+		} else {
+			logger.Warn("Failed to marshal span links to JSON", zap.Error(err))
+		}
+	}
 }
 
 // Creates a new envelope with some basic tags populated
