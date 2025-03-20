@@ -146,12 +146,23 @@ attributes:
   - key: datapoint.foo
   - key: datapoint.bar
     default_value: bar
+  - key: datapoint.baz
+    passthrough: true
 ```
 
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values. Optionally, a `default_value` can be used to always include
-the attribute with the value of the attribute defaulting to the value specified in
-`default_value` if the incoming data is missing that attribute.
+set of attribute values.
+
+- `default_value`, an optional configuration that can be used to always include the
+  attribute with the value of the attribute defaulting to the value specified in
+  `default_value` if the incoming data is missing that attribute.
+- `passthrough`, an optional configuration that can be used to passthrough the
+  attribute as-is. If the attribute is configured with `passthrough` and present in
+  the incoming signal then it will be added directly to the output metric. If it is
+  absent then it will be ignored. In addition, the passthrough attribute will not
+  impact the decision i.e. even if the passthrough attributes are not present in the
+  incoming signal, the signal will be processed and will produce a metric given all
+  other non-passthrough attributes are present or have a default value defined.
 
 ### Conditions
 
@@ -201,6 +212,8 @@ include_resource_attributes:
   - key: resource.foo # Include resource.foo attribute if present
   - key: resource.bar # Always include resource.bar attribute, default to bar
     default_value: bar
+  - key: resource.baz # Passthrough resource.baz attribute as-is
+    passthrough: true
 ```
 
 With the above configuration the produced metrics would only have the couple of
@@ -211,6 +224,9 @@ resource attributes specified in the list:
 - `resource.bar` will always be present because of the `default_value`. If the incoming
   data does not have a resource attribute with name `resource.bar` then the configured
   `default_value` of `bar` will be used.
+- `resource.baz` will be preserved with the `passthrough` set to `true`. If the
+  incoming data has the resource attribute with name `resource.baz` then it will be
+  added to the produced metrics and if it is absent then it will be ignored.
 
 ### Single writer
 
