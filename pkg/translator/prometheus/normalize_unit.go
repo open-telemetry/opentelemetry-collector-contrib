@@ -63,7 +63,7 @@ var perUnitMap = map[string]string{
 
 func BuildCompliantPrometheusUnit(unit string) string {
 	promUnitTokens := make([]string, 0, 3)
-	promMainUnit, promPerUnit := BuildCompliantMainUnit(unit), BuildCompliantPerUnit(unit)
+	promMainUnit, promPerUnit := buildCompliantMainUnit(unit), buildCompliantPerUnit(unit)
 	if promMainUnit != "" {
 		promUnitTokens = append(promUnitTokens, promMainUnit)
 	}
@@ -75,7 +75,7 @@ func BuildCompliantPrometheusUnit(unit string) string {
 
 // Extract the main unit from an OTLP unit and convert to Prometheus base unit
 // Returns an empty string if the unit is not found in the map
-func BuildCompliantMainUnit(unit string) string {
+func buildCompliantMainUnit(unit string) string {
 	unitTokens := strings.SplitN(unit, "/", 2)
 	if len(unitTokens) > 0 {
 		mainUnitOtel := strings.TrimSpace(unitTokens[0])
@@ -91,7 +91,7 @@ func BuildCompliantMainUnit(unit string) string {
 
 // Extract the rate unit from an OTLP unit and convert to Prometheus base unit
 // Returns an empty string if the unit is not found in the map
-func BuildCompliantPerUnit(unit string) string {
+func buildCompliantPerUnit(unit string) string {
 	unitTokens := strings.SplitN(unit, "/", 2)
 	if len(unitTokens) > 1 && unitTokens[1] != "" {
 		perUnitOtel := strings.TrimSpace(unitTokens[1])
