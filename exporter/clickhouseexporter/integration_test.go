@@ -63,7 +63,7 @@ func TestIntegration(t *testing.T) {
 			verifyTraceTable(t, traceExporter)
 
 			metricsExporter := newTestMetricsExporter(t, endpoint, func(c *Config) { c.Database = "otel" })
-			verifyExporterMetric(t, metricsExporter)
+			verifyMetricTable(t, metricsExporter)
 		})
 	}
 }
