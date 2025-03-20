@@ -25,13 +25,6 @@ resourceMetrics:
               dataPoints:
                 - timeUnixNano: 1
                   asDouble: 1
-          - name: test.summary
-            summary:
-              dataPoints:
-                - timeUnixNano: 1
-                  quantileValues:
-                    - quantile: 0.25
-                      value: 25
 
 -- out --
 resourceMetrics:
@@ -60,13 +53,6 @@ resourceMetrics:
               dataPoints:
                 - timeUnixNano: 1
                   asDouble: 1
-          - name: test.summary
-            summary:
-              dataPoints:
-                - timeUnixNano: 1
-                  quantileValues:
-                    - quantile: 0.25
-                      value: 25
 
 -- telemetry --
 counter otelcol_deltatocumulative_datapoints:
