@@ -1088,7 +1088,7 @@ func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 // createEffectiveConfigMsg create an EffectiveConfig with the content of the
 // current effective config.
 func (s *Supervisor) createEffectiveConfigMsg(ctx context.Context) *protobufs.EffectiveConfig {
-	ctx, span := s.getTracer().Start(ctx, "CreateEffectiveConfig")
+	_, span := s.getTracer().Start(ctx, "CreateEffectiveConfig")
 	defer span.End()
 	cfgStr, ok := s.effectiveConfig.Load().(string)
 	if !ok {
@@ -1250,7 +1250,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 }
 
 func (s *Supervisor) handleRestartCommand(ctx context.Context) error {
-	ctx, span := s.getTracer().Start(ctx, "HandleRestartCommand")
+	_, span := s.getTracer().Start(ctx, "HandleRestartCommand")
 	defer span.End()
 	s.agentRestarting.Store(true)
 	defer s.agentRestarting.Store(false)
@@ -1648,7 +1648,7 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
 func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protobufs.AgentRemoteConfig) bool {
-	ctx, span := s.getTracer().Start(ctx, "ProcessRemoteConfigMessage")
+	_, span := s.getTracer().Start(ctx, "ProcessRemoteConfigMessage")
 	defer span.End()
 	if err := s.saveLastReceivedConfig(msg); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not save last received remote config: %s", err.Error()))
