@@ -299,6 +299,8 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetGlusterfsPath("glusterfs.path-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sNamespaceName("k8s.namespace.name-val")
+			rb.SetK8sNodeAnnotations(map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"})
+			rb.SetK8sNodeLabels(map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"})
 			rb.SetK8sNodeName("k8s.node.name-val")
 			rb.SetK8sPersistentvolumeclaimName("k8s.persistentvolumeclaim.name-val")
 			rb.SetK8sPodName("k8s.pod.name-val")

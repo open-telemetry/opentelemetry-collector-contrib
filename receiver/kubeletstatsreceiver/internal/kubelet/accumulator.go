@@ -64,6 +64,8 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
 	rb.SetK8sNodeName(s.NodeName)
+	rb.SetK8sNodeLabels(a.metadata.nodeCapacity.Labels)
+	rb.SetK8sNodeAnnotations(a.metadata.nodeCapacity.Labels)
 	a.m = append(a.m, a.mbs.NodeMetricsBuilder.Emit(
 		metadata.WithStartTimeOverride(pcommon.NewTimestampFromTime(s.StartTime.Time)),
 		metadata.WithResource(rb.Emit()),

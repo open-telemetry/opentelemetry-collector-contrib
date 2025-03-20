@@ -3466,6 +3466,18 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 	if mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude != nil {
 		mb.resourceAttributeExcludeFilter["k8s.namespace.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNamespaceName.MetricsExclude)
 	}
+	if mbc.ResourceAttributes.K8sNodeAnnotations.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.annotations"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeAnnotations.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeAnnotations.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.annotations"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeAnnotations.MetricsExclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeLabels.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["k8s.node.labels"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeLabels.MetricsInclude)
+	}
+	if mbc.ResourceAttributes.K8sNodeLabels.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["k8s.node.labels"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeLabels.MetricsExclude)
+	}
 	if mbc.ResourceAttributes.K8sNodeName.MetricsInclude != nil {
 		mb.resourceAttributeIncludeFilter["k8s.node.name"] = filter.CreateFilter(mbc.ResourceAttributes.K8sNodeName.MetricsInclude)
 	}
