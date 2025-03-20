@@ -53,7 +53,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metadata: configkafka.MetadataConfig{
-					Full: true,
+					Full:            true,
+					RefreshInterval: 10 * time.Minute,
 					Retry: configkafka.MetadataRetryConfig{
 						Max:     10,
 						Backoff: time.Second * 5,
@@ -92,7 +93,8 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 				Metadata: configkafka.MetadataConfig{
-					Full: true,
+					Full:            true,
+					RefreshInterval: 10 * time.Minute,
 					Retry: configkafka.MetadataRetryConfig{
 						Max:     10,
 						Backoff: time.Second * 5,
