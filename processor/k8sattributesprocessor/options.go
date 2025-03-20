@@ -209,13 +209,6 @@ func withAutomaticRules(rules kube.AutomaticRules) option {
 			for _, prefix := range prefixes {
 				p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(prefix))
 			}
-			if rules.Labels {
-				for _, rule := range kube.AutomaticLabelRules {
-					if rules.IsEnabled(rule.Name) {
-						p.rules.Labels = append(p.rules.Labels, rule)
-					}
-				}
-			}
 		}
 		return nil
 	}
