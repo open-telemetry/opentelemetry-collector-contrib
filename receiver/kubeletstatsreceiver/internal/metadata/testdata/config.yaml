@@ -138,6 +138,10 @@ all_set:
       enabled: true
     k8s.namespace.name:
       enabled: true
+    k8s.node.annotations:
+      enabled: true
+    k8s.node.labels:
+      enabled: true
     k8s.node.name:
       enabled: true
     k8s.persistentvolumeclaim.name:
@@ -291,6 +295,10 @@ none_set:
       enabled: false
     k8s.namespace.name:
       enabled: false
+    k8s.node.annotations:
+      enabled: false
+    k8s.node.labels:
+      enabled: false
     k8s.node.name:
       enabled: false
     k8s.persistentvolumeclaim.name:
@@ -336,6 +344,14 @@ filter_set_include:
       metrics_include:
         - regexp: ".*"
     k8s.namespace.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.annotations:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    k8s.node.labels:
       enabled: true
       metrics_include:
         - regexp: ".*"
@@ -401,6 +417,14 @@ filter_set_exclude:
       enabled: true
       metrics_exclude:
         - strict: "k8s.namespace.name-val"
+    k8s.node.annotations:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
+    k8s.node.labels:
+      enabled: true
+      metrics_exclude:
+        - regexp: ".*"
     k8s.node.name:
       enabled: true
       metrics_exclude:

@@ -68,6 +68,9 @@ type NodeInfo struct {
 	CPUCapacity float64
 	// node's Memory capacity in bytes
 	MemoryCapacity float64
+
+	Labels      map[string]any
+	Annotations map[string]any
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
@@ -181,6 +184,8 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 		}
 
 		setResourcesFromVolume(rb, volume)
+
+		// setresourcesFromNode
 
 		// Get more labels from PersistentVolumeClaim volume type.
 		if volume.PersistentVolumeClaim != nil {
