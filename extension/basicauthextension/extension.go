@@ -32,7 +32,7 @@ func newClientAuthExtension(cfg *Config) *basicAuthClient {
 	return &basicAuthClient{clientAuth: cfg.ClientAuth}
 }
 
-func newServerAuthExtension(cfg *Config) (extensionauth.Server, error) {
+func newServerAuthExtension(cfg *Config) (*basicAuthServer, error) {
 	if cfg.Htpasswd == nil || (cfg.Htpasswd.File == "" && cfg.Htpasswd.Inline == "") {
 		return nil, errNoCredentialSource
 	}
@@ -42,7 +42,10 @@ func newServerAuthExtension(cfg *Config) (extensionauth.Server, error) {
 	}, nil
 }
 
-var _ extensionauth.Server = (*basicAuthServer)(nil)
+var (
+	_ extension.Extension  = (*basicAuthServer)(nil)
+	_ extensionauth.Server = (*basicAuthServer)(nil)
+)
 
 type basicAuthServer struct {
 	htpasswd  *HtpasswdSettings
