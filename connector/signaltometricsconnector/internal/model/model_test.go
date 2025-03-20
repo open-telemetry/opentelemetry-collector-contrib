@@ -189,7 +189,7 @@ func testAttributeKeyValue(
 
 	defaultVal := pcommon.NewValueEmpty()
 	if val != nil {
-		defaultVal.FromRaw(val)
+		require.NoError(t, defaultVal.FromRaw(val))
 	}
 	return AttributeKeyValue{
 		Key:          k,
