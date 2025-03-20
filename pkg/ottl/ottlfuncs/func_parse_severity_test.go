@@ -143,7 +143,7 @@ func Test_parseSeverity(t *testing.T) {
 					return m, nil
 				},
 			},
-			expectErrorMsg: "could not map log level: no matching log level found for value '400'",
+			expectErrorMsg: "could not evaluate log level of value '400': min must be int64, but got string",
 		},
 		{
 			name: "unexpected type in target, no match",
@@ -203,7 +203,7 @@ func Test_parseSeverity(t *testing.T) {
 					return m, nil
 				},
 			},
-			expectErrorMsg: "could not map log level: no matching log level found for value '400'",
+			expectErrorMsg: "could not evaluate log level of value '400': max must be int64, but got string",
 		},
 		{
 			name: "missing min in range, no match",

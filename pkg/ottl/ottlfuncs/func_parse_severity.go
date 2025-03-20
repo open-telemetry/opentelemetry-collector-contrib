@@ -24,6 +24,9 @@ const (
 
 	// hTTP5xx is a special key that is represents a range from 500 to 599
 	hTTP5xx = "5xx"
+
+	minKey = "min"
+	maxKey = "max"
 )
 
 type ParseSeverityArguments[K any] struct {
@@ -52,7 +55,7 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 			return nil, fmt.Errorf("cannot get severity mapping: %w", err)
 		}
 
-		sev, err := validateSeverity(severityMap.AsRaw())
+		sev, err := decodeSeverityMap(severityMap.AsRaw())
 		if err != nil {
 			return nil, fmt.Errorf("invalid severity mapping: %w", err)
 		}
@@ -71,7 +74,7 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 	}
 }
 
-func validateSeverity(raw map[string]any) (map[string][]any, error) {
+func decodeSeverityMap(raw map[string]any) (map[string][]any, error) {
 	s := map[string][]any{}
 	if err := mapstructure.Decode(raw, &s); err != nil {
 		return nil, fmt.Errorf("cannot decode severity mapping: %w", err)
@@ -98,13 +101,13 @@ func evaluateSeverityMapping(value any, criteria []any) (bool, error) {
 	case string:
 		return evaluateSeverityStringMapping(v, criteria), nil
 	case int64:
-		return evaluateSeverityNumberMapping(v, criteria), nil
+		return evaluateSeverityNumberMapping(v, criteria)
 	default:
 		return false, fmt.Errorf("log level must be either string or int64, but got %T", v)
 	}
 }
 
-func evaluateSeverityNumberMapping(value int64, criteria []any) bool {
+func evaluateSeverityNumberMapping(value int64, criteria []any) (bool, error) {
 	for _, crit := range criteria {
 		// if we have a numeric severity number, we need to match with number ranges
 		rangeMap, ok := crit.(map[string]any)
@@ -114,25 +117,25 @@ func evaluateSeverityNumberMapping(value int64, criteria []any) bool {
 				continue
 			}
 		}
-		rangeMin, gotMin := rangeMap["min"]
-		rangeMax, gotMax := rangeMap["max"]
+		rangeMin, gotMin := rangeMap[minKey]
+		rangeMax, gotMax := rangeMap[maxKey]
 		if !gotMin || !gotMax {
 			continue
 		}
 		rangeMinInt, ok := rangeMin.(int64)
 		if !ok {
-			continue
+			return false, fmt.Errorf("min must be int64, but got %T", rangeMin)
 		}
 		rangeMaxInt, ok := rangeMax.(int64)
 		if !ok {
-			continue
+			return false, fmt.Errorf("max must be int64, but got %T", rangeMax)
 		}
-		// TODO should we error if the range object does not contain the expected keys/types, or just proceed with checking the other criteria?
+
 		if rangeMinInt <= value && rangeMaxInt >= value {
-			return true
+			return true, nil
 		}
 	}
-	return false
+	return false, nil
 }
 
 func parseValueRangePlaceholder(crit any) (map[string]any, bool) {
@@ -172,7 +175,7 @@ func evaluateSeverityStringMapping(value string, criteria []any) bool {
 		// if we have a severity string, we need to match with string mappings
 		criteriaString, ok := crit.(string)
 		if !ok {
-			continue
+			return false
 		}
 		if criteriaString == value {
 			return true
