@@ -99,14 +99,12 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 
 	for _, tt := range queryTests {
 		t.Run(tt.name, func(t *testing.T) {
-			expectedBytes, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
 			require.NoError(t, err)
-			// Replace all will fix newlines when testing on Windows
-			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
 
 			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
 			require.NoError(t, err)
-			require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(actual))
+			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
 		})
 	}
 }
