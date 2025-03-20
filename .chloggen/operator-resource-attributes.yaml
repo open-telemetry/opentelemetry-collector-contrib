@@ -2,11 +2,13 @@ change_type: enhancement
 
 component: k8sattributesprocessor
 
-note: Add option to configure resource attributes using the same logic as the OTel operator
+note: Add option to configure automatic resource attributes - with annotation prefix
 
 issues: [37114]
 
 subtext: |
+  Implements [Specify resource attributes using Kubernetes annotations](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#specify-resource-attributes-using-kubernetes-annotations).
+  
   If you are using the file log receiver, you can now create the same resource attributes as traces (via OTLP) received
   from an application instrumented with the OpenTelemetry Operator -
   simply by adding the `extract: { automatic_attributes: { enabled: true }}` configuration to the `k8sattributesprocessor` processor.

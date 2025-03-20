@@ -12,7 +12,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
@@ -77,8 +76,6 @@ var rRegex = regexp.MustCompile(`^(.*)-[0-9a-zA-Z]+$`)
 // Extract CronJob name from the Job name. Job name is created using
 // format: [cronjob-name]-[time-hash-int]
 var cronJobRegex = regexp.MustCompile(`^(.*)-[0-9]+$`)
-
-var errCannotRetrieveImage = errors.New("cannot retrieve image name")
 
 // New initializes a new k8s Client.
 func New(
@@ -451,14 +448,10 @@ func (c *WatchClient) GetNode(nodeName string) (*Node, bool) {
 	return nil, false
 }
 
-func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, map[string]string) {
+func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	tags := map[string]string{}
-	serviceNames := map[string]string{}
 	if c.Rules.PodName {
 		tags[conventions.AttributeK8SPodName] = pod.Name
-	}
-	if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-		serviceNames[conventions.AttributeK8SPodName] = pod.Name
 	}
 
 	if c.Rules.PodHostName {
@@ -494,7 +487,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
+		c.Rules.CronJobName {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -504,19 +497,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.ReplicaSetName {
 					tags[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
-				}
-				if c.Rules.DeploymentName || c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
+				if c.Rules.DeploymentName {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
-						name := replicaset.Deployment.Name
-						if name != "" {
-							if c.Rules.DeploymentName {
-								tags[conventions.AttributeK8SDeploymentName] = name
-							}
-							if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-								serviceNames[conventions.AttributeK8SDeploymentName] = name
-							}
+						if replicaset.Deployment.Name != "" {
+							tags[conventions.AttributeK8SDeploymentName] = replicaset.Deployment.Name
 						}
 					}
 				}
@@ -534,9 +518,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.DaemonSetName {
 					tags[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
-				if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-					serviceNames[conventions.AttributeK8SDaemonSetName] = ref.Name
-				}
 			case "StatefulSet":
 				if c.Rules.StatefulSetUID {
 					tags[conventions.AttributeK8SStatefulSetUID] = string(ref.UID)
@@ -544,20 +525,11 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.StatefulSetName {
 					tags[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
-				if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-					serviceNames[conventions.AttributeK8SStatefulSetName] = ref.Name
-				}
 			case "Job":
-				if c.Rules.CronJobName || c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
+				if c.Rules.CronJobName {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
-						name := parts[1]
-						if c.Rules.CronJobName {
-							tags[conventions.AttributeK8SCronJobName] = name
-						}
-						if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-							serviceNames[conventions.AttributeK8SCronJobName] = name
-						}
+						tags[conventions.AttributeK8SCronJobName] = parts[1]
 					}
 				}
 				if c.Rules.JobUID {
@@ -565,9 +537,6 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				}
 				if c.Rules.JobName {
 					tags[conventions.AttributeK8SJobName] = ref.Name
-				}
-				if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-					serviceNames[conventions.AttributeK8SJobName] = ref.Name
 				}
 			}
 		}
@@ -592,7 +561,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 	for _, r := range c.Rules.Annotations {
 		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
 	}
-	return tags, serviceNames
+	return tags
 }
 
 // This function removes all data from the Pod except what is required by extraction rules and pod association
@@ -657,7 +626,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.AutomaticRules.NeedContainer() {
+			if rules.ContainerImageName || rules.ContainerImageTag {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -690,38 +659,6 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 	return &transformedPod
 }
 
-// parseServiceVersionFromImage parses the service version for differently-formatted image names
-// according to https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#how-serviceversion-should-be-calculated
-func parseServiceVersionFromImage(image string) (string, error) {
-	ref, err := reference.Parse(image)
-	if err != nil {
-		return "", err
-	}
-
-	namedRef, ok := ref.(reference.Named)
-	if !ok {
-		return "", errCannotRetrieveImage
-	}
-	var tag, digest string
-	if taggedRef, ok := namedRef.(reference.Tagged); ok {
-		tag = taggedRef.Tag()
-	}
-	if digestedRef, ok := namedRef.(reference.Digested); ok {
-		digest = digestedRef.Digest().String()
-	}
-	if digest != "" {
-		if tag != "" {
-			return fmt.Sprintf("%s@%s", tag, digest), nil
-		}
-		return digest, nil
-	}
-	if tag != "" {
-		return tag, nil
-	}
-
-	return "", errCannotRetrieveImage
-}
-
 func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContainers {
 	containers := PodContainers{
 		ByID:   map[string]*Container{},
@@ -730,7 +667,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.AutomaticRules.NeedContainer() {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
@@ -741,31 +678,18 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				if c.Rules.ContainerImageTag {
 					container.ImageTag = imageRef.Tag
 				}
-				serviceVersion, err := parseServiceVersionFromImage(spec.Image)
-				if err == nil {
-					if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceVersion) {
-						container.ServiceVersion = serviceVersion
-					}
-				}
 			}
 			containers.ByName[spec.Name] = container
 		}
 	}
 	for _, apiStatus := range append(pod.Status.ContainerStatuses, pod.Status.InitContainerStatuses...) {
-		containerName := apiStatus.Name
-		container, ok := containers.ByName[containerName]
+		container, ok := containers.ByName[apiStatus.Name]
 		if !ok {
 			container = &Container{}
-			containers.ByName[containerName] = container
+			containers.ByName[apiStatus.Name] = container
 		}
 		if c.Rules.ContainerName {
-			container.Name = containerName
-		}
-		if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceInstanceID) {
-			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
-		}
-		if c.Rules.AutomaticRules.IsEnabled(conventions.AttributeServiceName) {
-			container.ServiceName = containerName
+			container.Name = apiStatus.Name
 		}
 		containerID := apiStatus.ContainerID
 		// Remove container runtime prefix
@@ -837,7 +761,7 @@ func (c *WatchClient) podFromAPI(pod *api_v1.Pod) *Pod {
 	if c.shouldIgnorePod(pod) {
 		newPod.Ignore = true
 	} else {
-		newPod.Attributes, newPod.ServiceNames = c.extractPodAttributes(pod)
+		newPod.Attributes = c.extractPodAttributes(pod)
 		if needContainerAttributes(c.Rules) {
 			newPod.Containers = c.extractPodContainersAttributes(pod)
 		}
@@ -1098,8 +1022,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerName ||
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
-		rules.ContainerID ||
-		rules.AutomaticRules.NeedContainer()
+		rules.ContainerID
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {

@@ -746,3 +746,54 @@ func TestWithExcludes(t *testing.T) {
 		})
 	}
 }
+
+func Test_withAutomaticRules(t *testing.T) {
+	tests := []struct {
+		name            string
+		rules           kube.AutomaticRules
+		wantAnnotations []kube.FieldExtractionRule
+	}{
+		{
+			name:  "no automatic rules",
+			rules: kube.AutomaticRules{},
+		},
+		{
+			name: "default automatic rules",
+			rules: kube.AutomaticRules{
+				Enabled: true,
+			},
+			wantAnnotations: []kube.FieldExtractionRule{
+				{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
+				},
+			},
+		},
+		{
+			name: "custom automatic rules",
+			rules: kube.AutomaticRules{
+				Enabled:            true,
+				AnnotationPrefixes: []string{"custom.prefix/"},
+			},
+			wantAnnotations: []kube.FieldExtractionRule{
+				{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`^custom\.prefix/(.+)$`),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := kubernetesprocessor{}
+			rules := withAutomaticRules(tt.rules)
+			err := rules(&p)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantAnnotations, p.rules.Annotations)
+		})
+	}
+}
