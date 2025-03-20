@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package logprofile
 
 import (
@@ -23,7 +26,7 @@ func TestProfile_MarshalLogObject(t *testing.T) {
 			profile: func() pprofile.Profile {
 				p := &pprofiletest.Profile{
 					ProfileID:  pprofile.ProfileID([]byte("profileid1111111")),
-					Attributes: []pprofiletest.Attribute{{"container-attr1", "value1"}},
+					Attributes: []pprofiletest.Attribute{{Key: "container-attr1", Value: "value1"}},
 				}
 				return p.Transform(pprofile.NewScopeProfiles())
 			}(),
