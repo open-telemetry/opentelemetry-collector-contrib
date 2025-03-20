@@ -490,6 +490,7 @@ type tracesConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 type metricsConsumerGroupHandler struct {
@@ -508,6 +509,7 @@ type metricsConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 type logsConsumerGroupHandler struct {
@@ -526,6 +528,7 @@ type logsConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 var (
@@ -591,8 +594,15 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					c.backOffMutex.Lock()
 					backOffDelay := c.backOff.NextBackOff()
+					c.backOffMutex.Unlock()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -604,6 +614,8 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -611,7 +623,9 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				return err
 			}
 			if c.backOff != nil {
+				c.backOffMutex.Lock()
 				c.backOff.Reset()
+				c.backOffMutex.Unlock()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -686,8 +700,15 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					c.backOffMutex.Lock()
 					backOffDelay := c.backOff.NextBackOff()
+					c.backOffMutex.Unlock()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -699,6 +720,8 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -706,7 +729,9 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				return err
 			}
 			if c.backOff != nil {
+				c.backOffMutex.Lock()
 				c.backOff.Reset()
+				c.backOffMutex.Unlock()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -780,8 +805,15 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
+					c.backOffMutex.Lock()
 					backOffDelay := c.backOff.NextBackOff()
+					c.backOffMutex.Unlock()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -793,6 +825,8 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -800,7 +834,9 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				return err
 			}
 			if c.backOff != nil {
+				c.backOffMutex.Lock()
 				c.backOff.Reset()
+				c.backOffMutex.Unlock()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
