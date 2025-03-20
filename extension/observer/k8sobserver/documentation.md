@@ -5,11 +5,3 @@
 ## Internal Telemetry
 
 The following telemetry is emitted by this component.
-
-### otelcol_k8s_observer_watch_errors
-
-Counter with the number of errors while watching for Kubernetes resources.
-
-| Unit | Metric Type | Value Type | Monotonic |
-| ---- | ----------- | ---------- | --------- |
-| 1 | Sum | Int | true |

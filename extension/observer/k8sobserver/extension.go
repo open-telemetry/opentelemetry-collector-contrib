@@ -6,6 +6,8 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"context"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/k8sobserver/internal/metadata"
+	"go.opentelemetry.io/collector/featuregate"
 	"sync"
 	"time"
 
@@ -27,6 +29,13 @@ var (
 	_ observer.Observable = (*k8sObserver)(nil)
 )
 
+var enableK8sObserverWatchErrorsMetric = featuregate.GlobalRegistry().MustRegister(
+	"k8observer.watcherrorsmetric",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("Enable the watch errors metric for the k8s observer."),
+	featuregate.WithRegisterFromVersion("v0.124.0"),
+)
+
 type k8sObserver struct {
 	*endpointswatcher.EndpointsWatcher
 	telemetry            component.TelemetrySettings
@@ -42,8 +51,10 @@ type k8sObserver struct {
 }
 
 func (k *k8sObserver) handleInformerError(r *cache.Reflector, err error) {
-	if err != nil {
-		k.tb.K8sObserverWatchErrors.Add(context.Background(), 1)
+	if enableK8sObserverWatchErrorsMetric.IsEnabled() {
+		if err != nil {
+			k.tb.K8sObserverWatchErrors.Add(context.Background(), 1)
+		}
 	}
 	cache.DefaultWatchErrorHandler(r, err)
 }

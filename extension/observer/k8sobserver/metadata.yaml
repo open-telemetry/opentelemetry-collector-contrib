@@ -21,7 +21,7 @@ tests:
 telemetry:
   metrics:
     k8s_observer_watch_errors:
-      enabled: true
+      enabled: false
       description: "Counter with the number of errors while watching for Kubernetes resources."
       unit: "1"
       sum:
