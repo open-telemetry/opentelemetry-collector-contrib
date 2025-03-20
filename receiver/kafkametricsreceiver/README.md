@@ -25,7 +25,6 @@ This receiver supports Kafka versions:
 
 Required settings (no defaults):
 
-- `protocol_version`: Kafka protocol version
 - `scrapers`: any combination of the following scrapers can be enabled.
     - `topics`
     - `consumers`
@@ -36,11 +35,12 @@ Metrics collected by the associated scraper are listed in [metadata.yaml](metada
 Optional Settings (with defaults):
 
 - `cluster_alias`: Alias name of the cluster. Adds `kafka.cluster.alias` resource attribute.
+- `protocol_version` (default = 2.1.0): Kafka protocol version
 - `brokers` (default = localhost:9092): the list of brokers to read from.
 - `resolve_canonical_bootstrap_servers_only` (default = false): whether to resolve then reverse-lookup broker IPs during startup.
 - `topic_match` (default = ^[^_].*$): regex pattern of topics to filter on metrics collection. The default filter excludes internal topics (starting with `_`).
 - `group_match` (default = .*): regex pattern of consumer groups to filter on for metrics.
-- `client_id` (default = otel-metrics-receiver): consumer client id
+- `client_id` (default = otel-collector): consumer client id
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `auth` (default none)
@@ -68,6 +68,11 @@ Optional Settings (with defaults):
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
+- `metadata`
+  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `retry`
+    - `max` (default = 3): The number of retries to get metadata
+    - `backoff` (default = 250ms): How long to wait between metadata retries
 
 ## Examples:
 
@@ -76,7 +81,6 @@ Optional Settings (with defaults):
 ```yaml
 receivers:
   kafkametrics:
-    protocol_version: 2.0.0
     scrapers:
       - brokers
       - topics
@@ -86,14 +90,18 @@ receivers:
 2) Configuration with more optional settings:
 
 For this example:
+- A non-default broker is specified
+- cluster alias is set to "kafka-prod"
 - collection interval is 5 secs.
+- Kafka protocol version is 3.0.0
+- mTLS is configured
 
 ```yaml
 receivers:
   kafkametrics:
     cluster_alias: kafka-prod
-    brokers: 10.10.10.10:9092
-    protocol_version: 2.0.0
+    brokers: ["10.10.10.10:9092"]
+    protocol_version: 3.0.0
     scrapers:
       - brokers
       - topics
