@@ -1686,7 +1686,7 @@ func (s *Supervisor) processOwnTelemetryConnSettingsMessage(ctx context.Context,
 
 // processAgentIdentificationMessage processes an AgentIdentification message, returning true if the agent config has changed.
 func (s *Supervisor) processAgentIdentificationMessage(ctx context.Context, msg *protobufs.AgentIdentification) bool {
-	ctx, span := s.getTracer().Start(ctx, "ProcessAgentIdentificationMessage")
+	_, span := s.getTracer().Start(ctx, "ProcessAgentIdentificationMessage")
 	defer span.End()
 	newInstanceID, err := uuid.FromBytes(msg.NewInstanceUid)
 	if err != nil {
