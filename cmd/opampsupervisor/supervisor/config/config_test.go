@@ -703,8 +703,7 @@ agent:
 func setupSupervisorConfigFile(t *testing.T, tmpDir, configString string) string {
 	t.Helper()
 
-	testDir := t.TempDir()
-	cfgPath := filepath.Join(testDir, "config.yaml")
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
 	err := os.WriteFile(cfgPath, []byte(configString), 0o600)
 	require.NoError(t, err)
 	return cfgPath
