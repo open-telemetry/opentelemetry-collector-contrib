@@ -40,8 +40,8 @@ connector/spanmetricsconnector/                                  @open-telemetry
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
-exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @boostchicken @bryan-aguilar @rapphil
-exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia @bryan-aguilar
+exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @boostchicken @rapphil
+exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
 exporter/awsxrayexporter/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
