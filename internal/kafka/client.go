@@ -5,11 +5,20 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"time"
 
 	"github.com/IBM/sarama"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
+
+var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
+	"none":   sarama.CompressionNone,
+	"gzip":   sarama.CompressionGZIP,
+	"snappy": sarama.CompressionSnappy,
+	"lz4":    sarama.CompressionLZ4,
+	"zstd":   sarama.CompressionZSTD,
+}
 
 // NewSaramaClusterAdminClient returns a new Kafka cluster admin client with the given configuration.
 func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
@@ -21,7 +30,31 @@ func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientC
 }
 
 // TODO add NewSaramaConsumerGroup, extracted from receiver/kafkareceiver
-// TODO add NewSaramaSyncProducer, extracted from exporter/kafkaexporter
+
+// NewSaramaSyncProducer returns a new synchronous Kafka producer with the given configuration.
+//
+// NewSaramaSyncProducer takes a timeout for produce operations, which is the maximum time to
+// wait for required_acks. This is required since SyncProducer methods cannot be cancelled with
+// a context.Context.
+func NewSaramaSyncProducer(
+	ctx context.Context,
+	clientConfig configkafka.ClientConfig,
+	producerConfig configkafka.ProducerConfig,
+	producerTimeout time.Duration,
+) (sarama.SyncProducer, error) {
+	saramaConfig, err := NewSaramaClientConfig(ctx, clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	saramaConfig.Producer.Return.Successes = true // required for SyncProducer
+	saramaConfig.Producer.Return.Errors = true    // required for SyncProducer
+	saramaConfig.Producer.MaxMessageBytes = producerConfig.MaxMessageBytes
+	saramaConfig.Producer.Flush.MaxMessages = producerConfig.FlushMaxMessages
+	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
+	saramaConfig.Producer.Timeout = producerTimeout
+	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
+}
 
 // NewSaramaClientConfig returns a Sarama client config, based on the given config.
 func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
