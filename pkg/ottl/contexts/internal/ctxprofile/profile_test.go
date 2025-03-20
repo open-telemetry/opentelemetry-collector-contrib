@@ -164,7 +164,7 @@ func createValueTypeSlice() pprofile.ValueTypeSlice {
 
 func createValueType() pprofile.ValueType {
 	vt := pprofile.NewValueType()
-	vt.SetAggregationTemporality(1)
+	vt.SetAggregationTemporality(pprofile.AggregationTemporalityDelta)
 	vt.SetTypeStrindex(2)
 	vt.SetUnitStrindex(3)
 	return vt
