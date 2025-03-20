@@ -5,7 +5,7 @@ package k8sattributesprocessor
 
 import (
 	"context"
-	"errors"
+	"fmt"
 	"net"
 	"testing"
 	"time"
@@ -267,8 +267,8 @@ func TestNewProcessor(t *testing.T) {
 }
 
 func TestProcessorBadClientProvider(t *testing.T) {
-	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformerProvider, _ kube.InformerProviderNamespace, _ kube.InformerProviderReplicaSet, _ bool, _ time.Duration) (kube.Client, error) {
-		return nil, errors.New("bad client error")
+	clientProvider := func(_ component.TelemetrySettings, _ k8sconfig.APIConfig, _ kube.ExtractionRules, _ kube.Filters, _ []kube.Association, _ kube.Excludes, _ kube.APIClientsetProvider, _ kube.InformersFactoryList, _ bool, _ time.Duration) (kube.Client, error) {
+		return nil, fmt.Errorf("bad client error")
 	}
 
 	newMultiTest(t, NewFactory().CreateDefaultConfig(), func(err error) {
