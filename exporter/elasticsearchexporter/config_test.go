@@ -334,18 +334,6 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size_items"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.Batcher.MinSize = 100
-				cfg.Batcher.MaxSize = 200
-				cfg.Batcher.MinSizeItems = &cfg.Batcher.MinSize //nolint:staticcheck
-				cfg.Batcher.MaxSizeItems = &cfg.Batcher.MaxSize //nolint:staticcheck
-			}),
-		},
-		{
 			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
@@ -353,14 +341,6 @@ func TestConfig(t *testing.T) {
 
 				cfg.Batcher.MinSize = 100
 				cfg.Batcher.MaxSize = 200
-
-				// TODO uncomment setting min/max_size_items in config.yaml
-				// and uncomment the below, when the fix to ignore those fields
-				// is brought into contrib.
-				// minSizeItems := 300
-				// maxSizeItems := 400
-				// cfg.Batcher.MinSizeItems = &minSizeItems
-				// cfg.Batcher.MaxSizeItems = &maxSizeItems
 			}),
 		},
 	}
