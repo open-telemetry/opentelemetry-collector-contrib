@@ -18,12 +18,14 @@ jobs:
         with:
           fetch-depth: 0
       - name: Get changed files
+        shell: bash
         id: changed-source
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .go$ | xargs)
 
           echo "go_sources=$files" >> $GITHUB_OUTPUT
       - name: Get changed files
+        shell: bash
         id: changed-test
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep _test.go$ | xargs)
