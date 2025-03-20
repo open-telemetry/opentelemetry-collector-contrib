@@ -60,6 +60,17 @@ func TestLoadConfig(t *testing.T) {
 				QueueSize: 1000,
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "raw_logs"),
+			expected: &Config{
+				Scheme:    "netflow",
+				Port:      2055,
+				Sockets:   1,
+				Workers:   1,
+				QueueSize: 1000,
+				SendRaw:   true,
+			},
+		},
 	}
 
 	for _, tt := range tests {
