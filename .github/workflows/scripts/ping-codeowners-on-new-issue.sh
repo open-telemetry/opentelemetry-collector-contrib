@@ -33,7 +33,7 @@ if [[ -n "${TITLE_COMPONENT}" && ! ("${TITLE_COMPONENT}" =~ " ") ]]; then
   if [[ -n "${CODEOWNERS}" ]]; then
     PING_LINES+="- ${TITLE_COMPONENT}: ${CODEOWNERS}\n"
     PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
-    LABEL_NAME=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $2}' .github/component_labels.txt)
+    LABEL_NAME=$(awk -v path="${TITLE_COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $2}' .github/component_labels.txt)
     if (( "${#LABEL_NAME}" <= 50 )); then
       LABELS+="${LABEL_NAME}"
     else
