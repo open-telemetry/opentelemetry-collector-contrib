@@ -151,18 +151,30 @@ attributes:
 ```
 
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values.
+set of attribute values. There are three behaviours that can be configured for an
+attribute:
 
-- `default_value`, an optional configuration that can be used to always include the
-  attribute with the value of the attribute defaulting to the value specified in
-  `default_value` if the incoming data is missing that attribute.
-- `passthrough`, an optional configuration that can be used to passthrough the
-  attribute as-is. If the attribute is configured with `passthrough` and present in
-  the incoming signal then it will be added directly to the output metric. If it is
-  absent then it will be ignored. In addition, the passthrough attribute will not
-  impact the decision i.e. even if the passthrough attributes are not present in the
-  incoming signal, the signal will be processed and will produce a metric given all
-  other non-passthrough attributes are present or have a default value defined.
+- Without any optional parameters: `datapoint.foo` in the above yaml is an example
+  of such configuration. In this configuration, only the signals which have the said
+  attribute are processed with the attribute's value as one of the attributes for
+  the output metric.
+- With `default_value`: `datapoint.bar` in the above yaml is an example of such
+  configuration. In this configuration all the signals are processed irrespective
+  of the attribute being present or not in the input signal. The output metric
+  is categorized as per the incoming value of the attribute and an extra bucket
+  exists with the attribute set to the configured default value for all the signals
+  that were missing the configured attribute.
+- With `passthrough` set to `true`: `datapoint.baz` in the above yaml is an example
+  of such configuration. If the attribute is configured with `passthrough` and present
+  in the incoming signal then it will be added directly to the output metric. If
+  it is absent then a new metric with missing attributes will be created. In addition,
+  the passthrough attribute will not impact the decision i.e. even if the passthrough
+  attributes are not present in the incoming signal, the signal will be processed
+  and will produce a metric given all other non-passthrough attributes are present
+  or have a default value defined.
+
+Note that resource attributes are filtered differently, check the resource attributes
+section for more details on this.
 
 ### Conditions
 
@@ -216,17 +228,19 @@ include_resource_attributes:
     passthrough: true
 ```
 
-With the above configuration the produced metrics would only have the couple of
-resource attributes specified in the list:
+With the above configuration the produced metrics would have the following
+resource attributes:
 
 - `resource.foo` will be present for the produced metrics if the incoming data also
   has the attribute defined.
 - `resource.bar` will always be present because of the `default_value`. If the incoming
   data does not have a resource attribute with name `resource.bar` then the configured
   `default_value` of `bar` will be used.
-- `resource.baz` will be preserved with the `passthrough` set to `true`. If the
-  incoming data has the resource attribute with name `resource.baz` then it will be
-  added to the produced metrics and if it is absent then it will be ignored.
+- `resource.baz` will be preserved with the `passthrough` set to `true`. Note that
+  this is the same behaviour as `resource.foo` - since resource attributes are basically
+  an include list, the `passthrough` option is a no-op i.e. the attribute with
+  `passthrough` set to `true` behaves identical to an attribute configured without
+  a default value.
 
 ### Single writer
 

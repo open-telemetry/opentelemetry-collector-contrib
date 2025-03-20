@@ -53,7 +53,8 @@ func TestFilterResourceAttributes(t *testing.T) {
 			name: "include_resource_attributes_configured",
 			includeResourceAttributes: []AttributeKeyValue{
 				testAttributeKeyValue(t, "key.1", false, nil),
-				// With passthrough, the attribute will be copied as is
+				// Passthrough does not change the behaviour for resource attribute
+				// filtering.
 				testAttributeKeyValue(t, "key.2", true, nil),
 				// With default value configured and the attribute present, default
 				// value will be ignored.
@@ -64,8 +65,8 @@ func TestFilterResourceAttributes(t *testing.T) {
 				// Without default value, the resource attribute will be ignored
 				// if not present in the input
 				testAttributeKeyValue(t, "key.404", false, nil),
-				// With passthrough true, the resource attribute will ignored if
-				// they are not present in the input
+				// Passthrough does not change the behaviour for resource attribute
+				// filtering.
 				testAttributeKeyValue(t, "key.412", true, nil),
 			},
 			expected: map[string]any{
