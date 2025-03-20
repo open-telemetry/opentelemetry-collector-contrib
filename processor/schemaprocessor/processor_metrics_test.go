@@ -107,3 +107,73 @@ func TestMetrics_Rename(t *testing.T) {
 		})
 	}
 }
+
+func TestMetrics_Errors(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		name            string
+		in              pmetric.Metrics
+		errormsg        string
+		transformations string
+		targetVersion   string
+	}{
+		{
+			name: "target_attribute_already_exists",
+			in: func() pmetric.Metrics {
+				in, err := golden.ReadMetrics(filepath.Join("testdata", "metric-with-old-attr.yaml"))
+				assert.NoError(t, err, "Failed to read input metrics")
+				return in
+			}(),
+			errormsg: "value \"old.attr.name\" already exists",
+			transformations: `
+	1.9.0:
+	  all:
+		changes:
+		  - rename_attributes:
+			  attribute_map:
+				old.resource.name: new.resource.name
+	  metrics:
+		changes:
+			- rename_attributes:
+				  attribute_map:
+					old.attr.name: new.attr.name
+	1.8.0:`,
+			targetVersion: "1.8.0",
+		},
+		{
+			name: "invalid_schema_translation",
+			in: func() pmetric.Metrics {
+				in, err := golden.ReadMetrics(filepath.Join("testdata", "metric-with-old-attr.yaml"))
+				assert.NoError(t, err, "Failed to read input metrics")
+				in.ResourceMetrics().At(0).SetSchemaUrl("invalid_schema_url")
+				return in
+			}(),
+			errormsg: "invalid schema version",
+			transformations: `
+	1.9.0:
+	  all:
+		changes:
+		  - rename_attributes:
+			  attribute_map:
+				old.resource.name: new.resource.name
+	  metrics:
+		changes:
+			- rename_attributes:
+				  attribute_map:
+					old.attr.name: new.attr.name
+	1.8.0:`,
+			targetVersion: "1.8.0",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pr := newTestSchemaProcessor(t, tt.transformations, tt.targetVersion)
+			ctx := context.Background()
+			_, err := pr.processMetrics(ctx, tt.in)
+			require.Error(t, err)
+			assert.Equal(t, tt.errormsg, err.Error())
+		})
+	}
+}

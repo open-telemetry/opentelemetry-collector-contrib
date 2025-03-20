@@ -119,11 +119,12 @@ func (t schemaProcessor) processMetrics(ctx context.Context, md pmetric.Metrics)
 				RequestTranslation(ctx, metricSchemaURL)
 			if err != nil {
 				t.log.Error("failed to request translation", zap.Error(err))
-				continue
+				return md, err
 			}
 			err = tr.ApplyScopeMetricChanges(metric, metricSchemaURL)
 			if err != nil {
 				t.log.Error("failed to apply scope metric changes", zap.Error(err))
+				return md, err
 			}
 		}
 	}
