@@ -69,3 +69,44 @@ func TestQueryContents(t *testing.T) {
 		})
 	}
 }
+
+func TestQueryTextAndPlanQueryContents(t *testing.T) {
+	queryTests := []struct {
+		name                     string
+		instanceName             string
+		maxQuerySampleCount      uint
+		lookbackTime             uint
+		getQuery                 func(string, uint, uint) (string, error)
+		expectedQueryValFilename string
+	}{
+		{
+			name:                     "Test query text and query plan without instance name",
+			instanceName:             "",
+			maxQuerySampleCount:      1000,
+			lookbackTime:             60,
+			getQuery:                 getSQLServerQueryTextAndPlanQuery,
+			expectedQueryValFilename: "databaseTopQueryWithoutInstanceName.txt",
+		},
+		{
+			name:                     "Test query text and query plan with instance name",
+			instanceName:             "instanceName",
+			maxQuerySampleCount:      2000,
+			lookbackTime:             120,
+			getQuery:                 getSQLServerQueryTextAndPlanQuery,
+			expectedQueryValFilename: "databaseTopQueryWithInstanceName.txt",
+		},
+	}
+
+	for _, tt := range queryTests {
+		t.Run(tt.name, func(t *testing.T) {
+			expectedBytes, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
+			require.NoError(t, err)
+			// Replace all will fix newlines when testing on Windows
+			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
+
+			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
+			require.NoError(t, err)
+			require.Equal(t, strings.TrimSpace(expected), strings.TrimSpace(actual))
+		})
+	}
+}
