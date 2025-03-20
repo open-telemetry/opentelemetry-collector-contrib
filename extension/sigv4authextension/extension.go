@@ -107,7 +107,7 @@ func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvide
 		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
 	)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("unable to load AWS configuration: %w", err)
 	}
 	stsSvc := sts.NewFromConfig(awscfg)
 
