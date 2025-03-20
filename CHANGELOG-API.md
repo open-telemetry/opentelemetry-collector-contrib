@@ -7,6 +7,23 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.122.0
+
+### 🛑 Breaking changes 🛑
+
+- `pkg/ottl`: Add support for parsing OTTL conditions to the `ottl.ParserCollection`. (#37904)
+  The `ottl.WithParserCollectionContext` option now requires the converters to be configured using the `ottl.WithStatementConverter` and `ottl.WithConditionConverter` options.
+  
+- `datadogconnector`: Remove `datagodconnector.TracesConfig`, use `datadogconfig.TracesConnectorConfig` instead (#38661)
+
+### 💡 Enhancements 💡
+
+- `dbstorageextension`: Optimize dbstorage.Batch() performance for single-type Operations set call (#38026)
+- `bearertokenauthextension`: Add the ability to configure multiple bearer tokens for the same endpoint. (#38148)
+- `pkg/pdatatest`: Add ValidateProfile() function to validate pprofile.Profile. (#38452)
+- `receiver/prometheus`: Adds the Prometheus API server to more easily debug the Prometheus config, service discovery, and targets. (#32646)
+- `pkg/pdatatest`: Simplify generating profiles for testing by transforming Go structs to profiles. (#38430)
+
 ## v0.121.0
 
 ### 🛑 Breaking changes 🛑

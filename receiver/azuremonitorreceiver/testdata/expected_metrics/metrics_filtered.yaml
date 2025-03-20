@@ -1,0 +1,198 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: azuremonitor.subscription_id
+          value:
+            stringValue: ""
+        - key: azuremonitor.tenant_id
+          value:
+            stringValue: ""
+    scopeMetrics:
+      - metrics:
+          - gauge:
+              dataPoints:
+                - asDouble: 11
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceA/namespace1/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceA/namespace1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_connectionstotal_count
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_incommingmessages_minimum
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 11
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_incommingmessages_count
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 11
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_incommingmessages_total
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 123.45
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_incommingmessages_average
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 123.45
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_incommingmessages_maximum
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 123.45
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_transferedbytes_maximum
+            unit: u
+          - gauge:
+              dataPoints:
+                - asDouble: 0.1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscription/azuremonitor-receiver/resourceGroups/resource-group/providers/Microsoft.ServiceB/namespace2/resource-name
+                    - key: location
+                      value:
+                        stringValue: location-name
+                    - key: name
+                      value:
+                        stringValue: resource-name
+                    - key: resource_group
+                      value:
+                        stringValue: resource-group
+                    - key: type
+                      value:
+                        stringValue: Microsoft.ServiceB/namespace2
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_transferedbytes_minimum
+            unit: u
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+          version: latest

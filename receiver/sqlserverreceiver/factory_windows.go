@@ -51,3 +51,26 @@ func createMetricsReceiver(
 		opts...,
 	)
 }
+
+// createLogsReceiver create a logs receiver based on provided config.
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	receiverCfg component.Config,
+	logsConsumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg, ok := receiverCfg.(*Config)
+	if !ok {
+		return nil, errConfigNotSQLServer
+	}
+
+	// Disable logs receiver on Windows as the only supported logs query (Top Query) is not tested on Windows yet.
+	opts := []scraperhelper.ControllerOption{}
+
+	return scraperhelper.NewLogsController(
+		&cfg.ControllerConfig,
+		params,
+		logsConsumer,
+		opts...,
+	)
+}

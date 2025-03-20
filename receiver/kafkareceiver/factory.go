@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -28,13 +28,6 @@ const (
 	defaultInitialOffset     = offsetLatest
 	defaultSessionTimeout    = 10 * time.Second
 	defaultHeartbeatInterval = 3 * time.Second
-
-	// default from sarama.NewConfig()
-	defaultMetadataRetryMax = 3
-	// default from sarama.NewConfig()
-	defaultMetadataRetryBackoff = time.Millisecond * 250
-	// default from sarama.NewConfig()
-	defaultMetadataFull = true
 
 	// default from sarama.NewConfig()
 	defaultAutoCommitEnable = true
@@ -78,13 +71,7 @@ func createDefaultConfig() component.Config {
 		InitialOffset:     defaultInitialOffset,
 		SessionTimeout:    defaultSessionTimeout,
 		HeartbeatInterval: defaultHeartbeatInterval,
-		Metadata: kafkaexporter.Metadata{
-			Full: defaultMetadataFull,
-			Retry: kafkaexporter.MetadataRetry{
-				Max:     defaultMetadataRetryMax,
-				Backoff: defaultMetadataRetryBackoff,
-			},
-		},
+		Metadata:          configkafka.NewDefaultMetadataConfig(),
 		AutoCommit: AutoCommit{
 			Enable:   defaultAutoCommitEnable,
 			Interval: defaultAutoCommitInterval,
