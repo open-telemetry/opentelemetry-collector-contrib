@@ -315,7 +315,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val)
 			}
 		case fullScansPerSec:
-			val, err := strconv.ParseInt(row[valueKey], 10, 64)
+			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
 				err = fmt.Errorf("row %d: %w", i, err)
 				errs = append(errs, err)
