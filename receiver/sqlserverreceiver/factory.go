@@ -252,12 +252,9 @@ func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	if metrics.SqlserverDatabaseLatency.Enabled ||
+	return metrics.SqlserverDatabaseLatency.Enabled ||
 		metrics.SqlserverDatabaseOperations.Enabled ||
-		metrics.SqlserverDatabaseIo.Enabled {
-		return true
-	}
-	return false
+		metrics.SqlserverDatabaseIo.Enabled
 }
 
 func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
@@ -265,7 +262,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		return false
 	}
 
-	if metrics.SqlserverBatchRequestRate.Enabled ||
+	return metrics.SqlserverBatchRequestRate.Enabled ||
 		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
 		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
 		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
@@ -291,9 +288,5 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||
 		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
-		metrics.SqlserverUserConnectionCount.Enabled {
-		return true
-	}
-
-	return false
+		metrics.SqlserverUserConnectionCount.Enabled
 }
