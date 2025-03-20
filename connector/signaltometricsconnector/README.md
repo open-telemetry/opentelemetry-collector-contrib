@@ -151,7 +151,7 @@ attributes:
 ```
 
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values. There are three behaviours that can be configured for an
+set of attribute values. There are three behaviors that can be configured for an
 attribute:
 
 - Without any optional parameters: `datapoint.foo` in the above yaml is an example
@@ -237,7 +237,7 @@ resource attributes:
   data does not have a resource attribute with name `resource.bar` then the configured
   `default_value` of `bar` will be used.
 - `resource.baz` will be preserved with the `passthrough` set to `true`. Note that
-  this is the same behaviour as `resource.foo` - since resource attributes are basically
+  this is the same behavior as `resource.foo` - since resource attributes are basically
   an include list, the `passthrough` option is a no-op i.e. the attribute with
   `passthrough` set to `true` behaves identical to an attribute configured without
   a default value.
