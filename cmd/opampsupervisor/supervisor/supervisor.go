@@ -400,7 +400,7 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo(ctx context.Context) (err error) {
-	ctx, span := s.getTracer().Start(ctx, "GetBootstrapInfo")
+	_, span := s.getTracer().Start(ctx, "GetBootstrapInfo")
 	defer span.End()
 
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
@@ -584,7 +584,7 @@ func (s *Supervisor) startOpAMP(ctx context.Context) error {
 }
 
 func (s *Supervisor) startOpAMPClient(ctx context.Context) error {
-	ctx, span := s.getTracer().Start(ctx, "StartOpAMPClient")
+	_, span := s.getTracer().Start(ctx, "StartOpAMPClient")
 	defer span.End()
 	// determine if we need to load a TLS config or not
 	var tlsConfig *tls.Config
@@ -685,7 +685,7 @@ func (s *Supervisor) startOpAMPClient(ctx context.Context) error {
 // depending on information received by the Supervisor from the remote
 // OpAMP server.
 func (s *Supervisor) startOpAMPServer(ctx context.Context) error {
-	ctx, span := s.getTracer().Start(ctx, "StartOpAMPServer")
+	_, span := s.getTracer().Start(ctx, "StartOpAMPServer")
 	defer span.End()
 	s.opampServer = server.New(newLoggerFromZap(s.telemetrySettings.Logger, "opamp-server"))
 
@@ -931,13 +931,13 @@ func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *pr
 	// update the OpAMP server config
 	s.config.Server = newServerConfig
 
-	if err := s.startOpAMPClient(nil); err != nil {
+	if err := s.startOpAMPClient(ctx); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Cannot connect to the OpAMP server using the new settings: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Cannot connect to the OpAMP server using the new settings", zap.Error(err))
 		// revert the OpAMP server config
 		s.config.Server = oldServerConfig
 		// start the OpAMP client with the old settings
-		if err := s.startOpAMPClient(nil); err != nil {
+		if err := s.startOpAMPClient(ctx); err != nil {
 			span.SetStatus(codes.Error, fmt.Sprintf("Cannot reconnect to the OpAMP server after restoring old settings: %s", err.Error()))
 			s.telemetrySettings.Logger.Error("Cannot reconnect to the OpAMP server after restoring old settings", zap.Error(err))
 			return err

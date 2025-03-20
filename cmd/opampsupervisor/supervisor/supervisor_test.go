@@ -7,7 +7,6 @@ import (
 	"bytes"
 	"context"
 	"fmt"
-	"go.opentelemetry.io/otel/trace/noop"
 	"net"
 	"os"
 	"path/filepath"
@@ -27,6 +26,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -1255,7 +1255,7 @@ func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 			effectiveConfig: &atomic.Value{},
 			cfgState:        &atomic.Value{},
 		}
-		got := s.createEffectiveConfigMsg(nil)
+		got := s.createEffectiveConfigMsg(context.Background())
 
 		assert.Empty(t, got.ConfigMap.ConfigMap[""].Body)
 	})
