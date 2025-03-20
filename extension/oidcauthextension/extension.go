@@ -51,7 +51,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) extensionauth.Server {
+func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}
