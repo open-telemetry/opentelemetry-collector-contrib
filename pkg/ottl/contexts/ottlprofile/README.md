@@ -46,13 +46,3 @@ The following paths are supported.
 | profile.dropped_attributes_count         | the dropped attributes count of the profile being processed                                                                                        | int64                                                                   |
 | profile.original_payload_format          | the original payload format of the profile being processed                                                                                         | string                                                                  |
 | profile.original_payload                 | the original payload of the profile being processed                                                                                                | []byte                                                                  |
-
-## Enums
-
-The Profile Context supports the enum names from the [profiles proto](https://github.com/open-telemetry/opentelemetry-proto/blob/main/opentelemetry/proto/profiles/v1development/profiles.proto).
-
-| Enum Symbol                         | Value |
-|-------------------------------------|-------|
-| AGGREGATION_TEMPORALITY_UNSPECIFIED | 0     |
-| AGGREGATION_TEMPORALITY_DELTA       | 1     |
-| AGGREGATION_TEMPORALITY_CUMULATIVE  | 2     |
