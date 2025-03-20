@@ -4,9 +4,10 @@ status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek]
+    active: [StefanKurek, sincejune]
     seeking_new: true
 
 resource_attributes:
