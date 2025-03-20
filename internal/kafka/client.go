@@ -20,6 +20,15 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"zstd":   sarama.CompressionZSTD,
 }
 
+// NewSaramaClient returns a new Kafka client with the given configuration.
+func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
+	saramaConfig, err := NewSaramaClientConfig(ctx, config)
+	if err != nil {
+		return nil, err
+	}
+	return sarama.NewClient(config.Brokers, saramaConfig)
+}
+
 // NewSaramaClusterAdminClient returns a new Kafka cluster admin client with the given configuration.
 func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
 	saramaConfig, err := NewSaramaClientConfig(ctx, config)
@@ -60,6 +69,7 @@ func NewSaramaSyncProducer(
 func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Metadata.Full = config.Metadata.Full
+	saramaConfig.Metadata.RefreshFrequency = config.Metadata.RefreshInterval
 	saramaConfig.Metadata.Retry.Max = config.Metadata.Retry.Max
 	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
 	if config.ResolveCanonicalBootstrapServersOnly {
