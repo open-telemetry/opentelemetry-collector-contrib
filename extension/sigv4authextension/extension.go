@@ -5,6 +5,7 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
