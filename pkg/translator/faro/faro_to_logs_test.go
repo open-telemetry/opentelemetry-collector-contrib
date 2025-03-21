@@ -63,6 +63,66 @@ func TestTranslateToLogs(t *testing.T) {
 	}
 }
 
+func TestTranslateFromFaroToOTLPAndBack(t *testing.T) {
+	faroPayload := PayloadFromFile(t, "general/payload.json")
+	// Translate from faro payload to otlp logs
+	actualLogs, err := TranslateToLogs(context.TODO(), faroPayload)
+	require.NoError(t, err)
+
+	// Translate from faro payload to otlp traces
+	actualTraces, err := TranslateToTraces(context.TODO(), faroPayload)
+	require.NoError(t, err)
+
+	// Translate from otlp logs to faro payload
+	faroLogsPayloads, err := TranslateFromLogs(context.TODO(), actualLogs)
+	require.NoError(t, err)
+
+	// Translate from otlp traces to faro payload
+	faroTracesPayloads, err := TranslateFromTraces(context.TODO(), actualTraces)
+	require.NoError(t, err)
+
+	// Combine the traces and logs faro payloads into a single faro payload
+	expectedFaroPayload := faroLogsPayloads[0]
+	expectedFaroPayload.Traces = faroTracesPayloads[0].Traces
+
+	// Compare the original faro payload with the translated faro payload
+	require.Equal(t, expectedFaroPayload, faroPayload)
+}
+
+func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
+	logs, err := golden.ReadLogs(filepath.Join("testdata", "general", "plogs.yaml"))
+	require.NoError(t, err)
+
+	traces, err := golden.ReadTraces(filepath.Join("testdata", "general", "ptraces.yaml"))
+	require.NoError(t, err)
+
+	// Translate from otlp logs to faro payload
+	actualFaroLogsPayloads, err := TranslateFromLogs(context.TODO(), logs)
+	require.NoError(t, err)
+
+	// Translate from otlp traces to faro payload
+	actualFaroTracesPayloads, err := TranslateFromTraces(context.TODO(), traces)
+	require.NoError(t, err)
+
+	// Combine the traces and logs faro payloads into a single faro payload
+	actualFaroPayload := actualFaroLogsPayloads[0]
+	actualFaroPayload.Traces = actualFaroTracesPayloads[0].Traces
+
+	// Translate from faro payload to otlp logs
+	expectedLogs, err := TranslateToLogs(context.TODO(), actualFaroPayload)
+	require.NoError(t, err)
+
+	// Compare the original otlp logs with the translated otlp logs
+	require.Equal(t, logs, expectedLogs)
+
+	// Translate from faro payload to otlp traces
+	expectedTraces, err := TranslateToTraces(context.TODO(), actualFaroPayload)
+	require.NoError(t, err)
+
+	// Compare the original otlp traces with the translated otlp traces
+	require.Equal(t, traces, expectedTraces)
+}
+
 func PayloadFromFile(t *testing.T, filename string) faroTypes.Payload {
 	t.Helper()
 
