@@ -28,17 +28,17 @@ jobs:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/go/bin
@@ -85,7 +85,7 @@ jobs:
       - name: Link Checker
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         id: lychee
-        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
         with:
           args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
           failIfEmpty: false

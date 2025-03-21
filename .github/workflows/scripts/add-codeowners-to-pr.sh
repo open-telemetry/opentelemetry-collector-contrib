@@ -90,18 +90,17 @@ main () {
                 REVIEWERS+=$(echo -n "${OWNER}" | sed -E 's/@(.+)/"\1"/')
             done
 
-            # Convert the CODEOWNERS entry to a label
-            COMPONENT_NAME=$(echo -n "${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%')
+            LABEL_NAME="$(awk -v path="${COMPONENT}" '$1 == path {print $2}' .github/component_labels.txt)"
 
-            if (( "${#COMPONENT_NAME}" > 50 )); then
-                echo "'${COMPONENT_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding label"
+            if (( "${#LABEL_NAME}" > 50 )); then
+                echo "'${LABEL_NAME}' exceeds GitHub's 50-character limit on labels, skipping adding label"
                 continue
             fi
 
             if [[ -n "${LABELS}" ]]; then
                 LABELS+=","
             fi
-            LABELS+="${COMPONENT_NAME}"
+            LABELS+="${LABEL_NAME}"
         done
     done
 
