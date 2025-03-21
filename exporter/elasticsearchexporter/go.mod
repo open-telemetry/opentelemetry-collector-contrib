@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/elastic/go-docappender/v2 v2.6.1
+	github.com/elastic/go-docappender/v2 v2.7.0
 	github.com/elastic/go-elasticsearch/v8 v8.17.1
 	github.com/elastic/go-structform v0.0.12
 	github.com/klauspost/compress v1.18.0
