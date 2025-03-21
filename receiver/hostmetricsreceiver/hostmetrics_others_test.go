@@ -12,6 +12,7 @@ import (
 )
 
 func TestRootPathNotAllowedOnOS(t *testing.T) {
+	// Useless comment just to test changes on scoped-tests
 	assert.Error(t, validateRootPath("testdata"))
 }
 
