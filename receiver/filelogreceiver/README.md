@@ -63,6 +63,7 @@ Tails and parses logs from files.
 | `ordering_criteria.sort_by.format`    |                                      | Relevant if `sort_type` is set to `timestamp`. Defines the strptime format of the timestamp being sorted.                                                                                                                                                       |
 | `ordering_criteria.sort_by.ascending` |                                      | Sort direction                                                                                                                                                                                                                                                  |
 | `compression`                         |                                      | Indicate the compression format of input files. If set accordingly, files will be read using a reader that uncompresses the file before scanning its content. Options are `` or `gzip`                                                                          |
+| `polls_to_archive` | unset (`0`) | Enables [archiving](../../pkg/stanza/fileconsumer/design/archive.md). With archiving enabled, file offsets older than three poll cycles are stored on disk rather than being discarded |
 
 Note that _by default_, no logs will be read from a file that is not actively being written to because `start_at` defaults to `end`.
 
@@ -211,7 +212,7 @@ For additional resiliency, see [Fault tolerant log collection example](../../exa
 Here is some of the information the file log receiver stores:
 - The number of files it is currently tracking (`knownFiles`).
 - For each file being tracked:
-  - The [fingerprint](../../pkg/stanza/fileconsumer/design.md#fingerprints) of the file (`Fingerprint.first_bytes`).
+  - The [fingerprint](../../pkg/stanza/fileconsumer/design/design.md#fingerprints) of the file (`Fingerprint.first_bytes`).
   - The byte offset from the start of the file, indicating the position in the file from where the
     file log receiver continues reading the file (`Offset`).
   - An arbitrary set of file attributes, such as the name of the file (`FileAttributes`).
