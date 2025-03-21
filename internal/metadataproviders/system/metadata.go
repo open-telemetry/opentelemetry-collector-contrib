@@ -13,6 +13,7 @@ import (
 
 	"github.com/Showmax/go-fqdn"
 	"github.com/shirou/gopsutil/v4/cpu"
+	"github.com/shirou/gopsutil/v4/host"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
@@ -53,6 +54,9 @@ type Provider interface {
 	// OSType returns the host operating system
 	OSType() (string, error)
 
+	// OSVersion returns the version of the operating system
+	OSVersion() (string, error)
+
 	// LookupCNAME returns the canonical name for the current host
 	LookupCNAME() (string, error)
 
@@ -86,6 +90,14 @@ func NewProvider() Provider {
 
 func (systemMetadataProvider) OSType() (string, error) {
 	return internal.GOOSToOSType(runtime.GOOS), nil
+}
+
+func (systemMetadataProvider) OSVersion() (string, error) {
+	info, err := host.Info()
+	if err != nil {
+		return "", fmt.Errorf("OSVersion failed to get os version: %w", err)
+	}
+	return info.PlatformVersion, nil
 }
 
 func (systemMetadataProvider) FQDN() (string, error) {

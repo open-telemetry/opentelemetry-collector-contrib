@@ -150,6 +150,7 @@ extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+extension/encoding/awslogsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension

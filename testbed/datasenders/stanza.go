@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"testing"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
@@ -30,8 +31,8 @@ var _ testbed.LogDataSender = (*FileLogWriter)(nil)
 
 // NewFileLogWriter creates a new data sender that will write log entries to a
 // file, to be tailed by FluentBit and sent to the collector.
-func NewFileLogWriter() *FileLogWriter {
-	file, err := os.CreateTemp("", "perf-logs.log")
+func NewFileLogWriter(t *testing.T) *FileLogWriter {
+	file, err := os.CreateTemp(t.TempDir(), "perf-logs.log")
 	if err != nil {
 		panic("failed to create temp file")
 	}
@@ -144,11 +145,8 @@ func (f *FileLogWriter) GetEndpoint() net.Addr {
 	return nil
 }
 
-func NewLocalFileStorageExtension() map[string]string {
-	tempDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		panic("failed to create temp storage dir")
-	}
+func NewLocalFileStorageExtension(t *testing.T) map[string]string {
+	tempDir := t.TempDir()
 
 	return map[string]string{
 		"file_storage": fmt.Sprintf(`
