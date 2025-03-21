@@ -306,8 +306,13 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 		rp = v.scrapeData.rPoolsByRef[rpRef.Value]
 	}
 
+	// This can be used to identify VMs that have been orphaned
+	if vm.Config == nil {
+		v.logger.Debug(fmt.Sprintf("no VM Config found for VM [%s]", vm.Name))
+	}
+
 	groupInfo = &vmGroupInfo{poweredOff: 0, poweredOn: 0, suspended: 0, templates: 0}
-	if vm.Config.Template {
+	if vm.Config != nil && vm.Config.Template {
 		groupInfo.templates++
 	} else {
 		switch vm.Runtime.PowerState {
@@ -333,9 +338,11 @@ func (v *vcenterMetricScraper) buildVMMetrics(
 		v.recordVMPerformanceMetrics(perfMetrics)
 	}
 
-	vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
-	if vSANMetrics != nil {
-		v.recordVMVSANMetrics(vSANMetrics)
+	if vm.Config != nil {
+		vSANMetrics := v.scrapeData.vmVSANMetricsByUUID[vm.Config.InstanceUuid]
+		if vSANMetrics != nil {
+			v.recordVMVSANMetrics(vSANMetrics)
+		}
 	}
 	v.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 
