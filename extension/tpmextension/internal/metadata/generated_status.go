@@ -8,7 +8,7 @@ import (
 
 var (
 	Type      = component.MustNewType("tpm")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"
 )
 
 const (

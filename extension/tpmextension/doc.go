@@ -4,4 +4,4 @@
 //go:generate mdatagen metadata.yaml
 
 // Package tpmextension
-package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
+package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"

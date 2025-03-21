@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
+package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"
 
 import (
 	"context"
@@ -15,6 +15,10 @@ type tpmExtension struct {
 	cancel            context.CancelFunc
 	telemetrySettings component.TelemetrySettings
 }
+
+var (
+	_ extension.Extension = (*tpmExtension)(nil)
+)
 
 func newTPMExtension(extensionCfg *Config, settings extension.Settings) (extension.Extension, error) {
 	settingsExtension := &tpmExtension{

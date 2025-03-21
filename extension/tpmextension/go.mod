@@ -1,5 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension
-
+module github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension
 go 1.23.0
 
 require (

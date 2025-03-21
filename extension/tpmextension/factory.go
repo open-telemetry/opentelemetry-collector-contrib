@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
+package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"
 
 import (
 	"context"
@@ -12,7 +12,7 @@ import (
 
 var (
 	Type      = component.MustNewType("tpm")
-	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
+	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"
 )
 
 const (
