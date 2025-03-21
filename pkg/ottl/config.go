@@ -10,6 +10,8 @@ import (
 
 type ErrorMode string
 
+// Useless comment just to test changes on scoped-tests
+
 const (
 	IgnoreError    ErrorMode = "ignore"
 	PropagateError ErrorMode = "propagate"
