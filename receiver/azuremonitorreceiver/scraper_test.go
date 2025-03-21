@@ -371,6 +371,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreStartTimestamp(),
 				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
 			))
 		})
 	}
@@ -595,6 +596,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreStartTimestamp(),
 			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
 		))
 	})
 }
