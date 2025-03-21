@@ -213,7 +213,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			// Add the remaining labels as resource attributes
 			for _, l := range ls {
 				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
-					// Convert the label name to the resource attribute format
 					attrKey := strings.ReplaceAll(l.Name, "_", ".")
 					attrs.PutStr(attrKey, l.Value)
 				}
