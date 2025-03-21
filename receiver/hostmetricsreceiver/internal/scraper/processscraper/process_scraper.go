@@ -250,7 +250,7 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 		}
 
 		command, err := getProcessCommand(ctx, handle)
-		if err != nil && !s.config.MuteProcessAllErrors {
+		if err != nil {
 			errs.AddPartial(0, fmt.Errorf("error reading command for process %q (pid %v): %w", executable.name, pid, err))
 		}
 

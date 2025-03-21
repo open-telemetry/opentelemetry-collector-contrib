@@ -16,11 +16,7 @@ import (
 
 func BenchmarkGetProcessMetadata(b *testing.B) {
 	ctx := context.Background()
-	config := &Config{
-		MuteProcessExeError:  true,
-		MuteProcessNameError: true,
-		MuteProcessAllErrors: true, // Only way to pass the benchmark
-	}
+	config := &Config{}
 
 	scraper, err := newProcessScraper(scraper.Settings{}, config)
 	if err != nil {
@@ -61,10 +57,8 @@ func BenchmarkGetProcessMetadata(b *testing.B) {
 			scraper.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled = bm.parentPidEnabled
 
 			for i := 0; i < b.N; i++ {
-				_, err := scraper.getProcessMetadata(ctx)
-				if err != nil {
-					b.Fatalf("Failed to get process metadata: %v", err)
-				}
+				// Typically there are errors, but we are not interested in them for this benchmark
+				_, _ = scraper.getProcessMetadata(ctx)
 			}
 		})
 	}
