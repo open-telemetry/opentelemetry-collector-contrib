@@ -50,6 +50,7 @@ func newProcessor(cfg *Config, tel telemetry.Metrics, next consumer.Metrics) *Pr
 			nums: maps.New[identity.Stream, *mutex[pmetric.NumberDataPoint]](limit),
 			hist: maps.New[identity.Stream, *mutex[pmetric.HistogramDataPoint]](limit),
 			expo: maps.New[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]](limit),
+			summ: maps.New[identity.Stream, *mutex[pmetric.SummaryDataPoint]](limit),
 		},
 		aggr:   delta.Aggregator{Aggregator: new(data.Adder)},
 		ctx:    ctx,
@@ -69,6 +70,7 @@ type vals struct {
 	nums *mutex[pmetric.NumberDataPoint]
 	hist *mutex[pmetric.HistogramDataPoint]
 	expo *mutex[pmetric.ExponentialHistogramDataPoint]
+	summ *mutex[pmetric.SummaryDataPoint]
 }
 
 func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
@@ -83,10 +85,11 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 		nums: guard(pmetric.NewNumberDataPoint()),
 		hist: guard(pmetric.NewHistogramDataPoint()),
 		expo: guard(pmetric.NewExponentialHistogramDataPoint()),
+		summ: guard(pmetric.NewSummaryDataPoint()),
 	}
 
 	metrics.Filter(md, func(m metrics.Metric) bool {
-		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta {
+		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta && m.Type() != pmetric.MetricTypeSummary {
 			return keep
 		}
 
@@ -161,6 +164,27 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					err = p.aggr.Exponential(last, dp)
 					last.CopyTo(dp)
 				})
+			// Add a case for SummaryDataPoint in the switch statement
+			case pmetric.SummaryDataPoint:
+				last, loaded := p.last.summ.LoadOrStore(id, zero.summ)
+				if maps.Exceeded(last, loaded) {
+					// state is full, reject stream
+					attrs.Set(telemetry.Error("limit"))
+					return drop
+				}
+
+				// stream is ok and active, update stale tracker
+				p.stale.Store(id, now)
+
+				if !loaded {
+					// cached zero was stored, alloc new one
+					zero.summ = guard(pmetric.NewSummaryDataPoint())
+				}
+
+				last.use(func(last pmetric.SummaryDataPoint) {
+					err = p.aggr.Summary(last, dp)
+					last.CopyTo(dp)
+				})
 			}
 
 			if err != nil {
@@ -201,6 +225,7 @@ func (p *Processor) Start(_ context.Context, _ component.Host) error {
 							p.last.nums.LoadAndDelete(id)
 							p.last.hist.LoadAndDelete(id)
 							p.last.expo.LoadAndDelete(id)
+							p.last.summ.LoadAndDelete(id)
 							p.stale.Delete(id)
 						}
 						return true
@@ -228,6 +253,7 @@ type state struct {
 	nums *maps.Parallel[identity.Stream, *mutex[pmetric.NumberDataPoint]]
 	hist *maps.Parallel[identity.Stream, *mutex[pmetric.HistogramDataPoint]]
 	expo *maps.Parallel[identity.Stream, *mutex[pmetric.ExponentialHistogramDataPoint]]
+	summ *maps.Parallel[identity.Stream, *mutex[pmetric.SummaryDataPoint]]
 }
 
 func (s state) Size() int {

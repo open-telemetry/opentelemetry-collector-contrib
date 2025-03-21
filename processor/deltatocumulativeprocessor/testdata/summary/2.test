@@ -1,0 +1,42 @@
+-- in --
+resourceMetrics:
+  - resource:
+      attributes: []
+    scopeMetrics:
+      - scope:
+          name: Test
+        metrics:
+          - name: test.summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 2  # Note different timestamp
+                  sum: 50
+                  count: 5
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 30
+
+-- out --
+resourceMetrics:
+  - resource:
+      attributes: []
+    scopeMetrics:
+      - scope:
+          name: Test
+        metrics:
+          - name: test.summary
+            summary:
+              dataPoints:
+                - timeUnixNano: 2
+                  sum: 150  # 100 + 50
+                  count: 15  # 10 + 5
+                  quantileValues:
+                    - quantile: 0.25
+                      value: 30  # New quantile values replace old ones
+
+-- telemetry --
+counter otelcol_deltatocumulative_datapoints:
+- int: 2
+
+updown otelcol_deltatocumulative_streams_tracked:
+- int: 1
