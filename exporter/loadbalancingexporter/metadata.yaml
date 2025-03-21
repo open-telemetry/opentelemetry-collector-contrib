@@ -7,7 +7,7 @@ status:
     development: [metrics]
   distributions: [contrib, k8s]
   codeowners:
-    active: [jpkrohling]
+    active: [jpkrohling, rlankfo]
     seeking_new: true
 
 tests:

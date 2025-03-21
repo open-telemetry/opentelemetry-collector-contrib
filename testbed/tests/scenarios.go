@@ -158,7 +158,7 @@ func Scenario10kItemsPerSecond(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -217,7 +217,7 @@ func Scenario10kItemsPerSecondAlternateBackend(
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
 	fmt.Println(configStr)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -289,7 +289,7 @@ func Scenario1kSPSWithAttrs(t *testing.T, args []string, tests []TestCase, proce
 
 			// Prepare config.
 			configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-			configCleanup, err := agentProc.PrepareConfig(configStr)
+			configCleanup, err := agentProc.PrepareConfig(t, configStr)
 			require.NoError(t, err)
 			defer configCleanup()
 
@@ -345,7 +345,7 @@ func ScenarioTestTraceNoBackend10kSPS(
 	options := testbed.LoadOptions{DataItemsPerSecond: 10000, ItemsPerBatch: 10}
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 	configStr := createConfigYaml(t, sender, receiver, resultDir, configuration.Processor, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -391,7 +391,7 @@ func ScenarioSendingQueuesFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -473,7 +473,7 @@ func ScenarioSendingQueuesNotFull(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, extensions)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -524,7 +524,7 @@ func ScenarioLong(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)
@@ -570,7 +570,7 @@ func ScenarioMemoryLimiterHit(
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 	dataProvider := testbed.NewPerfTestDataProvider(loadOptions)

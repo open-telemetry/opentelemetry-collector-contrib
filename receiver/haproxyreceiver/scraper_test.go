@@ -21,8 +21,7 @@ import (
 )
 
 func Test_scraper_readStats(t *testing.T) {
-	f, err := os.MkdirTemp("", "haproxytest")
-	require.NoError(t, err)
+	f := t.TempDir()
 	socketAddr := filepath.Join(f, "testhaproxy.sock")
 	l, err := net.Listen("unix", socketAddr)
 	require.NoError(t, err)
@@ -65,8 +64,7 @@ func Test_scraper_readStats(t *testing.T) {
 }
 
 func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
-	f, err := os.MkdirTemp("", "haproxytest")
-	require.NoError(t, err)
+	f := t.TempDir()
 	socketAddr := filepath.Join(f, "testhaproxy.sock")
 	l, err := net.Listen("unix", socketAddr)
 	require.NoError(t, err)
@@ -109,8 +107,7 @@ func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
 }
 
 func Test_scraper_readStatsWithNoValues(t *testing.T) {
-	f, err := os.MkdirTemp("", "haproxytest")
-	require.NoError(t, err)
+	f := t.TempDir()
 	socketAddr := filepath.Join(f, "testhaproxy.sock")
 	l, err := net.Listen("unix", socketAddr)
 	require.NoError(t, err)

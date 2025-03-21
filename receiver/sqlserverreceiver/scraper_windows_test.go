@@ -91,7 +91,7 @@ func TestSqlServerScraper(t *testing.T) {
 
 	assert.NoError(t, s.start(context.Background(), nil))
 	assert.Empty(t, s.watcherRecorders)
-	assert.Equal(t, 23, obsLogs.Len())
+	assert.Equal(t, 21, obsLogs.Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("failed to create perf counter with path \\SQLServer:").Len())
 	assert.Equal(t, 21, obsLogs.FilterMessageSnippet("The specified object was not found on the computer.").Len())
 	assert.Equal(t, 1, obsLogs.FilterMessageSnippet("\\SQLServer:General Statistics\\").Len())
