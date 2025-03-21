@@ -201,7 +201,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			// search or create the ResourceMetrics
 			if existingRM, ok := prw.interRequestCache[hashedLabels]; ok {
 				rm = existingRM
 			} else {
