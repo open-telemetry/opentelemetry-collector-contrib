@@ -50,7 +50,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "filelog",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
@@ -59,7 +59,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "filelog checkpoints",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
@@ -260,7 +260,7 @@ func TestLogLargeFiles(t *testing.T) {
 			 * this results in a file size of approximately 2GB over its lifetime.
 			 */
 			name:     "filelog-largefiles-2Gb-lifetime",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 200000,
@@ -280,7 +280,7 @@ func TestLogLargeFiles(t *testing.T) {
 			 * this results in a file size of approximately 6GB over its lifetime.
 			 */
 			name:     "filelog-largefiles-6GB-lifetime",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 330000,
@@ -328,7 +328,7 @@ func TestLargeFileOnce(t *testing.T) {
 	}
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
-	sender := datasenders.NewFileLogWriter()
+	sender := datasenders.NewFileLogWriter(t)
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	loadOptions := testbed.LoadOptions{
 		DataItemsPerSecond: 1,
@@ -385,7 +385,7 @@ func TestMemoryLimiterHit(t *testing.T) {
 		{
 			name: "filelog",
 			sender: func() testbed.DataSender {
-				return datasenders.NewFileLogWriter().WithRetry(`
+				return datasenders.NewFileLogWriter(t).WithRetry(`
     retry_on_failure:
       enabled: true
 `)
