@@ -220,15 +220,23 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 		}
 	}
 
-	newLabels := make(map[string]any)
-	for key, value := range node.Labels {
-		newLabels[key] = value
+	r.nodeLimits.Name = node.Name
+
+	//newLabels := make(map[string]any)
+	// for key, value := range node.Labels {
+	// 	newLabels[key] = value
+	// }
+	newLabels := map[string]any{
+		"data1": "custom1",
 	}
 	r.nodeLimits.Labels = newLabels
 
-	newAnnotations := make(map[string]any)
-	for key, value := range node.Labels {
-		newAnnotations[key] = value
+	//newAnnotations := make(map[string]any)
+	// for key, value := range node.Annotations {
+	// 	newAnnotations[key] = value
+	// }
+	newAnnotations := map[string]any{
+		"data2": "custom2",
 	}
 	r.nodeLimits.Annotations = newAnnotations
 }

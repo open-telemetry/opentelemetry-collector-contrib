@@ -62,7 +62,7 @@ func (a *metricDataAccumulator) nodeStats(s stats.NodeStats) {
 	addNetworkMetrics(a.mbs.NodeMetricsBuilder, metadata.NodeNetworkMetrics, s.Network, currentTime)
 	// todo s.Runtime.ImageFs
 	rb := a.mbs.NodeMetricsBuilder.NewResourceBuilder()
-	rb.SetK8sNodeName(s.NodeName)
+	rb.SetK8sNodeName(a.metadata.nodeCapacity.Name)
 	if len(a.metadata.nodeCapacity.Labels) > 0 {
 		rb.SetK8sNodeLabels(a.metadata.nodeCapacity.Labels)
 	}
