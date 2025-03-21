@@ -11,12 +11,13 @@ import (
 	"time"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestTranslateFromLogs(t *testing.T) {
@@ -315,7 +316,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 		name        string
 		lr          plog.LogRecord
 		rl          pcommon.Resource
-		wantPayload *faroTypes.Payload
+		wantPayload faroTypes.Payload
 		wantErr     assert.ErrorAssertionFunc
 	}{
 		{
@@ -326,7 +327,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl:          pcommon.NewResource(),
-			wantPayload: nil,
+			wantPayload: faroTypes.Payload{},
 			wantErr:     assert.Error,
 		},
 		{
@@ -336,7 +337,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl:          pcommon.NewResource(),
-			wantPayload: nil,
+			wantPayload: faroTypes.Payload{},
 			wantErr:     assert.Error,
 		},
 		{
@@ -347,7 +348,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Logs: []faroTypes.Log{
 					{},
 				},
@@ -362,7 +363,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Logs: []faroTypes.Log{
 					{
 						Context: map[string]string{
@@ -390,7 +391,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Events: []faroTypes.Event{
 					{},
 				},
@@ -405,7 +406,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Events: []faroTypes.Event{
 					{
 						Name:      "faro.performanceEntry",
@@ -430,7 +431,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Measurements: []faroTypes.Measurement{
 					{},
 				},
@@ -445,7 +446,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Measurements: []faroTypes.Measurement{
 					{
 						Timestamp: time.Date(2021, 9, 30, 10, 46, 17, 680000000, time.UTC),
@@ -476,7 +477,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Exceptions: []faroTypes.Exception{
 					{},
 				},
@@ -491,7 +492,7 @@ func Test_translateLogToFaroPayload(t *testing.T) {
 				return record
 			}(),
 			rl: pcommon.NewResource(),
-			wantPayload: &faroTypes.Payload{
+			wantPayload: faroTypes.Payload{
 				Exceptions: []faroTypes.Exception{
 					{
 						Timestamp: time.Date(2021, 9, 30, 10, 46, 17, 680000000, time.UTC),
@@ -570,13 +571,13 @@ func Test_mergePayloads(t *testing.T) {
 	tests := []struct {
 		name            string
 		targetPayload   *faroTypes.Payload
-		sourcePayload   *faroTypes.Payload
+		sourcePayload   faroTypes.Payload
 		expectedPayload *faroTypes.Payload
 	}{
 		{
 			name:          "target.Traces is nil",
 			targetPayload: &faroTypes.Payload{},
-			sourcePayload: &faroTypes.Payload{
+			sourcePayload: faroTypes.Payload{
 				Logs: []faroTypes.Log{
 					{
 						Message: "test",
@@ -644,7 +645,7 @@ func Test_mergePayloads(t *testing.T) {
 					},
 				},
 			},
-			sourcePayload: &faroTypes.Payload{
+			sourcePayload: faroTypes.Payload{
 				Logs: []faroTypes.Log{
 					{
 						Message: "test2",

@@ -9,11 +9,12 @@ import (
 	"testing"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
 
 func TestTranslateFromTraces(t *testing.T) {
