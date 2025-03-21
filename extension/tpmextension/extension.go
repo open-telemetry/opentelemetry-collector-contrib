@@ -16,9 +16,7 @@ type tpmExtension struct {
 	telemetrySettings component.TelemetrySettings
 }
 
-var (
-	_ extension.Extension = (*tpmExtension)(nil)
-)
+var _ extension.Extension = (*tpmExtension)(nil)
 
 func newTPMExtension(extensionCfg *Config, settings extension.Settings) (extension.Extension, error) {
 	settingsExtension := &tpmExtension{
