@@ -408,27 +408,6 @@ func TestTranslateV2(t *testing.T) {
 				return expected
 			}(),
 		},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
-			if tc.expectError != "" {
-				assert.ErrorContains(t, err, tc.expectError)
-				return
-			}
-
-			assert.NoError(t, err)
-			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
-			assert.Equal(t, tc.expectedStats, stats)
-		})
-	}
-}
-
-func TestTargetInfo(t *testing.T) {
-	testCases := []struct {
-		name            string
-		request         *writev2.Request
-		expectedMetrics pmetric.Metrics
-	}{
 		{
 			name: "service with target_info metric",
 			request: &writev2.Request{
@@ -445,7 +424,7 @@ func TestTargetInfo(t *testing.T) {
 				},
 				Timeseries: []writev2.TimeSeries{
 					// Generating 2 metrics, one is a type info and the other is a normal gauge.
-					// The type info metric should be translated just contains the resource attributes.
+					// The type info metric should be translated to just contains the resource attributes.
 					// The normal_metric should be translated as usual.
 					{
 						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
@@ -488,12 +467,16 @@ func TestTargetInfo(t *testing.T) {
 				return metrics
 			}(),
 		},
-	}
-
-	for _, tc := range testCases {
+	} {
 		t.Run(tc.name, func(t *testing.T) {
-			prwReceiver := setupMetricsReceiver(t)
-			metrics, _, err := prwReceiver.translateV2(context.Background(), tc.request)
+			// since we are using the interRequestCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
+			prwReceiver.interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+			metrics, _, err := prwReceiver.translateV2(ctx, tc.request)
+			if tc.expectError != "" {
+				assert.ErrorContains(t, err, tc.expectError)
+				return
+			}
+
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
 		})

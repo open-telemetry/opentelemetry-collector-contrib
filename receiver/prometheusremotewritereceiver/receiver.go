@@ -37,6 +37,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
+		interRequestCache: make(map[uint64]pmetric.ResourceMetrics),
 	}, nil
 }
 
@@ -44,9 +45,10 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	config *Config
-	server *http.Server
-	wg     sync.WaitGroup
+	config            *Config
+	server            *http.Server
+	wg                sync.WaitGroup
+	interRequestCache map[uint64]pmetric.ResourceMetrics
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -164,8 +166,6 @@ func (prw *prometheusRemoteWriteReceiver) parseProto(contentType string) (promco
 	return promconfig.RemoteWriteProtoMsgV1, nil
 }
 
-var interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
-
 // translateV2 translates a v2 remote-write request into OTLP metrics.
 // translate is not feature complete.
 //
@@ -203,7 +203,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
 			// search or create the ResourceMetrics
-			if existingRM, ok := interRequestCache[hashedLabels]; ok {
+			if existingRM, ok := prw.interRequestCache[hashedLabels]; ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
@@ -221,20 +221,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(attrKey, l.Value)
 				}
 			}
-			interRequestCache[hashedLabels] = rm
+			prw.interRequestCache[hashedLabels] = rm
 			continue
 		}
 
 		// For the rest of the metrics, continue with the normal processing
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := interRequestCache[hashedLabels]
+		existingRM, ok := prw.interRequestCache[hashedLabels]
 		if ok {
 			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			interRequestCache[hashedLabels] = rm
+			prw.interRequestCache[hashedLabels] = rm
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
