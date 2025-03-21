@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -24,15 +25,8 @@ func TestCreateDefaultConfig(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	assert.Equal(t, []string{defaultBroker}, cfg.Brokers)
-	assert.Equal(t, defaultGroupID, cfg.GroupID)
-	assert.Equal(t, defaultClientID, cfg.ClientID)
-	assert.Equal(t, defaultInitialOffset, cfg.InitialOffset)
-	assert.Equal(t, defaultSessionTimeout, cfg.SessionTimeout)
-	assert.Equal(t, defaultHeartbeatInterval, cfg.HeartbeatInterval)
-	assert.Equal(t, defaultMinFetchSize, cfg.MinFetchSize)
-	assert.Equal(t, defaultDefaultFetchSize, cfg.DefaultFetchSize)
-	assert.Equal(t, defaultMaxFetchSize, cfg.MaxFetchSize)
+	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
+	assert.Equal(t, configkafka.NewDefaultConsumerConfig(), cfg.ConsumerConfig)
 }
 
 func TestCreateTraces(t *testing.T) {

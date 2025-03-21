@@ -34,39 +34,20 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Topic:                                "spans",
-				Encoding:                             "otlp_proto",
-				Brokers:                              []string{"foo:123", "bar:456"},
-				ResolveCanonicalBootstrapServersOnly: true,
-				ClientID:                             "otel-collector",
-				GroupID:                              "otel-collector",
-				InitialOffset:                        "latest",
-				SessionTimeout:                       10 * time.Second,
-				HeartbeatInterval:                    3 * time.Second,
-				Authentication: configkafka.AuthenticationConfig{
-					TLS: &configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
-						},
-					},
-				},
-				Metadata: configkafka.MetadataConfig{
-					Full:            true,
-					RefreshInterval: 10 * time.Minute,
-					Retry: configkafka.MetadataRetryConfig{
-						Max:     10,
-						Backoff: time.Second * 5,
-					},
-				},
-				AutoCommit: AutoCommit{
-					Enable:   true,
-					Interval: 1 * time.Second,
-				},
-				MinFetchSize:     1,
-				DefaultFetchSize: 1048576,
-				MaxFetchSize:     0,
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"foo:123", "bar:456"}
+					config.ResolveCanonicalBootstrapServersOnly = true
+					config.ClientID = "the_client_id"
+					return config
+				}(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.GroupID = "the_group_id"
+					return config
+				}(),
+				Topic:    "spans",
+				Encoding: "otlp_proto",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
 				},
@@ -75,38 +56,29 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:             "logs",
-				Encoding:          "direct",
-				Brokers:           []string{"coffee:123", "foobar:456"},
-				ClientID:          "otel-collector",
-				GroupID:           "otel-collector",
-				InitialOffset:     "earliest",
-				SessionTimeout:    45 * time.Second,
-				HeartbeatInterval: 15 * time.Second,
-				Authentication: configkafka.AuthenticationConfig{
-					TLS: &configtls.ClientConfig{
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"coffee:123", "foobar:456"}
+					config.Metadata.Retry.Max = 10
+					config.Metadata.Retry.Backoff = 5 * time.Second
+					config.Authentication.TLS = &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",
 						},
-					},
-				},
-				Metadata: configkafka.MetadataConfig{
-					Full:            true,
-					RefreshInterval: 10 * time.Minute,
-					Retry: configkafka.MetadataRetryConfig{
-						Max:     10,
-						Backoff: time.Second * 5,
-					},
-				},
-				AutoCommit: AutoCommit{
-					Enable:   true,
-					Interval: 1 * time.Second,
-				},
-				MinFetchSize:     1,
-				DefaultFetchSize: 1048576,
-				MaxFetchSize:     0,
+					}
+					return config
+				}(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.InitialOffset = configkafka.EarliestOffset
+					config.SessionTimeout = 45 * time.Second
+					config.HeartbeatInterval = 15 * time.Second
+					return config
+				}(),
+				Topic:    "logs",
+				Encoding: "direct",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,

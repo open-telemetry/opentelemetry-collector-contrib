@@ -20,6 +20,11 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"zstd":   sarama.CompressionZSTD,
 }
 
+var saramaInitialOffsets = map[string]int64{
+	configkafka.EarliestOffset: sarama.OffsetOldest,
+	configkafka.LatestOffset:   sarama.OffsetNewest,
+}
+
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
 	saramaConfig, err := NewSaramaClientConfig(ctx, config)
@@ -38,7 +43,26 @@ func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientC
 	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
 }
 
-// TODO add NewSaramaConsumerGroup, extracted from receiver/kafkareceiver
+// NewSaramaConsumerGroup returns a new Kafka consumer group with the given configuration.
+func NewSaramaConsumerGroup(
+	ctx context.Context,
+	clientConfig configkafka.ClientConfig,
+	consumerConfig configkafka.ConsumerConfig,
+) (sarama.ConsumerGroup, error) {
+	saramaConfig, err := NewSaramaClientConfig(ctx, clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	saramaConfig.Consumer.Group.Session.Timeout = consumerConfig.SessionTimeout
+	saramaConfig.Consumer.Group.Heartbeat.Interval = consumerConfig.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
+	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
+	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
+	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
+}
 
 // NewSaramaSyncProducer returns a new synchronous Kafka producer with the given configuration.
 //

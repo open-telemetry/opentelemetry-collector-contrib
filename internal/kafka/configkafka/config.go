@@ -99,7 +99,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		SessionTimeout:    10 * time.Second,
 		HeartbeatInterval: 3 * time.Second,
 		GroupID:           "otel-collector",
-		InitialOffset:     "latest",
+		InitialOffset:     LatestOffset,
 		AutoCommit: AutoCommitConfig{
 			Enable:   true,
 			Interval: time.Second,
