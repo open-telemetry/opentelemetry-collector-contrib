@@ -20,6 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/multierr"
 )
 
 var stacktraceRegexp *regexp.Regexp
@@ -39,6 +40,7 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 
 	w := sha256.New()
 	encoder := json.NewEncoder(w)
+	var errs error
 	for i := 0; i < rls.Len(); i++ {
 		scopeLogs := rls.At(i).ScopeLogs()
 		resource := rls.At(i).Resource()
@@ -48,12 +50,15 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 				log := logs.At(k)
 				payload, err := translateLogToFaroPayload(log, resource)
 				if err != nil {
-					return payloads, err
+					errs = multierr.Append(errs, err)
+					continue
 				}
+
 				meta := payload.Meta
 				// if payload meta already exists in the metaMap merge payload to the existing payload
 				if encodeErr := encoder.Encode(meta); encodeErr != nil {
-					return payloads, err
+					errs = multierr.Append(errs, err)
+					continue
 				}
 				metaKey := fmt.Sprintf("%x", w.Sum(nil))
 				w.Reset()
@@ -63,24 +68,24 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 					mergePayloads(existingPayload, payload)
 				} else {
 					// if payload meta doesn't exist in the metaMap add new meta key to the metaMap
-					metaMap[metaKey] = payload
+					metaMap[metaKey] = &payload
 				}
 			}
 		}
 	}
 
 	if len(metaMap) == 0 {
-		return payloads, nil
+		return payloads, errs
 	}
 
 	payloads = make([]faroTypes.Payload, 0)
 	for _, payload := range metaMap {
 		payloads = append(payloads, *payload)
 	}
-	return payloads, nil
+	return payloads, errs
 }
 
-func mergePayloads(target *faroTypes.Payload, source *faroTypes.Payload) {
+func mergePayloads(target *faroTypes.Payload, source faroTypes.Payload) {
 	// merge logs
 	target.Logs = append(target.Logs, source.Logs...)
 
@@ -106,43 +111,41 @@ func mergePayloads(target *faroTypes.Payload, source *faroTypes.Payload) {
 	}
 }
 
-func translateLogToFaroPayload(lr plog.LogRecord, rl pcommon.Resource) (*faroTypes.Payload, error) {
-	var payload *faroTypes.Payload
+func translateLogToFaroPayload(lr plog.LogRecord, rl pcommon.Resource) (faroTypes.Payload, error) {
+	var payload faroTypes.Payload
 	body := lr.Body().Str()
 	kv, err := parseLogfmtLine(body)
 	if err != nil {
-		return nil, err
+		return payload, err
 	}
 	kind, ok := kv["kind"]
 	if !ok {
-		return nil, fmt.Errorf("%s log record body doesn't contain kind", body)
-	}
-	switch kind {
-	case string(faroTypes.KindLog):
-		payload, err = convertLogKeyValToPayload(kv, rl)
-		if err != nil {
-			return nil, err
-		}
-	case string(faroTypes.KindEvent):
-		payload, err = convertEventKeyValsToPayload(kv, rl)
-		if err != nil {
-			return nil, err
-		}
-	case string(faroTypes.KindMeasurement):
-		payload, err = convertMeasurementKeyValsToPayload(kv, rl)
-		if err != nil {
-			return nil, err
-		}
-	case string(faroTypes.KindException):
-		payload, err = convertExceptionKeyValsToPayload(kv, rl)
-		if err != nil {
-			return nil, err
-		}
-	default:
-		return nil, fmt.Errorf("kind: %s is not supported, it must be one of %s, %s, %s, %s", kind, faroTypes.KindLog, faroTypes.KindEvent, faroTypes.KindMeasurement, faroTypes.KindException)
+		return payload, fmt.Errorf("%s log record body doesn't contain kind", body)
 	}
 
-	return payload, nil
+	var errs error
+
+	switch kind {
+	case string(faroTypes.KindLog):
+		payload, err = convertLogKeyValToPayload(kv)
+	case string(faroTypes.KindEvent):
+		payload, err = convertEventKeyValsToPayload(kv)
+	case string(faroTypes.KindMeasurement):
+		payload, err = convertMeasurementKeyValsToPayload(kv)
+	case string(faroTypes.KindException):
+		payload, err = convertExceptionKeyValsToPayload(kv)
+	default:
+		return payload, fmt.Errorf("kind: %s is not supported, it must be one of %s, %s, %s, %s", kind, faroTypes.KindLog, faroTypes.KindEvent, faroTypes.KindMeasurement, faroTypes.KindException)
+	}
+	if err != nil {
+		errs = multierr.Append(errs, err)
+	}
+	meta, metaErr := extractMetaFromKeyVal(kv, rl)
+	if metaErr != nil {
+		return payload, multierr.Append(errs, metaErr)
+	}
+	payload.Meta = meta
+	return payload, errs
 }
 
 func parseLogfmtLine(line string) (map[string]string, error) {
@@ -161,81 +164,52 @@ func parseLogfmtLine(line string) (map[string]string, error) {
 	return kv, nil
 }
 
-func convertLogKeyValToPayload(kv map[string]string, rl pcommon.Resource) (*faroTypes.Payload, error) {
+func convertLogKeyValToPayload(kv map[string]string) (faroTypes.Payload, error) {
 	var payload faroTypes.Payload
-
-	meta, err := extractMetaFromKeyVal(kv, rl)
-	if err != nil {
-		return nil, err
-	}
-
 	log, err := extractLogFromKeyVal(kv)
 	if err != nil {
-		return nil, err
+		return payload, err
 	}
-
-	payload.Meta = meta
 	payload.Logs = []faroTypes.Log{
 		log,
 	}
-
-	return &payload, nil
+	return payload, nil
 }
 
-func convertEventKeyValsToPayload(kv map[string]string, rl pcommon.Resource) (*faroTypes.Payload, error) {
+func convertEventKeyValsToPayload(kv map[string]string) (faroTypes.Payload, error) {
 	var payload faroTypes.Payload
-
-	meta, err := extractMetaFromKeyVal(kv, rl)
-	if err != nil {
-		return nil, err
-	}
-
 	event, err := extractEventFromKeyVal(kv)
 	if err != nil {
-		return nil, err
+		return payload, err
 	}
-
-	payload.Meta = meta
 	payload.Events = []faroTypes.Event{
 		event,
 	}
-
-	return &payload, nil
+	return payload, nil
 }
 
-func convertExceptionKeyValsToPayload(kv map[string]string, rl pcommon.Resource) (*faroTypes.Payload, error) {
+func convertExceptionKeyValsToPayload(kv map[string]string) (faroTypes.Payload, error) {
 	var payload faroTypes.Payload
-	meta, err := extractMetaFromKeyVal(kv, rl)
-	if err != nil {
-		return nil, err
-	}
 	exception, err := extractExceptionFromKeyVal(kv)
 	if err != nil {
-		return nil, err
+		return payload, err
 	}
-	payload.Meta = meta
 	payload.Exceptions = []faroTypes.Exception{
 		exception,
 	}
-
-	return &payload, nil
+	return payload, nil
 }
 
-func convertMeasurementKeyValsToPayload(kv map[string]string, rl pcommon.Resource) (*faroTypes.Payload, error) {
+func convertMeasurementKeyValsToPayload(kv map[string]string) (faroTypes.Payload, error) {
 	var payload faroTypes.Payload
-	meta, err := extractMetaFromKeyVal(kv, rl)
-	if err != nil {
-		return nil, err
-	}
 	measurement, err := extractMeasurementFromKeyVal(kv)
 	if err != nil {
-		return nil, err
+		return payload, err
 	}
-	payload.Meta = meta
 	payload.Measurements = []faroTypes.Measurement{
 		measurement,
 	}
-	return &payload, nil
+	return payload, nil
 }
 
 func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes.Meta, error) {
