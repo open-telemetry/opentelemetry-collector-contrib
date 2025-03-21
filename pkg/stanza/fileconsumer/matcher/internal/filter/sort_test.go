@@ -17,21 +17,6 @@ import (
 
 func TestNewSortOptionErr(t *testing.T) {
 	var err error
-	_, err = SortNumeric("", true)
-	require.Error(t, err)
-	_, err = SortNumeric("", false)
-	require.Error(t, err)
-
-	_, err = SortAlphabetical("", true)
-	require.Error(t, err)
-	_, err = SortAlphabetical("", false)
-	require.Error(t, err)
-
-	_, err = SortTemporal("", true, "%%Y%m%d%H", "")
-	require.Error(t, err)
-	_, err = SortTemporal("", false, "%%Y%m%d%H", "")
-	require.Error(t, err)
-
 	_, err = SortTemporal("foo", true, "", "")
 	require.Error(t, err)
 	_, err = SortTemporal("foo", false, "", "")
@@ -43,7 +28,7 @@ func TestNewSortOptionErr(t *testing.T) {
 	require.Error(t, err)
 }
 
-type withOpts func(t *testing.T, ascending bool) []Option
+type withOpts func(ascending bool) []Option
 
 func TestSort(t *testing.T) {
 	cases := []struct {
@@ -58,10 +43,8 @@ func TestSort(t *testing.T) {
 	}{
 		{
 			name: "Numeric",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortNumeric("num", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortNumeric("num", ascending)}
 			},
 			regex:           `(?P<num>\d{2}).*log`,
 			values:          []string{"55.log", "22.log", "66.log", "44.log"},
@@ -69,10 +52,8 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "NumericParseErr",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortNumeric("num", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortNumeric("num", ascending)}
 			},
 			regex:           `(?P<num>[a-z0-9]{2}).*log`,
 			values:          []string{"bb.log", "66.log", "aa.log", "zz.log", "44.log"},
@@ -81,10 +62,8 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "Alphabetical",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortAlphabetical("word", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortAlphabetical("word", ascending)}
 			},
 			regex:           `(?P<word>[a-z0-9]+).*log`,
 			values:          []string{"5b2c.log", "a.log", "foo.log", "99.log"},
@@ -92,7 +71,7 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "Temporal",
-			withOpts: func(t *testing.T, ascending bool) []Option {
+			withOpts: func(ascending bool) []Option {
 				o, err := SortTemporal("time", ascending, "%Y%m%d%H", "")
 				require.NoError(t, err)
 				return []Option{o}
@@ -103,7 +82,7 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "TemporalParseErr",
-			withOpts: func(t *testing.T, ascending bool) []Option {
+			withOpts: func(ascending bool) []Option {
 				o, err := SortTemporal("time", ascending, "%Y%m%d%H", "")
 				require.NoError(t, err)
 				return []Option{o}
@@ -115,10 +94,8 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "SoloItem",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortNumeric("num", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortNumeric("num", ascending)}
 			},
 			regex:           `(?P<num>[a-z0-9]{2}).*log`,
 			values:          []string{"22.log"},
@@ -126,10 +103,8 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "SoloErr",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortNumeric("num", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortNumeric("num", ascending)}
 			},
 			regex:           `(?P<num>[a-z0-9]{2}).*log`,
 			values:          []string{"aa.log"},
@@ -138,10 +113,8 @@ func TestSort(t *testing.T) {
 		},
 		{
 			name: "AllErr",
-			withOpts: func(t *testing.T, ascending bool) []Option {
-				o, err := SortNumeric("num", ascending)
-				require.NoError(t, err)
-				return []Option{o}
+			withOpts: func(ascending bool) []Option {
+				return []Option{SortNumeric("num", ascending)}
 			},
 			regex:           `(?P<num>[a-z0-9]{2}).*log`,
 			values:          []string{"bb.log", "aa.log", "zz.log"},
@@ -152,7 +125,7 @@ func TestSort(t *testing.T) {
 	for _, tc := range cases {
 		for _, ascending := range []bool{true, false} {
 			t.Run(fmt.Sprintf("%s/%t", tc.name, ascending), func(t *testing.T) {
-				result, err := Filter(tc.values, regexp.MustCompile(tc.regex), tc.withOpts(t, ascending)...)
+				result, err := Filter(tc.values, regexp.MustCompile(tc.regex), tc.withOpts(ascending)...)
 				if tc.expectApplyErr != "" {
 					assert.EqualError(t, err, tc.expectApplyErr)
 				} else {
