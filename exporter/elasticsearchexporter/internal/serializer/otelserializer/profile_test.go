@@ -115,7 +115,8 @@ func TestSerializeProfile(t *testing.T) {
 			profiles.MarkReadOnly()
 
 			buf := []*bytes.Buffer{}
-			err := SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
+			ser := New()
+			err := ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, func(b *bytes.Buffer, _ string, _ string) error {
 				buf = append(buf, b)
 				return nil
 			})

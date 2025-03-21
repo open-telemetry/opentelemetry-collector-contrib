@@ -8,6 +8,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
 
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
@@ -35,6 +36,7 @@ type elasticsearchExporter struct {
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
+	encoders            sync.Map
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
@@ -65,13 +67,22 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
+	nEnc, err := newEncoder(m)
+	if err != nil {
+		return nil, err
+	}
+	enc, _ := e.encoders.LoadOrStore(m, nEnc)
+	return enc.(documentEncoder), nil
+}
+
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	mappingMode, err := e.getMappingMode(ctx)
 	if err != nil {
 		return err
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -172,7 +183,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -335,7 +346,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -465,7 +476,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	if err != nil {
 		return err
 	}
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
