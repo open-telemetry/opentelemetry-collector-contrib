@@ -331,7 +331,7 @@ metrics:
     description: The number of unrestricted full table or index scans.
     unit: "{scans}/s"
     gauge:
-      value_type: int
+      value_type: double
     attributes: []
   sqlserver.index.search.rate:
     enabled: false
