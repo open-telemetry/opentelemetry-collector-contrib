@@ -22,6 +22,12 @@ import (
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 )
 
+var stacktraceRegexp *regexp.Regexp
+
+func init() {
+	stacktraceRegexp = regexp.MustCompile(`(?P<function>.+)?\s\(((?P<module>.+)\|)?(?P<filename>.+)?:(?P<lineno>\d+)?:(?P<colno>\d+)?\)$`)
+}
+
 // TranslateFromLogs converts a Logs pipeline data into []*faro.Payload
 func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, error) {
 	_, span := otel.Tracer("").Start(ctx, "TranslateFromLogs")
@@ -682,21 +688,20 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 		return nil, nil
 	}
 
-	pattern := regexp.MustCompile(`(?P<function>.+)?\s\(((?P<module>.+)\|)?(?P<filename>.+)?:(?P<lineno>\d+)?:(?P<colno>\d+)?\)$`)
-	matches := pattern.FindStringSubmatch(frameStr)
+	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
 
-	frame.Function = matches[pattern.SubexpIndex("function")]
-	frame.Module = matches[pattern.SubexpIndex("module")]
-	frame.Filename = matches[pattern.SubexpIndex("filename")]
+	frame.Function = matches[stacktraceRegexp.SubexpIndex("function")]
+	frame.Module = matches[stacktraceRegexp.SubexpIndex("module")]
+	frame.Filename = matches[stacktraceRegexp.SubexpIndex("filename")]
 
-	if linenoStr := matches[pattern.SubexpIndex("lineno")]; linenoStr != "" {
+	if linenoStr := matches[stacktraceRegexp.SubexpIndex("lineno")]; linenoStr != "" {
 		lineno, err := strconv.ParseInt(linenoStr, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		frame.Lineno = int(lineno)
 	}
-	if colnoStr := matches[pattern.SubexpIndex("colno")]; colnoStr != "" {
+	if colnoStr := matches[stacktraceRegexp.SubexpIndex("colno")]; colnoStr != "" {
 		colno, err := strconv.ParseInt(colnoStr, 10, 64)
 		if err != nil {
 			return nil, err
