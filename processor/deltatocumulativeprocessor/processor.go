@@ -89,7 +89,8 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 	}
 
 	metrics.Filter(md, func(m metrics.Metric) bool {
-		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta && m.Type() != pmetric.MetricTypeSummary {
+		if m.AggregationTemporality() != pmetric.AggregationTemporalityDelta &&
+			(m.Type() != pmetric.MetricTypeSummary || !p.cfg.AccumulateSummaries) {
 			return keep
 		}
 
@@ -164,7 +165,6 @@ func (p *Processor) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) erro
 					err = p.aggr.Exponential(last, dp)
 					last.CopyTo(dp)
 				})
-			// Add a case for SummaryDataPoint in the switch statement
 			case pmetric.SummaryDataPoint:
 				last, loaded := p.last.summ.LoadOrStore(id, zero.summ)
 				if maps.Exceeded(last, loaded) {

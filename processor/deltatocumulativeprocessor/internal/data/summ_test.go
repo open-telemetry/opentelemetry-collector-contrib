@@ -41,35 +41,6 @@ func (s SummaryDP) Into() pmetric.SummaryDataPoint {
 	return dp
 }
 
-// equalSummaryDataPoints compares two summary data points, treating nil and empty quantile slices as equivalent
-func equalSummaryDataPoints(expected, actual pmetric.SummaryDataPoint) bool {
-	if expected.Sum() != actual.Sum() || expected.Count() != actual.Count() {
-		return false
-	}
-
-	// Both have no quantiles (empty or nil) - consider them equal
-	if expected.QuantileValues().Len() == 0 && actual.QuantileValues().Len() == 0 {
-		return true
-	}
-
-	// Different number of quantiles
-	if expected.QuantileValues().Len() != actual.QuantileValues().Len() {
-		return false
-	}
-
-	// Compare each quantile
-	for i := range expected.QuantileValues().Len() {
-		expQ := expected.QuantileValues().At(i)
-		actQ := actual.QuantileValues().At(i)
-
-		if expQ.Quantile() != actQ.Quantile() || expQ.Value() != actQ.Value() {
-			return false
-		}
-	}
-
-	return true
-}
-
 func TestSummary(t *testing.T) {
 	// Test cases for Summary data type
 	cases := []struct {
@@ -188,9 +159,15 @@ func TestSummary(t *testing.T) {
 			err := add.Summary(dp, in)
 			is.Equal(nil, err)
 
-			// Use custom equality check instead of direct comparison
-			if !equalSummaryDataPoints(want, dp) {
-				t.Errorf("Summary data points not equal\nexpected: %v\nactual: %v", want, dp)
+			// Use direct comparison instead of custom function
+			is.Equal(want.Sum(), dp.Sum())
+			is.Equal(want.Count(), dp.Count())
+			is.Equal(want.QuantileValues().Len(), dp.QuantileValues().Len())
+
+			// Compare quantiles if any exist
+			for i := 0; i < want.QuantileValues().Len(); i++ {
+				is.Equal(want.QuantileValues().At(i).Quantile(), dp.QuantileValues().At(i).Quantile())
+				is.Equal(want.QuantileValues().At(i).Value(), dp.QuantileValues().At(i).Value())
 			}
 		})
 	}

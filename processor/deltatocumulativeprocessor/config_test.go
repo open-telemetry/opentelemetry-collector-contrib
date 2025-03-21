@@ -33,6 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				MaxStale:   1 * time.Minute,
 				MaxStreams: 10,
+				AccumulateSummaries: false,
 			},
 		},
 		{
@@ -40,6 +41,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				MaxStale:   2 * time.Minute,
 				MaxStreams: math.MaxInt,
+				AccumulateSummaries: false,
 			},
 		},
 		{
@@ -47,6 +49,15 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				MaxStale:   5 * time.Minute,
 				MaxStreams: 20,
+				AccumulateSummaries: false,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "set-valid-accumulate_summaries"),
+			expected: &Config{
+				MaxStale:            5 * time.Minute,
+				MaxStreams:          math.MaxInt,
+				AccumulateSummaries: true,
 			},
 		},
 	}
