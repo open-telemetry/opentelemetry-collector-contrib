@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
 type ProfileContext interface {
@@ -142,12 +143,14 @@ func accessLocationTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessLocationIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return toInt64Array(tCtx.GetProfile().LocationIndices()), nil
+			return ctxutil.AsIntegerRawSlice[int64](tCtx.GetProfile().LocationIndices())
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int64); ok {
-				fromInt64Array(v).CopyTo(tCtx.GetProfile().LocationIndices())
+			v, err := ctxutil.AsIntegerRawSlice[int32](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetProfile().LocationIndices().FromRaw(v)
 			return nil
 		},
 	}
@@ -215,9 +218,11 @@ func accessStringTable[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return tCtx.GetProfile().StringTable().AsRaw(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]string); ok {
-				tCtx.GetProfile().StringTable().FromRaw(v)
+			s, err := ctxutil.AsRawSlice[string](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetProfile().StringTable().FromRaw(s)
 			return nil
 		},
 	}
@@ -310,12 +315,14 @@ func accessPeriod[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessCommentStringIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return toInt64Array(tCtx.GetProfile().CommentStrindices()), nil
+			return ctxutil.AsIntegerRawSlice[int64](tCtx.GetProfile().CommentStrindices())
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int64); ok {
-				fromInt64Array(v).CopyTo(tCtx.GetProfile().CommentStrindices())
+			v, err := ctxutil.AsIntegerRawSlice[int32](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetProfile().CommentStrindices().FromRaw(v)
 			return nil
 		},
 	}
@@ -371,12 +378,14 @@ func accessStringProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 func accessAttributeIndices[K ProfileContext]() ottl.StandardGetSetter[K] {
 	return ottl.StandardGetSetter[K]{
 		Getter: func(_ context.Context, tCtx K) (any, error) {
-			return toInt64Array(tCtx.GetProfile().AttributeIndices()), nil
+			return ctxutil.AsIntegerRawSlice[int64](tCtx.GetProfile().AttributeIndices())
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if v, ok := val.([]int64); ok {
-				fromInt64Array(v).CopyTo(tCtx.GetProfile().AttributeIndices())
+			v, err := ctxutil.AsIntegerRawSlice[int32](val)
+			if err != nil {
+				return err
 			}
+			tCtx.GetProfile().AttributeIndices().FromRaw(v)
 			return nil
 		},
 	}
@@ -422,20 +431,4 @@ func accessOriginalPayload[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return nil
 		},
 	}
-}
-
-func toInt64Array(in pcommon.Int32Slice) []int64 {
-	out := make([]int64, 0, in.Len())
-	for _, v := range in.AsRaw() {
-		out = append(out, int64(v))
-	}
-	return out
-}
-
-func fromInt64Array(in []int64) pcommon.Int32Slice {
-	out := pcommon.NewInt32Slice()
-	for _, v := range in {
-		out.Append(int32(v))
-	}
-	return out
 }

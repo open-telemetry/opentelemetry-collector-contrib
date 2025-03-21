@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
@@ -18,8 +19,9 @@ import (
 func TestPathGetSetter(t *testing.T) {
 	// create tests
 	tests := []struct {
-		path string
-		val  any
+		path     string
+		val      any
+		setFails bool
 	}{
 		{
 			path: "sample_type",
@@ -40,6 +42,11 @@ func TestPathGetSetter(t *testing.T) {
 		{
 			path: "location_indices",
 			val:  []int64{5},
+		},
+		{
+			path:     "location_indices error",
+			val:      []string{"x"},
+			setFails: true,
 		},
 		{
 			path: "function_table",
@@ -130,13 +137,17 @@ func TestPathGetSetter(t *testing.T) {
 			profile := pprofile.NewProfile()
 
 			accessor, err := PathGetSetter[*profileContext](path)
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			err = accessor.Set(context.Background(), newProfileContext(profile), tt.val)
-			assert.NoError(t, err)
+			if tt.setFails {
+				require.Error(t, err)
+				return
+			}
+			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), newProfileContext(profile))
-			assert.NoError(t, err)
+			require.NoError(t, err)
 
 			assert.Equal(t, tt.val, got)
 		})

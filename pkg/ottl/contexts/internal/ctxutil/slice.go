@@ -8,6 +8,7 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"golang.org/x/exp/constraints"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
@@ -62,4 +63,78 @@ func SetSliceValue[K any](ctx context.Context, tCtx K, s pcommon.Slice, keys []o
 	}
 
 	return SetIndexableValue[K](ctx, tCtx, s.At(idx), val, keys[1:])
+}
+
+const msgInvalidType = "failed to convert type %T to %T"
+
+func AsIntegerRawSlice[T constraints.Integer](val any) ([]T, error) {
+	switch typeVal := val.(type) {
+	case []T:
+		return typeVal, nil
+	case []any:
+		res := make([]T, 0, len(typeVal))
+		for _, v := range typeVal {
+			switch v := v.(type) {
+			case int:
+				res = append(res, T(v))
+			case int32:
+				res = append(res, T(v))
+			case int64:
+				res = append(res, T(v))
+			default:
+				var typ T
+				return nil, fmt.Errorf(msgInvalidType, v, typ)
+			}
+		}
+		return res, nil
+	case []int64:
+		res := make([]T, 0, len(typeVal))
+		for _, v := range typeVal {
+			res = append(res, T(v))
+		}
+		return res, nil
+	case pcommon.Int32Slice:
+		res := make([]T, 0, typeVal.Len())
+		for i := 0; i < typeVal.Len(); i++ {
+			v := typeVal.At(i)
+			res = append(res, T(v))
+		}
+		return res, nil
+	default:
+		var typ []T
+		return nil, fmt.Errorf(msgInvalidType, val, typ)
+	}
+}
+
+func AsRawSlice[T any](val any) ([]T, error) {
+	switch typeVal := val.(type) {
+	case []T:
+		return typeVal, nil
+	case []any:
+		res := make([]T, 0, len(typeVal))
+		for _, v := range typeVal {
+			v, ok := v.(T)
+			if !ok {
+				var typ T
+				return nil, fmt.Errorf(msgInvalidType, v, typ)
+			}
+			res = append(res, v)
+		}
+		return res, nil
+	case pcommon.Slice:
+		raw := typeVal.AsRaw()
+		res := make([]T, 0, len(raw))
+		for _, v := range raw {
+			v, ok := v.(T)
+			if !ok {
+				var typ T
+				return nil, fmt.Errorf(msgInvalidType, v, typ)
+			}
+			res = append(res, v)
+		}
+		return res, nil
+	default:
+		var typ []T
+		return nil, fmt.Errorf(msgInvalidType, val, typ)
+	}
 }

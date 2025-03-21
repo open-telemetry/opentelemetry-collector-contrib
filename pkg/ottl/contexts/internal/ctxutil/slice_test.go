@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -167,4 +168,74 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 func Test_SetSliceValue_NilKey(t *testing.T) {
 	err := ctxutil.SetSliceValue[any](context.Background(), nil, pcommon.NewSlice(), nil, "value")
 	assert.Error(t, err)
+}
+
+func TestAsIntegerRawSlice(t *testing.T) {
+	expected := []int32{1, 2, 3}
+
+	testsInt32 := []struct {
+		name string
+		val  any
+	}{
+		{
+			name: "Int32Slice",
+			val: func() pcommon.Int32Slice {
+				sl := pcommon.NewInt32Slice()
+				sl.FromRaw([]int32{1, 2, 3})
+				return sl
+			}(),
+		},
+		{
+			name: "slice of any (int)",
+			val:  []any{1, 2, 3},
+		},
+		{
+			name: "slice of int32",
+			val:  []int32{1, 2, 3},
+		},
+		{
+			name: "slice of int34",
+			val:  []int64{1, 2, 3},
+		},
+	}
+	for _, tt := range testsInt32 {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ctxutil.AsIntegerRawSlice[int32](tt.val)
+			assert.NoError(t, err, "AsIntegerRawSlice(%v)", tt.val)
+			assert.Equal(t, expected, got, "AsIntegerRawSlice(%v)", tt.val)
+		})
+	}
+}
+
+func TestAsRawSlice_string(t *testing.T) {
+	expected := []string{"a", "b", "c"}
+
+	testsInt32 := []struct {
+		name string
+		val  any
+	}{
+		{
+			name: "Slice",
+			val: func() pcommon.Slice {
+				sl := pcommon.NewSlice()
+				assert.NoError(t, sl.FromRaw([]any{"a", "b", "c"}))
+				return sl
+			}(),
+		},
+		{
+			name: "slice of any",
+			val:  []any{"a", "b", "c"},
+		},
+		{
+			name: "slice of string",
+			val:  []string{"a", "b", "c"},
+		},
+	}
+	for _, tt := range testsInt32 {
+		t.Run(tt.name, func(t *testing.T) {
+			got, err := ctxutil.AsRawSlice[string](tt.val)
+			require.NoError(t, err, "AsIntegerRawSlice(%v)", tt.val)
+			assert.Equal(t, expected, got, "AsIntegerRawSlice(%v)", tt.val)
+		})
+	}
 }
