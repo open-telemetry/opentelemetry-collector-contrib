@@ -20,9 +20,10 @@ type Config struct {
 
 // AssumeRole holds the configuration needed to assume a role
 type AssumeRole struct {
-	ARN         string `mapstructure:"arn,omitempty"`
-	SessionName string `mapstructure:"session_name,omitempty"`
-	STSRegion   string `mapstructure:"sts_region,omitempty"`
+	ARN                  string `mapstructure:"arn,omitempty"`
+	SessionName          string `mapstructure:"session_name,omitempty"`
+	STSRegion            string `mapstructure:"sts_region,omitempty"`
+	WebIdentityTokenFile string `mapstructure:"web_identity_token_file,omitempty"`
 }
 
 // compile time check that the Config struct satisfies the component.Config interface
@@ -36,7 +37,16 @@ func (cfg *Config) Validate() error {
 		cfg.AssumeRole.STSRegion = cfg.Region
 	}
 
-	credsProvider, err := getCredsProviderFromConfig(cfg)
+	var credsProvider *aws.CredentialsProvider
+	var err error
+	if cfg.AssumeRole.WebIdentityTokenFile != "" {
+		if cfg.AssumeRole.ARN == "" {
+			return fmt.Errorf("must specify ARN when using WebIdentityTokenFile")
+		}
+		credsProvider, err = getCredsProviderFromWebIdentityConfig(cfg)
+	} else {
+		credsProvider, err = getCredsProviderFromConfig(cfg)
+	}
 	if err != nil {
 		return fmt.Errorf("could not retrieve credential provider: %w", err)
 	}
