@@ -7,7 +7,7 @@ change_type: enhancement
 component: signaltometricsconnector
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Allow to configure passthrough attributes which are copied as-is to the output metric.
+note: Allow to configure `optional` attributes which are copied as-is to the output metric.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38600]

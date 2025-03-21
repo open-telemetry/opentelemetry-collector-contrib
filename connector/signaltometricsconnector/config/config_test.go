@@ -52,11 +52,11 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
-			path: "with_passthrough_and_default_value",
+			path: "with_optional_and_default_value",
 			errorMsgs: []string{
-				fullErrorForSignal(t, "spans", "attributes validation failed: only one of default_value or passthrough should be set"),
-				fullErrorForSignal(t, "datapoints", "attributes validation failed: only one of default_value or passthrough should be set"),
-				fullErrorForSignal(t, "logs", "attributes validation failed: only one of default_value or passthrough should be set"),
+				fullErrorForSignal(t, "spans", "attributes validation failed: only one of default_value or optional should be set"),
+				fullErrorForSignal(t, "datapoints", "attributes validation failed: only one of default_value or optional should be set"),
+				fullErrorForSignal(t, "logs", "attributes validation failed: only one of default_value or optional should be set"),
 			},
 		},
 		{
@@ -118,7 +118,7 @@ func TestConfig(t *testing.T) {
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
 						Attributes: []Attribute{
 							{Key: "key.2", DefaultValue: "bar"},
-							{Key: "key.3", Passthrough: true},
+							{Key: "key.3", Optional: true},
 						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
@@ -137,7 +137,7 @@ func TestConfig(t *testing.T) {
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
 						Attributes: []Attribute{
 							{Key: "key.2", DefaultValue: "bar"},
-							{Key: "key.3", Passthrough: true},
+							{Key: "key.3", Optional: true},
 						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
@@ -158,7 +158,7 @@ func TestConfig(t *testing.T) {
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
 						Attributes: []Attribute{
 							{Key: "key.2", DefaultValue: "bar"},
-							{Key: "key.3", Passthrough: true},
+							{Key: "key.3", Optional: true},
 						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
@@ -177,7 +177,7 @@ func TestConfig(t *testing.T) {
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
 						Attributes: []Attribute{
 							{Key: "key.2", DefaultValue: "bar"},
-							{Key: "key.3", Passthrough: true},
+							{Key: "key.3", Optional: true},
 						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,

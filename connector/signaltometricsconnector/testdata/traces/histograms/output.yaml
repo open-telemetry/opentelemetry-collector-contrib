@@ -59,7 +59,7 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             name: with_resource_foo_only
             unit: ms
-          - description: The configured passthrough attribute will be added as-is
+          - description: The configured optional attribute will be added as-is
             histogram:
               aggregationTemporality: 1
               dataPoints:
@@ -185,7 +185,7 @@ resourceMetrics:
                     - 15000
                   sum: 1000
                   timeUnixNano: "1000000"
-            name: passthrough.histogram
+            name: optional.histogram
             unit: ms
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector

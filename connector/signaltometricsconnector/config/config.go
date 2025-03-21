@@ -123,7 +123,7 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 
 type Attribute struct {
 	Key          string `mapstructure:"key"`
-	Passthrough  bool   `mapstructure:"passthrough"`
+	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
 }
 
@@ -186,8 +186,8 @@ func (mi *MetricInfo) validateAttributes() error {
 		if attr.Key == "" {
 			return fmt.Errorf("attribute key missing")
 		}
-		if attr.DefaultValue != nil && attr.Passthrough {
-			return errors.New("only one of default_value or passthrough should be set")
+		if attr.DefaultValue != nil && attr.Optional {
+			return errors.New("only one of default_value or optional should be set")
 		}
 		if _, ok := duplicate[attr.Key]; ok {
 			return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)

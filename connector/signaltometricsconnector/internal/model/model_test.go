@@ -53,7 +53,7 @@ func TestFilterResourceAttributes(t *testing.T) {
 			name: "include_resource_attributes_configured",
 			includeResourceAttributes: []AttributeKeyValue{
 				testAttributeKeyValue(t, "key.1", false, nil),
-				// Passthrough does not change the behavior for resource attribute
+				// Optional does not change the behavior for resource attribute
 				// filtering.
 				testAttributeKeyValue(t, "key.2", true, nil),
 				// With default value configured and the attribute present, default
@@ -65,14 +65,14 @@ func TestFilterResourceAttributes(t *testing.T) {
 				// Without default value, the resource attribute will be ignored
 				// if not present in the input
 				testAttributeKeyValue(t, "key.404", false, nil),
-				// Passthrough does not change the behavior for resource attribute
+				// Optional does not change the behavior for resource attribute
 				// filtering.
 				testAttributeKeyValue(t, "key.412", true, nil),
 			},
 			expected: map[string]any{
 				// Include resource attributes are filtered
 				"key.1": "val.1",
-				// Passthrough attributes are copied if present
+				// Optional attributes are copied if present
 				"key.2": true,
 				// Default value is ignored if attribute is present
 				"key.3": int64(11),
@@ -123,13 +123,13 @@ func TestFilterAttributes(t *testing.T) {
 		{
 			// Attribute filter would process an entity (span, log record,
 			// datapoint) iff all the configured attributes, other than with
-			// passthrough, are present. If any of the required attributes
+			// optional, are present. If any of the required attributes
 			// are absent in the incoming entity then the entity is not
 			// processed.
 			name: "attributes_configured_but_missing",
 			attributes: []AttributeKeyValue{
 				testAttributeKeyValue(t, "key.1", false, nil),
-				// The below key has passthrough defined so should not
+				// The below key has optional defined so should not
 				// affect the processing decision.
 				testAttributeKeyValue(t, "key.2", true, nil),
 				// Below attribute would be missing in the input metric and
@@ -139,10 +139,10 @@ func TestFilterAttributes(t *testing.T) {
 			expectedDecision: false,
 		},
 		{
-			name: "attributes_configured_with_passthrough",
+			name: "attributes_configured_with_optional",
 			attributes: []AttributeKeyValue{
 				testAttributeKeyValue(t, "key.1", false, nil),
-				// The below two key has passthrough defined so should not
+				// The below two key has optional defined so should not
 				// affect the processing decision.
 				testAttributeKeyValue(t, "key.2", true, nil),
 				testAttributeKeyValue(t, "key.412", true, nil),
@@ -183,7 +183,7 @@ func testCollectorInstanceInfo(t *testing.T) *CollectorInstanceInfo {
 func testAttributeKeyValue(
 	t *testing.T,
 	k string,
-	passthrough bool,
+	optional bool,
 	val any,
 ) AttributeKeyValue {
 	t.Helper()
@@ -194,7 +194,7 @@ func testAttributeKeyValue(
 	}
 	return AttributeKeyValue{
 		Key:          k,
-		Passthrough:  passthrough,
+		Optional:     optional,
 		DefaultValue: defaultVal,
 	}
 }
