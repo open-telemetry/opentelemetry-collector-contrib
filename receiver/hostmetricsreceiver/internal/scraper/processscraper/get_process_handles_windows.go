@@ -16,7 +16,7 @@ import (
 )
 
 var useNewGetProcessHandles = featuregate.GlobalRegistry().MustRegister(
-	"hostmetrics.process.OnWindowsUseNewGetProcesses",
+	"hostmetrics.process.onWindowsUseNewGetProcesses",
 	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("If disabled, the scraper will use the legacy implementation to retrieve process handles."),
 )

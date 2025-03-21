@@ -9,7 +9,7 @@ component: hostmetricsreceiver
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: >
   Reduced the cost of retrieving number of threads and parent process ID on Windows.
-  Disable the featuregate `hostmetrics.process.OnWindowsUseNewGetProcesses` to fallback to the previous implementation.
+  Disable the featuregate `hostmetrics.process.onWindowsUseNewGetProcesses` to fallback to the previous implementation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [32947, 38589]
