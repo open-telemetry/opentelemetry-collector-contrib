@@ -21,7 +21,7 @@ import (
 )
 
 // TranslateFromTraces converts a Traces pipeline data into []*faro.Payload
-func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]*faroTypes.Payload, error) {
+func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]faroTypes.Payload, error) {
 	_, span := otel.Tracer("").Start(ctx, "TranslateFromTraces")
 	defer span.End()
 
@@ -30,9 +30,10 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]*faroTypes.Pa
 	if resourceSpansLen == 0 {
 		return nil, nil
 	}
-	metaMap := make(map[string]*faroTypes.Payload, 0)
-	payloads := make([]*faroTypes.Payload, 0)
-
+	metaMap := make(map[string]*faroTypes.Payload)
+	var payloads []faroTypes.Payload
+	w := sha256.New()
+	encoder := json.NewEncoder(w)
 	for i := 0; i < resourceSpansLen; i++ {
 		rs := resourceSpans.At(i)
 		payload := resourceSpansToFaroPayload(rs)
@@ -42,11 +43,11 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]*faroTypes.Pa
 
 		meta := payload.Meta
 		// if payload meta already exists in the metaMap merge payload to the existing payload
-		w := sha256.New()
-		if encodeErr := json.NewEncoder(w).Encode(meta); encodeErr != nil {
+		if encodeErr := encoder.Encode(meta); encodeErr != nil {
 			return payloads, encodeErr
 		}
 		metaKey := fmt.Sprintf("%x", w.Sum(nil))
+		w.Reset()
 		existingPayload, found := metaMap[metaKey]
 		if found {
 			// merge payloads with the same meta
@@ -56,8 +57,9 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]*faroTypes.Pa
 			metaMap[metaKey] = payload
 		}
 	}
+	payloads = make([]faroTypes.Payload, 0)
 	for _, payload := range metaMap {
-		payloads = append(payloads, payload)
+		payloads = append(payloads, *payload)
 	}
 	return payloads, nil
 }
