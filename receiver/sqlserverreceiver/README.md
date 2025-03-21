@@ -110,3 +110,5 @@ SQL Server docker users may run into an issue that the collector fails to parse 
 references:
 1. https://pkg.go.dev/crypto/x509#ParseCertificate
 2. https://github.com/microsoft/mssql-docker/issues/895
+
+NO-OP
