@@ -239,6 +239,16 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 			r.nodeInfo.MemoryCapacity = float64(q.Value())
 		}
 	}
-	r.nodeLimits.Labels = node.Labels
-	r.nodeLimits.Annotations = node.Annotations
+
+	newLabels := make(map[string]any, len(node.Labels))
+	for key, value := range node.Labels {
+		newLabels[key] = value
+	}
+	r.nodeLimits.Labels = newLabels
+
+	newAnnotations := make(map[string]any, len(node.Annotations))
+	for key, value := range node.Labels {
+		newAnnotations[key] = value
+	}
+	r.nodeLimits.Annotations = newAnnotations
 }
