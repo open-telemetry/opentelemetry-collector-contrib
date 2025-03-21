@@ -10,6 +10,8 @@ jobs:
   changedfiles:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
       go_sources: ${{ steps.changed-source.outputs.go_sources }}
       go_tests: ${{ steps.changed-test.outputs.go_tests }}
