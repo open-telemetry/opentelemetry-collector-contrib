@@ -13,13 +13,11 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/runtime"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources"
+	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -60,6 +58,15 @@ const (
 	filterAllAggregations  = "*"
 )
 
+// azureSubscription is an extract of armsubscriptions.Subscription.
+// It designates a common structure between complex structures retrieved from the AP
+// and simple subscriptions ids that you can find in config.
+type azureSubscription struct {
+	SubscriptionID   string
+	DisplayName      *string
+	resourcesUpdated time.Time
+}
+
 type azureResource struct {
 	attributes                map[string]*string
 	metricsByCompositeKey     map[metricsCompositeKey]*azureResourceMetrics
@@ -93,91 +100,38 @@ func (*timeWrapper) Now() time.Time {
 
 func newScraper(conf *Config, settings receiver.Settings) *azureScraper {
 	return &azureScraper{
-		cfg:                             conf,
-		settings:                        settings.TelemetrySettings,
-		mb:                              metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
-		azDefaultCredentialsFunc:        azidentity.NewDefaultAzureCredential,
-		azIDCredentialsFunc:             azidentity.NewClientSecretCredential,
-		azIDWorkloadFunc:                azidentity.NewWorkloadIdentityCredential,
-		azManagedIdentityFunc:           azidentity.NewManagedIdentityCredential,
-		armClientFunc:                   armresources.NewClient,
-		armMonitorDefinitionsClientFunc: armmonitor.NewMetricDefinitionsClient,
-		armMonitorMetricsClientFunc:     armmonitor.NewMetricsClient,
-		mutex:                           &sync.Mutex{},
-		time:                            &timeWrapper{},
+		cfg:                      conf,
+		settings:                 settings.TelemetrySettings,
+		mb:                       metadata.NewMetricsBuilder(conf.MetricsBuilderConfig, settings),
+		azDefaultCredentialsFunc: azidentity.NewDefaultAzureCredential,
+		azIDCredentialsFunc:      azidentity.NewClientSecretCredential,
+		azIDWorkloadFunc:         azidentity.NewWorkloadIdentityCredential,
+		azManagedIdentityFunc:    azidentity.NewManagedIdentityCredential,
+		mutex:                    &sync.Mutex{},
+		time:                     &timeWrapper{},
+		clientOptionsResolver:    newClientOptionsResolver(conf.Cloud),
 	}
 }
 
 type azureScraper struct {
 	cred azcore.TokenCredential
 
-	clientResources          armClient
-	clientMetricsDefinitions metricsDefinitionsClientInterface
-	clientMetricsValues      metricsValuesClient
+	cfg      *Config
+	settings component.TelemetrySettings
+	// resources on which we'll collect metrics. Stored by resource id and subscription id.
+	resources map[string]map[string]*azureResource
+	// subscriptions on which we'll look up resources. Stored by subscription id.
+	subscriptions            map[string]*azureSubscription
+	subscriptionsUpdated     time.Time
+	mb                       *metadata.MetricsBuilder
+	azDefaultCredentialsFunc func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
+	azIDCredentialsFunc      func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
+	azIDWorkloadFunc         func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
+	azManagedIdentityFunc    func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
 
-	cfg                             *Config
-	settings                        component.TelemetrySettings
-	resources                       map[string]*azureResource
-	resourcesUpdated                time.Time
-	mb                              *metadata.MetricsBuilder
-	azDefaultCredentialsFunc        func(options *azidentity.DefaultAzureCredentialOptions) (*azidentity.DefaultAzureCredential, error)
-	azIDCredentialsFunc             func(string, string, string, *azidentity.ClientSecretCredentialOptions) (*azidentity.ClientSecretCredential, error)
-	azIDWorkloadFunc                func(options *azidentity.WorkloadIdentityCredentialOptions) (*azidentity.WorkloadIdentityCredential, error)
-	azManagedIdentityFunc           func(options *azidentity.ManagedIdentityCredentialOptions) (*azidentity.ManagedIdentityCredential, error)
-	armClientOptions                *arm.ClientOptions
-	armClientFunc                   func(string, azcore.TokenCredential, *arm.ClientOptions) (*armresources.Client, error)
-	armMonitorDefinitionsClientFunc func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricDefinitionsClient, error)
-	armMonitorMetricsClientFunc     func(string, azcore.TokenCredential, *arm.ClientOptions) (*armmonitor.MetricsClient, error)
-	mutex                           *sync.Mutex
-	time                            timeNowIface
-}
-
-type armClient interface {
-	NewListPager(options *armresources.ClientListOptions) *runtime.Pager[armresources.ClientListResponse]
-}
-
-func (s *azureScraper) getArmClientOptions() *arm.ClientOptions {
-	var cloudToUse cloud.Configuration
-	switch s.cfg.Cloud {
-	case azureGovernmentCloud:
-		cloudToUse = cloud.AzureGovernment
-	case azureChinaCloud:
-		cloudToUse = cloud.AzureChina
-	default:
-		cloudToUse = cloud.AzurePublic
-	}
-	options := arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Cloud: cloudToUse,
-		},
-	}
-
-	return &options
-}
-
-func (s *azureScraper) getArmClient() (armClient, error) {
-	client, err := s.armClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
-}
-
-type metricsDefinitionsClientInterface interface {
-	NewListPager(resourceURI string, options *armmonitor.MetricDefinitionsClientListOptions) *runtime.Pager[armmonitor.MetricDefinitionsClientListResponse]
-}
-
-func (s *azureScraper) getMetricsDefinitionsClient() (metricsDefinitionsClientInterface, error) {
-	client, err := s.armMonitorDefinitionsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
-}
-
-type metricsValuesClient interface {
-	List(ctx context.Context, resourceURI string, options *armmonitor.MetricsClientListOptions) (
-		armmonitor.MetricsClientListResponse, error,
-	)
-}
-
-func (s *azureScraper) GetMetricsValuesClient() (metricsValuesClient, error) {
-	client, err := s.armMonitorMetricsClientFunc(s.cfg.SubscriptionID, s.cred, s.armClientOptions)
-	return client, err
+	mutex                 *sync.Mutex
+	time                  timeNowIface
+	clientOptionsResolver ClientOptionsResolver
 }
 
 func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
@@ -185,23 +139,27 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 		return err
 	}
 
-	s.armClientOptions = s.getArmClientOptions()
-	s.clientResources, err = s.getArmClient()
-	if err != nil {
-		return err
-	}
-	s.clientMetricsDefinitions, err = s.getMetricsDefinitionsClient()
-	if err != nil {
-		return err
-	}
-	s.clientMetricsValues, err = s.GetMetricsValuesClient()
-	if err != nil {
-		return err
-	}
+	s.subscriptions = map[string]*azureSubscription{}
+	s.resources = map[string]map[string]*azureResource{}
 
-	s.resources = map[string]*azureResource{}
+	// Initialize subscription ids from the config. Will be overridden if discovery is enabled anyway.
+	for _, id := range s.cfg.SubscriptionIDs {
+		s.loadSubscription(id)
+	}
 
 	return
+}
+
+func (s *azureScraper) loadSubscription(id string) {
+	s.resources[id] = make(map[string]*azureResource)
+	s.subscriptions[id] = &azureSubscription{
+		SubscriptionID: id,
+	}
+}
+
+func (s *azureScraper) unloadSubscription(id string) {
+	delete(s.resources, id)
+	delete(s.subscriptions, id)
 }
 
 func (s *azureScraper) loadCredentials() (err error) {
@@ -235,37 +193,93 @@ func (s *azureScraper) loadCredentials() (err error) {
 }
 
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	s.getResources(ctx)
-	resourcesIDsWithDefinitions := make(chan string)
+	s.getSubscriptions(ctx)
 
-	go func() {
-		defer close(resourcesIDsWithDefinitions)
-		for resourceID := range s.resources {
-			s.getResourceMetricsDefinitions(ctx, resourceID)
-			resourcesIDsWithDefinitions <- resourceID
+	for subscriptionID := range s.subscriptions {
+		s.getResources(ctx, subscriptionID)
+
+		resourcesIDsWithDefinitions := make(chan string)
+		go func(subscriptionID string) {
+			defer close(resourcesIDsWithDefinitions)
+			for resourceID := range s.resources[subscriptionID] {
+				s.getResourceMetricsDefinitions(ctx, subscriptionID, resourceID)
+				resourcesIDsWithDefinitions <- resourceID
+			}
+		}(subscriptionID)
+
+		var wg sync.WaitGroup
+		for resourceID := range resourcesIDsWithDefinitions {
+			wg.Add(1)
+			go func(subscriptionID, resourceID string) {
+				defer wg.Done()
+				s.getResourceMetricsValues(ctx, subscriptionID, resourceID)
+			}(subscriptionID, resourceID)
 		}
-	}()
 
-	var wg sync.WaitGroup
-	for resourceID := range resourcesIDsWithDefinitions {
-		wg.Add(1)
-		go func(resourceID string) {
-			defer wg.Done()
-			s.getResourceMetricsValues(ctx, resourceID)
-		}(resourceID)
+		wg.Wait()
+
+		// Once all metrics has been collected for one subscription, we move to the next.
+		// We need to keep it synchronous to have the subscription id in resource attributes and not metrics attributes.
+		// It can be revamped later if we need to parallelize more, but currently, resource emit is not thread safe.
+		rb := s.mb.NewResourceBuilder()
+		rb.SetAzuremonitorTenantID(s.cfg.TenantID)
+		rb.SetAzuremonitorSubscriptionID(subscriptionID)
+		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
-	wg.Wait()
-
-	return s.mb.Emit(
-		metadata.WithAzureMonitorSubscriptionID(s.cfg.SubscriptionID),
-		metadata.WithAzureMonitorTenantID(s.cfg.TenantID),
-	), nil
+	return s.mb.Emit(), nil
 }
 
-func (s *azureScraper) getResources(ctx context.Context) {
-	if time.Since(s.resourcesUpdated).Seconds() < s.cfg.CacheResources {
+func (s *azureScraper) getSubscriptions(ctx context.Context) {
+	if !s.cfg.DiscoverSubscriptions || !(time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources) {
 		return
 	}
+
+	// if subscriptions discovery is enabled, we'll need a client
+	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
+		return
+	}
+
+	opts := &armsubscriptions.ClientListOptions{}
+	pager := armSubscriptionClient.NewListPager(opts)
+
+	existingSubscriptions := map[string]void{}
+	for id := range s.subscriptions {
+		existingSubscriptions[id] = void{}
+	}
+
+	for pager.More() {
+		nextResult, err := pager.NextPage(ctx)
+		if err != nil {
+			s.settings.Logger.Error("failed to get Azure Subscriptions", zap.Error(err))
+			return
+		}
+
+		for _, subscription := range nextResult.Value {
+			s.loadSubscription(*subscription.SubscriptionID)
+			delete(existingSubscriptions, *subscription.SubscriptionID)
+		}
+	}
+	if len(existingSubscriptions) > 0 {
+		for idToDelete := range existingSubscriptions {
+			s.unloadSubscription(idToDelete)
+		}
+	}
+
+	s.subscriptionsUpdated = time.Now()
+}
+
+func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) {
+	if time.Since(s.subscriptions[subscriptionID].resourcesUpdated).Seconds() < s.cfg.CacheResources {
+		return
+	}
+	clientResources, clientErr := armresources.NewClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmResourceClientOptions(subscriptionID))
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Resources", zap.Error(clientErr))
+		return
+	}
+
 	existingResources := map[string]void{}
 	for id := range s.resources {
 		existingResources[id] = void{}
@@ -276,7 +290,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 		Filter: &filter,
 	}
 
-	pager := s.clientResources.NewListPager(opts)
+	pager := clientResources.NewListPager(opts)
 
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
@@ -285,7 +299,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 			return
 		}
 		for _, resource := range nextResult.Value {
-			if _, ok := s.resources[*resource.ID]; !ok {
+			if _, ok := s.resources[subscriptionID][*resource.ID]; !ok {
 				resourceGroup := getResourceGroupFromID(*resource.ID)
 				attributes := map[string]*string{
 					attributeName:          resource.Name,
@@ -295,7 +309,7 @@ func (s *azureScraper) getResources(ctx context.Context) {
 				if resource.Location != nil {
 					attributes[attributeLocation] = resource.Location
 				}
-				s.resources[*resource.ID] = &azureResource{
+				s.resources[subscriptionID][*resource.ID] = &azureResource{
 					attributes:   attributes,
 					tags:         resource.Tags,
 					resourceType: resource.Type,
@@ -306,11 +320,11 @@ func (s *azureScraper) getResources(ctx context.Context) {
 	}
 	if len(existingResources) > 0 {
 		for idToDelete := range existingResources {
-			delete(s.resources, idToDelete)
+			delete(s.resources[subscriptionID], idToDelete)
 		}
 	}
 
-	s.resourcesUpdated = time.Now()
+	s.subscriptions[subscriptionID].resourcesUpdated = time.Now()
 }
 
 func getResourceGroupFromID(id string) string {
@@ -337,14 +351,20 @@ func (s *azureScraper) getResourcesFilter() string {
 	return fmt.Sprintf("(resourceType eq '%s')%s", resourcesTypeFilter, resourcesGroupFilterString)
 }
 
-func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resourceID string) {
-	if time.Since(s.resources[resourceID].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
+func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, subscriptionID, resourceID string) {
+	if time.Since(s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated).Seconds() < s.cfg.CacheResourcesDefinitions {
 		return
 	}
 
-	s.resources[resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
+	clientMetricsDefinitions, clientErr := armmonitor.NewMetricDefinitionsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Metrics definitions", zap.Error(clientErr))
+		return
+	}
 
-	pager := s.clientMetricsDefinitions.NewListPager(resourceID, nil)
+	s.resources[subscriptionID][resourceID].metricsByCompositeKey = map[metricsCompositeKey]*azureResourceMetrics{}
+
+	pager := clientMetricsDefinitions.NewListPager(resourceID, nil)
 	for pager.More() {
 		nextResult, err := pager.NextPage(ctx)
 		if err != nil {
@@ -360,31 +380,37 @@ func (s *azureScraper) getResourceMetricsDefinitions(ctx context.Context, resour
 			}
 
 			timeGrain := *v.MetricAvailabilities[0].TimeGrain
-			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[resourceID].resourceType, metricName)
+			dimensions := filterDimensions(v.Dimensions, s.cfg.Dimensions, *s.resources[subscriptionID][resourceID].resourceType, metricName)
 			compositeKey := metricsCompositeKey{
 				timeGrain:    timeGrain,
 				dimensions:   serializeDimensions(dimensions),
 				aggregations: strings.Join(metricAggregations, ","),
 			}
-			s.storeMetricsDefinition(resourceID, metricName, compositeKey)
+			s.storeMetricsDefinition(subscriptionID, resourceID, metricName, compositeKey)
 		}
 	}
-	s.resources[resourceID].metricsDefinitionsUpdated = time.Now()
+	s.resources[subscriptionID][resourceID].metricsDefinitionsUpdated = time.Now()
 }
 
-func (s *azureScraper) storeMetricsDefinition(resourceID, name string, compositeKey metricsCompositeKey) {
-	if _, ok := s.resources[resourceID].metricsByCompositeKey[compositeKey]; ok {
-		s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics = append(
-			s.resources[resourceID].metricsByCompositeKey[compositeKey].metrics, name,
+func (s *azureScraper) storeMetricsDefinition(subscriptionID, resourceID, name string, compositeKey metricsCompositeKey) {
+	if _, ok := s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey]; ok {
+		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey].metrics = append(
+			s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey].metrics, name,
 		)
 	} else {
-		s.resources[resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
+		s.resources[subscriptionID][resourceID].metricsByCompositeKey[compositeKey] = &azureResourceMetrics{metrics: []string{name}}
 	}
 }
 
-func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID string) {
-	res := *s.resources[resourceID]
+func (s *azureScraper) getResourceMetricsValues(ctx context.Context, subscriptionID, resourceID string) {
+	res := *s.resources[subscriptionID][resourceID]
 	updatedAt := s.time.Now().Truncate(truncateTimeGrain)
+
+	clientMetricsValues, clientErr := armmonitor.NewMetricsClient(subscriptionID, s.cred, s.clientOptionsResolver.GetArmMonitorClientOptions())
+	if clientErr != nil {
+		s.settings.Logger.Error("failed to initialize the client to get Azure Metrics values", zap.Error(clientErr))
+		return
+	}
 
 	for compositeKey, metricsByGrain := range res.metricsByCompositeKey {
 		if updatedAt.Sub(metricsByGrain.metricsValuesUpdated).Seconds() < float64(timeGrains[compositeKey.timeGrain]) {
@@ -411,7 +437,7 @@ func (s *azureScraper) getResourceMetricsValues(ctx context.Context, resourceID 
 			)
 			start = end
 
-			result, err := s.clientMetricsValues.List(
+			result, err := clientMetricsValues.List(
 				ctx,
 				resourceID,
 				&opts,
