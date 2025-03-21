@@ -11,36 +11,37 @@ import (
 	"github.com/go-logfmt/logfmt"
 	faroTypes "github.com/grafana/faro/pkg/go"
 	"github.com/zeebo/xxh3"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/multierr"
 )
 
 type kvTime struct {
-	kv   *KeyVal
+	kv   *keyVal
 	ts   time.Time
 	kind faroTypes.Kind
 	hash uint64
 }
 
 // TranslateToLogs converts faro.Payload into Logs pipeline data
-func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (*plog.Logs, error) {
+func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs, error) {
+	logs := plog.NewLogs()
 	_, span := otel.Tracer("").Start(ctx, "TranslateToLogs")
 	defer span.End()
 	var kvList []*kvTime
 
 	for _, logItem := range payload.Logs {
 		kvList = append(kvList, &kvTime{
-			kv:   LogToKeyVal(logItem),
+			kv:   logToKeyVal(logItem),
 			ts:   logItem.Timestamp,
 			kind: faroTypes.KindLog,
 		})
 	}
 	for _, exception := range payload.Exceptions {
 		kvList = append(kvList, &kvTime{
-			kv:   ExceptionToKeyVal(exception),
+			kv:   exceptionToKeyVal(exception),
 			ts:   exception.Timestamp,
 			kind: faroTypes.KindException,
 			hash: xxh3.HashString(exception.Value),
@@ -48,23 +49,23 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (*plog.Logs
 	}
 	for _, measurement := range payload.Measurements {
 		kvList = append(kvList, &kvTime{
-			kv:   MeasurementToKeyVal(measurement),
+			kv:   measurementToKeyVal(measurement),
 			ts:   measurement.Timestamp,
 			kind: faroTypes.KindMeasurement,
 		})
 	}
 	for _, event := range payload.Events {
 		kvList = append(kvList, &kvTime{
-			kv:   EventToKeyVal(event),
+			kv:   eventToKeyVal(event),
 			ts:   event.Timestamp,
 			kind: faroTypes.KindEvent,
 		})
 	}
-	if len(kvList) == 0 {
-		return nil, nil
-	}
 	span.SetAttributes(attribute.Int("count", len(kvList)))
-	logs := plog.NewLogs()
+	if len(kvList) == 0 {
+		return logs, nil
+	}
+
 	meta := MetaToKeyVal(payload.Meta)
 	resourceAttrs := map[string]any{
 		string(semconv.ServiceNameKey):           payload.Meta.App.Name,
@@ -79,23 +80,24 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (*plog.Logs
 	}
 	rls := logs.ResourceLogs().AppendEmpty()
 	if err := rls.Resource().Attributes().FromRaw(resourceAttrs); err != nil {
-		return nil, err
+		return plog.NewLogs(), err
 	}
 	sl := rls.ScopeLogs().AppendEmpty()
-	attrs := pcommon.NewMap()
+	var errs error
 	for _, i := range kvList {
-		MergeKeyVal(i.kv, meta)
-		line, err := logfmt.MarshalKeyvals(KeyValToInterfaceSlice(i.kv)...)
+		mergeKeyVal(i.kv, meta)
+		line, err := logfmt.MarshalKeyvals(keyValToInterfaceSlice(i.kv)...)
+		// If there is an error, we skip the log record
 		if err != nil {
-			return nil, err
+			errs = multierr.Append(errs, err)
+			continue
 		}
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(string(line))
-		attrs.CopyTo(logRecord.Attributes())
 		logRecord.Attributes().PutStr("kind", string(i.kind))
 		if (i.kind == faroTypes.KindException) && (i.hash != 0) {
 			logRecord.Attributes().PutStr("hash", strconv.FormatUint(i.hash, 10))
 		}
 	}
-	return &logs, nil
+	return logs, errs
 }

@@ -23,14 +23,16 @@ import (
 )
 
 // TranslateFromLogs converts a Logs pipeline data into []*faro.Payload
-func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]*faroTypes.Payload, error) {
+func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, error) {
 	_, span := otel.Tracer("").Start(ctx, "TranslateFromLogs")
 	defer span.End()
 
-	metaMap := make(map[string]*faroTypes.Payload, 0)
-	payloads := make([]*faroTypes.Payload, 0)
+	metaMap := make(map[string]*faroTypes.Payload)
+	var payloads []faroTypes.Payload
 	rls := ld.ResourceLogs()
 
+	w := sha256.New()
+	encoder := json.NewEncoder(w)
 	for i := 0; i < rls.Len(); i++ {
 		scopeLogs := rls.At(i).ScopeLogs()
 		resource := rls.At(i).Resource()
@@ -44,11 +46,11 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]*faroTypes.Payload,
 				}
 				meta := payload.Meta
 				// if payload meta already exists in the metaMap merge payload to the existing payload
-				w := sha256.New()
-				if encodeErr := json.NewEncoder(w).Encode(meta); encodeErr != nil {
+				if encodeErr := encoder.Encode(meta); encodeErr != nil {
 					return payloads, err
 				}
 				metaKey := fmt.Sprintf("%x", w.Sum(nil))
+				w.Reset()
 				existingPayload, found := metaMap[metaKey]
 				if found {
 					// merge payloads with the same meta
@@ -60,8 +62,14 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]*faroTypes.Payload,
 			}
 		}
 	}
+
+	if len(metaMap) == 0 {
+		return payloads, nil
+	}
+
+	payloads = make([]faroTypes.Payload, 0)
 	for _, payload := range metaMap {
-		payloads = append(payloads, payload)
+		payloads = append(payloads, *payload)
 	}
 	return payloads, nil
 }
@@ -83,7 +91,12 @@ func mergePayloads(target *faroTypes.Payload, source *faroTypes.Payload) {
 	if source.Traces != nil {
 		sourceTraces := ptrace.NewTraces()
 		source.Traces.CopyTo(sourceTraces)
-		sourceTraces.ResourceSpans().MoveAndAppendTo(target.Traces.ResourceSpans())
+		if target.Traces == nil {
+			target.Traces = &faroTypes.Traces{
+				Traces: ptrace.NewTraces(),
+			}
+		}
+		sourceTraces.ResourceSpans().MoveAndAppendTo(target.Traces.Traces.ResourceSpans())
 	}
 }
 

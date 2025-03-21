@@ -5,7 +5,8 @@ package faro // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"fmt"
-	"sort"
+	"maps"
+	"slices"
 	"strconv"
 	"strings"
 
@@ -13,65 +14,55 @@ import (
 	om "github.com/wk8/go-ordered-map"
 )
 
-// KeyVal is an ordered map of string to interface
-type KeyVal = om.OrderedMap
+// keyVal is an ordered map of string to interface
+type keyVal = om.OrderedMap
 
-// NewKeyVal creates new empty KeyVal
-func NewKeyVal() *KeyVal {
+// newKeyVal creates new empty keyVal
+func newKeyVal() *keyVal {
 	return om.New()
 }
 
-// KeyValFromMap will instantiate KeyVal from a map[string]string
-func KeyValFromMap(m map[string]string) *KeyVal {
-	kv := NewKeyVal()
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		KeyValAdd(kv, k, m[k])
+// keyValFromMap will instantiate keyVal from a map[string]string
+func keyValFromMap(m map[string]string) *keyVal {
+	kv := newKeyVal()
+	for _, k := range slices.Sorted(maps.Keys(m)) {
+		keyValAdd(kv, k, m[k])
 	}
 	return kv
 }
 
-// KeyValFromMap will instantiate KeyVal from a map[string]float64
-func KeyValFromFloatMap(m map[string]float64) *KeyVal {
-	kv := NewKeyVal()
-	keys := make([]string, 0, len(m))
-	for k := range m {
-		keys = append(keys, k)
-	}
-	sort.Strings(keys)
-	for _, k := range keys {
+// keyValFromFloatMap will instantiate keyVal from a map[string]float64
+func keyValFromFloatMap(m map[string]float64) *keyVal {
+	kv := newKeyVal()
+	for _, k := range slices.Sorted(maps.Keys(m)) {
 		kv.Set(k, m[k])
 	}
 	return kv
 }
 
-// MergeKeyVal will merge source in target
-func MergeKeyVal(target *KeyVal, source *KeyVal) {
+// mergeKeyVal will merge source in target
+func mergeKeyVal(target *keyVal, source *keyVal) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(el.Key, el.Value)
 	}
 }
 
-// MergeKeyValWithPrefix will merge source in target, adding a prefix to each key being merged in
-func MergeKeyValWithPrefix(target *KeyVal, source *KeyVal, prefix string) {
+// mergeKeyValWithPrefix will merge source in target, adding a prefix to each key being merged in
+func mergeKeyValWithPrefix(target *keyVal, source *keyVal, prefix string) {
 	for el := source.Oldest(); el != nil; el = el.Next() {
 		target.Set(fmt.Sprintf("%s%s", prefix, el.Key), el.Value)
 	}
 }
 
-// KeyValAdd adds a key + value string pair to kv
-func KeyValAdd(kv *KeyVal, key string, value string) {
+// keyValAdd adds a key + value string pair to kv
+func keyValAdd(kv *keyVal, key string, value string) {
 	if len(value) > 0 {
 		kv.Set(key, value)
 	}
 }
 
-// KeyValToInterfaceSlice converts KeyVal to []interface{}, typically used for logging
-func KeyValToInterfaceSlice(kv *KeyVal) []any {
+// keyValToInterfaceSlice converts keyVal to []interface{}, typically used for logging
+func keyValToInterfaceSlice(kv *keyVal) []any {
 	slice := make([]any, kv.Len()*2)
 	idx := 0
 	for el := kv.Oldest(); el != nil; el = el.Next() {
@@ -83,58 +74,49 @@ func KeyValToInterfaceSlice(kv *KeyVal) []any {
 	return slice
 }
 
-// KeyValToInterfaceMap converts KeyVal to map[string]interface
-func KeyValToInterfaceMap(kv *KeyVal) map[string]any {
-	retv := make(map[string]any)
-	for el := kv.Oldest(); el != nil; el = el.Next() {
-		retv[fmt.Sprint(el.Key)] = el.Value
-	}
-	return retv
-}
-
-// LogToKeyVal represents a Log object as KeyVal
-func LogToKeyVal(l faroTypes.Log) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "timestamp", l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	KeyValAdd(kv, "kind", string(faroTypes.KindLog))
-	KeyValAdd(kv, "message", l.Message)
-	KeyValAdd(kv, "level", string(l.LogLevel))
-	MergeKeyValWithPrefix(kv, KeyValFromMap(l.Context), "context_")
-	MergeKeyVal(kv, TraceToKeyVal(l.Trace))
+// logToKeyVal represents a Log object as keyVal
+func logToKeyVal(l faroTypes.Log) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "timestamp", l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, "kind", string(faroTypes.KindLog))
+	keyValAdd(kv, "message", l.Message)
+	keyValAdd(kv, "level", string(l.LogLevel))
+	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), "context_")
+	mergeKeyVal(kv, traceToKeyVal(l.Trace))
 	return kv
 }
 
-// ExceptionToKeyVal represents an Exception object as KeyVal
-func ExceptionToKeyVal(e faroTypes.Exception) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	KeyValAdd(kv, "kind", string(faroTypes.KindException))
-	KeyValAdd(kv, "type", e.Type)
-	KeyValAdd(kv, "value", e.Value)
-	KeyValAdd(kv, "stacktrace", ExceptionToString(e))
-	MergeKeyVal(kv, TraceToKeyVal(e.Trace))
-	MergeKeyValWithPrefix(kv, KeyValFromMap(e.Context), "context_")
+// exceptionToKeyVal represents an Exception object as keyVal
+func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, "kind", string(faroTypes.KindException))
+	keyValAdd(kv, "type", e.Type)
+	keyValAdd(kv, "value", e.Value)
+	keyValAdd(kv, "stacktrace", exceptionToString(e))
+	mergeKeyVal(kv, traceToKeyVal(e.Trace))
+	mergeKeyValWithPrefix(kv, keyValFromMap(e.Context), "context_")
 	return kv
 }
 
-// ExceptionMessage string is concatenating of the Exception.Type and Exception.Value
-func ExceptionMessage(e faroTypes.Exception) string {
+// exceptionMessage string is concatenating of the Exception.Type and Exception.Value
+func exceptionMessage(e faroTypes.Exception) string {
 	return fmt.Sprintf("%s: %s", e.Type, e.Value)
 }
 
-// ExceptionToString is the string representation of an Exception
-func ExceptionToString(e faroTypes.Exception) string {
-	stacktrace := ExceptionMessage(e)
+// exceptionToString is the string representation of an Exception
+func exceptionToString(e faroTypes.Exception) string {
+	stacktrace := exceptionMessage(e)
 	if e.Stacktrace != nil {
 		for _, frame := range e.Stacktrace.Frames {
-			stacktrace += FrameToString(frame)
+			stacktrace += frameToString(frame)
 		}
 	}
 	return stacktrace
 }
 
-// FrameToString function converts a Frame into a human readable string
-func FrameToString(frame faroTypes.Frame) string {
+// frameToString function converts a Frame into a human readable string
+func frameToString(frame faroTypes.Frame) string {
 	module := ""
 	if len(frame.Module) > 0 {
 		module = frame.Module + "|"
@@ -142,193 +124,188 @@ func FrameToString(frame faroTypes.Frame) string {
 	return fmt.Sprintf("\n  at %s (%s%s:%v:%v)", frame.Function, module, frame.Filename, frame.Lineno, frame.Colno)
 }
 
-// MeasurementToKeyVal representation of the measurement object
-func MeasurementToKeyVal(m faroTypes.Measurement) *KeyVal {
-	kv := NewKeyVal()
+// measurementToKeyVal representation of the measurement object
+func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
+	kv := newKeyVal()
 
-	KeyValAdd(kv, "timestamp", m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	KeyValAdd(kv, "kind", string(faroTypes.KindMeasurement))
-	KeyValAdd(kv, "type", m.Type)
-	MergeKeyValWithPrefix(kv, KeyValFromMap(m.Context), "context_")
+	keyValAdd(kv, "timestamp", m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, "kind", string(faroTypes.KindMeasurement))
+	keyValAdd(kv, "type", m.Type)
+	mergeKeyValWithPrefix(kv, keyValFromMap(m.Context), "context_")
 
-	keys := make([]string, 0, len(m.Values))
-	for k := range m.Values {
-		keys = append(keys, k)
+	for _, k := range slices.Sorted(maps.Keys(m.Values)) {
+		keyValAdd(kv, k, fmt.Sprintf("%f", m.Values[k]))
 	}
-	sort.Strings(keys)
-	for _, k := range keys {
-		KeyValAdd(kv, k, fmt.Sprintf("%f", m.Values[k]))
-	}
-	MergeKeyVal(kv, TraceToKeyVal(m.Trace))
+	mergeKeyVal(kv, traceToKeyVal(m.Trace))
 
 	values := make(map[string]float64, len(m.Values))
 	for key, value := range m.Values {
 		values[key] = value
 	}
 
-	MergeKeyValWithPrefix(kv, KeyValFromFloatMap(values), "value_")
+	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), "value_")
 
 	return kv
 }
 
-// EventToKeyVal produces key -> value representation of Event metadata
-func EventToKeyVal(e faroTypes.Event) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	KeyValAdd(kv, "kind", string(faroTypes.KindEvent))
-	KeyValAdd(kv, "event_name", e.Name)
-	KeyValAdd(kv, "event_domain", e.Domain)
+// eventToKeyVal produces key -> value representation of Event metadata
+func eventToKeyVal(e faroTypes.Event) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, "kind", string(faroTypes.KindEvent))
+	keyValAdd(kv, "event_name", e.Name)
+	keyValAdd(kv, "event_domain", e.Domain)
 	if e.Attributes != nil {
-		MergeKeyValWithPrefix(kv, KeyValFromMap(e.Attributes), "event_data_")
+		mergeKeyValWithPrefix(kv, keyValFromMap(e.Attributes), "event_data_")
 	}
-	MergeKeyVal(kv, TraceToKeyVal(e.Trace))
+	mergeKeyVal(kv, traceToKeyVal(e.Trace))
 	return kv
 }
 
 // MetaToKeyVal produces key->value representation of the metadata
-func MetaToKeyVal(m faroTypes.Meta) *KeyVal {
-	kv := NewKeyVal()
-	MergeKeyValWithPrefix(kv, SDKToKeyVal(m.SDK), "sdk_")
-	MergeKeyValWithPrefix(kv, AppToKeyVal(m.App), "app_")
-	MergeKeyValWithPrefix(kv, UserToKeyVal(m.User), "user_")
-	MergeKeyValWithPrefix(kv, SessionToKeyVal(m.Session), "session_")
-	MergeKeyValWithPrefix(kv, PageToKeyVal(m.Page), "page_")
-	MergeKeyValWithPrefix(kv, BrowserToKeyVal(m.Browser), "browser_")
-	MergeKeyValWithPrefix(kv, K6ToKeyVal(m.K6), "k6_")
-	MergeKeyValWithPrefix(kv, ViewToKeyVal(m.View), "view_")
-	MergeKeyValWithPrefix(kv, GeoToKeyVal(m.Geo), "geo_")
+func MetaToKeyVal(m faroTypes.Meta) *keyVal {
+	kv := newKeyVal()
+	mergeKeyValWithPrefix(kv, sdkToKeyVal(m.SDK), "sdk_")
+	mergeKeyValWithPrefix(kv, appToKeyVal(m.App), "app_")
+	mergeKeyValWithPrefix(kv, userToKeyVal(m.User), "user_")
+	mergeKeyValWithPrefix(kv, sessionToKeyVal(m.Session), "session_")
+	mergeKeyValWithPrefix(kv, pageToKeyVal(m.Page), "page_")
+	mergeKeyValWithPrefix(kv, browserToKeyVal(m.Browser), "browser_")
+	mergeKeyValWithPrefix(kv, k6ToKeyVal(m.K6), "k6_")
+	mergeKeyValWithPrefix(kv, viewToKeyVal(m.View), "view_")
+	mergeKeyValWithPrefix(kv, geoToKeyVal(m.Geo), "geo_")
 	return kv
 }
 
-// SDKToKeyVal produces key->value representation of Sdk metadata
-func SDKToKeyVal(sdk faroTypes.SDK) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "name", sdk.Name)
-	KeyValAdd(kv, "version", sdk.Version)
+// sdkToKeyVal produces key->value representation of Sdk metadata
+func sdkToKeyVal(sdk faroTypes.SDK) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "name", sdk.Name)
+	keyValAdd(kv, "version", sdk.Version)
 
 	if len(sdk.Integrations) > 0 {
 		integrations := make([]string, len(sdk.Integrations))
 
 		for i, integration := range sdk.Integrations {
-			integrations[i] = SDKIntegrationToString(integration)
+			integrations[i] = sdkIntegrationToString(integration)
 		}
 
-		KeyValAdd(kv, "integrations", strings.Join(integrations, ","))
+		keyValAdd(kv, "integrations", strings.Join(integrations, ","))
 	}
 
 	return kv
 }
 
-// SDKIntegrationToString is the string representation of an SDKIntegration
-func SDKIntegrationToString(i faroTypes.SDKIntegration) string {
+// sdkIntegrationToString is the string representation of an SDKIntegration
+func sdkIntegrationToString(i faroTypes.SDKIntegration) string {
 	return fmt.Sprintf("%s:%s", i.Name, i.Version)
 }
 
-// AppToKeyVal produces key-> value representation of App metadata
-func AppToKeyVal(a faroTypes.App) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "name", a.Name)
-	KeyValAdd(kv, "namespace", a.Namespace)
-	KeyValAdd(kv, "release", a.Release)
-	KeyValAdd(kv, "version", a.Version)
-	KeyValAdd(kv, "environment", a.Environment)
+// appToKeyVal produces key-> value representation of App metadata
+func appToKeyVal(a faroTypes.App) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "name", a.Name)
+	keyValAdd(kv, "namespace", a.Namespace)
+	keyValAdd(kv, "release", a.Release)
+	keyValAdd(kv, "version", a.Version)
+	keyValAdd(kv, "environment", a.Environment)
 	return kv
 }
 
-// UserToKeyVal produces a key->value representation User metadata
-func UserToKeyVal(u faroTypes.User) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "email", u.Email)
-	KeyValAdd(kv, "id", u.ID)
-	KeyValAdd(kv, "username", u.Username)
-	MergeKeyValWithPrefix(kv, KeyValFromMap(u.Attributes), "attr_")
+// userToKeyVal produces a key->value representation User metadata
+func userToKeyVal(u faroTypes.User) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "email", u.Email)
+	keyValAdd(kv, "id", u.ID)
+	keyValAdd(kv, "username", u.Username)
+	mergeKeyValWithPrefix(kv, keyValFromMap(u.Attributes), "attr_")
 	return kv
 }
 
-// SessionToKeyVal produces key->value representation of the Session metadata
-func SessionToKeyVal(s faroTypes.Session) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "id", s.ID)
-	MergeKeyValWithPrefix(kv, KeyValFromMap(s.Attributes), "attr_")
+// sessionToKeyVal produces key->value representation of the Session metadata
+func sessionToKeyVal(s faroTypes.Session) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "id", s.ID)
+	mergeKeyValWithPrefix(kv, keyValFromMap(s.Attributes), "attr_")
 	return kv
 }
 
-// PageToKeyVal produces key->val representation of Page metadata
-func PageToKeyVal(p faroTypes.Page) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "id", p.ID)
-	KeyValAdd(kv, "url", p.URL)
-	MergeKeyValWithPrefix(kv, KeyValFromMap(p.Attributes), "attr_")
+// pageToKeyVal produces key->val representation of Page metadata
+func pageToKeyVal(p faroTypes.Page) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "id", p.ID)
+	keyValAdd(kv, "url", p.URL)
+	mergeKeyValWithPrefix(kv, keyValFromMap(p.Attributes), "attr_")
 
 	return kv
 }
 
-// BrowserToKeyVal produces key->value representation of the Browser metadata
-func BrowserToKeyVal(b faroTypes.Browser) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "name", b.Name)
-	KeyValAdd(kv, "version", b.Version)
-	KeyValAdd(kv, "os", b.OS)
-	KeyValAdd(kv, "mobile", fmt.Sprintf("%v", b.Mobile))
-	KeyValAdd(kv, "userAgent", b.UserAgent)
-	KeyValAdd(kv, "language", b.Language)
-	KeyValAdd(kv, "viewportWidth", b.ViewportWidth)
-	KeyValAdd(kv, "viewportHeight", b.ViewportHeight)
+// browserToKeyVal produces key->value representation of the Browser metadata
+func browserToKeyVal(b faroTypes.Browser) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "name", b.Name)
+	keyValAdd(kv, "version", b.Version)
+	keyValAdd(kv, "os", b.OS)
+	keyValAdd(kv, "mobile", fmt.Sprintf("%v", b.Mobile))
+	keyValAdd(kv, "userAgent", b.UserAgent)
+	keyValAdd(kv, "language", b.Language)
+	keyValAdd(kv, "viewportWidth", b.ViewportWidth)
+	keyValAdd(kv, "viewportHeight", b.ViewportHeight)
 
 	if brandsArray, err := b.Brands.AsBrandsArray(); err == nil {
 		for i, brand := range brandsArray {
-			MergeKeyValWithPrefix(kv, BrandToKeyVal(brand), fmt.Sprintf("brand_%d_", i))
+			mergeKeyValWithPrefix(kv, brandToKeyVal(brand), fmt.Sprintf("brand_%d_", i))
 		}
 		return kv
 	}
 
 	if brandsString, err := b.Brands.AsBrandsString(); err == nil {
-		KeyValAdd(kv, "brands", brandsString)
+		keyValAdd(kv, "brands", brandsString)
 		return kv
 	}
 
 	return kv
 }
 
-func BrandToKeyVal(b faroTypes.Brand) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "brand", b.Brand)
-	KeyValAdd(kv, "version", b.Version)
+func brandToKeyVal(b faroTypes.Brand) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "brand", b.Brand)
+	keyValAdd(kv, "version", b.Version)
 	return kv
 }
 
-// K6ToKeyVal produces a key->value representation K6 metadata
-func K6ToKeyVal(k faroTypes.K6) *KeyVal {
-	kv := NewKeyVal()
+// k6ToKeyVal produces a key->value representation K6 metadata
+func k6ToKeyVal(k faroTypes.K6) *keyVal {
+	kv := newKeyVal()
 	if k.IsK6Browser {
-		KeyValAdd(kv, "isK6Browser", strconv.FormatBool(k.IsK6Browser))
+		keyValAdd(kv, "isK6Browser", strconv.FormatBool(k.IsK6Browser))
 	}
 	return kv
 }
 
-// ViewToKeyVal produces a key->value representation View metadata
-func ViewToKeyVal(v faroTypes.View) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "name", v.Name)
+// viewToKeyVal produces a key->value representation View metadata
+func viewToKeyVal(v faroTypes.View) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "name", v.Name)
 	return kv
 }
 
-// GeoToKeyVal produces a key->value representation Geo metadata
-func GeoToKeyVal(g faroTypes.Geo) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "continent_iso", g.ContinentISOCode)
-	KeyValAdd(kv, "country_iso", g.CountryISOCode)
-	KeyValAdd(kv, "subdivision_iso", g.SubdivisionISO)
-	KeyValAdd(kv, "city", g.City)
-	KeyValAdd(kv, "asn_org", g.ASNOrg)
-	KeyValAdd(kv, "asn_id", g.ASNID)
+// geoToKeyVal produces a key->value representation Geo metadata
+func geoToKeyVal(g faroTypes.Geo) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "continent_iso", g.ContinentISOCode)
+	keyValAdd(kv, "country_iso", g.CountryISOCode)
+	keyValAdd(kv, "subdivision_iso", g.SubdivisionISO)
+	keyValAdd(kv, "city", g.City)
+	keyValAdd(kv, "asn_org", g.ASNOrg)
+	keyValAdd(kv, "asn_id", g.ASNID)
 	return kv
 }
 
-// TraceToKeyVal produces a key->value representation of the trace context object
-func TraceToKeyVal(tc faroTypes.TraceContext) *KeyVal {
-	kv := NewKeyVal()
-	KeyValAdd(kv, "traceID", tc.TraceID)
-	KeyValAdd(kv, "spanID", tc.SpanID)
+// traceToKeyVal produces a key->value representation of the trace context object
+func traceToKeyVal(tc faroTypes.TraceContext) *keyVal {
+	kv := newKeyVal()
+	keyValAdd(kv, "traceID", tc.TraceID)
+	keyValAdd(kv, "spanID", tc.SpanID)
 	return kv
 }
