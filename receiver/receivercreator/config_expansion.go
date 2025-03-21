@@ -42,7 +42,14 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (a
 			if i+1 == len(configValue) {
 				return nil, errors.New(`encountered escape (\) without value at end of expression`)
 			}
-			output.WriteByte(configValue[i+1])
+
+			// remove backslash only before backtick
+			if configValue[i+1] == '`' {
+				output.WriteByte('`')
+			} else {
+				output.WriteByte(configValue[i])
+				output.WriteByte(configValue[i+1])
+			}
 			i++
 		case '`':
 			if exprStartIndex == -1 {
