@@ -19,19 +19,21 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
+
       - name: Get changed files
         shell: bash
         id: changed-source
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .go$ | xargs)
-
+          echo $files
           echo "go_sources=$files" >> $GITHUB_OUTPUT
+
       - name: Get changed files
         shell: bash
         id: changed-test
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep _test.go$ | xargs)
-
+          echo $files
           echo "go_tests=$files" >> $GITHUB_OUTPUT
 
   scoped-tests:
