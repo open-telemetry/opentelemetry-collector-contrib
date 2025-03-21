@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension"
+package tpmextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
 
 import (
 	"go.opentelemetry.io/collector/component"
