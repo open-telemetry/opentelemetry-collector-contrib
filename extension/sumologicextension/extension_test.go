@@ -196,9 +196,7 @@ func TestStoreCredentials(t *testing.T) {
 	require.NoError(t, err)
 
 	t.Run("dir does not exist", func(t *testing.T) {
-		dir, err := os.MkdirTemp(t.TempDir(), "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -222,9 +220,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("dir exists before launch with 600 permissions", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -248,9 +244,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("ensure dir gets created with 700 permissions", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -273,9 +267,7 @@ func TestStoreCredentials(t *testing.T) {
 	})
 
 	t.Run("by default use sha256 for hashing", func(t *testing.T) {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
-		require.NoError(t, err)
-		t.Cleanup(func() { os.RemoveAll(dir) })
+		dir := t.TempDir()
 
 		srv := getServer()
 		t.Cleanup(func() { srv.Close() })
@@ -433,15 +425,11 @@ func TestLocalFSCredentialsStore_WorkCorrectlyForMultipleExtensions(t *testing.T
 	}
 
 	getDir := func(t *testing.T) string {
-		dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-multiple-extensions-test-*")
-		require.NoError(t, err)
-		return dir
+		return t.TempDir()
 	}
 
 	dir1 := getDir(t)
-	t.Cleanup(func() { os.RemoveAll(dir1) })
 	dir2 := getDir(t)
-	t.Cleanup(func() { os.RemoveAll(dir2) })
 
 	srv1 := getServer()
 	t.Cleanup(func() { srv1.Close() })
@@ -532,12 +520,10 @@ func TestRegisterEmptyCollectorName(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -619,12 +605,10 @@ func TestRegisterEmptyCollectorNameForceRegistration(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -1061,10 +1045,9 @@ func TestRegisterEmptyCollectorNameWithBackoff(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
 	require.NoError(t, err)
 
@@ -1110,11 +1093,9 @@ func TestRegisterEmptyCollectorNameUnrecoverableError(t *testing.T) {
 		})
 	}())
 
-	var dir string
-	dir, err = os.MkdirTemp("", "otelcol-sumo-store-credentials-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
 	require.NoError(t, err)
 
@@ -1212,9 +1193,7 @@ func TestRegistrationRedirect(t *testing.T) {
 	))
 	t.Cleanup(func() { origSrv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-redirect-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	configFn := func() *Config {
 		cfg := createDefaultConfig().(*Config)
@@ -1327,9 +1306,7 @@ func TestCollectorReregistersAfterHTTPUnauthorizedFromHeartbeat(t *testing.T) {
 
 	t.Cleanup(func() { srv.Close() })
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-reregistration-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() { os.RemoveAll(dir) })
+	dir := t.TempDir()
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
@@ -1409,12 +1386,10 @@ func TestRegistrationRequestPayload(t *testing.T) {
 		})
 	}())
 
-	dir, err := os.MkdirTemp("", "otelcol-sumo-registration-payload-test-*")
+	dir := t.TempDir()
 	t.Cleanup(func() {
 		srv.Close()
-		os.RemoveAll(dir)
 	})
-	require.NoError(t, err)
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.CollectorName = ""
