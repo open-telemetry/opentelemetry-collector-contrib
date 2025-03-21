@@ -4,7 +4,8 @@ go 1.23.0
 
 require (
 	github.com/aws/aws-lambda-go v1.47.0
-	github.com/json-iterator/go v1.1.12
+	github.com/goccy/go-json v0.10.5
+	github.com/klauspost/compress v1.18.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.122.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.122.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.122.0
@@ -16,7 +17,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/extension/extensiontest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/semconv v0.122.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/semconv v0.122.1
 	go.uber.org/goleak v1.3.0
 )
 
@@ -29,6 +30,7 @@ require (
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
+	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/knadh/koanf/maps v0.1.1 // indirect
 	github.com/knadh/koanf/providers/confmap v0.1.0 // indirect
 	github.com/knadh/koanf/v2 v2.1.2 // indirect

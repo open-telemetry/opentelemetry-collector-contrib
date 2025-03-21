@@ -1,19 +1,18 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package subscriptionfilter // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/unmarshaler/subscription-filter"
+package subscriptionfilter // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 
 import (
 	"bytes"
-	"compress/gzip"
 	"errors"
 	"fmt"
-	"io"
 	"sync"
 	"time"
 
 	"github.com/aws/aws-lambda-go/events"
-	jsoniter "github.com/json-iterator/go"
+	gojson "github.com/goccy/go-json"
+	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -50,12 +49,7 @@ func validateLog(log events.CloudwatchLogsData) error {
 type subscriptionFilterUnmarshaler struct {
 	buildInfo component.BuildInfo
 
-	// We need to decompress the records.
-	// Creating a new gzip.Reader every time is expensive.
-	// We can keep the gzip in cache, and take advantage
-	// of the continuously AWS environment or the AWS
-	// warm starts, in case of lambda.
-	// See https://docs.aws.amazon.com/lambda/latest/dg/lambda-runtime-environment.html.
+	// Pool the gzip readers, which are expensive to create.
 	gzipPool sync.Pool
 }
 
@@ -74,31 +68,27 @@ var _ plog.Unmarshaler = (*subscriptionFilterUnmarshaler)(nil)
 // https://docs.aws.amazon.com/firehose/latest/dev/writing-with-cloudwatch-logs.html.
 func (f *subscriptionFilterUnmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) {
 	var errDecompress error
-	record, ok := f.gzipPool.Get().(*gzip.Reader)
+	gzipReader, ok := f.gzipPool.Get().(*gzip.Reader)
 	if !ok {
-		record, errDecompress = gzip.NewReader(bytes.NewReader(compressedRecord))
+		gzipReader, errDecompress = gzip.NewReader(bytes.NewReader(compressedRecord))
 	} else {
-		errDecompress = record.Reset(bytes.NewReader(compressedRecord))
+		errDecompress = gzipReader.Reset(bytes.NewReader(compressedRecord))
 	}
 	if errDecompress != nil {
-		if record != nil {
-			f.gzipPool.Put(record)
+		if gzipReader != nil {
+			f.gzipPool.Put(gzipReader)
 		}
 		return plog.Logs{}, fmt.Errorf("failed to decompress record: %w", errDecompress)
 	}
 	defer func() {
-		_ = record.Close()
-		f.gzipPool.Put(record)
+		_ = gzipReader.Close()
+		f.gzipPool.Put(gzipReader)
 	}()
 
-	decompressedRecord, errRead := io.ReadAll(record)
-	if errRead != nil {
-		return plog.Logs{}, fmt.Errorf("failed to read decompressed record: %w", errRead)
-	}
-
 	var cwLog events.CloudwatchLogsData
-	if err := jsoniter.ConfigFastest.Unmarshal(decompressedRecord, &cwLog); err != nil {
-		return plog.Logs{}, fmt.Errorf("error unmarshaling data: %w", err)
+	decoder := gojson.NewDecoder(gzipReader)
+	if err := decoder.Decode(&cwLog); err != nil {
+		return plog.Logs{}, fmt.Errorf("failed to decode decompressed record: %w", err)
 	}
 
 	if cwLog.MessageType == "CONTROL_MESSAGE" {

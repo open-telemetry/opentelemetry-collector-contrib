@@ -125,7 +125,7 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 		},
 		"invalid_json_struct": {
 			record:      compressData(t, []byte("invalid")),
-			expectedErr: "error unmarshaling data",
+			expectedErr: "failed to decode decompressed record",
 		},
 	}
 
