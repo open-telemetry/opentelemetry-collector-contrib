@@ -24,7 +24,7 @@ func newTPMExtension(extensionCfg *Config, settings extension.Settings) (extensi
 	return settingsExtension, nil
 }
 
-func (extension *tpmExtension) Start(_ context.Context, host component.Host) error {
+func (extension *tpmExtension) Start(_ context.Context, _ component.Host) error {
 	extension.telemetrySettings.Logger.Info("starting up tpm extension")
 
 	return nil

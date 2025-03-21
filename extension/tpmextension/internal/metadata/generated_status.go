@@ -7,7 +7,7 @@ import (
 )
 
 var (
-	Type      = component.MustNewType("solarwindsapmsettings")
+	Type      = component.MustNewType("tpm")
 	ScopeName = "github.com/open-telemetry/opentelemetry-collector-contrib/extension/tmpextension"
 )
 
