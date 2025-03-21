@@ -20,21 +20,23 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Get changed files
+      - name: Get changed source files
         shell: bash
         id: changed-source
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .go$ | xargs)
-          echo $files
-          echo "go_sources=$files" >> $GITHUB_OUTPUT
+          if [[ -n "$files" ]]; then
+            echo "go_sources=$files" >> $GITHUB_OUTPUT
+          fi
 
-      - name: Get changed files
+      - name: Get changed test files
         shell: bash
         id: changed-test
         run: |
           files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep _test.go$ | xargs)
-          echo $files
-          echo "go_tests=$files" >> $GITHUB_OUTPUT
+          if [[ -n "$files" ]]; then
+            echo "go_tests=$files" >> $GITHUB_OUTPUT
+          fi
 
   scoped-tests:
     needs: changedfiles
