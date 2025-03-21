@@ -27,14 +27,10 @@ resource_attributes:
     description: Name of the database host.
     enabled: false
     type: string
-    warnings:
-      if_enabled_not_set: "This attribute will be enabled by default starting in release v0.121.0."
   server.port:
     description: Server port number.
     enabled: false
     type: int
-    warnings:
-      if_enabled_not_set: "This attribute will be enabled by default starting in release v0.121.0."
 
 attributes:
   page.operations:

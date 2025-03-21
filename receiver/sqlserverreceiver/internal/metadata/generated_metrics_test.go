@@ -62,14 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.resAttrsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.address`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.port`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 

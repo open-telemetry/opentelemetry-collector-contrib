@@ -66,15 +66,7 @@ func setupQueries(cfg *Config) []string {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if cfg.MetricsBuilderConfig.Metrics.SqlserverBatchRequestRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverPageBufferCacheHitRatio.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverLockWaitRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverProcessesBlocked.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverBatchSQLCompilationRate.Enabled ||
-		cfg.MetricsBuilderConfig.Metrics.SqlserverUserConnectionCount.Enabled {
+	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
@@ -256,10 +248,45 @@ func setupLogsScrapers(params receiver.Settings, cfg *Config) ([]scraperhelper.C
 }
 
 func isDatabaseIOQueryEnabled(metrics *metadata.MetricsConfig) bool {
-	if metrics.SqlserverDatabaseLatency.Enabled ||
-		metrics.SqlserverDatabaseOperations.Enabled ||
-		metrics.SqlserverDatabaseIo.Enabled {
-		return true
+	if metrics == nil {
+		return false
 	}
-	return false
+
+	return metrics.SqlserverDatabaseLatency.Enabled ||
+		metrics.SqlserverDatabaseOperations.Enabled ||
+		metrics.SqlserverDatabaseIo.Enabled
+}
+
+func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
+	if metrics == nil {
+		return false
+	}
+
+	return metrics.SqlserverBatchRequestRate.Enabled ||
+		metrics.SqlserverBatchSQLCompilationRate.Enabled ||
+		metrics.SqlserverBatchSQLRecompilationRate.Enabled ||
+		metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled ||
+		metrics.SqlserverDatabaseExecutionErrors.Enabled ||
+		metrics.SqlserverDatabaseFullScanRate.Enabled ||
+		metrics.SqlserverDatabaseTempdbSpace.Enabled ||
+		metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled ||
+		metrics.SqlserverDeadlockRate.Enabled ||
+		metrics.SqlserverIndexSearchRate.Enabled ||
+		metrics.SqlserverLockTimeoutRate.Enabled ||
+		metrics.SqlserverLockWaitRate.Enabled ||
+		metrics.SqlserverLoginRate.Enabled ||
+		metrics.SqlserverLogoutRate.Enabled ||
+		metrics.SqlserverMemoryGrantsPendingCount.Enabled ||
+		metrics.SqlserverMemoryUsage.Enabled ||
+		metrics.SqlserverPageBufferCacheFreeListStallsRate.Enabled ||
+		metrics.SqlserverPageBufferCacheHitRatio.Enabled ||
+		metrics.SqlserverPageLookupRate.Enabled ||
+		metrics.SqlserverProcessesBlocked.Enabled ||
+		metrics.SqlserverReplicaDataRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
+		metrics.SqlserverTableCount.Enabled ||
+		metrics.SqlserverTransactionDelay.Enabled ||
+		metrics.SqlserverTransactionMirrorWriteRate.Enabled ||
+		metrics.SqlserverUserConnectionCount.Enabled
 }
