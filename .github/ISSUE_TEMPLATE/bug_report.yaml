@@ -38,7 +38,6 @@ body:
       - connector/signaltometrics
       - connector/spanmetrics
       - connector/sum
-      - examples/demo
       - exporter/alertmanager
       - exporter/alibabacloudlogservice
       - exporter/awscloudwatchlogs
@@ -58,6 +57,7 @@ body:
       - exporter/dataset
       - exporter/doris
       - exporter/elasticsearch
+      - exporter/faro
       - exporter/file
       - exporter/googlecloud
       - exporter/googlecloudpubsub
@@ -97,6 +97,7 @@ body:
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
+      - extension/encoding/awslogsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -182,6 +183,7 @@ body:
       - processor/attributes
       - processor/coralogix
       - processor/cumulativetodelta
+      - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
       - processor/filter
@@ -264,6 +266,7 @@ body:
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
+      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics

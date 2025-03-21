@@ -13,6 +13,14 @@ all_set:
       enabled: true
     rabbitmq.message.published:
       enabled: true
+    rabbitmq.node.disk_free:
+      enabled: true
+    rabbitmq.node.fd_used:
+      enabled: true
+    rabbitmq.node.mem_limit:
+      enabled: true
+    rabbitmq.node.mem_used:
+      enabled: true
   resource_attributes:
     rabbitmq.node.name:
       enabled: true
@@ -33,6 +41,14 @@ none_set:
     rabbitmq.message.dropped:
       enabled: false
     rabbitmq.message.published:
+      enabled: false
+    rabbitmq.node.disk_free:
+      enabled: false
+    rabbitmq.node.fd_used:
+      enabled: false
+    rabbitmq.node.mem_limit:
+      enabled: false
+    rabbitmq.node.mem_used:
       enabled: false
   resource_attributes:
     rabbitmq.node.name:

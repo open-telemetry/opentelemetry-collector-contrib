@@ -31,6 +31,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RabbitmqMessageDelivered:    MetricConfig{Enabled: true},
 					RabbitmqMessageDropped:      MetricConfig{Enabled: true},
 					RabbitmqMessagePublished:    MetricConfig{Enabled: true},
+					RabbitmqNodeDiskFree:        MetricConfig{Enabled: true},
+					RabbitmqNodeFdUsed:          MetricConfig{Enabled: true},
+					RabbitmqNodeMemLimit:        MetricConfig{Enabled: true},
+					RabbitmqNodeMemUsed:         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RabbitmqNodeName:  ResourceAttributeConfig{Enabled: true},
@@ -49,6 +53,10 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					RabbitmqMessageDelivered:    MetricConfig{Enabled: false},
 					RabbitmqMessageDropped:      MetricConfig{Enabled: false},
 					RabbitmqMessagePublished:    MetricConfig{Enabled: false},
+					RabbitmqNodeDiskFree:        MetricConfig{Enabled: false},
+					RabbitmqNodeFdUsed:          MetricConfig{Enabled: false},
+					RabbitmqNodeMemLimit:        MetricConfig{Enabled: false},
+					RabbitmqNodeMemUsed:         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
 					RabbitmqNodeName:  ResourceAttributeConfig{Enabled: false},

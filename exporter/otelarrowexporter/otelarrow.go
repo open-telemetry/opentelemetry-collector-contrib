@@ -140,7 +140,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		var perRPCCreds credentials.PerRPCCredentials
 		if e.config.ClientConfig.Auth != nil {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.ClientConfig.Auth.GetClientAuthenticator(ctx, host.GetExtensions())
+			authClient, err := e.config.ClientConfig.Auth.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}

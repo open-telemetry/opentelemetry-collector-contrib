@@ -23,6 +23,8 @@ stored in AWS Secrets Manager.
 - Just use the placeholders with the following pattern `${secretsmanager:<arn or name>}`
 - Make sure you have the `secretsmanager:GetSecretValue` in the OTEL Collector Role
 - If your secret is a json string, you can get the value for a json key using the following pattern `${secretsmanager:<arn or name>#json-key}`
+- You can also specify a default value by using the following pattern `${secretsmanager:<arn or name>:-<default>}`
+  - The default value is used when the ARN or name is empty or the json key is not found
 
 Prerequisites:
 

@@ -6,12 +6,14 @@ package rabbitmqreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"errors"
+	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver/internal/metadata"
@@ -70,18 +72,54 @@ func (r *rabbitmqScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errClientNotInit
 	}
 
-	// Get queues for processing
+	var scrapeErrors scrapererror.ScrapeErrors
+
+	// Collect queue metrics
+	if err := r.collectQueueMetrics(ctx, now); err != nil {
+		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect queue metrics: %w", err))
+	}
+
+	// Collect node metrics
+	if err := r.collectNodeMetrics(ctx, now); err != nil {
+		scrapeErrors.AddPartial(0, fmt.Errorf("failed to collect node metrics: %w", err))
+	}
+
+	// Emit collected metrics
+	metrics := r.mb.Emit()
+
+	// Define err at the correct scope
+	err := scrapeErrors.Combine()
+
+	// Return a PartialScrapeError if no metrics were collected
+	if err != nil && metrics.ResourceMetrics().Len() == 0 {
+		err = scrapererror.NewPartialScrapeError(err, metrics.MetricCount())
+	}
+
+	return metrics, err
+}
+
+func (r *rabbitmqScraper) collectQueueMetrics(ctx context.Context, now pcommon.Timestamp) error {
 	queues, err := r.client.GetQueues(ctx)
 	if err != nil {
-		return pmetric.NewMetrics(), err
+		return err
 	}
 
 	// Collect metrics for each queue
 	for _, queue := range queues {
 		r.collectQueue(queue, now)
 	}
+	return nil
+}
 
-	return r.mb.Emit(), nil
+func (r *rabbitmqScraper) collectNodeMetrics(ctx context.Context, now pcommon.Timestamp) error {
+	nodes, err := r.client.GetNodes(ctx)
+	if err != nil {
+		return err
+	}
+	for _, node := range nodes {
+		r.collectNode(node, now)
+	}
+	return nil
 }
 
 // collectQueue collects metrics
@@ -122,6 +160,19 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 	rb.SetRabbitmqQueueName(queue.Name)
 	rb.SetRabbitmqNodeName(queue.Node)
 	rb.SetRabbitmqVhostName(queue.VHost)
+	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+// collectNode collects metrics for a specific RabbitMQ node
+func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) {
+	r.mb.RecordRabbitmqNodeDiskFreeDataPoint(now, node.DiskFree)
+	r.mb.RecordRabbitmqNodeFdUsedDataPoint(now, node.FDUsed)
+	r.mb.RecordRabbitmqNodeMemLimitDataPoint(now, node.MemLimit)
+	r.mb.RecordRabbitmqNodeMemUsedDataPoint(now, node.MemUsed)
+
+	rb := r.mb.NewResourceBuilder()
+	rb.SetRabbitmqNodeName(node.Name)
+
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 }
 

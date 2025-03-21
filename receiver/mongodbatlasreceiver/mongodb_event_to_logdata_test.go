@@ -19,18 +19,18 @@ import (
 
 func TestMongoeventToLogData4_4(t *testing.T) {
 	mongoevent := getTestEvent4_4()
-	pc := ProjectContext{
+	pc := projectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
-	clusterInfo := ClusterInfo{
+	c := clusterInfo{
 		ClusterName:         "clusterName",
 		RegionName:          "regionName",
 		ProviderName:        "providerName",
 		MongoDBMajorVersion: "4.4",
 	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "logName", c)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -65,19 +65,19 @@ func TestMongoeventToLogData4_4(t *testing.T) {
 
 func TestMongoeventToLogData4_2(t *testing.T) {
 	mongoevent := getTestEvent4_2()
-	pc := ProjectContext{
+	pc := projectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	clusterInfo := ClusterInfo{
+	c := clusterInfo{
 		ClusterName:         "clusterName",
 		RegionName:          "regionName",
 		ProviderName:        "providerName",
 		MongoDBMajorVersion: "4.2",
 	}
 
-	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	ld := mongodbEventToLogData(zaptest.NewLogger(t), []model.LogEntry{mongoevent}, pc, "hostname", "logName", c)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
 	sl := rl.ScopeLogs().At(0)
@@ -111,18 +111,18 @@ func TestMongoeventToLogData4_2(t *testing.T) {
 func TestUnknownSeverity(t *testing.T) {
 	mongoevent := getTestEvent4_4()
 	mongoevent.Severity = "Unknown"
-	pc := ProjectContext{
+	pc := projectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
-	clusterInfo := ClusterInfo{
+	c := clusterInfo{
 		ClusterName:         "clusterName",
 		RegionName:          "regionName",
 		ProviderName:        "providerName",
 		MongoDBMajorVersion: "4.4",
 	}
 
-	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", clusterInfo)
+	ld := mongodbEventToLogData(zap.NewNop(), []model.LogEntry{mongoevent}, pc, "hostname", "clusterName", c)
 	rl := ld.ResourceLogs().At(0)
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
@@ -132,19 +132,19 @@ func TestUnknownSeverity(t *testing.T) {
 
 func TestMongoEventToAuditLogData5_0(t *testing.T) {
 	mongoevent := getTestAuditEvent5_0()
-	pc := ProjectContext{
+	pc := projectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	clusterInfo := ClusterInfo{
+	c := clusterInfo{
 		ClusterName:         "clusterName",
 		RegionName:          "regionName",
 		ProviderName:        "providerName",
 		MongoDBMajorVersion: "5.0",
 	}
 
-	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", c)
 	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()
@@ -198,19 +198,19 @@ func TestMongoEventToAuditLogData5_0(t *testing.T) {
 
 func TestMongoEventToAuditLogData4_2(t *testing.T) {
 	mongoevent := getTestAuditEvent4_2()
-	pc := ProjectContext{
+	pc := projectContext{
 		orgName: "Org",
 		Project: mongodbatlas.Project{Name: "Project"},
 	}
 
-	clusterInfo := ClusterInfo{
+	c := clusterInfo{
 		ClusterName:         "clusterName",
 		RegionName:          "regionName",
 		ProviderName:        "providerName",
 		MongoDBMajorVersion: "4.2",
 	}
 
-	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", clusterInfo)
+	ld, err := mongodbAuditEventToLogData(zaptest.NewLogger(t), []model.AuditLog{mongoevent}, pc, "hostname", "logName", c)
 	require.NoError(t, err)
 	rl := ld.ResourceLogs().At(0)
 	resourceAttrs := rl.Resource().Attributes()

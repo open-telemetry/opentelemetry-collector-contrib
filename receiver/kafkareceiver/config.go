@@ -9,8 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
 
 type AutoCommit struct {
@@ -67,9 +66,9 @@ type Config struct {
 
 	// Metadata is the namespace for metadata management properties used by the
 	// Client, and shared by the Producer/Consumer.
-	Metadata kafkaexporter.Metadata `mapstructure:"metadata"`
+	Metadata configkafka.MetadataConfig `mapstructure:"metadata"`
 
-	Authentication kafka.Authentication `mapstructure:"auth"`
+	Authentication configkafka.AuthenticationConfig `mapstructure:"auth"`
 
 	// Controls the auto-commit functionality
 	AutoCommit AutoCommit `mapstructure:"autocommit"`
