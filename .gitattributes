@@ -4,3 +4,5 @@
 
 go.sum linguist-generated=true
 
+# To avoid lint or diff reporting files due to different line endings
+eol=lf
