@@ -18,6 +18,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
+	"go.uber.org/zap"
 )
 
 func TestLoadConfig(t *testing.T) {
@@ -161,6 +162,13 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
 			assert.Equal(t, tt.expected.Objects, cfg.Objects)
+
+			err = cfg.Validate(zap.NewNop())
+			if tt.expected == nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -179,7 +187,7 @@ func TestValidateResourceConflict(t *testing.T) {
 		},
 	}
 
-	err := rCfg.Validate()
+	err := rCfg.Validate(zap.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, "group1", rCfg.Objects[0].gvr.Group)
 
@@ -192,13 +200,13 @@ func TestValidateResourceConflict(t *testing.T) {
 		},
 	}
 
-	err = rCfg.Validate()
+	err = rCfg.Validate(zap.NewNop())
 	require.NoError(t, err)
 	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
 }
 
 func TestClientRequired(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
-	err := rCfg.Validate()
+	err := rCfg.Validate(zap.NewNop())
 	require.Error(t, err)
 }

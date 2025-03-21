@@ -15,6 +15,8 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"go.uber.org/zap"
 )
 
 type mode string
@@ -50,26 +52,59 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects []*K8sObjectsConfig `mapstructure:"objects"`
+	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode ottl.ErrorMode      `mapstructure:"error_mode"`
+	logger    *zap.Logger
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
 	makeDynamicClient   func() (dynamic.Interface, error)
 }
 
-func (c *Config) Validate() error {
+func (c *Config) Validate(logger *zap.Logger) error {
+	if logger == nil {
+		logger = zap.NewNop()
+	}
+	c.logger = logger
+
+	if c.ErrorMode == "" {
+		c.ErrorMode = ottl.PropagateError
+	}
+
+	switch c.ErrorMode {
+	case ottl.PropagateError, ottl.IgnoreError, ottl.SilentError:
+	default:
+		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
+	}
+
 	validObjects, err := c.getValidObjects()
 	if err != nil {
-		return err
+		if c.ErrorMode == ottl.PropagateError {
+			return err
+		}
+		if c.ErrorMode == ottl.IgnoreError {
+			c.logger.Warn("Error getting valid objects", zap.Error(err))
+		}
 	}
+
+	var validConfigs []*K8sObjectsConfig
+
 	for _, object := range c.Objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			availableResource := make([]string, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
+			if c.ErrorMode == ottl.PropagateError {
+				return fmt.Errorf("resource not found: %s", object.Name)
 			}
-			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
+			if c.ErrorMode == ottl.IgnoreError {
+				availableResource := make([]string, 0, len(validObjects))
+				for k := range validObjects {
+					availableResource = append(availableResource, k)
+				}
+				c.logger.Warn("Resource not found",
+					zap.String("resource", object.Name),
+					zap.Strings("available_resources", availableResource))
+			}
+			continue
 		}
 
 		gvr := gvrs[0]
@@ -95,7 +130,21 @@ func (c *Config) Validate() error {
 		}
 
 		object.gvr = gvr
+		validConfigs = append(validConfigs, object)
 	}
+
+	c.Objects = validConfigs
+
+	if len(validConfigs) == 0 {
+		msg := "no valid Kubernetes objects found to watch"
+		if c.ErrorMode == ottl.PropagateError {
+			return errors.New(msg)
+		}
+		if c.ErrorMode == ottl.IgnoreError {
+			c.logger.Warn(msg)
+		}
+	}
+
 	return nil
 }
 
