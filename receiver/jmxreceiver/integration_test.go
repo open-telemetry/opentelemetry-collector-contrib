@@ -51,7 +51,7 @@ func TestJMXIntegration(t *testing.T) {
 func (suite *jmxIntegrationSuite) SetupSuite() {
 	suite.VersionToJar = make(map[string]string)
 	for version, url := range jmxJarReleases {
-		jarPath, err := downloadJMXMetricGathererJAR(url)
+		jarPath, err := downloadJMXMetricGathererJAR(suite.T(), url)
 		suite.VersionToJar[version] = jarPath
 		suite.Require().NoError(err)
 	}
@@ -63,14 +63,14 @@ func (suite *jmxIntegrationSuite) TearDownSuite() {
 	}
 }
 
-func downloadJMXMetricGathererJAR(url string) (string, error) {
+func downloadJMXMetricGathererJAR(t *testing.T, url string) (string, error) {
 	resp, err := http.Get(url) //nolint:gosec
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
 
-	file, err := os.CreateTemp("", "jmx-metrics.jar")
+	file, err := os.CreateTemp(t.TempDir(), "jmx-metrics.jar")
 	if err != nil {
 		return "", err
 	}

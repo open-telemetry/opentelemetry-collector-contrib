@@ -76,7 +76,7 @@ func TestExamples(t *testing.T) {
 		require.NotEmpty(t, out.Data.YAML)
 
 		data := []byte(out.Data.YAML)
-		f, err := os.CreateTemp("", "ddexporter-yaml-test-")
+		f, err := os.CreateTemp(t.TempDir(), "ddexporter-yaml-test-")
 		require.NoError(t, err)
 		n, err := f.Write(data)
 		require.NoError(t, err)
