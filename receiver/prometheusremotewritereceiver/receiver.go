@@ -207,7 +207,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			}
 
-			// Add all labels as resource attributes
 			attrs := rm.Resource().Attributes()
 			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
 
