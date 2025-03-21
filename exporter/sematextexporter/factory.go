@@ -24,7 +24,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-var metricsAppToken = uuid.NewString()
+var (
+	metricsAppToken = uuid.NewString()
+	logsAppToken    = uuid.NewString()
+)
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {
@@ -46,11 +49,17 @@ func createDefaultConfig() component.Config {
 		},
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		MetricsConfig: MetricsConfig{
+			MetricsEndpoint: usMetricsEndpoint,
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
+		LogsConfig: LogsConfig{
+			LogsEndpoint: usLogsEndpoint,
+			AppToken:     logsAppToken,
+		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
+		Region:        usRegion,
 	}
 	return cfg
 }
