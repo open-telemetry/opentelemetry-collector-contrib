@@ -68,6 +68,9 @@ type NodeCapacity struct {
 	CPUCapacity float64
 	// node's Memory capacity in bytes
 	MemoryCapacity float64
+
+	Labels      map[string]any
+	Annotations map[string]any
 }
 
 func getContainerResources(r *v1.ResourceRequirements) resources {
