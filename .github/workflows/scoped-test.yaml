@@ -24,11 +24,9 @@ jobs:
         shell: bash
         id: changes
         run: |
-          echo -e "00 GITHUB_OUTPUT=\n$(cat $GITHUB_OUTPUT)\n***************"
           changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
 
           go_sources=$(echo "$changed_files" | grep .go$  || true | xargs)
-          echo -e "go_sources=\n$go_sources\n***************"
           if [[ -n "$go_sources" ]]; then
             {
               echo 'go_sources<<EOF'
@@ -37,10 +35,7 @@ jobs:
             } >> $GITHUB_OUTPUT
           fi
 
-          echo -e "01 GITHUB_OUTPUT=\n$(cat $GITHUB_OUTPUT)\n***************"
-
           go_tests=$(echo "$changed_files" | grep _test.go$ || true | xargs)
-          echo -e "go_tests=\n$go_tests\n***************"
           if [[ -n "$go_tests" ]]; then
             {
               echo 'go_tests<<EOF'
@@ -49,7 +44,6 @@ jobs:
             } >> $GITHUB_OUTPUT
           fi
 
-          echo -e "02 GITHUB_OUTPUT=\n$(cat $GITHUB_OUTPUT)\n***************"
   scoped-tests:
     needs: changedfiles
     if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
