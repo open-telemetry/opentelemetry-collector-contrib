@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
+	"go.uber.org/multierr"
 )
 
 // TranslateFromTraces converts a Traces pipeline data into []*faro.Payload
@@ -34,17 +35,15 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]faroTypes.Pay
 	var payloads []faroTypes.Payload
 	w := sha256.New()
 	encoder := json.NewEncoder(w)
+	var errs error
 	for i := 0; i < resourceSpansLen; i++ {
 		rs := resourceSpans.At(i)
 		payload := resourceSpansToFaroPayload(rs)
-		if payload == nil {
-			continue
-		}
-
 		meta := payload.Meta
 		// if payload meta already exists in the metaMap merge payload to the existing payload
 		if encodeErr := encoder.Encode(meta); encodeErr != nil {
-			return payloads, encodeErr
+			errs = multierr.Append(errs, encodeErr)
+			continue
 		}
 		metaKey := fmt.Sprintf("%x", w.Sum(nil))
 		w.Reset()
@@ -54,29 +53,34 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]faroTypes.Pay
 			mergePayloads(existingPayload, payload)
 		} else {
 			// if payload meta doesn't exist in the metaMap add new meta key to the metaMap
-			metaMap[metaKey] = payload
+			metaMap[metaKey] = &payload
 		}
+	}
+	if len(metaMap) == 0 {
+		return payloads, errs
 	}
 	payloads = make([]faroTypes.Payload, 0)
 	for _, payload := range metaMap {
 		payloads = append(payloads, *payload)
 	}
-	return payloads, nil
+	return payloads, errs
 }
 
-func resourceSpansToFaroPayload(rs ptrace.ResourceSpans) *faroTypes.Payload {
+func resourceSpansToFaroPayload(rs ptrace.ResourceSpans) faroTypes.Payload {
+	var payload faroTypes.Payload
+
 	resource := rs.Resource()
 	scopeSpans := rs.ScopeSpans()
 
 	if resource.Attributes().Len() == 0 && scopeSpans.Len() == 0 {
-		return nil
+		return payload
 	}
 
 	traces := ptrace.NewTraces()
 	rs.CopyTo(traces.ResourceSpans().AppendEmpty())
 
 	meta := extractMetaFromResourceAttributes(resource.Attributes())
-	payload := &faroTypes.Payload{
+	payload = faroTypes.Payload{
 		Meta: meta,
 		Traces: &faroTypes.Traces{
 			Traces: traces,
