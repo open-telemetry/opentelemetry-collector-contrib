@@ -13,29 +13,29 @@ jobs:
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
-      go_sources: ${{ steps.changed-source.outputs.go_sources }}
-      go_tests: ${{ steps.changed-test.outputs.go_tests }}
+      go_sources: ${{ steps.changes.outputs.go_sources }}
+      go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
 
-      - name: Get changed source files
+      - name: Get changes
         shell: bash
-        id: changed-source
+        id: changes
         run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .go$ | xargs)
-          if [[ -n "$files" ]]; then
-            echo "go_sources=$files" >> $GITHUB_OUTPUT
+          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+
+          go_sources=$(echo "$changed_files" | grep .go$ | xargs)
+          echo "go_sources=$go_sources"
+          if [[ -n "$go_sources" ]]; then
+            echo "go_sources=$go_sources" >> $GITHUB_OUTPUT
           fi
 
-      - name: Get changed test files
-        shell: bash
-        id: changed-test
-        run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep _test.go$ | xargs)
-          if [[ -n "$files" ]]; then
-            echo "go_tests=$files" >> $GITHUB_OUTPUT
+          go_tests=$(echo "$changed_files" | grep _test.go$ | xargs)
+          echo "go_tests=$go_tests"
+          if [[ -n "$go_tests" ]]; then
+            echo "go_tests=$go_tests" >> $GITHUB_OUTPUT
           fi
 
   scoped-tests:
