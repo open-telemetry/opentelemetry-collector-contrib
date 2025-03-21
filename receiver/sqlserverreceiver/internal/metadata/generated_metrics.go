@@ -2538,12 +2538,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 	})
 }
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
-	if !mbc.ResourceAttributes.ServerAddress.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `server.address`: This attribute will be enabled by default starting in release v0.121.0.")
-	}
-	if !mbc.ResourceAttributes.ServerPort.enabledSetByUser {
-		settings.Logger.Warn("[WARNING] Please set `enabled` field explicitly for `server.port`: This attribute will be enabled by default starting in release v0.121.0.")
-	}
 	mb := &MetricsBuilder{
 		config:                                   mbc,
 		startTime:                                pcommon.NewTimestampFromTime(time.Now()),

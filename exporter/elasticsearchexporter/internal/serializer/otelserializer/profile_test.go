@@ -81,6 +81,20 @@ func TestSerializeProfile(t *testing.T) {
 					"upsert":          map[string]any{},
 				},
 				{
+					"Stacktrace.frame.id":     []any{"YA3K_koRAADyvzjEk_X7kgAAAAAAAABv"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
+				},
+				{
+					"Executable.file.id":      []any{"YA3K_koRAADyvzjEk_X7kg"},
+					"Symbolization.retries":   json.Number("0"),
+					"Symbolization.time.next": "",
+					"Time.created":            "",
+					"ecs.version":             serializeprofiles.EcsVersionString,
+				},
+				{
 					"@timestamp":          "1970-01-01T00:00:00Z",
 					"Stacktrace.count":    json.Number("1"),
 					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
@@ -114,13 +128,26 @@ func TestSerializeProfile(t *testing.T) {
 				var d map[string]any
 				decoder := json.NewDecoder(v)
 				decoder.UseNumber()
-				err := decoder.Decode(&d)
+				require.NoError(t, decoder.Decode(&d))
 
-				require.NoError(t, err)
+				// Remove timestamps to allow comparing test results with expected values.
+				for k, v := range d {
+					switch k {
+					case "Symbolization.time.next", "Time.created":
+						tm, err := time.Parse(time.RFC3339Nano, v.(string))
+						require.NoError(t, err)
+						assert.True(t, isWithinLastSecond(tm))
+						d[k] = ""
+					}
+				}
 				results = append(results, d)
 			}
 
 			assert.Equal(t, tt.expected, results)
 		})
 	}
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }

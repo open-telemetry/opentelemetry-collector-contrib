@@ -96,6 +96,7 @@ body:
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
+      - extension/encoding/awslogsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding

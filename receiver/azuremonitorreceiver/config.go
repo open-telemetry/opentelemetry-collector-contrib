@@ -21,12 +21,12 @@ const (
 
 var (
 	// Predefined error responses for configuration validation failures
-	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
-	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
-	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
-	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
-	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
-	errInvalidCloud          = errors.New(`Cloud" is invalid`)
+	errMissingTenantID        = errors.New(`"TenantID" is not specified in config`)
+	errMissingSubscriptionIDs = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
+	errMissingClientID        = errors.New(`"ClientID" is not specified in config`)
+	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
+	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile"" is not specified in config`)
+	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -240,7 +240,8 @@ type Config struct {
 	scraperhelper.ControllerConfig    `mapstructure:",squash"`
 	MetricsBuilderConfig              metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	Cloud                             string                        `mapstructure:"cloud"`
-	SubscriptionID                    string                        `mapstructure:"subscription_id"`
+	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
+	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
 	Authentication                    string                        `mapstructure:"auth"`
 	TenantID                          string                        `mapstructure:"tenant_id"`
 	ClientID                          string                        `mapstructure:"client_id"`
@@ -266,8 +267,8 @@ const (
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.SubscriptionID == "" {
-		err = multierr.Append(err, errMissingSubscriptionID)
+	if len(c.SubscriptionIDs) == 0 && !c.DiscoverSubscriptions {
+		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
 	switch c.Authentication {
