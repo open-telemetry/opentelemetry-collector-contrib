@@ -77,8 +77,10 @@ func createDefaultConfig() component.Config {
 			DateFormat:      "%Y.%m.%d",
 		},
 		TelemetrySettings: TelemetrySettings{
-			LogRequestBody:  false,
-			LogResponseBody: false,
+			LogRequestBody:               false,
+			LogResponseBody:              false,
+			LogFailedDocsSource:          false,
+			LogFailedDocsSourceRateLimit: time.Second,
 		},
 		Batcher: BatcherConfig{
 			Config: exporterbatcher.Config{
@@ -107,6 +109,7 @@ func createLogsExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.LogsIndex)
 
@@ -126,6 +129,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.MetricsIndex)
 
@@ -144,6 +148,7 @@ func createTracesExporter(ctx context.Context,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, cf.TracesIndex)
 
@@ -167,6 +172,7 @@ func createProfilesExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter := newExporter(cf, set, "")
 
