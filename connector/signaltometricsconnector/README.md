@@ -173,8 +173,11 @@ attribute:
   and will produce a metric given all other non-optional attributes are present
   or have a default value defined.
 
-Note that resource attributes are filtered differently, check the resource attributes
-section for more details on this.
+Note that resource attributes are handled differently, check the resource attributes
+section for more details on this. Think of `attributes` as conditional filters for
+choosing which attributes should be included in the output metric whereas
+`include_resource_attributes` is an include list for customizing resource attributes
+of the output metric.
 
 ### Conditions
 
