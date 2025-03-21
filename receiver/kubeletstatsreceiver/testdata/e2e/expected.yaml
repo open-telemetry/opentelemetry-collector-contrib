@@ -4,6 +4,12 @@ resourceMetrics:
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: k8s.node.labels
+          value:
+            kvlistValue: {}
+        - key: k8s.node.annotations
+          value:
+            kvlistValue: {}
     scopeMetrics:
       - scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
