@@ -11,10 +11,11 @@ import (
 	"testing"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestTranslateToLogs(t *testing.T) {
@@ -113,14 +114,14 @@ func TestTranslateFromOTLPToFaroAndBack(t *testing.T) {
 	require.NoError(t, err)
 
 	// Compare the original otlp logs with the translated otlp logs
-	require.Equal(t, logs, expectedLogs)
+	require.Equal(t, expectedLogs, logs)
 
 	// Translate from faro payload to otlp traces
 	expectedTraces, err := TranslateToTraces(context.TODO(), actualFaroPayload)
 	require.NoError(t, err)
 
 	// Compare the original otlp traces with the translated otlp traces
-	require.Equal(t, traces, expectedTraces)
+	require.Equal(t, expectedTraces, traces)
 }
 
 func PayloadFromFile(t *testing.T, filename string) faroTypes.Payload {
