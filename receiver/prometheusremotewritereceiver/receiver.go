@@ -180,7 +180,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
-		// intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		// TODO: use the appropriate hash function.
 		metricCache = make(map[string]pmetric.Metric)
