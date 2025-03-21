@@ -4,8 +4,9 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
-	"github.com/shirou/gopsutil/v4/process"
 	"testing"
+
+	"github.com/shirou/gopsutil/v4/process"
 )
 
 type StartParams struct {
