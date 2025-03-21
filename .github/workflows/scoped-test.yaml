@@ -26,7 +26,7 @@ jobs:
         run: |
           changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
 
-          go_sources=$(echo "$changed_files" | grep .go$  || true | xargs)
+          go_sources=$(echo "$changed_files" | grep .go$ | grep -v -E .*_test\.go$ | xargs)
           if [[ -n "$go_sources" ]]; then
             {
               echo 'go_sources<<EOF'
@@ -35,7 +35,7 @@ jobs:
             } >> $GITHUB_OUTPUT
           fi
 
-          go_tests=$(echo "$changed_files" | grep _test.go$ || true | xargs)
+          go_tests=$(echo "$changed_files" | grep -E .*_test.go$ | xargs)
           if [[ -n "$go_tests" ]]; then
             {
               echo 'go_tests<<EOF'
