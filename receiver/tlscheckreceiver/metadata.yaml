@@ -23,6 +23,10 @@ attributes:
     enabled: true
     description: The commonName in the subject of the certificate.
     type: string
+  tlscheck.x509.san:
+    enabled: false
+    description: The Subject Alternative Name of the certificate.
+    type: slice
 
 metrics:
   tlscheck.time_left:
@@ -31,4 +35,4 @@ metrics:
     gauge:
       value_type: int
     unit: "s"
-    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn]
+    attributes: [tlscheck.x509.issuer, tlscheck.x509.cn, tlscheck.x509.san]

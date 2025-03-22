@@ -53,6 +53,28 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 	cert := state.PeerCertificates[0]
 	issuer := cert.Issuer.String()
 	commonName := cert.Subject.CommonName
+	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	i := 0
+	for _, ip := range cert.IPAddresses {
+		sans[i] = ip.String()
+		i++
+	}
+
+	for _, uri := range cert.URIs {
+		sans[i] = uri.String()
+		i++
+	}
+
+	for _, dnsName := range cert.DNSNames {
+		sans[i] = dnsName
+		i++
+	}
+
+	for _, emailAddress := range cert.EmailAddresses {
+		sans[i] = emailAddress
+		i++
+	}
+
 	currentTime := time.Now()
 	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
 	timeLeftInt := int64(timeLeft)
@@ -64,7 +86,7 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 	rb := mb.NewResourceBuilder()
 	rb.SetTlscheckEndpoint(endpoint)
-	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName)
+	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
 	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
 	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
 }
