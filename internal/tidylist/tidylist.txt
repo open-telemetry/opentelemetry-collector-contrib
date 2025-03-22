@@ -184,6 +184,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s

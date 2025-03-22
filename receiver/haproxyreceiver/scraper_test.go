@@ -9,6 +9,7 @@ import (
 	"net"
 	"os"
 	"path/filepath"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -64,6 +65,9 @@ func Test_scraper_readStats(t *testing.T) {
 }
 
 func Test_scraper_readStatsWithIncompleteValues(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("Test is failing due to t.TempDir usage on Windows. See https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38860")
+	}
 	f := t.TempDir()
 	socketAddr := filepath.Join(f, "testhaproxy.sock")
 	l, err := net.Listen("unix", socketAddr)

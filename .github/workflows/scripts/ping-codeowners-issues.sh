@@ -14,6 +14,12 @@ fi
 
 CUR_DIRECTORY=$(dirname "$0")
 COMPONENT=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $1}' .github/component_labels.txt | head -n 1)
+# Some labels are unrelated to components. These labels do not have code owners,
+# e.g "os:windows", "priority:p1", and "chore"
+if [[ -z "${COMPONENT}" ]]; then
+    exit 0
+fi
+
 OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
 if [[ -z "${OWNERS}" ]]; then
