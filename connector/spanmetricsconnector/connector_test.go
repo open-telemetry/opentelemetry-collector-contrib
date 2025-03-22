@@ -937,7 +937,27 @@ func TestMetricKeyCache(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	resourceMetricsCacheCheck(t, []string{}, false)
+	resourceMetricsCacheCheck(t, []string{"dummy", "service.name"}, true)
+}
+
+func resourceMetricsCacheCheck(t *testing.T, resourceMetricsKeyAttributes []string, featureGateEnabled bool) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, featureGateEnabled))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, !featureGateEnabled))
+	}()
+
+	p, err := newConnectorImp(
+		stringp("defaultNullValue"),
+		explicitHistogramsConfig,
+		disabledExemplarsConfig,
+		disabledEventsConfig,
+		cumulative,
+		0,
+		resourceMetricsKeyAttributes,
+		1000,
+		clockwork.NewFakeClock(),
+	)
 	require.NoError(t, err)
 
 	// Test
@@ -1873,4 +1893,139 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 func (c alwaysIncreasingClock) Now() time.Time {
 	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
+}
+
+func TestCreateResourceKey(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, false))
+	}()
+
+	tests := []struct {
+		name                     string
+		resourceAttrs            map[string]any
+		resourceMetricsKeyAttrs  []string
+		wantSameKeyWithExtraAttr map[string]any
+		wantDifferentKeyWithAttr map[string]any
+	}{
+		{
+			name: "default_attributes",
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName:          "test-service",
+				conventions.AttributeServiceNamespace:     "test-namespace",
+				conventions.AttributeTelemetrySDKName:     "opentelemetry",
+				conventions.AttributeTelemetrySDKLanguage: "go",
+				conventions.AttributeProcessPID:           123,
+				"custom.attribute":                        "value",
+			},
+			// No resourceMetricsKeyAttrs specified - should use defaults
+			wantSameKeyWithExtraAttr: map[string]any{
+				// Adding unstable attributes shouldn't change the key
+				conventions.AttributeProcessPID: 456,
+				"custom.attribute":              "different-value",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				// Changing stable attributes should change the key
+				conventions.AttributeServiceName: "different-service",
+			},
+		},
+		{
+			name: "configured_attributes",
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName:          "test-service",
+				conventions.AttributeServiceNamespace:     "test-namespace",
+				conventions.AttributeTelemetrySDKName:     "opentelemetry",
+				conventions.AttributeTelemetrySDKLanguage: "go",
+			},
+			resourceMetricsKeyAttrs: []string{
+				conventions.AttributeServiceName,
+				conventions.AttributeTelemetrySDKLanguage,
+			},
+			wantSameKeyWithExtraAttr: map[string]any{
+				// Changing non-configured attributes shouldn't change key
+				conventions.AttributeServiceNamespace: "different-namespace",
+				conventions.AttributeTelemetrySDKName: "different-sdk",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				// Changing configured attributes should change key
+				conventions.AttributeTelemetrySDKLanguage: "java",
+			},
+		},
+		{
+			name: "excluded_attributes",
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName:           "test-service",
+				conventions.AttributeProcessPID:            123,
+				conventions.AttributeContainerID:           "container1",
+				conventions.AttributeHostName:              "host1",
+				conventions.AttributeCloudAvailabilityZone: "zone1",
+			},
+			wantSameKeyWithExtraAttr: map[string]any{
+				// Changing excluded attributes shouldn't change key
+				conventions.AttributeProcessPID:            456,
+				conventions.AttributeContainerID:           "container2",
+				conventions.AttributeHostName:              "host2",
+				conventions.AttributeCloudAvailabilityZone: "zone2",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				conventions.AttributeServiceName: "different-service",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create connector with test configuration
+			c, err := newConnectorImp(
+				nil,
+				explicitHistogramsConfig,
+				disabledExemplarsConfig,
+				disabledEventsConfig,
+				cumulative,
+				0,
+				tt.resourceMetricsKeyAttrs,
+				0,
+				clockwork.NewFakeClock(),
+			)
+			require.NoError(t, err)
+
+			// Create initial attributes
+			attrs := pcommon.NewMap()
+			for k, v := range tt.resourceAttrs {
+				setMapValue(attrs, k, v)
+			}
+
+			// Get initial key
+			initialKey := c.createResourceKey(attrs)
+
+			// Test that adding extra attributes doesn't change key
+			extraAttrs := pcommon.NewMap()
+			attrs.CopyTo(extraAttrs)
+			for k, v := range tt.wantSameKeyWithExtraAttr {
+				setMapValue(extraAttrs, k, v)
+			}
+			sameKey := c.createResourceKey(extraAttrs)
+			assert.Equal(t, initialKey, sameKey, "key should not change with extra/excluded attributes")
+
+			// Test that changing important attributes does change key
+			differentAttrs := pcommon.NewMap()
+			attrs.CopyTo(differentAttrs)
+			for k, v := range tt.wantDifferentKeyWithAttr {
+				setMapValue(differentAttrs, k, v)
+			}
+			differentKey := c.createResourceKey(differentAttrs)
+			assert.NotEqual(t, initialKey, differentKey, "key should change with different core attributes")
+		})
+	}
+}
+
+func setMapValue(m pcommon.Map, k string, v any) {
+	switch val := v.(type) {
+	case string:
+		m.PutStr(k, val)
+	case int:
+		m.PutInt(k, int64(val))
+	case bool:
+		m.PutBool(k, val)
+	}
 }

@@ -19,11 +19,15 @@ import (
 )
 
 const (
-	DefaultNamespace               = "traces.span.metrics"
-	legacyMetricNamesFeatureGateID = "connector.spanmetrics.legacyMetricNames"
+	DefaultNamespace                          = "traces.span.metrics"
+	legacyMetricNamesFeatureGateID            = "connector.spanmetrics.legacyMetricNames"
+	defaultResourceMetricsKeyAttributesGateID = "connector.spanmetrics.defaultResourceMetricsKeyAttributes"
 )
 
-var legacyMetricNamesFeatureGate *featuregate.Gate
+var (
+	legacyMetricNamesFeatureGate            *featuregate.Gate
+	defaultResourceMetricsKeyAttributesGate *featuregate.Gate
+)
 
 func init() {
 	// TODO: Remove this feature gate when the legacy metric names are removed.
@@ -32,6 +36,13 @@ func init() {
 		featuregate.StageAlpha, // Alpha because we want it disabled by default.
 		featuregate.WithRegisterDescription("When enabled, connector uses legacy metric names."),
 		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/33227"),
+	)
+
+	defaultResourceMetricsKeyAttributesGate = featuregate.GlobalRegistry().MustRegister(
+		defaultResourceMetricsKeyAttributesGateID,
+		featuregate.StageAlpha, // Alpha because we want it disabled by default.
+		featuregate.WithRegisterDescription("Controls whether to use default resource metrics key attributes and exclude attributes that change between restarts."),
+		featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101"),
 	)
 }
 
