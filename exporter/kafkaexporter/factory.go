@@ -27,21 +27,14 @@ const (
 	defaultPartitionLogsByResourceAttributesEnabled = false
 )
 
-// FactoryOption applies changes to kafkaExporterFactory.
-type FactoryOption func(factory *kafkaExporterFactory)
-
 // NewFactory creates Kafka exporter factory.
-func NewFactory(options ...FactoryOption) exporter.Factory {
-	f := &kafkaExporterFactory{}
-	for _, o := range options {
-		o(f)
-	}
+func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		exporter.WithTraces(f.createTracesExporter, metadata.TracesStability),
-		exporter.WithMetrics(f.createMetricsExporter, metadata.MetricsStability),
-		exporter.WithLogs(f.createLogsExporter, metadata.LogsStability),
+		exporter.WithTraces(createTracesExporter, metadata.TracesStability),
+		exporter.WithMetrics(createMetricsExporter, metadata.MetricsStability),
+		exporter.WithLogs(createLogsExporter, metadata.LogsStability),
 	)
 }
 
@@ -60,9 +53,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type kafkaExporterFactory struct{}
-
-func (f *kafkaExporterFactory) createTracesExporter(
+func createTracesExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -90,7 +81,7 @@ func (f *kafkaExporterFactory) createTracesExporter(
 		exporterhelper.WithShutdown(exp.Close))
 }
 
-func (f *kafkaExporterFactory) createMetricsExporter(
+func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
@@ -118,7 +109,7 @@ func (f *kafkaExporterFactory) createMetricsExporter(
 		exporterhelper.WithShutdown(exp.Close))
 }
 
-func (f *kafkaExporterFactory) createLogsExporter(
+func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
 	cfg component.Config,
