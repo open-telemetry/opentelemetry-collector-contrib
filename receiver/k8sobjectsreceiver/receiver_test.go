@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -64,7 +65,7 @@ func TestPullObject(t *testing.T) {
 		},
 	}
 
-	err := rCfg.Validate()
+	err := rCfg.Validate(zap.NewNop())
 	require.NoError(t, err)
 
 	consumer := newMockLogConsumer()
@@ -105,7 +106,7 @@ func TestWatchObject(t *testing.T) {
 		},
 	}
 
-	err := rCfg.Validate()
+	err := rCfg.Validate(zap.NewNop())
 	require.NoError(t, err)
 
 	consumer := newMockLogConsumer()
@@ -177,7 +178,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 		},
 	}
 
-	err := rCfg.Validate()
+	err := rCfg.Validate(zap.NewNop())
 	require.NoError(t, err)
 
 	consumer := newMockLogConsumer()

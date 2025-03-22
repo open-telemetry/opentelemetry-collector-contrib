@@ -36,6 +36,7 @@ type k8sobjectsreceiver struct {
 	obsrecv         *receiverhelper.ObsReport
 	mu              sync.Mutex
 	cancel          context.CancelFunc
+	logger          *zap.Logger
 }
 
 func newReceiver(params receiver.Settings, config *Config, consumer consumer.Logs) (receiver.Logs, error) {
@@ -47,6 +48,10 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		ReceiverCreateSettings: params,
 	})
 	if err != nil {
+		return nil, err
+	}
+
+	if err := config.Validate(params.Logger); err != nil {
 		return nil, err
 	}
 
@@ -63,6 +68,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		config:   config,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
+		logger:   params.Logger,
 	}, nil
 }
 
@@ -72,7 +78,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		return err
 	}
 	kr.client = client
-	kr.setting.Logger.Info("Object Receiver started")
+	kr.logger.Info("Object Receiver started")
 
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
@@ -84,7 +90,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 }
 
 func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
-	kr.setting.Logger.Info("Object Receiver stopped")
+	kr.logger.Info("Object Receiver stopped")
 	if kr.cancel != nil {
 		kr.cancel()
 	}
@@ -99,7 +105,10 @@ func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
 	resource := kr.client.Resource(*object.gvr)
-	kr.setting.Logger.Info("Started collecting", zap.Any("gvr", object.gvr), zap.Any("mode", object.Mode), zap.Any("namespaces", object.Namespaces))
+	kr.logger.Info("Started collecting",
+		zap.Any("gvr", object.gvr),
+		zap.Any("mode", object.Mode),
+		zap.Any("namespaces", object.Namespaces))
 
 	switch object.Mode {
 	case PullMode:
@@ -144,7 +153,9 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-ticker.C:
 			objects, err := resource.List(ctx, listOption)
 			if err != nil {
-				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
+				kr.logger.Error("error in pulling object",
+					zap.String("resource", config.gvr.String()),
+					zap.Error(err))
 			} else if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
@@ -175,7 +186,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
-			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
+			kr.logger.Error("could not retrieve a resourceVersion",
+				zap.String("resource", cfgCopy.gvr.String()),
+				zap.Error(err))
 			cancel()
 			return
 		}
@@ -195,7 +208,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
-		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
+		kr.logger.Error("error in watching object",
+			zap.String("resource", config.gvr.String()),
+			zap.Error(err))
 		return true
 	}
 
@@ -208,25 +223,28 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 				errObject := apierrors.FromObject(data.Object)
 				//nolint:errorlint
 				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
-					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
+					kr.logger.Info("received a 410, grabbing new resource version",
+						zap.Any("data", data))
 					// we received a 410 so we need to restart
 					return false
 				}
 			}
 
 			if !ok {
-				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
+				kr.logger.Warn("Watch channel closed unexpectedly",
+					zap.String("resource", config.gvr.String()))
 				return true
 			}
 
 			if config.exclude[data.Type] {
-				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				kr.logger.Debug("dropping excluded data",
+					zap.String("type", string(data.Type)))
 				continue
 			}
 
 			logs, err := watchObjectsToLogData(&data, time.Now(), config)
 			if err != nil {
-				kr.setting.Logger.Error("error converting objects to log data", zap.Error(err))
+				kr.logger.Error("error converting objects to log data", zap.Error(err))
 			} else {
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				err := kr.consumer.ConsumeLogs(obsCtx, logs)
