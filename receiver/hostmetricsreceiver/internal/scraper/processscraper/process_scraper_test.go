@@ -733,7 +733,10 @@ func enableOptionalMetrics(ms *metadata.MetricsConfig) {
 	ms.ProcessOpenFileDescriptors.Enabled = true
 	ms.ProcessSignalsPending.Enabled = true
 	ms.ProcessUptime.Enabled = true
-	ms.ProcessHandles.Enabled = true
+	if runtime.GOOS == "windows" {
+		// Only Windows can produce this metric, do not fake it for other OSes.
+		ms.ProcessHandles.Enabled = true
+	}
 }
 
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
@@ -883,7 +886,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			numThreadsError:     errors.New("err8"),
 			numCtxSwitchesError: errors.New("err9"),
 			numFDsError:         errors.New("err10"),
-			handleCountError:    errors.New("err-handle-count"),
+			handleCountError:    handleCountErrorIfSupportedOnPlatform(),
 			rlimitError:         errors.New("err-rlimit"),
 			expectedError: `error reading command for process "test" (pid 1): err2; ` +
 				`error reading username for process "test" (pid 1): err3; ` +
@@ -896,7 +899,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading thread info for process "test" (pid 1): err8; ` +
 				`error reading context switch counts for process "test" (pid 1): err9; ` +
 				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
-				`error reading handle count for process "test" (pid 1): err-handle-count; ` +
+				handleCountErrorMessageIfSupportedOnPlatform() +
 				`error reading pending signals for process "test" (pid 1): err-rlimit; ` +
 				`error calculating uptime for process "test" (pid 1): err4`,
 		},
@@ -1021,7 +1024,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
-	if handleCountError == nil && runtime.GOOS == "windows" {
+	if handleCountError == nil {
 		expectedLen += handleCountMetricsLen
 	}
 	if rlimitError == nil && runtime.GOOS != "darwin" {
@@ -1385,4 +1388,20 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
+}
+
+func handleCountErrorIfSupportedOnPlatform() error {
+	if handleCountMetricsLen > 0 {
+		return errors.New("error-handle-count")
+	}
+
+	return nil
+}
+
+func handleCountErrorMessageIfSupportedOnPlatform() string {
+	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
+		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w", handleCountErr).Error()
+	}
+
+	return ""
 }

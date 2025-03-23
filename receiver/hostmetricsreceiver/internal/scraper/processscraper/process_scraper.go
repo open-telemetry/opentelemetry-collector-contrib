@@ -36,7 +36,6 @@ const (
 	fileDescriptorMetricsLen    = 1
 	handleMetricsLen            = 1
 	signalMetricsLen            = 1
-	handleCountMetricsLen       = 1
 	uptimeMetricsLen            = 1
 
 	metricsLen = cpuMetricsLen + memoryMetricsLen + diskMetricsLen + memoryUtilizationMetricsLen + pagingMetricsLen + threadMetricsLen + contextSwitchMetricsLen + fileDescriptorMetricsLen + signalMetricsLen + handleCountMetricsLen + uptimeMetricsLen

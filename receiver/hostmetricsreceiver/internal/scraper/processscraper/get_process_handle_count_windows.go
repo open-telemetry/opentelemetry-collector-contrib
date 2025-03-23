@@ -9,6 +9,8 @@ import (
 	"context"
 )
 
+const handleCountMetricsLen = 1
+
 func (p *wrappedProcessHandle) GetProcessHandleCountWithContext(ctx context.Context) (int64, error) {
 	// On Windows NumFDsWithContext returns the number of open handles, since it uses the
 	// GetProcessHandleCount API.
