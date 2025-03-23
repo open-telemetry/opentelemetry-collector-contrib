@@ -29,7 +29,7 @@ The following settings can be optionally configured:
 - `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with.
 - `topics_sync_interval` (default 5s)
 - `auth`
-    - `plain_text`
+    - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
         - `password`: The password to use
     - `sasl`
