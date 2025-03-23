@@ -258,7 +258,7 @@ function generateReport({ issuesData, previousReport, componentData }) {
   for (const lbl of Object.keys(issuesData)) {
     const section = [``];
     const { count, data, title } = issuesData[lbl];
-    li = `<li> ${title}: ${count}`
+    let li = `<li> ${title}: ${count}`
     if (previousReport !== null) {
       li = addChangesFromPreviousWeek(li, count, previousReport.issuesData[lbl])
     }
@@ -288,7 +288,7 @@ function generateReport({ issuesData, previousReport, componentData }) {
     const section = [``];
     const data = byStatus[lbl];
     const count = Object.keys(data).length;
-    li = section.push(`<li> ${lbl}: ${count}`); 
+    let li = `<li> ${lbl}: ${count}`; 
     if (previousReport !== null) {
       li = addChangesFromPreviousWeek(li, count, previousReport.componentData[lbl])
     }
@@ -300,8 +300,8 @@ function generateReport({ issuesData, previousReport, componentData }) {
       section.push(`${Object.keys(data).map((compName) => {
         const {stability} = data[compName]
         return `- [ ] ${compName}: ${JSON.stringify(stability)}`
-      }).join('\n')}
-      </details>`);
+      }).join('\n')}`)
+      section.push(`</details>`);
     }
     section.push('</li>');
     out.push(section.join('\n'));
@@ -499,7 +499,6 @@ async function main({ github, context }) {
   const lookbackData = genLookbackDates();
   const {issuesData, previousReport} = await processIssues({ octokit, context, lookbackData })
   const componentData = await processComponents()
-
   const report = generateReport({ issuesData, previousReport, componentData })
 
   await createIssue({octokit, lookbackData, report, context});
