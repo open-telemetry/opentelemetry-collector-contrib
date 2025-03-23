@@ -11,6 +11,8 @@ on:
     branches:
       - main
 
+permissions: read-all
+
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
