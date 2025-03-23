@@ -859,6 +859,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		},
 		{
 			name:             "Handle Count Error",
+			osFilter:         []string{"darwin", "linux"},
 			handleCountError: errors.New("err-handle-count"),
 			expectedError:    `error reading handle count for process "test" (pid 1): err-handle-count`,
 		},
@@ -1020,7 +1021,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
-	if handleCountError == nil {
+	if handleCountError == nil && runtime.GOOS == "windows" {
 		expectedLen += handleCountMetricsLen
 	}
 	if rlimitError == nil && runtime.GOOS != "darwin" {
