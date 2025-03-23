@@ -1400,7 +1400,7 @@ func handleCountErrorIfSupportedOnPlatform() error {
 
 func handleCountErrorMessageIfSupportedOnPlatform() string {
 	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
-		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w", handleCountErr).Error()
+		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w; ", handleCountErr).Error()
 	}
 
 	return ""
