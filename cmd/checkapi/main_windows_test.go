@@ -1,8 +1,6 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-//go:build !windows
-
 package main
 
 import (
@@ -29,5 +27,5 @@ func TestAltConfig(t *testing.T) {
 
 func TestAltConfigWithOriginalConfig(t *testing.T) {
 	err := run(filepath.Join("internal", "altpkg"), "config.yaml")
-	require.ErrorContains(t, err, "[internal/altpkg/receiver/altreceiver] no function matching configuration found\n[internal/altpkg/receiver/badreceiver] no function matching configuration found")
+	require.ErrorContains(t, err, "[internal\\altpkg\\receiver\\altreceiver] no function matching configuration found\n[internal\\altpkg\\receiver\\badreceiver] no function matching configuration found")
 }

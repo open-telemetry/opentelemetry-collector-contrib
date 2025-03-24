@@ -3,6 +3,9 @@ ignored_paths:
   - extension/encoding
   - extension/opampcustommessages
   - processor/tailsamplingprocessor
+  - receiver/pulsarreceiver # 38930
+  - exporter/pulsarexporter # 38929
+  - exporter/elasticsearchexporter/integrationtest
 allowed_functions:
   - name: NewFactory
     parameters:

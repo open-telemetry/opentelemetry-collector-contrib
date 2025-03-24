@@ -1,4 +1,4 @@
-module testpkg
+module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
 
 go 1.23.7
 

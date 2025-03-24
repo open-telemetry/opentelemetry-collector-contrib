@@ -3,6 +3,6 @@
 
 package altreceiver
 
-func MyFoo(blah string) bool {
+func MyFoo(_ string) bool {
 	return false
 }

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
 	"go/ast"
 	"go/parser"
 	"go/token"
@@ -21,6 +20,8 @@ import (
 	"strings"
 
 	"gopkg.in/yaml.v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
 )
 
 func main() {
@@ -84,7 +85,7 @@ func run(folder string, configPath string) error {
 			}
 
 			for _, a := range cfg.IgnoredPaths {
-				if a == relativeBase {
+				if filepath.Join(filepath.SplitList(a)...) == relativeBase {
 					fmt.Printf("Ignoring %s per denylist\n", base)
 					return nil
 				}
@@ -176,7 +177,7 @@ func handleFile(cfg config, f *ast.File, result *api) {
 	}
 }
 
-func walkFolder(cfg config, folder string, componentType string) error {
+func walkFolder(cfg config, folder string, _ string) error {
 	result := &api{}
 	set := token.NewFileSet()
 	packs, err := parser.ParseDir(set, folder, nil, 0)

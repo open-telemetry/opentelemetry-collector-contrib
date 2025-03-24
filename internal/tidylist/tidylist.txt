@@ -1,4 +1,8 @@
 cmd/checkapi
+cmd/checkapi/internal/altpkg/receiver/altreceiver
+cmd/checkapi/internal/altpkg/receiver/badreceiver
+cmd/checkapi/internal/badpkg/receiver/badreceiver
+cmd/checkapi/internal/testpkg/receiver/validreceiver
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
