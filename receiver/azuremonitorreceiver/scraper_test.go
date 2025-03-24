@@ -19,6 +19,7 @@ import (
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -537,39 +538,64 @@ func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
 	}
 }
 
-func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
-	getTestScraper := func() *azureScraper {
-		optionsResolver := newMockClientOptionsResolver(
-			getSubscriptionsMockData(),
-			getResourcesMockData(false),
-			getMetricsDefinitionsMockData(),
-			getMetricsValuesMockData(),
-		)
+func getNominalTestScraper() *azureScraper {
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionsMockData(),
+		getResourcesMockData(false),
+		getMetricsDefinitionsMockData(),
+		getMetricsValuesMockData(),
+	)
 
-		return &azureScraper{
-			cfg: createDefaultTestConfig(),
-			mb: metadata.NewMetricsBuilder(
-				metadata.DefaultMetricsBuilderConfig(),
-				receivertest.NewNopSettings(receivertest.NopType),
-			),
-			mutex:                 &sync.Mutex{},
-			time:                  getTimeMock(),
-			clientOptionsResolver: optionsResolver,
+	settings := receivertest.NewNopSettings(metadata.Type)
 
-			// From there, initialize everything that is normally initialized in start() func
-			subscriptions: map[string]*azureSubscription{
-				"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-			},
-			resources: map[string]map[string]*azureResource{
-				"subscriptionId1": {},
-			},
-		}
+	return &azureScraper{
+		cfg:                   createDefaultTestConfig(),
+		settings:              settings.TelemetrySettings,
+		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                 &sync.Mutex{},
+		time:                  getTimeMock(),
+		clientOptionsResolver: optionsResolver,
+
+		// From there, initialize everything that is normally initialized in start() func
+		subscriptions: map[string]*azureSubscription{
+			"subscriptionId1": {SubscriptionID: "subscriptionId1"},
+		},
+		resources: map[string]map[string]*azureResource{
+			"subscriptionId1": {},
+		},
 	}
+}
 
+func TestAzureScraperGetResources(t *testing.T) {
+	s := getNominalTestScraper()
+	s.resources["subscriptionId1"] = map[string]*azureResource{}
+	s.cfg.CacheResources = 0
+	s.getResources(context.Background(), "subscriptionId1")
+	assert.Contains(t, s.resources, "subscriptionId1")
+	assert.Len(t, s.resources["subscriptionId1"], 3)
+
+	s.clientOptionsResolver = newMockClientOptionsResolver(
+		getSubscriptionsMockData(),
+		map[string][]armresources.ClientListResponse{
+			"subscriptionId1": {{
+				ResourceListResult: armresources.ResourceListResult{
+					Value: nil, // Simulate resources disappear
+				},
+			}},
+		},
+		getMetricsDefinitionsMockData(),
+		getMetricsValuesMockData(),
+	)
+	s.getResources(context.Background(), "subscriptionId1")
+	assert.Contains(t, s.resources, "subscriptionId1")
+	assert.Empty(t, s.resources["subscriptionId1"])
+}
+
+func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("do_not_fetch_in_same_interval", func(t *testing.T) {
-		s := getTestScraper()
+		s := getNominalTestScraper()
 
 		metrics, err := s.scrape(ctx)
 
@@ -592,7 +618,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			time.Now().Add(time.Minute + 3*timeInterval - timeJitter),
 			time.Now().Add(time.Minute + 4*timeInterval + timeJitter),
 		}
-		s := getTestScraper()
+		s := getNominalTestScraper()
 		mockedTime := s.time.(*timeMock)
 
 		for _, timeNowNew := range timeIntervals {
