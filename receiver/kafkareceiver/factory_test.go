@@ -39,8 +39,7 @@ func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{}
-	r, err := f.createTracesReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	r, err := createTracesReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -78,8 +77,7 @@ func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{}
-	r, err := f.createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	r, err := createMetricsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
@@ -117,8 +115,7 @@ func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Brokers = []string{"invalid:9092"}
 	cfg.ProtocolVersion = "2.0.0"
-	f := kafkaReceiverFactory{}
-	r, err := f.createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
+	r, err := createLogsReceiver(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 	require.NoError(t, err)
 	// no available broker
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))

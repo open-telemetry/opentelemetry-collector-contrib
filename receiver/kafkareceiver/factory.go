@@ -44,21 +44,14 @@ const (
 
 var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
-// FactoryOption applies changes to kafkaExporterFactory.
-type FactoryOption func(factory *kafkaReceiverFactory)
-
 // NewFactory creates Kafka receiver factory.
-func NewFactory(options ...FactoryOption) receiver.Factory {
-	f := &kafkaReceiverFactory{}
-	for _, o := range options {
-		o(f)
-	}
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
@@ -89,9 +82,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type kafkaReceiverFactory struct{}
-
-func (f *kafkaReceiverFactory) createTracesReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
@@ -109,7 +100,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	return r, nil
 }
 
-func (f *kafkaReceiverFactory) createMetricsReceiver(
+func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
@@ -127,7 +118,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	return r, nil
 }
 
-func (f *kafkaReceiverFactory) createLogsReceiver(
+func createLogsReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
