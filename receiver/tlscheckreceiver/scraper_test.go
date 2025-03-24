@@ -26,6 +26,7 @@ func mockGetConnectionStateValid(endpoint string) (tls.ConnectionState, error) {
 		NotAfter:  time.Now().Add(24 * time.Hour),
 		Subject:   pkix.Name{CommonName: "valid.com"},
 		Issuer:    pkix.Name{CommonName: "ValidIssuer"},
+		DNSNames:  []string{"foo.example.com", "bar.example.com", "*.example.com"},
 	}
 	return tls.ConnectionState{
 		PeerCertificates: []*x509.Certificate{cert},
@@ -59,11 +60,12 @@ func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, er
 }
 
 func TestScrape_ValidCertificate(t *testing.T) {
+	metricConfig := metadata.DefaultMetricsBuilderConfig()
 	cfg := &Config{
 		Targets: []*confignet.TCPAddrConfig{
 			{Endpoint: "example.com:443"},
 		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		MetricsBuilderConfig: metricConfig,
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
@@ -82,9 +84,11 @@ func TestScrape_ValidCertificate(t *testing.T) {
 	attributes := dp.Attributes()
 	issuer, _ := attributes.Get("tlscheck.x509.issuer")
 	commonName, _ := attributes.Get("tlscheck.x509.cn")
+	sans, _ := attributes.Get("tlscheck.x509.san")
 
 	assert.Equal(t, "CN=ValidIssuer", issuer.AsString())
 	assert.Equal(t, "valid.com", commonName.AsString())
+	assert.Equal(t, "[\"foo.example.com\",\"bar.example.com\",\"*.example.com\"]", sans.AsString())
 }
 
 func TestScrape_ExpiredCertificate(t *testing.T) {
