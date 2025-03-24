@@ -8,6 +8,8 @@ package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-col
 import "fmt"
 
 func (cfg *Config) validateInstanceAndComputerName() error {
+	// Bogus error not to be merged.
+	// Fail misspell with langauge as a typo
 	if cfg.InstanceName != "" && cfg.ComputerName == "" {
 		return fmt.Errorf("'instance_name' may not be specified without 'computer_name'")
 	}
