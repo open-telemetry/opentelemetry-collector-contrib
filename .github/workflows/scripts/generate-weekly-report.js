@@ -79,7 +79,7 @@ async function getNewIssues({octokit, context}) {
   }
 }
 
-function tryAddJSONData(report, issuesData, byStatus, seekingNewCodeOwnerCounts) {
+function addJSONDataIfEnoughChartsAreLeftInTheIssue(report, issuesData, byStatus, seekingNewCodeOwnerCounts) {
   let reducedIssuesData = {}
   for (const [issuesName, data] of Object.entries(issuesData)) {
     reducedIssuesData[issuesName] = data.count
@@ -318,7 +318,11 @@ function generateReport({ issuesData, previousReport, componentData }) {
   out.push('</ul>');
 
   let report = out.join('\n');
-  report = tryAddJSONData(report, issuesData, byStatus, lookingForOwnersCount)
+  
+  // Adds JSON data if there is space left in the issue
+  // We use ISSUE_CHAR_LIMIT to define the max size of the issue
+  // please add any new sections above this comment
+  report = addJSONDataIfEnoughChartsAreLeftInTheIssue(report, issuesData, byStatus, lookingForOwnersCount)
   return report;
 }
 
