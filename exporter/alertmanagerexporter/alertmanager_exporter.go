@@ -96,10 +96,9 @@ func (s *alertmanagerExporter) extractEvents(td ptrace.Traces) []*alertmanagerEv
 
 func createAnnotations(event *alertmanagerEvent) model.LabelSet {
 	labelMap := make(model.LabelSet, event.spanEvent.Attributes().Len()+2)
-	event.spanEvent.Attributes().Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range event.spanEvent.Attributes().All() {
 		labelMap[model.LabelName(key)] = model.LabelValue(attr.AsString())
-		return true
-	})
+	}
 	labelMap["TraceID"] = model.LabelValue(event.traceID)
 	labelMap["SpanID"] = model.LabelValue(event.spanID)
 	return labelMap

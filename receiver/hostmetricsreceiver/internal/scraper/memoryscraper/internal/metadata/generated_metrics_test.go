@@ -63,7 +63,13 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSystemLinuxMemoryAvailableDataPoint(ts, 1)
 
 			allMetricsCount++
+			mb.RecordSystemLinuxMemoryDirtyDataPoint(ts, 1)
+
+			allMetricsCount++
 			mb.RecordSystemMemoryLimitDataPoint(ts, 1)
+
+			allMetricsCount++
+			mb.RecordSystemMemoryPageSizeDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -108,6 +114,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.linux.memory.dirty":
+					assert.False(t, validatedMetrics["system.linux.memory.dirty"], "Found a duplicate in the metrics slice: system.linux.memory.dirty")
+					validatedMetrics["system.linux.memory.dirty"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "The amount of dirty memory according to `/proc/meminfo`.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					assert.False(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "system.memory.limit":
 					assert.False(t, validatedMetrics["system.memory.limit"], "Found a duplicate in the metrics slice: system.memory.limit")
 					validatedMetrics["system.memory.limit"] = true
@@ -118,6 +138,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "system.memory.page_size":
+					assert.False(t, validatedMetrics["system.memory.page_size"], "Found a duplicate in the metrics slice: system.memory.page_size")
+					validatedMetrics["system.memory.page_size"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "A constant value for the system's configured page size.", ms.At(i).Description())
+					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

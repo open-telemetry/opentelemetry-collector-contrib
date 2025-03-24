@@ -5,45 +5,75 @@ package docker // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"errors"
-	"regexp"
 
+	"github.com/distribution/reference"
 	"go.uber.org/zap"
 )
 
-var extractImageRegexp = regexp.MustCompile(`^(?P<repository>([^/\s]+/)?([^:\s]+))(:(?P<tag>[^@\s]+))?(@sha256:(?P<sha256>[A-Fa-f0-9]{64}))?$`)
-
 type ImageRef struct {
-	Repository string
-	Tag        string
-	SHA256     string
+	Repository      string
+	Tag             string
+	Digest          string
+	DigestAlgorithm string
 }
 
-// ParseImageName extracts image repository and tag from a combined image reference
+// ParseImageName extracts image repository, tag, digest and digest algorithm from a combined image reference
 // e.g. example.com:5000/alpine/alpine:test --> `example.com:5000/alpine/alpine` and `test`
 func ParseImageName(image string) (ImageRef, error) {
-	if image == "" {
-		return ImageRef{}, errors.New("empty image")
+	ref, err := reference.Parse(image)
+	if err != nil {
+		return ImageRef{}, err
 	}
 
-	match := extractImageRegexp.FindStringSubmatch(image)
-	if len(match) == 0 {
-		return ImageRef{}, errors.New("failed to match regex against image")
+	namedRef, imgOk := ref.(reference.Named)
+	if !imgOk {
+		return ImageRef{}, errors.New("cannot retrieve image name")
 	}
 
-	tag := "latest"
-	if foundTag := match[extractImageRegexp.SubexpIndex("tag")]; foundTag != "" {
-		tag = foundTag
+	// Basic image reference
+	img := ImageRef{
+		Repository: namedRef.Name(),
+		// If no tag provided in image reference - default to "latest"
+		Tag: "latest",
 	}
 
-	repository := match[extractImageRegexp.SubexpIndex("repository")]
+	if taggedRef, ok := namedRef.(reference.Tagged); ok {
+		img.Tag = taggedRef.Tag()
+	}
 
-	hash := match[extractImageRegexp.SubexpIndex("sha256")]
+	digestedRef, digestOk := namedRef.(reference.Digested)
+	// No image digest provided
+	if !digestOk {
+		return img, nil
+	}
 
-	return ImageRef{
-		Repository: repository,
-		Tag:        tag,
-		SHA256:     hash,
-	}, nil
+	// Image digest is incorrect or no digest
+	if err := digestedRef.Digest().Validate(); err != nil {
+		return img, nil
+	}
+	img.Digest = digestedRef.Digest().Encoded()
+	img.DigestAlgorithm = digestedRef.Digest().Algorithm().String()
+
+	return img, nil
+}
+
+// CanonicalImageRef tries to parse provided image reference
+// and return canonical image reference instead, i.e. image reference
+// that have qualified repository path and image name
+// If it's not possible to normalize image reference - empty string and error returned
+// Extracted from k8sattributesprocessor for future reuse
+func CanonicalImageRef(image string) (string, error) {
+	parsed, err := reference.ParseAnyReference(image)
+	if err != nil {
+		return "", err
+	}
+
+	switch parsed.(type) {
+	case reference.Canonical:
+		return parsed.String(), nil
+	default:
+		return "", errors.New("not canonical image reference")
+	}
 }
 
 func LogParseError(err error, image string, logger *zap.Logger) {
