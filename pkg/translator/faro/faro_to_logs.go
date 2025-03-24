@@ -76,7 +76,7 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 		resourceAttrs[string(semconv.ServiceNamespaceKey)] = payload.Meta.App.Namespace
 	}
 	if payload.Meta.App.BundleID != "" {
-		resourceAttrs["app_bundle_id"] = payload.Meta.App.BundleID
+		resourceAttrs[faroAppBundleID] = payload.Meta.App.BundleID
 	}
 	rls := logs.ResourceLogs().AppendEmpty()
 	if err := rls.Resource().Attributes().FromRaw(resourceAttrs); err != nil {
@@ -94,9 +94,9 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 		}
 		logRecord := sl.LogRecords().AppendEmpty()
 		logRecord.Body().SetStr(string(line))
-		logRecord.Attributes().PutStr("kind", string(i.kind))
+		logRecord.Attributes().PutStr(faroKind, string(i.kind))
 		if (i.kind == faroTypes.KindException) && (i.hash != 0) {
-			logRecord.Attributes().PutStr("hash", strconv.FormatUint(i.hash, 10))
+			logRecord.Attributes().PutStr(faroExceptionHash, strconv.FormatUint(i.hash, 10))
 		}
 	}
 	return logs, errs

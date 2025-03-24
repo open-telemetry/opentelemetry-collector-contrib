@@ -84,7 +84,7 @@ func Test_extractMetaFromResourceAttributes(t *testing.T) {
 				attrs.PutStr(string(semconv.ServiceNamespaceKey), "testnamespace")
 				attrs.PutStr(string(semconv.ServiceVersionKey), "1.0.0")
 				attrs.PutStr(string(semconv.DeploymentEnvironmentKey), "production")
-				attrs.PutStr("app_bundle_id", "123")
+				attrs.PutStr(faroAppBundleID, "123")
 				attrs.PutStr(string(semconv.TelemetrySDKNameKey), "telemetry sdk")
 				attrs.PutStr(string(semconv.TelemetrySDKVersionKey), "1.0.0")
 

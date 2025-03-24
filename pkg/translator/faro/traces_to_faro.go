@@ -107,7 +107,7 @@ func extractMetaFromResourceAttributes(resourceAttributes pcommon.Map) faroTypes
 	if environment, ok := resourceAttributes.Get(string(semconv.DeploymentEnvironmentKey)); ok {
 		app.Environment = environment.Str()
 	}
-	if appBundleID, ok := resourceAttributes.Get("app_bundle_id"); ok {
+	if appBundleID, ok := resourceAttributes.Get(faroAppBundleID); ok {
 		app.BundleID = appBundleID.Str()
 	}
 	if sdkName, ok := resourceAttributes.Get(string(semconv.TelemetrySDKNameKey)); ok {

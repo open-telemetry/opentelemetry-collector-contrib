@@ -23,6 +23,85 @@ import (
 	"go.uber.org/multierr"
 )
 
+const (
+	faroKind          = "kind"
+	faroTimestamp     = "timestamp"
+	faroContextPrefix = "context_"
+
+	faroSDKName         = "sdk_name"
+	faroSDKVersion      = "sdk_version"
+	faroSDKIntegrations = "sdk_integrations"
+
+	faroApp            = "app"
+	faroAppName        = "app_name"
+	faroAppNamespace   = "app_namespace"
+	faroAppRelease     = "app_release"
+	faroAppVersion     = "app_version"
+	faroAppBundleID    = "app_bundle_id"
+	faroAppEnvironment = "app_environment"
+
+	faroBrowserName           = "browser_name"
+	faroBrowserVersion        = "browser_version"
+	faroBrowserOS             = "browser_os"
+	faroBrowserMobile         = "browser_mobile"
+	faroBrowserLanguage       = "browser_language"
+	faroBrowserUserAgent      = "user_agent"
+	faroBrowserViewportHeight = "browser_viewportHeight"
+	faroBrowserViewportWidth  = "browser_viewportWidth"
+	faroBrowserBrands         = "browser_brands"
+	faroBrowserBrandPrefix    = "browser_brand_"
+
+	faroBrand        = "brand"
+	faroBrandVersion = "version"
+
+	faroGeoContinentIso   = "geo_continent_iso"
+	faroGeoCountryIso     = "geo_country_iso"
+	faroGeoSubdivisionIso = "geo_subdivision_iso"
+	faroGeoCity           = "geo_city"
+	faroGeoASNOrg         = "geo_asn_org"
+	faroGeoASNID          = "geo_asn_id"
+
+	faroIsK6Browser = "k6_isK6Browser"
+
+	faroPageID         = "page_id"
+	faroPageURL        = "page_url"
+	faroPageAttrPrefix = "page_attr_"
+
+	faroSessionID         = "session_id"
+	faroSessionAttrPrefix = "session_attr_"
+
+	faroUserID         = "user_id"
+	faroUserEmail      = "user_email"
+	faroUsername       = "user_username"
+	faroUserAttrPrefix = "user_attr_"
+
+	faroViewName = "view_name"
+
+	faroLogMessage = "message"
+	faroLogLevel   = "level"
+
+	faroTraceID = "traceID"
+	faroSpanID  = "spanID"
+
+	faroEventDomain     = "event_domain"
+	faroEventName       = "event_name"
+	faroEventDataPrefix = "event_data_"
+
+	faroExceptionType       = "type"
+	faroExceptionValue      = "value"
+	faroExceptionHash       = "hash"
+	faroExceptionStacktrace = "stacktrace"
+
+	faroStacktraceFunction = "function"
+	faroStackTraceModule   = "module"
+	faroStackTraceFilename = "filename"
+	faroStackTraceLineno   = "lineno"
+	faroStackTraceColno    = "colno"
+
+	faroMeasurementType        = "type"
+	faroMeasurementValuePrefix = "value_"
+)
+
 var stacktraceRegexp *regexp.Regexp
 
 func init() {
@@ -118,7 +197,7 @@ func translateLogToFaroPayload(lr plog.LogRecord, rl pcommon.Resource) (faroType
 	if err != nil {
 		return payload, err
 	}
-	kind, ok := kv["kind"]
+	kind, ok := kv[faroKind]
 	if !ok {
 		return payload, fmt.Errorf("%s log record body doesn't contain kind", body)
 	}
@@ -244,7 +323,7 @@ func extractMetaFromKeyVal(kv map[string]string, rl pcommon.Resource) (faroTypes
 
 func extractTimestampFromKeyVal(kv map[string]string) (time.Time, error) {
 	var timestamp time.Time
-	val, ok := kv["timestamp"]
+	val, ok := kv[faroTimestamp]
 	if !ok {
 		return timestamp, nil
 	}
@@ -257,13 +336,13 @@ func extractTimestampFromKeyVal(kv map[string]string) (time.Time, error) {
 
 func extractSDKFromKeyVal(kv map[string]string) faroTypes.SDK {
 	var sdk faroTypes.SDK
-	if name, ok := kv["sdk_name"]; ok {
+	if name, ok := kv[faroSDKName]; ok {
 		sdk.Name = name
 	}
-	if version, ok := kv["sdk_version"]; ok {
+	if version, ok := kv[faroSDKVersion]; ok {
 		sdk.Version = version
 	}
-	if integrationsStr, ok := kv["sdk_integrations"]; ok {
+	if integrationsStr, ok := kv[faroSDKIntegrations]; ok {
 		sdk.Integrations = parseIntegrationsFromString(integrationsStr)
 	}
 	return sdk
@@ -303,39 +382,39 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 		}
 		// force the app name stored in resource attribute service.name
 		// if service.name resource attribute is missing try to get app name from the custom "app" resource attribute
-		if key == "app" && app.Name == "" {
+		if key == faroApp && app.Name == "" {
 			app.Name = val.Str()
 		}
-		if key == "app_bundle_id" {
+		if key == faroAppBundleID {
 			app.BundleID = val.Str()
 		}
 		return true
 	})
-	if name, ok := kv["app_name"]; ok {
+	if name, ok := kv[faroAppName]; ok {
 		// force the app name stored in resource attribute service.name or in custom "app" resource attribute
 		// if service.name resource attribute is missing as well as custom "app" attribute try to get app name from the log line
 		if app.Name == "" {
 			app.Name = name
 		}
 	}
-	if namespace, ok := kv["app_namespace"]; ok {
+	if namespace, ok := kv[faroAppNamespace]; ok {
 		// force the app namespace stored in resource attribute service.namespace
 		// if service.namespace resource attribute is missing try to get app namespace from the log line
 		if app.Namespace == "" {
 			app.Namespace = namespace
 		}
 	}
-	if release, ok := kv["app_release"]; ok {
+	if release, ok := kv[faroAppRelease]; ok {
 		app.Release = release
 	}
-	if version, ok := kv["app_version"]; ok {
+	if version, ok := kv[faroAppVersion]; ok {
 		// force the app version stored in resource attribute service.version
 		// if service.version resource attribute is missing try to get app version from the log line
 		if app.Version == "" {
 			app.Version = version
 		}
 	}
-	if environment, ok := kv["app_environment"]; ok {
+	if environment, ok := kv[faroAppEnvironment]; ok {
 		// force the app environment stored in resource attribute deployment.environment
 		// if deployment.environment resource attribute is missing try to get app environment from the log line
 		if app.Environment == "" {
@@ -347,32 +426,32 @@ func extractAppFromKeyVal(kv map[string]string, rl pcommon.Resource) faroTypes.A
 
 func extractBrowserFromKeyVal(kv map[string]string) (*faroTypes.Browser, error) {
 	var browser faroTypes.Browser
-	if name, ok := kv["browser_name"]; ok {
+	if name, ok := kv[faroBrowserName]; ok {
 		browser.Name = name
 	}
-	if version, ok := kv["browser_version"]; ok {
+	if version, ok := kv[faroBrowserVersion]; ok {
 		browser.Version = version
 	}
-	if os, ok := kv["browser_os"]; ok {
+	if os, ok := kv[faroBrowserOS]; ok {
 		browser.OS = os
 	}
-	if mobile, ok := kv["browser_mobile"]; ok {
+	if mobile, ok := kv[faroBrowserMobile]; ok {
 		isMobile, err := strconv.ParseBool(mobile)
 		if err != nil {
 			return nil, err
 		}
 		browser.Mobile = isMobile
 	}
-	if language, ok := kv["browser_language"]; ok {
+	if language, ok := kv[faroBrowserLanguage]; ok {
 		browser.Language = language
 	}
-	if userAgent, ok := kv["user_agent"]; ok {
+	if userAgent, ok := kv[faroBrowserUserAgent]; ok {
 		browser.UserAgent = userAgent
 	}
-	if viewportHeight, ok := kv["browser_viewportHeight"]; ok {
+	if viewportHeight, ok := kv[faroBrowserViewportHeight]; ok {
 		browser.ViewportHeight = viewportHeight
 	}
-	if viewportWidth, ok := kv["browser_viewportWidth"]; ok {
+	if viewportWidth, ok := kv[faroBrowserViewportWidth]; ok {
 		browser.ViewportWidth = viewportWidth
 	}
 
@@ -386,7 +465,7 @@ func extractBrowserFromKeyVal(kv map[string]string) (*faroTypes.Browser, error) 
 
 func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Brands, error) {
 	var brands faroTypes.Browser_Brands
-	if brandsAsString, ok := kv["browser_brands"]; ok {
+	if brandsAsString, ok := kv[faroBrowserBrands]; ok {
 		if err := brands.FromBrandsString(brandsAsString); err != nil {
 			return brands, err
 		}
@@ -395,7 +474,7 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 
 	brandsMap := make(map[int64]faroTypes.Brand)
 	for key, val := range kv {
-		if suffix, found := strings.CutPrefix(key, "browser_brand_"); found {
+		if suffix, found := strings.CutPrefix(key, faroBrowserBrandPrefix); found {
 			brandAsString := strings.Split(suffix, "_")
 			idx, err := strconv.ParseInt(brandAsString[0], 10, 64)
 			if err != nil {
@@ -406,10 +485,10 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 				brandsMap[idx] = faroTypes.Brand{}
 				brand = brandsMap[idx]
 			}
-			if brandAsString[1] == "brand" {
+			if brandAsString[1] == faroBrand {
 				brand.Brand = val
 			}
-			if brandAsString[1] == "version" {
+			if brandAsString[1] == faroBrandVersion {
 				brand.Version = val
 			}
 			brandsMap[idx] = brand
@@ -430,22 +509,22 @@ func extractBrowserBrandsFromKeyVal(kv map[string]string) (faroTypes.Browser_Bra
 
 func extractGeoFromKeyVal(kv map[string]string) faroTypes.Geo {
 	var geo faroTypes.Geo
-	if continentISOCode, ok := kv["geo_continent_iso"]; ok {
+	if continentISOCode, ok := kv[faroGeoContinentIso]; ok {
 		geo.ContinentISOCode = continentISOCode
 	}
-	if countryISOCode, ok := kv["geo_country_iso"]; ok {
+	if countryISOCode, ok := kv[faroGeoCountryIso]; ok {
 		geo.CountryISOCode = countryISOCode
 	}
-	if subdivisionISO, ok := kv["geo_subdivision_iso"]; ok {
+	if subdivisionISO, ok := kv[faroGeoSubdivisionIso]; ok {
 		geo.SubdivisionISO = subdivisionISO
 	}
-	if city, ok := kv["geo_city"]; ok {
+	if city, ok := kv[faroGeoCity]; ok {
 		geo.City = city
 	}
-	if asnOrg, ok := kv["geo_asn_org"]; ok {
+	if asnOrg, ok := kv[faroGeoASNOrg]; ok {
 		geo.ASNOrg = asnOrg
 	}
-	if asnID, ok := kv["geo_asn_id"]; ok {
+	if asnID, ok := kv[faroGeoASNID]; ok {
 		geo.ASNID = asnID
 	}
 
@@ -454,7 +533,7 @@ func extractGeoFromKeyVal(kv map[string]string) faroTypes.Geo {
 
 func extractK6FromKeyVal(kv map[string]string) (faroTypes.K6, error) {
 	var k6 faroTypes.K6
-	if isK6BrowserStr, ok := kv["k6_isK6Browser"]; ok {
+	if isK6BrowserStr, ok := kv[faroIsK6Browser]; ok {
 		isK6Browser, err := strconv.ParseBool(isK6BrowserStr)
 		if err != nil {
 			return k6, err
@@ -466,44 +545,44 @@ func extractK6FromKeyVal(kv map[string]string) (faroTypes.K6, error) {
 
 func extractPageFromKeyVal(kv map[string]string) faroTypes.Page {
 	var page faroTypes.Page
-	if id, ok := kv["page_id"]; ok {
+	if id, ok := kv[faroPageID]; ok {
 		page.ID = id
 	}
-	if url, ok := kv["page_url"]; ok {
+	if url, ok := kv[faroPageURL]; ok {
 		page.URL = url
 	}
-	page.Attributes = extractAttributesWithPrefixFromKeyVal("page_attr_", kv)
+	page.Attributes = extractAttributesWithPrefixFromKeyVal(faroPageAttrPrefix, kv)
 	return page
 }
 
 func extractSessionFromKeyVal(kv map[string]string) faroTypes.Session {
 	var session faroTypes.Session
-	if id, ok := kv["session_id"]; ok {
+	if id, ok := kv[faroSessionID]; ok {
 		session.ID = id
 	}
-	session.Attributes = extractAttributesWithPrefixFromKeyVal("session_attr_", kv)
+	session.Attributes = extractAttributesWithPrefixFromKeyVal(faroSessionAttrPrefix, kv)
 	return session
 }
 
 func extractUserFromKeyVal(kv map[string]string) faroTypes.User {
 	var user faroTypes.User
-	if email, ok := kv["user_email"]; ok {
+	if email, ok := kv[faroUserEmail]; ok {
 		user.Email = email
 	}
-	if id, ok := kv["user_id"]; ok {
+	if id, ok := kv[faroUserID]; ok {
 		user.ID = id
 	}
-	if username, ok := kv["user_username"]; ok {
+	if username, ok := kv[faroUsername]; ok {
 		user.Username = username
 	}
 
-	user.Attributes = extractAttributesWithPrefixFromKeyVal("user_attr_", kv)
+	user.Attributes = extractAttributesWithPrefixFromKeyVal(faroUserAttrPrefix, kv)
 	return user
 }
 
 func extractViewFromKeyVal(kv map[string]string) faroTypes.View {
 	var view faroTypes.View
-	if name, ok := kv["view_name"]; ok {
+	if name, ok := kv[faroViewName]; ok {
 		view.Name = name
 	}
 	return view
@@ -517,11 +596,11 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 	}
 	log.Timestamp = timestamp
 
-	if message, ok := kv["message"]; ok {
+	if message, ok := kv[faroLogMessage]; ok {
 		log.Message = message
 	}
 
-	if level, ok := kv["level"]; ok {
+	if level, ok := kv[faroLogLevel]; ok {
 		switch level {
 		case string(faroTypes.LogLevelError):
 			log.LogLevel = faroTypes.LogLevelError
@@ -548,7 +627,7 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 func extractLogContextFromKeyVal(kv map[string]string) faroTypes.LogContext {
 	logContext := make(faroTypes.LogContext, 0)
 	for key, val := range kv {
-		if after, found := strings.CutPrefix(key, "context_"); found {
+		if after, found := strings.CutPrefix(key, faroContextPrefix); found {
 			logContext[after] = val
 		}
 	}
@@ -558,10 +637,10 @@ func extractLogContextFromKeyVal(kv map[string]string) faroTypes.LogContext {
 
 func extractTraceFromKeyVal(kv map[string]string) faroTypes.TraceContext {
 	var trace faroTypes.TraceContext
-	if traceID, ok := kv["traceID"]; ok {
+	if traceID, ok := kv[faroTraceID]; ok {
 		trace.TraceID = traceID
 	}
-	if spanID, ok := kv["spanID"]; ok {
+	if spanID, ok := kv[faroSpanID]; ok {
 		trace.SpanID = spanID
 	}
 	return trace
@@ -569,10 +648,10 @@ func extractTraceFromKeyVal(kv map[string]string) faroTypes.TraceContext {
 
 func extractEventFromKeyVal(kv map[string]string) (faroTypes.Event, error) {
 	var event faroTypes.Event
-	if domain, ok := kv["event_domain"]; ok {
+	if domain, ok := kv[faroEventDomain]; ok {
 		event.Domain = domain
 	}
-	if name, ok := kv["event_name"]; ok {
+	if name, ok := kv[faroEventName]; ok {
 		event.Name = name
 	}
 	timestamp, err := extractTimestampFromKeyVal(kv)
@@ -582,16 +661,16 @@ func extractEventFromKeyVal(kv map[string]string) (faroTypes.Event, error) {
 	event.Timestamp = timestamp
 	trace := extractTraceFromKeyVal(kv)
 	event.Trace = trace
-	event.Attributes = extractAttributesWithPrefixFromKeyVal("event_data_", kv)
+	event.Attributes = extractAttributesWithPrefixFromKeyVal(faroEventDataPrefix, kv)
 	return event, nil
 }
 
 func extractExceptionFromKeyVal(kv map[string]string) (faroTypes.Exception, error) {
 	var exception faroTypes.Exception
-	if exceptionType, ok := kv["type"]; ok {
+	if exceptionType, ok := kv[faroExceptionType]; ok {
 		exception.Type = exceptionType
 	}
-	if exceptionValue, ok := kv["value"]; ok {
+	if exceptionValue, ok := kv[faroExceptionValue]; ok {
 		exception.Value = exceptionValue
 	}
 	exceptionContext := extractExceptionContextFromKeyVal(kv)
@@ -616,7 +695,7 @@ func extractExceptionFromKeyVal(kv map[string]string) (faroTypes.Exception, erro
 func extractExceptionContextFromKeyVal(kv map[string]string) faroTypes.ExceptionContext {
 	exceptionContext := make(faroTypes.ExceptionContext, 0)
 	for key, val := range kv {
-		if after, found := strings.CutPrefix(key, "context_"); found {
+		if after, found := strings.CutPrefix(key, faroContextPrefix); found {
 			exceptionContext[after] = val
 		}
 	}
@@ -625,7 +704,7 @@ func extractExceptionContextFromKeyVal(kv map[string]string) faroTypes.Exception
 }
 
 func extractStacktraceFromKeyVal(kv map[string]string, exceptionType string, exceptionValue string) (*faroTypes.Stacktrace, error) {
-	stacktraceStr, ok := kv["stacktrace"]
+	stacktraceStr, ok := kv[faroExceptionStacktrace]
 	if !ok {
 		return nil, nil
 	}
@@ -664,18 +743,18 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 
 	matches := stacktraceRegexp.FindStringSubmatch(frameStr)
 
-	frame.Function = matches[stacktraceRegexp.SubexpIndex("function")]
-	frame.Module = matches[stacktraceRegexp.SubexpIndex("module")]
-	frame.Filename = matches[stacktraceRegexp.SubexpIndex("filename")]
+	frame.Function = matches[stacktraceRegexp.SubexpIndex(faroStacktraceFunction)]
+	frame.Module = matches[stacktraceRegexp.SubexpIndex(faroStackTraceModule)]
+	frame.Filename = matches[stacktraceRegexp.SubexpIndex(faroStackTraceFilename)]
 
-	if linenoStr := matches[stacktraceRegexp.SubexpIndex("lineno")]; linenoStr != "" {
+	if linenoStr := matches[stacktraceRegexp.SubexpIndex(faroStackTraceLineno)]; linenoStr != "" {
 		lineno, err := strconv.ParseInt(linenoStr, 10, 64)
 		if err != nil {
 			return nil, err
 		}
 		frame.Lineno = int(lineno)
 	}
-	if colnoStr := matches[stacktraceRegexp.SubexpIndex("colno")]; colnoStr != "" {
+	if colnoStr := matches[stacktraceRegexp.SubexpIndex(faroStackTraceColno)]; colnoStr != "" {
 		colno, err := strconv.ParseInt(colnoStr, 10, 64)
 		if err != nil {
 			return nil, err
@@ -688,7 +767,7 @@ func parseFrameFromString(frameStr string) (*faroTypes.Frame, error) {
 
 func extractMeasurementFromKeyVal(kv map[string]string) (faroTypes.Measurement, error) {
 	var measurement faroTypes.Measurement
-	if measurementType, ok := kv["type"]; ok {
+	if measurementType, ok := kv[faroMeasurementType]; ok {
 		measurement.Type = measurementType
 	}
 	measurementContext := extractMeasurementContextFromKeyVal(kv)
@@ -713,7 +792,7 @@ func extractMeasurementFromKeyVal(kv map[string]string) (faroTypes.Measurement, 
 func extractMeasurementContextFromKeyVal(kv map[string]string) faroTypes.MeasurementContext {
 	measurementContext := make(faroTypes.MeasurementContext, 0)
 	for key, val := range kv {
-		if after, found := strings.CutPrefix(key, "context_"); found {
+		if after, found := strings.CutPrefix(key, faroContextPrefix); found {
 			measurementContext[after] = val
 		}
 	}
@@ -724,7 +803,7 @@ func extractMeasurementContextFromKeyVal(kv map[string]string) faroTypes.Measure
 func extractMeasurementValuesFromKeyVal(kv map[string]string) (map[string]float64, error) {
 	values := make(map[string]float64, 0)
 	for key, val := range kv {
-		if valueName, found := strings.CutPrefix(key, "value_"); found {
+		if valueName, found := strings.CutPrefix(key, faroMeasurementValuePrefix); found {
 			valFloat64, err := strconv.ParseFloat(val, 64)
 			if err != nil {
 				return nil, err
