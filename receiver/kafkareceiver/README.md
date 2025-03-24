@@ -50,12 +50,12 @@ The following settings can be optionally configured:
 - `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
 - `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
 - `auth`
-  - `plain_text`
+  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
     - `password`: The password to use
   - `sasl`
     - `username`: The username to use.
-    - `password`: The password to use
+    - `password`: The password to use.
     - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
