@@ -27,6 +27,8 @@ jobs:
         id: changes
         run: |
           changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | tr '\n' ' ')
+          echo changed_files
+          echo $changed_files
 
           go_sources=$(echo "$changed_files" | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
           echo go_sources
@@ -52,7 +54,7 @@ jobs:
 
   scoped-tests:
     needs: changedfiles
-    # if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
+    if: needs.changedfiles.outputs.go_sources != '' || needs.changedfiles.outputs.go_tests != ''
     strategy:
       fail-fast: false
       matrix:
