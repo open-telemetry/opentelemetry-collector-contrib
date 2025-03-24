@@ -8,6 +8,7 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"os"
 	"testing"
 	"time"
 
@@ -49,8 +50,8 @@ func mockGetConnectionStateExpired(endpoint string) (tls.ConnectionState, error)
 //nolint:revive
 func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
-		NotBefore: time.Now().Add(48 * time.Hour),
-		NotAfter:  time.Now().Add(24 * time.Hour),
+		NotBefore: time.Now().Add(24 * time.Hour),
+		NotAfter:  time.Now().Add(48 * time.Hour),
 		Subject:   pkix.Name{CommonName: "notyetvalid.com"},
 		Issuer:    pkix.Name{CommonName: "NotYetValidIssuer"},
 	}
@@ -59,42 +60,61 @@ func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, er
 	}, nil
 }
 
+func createTestCertFile(t *testing.T, certData string) string {
+	tmpFile, err := os.CreateTemp("", "test-cert-*.pem")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
+
+	_, err = tmpFile.WriteString(certData)
+	require.NoError(t, err)
+	err = tmpFile.Close()
+	require.NoError(t, err)
+
+	return tmpFile.Name()
+}
+
 func TestScrape_ValidCertificate(t *testing.T) {
-	metricConfig := metadata.DefaultMetricsBuilderConfig()
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "example.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example.com:443",
+				},
+			},
 		},
-		MetricsBuilderConfig: metricConfig,
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 	factory := receivertest.NewNopFactory()
 	settings := receivertest.NewNopSettings(factory.Type())
 	s := newScraper(cfg, settings, mockGetConnectionStateValid)
 
-	metrics, err := s.scrape(context.Background())
-	require.NoError(t, err)
+		metrics, err := s.scrape(context.Background())
+		require.NoError(t, err)
+		assert.Equal(t, 1, metrics.DataPointCount())
 
-	assert.Equal(t, 1, metrics.DataPointCount())
+		rm := metrics.ResourceMetrics().At(0)
+		ilms := rm.ScopeMetrics().At(0)
+		metric := ilms.Metrics().At(0)
+		dp := metric.Gauge().DataPoints().At(0)
 
-	rm := metrics.ResourceMetrics().At(0)
-	ilms := rm.ScopeMetrics().At(0)
-	metric := ilms.Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
+		attributes := dp.Attributes()
+		issuer, _ := attributes.Get("tlscheck.x509.issuer")
+		commonName, _ := attributes.Get("tlscheck.x509.cn")
+		sans, _ := attributes.Get("tlscheck.x509.san")
 
-	attributes := dp.Attributes()
-	issuer, _ := attributes.Get("tlscheck.x509.issuer")
-	commonName, _ := attributes.Get("tlscheck.x509.cn")
-	sans, _ := attributes.Get("tlscheck.x509.san")
-
-	assert.Equal(t, "CN=ValidIssuer", issuer.AsString())
-	assert.Equal(t, "valid.com", commonName.AsString())
-	assert.Equal(t, "[\"foo.example.com\",\"bar.example.com\",\"*.example.com\"]", sans.AsString())
-}
+		assert.Equal(t, "CN=ValidIssuer", issuer.AsString())
+		assert.Equal(t, "valid.com", commonName.AsString())
+		assert.Equal(t, "[\"foo.example.com\",\"bar.example.com\",\"*.example.com\"]", sans.AsString())
+	}
 
 func TestScrape_ExpiredCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "expired.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -126,8 +146,12 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 
 func TestScrape_NotYetValidCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "expired.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -159,10 +183,22 @@ func TestScrape_NotYetValidCertificate(t *testing.T) {
 
 func TestScrape_MultipleEndpoints(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "example1.com:443"},
-			{Endpoint: "example2.com:443"},
-			{Endpoint: "example3.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example1.com:443",
+				},
+			},
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example2.com:443",
+				},
+			},
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example3.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -199,18 +235,18 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 
-		// Get the endpoint resource attribute
-		endpoint, exists := rm.Resource().Attributes().Get("tlscheck.endpoint")
-		require.True(t, exists, "Resource should have tlscheck.endpoint attribute")
+		// Get the target resource attribute
+		target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+		require.True(t, exists, "Resource should have tlscheck.target attribute")
 
-		endpointStr := endpoint.AsString()
-		expected, ok := expectedMetrics[endpointStr]
-		require.True(t, ok, "Unexpected endpoint found: %s", endpointStr)
+		targetStr := target.AsString()
+		expected, ok := expectedMetrics[targetStr]
+		require.True(t, ok, "Unexpected target found: %s", targetStr)
 
-		// Remove the endpoint from expected metrics as we've found it
-		delete(expectedMetrics, endpointStr)
+		// Remove the target from expected metrics as we've found it
+		delete(expectedMetrics, targetStr)
 
-		// Verify we have the expected metrics for this endpoint
+		// Verify we have the expected metrics for this target
 		ilms := rm.ScopeMetrics().At(0)
 		metric := ilms.Metrics().At(0)
 		dp := metric.Gauge().DataPoints().At(0)
@@ -220,8 +256,8 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 		issuer, _ := attributes.Get("tlscheck.x509.issuer")
 		commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for endpoint %s", endpointStr)
-		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for endpoint %s", endpointStr)
+		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
+		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
 	}
 
 	// Verify we found all expected endpoints

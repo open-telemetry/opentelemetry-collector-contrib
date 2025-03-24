@@ -28,7 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckEndpoint: ResourceAttributeConfig{Enabled: true},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -39,7 +39,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckEndpoint: ResourceAttributeConfig{Enabled: false},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -47,8 +47,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
@@ -75,21 +76,22 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				TlscheckEndpoint: ResourceAttributeConfig{Enabled: true},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				TlscheckEndpoint: ResourceAttributeConfig{Enabled: false},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
