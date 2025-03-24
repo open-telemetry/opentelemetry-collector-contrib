@@ -51,7 +51,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		return nil, err
 	}
 
-	if err := config.Validate(params.Logger); err != nil {
+	if err := config.Validate(); err != nil {
 		return nil, err
 	}
 

@@ -68,9 +68,11 @@ type Config struct {
 	makeDynamicClient   func() (dynamic.Interface, error)
 }
 
-func (c *Config) Validate(logger *zap.Logger) error {
-	if logger == nil {
-		logger = zap.NewNop()
+func (c *Config) Validate() error {
+	zapCfg := zap.NewProductionConfig()
+	logger, err := zapCfg.Build()
+	if err != nil {
+		return fmt.Errorf("failed to create logger: %w", err)
 	}
 	c.logger = logger
 
