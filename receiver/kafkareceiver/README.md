@@ -19,13 +19,12 @@ Note that metrics and logs only support OTLP.
 
 ## Getting Started
 
-The following settings are required:
-
-- `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
+There are no required settings.
 
 The following settings can be optionally configured:
 
-- `brokers` (default = localhost:9092): The list of kafka brokers
+- `brokers` (default = localhost:9092): The list of kafka brokers.
+- `protocol_version` (default = 2.1.0): Kafka protocol version.
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
 - `topic` (default = otlp_spans for traces, otlp_metrics for metrics, otlp_logs for logs): The name of the kafka topic to read from.
   Only one telemetry type may be used for a given topic.
