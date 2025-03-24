@@ -15,7 +15,6 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"go.uber.org/zap"
 )
 
@@ -35,6 +34,14 @@ var modeMap = map[mode]bool{
 	WatchMode: true,
 }
 
+type ErrorMode string
+
+const (
+	PropagateError ErrorMode = "propagate"
+	IgnoreError    ErrorMode = "ignore"
+	SilentError    ErrorMode = "silent"
+)
+
 type K8sObjectsConfig struct {
 	Name             string               `mapstructure:"name"`
 	Group            string               `mapstructure:"group"`
@@ -53,7 +60,7 @@ type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
 	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
-	ErrorMode ottl.ErrorMode      `mapstructure:"error_mode"`
+	ErrorMode ErrorMode           `mapstructure:"error_mode"`
 	logger    *zap.Logger
 
 	// For mocking purposes only.
@@ -68,21 +75,21 @@ func (c *Config) Validate(logger *zap.Logger) error {
 	c.logger = logger
 
 	if c.ErrorMode == "" {
-		c.ErrorMode = ottl.PropagateError
+		c.ErrorMode = PropagateError
 	}
 
 	switch c.ErrorMode {
-	case ottl.PropagateError, ottl.IgnoreError, ottl.SilentError:
+	case PropagateError, IgnoreError, SilentError:
 	default:
 		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
 	}
 
 	validObjects, err := c.getValidObjects()
 	if err != nil {
-		if c.ErrorMode == ottl.PropagateError {
+		if c.ErrorMode == PropagateError {
 			return err
 		}
-		if c.ErrorMode == ottl.IgnoreError {
+		if c.ErrorMode == IgnoreError {
 			c.logger.Warn("Error getting valid objects", zap.Error(err))
 		}
 	}
@@ -92,10 +99,10 @@ func (c *Config) Validate(logger *zap.Logger) error {
 	for _, object := range c.Objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			if c.ErrorMode == ottl.PropagateError {
+			if c.ErrorMode == PropagateError {
 				return fmt.Errorf("resource not found: %s", object.Name)
 			}
-			if c.ErrorMode == ottl.IgnoreError {
+			if c.ErrorMode == IgnoreError {
 				availableResource := make([]string, 0, len(validObjects))
 				for k := range validObjects {
 					availableResource = append(availableResource, k)
@@ -137,10 +144,10 @@ func (c *Config) Validate(logger *zap.Logger) error {
 
 	if len(validConfigs) == 0 {
 		msg := "no valid Kubernetes objects found to watch"
-		if c.ErrorMode == ottl.PropagateError {
+		if c.ErrorMode == PropagateError {
 			return errors.New(msg)
 		}
-		if c.ErrorMode == ottl.IgnoreError {
+		if c.ErrorMode == IgnoreError {
 			c.logger.Warn(msg)
 		}
 	}
