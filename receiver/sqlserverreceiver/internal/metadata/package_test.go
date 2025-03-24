@@ -10,7 +10,6 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// Bogus error not to be merged.
-	// Fail misspell with langauge as a typo
+	// Bogus change not to be merged.
 	goleak.VerifyTestMain(m)
 }
