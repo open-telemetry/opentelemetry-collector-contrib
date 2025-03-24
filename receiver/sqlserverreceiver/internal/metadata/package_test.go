@@ -10,6 +10,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	// Bogus change not to be merged.
 	goleak.VerifyTestMain(m)
 }
