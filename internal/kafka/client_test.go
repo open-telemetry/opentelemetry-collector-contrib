@@ -24,8 +24,12 @@ import (
 )
 
 func init() {
-	// Disable the go-metrics registry, as there's a goroutine
-	// leak in the Sarama code that uses it.
+	// Disable the go-metrics registry, as there's a goroutine leak in the Sarama
+	// code that uses it. See this stale issue: https://github.com/IBM/sarama/issues/1321
+	//
+	// Sarama docs suggest setting UseNilMetrics to true to disable metrics if they
+	// are not needed, which is the case here. We only disable in tests to avoid
+	// affecting other components that rely on go-metrics.
 	metrics.UseNilMetrics = true
 }
 
