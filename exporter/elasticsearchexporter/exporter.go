@@ -8,7 +8,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"sync"
 
 	"github.com/elastic/go-docappender/v2"
 	"go.opentelemetry.io/collector/client"
@@ -36,12 +35,22 @@ type elasticsearchExporter struct {
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
-	encoders            sync.Map
+	encoders            map[MappingMode]documentEncoder
 }
 
-func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
+
+	encoders := map[MappingMode]documentEncoder{}
+	for i := range NumMappingModes {
+		enc, err := newEncoder(i)
+		if err != nil {
+			return nil, err
+		}
+		encoders[i] = enc
+	}
+
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
@@ -50,7 +59,8 @@ func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearc
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
-	}
+		encoders:            encoders,
+	}, nil
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
@@ -68,12 +78,11 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 }
 
 func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
-	nEnc, err := newEncoder(m)
-	if err != nil {
-		return nil, err
+	if enc, ok := e.encoders[m]; ok {
+		return enc, nil
 	}
-	enc, _ := e.encoders.LoadOrStore(m, nEnc)
-	return enc.(documentEncoder), nil
+
+	return nil, fmt.Errorf("no encoder setup for mapping mode %s", m)
 }
 
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
