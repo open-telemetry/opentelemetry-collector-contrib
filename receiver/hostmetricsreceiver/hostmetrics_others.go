@@ -12,7 +12,6 @@ import (
 )
 
 func validateRootPath(rootPath string) error {
-	// Change just for testing purposes - to be removed.
 	if rootPath == "" {
 		return nil
 	}

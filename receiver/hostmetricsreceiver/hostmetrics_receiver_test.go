@@ -74,8 +74,6 @@ var systemSpecificMetrics = map[string][]string{
 func TestGatherMetrics_EndToEnd(t *testing.T) {
 	sink := new(consumertest.MetricsSink)
 
-	// Useless comment just to test changes on scoped-tests
-
 	cfg := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
 			CollectionInterval: 100 * time.Millisecond,
