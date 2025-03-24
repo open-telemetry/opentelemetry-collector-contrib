@@ -6,6 +6,8 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions: read-all
+
 jobs:
   changedfiles:
     runs-on: ubuntu-latest

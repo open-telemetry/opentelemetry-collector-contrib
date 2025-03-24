@@ -66,7 +66,7 @@ func newProcessScraper(settings scraper.Settings, cfg *Config) (*processScraper,
 		settings:             settings,
 		config:               cfg,
 		getProcessCreateTime: processHandle.CreateTimeWithContext,
-		getProcessHandles:    getProcessHandlesInternal,
+		getProcessHandles:    getGopsutilProcessHandles,
 		scrapeProcessDelay:   cfg.ScrapeProcessDelay,
 		ucals:                make(map[int32]*ucal.CPUUtilizationCalculator),
 		handleCountManager:   handlecount.NewManager(),
@@ -271,14 +271,17 @@ func (s *processScraper) getProcessMetadata(ctx context.Context) ([]*processMeta
 			continue
 		}
 
-		parentPid, err := parentPid(ctx, handle, pid)
-		if err != nil {
-			errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+		parentProcessID := int32(0)
+		if s.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled {
+			parentProcessID, err = parentPid(ctx, handle, pid)
+			if err != nil {
+				errs.AddPartial(0, fmt.Errorf("error reading parent pid for process %q (pid %v): %w", executable.name, pid, err))
+			}
 		}
 
 		md := &processMetadata{
 			pid:        pid,
-			parentPid:  parentPid,
+			parentPid:  parentProcessID,
 			executable: executable,
 			command:    command,
 			username:   username,
