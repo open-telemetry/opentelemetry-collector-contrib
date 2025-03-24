@@ -126,7 +126,7 @@ func TestNewSaramaClient(t *testing.T) {
 	_, clientConfig := kafkatest.NewCluster(t)
 	client, err := NewSaramaClient(context.Background(), clientConfig)
 	require.NoError(t, err)
-	defer func() { assert.NoError(t, client.Close()) }()
+	assert.NoError(t, client.Close())
 }
 
 func TestNewSaramaClient_SASL(t *testing.T) {
