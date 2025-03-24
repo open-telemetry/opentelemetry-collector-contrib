@@ -97,6 +97,7 @@ body:
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
+      - extension/encoding/awslogsencoding
       - extension/encoding/googlecloudlogentryencoding
       - extension/encoding/jaegerencoding
       - extension/encoding/jsonlogencoding
@@ -132,6 +133,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/tpm
       - internal/aws
       - internal/collectd
       - internal/common
@@ -265,6 +267,7 @@ body:
       - receiver/journald
       - receiver/k8scluster
       - receiver/k8sevents
+      - receiver/k8slog
       - receiver/k8sobjects
       - receiver/kafka
       - receiver/kafkametrics

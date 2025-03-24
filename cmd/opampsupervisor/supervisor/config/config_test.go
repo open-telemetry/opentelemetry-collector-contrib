@@ -486,8 +486,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
@@ -495,7 +494,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -704,10 +703,8 @@ agent:
 func setupSupervisorConfigFile(t *testing.T, tmpDir, configString string) string {
 	t.Helper()
 
-	testDir, err := os.MkdirTemp(tmpDir, "*")
-	require.NoError(t, err)
-	cfgPath := filepath.Join(testDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configString), 0o600)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(configString), 0o600)
 	require.NoError(t, err)
 	return cfgPath
 }

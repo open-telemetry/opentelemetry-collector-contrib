@@ -13,7 +13,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
 
@@ -30,13 +30,6 @@ const (
 	defaultHeartbeatInterval = 3 * time.Second
 
 	// default from sarama.NewConfig()
-	defaultMetadataRetryMax = 3
-	// default from sarama.NewConfig()
-	defaultMetadataRetryBackoff = time.Millisecond * 250
-	// default from sarama.NewConfig()
-	defaultMetadataFull = true
-
-	// default from sarama.NewConfig()
 	defaultAutoCommitEnable = true
 	// default from sarama.NewConfig()
 	defaultAutoCommitInterval = 1 * time.Second
@@ -51,21 +44,14 @@ const (
 
 var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
-// FactoryOption applies changes to kafkaExporterFactory.
-type FactoryOption func(factory *kafkaReceiverFactory)
-
 // NewFactory creates Kafka receiver factory.
-func NewFactory(options ...FactoryOption) receiver.Factory {
-	f := &kafkaReceiverFactory{}
-	for _, o := range options {
-		o(f)
-	}
+func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithTraces(f.createTracesReceiver, metadata.TracesStability),
-		receiver.WithMetrics(f.createMetricsReceiver, metadata.MetricsStability),
-		receiver.WithLogs(f.createLogsReceiver, metadata.LogsStability),
+		receiver.WithTraces(createTracesReceiver, metadata.TracesStability),
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability),
 	)
 }
 
@@ -78,13 +64,7 @@ func createDefaultConfig() component.Config {
 		InitialOffset:     defaultInitialOffset,
 		SessionTimeout:    defaultSessionTimeout,
 		HeartbeatInterval: defaultHeartbeatInterval,
-		Metadata: kafkaexporter.Metadata{
-			Full: defaultMetadataFull,
-			Retry: kafkaexporter.MetadataRetry{
-				Max:     defaultMetadataRetryMax,
-				Backoff: defaultMetadataRetryBackoff,
-			},
-		},
+		Metadata:          configkafka.NewDefaultMetadataConfig(),
 		AutoCommit: AutoCommit{
 			Enable:   defaultAutoCommitEnable,
 			Interval: defaultAutoCommitInterval,
@@ -102,9 +82,7 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-type kafkaReceiverFactory struct{}
-
-func (f *kafkaReceiverFactory) createTracesReceiver(
+func createTracesReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
@@ -122,7 +100,7 @@ func (f *kafkaReceiverFactory) createTracesReceiver(
 	return r, nil
 }
 
-func (f *kafkaReceiverFactory) createMetricsReceiver(
+func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
@@ -140,7 +118,7 @@ func (f *kafkaReceiverFactory) createMetricsReceiver(
 	return r, nil
 }
 
-func (f *kafkaReceiverFactory) createLogsReceiver(
+func createLogsReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,

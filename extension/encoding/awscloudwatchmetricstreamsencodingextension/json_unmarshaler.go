@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"fmt"
 	"strings"
 	"time"
 
@@ -15,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension/internal/metadata"
 )
@@ -35,7 +35,6 @@ var (
 
 type formatJSONUnmarshaler struct {
 	buildInfo component.BuildInfo
-	logger    *zap.Logger
 }
 
 var _ pmetric.Unmarshaler = (*formatJSONUnmarshaler)(nil)
@@ -132,6 +131,7 @@ type metricKey struct {
 }
 
 func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
+	var errs []error
 	byResource := make(map[resourceKey]map[metricKey]pmetric.Metric)
 
 	// Multiple metrics in each record separated by newline character
@@ -139,32 +139,29 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
 		var cwMetric cloudwatchMetric
 		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
-			c.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("datum_index", datumIndex),
-			)
+			errs = append(errs, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err))
+			byResource = map[resourceKey]map[metricKey]pmetric.Metric{} // free the memory
 			continue
 		}
 		if err := validateMetric(cwMetric); err != nil {
-			c.logger.Error(
-				"Invalid metric",
-				zap.Int("datum_index", datumIndex),
-				zap.Error(err),
-			)
+			errs = append(errs, fmt.Errorf("invalid cloudwatch metric at index %d: %w", datumIndex, err))
+			byResource = map[resourceKey]map[metricKey]pmetric.Metric{} // free the memory
 			continue
 		}
 
-		c.addMetricToResource(byResource, cwMetric)
+		if len(errs) == 0 {
+			// only add the metric if there are
+			// no errors so far
+			c.addMetricToResource(byResource, cwMetric)
+		}
 	}
 
 	if err := scanner.Err(); err != nil {
-		// Treat this as a non-fatal error, and handle the data below.
-		c.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
+		errs = append(errs, fmt.Errorf("error scanning for newline-delimited JSON: %w", err))
 	}
 
-	if len(byResource) == 0 {
-		return pmetric.Metrics{}, errEmptyRecord
+	if len(errs) > 0 {
+		return pmetric.Metrics{}, errors.Join(errs...)
 	}
 
 	return c.createMetrics(byResource), nil

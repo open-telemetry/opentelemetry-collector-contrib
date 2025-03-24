@@ -20,7 +20,7 @@ There are also optional metrics that you must specify in your configuration to c
 
 ## Prerequisites
 
-This receiver supports MySQL version 8.0
+This receiver supports MySQL version 8.0 and MariaDB 10.11.
 
 Collecting most metrics requires the ability to execute `SHOW GLOBAL STATUS`.
 
