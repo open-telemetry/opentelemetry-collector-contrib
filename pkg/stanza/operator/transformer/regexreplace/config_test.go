@@ -128,6 +128,7 @@ func TestBuild(t *testing.T) {
 					return cfg
 				}(),
 				BuildError: "error parsing regexp: unexpected ): `)`",
-			}},
+			},
+		},
 	}.Run(t)
 }
