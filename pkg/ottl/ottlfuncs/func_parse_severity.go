@@ -7,8 +7,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/go-viper/mapstructure/v2"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
@@ -55,17 +53,12 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 			return nil, fmt.Errorf("cannot get severity mapping: %w", err)
 		}
 
-		sev, err := decodeSeverityMap(severityMap.AsRaw())
-		if err != nil {
-			return nil, fmt.Errorf("invalid severity mapping: %w", err)
-		}
-
 		value, err := target.Get(ctx, tCtx)
 		if err != nil {
 			return nil, fmt.Errorf("could not get log level: %w", err)
 		}
 
-		logLevel, err := evaluateSeverity(value, sev)
+		logLevel, err := evaluateSeverity(value, severityMap.AsRaw())
 		if err != nil {
 			return nil, fmt.Errorf("could not map log level: %w", err)
 		}
@@ -74,18 +67,13 @@ func parseSeverity[K any](target ottl.Getter[K], mapping ottl.PMapGetter[K]) ott
 	}
 }
 
-func decodeSeverityMap(raw map[string]any) (map[string][]any, error) {
-	s := map[string][]any{}
-	if err := mapstructure.Decode(raw, &s); err != nil {
-		return nil, fmt.Errorf("cannot decode severity mapping: %w", err)
-	}
-
-	return s, nil
-}
-
-func evaluateSeverity(value any, severities map[string][]any) (string, error) {
+func evaluateSeverity(value any, severities map[string]any) (string, error) {
 	for level, criteria := range severities {
-		match, err := evaluateSeverityMapping(value, criteria)
+		criteriaList, ok := criteria.([]any)
+		if !ok {
+			return "", fmt.Errorf("criteria for mapping log level must be []any")
+		}
+		match, err := evaluateSeverityMapping(value, criteriaList)
 		if err != nil {
 			return "", fmt.Errorf("could not evaluate log level of value '%v': %w", value, err)
 		}

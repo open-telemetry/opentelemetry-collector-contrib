@@ -126,6 +126,22 @@ func Test_parseSeverity(t *testing.T) {
 			expectErrorMsg: "could not map log level: no matching log level found for value 'foo'",
 		},
 		{
+			name: "unexpected type in criteria",
+			target: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(400), nil
+				},
+			},
+			mapping: ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					m := pcommon.NewMap()
+					m.PutStr("error", "invalid")
+					return m, nil
+				},
+			},
+			expectErrorMsg: "could not map log level: criteria for mapping log level must be []any",
+		},
+		{
 			name: "unexpected type in range criteria (min), no match",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
