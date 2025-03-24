@@ -937,7 +937,27 @@ func TestMetricKeyCache(t *testing.T) {
 }
 
 func TestResourceMetricsCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	resourceMetricsCacheCheck(t, []string{}, false)
+	resourceMetricsCacheCheck(t, []string{"dummy", "service.name"}, true)
+}
+
+func resourceMetricsCacheCheck(t *testing.T, resourceMetricsKeyAttributes []string, featureGateEnabled bool) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, featureGateEnabled))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, !featureGateEnabled))
+	}()
+
+	p, err := newConnectorImp(
+		stringp("defaultNullValue"),
+		explicitHistogramsConfig,
+		disabledExemplarsConfig,
+		disabledEventsConfig,
+		cumulative,
+		0,
+		resourceMetricsKeyAttributes,
+		1000,
+		clockwork.NewFakeClock(),
+	)
 	require.NoError(t, err)
 
 	// Test
@@ -1873,4 +1893,158 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 func (c alwaysIncreasingClock) Now() time.Time {
 	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
+}
+
+func TestCreateResourceKey(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, true))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, false))
+	}()
+
+	tests := []struct {
+		name                     string
+		featureGateEnabled       bool
+		resourceAttrs            map[string]any
+		resourceMetricsKeyAttrs  []string
+		wantSameKeyWithExtraAttr map[string]any
+		wantDifferentKeyWithAttr map[string]any
+	}{
+		{
+			name: "default_attributes",
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName:          "test-service",
+				conventions.AttributeServiceNamespace:     "test-namespace",
+				conventions.AttributeTelemetrySDKName:     "opentelemetry",
+				conventions.AttributeTelemetrySDKLanguage: "go",
+				conventions.AttributeProcessPID:           123,
+				"custom.attribute":                        "value",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				conventions.AttributeServiceName: "different-service",
+			},
+		},
+		{
+			name: "configured_attributes",
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName:          "test-service",
+				conventions.AttributeServiceNamespace:     "test-namespace",
+				conventions.AttributeTelemetrySDKName:     "opentelemetry",
+				conventions.AttributeTelemetrySDKLanguage: "go",
+			},
+			resourceMetricsKeyAttrs: []string{
+				conventions.AttributeServiceName,
+				conventions.AttributeTelemetrySDKLanguage,
+			},
+			wantSameKeyWithExtraAttr: map[string]any{
+				// Changing non-configured attributes shouldn't change key
+				conventions.AttributeServiceNamespace: "different-namespace",
+				conventions.AttributeTelemetrySDKName: "different-sdk",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				// Changing configured attributes should change key
+				conventions.AttributeTelemetrySDKLanguage: "java",
+			},
+		},
+		{
+			name:               "feature_gate_disabled",
+			featureGateEnabled: false,
+			resourceAttrs: map[string]any{
+				conventions.AttributeServiceName: "test-service",
+				"custom.attribute":               "value",
+			},
+			// Should use all attributes when feature gate is disabled
+			wantSameKeyWithExtraAttr: nil,
+			wantDifferentKeyWithAttr: map[string]any{
+				"custom.attribute": "different-value",
+			},
+		},
+		{
+			name:               "empty_resource_attributes",
+			featureGateEnabled: true,
+			resourceAttrs:      map[string]any{},
+			resourceMetricsKeyAttrs: []string{
+				conventions.AttributeServiceName,
+			},
+			wantSameKeyWithExtraAttr: map[string]any{
+				"custom.attribute": "value",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				conventions.AttributeServiceName: "test-service",
+			},
+		},
+		{
+			name:               "missing_configured_attributes",
+			featureGateEnabled: true,
+			resourceAttrs: map[string]any{
+				"custom.attribute": "value",
+			},
+			resourceMetricsKeyAttrs: []string{
+				conventions.AttributeServiceName,
+				conventions.AttributeTelemetrySDKLanguage,
+			},
+			wantSameKeyWithExtraAttr: map[string]any{
+				"other.attribute": "value",
+			},
+			wantDifferentKeyWithAttr: map[string]any{
+				conventions.AttributeServiceName: "test-service",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, tt.featureGateEnabled))
+			defer func() {
+				require.NoError(t, featuregate.GlobalRegistry().Set(defaultResourceMetricsKeyAttributesGateID, false))
+			}()
+			c, err := newConnectorImp(
+				nil,
+				explicitHistogramsConfig,
+				disabledExemplarsConfig,
+				disabledEventsConfig,
+				cumulative,
+				0,
+				tt.resourceMetricsKeyAttrs,
+				0,
+				clockwork.NewFakeClock(),
+			)
+			require.NoError(t, err)
+
+			attrs := pcommon.NewMap()
+			for k, v := range tt.resourceAttrs {
+				setMapValue(attrs, k, v)
+			}
+
+			initialKey := c.createResourceKey(attrs)
+
+			// Test that adding extra attributes doesn't change key
+			extraAttrs := pcommon.NewMap()
+			attrs.CopyTo(extraAttrs)
+			for k, v := range tt.wantSameKeyWithExtraAttr {
+				setMapValue(extraAttrs, k, v)
+			}
+			sameKey := c.createResourceKey(extraAttrs)
+			assert.Equal(t, initialKey, sameKey, "key should not change with extra/excluded attributes")
+
+			// Test that changing important attributes does change key
+			differentAttrs := pcommon.NewMap()
+			attrs.CopyTo(differentAttrs)
+			for k, v := range tt.wantDifferentKeyWithAttr {
+				setMapValue(differentAttrs, k, v)
+			}
+			differentKey := c.createResourceKey(differentAttrs)
+			assert.NotEqual(t, initialKey, differentKey, "key should change with different core attributes")
+		})
+	}
+}
+
+func setMapValue(m pcommon.Map, k string, v any) {
+	switch val := v.(type) {
+	case string:
+		m.PutStr(k, val)
+	case int:
+		m.PutInt(k, int64(val))
+	case bool:
+		m.PutBool(k, val)
+	}
 }

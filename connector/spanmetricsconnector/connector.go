@@ -44,6 +44,17 @@ const (
 	defaultUnit = metrics.Milliseconds
 )
 
+var defaultResourceAttributes = map[string]struct{}{
+	conventions.AttributeServiceName:          {}, // Primary logical unit; must-have
+	conventions.AttributeServiceInstanceID:    {}, // Prevents collision across identical-looking service replicas
+	conventions.AttributeTelemetrySDKName:     {}, // Disambiguates SDKs
+	conventions.AttributeTelemetrySDKLanguage: {}, // Helps avoid polyglot collisions
+	conventions.AttributeTelemetrySDKVersion:  {}, // Differentiates multiple SDK versions
+	conventions.AttributeHostName:             {}, // Ensures uniqueness across hosts
+	conventions.AttributeContainerName:        {}, // Differentiates containers on same host
+	conventions.AttributeCloudRegion:          {}, // Differentiates workloads running in different regions
+}
+
 type connectorImp struct {
 	lock   sync.Mutex
 	logger *zap.Logger
@@ -461,15 +472,25 @@ func (p *connectorImp) addExemplar(span ptrace.Span, duration float64, h metrics
 type resourceKey [16]byte
 
 func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
-	if len(p.resourceMetricsKeyAttributes) == 0 {
+	if len(p.resourceMetricsKeyAttributes) == 0 && !defaultResourceMetricsKeyAttributesGate.IsEnabled() {
 		return pdatautil.MapHash(attr)
 	}
+
 	m := pcommon.NewMap()
-	attr.CopyTo(m)
-	m.RemoveIf(func(k string, _ pcommon.Value) bool {
-		_, ok := p.resourceMetricsKeyAttributes[k]
-		return !ok
+
+	useAttributes := p.resourceMetricsKeyAttributes
+	if len(useAttributes) == 0 && defaultResourceMetricsKeyAttributesGate.IsEnabled() {
+		useAttributes = defaultResourceAttributes
+		p.logger.Info("No resource_metrics_key_attributes configured, using default set of attributes")
+	}
+
+	attr.Range(func(k string, v pcommon.Value) bool {
+		if _, allowed := useAttributes[k]; allowed {
+			v.CopyTo(m.PutEmpty(k))
+		}
+		return true
 	})
+
 	return pdatautil.MapHash(m)
 }
 

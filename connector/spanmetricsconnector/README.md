@@ -229,3 +229,28 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+
+### Resource Metrics Key Attributes
+
+The connector provides two ways to control how resource attributes are used for metric grouping:
+
+1. Using the `resource_metrics_key_attributes` configuration:
+```yaml
+resource_metrics_key_attributes:
+  - service.name
+  - service.namespace
+  - telemetry.sdk.name
+  - telemetry.sdk.language
+```
+
+2. Using the feature gate `connector.spanmetrics.defaultResourceMetricsKeyAttributes`:
+   - When enabled: uses a default set of stable attributes and excludes attributes that commonly change between restarts.
+   - When disabled (default): uses all resource attributes for grouping, which may cause metric instability.
+
+> **Warning**: Using all resource attributes (default behavior) can cause counter metrics to reset or appear to decrease. This happens because changes in attributes like `process.pid` or `container.id` create new metric time series. To prevent this:
+> 1. Enable the feature gate, OR
+> 2. Configure `resource_metrics_key_attributes` with a stable set of attributes that uniquely identify your service
+
+Consider using the [resource detection processor](../../processor/resourcedetectionprocessor) or the [k8sattributes processor](../../processor/k8sattributesprocessor) to add appropriate labels.
+
+For more information about this feature, see [#21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).
