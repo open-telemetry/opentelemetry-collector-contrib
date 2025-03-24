@@ -65,7 +65,6 @@ func TestConsumeTraces(t *testing.T) {
 		name               string
 		cfg                *Config
 		input              ptrace.Traces
-		output             []pmetric.Metrics
 		expectedValue      string
 		expectedMetricsLen int
 	}{
@@ -83,12 +82,12 @@ func TestConsumeTraces(t *testing.T) {
 		{
 			name: "multiple identifiers",
 			cfg: &Config{
-				HostIdentifiers: []string{"k8s.host.name", "host.id"},
+				HostIdentifiers: []string{"k8s.node.name", "host.id"},
 			},
 			input: testTraces(
 				map[string]string{
 					"host.id":       "foo",
-					"k8s.host.name": "bar",
+					"k8s.node.name": "bar",
 				},
 			),
 			expectedValue:      "bar",
@@ -97,12 +96,12 @@ func TestConsumeTraces(t *testing.T) {
 		{
 			name: "multiple identifiers - reverse order",
 			cfg: &Config{
-				HostIdentifiers: []string{"host.id", "k8s.host.name"},
+				HostIdentifiers: []string{"host.id", "k8s.node.name"},
 			},
 			input: testTraces(
 				map[string]string{
 					"host.id":       "foo",
-					"k8s.host.name": "bar",
+					"k8s.node.name": "bar",
 				},
 			),
 			expectedValue:      "foo",
@@ -111,7 +110,7 @@ func TestConsumeTraces(t *testing.T) {
 		{
 			name: "no attrs",
 			cfg: &Config{
-				HostIdentifiers: []string{"host.id", "k8s.host.name"},
+				HostIdentifiers: []string{"host.id", "k8s.node.name"},
 			},
 			input: testTraces(
 				map[string]string{},
@@ -127,7 +126,7 @@ func TestConsumeTraces(t *testing.T) {
 			input: testTraces(
 				map[string]string{
 					"host.id":       "foo",
-					"k8s.host.name": "bar",
+					"k8s.node.name": "bar",
 				},
 			),
 			expectedValue:      "",
