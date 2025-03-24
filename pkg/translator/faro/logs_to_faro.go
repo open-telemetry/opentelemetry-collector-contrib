@@ -134,19 +134,17 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 				}
 
 				meta := payload.Meta
-				// if payload meta already exists in the metaMap merge payload to the existing payload
+				w.Reset() // Reset hash before encoding
 				if encodeErr := encoder.Encode(meta); encodeErr != nil {
 					errs = multierr.Append(errs, err)
 					continue
 				}
 				metaKey := fmt.Sprintf("%x", w.Sum(nil))
-				w.Reset()
+				// if payload meta already exists in the metaMap merge payload to the existing payload
 				existingPayload, found := metaMap[metaKey]
 				if found {
-					// merge payloads with the same meta
 					mergePayloads(existingPayload, payload)
 				} else {
-					// if payload meta doesn't exist in the metaMap add new meta key to the metaMap
 					metaMap[metaKey] = &payload
 				}
 			}
@@ -161,6 +159,7 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 	for _, payload := range metaMap {
 		payloads = append(payloads, *payload)
 	}
+
 	return payloads, errs
 }
 

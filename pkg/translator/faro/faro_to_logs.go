@@ -67,21 +67,17 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 	}
 
 	meta := MetaToKeyVal(payload.Meta)
-	resourceAttrs := map[string]any{
-		string(semconv.ServiceNameKey):           payload.Meta.App.Name,
-		string(semconv.ServiceVersionKey):        payload.Meta.App.Version,
-		string(semconv.DeploymentEnvironmentKey): payload.Meta.App.Environment,
-	}
+	rls := logs.ResourceLogs().AppendEmpty()
+	rls.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), payload.Meta.App.Name)
+	rls.Resource().Attributes().PutStr(string(semconv.ServiceVersionKey), payload.Meta.App.Version)
+	rls.Resource().Attributes().PutStr(string(semconv.DeploymentEnvironmentKey), payload.Meta.App.Environment)
 	if payload.Meta.App.Namespace != "" {
-		resourceAttrs[string(semconv.ServiceNamespaceKey)] = payload.Meta.App.Namespace
+		rls.Resource().Attributes().PutStr(string(semconv.ServiceNamespaceKey), payload.Meta.App.Namespace)
 	}
 	if payload.Meta.App.BundleID != "" {
-		resourceAttrs[faroAppBundleID] = payload.Meta.App.BundleID
+		rls.Resource().Attributes().PutStr(faroAppBundleID, payload.Meta.App.BundleID)
 	}
-	rls := logs.ResourceLogs().AppendEmpty()
-	if err := rls.Resource().Attributes().FromRaw(resourceAttrs); err != nil {
-		return plog.NewLogs(), err
-	}
+
 	sl := rls.ScopeLogs().AppendEmpty()
 	var errs error
 	for _, i := range kvList {
