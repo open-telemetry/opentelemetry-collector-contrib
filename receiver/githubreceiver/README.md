@@ -113,10 +113,10 @@ see the [Scraping README][ghsread].
 To create a GitHub Personal Access Token (PAT), please refer to the official [documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
 
 **Organization or Personal Access:**
-When generating the PAT, ensure it is created under the appropriate `Resource owner` — either your personal account (<user>) or the organization (<organization>). Select the correct `Repository access` type. For fine-grained tokens, you may need to explicitly set `Repository permissions` or `Organization permissions`.
+When generating the PAT, select the appropriate `Resource owner` — either your personal account  or the organization  —and choose the correct `Repository access` type. For fine-grained tokens, explicitly configure the necessary `Repository permissions` or `Organization permissions`
 
 **Note**: 
-If the PAT does not have permission to access any repositories in the target organization. In such cases  only the `vcs.repository.count` metric will be available. No detailed repository metrics can be fetched. **The PAT must have read access to the target repositories or organization.** 
+The PAT must have read access to the target repositories. If the PAT lacks permission to access repositories in the target organization, only the `vcs.repository.count` metric will be available, and detailed repository metrics cannot be fetched. 
 
 ## Traces - Getting Started
 
