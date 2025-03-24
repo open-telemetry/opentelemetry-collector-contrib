@@ -150,6 +150,7 @@ extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+extension/encoding/awslogsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -183,6 +184,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s

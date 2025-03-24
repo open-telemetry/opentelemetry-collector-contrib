@@ -26,6 +26,7 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 | ---- | ----------- | ------ |
 | tlscheck.x509.issuer | The entity that issued the certificate. | Any Str |
 | tlscheck.x509.cn | The commonName in the subject of the certificate. | Any Str |
+| tlscheck.x509.san | The Subject Alternative Name of the certificate. | Any Slice |
 
 ## Resource Attributes
 

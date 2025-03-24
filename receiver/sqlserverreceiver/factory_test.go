@@ -5,6 +5,7 @@ package sqlserverreceiver
 
 import (
 	"context"
+	"os"
 	"testing"
 	"time"
 
@@ -15,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
@@ -247,4 +249,20 @@ func TestNewCache(t *testing.T) {
 	require.NotNil(t, cache.Values())
 	cache = newCache(0)
 	require.NotNil(t, cache.Values())
+}
+
+func TestSetupQueries(t *testing.T) {
+	var metadata map[string]any
+
+	yamlFile, err := os.ReadFile("./metadata.yaml")
+	require.NoError(t, err)
+	require.NoError(t, yaml.Unmarshal(yamlFile, &metadata))
+	require.NotNil(t, metadata["metrics"])
+
+	metricsMetadata, ok := metadata["metrics"].(map[string]any)
+	require.True(t, ok)
+	require.Len(t, metricsMetadata, 45,
+		"Every time metrics are added or removed, the function `setupQueries` must "+
+			"be modified to properly account for the change. Please update `setupQueries` and then, "+
+			"and only then, update the expected metric count here.")
 }
