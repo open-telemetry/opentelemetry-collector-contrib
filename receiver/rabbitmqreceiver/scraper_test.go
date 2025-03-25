@@ -145,19 +145,11 @@ func TestScraperScrape(t *testing.T) {
 			  require.NoError(t, err)
 		  
 			  nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-			  t.Logf("Raw node JSON: %s", string(nodeData)) //Print the raw JSON
 			  
 			  var nodes []*models.Node
 			  err = json.Unmarshal(nodeData, &nodes)
 			  require.NoError(t, err)
-			  
-			  t.Logf("Unmarshalled %d nodes", len(nodes))
-			  if len(nodes) > 0 {
-				  t.Logf("First node: %+v", nodes[0])
-			  } else {
-				  t.Fatalf("Mock node list is empty — node data probably malformed")
-			  }
-			  
+			  			  
 			  require.NotEmpty(t, nodes, "Mock node list should not be empty")
 		  
 			  mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
@@ -177,7 +169,33 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
+
+			cfg := createDefaultConfig().(*Config)
+
+			// Enable all 17 node metrics
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFree.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeLimit.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeAlarm.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemLimit.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemAlarm.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcUsedDetailsRate.Enabled = true
+
+			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())
