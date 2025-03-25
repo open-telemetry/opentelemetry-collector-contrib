@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/multierr"
 )
@@ -160,6 +161,7 @@ func TranslateFromLogs(ctx context.Context, ld plog.Logs) ([]faroTypes.Payload, 
 		payloads = append(payloads, *payload)
 	}
 
+	span.SetAttributes(attribute.Int("count", len(payloads)))
 	return payloads, errs
 }
 

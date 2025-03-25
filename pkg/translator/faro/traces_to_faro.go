@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
 	semconv "go.opentelemetry.io/otel/semconv/v1.21.0"
 	"go.uber.org/multierr"
 )
@@ -61,6 +62,7 @@ func TranslateFromTraces(ctx context.Context, td ptrace.Traces) ([]faroTypes.Pay
 	for _, payload := range metaMap {
 		payloads = append(payloads, *payload)
 	}
+	span.SetAttributes(attribute.Int("count", len(payloads)))
 	return payloads, errs
 }
 
