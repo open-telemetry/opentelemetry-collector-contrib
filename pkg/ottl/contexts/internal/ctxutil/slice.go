@@ -149,7 +149,7 @@ func SetCommonTypedSliceValues[V any](s CommonTypedSlice[V], val any) error {
 		s.FromRaw(raw)
 	case pcommon.Slice:
 		raw := make([]V, typeVal.Len())
-		for i := 0; i < typeVal.Len(); i++ {
+		for i := range typeVal.Len() {
 			v, ok := typeVal.At(i).AsRaw().(V)
 			if !ok {
 				return fmt.Errorf("invalid value type provided for a slice of %T: %T", raw, typeVal.At(i).AsRaw())
@@ -168,7 +168,7 @@ func SetCommonTypedSliceValues[V any](s CommonTypedSlice[V], val any) error {
 // []int64, which is the standard OTTL type for integer slices.
 func GetCommonIntSliceValues[V constraints.Integer](val CommonTypedSlice[V]) []int64 {
 	output := make([]int64, val.Len())
-	for i := 0; i < val.Len(); i++ {
+	for i := range val.Len() {
 		output[i] = int64(val.At(i))
 	}
 	return output
@@ -246,7 +246,7 @@ func SetCommonIntSliceValues[V constraints.Integer](s CommonTypedSlice[V], val a
 		s.FromRaw(raw)
 	case pcommon.Slice:
 		raw := make([]V, typeVal.Len())
-		for i := 0; i < typeVal.Len(); i++ {
+		for i := range typeVal.Len() {
 			v, ok := typeVal.At(i).AsRaw().(int64)
 			if !ok {
 				return fmt.Errorf("invalid value type provided for slice of %T: %T, expected int64", *new(V), typeVal.At(i).AsRaw())
