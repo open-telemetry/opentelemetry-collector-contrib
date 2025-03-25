@@ -136,40 +136,39 @@ func TestScraperScrape(t *testing.T) {
 		{
 			desc: "Successful Queue + Node Metrics Collection",
 			setupMockClient: func(t *testing.T) client {
-			  mockClient := mocks.MockClient{}
-		  
-			  // Fixed: relative path only
-			  queueData := loadAPIResponseData(t, queuesAPIResponseFile)
-			  var queues []*models.Queue
-			  err := json.Unmarshal(queueData, &queues)
-			  require.NoError(t, err)
-		  
-			  nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-			  
-			  var nodes []*models.Node
-			  err = json.Unmarshal(nodeData, &nodes)
-			  require.NoError(t, err)
-			  			  
-			  require.NotEmpty(t, nodes, "Mock node list should not be empty")
-		  
-			  mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
-			  mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
-		  
-			  return &mockClient
+				mockClient := mocks.MockClient{}
+
+				// Fixed: relative path only
+				queueData := loadAPIResponseData(t, queuesAPIResponseFile)
+				var queues []*models.Queue
+				err := json.Unmarshal(queueData, &queues)
+				require.NoError(t, err)
+
+				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+
+				var nodes []*models.Node
+				err = json.Unmarshal(nodeData, &nodes)
+				require.NoError(t, err)
+
+				require.NotEmpty(t, nodes, "Mock node list should not be empty")
+
+				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+
+				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-			  goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
-			  expectedMetrics, err := golden.ReadMetrics(goldenPath)
-			  require.NoError(t, err)
-			  return expectedMetrics
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
 			},
 			expectedErr: nil,
-		},		  
+		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-
 			cfg := createDefaultConfig().(*Config)
 
 			// Enable all 17 node metrics
