@@ -821,7 +821,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	logs := plog.NewLogs()
 
 	resourceLog := logs.ResourceLogs().AppendEmpty()
-	resourceLog.Resource().Attributes().PutStr("db.system.type", "microsoft.sql_server")
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
 	scopedLog.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
@@ -917,6 +916,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
+
 		record.Attributes().PutStr("db.namespace", row[DBName])
 		record.Attributes().PutStr("network.peer.address", row[clientAddress])
 		record.Attributes().PutInt("network.peer.port", int64(clientPortNumber))
