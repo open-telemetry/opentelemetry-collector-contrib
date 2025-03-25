@@ -196,6 +196,7 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
+pkg/translator/faro
 pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor

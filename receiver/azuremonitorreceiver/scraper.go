@@ -281,7 +281,7 @@ func (s *azureScraper) getResources(ctx context.Context, subscriptionID string) 
 	}
 
 	existingResources := map[string]void{}
-	for id := range s.resources {
+	for id := range s.resources[subscriptionID] {
 		existingResources[id] = void{}
 	}
 
