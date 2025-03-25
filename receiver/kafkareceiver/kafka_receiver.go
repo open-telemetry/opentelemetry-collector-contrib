@@ -594,9 +594,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					c.backOffMutex.Lock()
-					backOffDelay := c.backOff.NextBackOff()
-					c.backOffMutex.Unlock()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
 						c.logger.Info("Backing off due to error from the next consumer.",
 							zap.Error(err),
@@ -623,9 +621,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				return err
 			}
 			if c.backOff != nil {
-				c.backOffMutex.Lock()
-				c.backOff.Reset()
-				c.backOffMutex.Unlock()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -641,6 +637,18 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			return nil
 		}
 	}
+}
+
+func (c *tracesConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *tracesConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
 }
 
 func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
@@ -700,9 +708,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					c.backOffMutex.Lock()
-					backOffDelay := c.backOff.NextBackOff()
-					c.backOffMutex.Unlock()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
 						c.logger.Info("Backing off due to error from the next consumer.",
 							zap.Error(err),
@@ -729,9 +735,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				return err
 			}
 			if c.backOff != nil {
-				c.backOffMutex.Lock()
-				c.backOff.Reset()
-				c.backOffMutex.Unlock()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -747,6 +751,18 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			return nil
 		}
 	}
+}
+
+func (c *metricsConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *metricsConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
 }
 
 func (c *logsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
@@ -805,9 +821,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					c.backOffMutex.Lock()
-					backOffDelay := c.backOff.NextBackOff()
-					c.backOffMutex.Unlock()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
 						c.logger.Info("Backing off due to error from the next consumer.",
 							zap.Error(err),
@@ -834,9 +848,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				return err
 			}
 			if c.backOff != nil {
-				c.backOffMutex.Lock()
-				c.backOff.Reset()
-				c.backOffMutex.Unlock()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -852,6 +864,18 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			return nil
 		}
 	}
+}
+
+func (c *logsConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *logsConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
 }
 
 func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {
