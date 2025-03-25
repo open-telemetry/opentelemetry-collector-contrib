@@ -64,6 +64,7 @@ receivers:
 
 Depending on which metrics you collect, you will need to assign those permissions to the database user:
 ```
+GRANT CREATE SESSION TO <username>;
 GRANT SELECT ON V_$SESSION TO <username>;
 GRANT SELECT ON V_$SYSSTAT TO <username>;
 GRANT SELECT ON V_$RESOURCE_LIMIT TO <username>;
