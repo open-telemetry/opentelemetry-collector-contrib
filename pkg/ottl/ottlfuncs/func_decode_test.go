@@ -178,21 +178,21 @@ func TestDecode(t *testing.T) {
 			want:     "Go?/Z~x",
 		},
 		{
-			name:     "rawbase64 with url-safe sensitive characters",
+			name:     "base64-raw with url-safe sensitive characters",
 			value:    "R28/L1p+eA",
-			encoding: "rawbase64",
+			encoding: "base64-raw",
 			want:     "Go?/Z~x",
 		},
 		{
-			name:     "urlbase64 with url-safe sensitive characters",
+			name:     "base64-url with url-safe sensitive characters",
 			value:    "R28_L1p-eA==",
-			encoding: "urlbase64",
+			encoding: "base64-url",
 			want:     "Go?/Z~x",
 		},
 		{
-			name:     "rawurlbase64 with url-safe sensitive characters",
+			name:     "base64-raw-url with url-safe sensitive characters",
 			value:    "R28_L1p-eA",
-			encoding: "rawurlbase64",
+			encoding: "base64-raw-url",
 			want:     "Go?/Z~x",
 		},
 	}

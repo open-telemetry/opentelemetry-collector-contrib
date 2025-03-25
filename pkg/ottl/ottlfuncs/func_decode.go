@@ -63,11 +63,11 @@ func Decode[K any](target ottl.Getter[K], encoding string) (ottl.ExprFunc[K], er
 		// base64 is not in IANA index, so we have to deal with this encoding separately
 		case "base64":
 			return decodeBase64(base64.StdEncoding, stringValue)
-		case "rawbase64":
+		case "base64-raw":
 			return decodeBase64(base64.RawStdEncoding, stringValue)
-		case "urlbase64":
+		case "base64-url":
 			return decodeBase64(base64.URLEncoding, stringValue)
-		case "rawurlbase64":
+		case "base64-raw-url":
 			return decodeBase64(base64.RawURLEncoding, stringValue)
 		default:
 			e, err := textutils.LookupEncoding(encoding)
