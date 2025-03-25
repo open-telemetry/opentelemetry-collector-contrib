@@ -92,71 +92,54 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRabbitmqMessagePublishedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeAlarmDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeDetailsRateDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeDiskFreeLimitDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdTotalDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeFdUsedDetailsRateDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemAlarmDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemLimitDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeMemUsedDetailsRateDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcTotalDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeProcUsedDetailsRateDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsTotalDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRabbitmqNodeSocketsUsedDetailsRateDataPoint(ts, 1)
 

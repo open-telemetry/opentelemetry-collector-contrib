@@ -74,55 +74,55 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RabbitmqNodeDiskFree: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeDiskFreeAlarm: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeDiskFreeDetailsRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeDiskFreeLimit: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeFdTotal: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeFdUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeFdUsedDetailsRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemAlarm: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemLimit: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeMemUsedDetailsRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeProcTotal: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeProcUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeProcUsedDetailsRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeSocketsTotal: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeSocketsUsed: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

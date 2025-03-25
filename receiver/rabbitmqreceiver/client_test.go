@@ -25,8 +25,8 @@ import (
 )
 
 const (
-    queuesAPIResponseFile = "get_queues_response.json"
-    nodesAPIResponseFile  = "get_nodes_response.json"
+	queuesAPIResponseFile = "get_queues_response.json"
+	nodesAPIResponseFile  = "get_nodes_response.json"
 )
 
 func TestNewClient(t *testing.T) {

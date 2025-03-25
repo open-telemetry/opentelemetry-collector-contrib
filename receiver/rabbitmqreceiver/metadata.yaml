@@ -130,7 +130,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.disk_free_limit:
     description: Minimum required free disk space before alarm.
     unit: "{bytes}"
@@ -138,7 +138,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.disk_free_alarm:
     description: Whether disk usage has triggered an alarm.
     unit: "{status}"
@@ -146,7 +146,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.disk_free_details.rate:
     description: Rate of disk usage change.
     unit: "{bytes}/s"
@@ -154,7 +154,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
 
   rabbitmq.node.mem_used:
     description: The memory used on the node.
@@ -163,7 +163,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.mem_limit:
     description: The memory limit on the node.
     unit: "{bytes}"
@@ -171,7 +171,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.mem_alarm:
     description: Whether memory alarm is triggered.
     unit: "{status}"
@@ -179,7 +179,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.mem_used_details.rate:
     description: Rate of memory usage change.
     unit: "{bytes}/s"
@@ -187,7 +187,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
 
   rabbitmq.node.fd_used:
     description: The number of file descriptors used on the node.
@@ -196,7 +196,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.fd_total:
     description: Maximum available file descriptors.
     unit: "{fd}"
@@ -204,7 +204,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.fd_used_details.rate:
     description: Rate of file descriptor usage.
     unit: "{fd}/s"
@@ -212,7 +212,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
 
   rabbitmq.node.sockets_used:
     description: Number of sockets in use.
@@ -221,7 +221,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.sockets_total:
     description: Maximum allowed sockets.
     unit: "{sockets}"
@@ -229,7 +229,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.sockets_used_details.rate:
     description: Rate of socket usage.
     unit: "{sockets}/s"
@@ -237,7 +237,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
 
   rabbitmq.node.proc_used:
     description: Number of Erlang processes in use.
@@ -246,7 +246,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.proc_total:
     description: Maximum allowed Erlang processes.
     unit: "{processes}"
@@ -254,7 +254,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
   rabbitmq.node.proc_used_details.rate:
     description: Rate of process usage.
     unit: "{processes}/s"
@@ -262,4 +262,4 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    enabled: true
+    enabled: false
