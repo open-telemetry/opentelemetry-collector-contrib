@@ -7,12 +7,15 @@ require (
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.1
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.62
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/component v1.27.1-0.20250313100724-0885401136ff
-	go.opentelemetry.io/collector/config/configtls v1.27.1-0.20250313100724-0885401136ff
-	go.opentelemetry.io/collector/confmap v1.27.1-0.20250313100724-0885401136ff
-	go.opentelemetry.io/collector/confmap/xconfmap v0.121.1-0.20250313100724-0885401136ff
+	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/config/configopaque v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/config/configtls v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/confmap/xconfmap v0.122.2-0.20250319144947-41a9ea7f7402
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -54,20 +57,20 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
+	github.com/twmb/franz-go v1.18.1 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.27.1-0.20250313100724-0885401136ff // indirect
-	go.opentelemetry.io/collector/featuregate v1.27.1-0.20250313100724-0885401136ff // indirect
-	go.opentelemetry.io/collector/pdata v1.27.1-0.20250313100724-0885401136ff // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
+	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
-	golang.org/x/net v0.35.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
+	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect

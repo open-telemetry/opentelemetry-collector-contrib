@@ -12,7 +12,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -94,10 +93,9 @@ func (f *TCPUDPWriter) Send(lr plog.LogRecord) error {
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "trace_id", traceutil.TraceIDToHexOrEmptyString(lr.TraceID())))
 	sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", "span_id", traceutil.SpanIDToHexOrEmptyString(lr.SpanID())))
 	sdid.WriteString(fmt.Sprintf("%s=\"%d\" ", "trace_flags", lr.Flags()))
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		sdid.WriteString(fmt.Sprintf("%s=\"%s\" ", k, v.Str()))
-		return true
-	})
+	}
 	msg := fmt.Sprintf("<166> %s 127.0.0.1 - - - [%s] %s\n", ts, sdid.String(), lr.Body().Str())
 
 	f.buf = append(f.buf, msg)
