@@ -28,7 +28,9 @@ var (
 type Config struct {
 	// Format defines the AWS logs format.
 	//
-	// Valid values are defined in supportedLogFormats
+	// Current valid values are:
+	// - cloudwatch_logs_subscription_filter
+	// - vpc_flow_log
 	Format string `mapstructure:"format"`
 
 	VPCFlowLogConfig VPCFlowLogConfig `mapstructure:"vpc_flow_log"`

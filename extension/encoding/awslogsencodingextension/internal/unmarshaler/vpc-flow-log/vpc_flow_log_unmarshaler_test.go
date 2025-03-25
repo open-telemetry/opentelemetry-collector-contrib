@@ -17,45 +17,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
-func TestVPCFlowLog(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]struct {
-		field       string
-		value       string
-		expectedErr string
-	}{
-		"unknown_value": {
-			field: "test",
-			value: "-",
-		},
-		"unknown_field": {
-			field: "test",
-			value: "test",
-		},
-		"supported_value": {
-			field: "action",
-			value: "ACCEPT",
-		},
-		"unsupported_value": {
-			field:       "action",
-			value:       "unsupported",
-			expectedErr: `value "unsupported" is invalid for the action field, valid values are [ACCEPT REJECT]`,
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			err := validateVPCFlowLog(test.field, test.value)
-			if test.expectedErr != "" {
-				require.ErrorContains(t, err, test.expectedErr)
-			} else {
-				require.NoError(t, err)
-			}
-		})
-	}
-}
-
 // compressData in gzip format
 func compressData(t *testing.T, buf []byte) []byte {
 	var compressedData bytes.Buffer
@@ -118,4 +79,14 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})
 	}
+}
+
+func TestUnmarshalLogs_Parquet(t *testing.T) {
+	_, errCreate := NewVPCFlowLogUnmarshaler(fileFormatParquet, component.BuildInfo{})
+	require.ErrorContains(t, errCreate, "still needs to be implemented")
+}
+
+func TestUnmarshalLogs_Unsupported(t *testing.T) {
+	_, errCreate := NewVPCFlowLogUnmarshaler("unsupported", component.BuildInfo{})
+	require.ErrorContains(t, errCreate, `unsupported file fileFormat "unsupported" for VPC flow log`)
 }

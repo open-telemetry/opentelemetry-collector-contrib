@@ -4,49 +4,25 @@ resourceLogs:
         - key: cloud.provider
           value:
             stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "12345678910"
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: version
+              - key: aws.flow.log.version
                 value:
-                  stringValue: "2"
-              - key: account-id
-                value:
-                  stringValue: "12345678910"
-              - key: interface-id
+                  intValue: "2"
+              - key: aws.eni.id
                 value:
                   stringValue: eni-0eb1e4178af74336c
-              - key: srcaddr
+              - key: aws.flow.log.start
                 value:
-                  stringValue: '-'
-              - key: dstaddr
+                  intValue: "1742570089"
+              - key: aws.flow.log.end
                 value:
-                  stringValue: '-'
-              - key: srcport
-                value:
-                  stringValue: '-'
-              - key: dstport
-                value:
-                  stringValue: '-'
-              - key: protocol
-                value:
-                  stringValue: '-'
-              - key: packets
-                value:
-                  stringValue: '-'
-              - key: bytes
-                value:
-                  stringValue: '-'
-              - key: start
-                value:
-                  stringValue: "1742570089"
-              - key: end
-                value:
-                  stringValue: "1742570142"
-              - key: action
-                value:
-                  stringValue: '-'
-              - key: log-status
+                  intValue: "1742570142"
+              - key: aws.flow.log.status
                 value:
                   stringValue: NODATA
             body: {}
