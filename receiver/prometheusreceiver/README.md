@@ -217,7 +217,7 @@ receivers:
 
 The API server hosts the same paths as the Prometheus agent-mode API. These include:
 - [/api/v1/targets](https://prometheus.io/docs/prometheus/latest/querying/api/#targets)
-- [/api/v1/targets/metdata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
+- [/api/v1/targets/metadata](https://prometheus.io/docs/prometheus/latest/querying/api/#querying-target-metadata)
 - [/api/v1/status/config](https://prometheus.io/docs/prometheus/latest/querying/api/#config)
 - /api/v1/scrape_pools
 - /metrics
