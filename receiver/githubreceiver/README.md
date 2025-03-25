@@ -74,7 +74,7 @@ receivers:
                     vcs.contributor.count:
                         enabled: true
                 github_org: <myfancyorg> 
-                search_query: "org:<myfancyorg> topic:<o11yalltheway>" #Recommended optional query override, defaults to "{org,user}:<github_org>"
+                search_query: "org:<myfancyorg> topic:<o11yalltheway>" # Recommended optional query override, defaults to "{org,user}:<github_org>"
                 endpoint: "https://selfmanagedenterpriseserver.com" # Optional
                 auth:
                     authenticator: bearertokenauth/github
