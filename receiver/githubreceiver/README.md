@@ -90,7 +90,7 @@ service:
 
 `github_org` (**required**): Specify the GitHub organization or username to scrape.
 
-`endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com`).
+`endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com` -- SHOULD NOT include `api` subdomain or `/graphql` context path).
 
 `search_query` (optional): A filter to narrow down repositories. Defaults to `org:<github_org>` (or `user:<username>`). For example, use `repo:<org>/<repo>` to target a specific repository. Any valid GitHub search syntax is allowed.
 
