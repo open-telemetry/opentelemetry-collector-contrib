@@ -40,7 +40,7 @@ var errMemoryLimiterDataRefused = errors.New("data refused due to high memory us
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
@@ -62,7 +62,7 @@ type kafkaTracesConsumer struct {
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaMetricsConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Metrics
 	topics            []string
@@ -84,7 +84,7 @@ type kafkaMetricsConsumer struct {
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Logs
 	topics            []string
@@ -110,7 +110,7 @@ var (
 	_ receiver.Logs    = (*kafkaLogsConsumer)(nil)
 )
 
-func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 
 	return &kafkaTracesConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Traces.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -133,7 +133,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 	}, nil
 }
 
-func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+func createKafkaClient(ctx context.Context, config *Config) (sarama.ConsumerGroup, error) {
 	return kafka.NewSaramaConsumerGroup(ctx, config.ClientConfig, config.ConsumerConfig)
 }
 
@@ -151,14 +151,14 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	// extensions take precedence over internal encodings
 	if unmarshaler, errExt := loadEncodingExtension[ptrace.Unmarshaler](
 		host,
-		c.config.Encoding,
+		c.config.Traces.Encoding,
 	); errExt == nil {
 		c.unmarshaler = &tracesEncodingUnmarshaler{
 			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
+			encoding:    c.config.Traces.Encoding,
 		}
 	}
-	if unmarshaler, ok := defaultTracesUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+	if unmarshaler, ok := defaultTracesUnmarshalers()[c.config.Traces.Encoding]; c.unmarshaler == nil && ok {
 		c.unmarshaler = unmarshaler
 	}
 	if c.unmarshaler == nil {
@@ -223,7 +223,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -231,7 +231,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consu
 
 	return &kafkaMetricsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Metrics.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -260,14 +260,14 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	// extensions take precedence over internal encodings
 	if unmarshaler, errExt := loadEncodingExtension[pmetric.Unmarshaler](
 		host,
-		c.config.Encoding,
+		c.config.Metrics.Encoding,
 	); errExt == nil {
 		c.unmarshaler = &metricsEncodingUnmarshaler{
 			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
+			encoding:    c.config.Metrics.Encoding,
 		}
 	}
-	if unmarshaler, ok := defaultMetricsUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
+	if unmarshaler, ok := defaultMetricsUnmarshalers()[c.config.Metrics.Encoding]; c.unmarshaler == nil && ok {
 		c.unmarshaler = unmarshaler
 	}
 	if c.unmarshaler == nil {
@@ -332,7 +332,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -340,7 +340,7 @@ func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer
 
 	return &kafkaLogsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Logs.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -369,15 +369,15 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	// extensions take precedence over internal encodings
 	if unmarshaler, errExt := loadEncodingExtension[plog.Unmarshaler](
 		host,
-		c.config.Encoding,
+		c.config.Logs.Encoding,
 	); errExt == nil {
 		c.unmarshaler = &logsEncodingUnmarshaler{
 			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
+			encoding:    c.config.Logs.Encoding,
 		}
 	}
 	if unmarshaler, errInt := getLogsUnmarshaler(
-		c.config.Encoding,
+		c.config.Logs.Encoding,
 		defaultLogsUnmarshalers(c.settings.BuildInfo.Version, c.settings.Logger),
 	); c.unmarshaler == nil && errInt == nil {
 		c.unmarshaler = unmarshaler
