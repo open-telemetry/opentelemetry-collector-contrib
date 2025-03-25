@@ -252,7 +252,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case activeTempTables:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, activeTempTables)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverTableCountDataPoint(now, val, metadata.AttributeTableStateActive, metadata.AttributeTableStatusTemporary)
@@ -260,7 +260,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case backupRestoreThroughputPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, backupRestoreThroughputPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseBackupOrRestoreRateDataPoint(now, val)
@@ -268,7 +268,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case batchRequestRate:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, batchRequestRate)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchRequestRateDataPoint(now, val)
@@ -276,7 +276,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case bufferCacheHitRatio:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bufferCacheHitRatio)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageBufferCacheHitRatioDataPoint(now, val)
@@ -284,7 +284,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case bytesReceivedFromReplicaPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val, metadata.AttributeReplicaDirectionReceive)
@@ -292,7 +292,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case bytesSentForReplicaPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, bytesReceivedFromReplicaPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverReplicaDataRateDataPoint(now, val, metadata.AttributeReplicaDirectionTransmit)
@@ -304,7 +304,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case executionErrors:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, executionErrors)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseExecutionErrorsDataPoint(now, val)
@@ -312,15 +312,15 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case freeListStalls:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeListStalls)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageBufferCacheFreeListStallsRateDataPoint(now, val)
 			}
 		case fullScansPerSec:
-			val, err := strconv.ParseInt(row[valueKey], 10, 64)
+			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, fullScansPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseFullScanRateDataPoint(now, val)
@@ -328,7 +328,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case freeSpaceInTempdb:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, freeSpaceInTempdb)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseTempdbSpaceDataPoint(now, val, metadata.AttributeTempdbStateFree)
@@ -336,7 +336,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case indexSearchesPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, indexSearchesPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverIndexSearchRateDataPoint(now, val)
@@ -344,7 +344,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case lockTimeoutsPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockTimeoutsPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLockTimeoutRateDataPoint(now, val)
@@ -352,7 +352,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case lockWaits:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, lockWaits)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLockWaitRateDataPoint(now, val)
@@ -360,7 +360,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case loginsPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, loginsPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLoginRateDataPoint(now, val)
@@ -368,7 +368,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case logoutPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, logoutPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverLogoutRateDataPoint(now, val)
@@ -376,7 +376,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case memoryGrantsPending:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, memoryGrantsPending)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverMemoryGrantsPendingCountDataPoint(now, val)
@@ -384,7 +384,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case mirrorWritesTransactionPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, mirrorWritesTransactionPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverTransactionMirrorWriteRateDataPoint(now, val)
@@ -392,7 +392,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case numberOfDeadlocksPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, numberOfDeadlocksPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDeadlockRateDataPoint(now, val)
@@ -400,7 +400,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case pageLookupsPerSec:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, pageLookupsPerSec)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverPageLookupRateDataPoint(now, val)
@@ -410,7 +410,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case sqlCompilationRate:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, sqlCompilationRate)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchSQLCompilationRateDataPoint(now, val)
@@ -418,7 +418,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case sqlReCompilationsRate:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, sqlReCompilationsRate)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverBatchSQLRecompilationRateDataPoint(now, val)
@@ -426,7 +426,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case transactionDelay:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, transactionDelay)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverTransactionDelayDataPoint(now, val)
@@ -434,7 +434,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case userConnCount:
 			val, err := strconv.ParseInt(row[valueKey], 10, 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, userConnCount)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverUserConnectionCountDataPoint(now, val)
@@ -442,7 +442,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case usedMemory:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, usedMemory)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverMemoryUsageDataPoint(now, val)
@@ -450,7 +450,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 		case versionStoreSize:
 			val, err := strconv.ParseFloat(row[valueKey], 64)
 			if err != nil {
-				err = fmt.Errorf("row %d: %w", i, err)
+				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, versionStoreSize)
 				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverDatabaseTempdbVersionStoreSizeDataPoint(now, val)

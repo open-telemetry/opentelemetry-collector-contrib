@@ -18,6 +18,8 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
+permissions: read-all
+
 jobs:
   setup-environment:
     timeout-minutes: 30
@@ -122,6 +124,11 @@ jobs:
   update-benchmarks:
     runs-on: ubuntu-24.04
     needs: [loadtest]
+    permissions:
+      # deployments permission to deploy GitHub pages website
+      deployments: write
+      # contents permission to update benchmark contents in gh-pages branch
+      contents: write
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4

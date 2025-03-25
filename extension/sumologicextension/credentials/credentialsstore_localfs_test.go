@@ -18,11 +18,7 @@ import (
 )
 
 func TestCredentialsStoreLocalFs(t *testing.T) {
-	dir, err := os.MkdirTemp("", "otelcol-sumo-credentials-store-local-fs-test-*")
-	require.NoError(t, err)
-	t.Cleanup(func() {
-		os.RemoveAll(dir)
-	})
+	dir := t.TempDir()
 
 	const key = "my_storage_key"
 
