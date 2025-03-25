@@ -86,6 +86,8 @@ service:
             processors: []
             exporters: [...]
 ```
+### Configuration
+
 `github_org` (**required**): Specify the GitHub organization or username to scrape.
 
 `endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com`).
