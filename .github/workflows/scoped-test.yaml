@@ -12,25 +12,45 @@ jobs:
   changedfiles:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
-      go_sources: ${{ steps.changed-source.outputs.go_sources }}
-      go_tests: ${{ steps.changed-test.outputs.go_tests }}
+      go_sources: ${{ steps.changes.outputs.go_sources }}
+      go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
-      - name: Get changed files
-        id: changed-source
-        run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep .go$ | xargs)
 
-          echo "go_sources=$files" >> $GITHUB_OUTPUT
-      - name: Get changed files
-        id: changed-test
+      - name: Get changes
+        shell: bash
+        id: changes
         run: |
-          files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep _test.go$ | xargs)
+          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          echo changed_files
+          echo $changed_files
 
-          echo "go_tests=$files" >> $GITHUB_OUTPUT
+          go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
+          echo go_sources
+          echo $go_sources
+          if [[ -n "$go_sources" ]]; then
+            {
+              echo 'go_sources<<EOF'
+              echo $go_sources
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          fi
+
+          go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
+          echo go_tests
+          echo $go_tests
+          if [[ -n "$go_tests" ]]; then
+            {
+              echo 'go_tests<<EOF'
+              echo $go_tests
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          fi
 
   scoped-tests:
     needs: changedfiles
@@ -83,4 +103,4 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make test"
+          make for-affected-components CMD="make"
