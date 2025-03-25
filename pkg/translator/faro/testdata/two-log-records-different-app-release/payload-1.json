@@ -1,0 +1,23 @@
+{
+  "logs": [
+    {
+      "message": "opened pricing page",
+      "level": "info",
+      "context": {
+        "component": "AppRoot",
+        "page": "Pricing"
+      },
+      "timestamp": "2021-09-30T10:46:17.680Z",
+      "trace": {
+        "trace_id": "abcd",
+        "span_id": "def"
+      }
+    }
+  ],
+  "meta": {
+    "app": {
+      "name": "testapp",
+      "release": "1.2.3"
+    }
+  }
+}
