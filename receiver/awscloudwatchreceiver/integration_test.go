@@ -7,7 +7,6 @@ package awscloudwatchreceiver // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
