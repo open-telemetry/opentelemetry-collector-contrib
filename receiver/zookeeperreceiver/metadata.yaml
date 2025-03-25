@@ -8,6 +8,6 @@ status:
   codeowners:
     active: [akats7]
     emeritus: [djaglowski]
-
+    seeking_new: true
 tests:
   config:
