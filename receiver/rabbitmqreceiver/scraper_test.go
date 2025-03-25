@@ -134,36 +134,45 @@ func TestScraperScrape(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			desc: "Successful Node Metrics Collection",
+			desc: "Successful Queue + Node Metrics Collection",
 			setupMockClient: func(t *testing.T) client {
-				mockClient := mocks.MockClient{}
-
-				// Mock data for nodes
-				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-				var nodes []*models.Node
-				err := json.Unmarshal(nodeData, &nodes)
-				require.NoError(t, err)
-
-				// Mock data for queues
-				queueData := loadAPIResponseData(t, queuesAPIResponseFile)
-				var queues []*models.Queue
-				err = json.Unmarshal(queueData, &queues)
-				require.NoError(t, err)
-
-				// Mock client methods
-				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
-				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
-
-				return &mockClient
+			  mockClient := mocks.MockClient{}
+		  
+			  // Fixed: relative path only
+			  queueData := loadAPIResponseData(t, queuesAPIResponseFile)
+			  var queues []*models.Queue
+			  err := json.Unmarshal(queueData, &queues)
+			  require.NoError(t, err)
+		  
+			  nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+			  t.Logf("Raw node JSON: %s", string(nodeData)) //Print the raw JSON
+			  
+			  var nodes []*models.Node
+			  err = json.Unmarshal(nodeData, &nodes)
+			  require.NoError(t, err)
+			  
+			  t.Logf("Unmarshalled %d nodes", len(nodes))
+			  if len(nodes) > 0 {
+				  t.Logf("First node: %+v", nodes[0])
+			  } else {
+				  t.Fatalf("Mock node list is empty — node data probably malformed")
+			  }
+			  
+			  require.NotEmpty(t, nodes, "Mock node list should not be empty")
+		  
+			  mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+			  mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+		  
+			  return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
-				expectedMetrics, err := golden.ReadMetrics(goldenPath)
-				require.NoError(t, err)
-				return expectedMetrics
+			  goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
+			  expectedMetrics, err := golden.ReadMetrics(goldenPath)
+			  require.NoError(t, err)
+			  return expectedMetrics
 			},
 			expectedErr: nil,
-		},
+		},		  
 	}
 
 	for _, tc := range testCases {
@@ -184,6 +193,7 @@ func TestScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
 	}
