@@ -6,9 +6,6 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/operatortest"
 )
@@ -87,65 +84,51 @@ func TestUnmarshal(t *testing.T) {
 	}.Run(t)
 }
 
-type invalidConfigCase struct {
-	name      string
-	cfg       *Config
-	expectErr string
-}
-
-func TestInvalidConfig(t *testing.T) {
-	cases := []invalidConfigCase{
-		{
-			name: "neither_regex_nor_regexname",
-			cfg: func() *Config {
-				cfg := NewConfig()
-				cfg.Field = entry.NewBodyField()
-				cfg.RegexName = ""
-				cfg.Regex = ""
-				return cfg
-			}(),
-			expectErr: "either regex or regex_name must be set",
+func TestBuild(t *testing.T) {
+	operatortest.ConfigBuilderTests{
+		Tests: []operatortest.ConfigBuilderTest{
+			{
+				Name: "neither_regex_nor_regexname",
+				Cfg: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.RegexName = ""
+					cfg.Regex = ""
+					return cfg
+				}(),
+				BuildError: "either regex or regex_name must be set",
+			},
+			{
+				Name: "both_regex_and_regexname",
+				Cfg: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.RegexName = "ansi_control_sequences"
+					cfg.Regex = ".*"
+					return cfg
+				}(),
+				BuildError: "either regex or regex_name must be set",
+			},
+			{
+				Name: "unknown_regex_name",
+				Cfg: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.RegexName = "i_do_not_exist"
+					return cfg
+				}(),
+				BuildError: "regex_name i_do_not_exist is unknown",
+			},
+			{
+				Name: "invalid_regex",
+				Cfg: func() *Config {
+					cfg := NewConfig()
+					cfg.Field = entry.NewBodyField()
+					cfg.Regex = ")"
+					return cfg
+				}(),
+				BuildError: "error parsing regexp: unexpected ): `)`",
+			},
 		},
-		{
-			name: "both_regex_and_regexname",
-			cfg: func() *Config {
-				cfg := NewConfig()
-				cfg.Field = entry.NewBodyField()
-				cfg.RegexName = "ansi_control_sequences"
-				cfg.Regex = ".*"
-				return cfg
-			}(),
-			expectErr: "either regex or regex_name must be set",
-		},
-		{
-			name: "unknown_regex_name",
-			cfg: func() *Config {
-				cfg := NewConfig()
-				cfg.Field = entry.NewBodyField()
-				cfg.RegexName = "i_do_not_exist"
-				return cfg
-			}(),
-			expectErr: "regex_name i_do_not_exist is unknown",
-		},
-		{
-			name: "invalid_regex",
-			cfg: func() *Config {
-				cfg := NewConfig()
-				cfg.Field = entry.NewBodyField()
-				cfg.Regex = ")"
-				return cfg
-			}(),
-			expectErr: "error parsing regexp: unexpected ): `)`",
-		},
-	}
-	for _, tc := range cases {
-		t.Run("InvalidConfig/"+tc.name, func(t *testing.T) {
-			cfg := tc.cfg
-			cfg.OutputIDs = []string{"fake"}
-			cfg.OnError = "send"
-			set := componenttest.NewNopTelemetrySettings()
-			_, err := cfg.Build(set)
-			require.Equal(t, tc.expectErr, err.Error())
-		})
-	}
+	}.Run(t)
 }
