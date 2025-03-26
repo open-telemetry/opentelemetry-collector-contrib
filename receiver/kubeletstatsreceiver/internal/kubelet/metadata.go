@@ -185,8 +185,6 @@ func (m *Metadata) setExtraResources(rb *metadata.ResourceBuilder, podRef stats.
 
 		setResourcesFromVolume(rb, volume)
 
-		// setresourcesFromNode
-
 		// Get more labels from PersistentVolumeClaim volume type.
 		if volume.PersistentVolumeClaim != nil {
 			volCacheID := fmt.Sprintf("%s/%s", podRef.UID, extraMetadataFrom)

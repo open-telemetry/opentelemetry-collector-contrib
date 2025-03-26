@@ -106,8 +106,11 @@ func newKubeletScraper(
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeAnnotations.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeLabels.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
+
 	}
 
 	return scraper.NewMetrics(
@@ -134,12 +137,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	var nodeInfo kubelet.NodeInfo
-	if r.nodeInformer != nil {
-		nodeInfo = r.node()
-	}
-
-	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
+	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.node(), r.detailedPVCLabelsSetter())
 
 	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
 	md := pmetric.NewMetrics()
@@ -240,15 +238,23 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 		}
 	}
 
-	newLabels := make(map[string]any)
-	for key, value := range node.Labels {
-		newLabels[key] = value
+	r.nodeLimits.Name = node.Name
+
+	//newLabels := make(map[string]any)
+	// for key, value := range node.Labels {
+	// 	newLabels[key] = value
+	// }
+	newLabels := map[string]any{
+		"data1": "custom1",
 	}
 	r.nodeLimits.Labels = newLabels
 
-	newAnnotations := make(map[string]any)
-	for key, value := range node.Labels {
-		newAnnotations[key] = value
+	//newAnnotations := make(map[string]any)
+	// for key, value := range node.Annotations {
+	// 	newAnnotations[key] = value
+	// }
+	newAnnotations := map[string]any{
+		"data2": "custom2",
 	}
 	r.nodeLimits.Annotations = newAnnotations
 }
