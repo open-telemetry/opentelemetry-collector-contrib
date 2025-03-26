@@ -131,7 +131,7 @@ func TestValidate(t *testing.T) {
 func compareConfigs(t *testing.T, expected, actual *Config) {
 	assert.Equal(t, len(expected.Targets), len(actual.Targets))
 	assert.Equal(t, expected.ControllerConfig, actual.ControllerConfig)
-	// assert.ElementsMatch(t, expected.Targets, actual.Targets)
+	assert.ElementsMatch(t, expected.Targets, actual.Targets)
 }
 
 func TestLoadConfig(t *testing.T) {
