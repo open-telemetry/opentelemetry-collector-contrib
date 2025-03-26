@@ -315,6 +315,7 @@ body:
       - receiver/sqlserver
       - receiver/sshcheck
       - receiver/statsd
+      - receiver/stef
       - receiver/syslog
       - receiver/systemd
       - receiver/tcpcheck
