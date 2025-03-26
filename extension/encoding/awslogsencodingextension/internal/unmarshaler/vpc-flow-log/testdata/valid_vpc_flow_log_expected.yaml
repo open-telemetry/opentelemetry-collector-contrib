@@ -10,19 +10,19 @@ resourceLogs:
     scopeLogs:
       - logRecords:
           - attributes:
-              - key: aws.flow.log.version
+              - key: aws.vpc.flow.version
                 value:
                   intValue: "2"
               - key: aws.eni.id
                 value:
                   stringValue: eni-0eb1e4178af74336c
-              - key: aws.flow.log.start
+              - key: aws.vpc.flow.start
                 value:
                   intValue: "1742570089"
-              - key: aws.flow.log.end
+              - key: aws.vpc.flow.end
                 value:
                   intValue: "1742570142"
-              - key: aws.flow.log.status
+              - key: aws.vpc.flow.status
                 value:
                   stringValue: NODATA
             body: {}

@@ -220,10 +220,19 @@ func (v *vpcFlowLogUnmarshaler) getScopeLogs(key resourceKey, logs map[resourceK
 // field and its value in the attributes map. If the
 // field is not recognized, it returns false.
 func handleField(field string, value string, record plog.LogRecord, key *resourceKey) (bool, error) {
+	// convert string to number
+	getNumber := func(value string) (int64, error) {
+		n, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return -1, fmt.Errorf("%q field in log file is not a number", field)
+		}
+		return n, nil
+	}
+
 	// convert string to number and add the
 	// value to an attribute
-	addNumber := func(field, str, attrName string) error {
-		n, err := strconv.ParseInt(str, 10, 64)
+	addNumber := func(field, value, attrName string) error {
+		n, err := getNumber(value)
 		if err != nil {
 			return fmt.Errorf("%q field in log file is not a number", field)
 		}
@@ -258,9 +267,15 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 			return false, err
 		}
 	case "protocol":
-		if err := addNumber(field, value, "network.protocol.number"); err != nil {
+		n, err := getNumber(value)
+		if err != nil {
 			return false, err
 		}
+		name, ok := protocolNames[int(n)]
+		if !ok {
+			return true, fmt.Errorf("number %d does not correspond to a IANA protocol number", n)
+		}
+		record.Attributes().PutStr(conventions.AttributeNetworkProtocolName, name)
 	case "type":
 		record.Attributes().PutStr(conventions.AttributeNetworkType, strings.ToLower(value))
 	case "region":
