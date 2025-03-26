@@ -88,6 +88,7 @@ exporter/zipkinexporter/                                         @open-telemetry
 extension/ackextension/                                          @open-telemetry/collector-contrib-approvers @zpzhuSplunk @splunkericl
 extension/asapauthextension/                                     @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+extension/azureauthextension/                                    @open-telemetry/collector-contrib-approvers @constanca-m
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/                              @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/cgroupruntimeextension/                                @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
