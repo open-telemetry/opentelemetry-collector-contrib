@@ -869,7 +869,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	resourceLog := logs.ResourceLogs().AppendEmpty()
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver")
+	scopedLog.Scope().SetName(metadata.ScopeName)
 	scopedLog.Scope().SetVersion("v0.0.1")
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
