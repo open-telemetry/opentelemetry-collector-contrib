@@ -47,7 +47,7 @@ Top-Query collection specific options (only useful when top-query collection are
   - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
 Query sample collection related options (only useful when query sample is enabled)
-- `max_result_per_query`: (optional, example = `200`, default = `100`) use this to limit rows returned by the sampling query.
+- `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
 - `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
@@ -97,7 +97,7 @@ Top query collection enabled:
           top_query_count: 200
         query_sample_collection:
           enabled: true
-          max_result_per_query: 1450
+          max_rows_per_query: 1450
           
 ```
 ## Metrics

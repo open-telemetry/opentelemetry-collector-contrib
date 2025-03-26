@@ -121,7 +121,7 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	switch s.sqlQuery {
 	case queryTextAndPlanQuery:
 		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
-	case getSQLServerQuerySamplesQuery(s.config.MaxResultPerQuery):
+	case getSQLServerQuerySamplesQuery(s.config.MaxRowsPerQuery):
 		return s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -776,14 +776,14 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
 	const dbPrefix = "sqlserver."
 	// Constants are the column names of the database status
-	const DBName = "db_name"
+	const dbName = "db_name"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
 	const queryStart = "query_start"
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
 	const requestStatus = "request_status"
-	const hostname = "host_name"
+	const hostName = "host_name"
 	const command = "command"
 	const statementText = "statement_text"
 	const blockingSessionID = "blocking_session_id"
@@ -806,8 +806,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const queryHash = "query_hash"
 	const queryPlanHash = "query_plan_hash"
 	const contextInfo = "context_info"
-
 	const username = "username"
+
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -918,7 +918,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
 
-		record.Attributes().PutStr("db.namespace", row[DBName])
+		record.Attributes().PutStr("db.namespace", row[dbName])
 		record.Attributes().PutStr("network.peer.address", row[clientAddress])
 		record.Attributes().PutInt("network.peer.port", int64(clientPortNumber))
 		record.Attributes().PutStr(dbPrefix+queryStart, row[queryStart])
@@ -955,8 +955,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		// this value may not be accurate if
 		// - there is proxy in the middle of sql client and sql server. Or
 		// - host_name value is empty or not accurate.
-		if row[hostname] != "" {
-			record.Attributes().PutStr("client.address", row[hostname])
+		if row[hostName] != "" {
+			record.Attributes().PutStr("client.address", row[hostName])
 		} else {
 			record.Attributes().PutStr("client.address", row[clientAddress])
 		}

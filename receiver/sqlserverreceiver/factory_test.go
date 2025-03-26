@@ -50,8 +50,8 @@ func TestFactory(t *testing.T) {
 						TopQueryCount:       200,
 					},
 					QuerySample: QuerySample{
-						Enabled:           false,
-						MaxResultPerQuery: 100,
+						Enabled:         false,
+						MaxRowsPerQuery: 100,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 				}

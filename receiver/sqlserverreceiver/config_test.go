@@ -151,8 +151,8 @@ func TestLoadConfig(t *testing.T) {
 		expected.TopQueryCollection.MaxQuerySampleCount = 1000
 
 		expected.QuerySample = QuerySample{
-			Enabled:           true,
-			MaxResultPerQuery: 1450,
+			Enabled:         true,
+			MaxRowsPerQuery: 1450,
 		}
 
 		sub, err := cm.Sub("sqlserver/named")

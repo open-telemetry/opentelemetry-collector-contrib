@@ -13,8 +13,8 @@ import (
 )
 
 type QuerySample struct {
-	Enabled           bool   `mapstructure:"enabled"`
-	MaxResultPerQuery uint64 `mapstructure:"max_result_per_query"`
+	Enabled         bool   `mapstructure:"enabled"`
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
 }
 
 type TopQueryCollection struct {
