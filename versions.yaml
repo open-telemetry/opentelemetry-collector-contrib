@@ -324,3 +324,7 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/badpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver
