@@ -12,12 +12,12 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.122.0
-	go.opentelemetry.io/build-tools/checkfile v0.20.0
-	go.opentelemetry.io/build-tools/chloggen v0.20.0
-	go.opentelemetry.io/build-tools/crosslink v0.20.0
-	go.opentelemetry.io/build-tools/githubgen v0.20.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.20.0
-	go.opentelemetry.io/build-tools/multimod v0.20.0
+	go.opentelemetry.io/build-tools/checkfile v0.21.0
+	go.opentelemetry.io/build-tools/chloggen v0.21.0
+	go.opentelemetry.io/build-tools/crosslink v0.21.0
+	go.opentelemetry.io/build-tools/githubgen v0.21.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.21.0
+	go.opentelemetry.io/build-tools/multimod v0.21.0
 	go.opentelemetry.io/collector/cmd/builder v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/cmd/mdatagen v0.122.2-0.20250319144947-41a9ea7f7402
 	go.uber.org/goleak v1.3.0
@@ -120,7 +120,6 @@ require (
 	github.com/hashicorp/go-immutable-radix/v2 v2.1.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru/v2 v2.0.7 // indirect
-	github.com/hashicorp/hcl v1.0.0 // indirect
 	github.com/hexops/gotextdiff v1.0.3 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/jbenet/go-context v0.0.0-20150711004518-d14ea06fba99 // indirect
@@ -151,7 +150,6 @@ require (
 	github.com/ldez/usetesting v0.4.2 // indirect
 	github.com/leonklingele/grouper v1.1.2 // indirect
 	github.com/macabu/inamedparam v0.1.3 // indirect
-	github.com/magiconair/properties v1.8.7 // indirect
 	github.com/maratori/testableexamples v1.0.0 // indirect
 	github.com/maratori/testpackage v1.1.1 // indirect
 	github.com/matoous/godox v1.1.0 // indirect
@@ -161,7 +159,6 @@ require (
 	github.com/mgechev/revive v1.7.0 // indirect
 	github.com/mitchellh/copystructure v1.2.0 // indirect
 	github.com/mitchellh/go-homedir v1.1.0 // indirect
-	github.com/mitchellh/mapstructure v1.5.1-0.20220423185008-bf980b35cac4 // indirect
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -190,8 +187,7 @@ require (
 	github.com/rogpeppe/go-internal v1.14.1 // indirect
 	github.com/ryancurrah/gomodguard v1.3.5 // indirect
 	github.com/ryanrolds/sqlclosecheck v0.5.1 // indirect
-	github.com/sagikazarmark/locafero v0.4.0 // indirect
-	github.com/sagikazarmark/slog-shim v0.1.0 // indirect
+	github.com/sagikazarmark/locafero v0.7.0 // indirect
 	github.com/sanposhiho/wastedassign/v2 v2.1.0 // indirect
 	github.com/santhosh-tekuri/jsonschema/v6 v6.0.1 // indirect
 	github.com/sashamelentyev/interfacebloat v1.1.0 // indirect
@@ -206,10 +202,10 @@ require (
 	github.com/sourcegraph/conc v0.3.0 // indirect
 	github.com/sourcegraph/go-diff v0.7.0 // indirect
 	github.com/spf13/afero v1.12.0 // indirect
-	github.com/spf13/cast v1.6.0 // indirect
+	github.com/spf13/cast v1.7.1 // indirect
 	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
-	github.com/spf13/viper v1.19.0 // indirect
+	github.com/spf13/viper v1.20.0 // indirect
 	github.com/ssgreg/nlreturn/v2 v2.2.1 // indirect
 	github.com/stbenjam/no-sprintf-host-port v0.2.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
@@ -234,7 +230,7 @@ require (
 	gitlab.com/bosi/decorder v0.4.2 // indirect
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.9.0 // indirect
-	go.opentelemetry.io/build-tools v0.20.0 // indirect
+	go.opentelemetry.io/build-tools v0.21.0 // indirect
 	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
 	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
@@ -248,7 +244,6 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
@@ -261,7 +256,6 @@ require (
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250219182151-9fdb1cabc7b2 // indirect
 	google.golang.org/grpc v1.71.0 // indirect
 	google.golang.org/protobuf v1.36.5 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
