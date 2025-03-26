@@ -6,7 +6,7 @@ require (
 	github.com/go-logfmt/logfmt v0.6.0
 	github.com/grafana/faro/pkg/go v0.0.0-20250303131049-4a4f3d5b57fc
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.122.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.122.0
 	github.com/stretchr/testify v1.10.0
 	github.com/wk8/go-ordered-map/v2 v2.1.8
 	github.com/zeebo/xxh3 v1.0.2
