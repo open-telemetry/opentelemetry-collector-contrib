@@ -18,11 +18,11 @@ tests:              # generated_component_test.go looking for test.config from m
       rabbitmq.node.mem_used:
         enabled: false
       rabbitmq.node.mem_limit:
-        enabled: true
+        enabled: false
       rabbitmq.node.mem_alarm:
         enabled: false
       rabbitmq.node.mem_used_details.rate:
-        enabled: true
+        enabled: false
       rabbitmq.node.fd_used:
         enabled: false
       rabbitmq.node.fd_total:
