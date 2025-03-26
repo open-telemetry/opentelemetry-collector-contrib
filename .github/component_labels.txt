@@ -148,6 +148,7 @@ pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
+pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
 pkg/translator/opencensus pkg/translator/opencensus

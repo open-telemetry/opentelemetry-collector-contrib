@@ -73,7 +73,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordTlscheckTimeLeftDataPoint(ts, 1, "tlscheck.x509.issuer-val", "tlscheck.x509.cn-val", []any{"tlscheck.x509.san-item1", "tlscheck.x509.san-item2"})
 
 			rb := mb.NewResourceBuilder()
-			rb.SetTlscheckEndpoint("tlscheck.endpoint-val")
+			rb.SetTlscheckTarget("tlscheck.target-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
