@@ -301,6 +301,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
