@@ -859,7 +859,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
 		}
-		// TODO: ignore this for now.
+		// in case the sql returned rows contains null value, we just log a warning and continue
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
