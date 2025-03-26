@@ -226,8 +226,8 @@ func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) 
 	r.mb.RecordRabbitmqNodeIoReopenCountDataPoint(now, node.IOReopenCount)
 	r.mb.RecordRabbitmqNodeIoReopenCountDetailsRateDataPoint(now, node.IOReopenCountRate)
 
-	r.mb.RecordRabbitmqNodeMnesiaRAMTxCountDataPoint(now, node.MnesiaRamTxCount)
-	r.mb.RecordRabbitmqNodeMnesiaRAMTxCountDetailsRateDataPoint(now, node.MnesiaRamTxRate)
+	r.mb.RecordRabbitmqNodeMnesiaRAMTxCountDataPoint(now, node.MnesiaRAMTxCount)
+	r.mb.RecordRabbitmqNodeMnesiaRAMTxCountDetailsRateDataPoint(now, node.MnesiaRAMTxRate)
 	r.mb.RecordRabbitmqNodeMnesiaDiskTxCountDataPoint(now, node.MnesiaDiskTxCount)
 	r.mb.RecordRabbitmqNodeMnesiaDiskTxCountDetailsRateDataPoint(now, node.MnesiaDiskTxRate)
 

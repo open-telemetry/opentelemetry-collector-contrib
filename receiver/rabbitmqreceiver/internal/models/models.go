@@ -85,8 +85,8 @@ type Node struct {
 	IOReopenCountRate float64 `json:"io_reopen_count_details.rate"`
 
 	// Mnesia transactions
-	MnesiaRamTxCount  int64   `json:"mnesia_ram_tx_count"`
-	MnesiaRamTxRate   float64 `json:"mnesia_ram_tx_count_details.rate"`
+	MnesiaRAMTxCount  int64   `json:"mnesia_ram_tx_count"`
+	MnesiaRAMTxRate   float64 `json:"mnesia_ram_tx_count_details.rate"`
 	MnesiaDiskTxCount int64   `json:"mnesia_disk_tx_count"`
 	MnesiaDiskTxRate  float64 `json:"mnesia_disk_tx_count_details.rate"`
 
