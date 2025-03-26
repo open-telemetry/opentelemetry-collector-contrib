@@ -25,8 +25,21 @@ type Node struct {
 	Name string `json:"name"`
 
 	// Metrics
-	DiskFree int64 `json:"disk_free"`
-	FDUsed   int64 `json:"fd_used"`
-	MemLimit int64 `json:"mem_limit"`
-	MemUsed  int64 `json:"mem_used"`
+	DiskFree        int64 `json:"disk_free"`
+	DiskFreeLimit   int64 `json:"disk_free_limit"`
+	DiskFreeAlarm   bool  `json:"disk_free_alarm"`
+	FDUsed          int64 `json:"fd_used"`
+	FDTotal         int64 `json:"fd_total"`
+	SocketsUsed     int64 `json:"sockets_used"`
+	SocketsTotal    int64 `json:"sockets_total"`
+	ProcUsed        int64 `json:"proc_used"`
+	ProcTotal       int64 `json:"proc_total"`
+	MemUsed         int64 `json:"mem_used"`
+	MemUsedRate     int64 `json:"mem_used_details.rate"`
+	MemLimit        int64 `json:"mem_limit"`
+	MemAlarm        bool  `json:"mem_alarm"`
+	FDUsedRate      int64 `json:"fd_used_details.rate"`
+	SocketsUsedRate int64 `json:"sockets_used_details.rate"`
+	ProcUsedRate    int64 `json:"proc_used_details.rate"`
+	DiskFreeRate    int64 `json:"disk_free_details.rate"`
 }

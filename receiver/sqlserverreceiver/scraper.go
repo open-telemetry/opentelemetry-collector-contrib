@@ -551,7 +551,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 	logs := plog.NewLogs()
 	resourceLog := logs.ResourceLogs().AppendEmpty()
-	resourceLog.Resource().Attributes().PutStr("db.system.type", "microsoft.sql_server")
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
 	scopedLog.Scope().SetName(metadata.ScopeName)
@@ -570,6 +569,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(timestamp)
+		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
 
 		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
 		record.Attributes().PutStr(instanceNameKey, row[instanceNameKey])

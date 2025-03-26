@@ -48,11 +48,37 @@ receivers:
      metrics:  # Enable node metrics by explicitly setting them to true
       rabbitmq.node.disk_free:
         enabled: true
-      rabbitmq.node.fd_used:
+      rabbitmq.node.disk_free_limit:
+        enabled: true
+      rabbitmq.node.disk_free_alarm:
+        enabled: true
+      rabbitmq.node.mem_used:
         enabled: true
       rabbitmq.node.mem_limit:
         enabled: true
-      rabbitmq.node.mem_used:
+      rabbitmq.node.mem_alarm:
+        enabled: true
+      rabbitmq.node.fd_used:
+        enabled: true
+      rabbitmq.node.fd_total:
+        enabled: true
+      rabbitmq.node.sockets_used:
+        enabled: true
+      rabbitmq.node.sockets_total:
+        enabled: true
+      rabbitmq.node.proc_used:
+        enabled: true
+      rabbitmq.node.proc_total:
+        enabled: true
+      rabbitmq.node.disk_free_details.rate:
+        enabled: true
+      rabbitmq.node.fd_used_details.rate:
+        enabled: true
+      rabbitmq.node.mem_used_details.rate:
+        enabled: true
+      rabbitmq.node.proc_used_details.rate:
+        enabled: true
+      rabbitmq.node.sockets_used_details.rate:
         enabled: true
 ```
 
