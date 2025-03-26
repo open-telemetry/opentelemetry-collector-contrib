@@ -21,8 +21,8 @@ func NewFactory() extension.Factory {
 	)
 }
 
-func createExtension(ctx context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newAzureAuthenticator(cfg.(*Config), set.Logger)
+func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
+	return newAzureAuthenticator(cfg.(*Config), set.Logger), nil
 }
 
 func createDefaultConfig() component.Config {

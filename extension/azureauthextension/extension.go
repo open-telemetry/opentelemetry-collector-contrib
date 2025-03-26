@@ -7,14 +7,12 @@ import (
 	"context"
 	"net/http"
 
-	"go.opentelemetry.io/collector/extension/extensionauth"
-	"google.golang.org/grpc/credentials"
-
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+	"google.golang.org/grpc/credentials"
 )
 
 type authenticator struct {
@@ -28,42 +26,39 @@ var (
 	_ extensionauth.Server     = (*authenticator)(nil)
 )
 
-func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
+func newAzureAuthenticator(_ *Config, logger *zap.Logger) *authenticator {
 	var credential azcore.TokenCredential
-	if cfg.UseDefault {
-		// TODO
-	}
-	if cfg.Workload != nil {
-		// TODO
-	}
-	if cfg.Managed != nil {
-		// TODO
-	}
-	if cfg.ServicePrincipal != nil {
-		// TODO
-	}
+	// TODO
+	// if cfg.UseDefault {
+	// }
+	// if cfg.Workload != nil {
+	// }
+	// if cfg.Managed != nil {
+	// }
+	// if cfg.ServicePrincipal != nil {
+	// }
 	return &authenticator{
 		credential: credential,
 		logger:     logger,
-	}, nil
+	}
 }
 
-func (a authenticator) Start(ctx context.Context, host component.Host) error {
+func (a authenticator) Start(_ context.Context, _ component.Host) error {
 	// TODO
 	return nil
 }
 
-func (a authenticator) Shutdown(ctx context.Context) error {
+func (a authenticator) Shutdown(_ context.Context) error {
 	// TODO
 	return nil
 }
 
-func (a authenticator) Authenticate(ctx context.Context, sources map[string][]string) (context.Context, error) {
+func (a authenticator) Authenticate(ctx context.Context, _ map[string][]string) (context.Context, error) {
 	// TODO
 	return ctx, nil
 }
 
-func (a authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (a authenticator) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
 	// TODO
 	return nil, nil
 }
