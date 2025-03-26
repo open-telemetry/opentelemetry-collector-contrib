@@ -24,7 +24,7 @@ import (
 
 type signalToMetrics struct {
 	next                  consumer.Metrics
-	collectorInstanceInfo *model.CollectorInstanceInfo
+	collectorInstanceInfo model.CollectorInstanceInfo
 	logger                *zap.Logger
 
 	spanMetricDefs []model.MetricDef[ottlspan.TransformContext]
