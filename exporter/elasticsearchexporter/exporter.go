@@ -8,11 +8,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"time"
 
-	"github.com/cespare/xxhash"
 	"github.com/elastic/go-docappender/v2"
-	"github.com/elastic/go-freelru"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -25,25 +22,9 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
-
-const (
-	KiB = 1024
-	MiB = 1024 * KiB
-
-	knownExecutablesCacheSize = 128 * KiB
-	knownFramesCacheSize      = 128 * KiB
-	knownTracesCacheSize      = 128 * KiB
-
-	minILMRolloverTime = 3 * time.Hour
-)
-
-var stringHashFn = func(s string) uint32 {
-	return uint32(xxhash.Sum64String(s))
-}
 
 type elasticsearchExporter struct {
 	set                 exporter.Settings
@@ -55,35 +36,11 @@ type elasticsearchExporter struct {
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
 	encoders            map[MappingMode]documentEncoder
-
-	// Data cache for profiles
-	knownTraces      *lru.LRUSet[string]
-	knownFrames      *lru.LRUSet[string]
-	knownExecutables *lru.LRUSet[string]
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
-
-	// Create LRUs with MinILMRolloverTime as lifetime to avoid losing data by ILM roll-over.
-	knownTraces, err := freelru.New[string, lru.Void](knownTracesCacheSize, stringHashFn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create traces LRU: %w", err)
-	}
-	knownTraces.SetLifetime(minILMRolloverTime)
-
-	knownFrames, err := freelru.New[string, lru.Void](knownFramesCacheSize, stringHashFn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create frames LRU: %w", err)
-	}
-	knownFrames.SetLifetime(minILMRolloverTime)
-
-	knownExecutables, err := freelru.New[string, lru.Void](knownExecutablesCacheSize, stringHashFn)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
-	}
-	knownExecutables.SetLifetime(minILMRolloverTime)
 
 	encoders := map[MappingMode]documentEncoder{}
 	for i := range NumMappingModes {
@@ -103,10 +60,6 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
 		encoders:            encoders,
-
-		knownTraces:      lru.NewLRUSet(knownTraces),
-		knownFrames:      lru.NewLRUSet(knownFrames),
-		knownExecutables: lru.NewLRUSet(knownExecutables),
 	}, nil
 }
 
@@ -640,37 +593,22 @@ func (e *elasticsearchExporter) pushProfileRecord(
 	profile pprofile.Profile,
 	defaultSession, eventsSession, stackTracesSession, stackFramesSession, executablesSession bulkIndexerSession,
 ) error {
-	return e.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet[string]) error {
-		return e.knownFrames.WithLock(func(framesSet lru.LockedLRUSet[string]) error {
-			return e.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet[string]) error {
-				return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
-					switch index {
-					case otelserializer.StackTraceIndex:
-						if !tracesSet.CheckAndAdd(docID) {
-							return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-						}
-						return nil
-					case otelserializer.StackFrameIndex:
-						if !framesSet.CheckAndAdd(docID) {
-							return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-						}
-						return nil
-					case otelserializer.AllEventsIndex:
-						return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-					case otelserializer.ExecutablesIndex:
-						if !executablesSet.CheckAndAdd(docID) {
-							return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
-						}
-						return nil
-					case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
-						// These regular indices have a low write-frequency and can share the executablesSession.
-						return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-					default:
-						return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
-					}
-				})
-			})
-		})
+	return encoder.encodeProfile(ec, profile, func(buf *bytes.Buffer, docID, index string) error {
+		switch index {
+		case otelserializer.StackTraceIndex:
+			return stackTracesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		case otelserializer.StackFrameIndex:
+			return stackFramesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		case otelserializer.AllEventsIndex:
+			return eventsSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		case otelserializer.ExecutablesIndex:
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
+		case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
+			// These regular indices have a low write-frequency and can share the executablesSession.
+			return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		default:
+			return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
+		}
 	})
 }
 
