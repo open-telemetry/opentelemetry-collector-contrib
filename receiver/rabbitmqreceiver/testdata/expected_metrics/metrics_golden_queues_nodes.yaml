@@ -142,125 +142,520 @@ resourceMetrics:
             description: Free disk space on the node.
             unit: '{bytes}'
             sum:
-              dataPoints:
-                - asInt: "50000000"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.disk_free_limit
             description: Minimum required free disk space before alarm.
             unit: '{bytes}'
             sum:
-              dataPoints:
-                - asInt: "20000000"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.disk_free_alarm
             description: Whether disk usage has triggered an alarm.
             unit: '{status}'
             sum:
-              dataPoints:
-                - asInt: "1"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '0'
           - name: rabbitmq.node.disk_free_details.rate
             description: Rate of disk usage change.
             unit: '{bytes}/s'
             sum:
-              dataPoints:
-                - asInt: "100000"
               aggregationTemporality: 2
-
+              dataPoints:
+              - asDouble: '123.456'
           - name: rabbitmq.node.mem_used
             description: The memory used on the node.
             unit: '{bytes}'
             sum:
-              dataPoints:
-                - asInt: "512000000"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.mem_limit
             description: The memory limit on the node.
             unit: '{bytes}'
             sum:
-              dataPoints:
-                - asInt: "1024000000"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.mem_alarm
             description: Whether memory alarm is triggered.
             unit: '{status}'
             sum:
-              dataPoints:
-                - asInt: "0"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '0'
           - name: rabbitmq.node.mem_used_details.rate
             description: Rate of memory usage change.
             unit: '{bytes}/s'
             sum:
-              dataPoints:
-                - asInt: "204800"
               aggregationTemporality: 2
-
+              dataPoints:
+              - asDouble: '123.456'
           - name: rabbitmq.node.fd_used
-            description: The number of file descriptors used on the node.
+            description: Number of file descriptors used.
             unit: '{fd}'
             sum:
-              dataPoints:
-                - asInt: "120"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.fd_total
-            description: Maximum available file descriptors.
+            description: Maximum number of file descriptors available.
             unit: '{fd}'
             sum:
-              dataPoints:
-                - asInt: "500"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.fd_used_details.rate
             description: Rate of file descriptor usage.
             unit: '{fd}/s'
             sum:
-              dataPoints:
-                - asInt: "5"
               aggregationTemporality: 2
-
+              dataPoints:
+              - asDouble: '123.456'
           - name: rabbitmq.node.sockets_used
             description: Number of sockets in use.
             unit: '{sockets}'
             sum:
-              dataPoints:
-                - asInt: "60"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.sockets_total
             description: Maximum allowed sockets.
             unit: '{sockets}'
             sum:
-              dataPoints:
-                - asInt: "300"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.sockets_used_details.rate
             description: Rate of socket usage.
             unit: '{sockets}/s'
             sum:
-              dataPoints:
-                - asInt: "3"
               aggregationTemporality: 2
-
+              dataPoints:
+              - asDouble: '123.456'
           - name: rabbitmq.node.proc_used
             description: Number of Erlang processes in use.
             unit: '{processes}'
             sum:
-              dataPoints:
-                - asInt: "300"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.proc_total
             description: Maximum allowed Erlang processes.
             unit: '{processes}'
             sum:
-              dataPoints:
-                - asInt: "1024"
               aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
           - name: rabbitmq.node.proc_used_details.rate
             description: Rate of process usage.
             unit: '{processes}/s'
             sum:
-              dataPoints:
-                - asInt: "15"
               aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.uptime
+            description: Uptime of the node.
+            unit: ms
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.run_queue
+            description: Run queue length of the Erlang scheduler.
+            unit: '{threads}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.processors
+            description: Number of processors available to the node.
+            unit: '{processors}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.context_switches
+            description: Total number of context switches.
+            unit: '{switches}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.context_switches_details.rate
+            description: Rate of context switches.
+            unit: '{switches}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.gc_num
+            description: Number of garbage collections.
+            unit: '{collections}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.gc_num_details.rate
+            description: Rate of garbage collections.
+            unit: '{collections}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.gc_bytes_reclaimed
+            description: Bytes reclaimed by garbage collection.
+            unit: '{bytes}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.gc_bytes_reclaimed_details.rate
+            description: Rate of bytes reclaimed by GC.
+            unit: '{bytes}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_read_count
+            description: Number of read operations.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_read_bytes
+            description: Total bytes read.
+            unit: '{bytes}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_read_avg_time
+            description: Average read time in microseconds.
+            unit: '{microseconds}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.0'
+          - name: rabbitmq.node.io_write_count
+            description: Number of write operations.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_write_bytes
+            description: Total bytes written.
+            unit: '{bytes}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_write_avg_time
+            description: Average write time in microseconds.
+            unit: '{microseconds}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.0'
+          - name: rabbitmq.node.io_sync_count
+            description: Number of sync operations.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_sync_avg_time
+            description: Average sync time in microseconds.
+            unit: '{microseconds}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.0'
+          - name: rabbitmq.node.io_seek_count
+            description: Number of seek operations.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_seek_avg_time
+            description: Average seek time in microseconds.
+            unit: '{microseconds}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.0'
+          - name: rabbitmq.node.io_reopen_count
+            description: Number of file reopen operations.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.mnesia_ram_tx_count
+            description: Number of RAM transactions in Mnesia.
+            unit: '{tx}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.mnesia_disk_tx_count
+            description: Number of disk transactions in Mnesia.
+            unit: '{tx}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.msg_store_read_count
+            description: Number of message store reads.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.msg_store_write_count
+            description: Number of message store writes.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.queue_index_write_count
+            description: Number of queue index writes.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.queue_index_read_count
+            description: Number of queue index reads.
+            unit: '{ops}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.connection_created
+            description: Number of connections created.
+            unit: '{connections}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.connection_closed
+            description: Number of connections closed.
+            unit: '{connections}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.channel_created
+            description: Number of channels created.
+            unit: '{channels}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.channel_closed
+            description: Number of channels closed.
+            unit: '{channels}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.queue_declared
+            description: Number of queues declared.
+            unit: '{queues}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.queue_created
+            description: Number of queues created.
+            unit: '{queues}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.queue_deleted
+            description: Number of queues deleted.
+            unit: '{queues}'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asInt: '123'
+          - name: rabbitmq.node.io_read_count_details.rate
+            description: Rate of read operations.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_read_bytes_details.rate
+            description: Rate of bytes read.
+            unit: '{bytes}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_read_avg_time_details.rate
+            description: Rate of change of average read time.
+            unit: '{microseconds}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_write_count_details.rate
+            description: Rate of write operations.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_write_bytes_details.rate
+            description: Rate of bytes written.
+            unit: '{bytes}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_write_avg_time_details.rate
+            description: Rate of change of average write time.
+            unit: '{microseconds}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_sync_count_details.rate
+            description: Rate of sync operations.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_sync_avg_time_details.rate
+            description: Rate of change of average sync time.
+            unit: '{microseconds}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_seek_count_details.rate
+            description: Rate of seek operations.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_seek_avg_time_details.rate
+            description: Rate of change of average seek time.
+            unit: '{microseconds}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.io_reopen_count_details.rate
+            description: Rate of file reopen operations.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.mnesia_ram_tx_count_details.rate
+            description: Rate of RAM transactions in Mnesia.
+            unit: '{tx}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.mnesia_disk_tx_count_details.rate
+            description: Rate of disk transactions in Mnesia.
+            unit: '{tx}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.msg_store_read_count_details.rate
+            description: Rate of message store reads.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.msg_store_write_count_details.rate
+            description: Rate of message store writes.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.queue_index_write_count_details.rate
+            description: Rate of queue index writes.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.queue_index_read_count_details.rate
+            description: Rate of queue index reads.
+            unit: '{ops}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.connection_created_details.rate
+            description: Rate of connections created.
+            unit: '{connections}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.connection_closed_details.rate
+            description: Rate of connections closed.
+            unit: '{connections}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.channel_created_details.rate
+            description: Rate of channels created.
+            unit: '{channels}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.channel_closed_details.rate
+            description: Rate of channels closed.
+            unit: '{channels}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.queue_declared_details.rate
+            description: Rate of queues declared.
+            unit: '{queues}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.queue_created_details.rate
+            description: Rate of queues created.
+            unit: '{queues}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
+          - name: rabbitmq.node.queue_deleted_details.rate
+            description: Rate of queues deleted.
+            unit: '{queues}/s'
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+              - asDouble: '123.456'
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/rabbitmqreceiver
           version: latest
