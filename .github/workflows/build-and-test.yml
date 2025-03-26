@@ -678,6 +678,8 @@ jobs:
     if: ${{ always() }} # github.event_name == 'push' && github.ref == 'refs/heads/main'
     runs-on: ubuntu-24.04
     needs: [unittest-matrix]
+    permissions:
+      issues: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
