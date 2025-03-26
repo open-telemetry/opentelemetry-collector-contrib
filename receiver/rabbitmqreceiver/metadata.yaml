@@ -8,13 +8,39 @@ tests:              # generated_component_test.go looking for test.config from m
     collection_interval: 10s
     metrics:
       rabbitmq.node.disk_free:
-        enabled: true
-      rabbitmq.node.fd_used:
-        enabled: true
-      rabbitmq.node.mem_limit:
-        enabled: true
+        enabled: false
+      rabbitmq.node.disk_free_limit:
+        enabled: false
+      rabbitmq.node.disk_free_alarm:
+        enabled: false
+      rabbitmq.node.disk_free_details.rate:
+        enabled: false
       rabbitmq.node.mem_used:
-        enabled: true
+        enabled: false
+      rabbitmq.node.mem_limit:
+        enabled: false
+      rabbitmq.node.mem_alarm:
+        enabled: false
+      rabbitmq.node.mem_used_details.rate:
+        enabled: false
+      rabbitmq.node.fd_used:
+        enabled: false
+      rabbitmq.node.fd_total:
+        enabled: false
+      rabbitmq.node.fd_used_details.rate:
+        enabled: false
+      rabbitmq.node.sockets_used:
+        enabled: false
+      rabbitmq.node.sockets_total:
+        enabled: false
+      rabbitmq.node.sockets_used_details.rate:
+        enabled: false
+      rabbitmq.node.proc_used:
+        enabled: false
+      rabbitmq.node.proc_total:
+        enabled: false
+      rabbitmq.node.proc_used_details.rate:
+        enabled: false
 
 status:
   class: receiver
@@ -105,9 +131,34 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: false
-  rabbitmq.node.fd_used:
-    description: The number of file descriptors used on the node.
-    unit: "{fd}"
+  rabbitmq.node.disk_free_limit:
+    description: Minimum required free disk space before alarm.
+    unit: "{bytes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.disk_free_alarm:
+    description: Whether disk usage has triggered an alarm.
+    unit: "{status}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.disk_free_details.rate:
+    description: Rate of disk usage change.
+    unit: "{bytes}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+
+  rabbitmq.node.mem_used:
+    description: The memory used on the node.
+    unit: "{bytes}"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -121,9 +172,92 @@ metrics:
       aggregation_temporality: cumulative
       value_type: int
     enabled: false
-  rabbitmq.node.mem_used:
-    description: The memory used on the node.
-    unit: "{bytes}"
+  rabbitmq.node.mem_alarm:
+    description: Whether memory alarm is triggered.
+    unit: "{status}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.mem_used_details.rate:
+    description: Rate of memory usage change.
+    unit: "{bytes}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+
+  rabbitmq.node.fd_used:
+    description: The number of file descriptors used on the node.
+    unit: "{fd}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.fd_total:
+    description: Maximum available file descriptors.
+    unit: "{fd}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.fd_used_details.rate:
+    description: Rate of file descriptor usage.
+    unit: "{fd}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+
+  rabbitmq.node.sockets_used:
+    description: Number of sockets in use.
+    unit: "{sockets}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.sockets_total:
+    description: Maximum allowed sockets.
+    unit: "{sockets}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.sockets_used_details.rate:
+    description: Rate of socket usage.
+    unit: "{sockets}/s"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+
+  rabbitmq.node.proc_used:
+    description: Number of Erlang processes in use.
+    unit: "{processes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.proc_total:
+    description: Maximum allowed Erlang processes.
+    unit: "{processes}"
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.proc_used_details.rate:
+    description: Rate of process usage.
+    unit: "{processes}/s"
     sum:
       monotonic: false
       aggregation_temporality: cumulative
