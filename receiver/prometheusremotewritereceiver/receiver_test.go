@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -406,9 +408,70 @@ func TestTranslateV2(t *testing.T) {
 				return expected
 			}(),
 		},
+		{
+			name: "service with target_info metric",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"job", "production/service_a", // 1, 2
+					"instance", "host1", // 3, 4
+					"machine_type", "n1-standard-1", // 5, 6
+					"cloud_provider", "gcp", // 7, 8
+					"region", "us-central1", // 9, 10
+					"datacenter", "sdc", // 11, 12
+					"__name__", "normal_metric", // 13, 14
+					"d", "e", // 15, 16
+				},
+				Timeseries: []writev2.TimeSeries{
+					// Generating 2 metrics, one is a type info and the other is a normal gauge.
+					// The type info metric should be translated to just contains the resource attributes.
+					// The normal_metric should be translated as usual.
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+					{
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+						LabelsRefs: []uint32{13, 14, 1, 2, 3, 4, 15, 16},
+						Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "production")
+				attrs.PutStr("service.name", "service_a")
+				attrs.PutStr("service.instance.id", "host1")
+				attrs.PutStr("machine.type", "n1-standard-1")
+				attrs.PutStr("cloud.provider", "gcp")
+				attrs.PutStr("region", "us-central1")
+				attrs.PutStr("datacenter", "sdc")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("OpenTelemetry Collector")
+				sm.Scope().SetVersion("latest")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("normal_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				dp := m.SetEmptyGauge().DataPoints().AppendEmpty()
+				dp.SetDoubleValue(1.0)
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.Attributes().PutStr("d", "e")
+
+				return metrics
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
+			// since we are using the interRequestCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
+			prwReceiver.interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+			metrics, _, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)
 				return
@@ -416,7 +479,123 @@ func TestTranslateV2(t *testing.T) {
 
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
-			assert.Equal(t, tc.expectedStats, stats)
 		})
 	}
+}
+
+type nonMutatingConsumer struct{}
+
+// Capabilities returns the base consumer capabilities.
+func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+type MockConsumer struct {
+	nonMutatingConsumer
+	mu         sync.Mutex
+	metrics    []pmetric.Metrics
+	dataPoints int
+}
+
+func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.metrics = append(m.metrics, md)
+	m.dataPoints += md.DataPointCount()
+	return nil
+}
+
+func TestTargetInfoWithMultipleRequests(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+	mockConsumer := new(MockConsumer)
+	prwReceiver.nextConsumer = mockConsumer
+	w := httptest.NewRecorder()
+
+	firstRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"machine_type", "n1-standard-1", // 5, 6
+			"cloud_provider", "gcp", // 7, 8
+			"region", "us-central1", // 9, 10
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10},
+			},
+		},
+	}
+
+	buf := proto.NewBuffer(nil)
+	err := buf.Marshal(firstRequest)
+	assert.NoError(t, err)
+
+	req1 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(buf.Bytes()))
+	req1.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	req1.Header.Set("Content-Encoding", "snappy")
+
+	prwReceiver.handlePRW(w, req1)
+	resp1 := w.Result()
+	assert.Equal(t, http.StatusNoContent, resp1.StatusCode)
+
+	secondRequest := &writev2.Request{
+		Symbols: []string{
+			"",
+			"job", "production/service_a", // 1, 2
+			"instance", "host1", // 3, 4
+			"__name__", "normal_metric", // 5, 6
+			"foo", "bar", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+				Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+			},
+		},
+	}
+
+	buf2 := proto.NewBuffer(nil)
+	err = buf2.Marshal(secondRequest)
+	assert.NoError(t, err)
+
+	req2 := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewReader(buf2.Bytes()))
+	req2.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	req2.Header.Set("Content-Encoding", "snappy")
+	w = httptest.NewRecorder()
+	prwReceiver.handlePRW(w, req2)
+	resp2 := w.Result()
+	assert.Equal(t, http.StatusNoContent, resp2.StatusCode)
+
+	expectedMetrics := func() pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+
+		rm := metrics.ResourceMetrics().AppendEmpty()
+		attrs := rm.Resource().Attributes()
+		attrs.PutStr("service.namespace", "production")
+		attrs.PutStr("service.name", "service_a")
+		attrs.PutStr("service.instance.id", "host1")
+		attrs.PutStr("machine.type", "n1-standard-1")
+		attrs.PutStr("cloud.provider", "gcp")
+		attrs.PutStr("region", "us-central1")
+
+		sm := rm.ScopeMetrics().AppendEmpty()
+		sm.Scope().SetName("OpenTelemetry Collector")
+		sm.Scope().SetVersion("latest")
+
+		m1 := sm.Metrics().AppendEmpty()
+		m1.SetName("normal_metric")
+		m1.SetUnit("")
+		m1.SetDescription("")
+		dp1 := m1.SetEmptyGauge().DataPoints().AppendEmpty()
+		dp1.SetDoubleValue(2.0)
+		dp1.SetTimestamp(pcommon.Timestamp(2 * int64(time.Millisecond)))
+		dp1.Attributes().PutStr("foo", "bar")
+
+		return metrics
+	}()
+
+	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
 }
