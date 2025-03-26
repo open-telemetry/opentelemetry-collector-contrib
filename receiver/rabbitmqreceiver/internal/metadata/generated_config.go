@@ -28,16 +28,29 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
-	RabbitmqConsumerCount       MetricConfig `mapstructure:"rabbitmq.consumer.count"`
-	RabbitmqMessageAcknowledged MetricConfig `mapstructure:"rabbitmq.message.acknowledged"`
-	RabbitmqMessageCurrent      MetricConfig `mapstructure:"rabbitmq.message.current"`
-	RabbitmqMessageDelivered    MetricConfig `mapstructure:"rabbitmq.message.delivered"`
-	RabbitmqMessageDropped      MetricConfig `mapstructure:"rabbitmq.message.dropped"`
-	RabbitmqMessagePublished    MetricConfig `mapstructure:"rabbitmq.message.published"`
-	RabbitmqNodeDiskFree        MetricConfig `mapstructure:"rabbitmq.node.disk_free"`
-	RabbitmqNodeFdUsed          MetricConfig `mapstructure:"rabbitmq.node.fd_used"`
-	RabbitmqNodeMemLimit        MetricConfig `mapstructure:"rabbitmq.node.mem_limit"`
-	RabbitmqNodeMemUsed         MetricConfig `mapstructure:"rabbitmq.node.mem_used"`
+	RabbitmqConsumerCount              MetricConfig `mapstructure:"rabbitmq.consumer.count"`
+	RabbitmqMessageAcknowledged        MetricConfig `mapstructure:"rabbitmq.message.acknowledged"`
+	RabbitmqMessageCurrent             MetricConfig `mapstructure:"rabbitmq.message.current"`
+	RabbitmqMessageDelivered           MetricConfig `mapstructure:"rabbitmq.message.delivered"`
+	RabbitmqMessageDropped             MetricConfig `mapstructure:"rabbitmq.message.dropped"`
+	RabbitmqMessagePublished           MetricConfig `mapstructure:"rabbitmq.message.published"`
+	RabbitmqNodeDiskFree               MetricConfig `mapstructure:"rabbitmq.node.disk_free"`
+	RabbitmqNodeDiskFreeAlarm          MetricConfig `mapstructure:"rabbitmq.node.disk_free_alarm"`
+	RabbitmqNodeDiskFreeDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.disk_free_details.rate"`
+	RabbitmqNodeDiskFreeLimit          MetricConfig `mapstructure:"rabbitmq.node.disk_free_limit"`
+	RabbitmqNodeFdTotal                MetricConfig `mapstructure:"rabbitmq.node.fd_total"`
+	RabbitmqNodeFdUsed                 MetricConfig `mapstructure:"rabbitmq.node.fd_used"`
+	RabbitmqNodeFdUsedDetailsRate      MetricConfig `mapstructure:"rabbitmq.node.fd_used_details.rate"`
+	RabbitmqNodeMemAlarm               MetricConfig `mapstructure:"rabbitmq.node.mem_alarm"`
+	RabbitmqNodeMemLimit               MetricConfig `mapstructure:"rabbitmq.node.mem_limit"`
+	RabbitmqNodeMemUsed                MetricConfig `mapstructure:"rabbitmq.node.mem_used"`
+	RabbitmqNodeMemUsedDetailsRate     MetricConfig `mapstructure:"rabbitmq.node.mem_used_details.rate"`
+	RabbitmqNodeProcTotal              MetricConfig `mapstructure:"rabbitmq.node.proc_total"`
+	RabbitmqNodeProcUsed               MetricConfig `mapstructure:"rabbitmq.node.proc_used"`
+	RabbitmqNodeProcUsedDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.proc_used_details.rate"`
+	RabbitmqNodeSocketsTotal           MetricConfig `mapstructure:"rabbitmq.node.sockets_total"`
+	RabbitmqNodeSocketsUsed            MetricConfig `mapstructure:"rabbitmq.node.sockets_used"`
+	RabbitmqNodeSocketsUsedDetailsRate MetricConfig `mapstructure:"rabbitmq.node.sockets_used_details.rate"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -63,13 +76,52 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqNodeDiskFree: MetricConfig{
 			Enabled: false,
 		},
+		RabbitmqNodeDiskFreeAlarm: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeDiskFreeDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeDiskFreeLimit: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeFdTotal: MetricConfig{
+			Enabled: false,
+		},
 		RabbitmqNodeFdUsed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeFdUsedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMemAlarm: MetricConfig{
 			Enabled: false,
 		},
 		RabbitmqNodeMemLimit: MetricConfig{
 			Enabled: false,
 		},
 		RabbitmqNodeMemUsed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMemUsedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeProcTotal: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeProcUsed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeProcUsedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeSocketsTotal: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeSocketsUsed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
 			Enabled: false,
 		},
 	}
