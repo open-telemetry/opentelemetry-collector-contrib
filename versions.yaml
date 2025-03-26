@@ -326,4 +326,3 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/badreceiver
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver
-
