@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
-	"google.golang.org/grpc/credentials"
 )
 
 type authenticator struct {
@@ -59,11 +58,6 @@ func (a authenticator) Authenticate(ctx context.Context, _ map[string][]string) 
 }
 
 func (a authenticator) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
-	// TODO
-	return nil, nil
-}
-
-func (a authenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	// TODO
 	return nil, nil
 }
