@@ -145,6 +145,7 @@ exporter/tencentcloudlogserviceexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
+extension/azureauthextension
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension

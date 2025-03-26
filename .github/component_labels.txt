@@ -69,6 +69,7 @@ exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
 extension/awsproxy extension/awsproxy
+extension/azureauthextension extension/azureauth
 extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
