@@ -23,9 +23,9 @@ type authenticator struct {
 }
 
 var (
-	_ extension.Extension  = (*authenticator)(nil)
-	_ extensionauth.Client = (*authenticator)(nil)
-	_ extensionauth.Server = (*authenticator)(nil)
+	_ extension.Extension      = (*authenticator)(nil)
+	_ extensionauth.HTTPClient = (*authenticator)(nil)
+	_ extensionauth.Server     = (*authenticator)(nil)
 )
 
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
