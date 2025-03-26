@@ -216,13 +216,13 @@ linters:
     - reassign
     - revive
     - staticcheck
-    - tenv
     - testifylint
     - thelper
     - unconvert
     - unparam
     - unused
     - usestdlibvars
+    - usetesting
     - wastedassign
     - whitespace
 
