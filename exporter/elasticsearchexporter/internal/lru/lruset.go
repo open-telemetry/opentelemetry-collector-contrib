@@ -47,11 +47,10 @@ type lockedLRUSet[T comparable] struct {
 }
 
 func (l lockedLRUSet[T]) CheckAndAdd(entry T) bool {
-	defer (l.excluded).Add(entry, Void{})
-
 	if _, exclude := (l.excluded).Get(entry); exclude {
 		return true
 	}
+	defer (l.excluded).Add(entry, Void{})
 	return false
 }
 

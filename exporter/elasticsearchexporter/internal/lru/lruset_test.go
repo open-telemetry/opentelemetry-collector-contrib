@@ -5,6 +5,7 @@ package lru
 
 import (
 	"testing"
+	"time"
 
 	"github.com/cespare/xxhash"
 	"github.com/elastic/go-freelru"
@@ -32,6 +33,50 @@ func TestLRUSet(t *testing.T) {
 	})
 
 	assert.NoError(t, err)
+}
+
+func TestLRUSetLifeTime(t *testing.T) {
+	const lifetime = 100 * time.Millisecond
+
+	lru, err := freelru.New[string, Void](5, func(s string) uint32 {
+		return uint32(xxhash.Sum64String(s))
+	})
+	require.NoError(t, err)
+	lru.SetLifetime(lifetime)
+
+	cache := NewLRUSet(lru)
+
+	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+		assert.False(t, lock.CheckAndAdd("a"))
+		assert.True(t, lock.CheckAndAdd("a"))
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Wait until cache item is expired.
+	time.Sleep(lifetime)
+	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+		assert.False(t, lock.CheckAndAdd("a"))
+		assert.True(t, lock.CheckAndAdd("a"))
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Wait 50% of the lifetime, so the item is not expired.
+	time.Sleep(lifetime / 2)
+	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+		assert.True(t, lock.CheckAndAdd("a"))
+		return nil
+	})
+	require.NoError(t, err)
+
+	// Wait another 50% of the lifetime, so the item should be expired.
+	time.Sleep(lifetime / 2)
+	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+		assert.False(t, lock.CheckAndAdd("a"))
+		return nil
+	})
+	require.NoError(t, err)
 }
 
 func TestNilLRUSet(t *testing.T) {
