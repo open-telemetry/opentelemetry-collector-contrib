@@ -449,67 +449,62 @@ func TestInvalidQueryTextAndPlanQuery(t *testing.T) {
 }
 
 func TestRecordDatabaseSampleQuery(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Username = "sa"
-	cfg.Password = "password"
-	cfg.Port = 1433
-	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	assert.NoError(t, cfg.Validate())
-
-	configureAllScraperMetrics(cfg, false)
-	cfg.QuerySample.Enabled = true
-
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
-	assert.NotNil(t, scrapers)
-
-	scraper := scrapers[0]
-	assert.NotNil(t, scraper.cache)
-
-	scraper.client = mockClient{
-		instanceName:      scraper.instanceName,
-		SQL:               scraper.sqlQuery,
-		maxResultPerQuery: 100,
-	}
-
-	actualLogs, err := scraper.ScrapeLogs(context.Background())
-	assert.NoError(t, err)
-
-	expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", "expectedRecordDatabaseSampleQuery.yaml"))
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-
-	assert.NoError(t, errs)
-}
-
-func TestRecordInvalidDatabaseSampleQuery(t *testing.T) {
-	cfg := createDefaultConfig().(*Config)
-	cfg.Username = "sa"
-	cfg.Password = "password"
-	cfg.Port = 1433
-	cfg.Server = "0.0.0.0"
-	cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
-	assert.NoError(t, cfg.Validate())
-
-	configureAllScraperMetrics(cfg, false)
-	cfg.QuerySample.Enabled = true
-
-	scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
-	assert.NotNil(t, scrapers)
-
-	scraper := scrapers[0]
-	assert.NotNil(t, scraper.cache)
-
-	scraper.client = mockInvalidClient{
-		mockClient{
-			instanceName:      scraper.instanceName,
-			SQL:               scraper.sqlQuery,
-			maxResultPerQuery: 100,
+	tests := map[string]struct {
+		expectedFile string
+		mockClient   func(instance, sql string) sqlquery.DbClient
+	}{
+		"valid data": {
+			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
+			mockClient: func(instance, sql string) sqlquery.DbClient {
+				return mockClient{
+					instanceName:      instance,
+					SQL:               sql,
+					maxResultPerQuery: 100,
+				}
+			},
+		},
+		"invalid data": {
+			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
+			mockClient: func(instance, sql string) sqlquery.DbClient {
+				return mockInvalidClient{
+					mockClient{
+						instanceName:      instance,
+						SQL:               sql,
+						maxResultPerQuery: 100,
+					},
+				}
+			},
 		},
 	}
 
-	actualLogs, err := scraper.ScrapeLogs(context.Background())
-	assert.NoError(t, err)
-	expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", "expectedRecordDatabaseSampleQueryWithInvalidData.yaml"))
-	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-	assert.NoError(t, errs)
+	for name, tc := range tests {
+		t.Run("TestRecordDatabaseSampleQuery/"+name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			cfg.Username = "sa"
+			cfg.Password = "password"
+			cfg.Port = 1433
+			cfg.Server = "0.0.0.0"
+			cfg.MetricsBuilderConfig.ResourceAttributes.SqlserverInstanceName.Enabled = true
+			assert.NoError(t, cfg.Validate())
+
+			configureAllScraperMetrics(cfg, false)
+			cfg.QuerySample.Enabled = true
+
+			scrapers := setupSQLServerLogsScrapers(receivertest.NewNopSettings(metadata.Type), cfg)
+			assert.NotNil(t, scrapers)
+
+			scraper := scrapers[0]
+			assert.NotNil(t, scraper.cache)
+
+			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
+
+			actualLogs, err := scraper.ScrapeLogs(context.Background())
+			assert.NoError(t, err)
+
+			expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
+			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+
+			assert.NoError(t, errs)
+		})
+	}
 }
