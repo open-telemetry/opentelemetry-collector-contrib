@@ -58,7 +58,7 @@ func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *C
 	sourceType := config.SourceType
 	index := config.Index
 	commonFields := map[string]any{}
-	resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range resource.Attributes().All() {
 		switch k {
 		case hostKey:
 			host = v.Str()
@@ -73,8 +73,7 @@ func mapSpanToSplunkEvent(resource pcommon.Resource, span ptrace.Span, config *C
 		default:
 			commonFields[k] = v.AsString()
 		}
-		return true
-	})
+	}
 
 	se := &splunk.Event{
 		Time:       timestampToSecondsWithMillisecondPrecision(span.StartTimestamp()),

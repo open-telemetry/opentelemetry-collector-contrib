@@ -49,12 +49,12 @@ type elasticsearchExporter struct {
 	set                 exporter.Settings
 	config              *Config
 	index               string
-	dynamicIndex        bool
 	logstashFormat      LogstashFormatSettings
 	defaultMappingMode  MappingMode
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
+	encoders            map[MappingMode]documentEncoder
 
 	// Data cache for profiles
 	knownTraces      *lru.LRUSet[string]
@@ -62,12 +62,7 @@ type elasticsearchExporter struct {
 	knownExecutables *lru.LRUSet[string]
 }
 
-func newExporter(
-	cfg *Config,
-	set exporter.Settings,
-	index string,
-	dynamicIndex bool,
-) (*elasticsearchExporter, error) {
+func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
 
@@ -90,15 +85,24 @@ func newExporter(
 	}
 	knownExecutables.SetLifetime(minILMRolloverTime)
 
+	encoders := map[MappingMode]documentEncoder{}
+	for i := range NumMappingModes {
+		enc, err := newEncoder(i)
+		if err != nil {
+			return nil, err
+		}
+		encoders[i] = enc
+	}
+
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
 		index:               index,
-		dynamicIndex:        dynamicIndex,
 		logstashFormat:      cfg.LogstashFormat,
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
+		encoders:            encoders,
 
 		knownTraces:      lru.NewLRUSet(knownTraces),
 		knownFrames:      lru.NewLRUSet(knownFrames),
@@ -120,13 +124,21 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
+	if enc, ok := e.encoders[m]; ok {
+		return enc, nil
+	}
+
+	return nil, fmt.Errorf("no encoder setup for mapping mode %s", m)
+}
+
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	mappingMode, err := e.getMappingMode(ctx)
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
-	encoder, err := newEncoder(mappingMode)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -225,9 +237,9 @@ func (e *elasticsearchExporter) pushMetricsData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -388,8 +400,9 @@ func (e *elasticsearchExporter) pushTraceData(
 	if err != nil {
 		return err
 	}
-	router := newDocumentRouter(mappingMode, e.dynamicIndex, e.index, e.config)
-	encoder, err := newEncoder(mappingMode)
+	router := newDocumentRouter(mappingMode, e.index, e.config)
+	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -427,7 +440,7 @@ func (e *elasticsearchExporter) pushTraceData(
 				}
 				for ii := 0; ii < span.Events().Len(); ii++ {
 					spanEvent := span.Events().At(ii)
-					if err := e.pushSpanEvent(ctx, router, encoder, ec, span, spanEvent, session); err != nil {
+					if err := e.pushSpanEvent(ctx, spanEventRouter, encoder, ec, span, spanEvent, session); err != nil {
 						errs = append(errs, err)
 					}
 				}
@@ -519,7 +532,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	if err != nil {
 		return err
 	}
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -649,6 +662,9 @@ func (e *elasticsearchExporter) pushProfileRecord(
 							return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionUpdate)
 						}
 						return nil
+					case otelserializer.ExecutablesSymQueueIndex, otelserializer.LeafFramesSymQueueIndex:
+						// These regular indices have a low write-frequency and can share the executablesSession.
+						return executablesSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 					default:
 						return defaultSession.Add(ctx, index, docID, "", buf, nil, docappender.ActionCreate)
 					}

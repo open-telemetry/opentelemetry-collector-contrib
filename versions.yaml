@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.121.0
+    version: v0.122.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi
@@ -24,8 +24,6 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector
       - github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumconnector
-      - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/client
-      - github.com/open-telemetry/opentelemetry-collector-contrib/examples/demo/server
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awscloudwatchlogsexporter
@@ -47,6 +45,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/integrationtest
+      - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/fileexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter
       - github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
@@ -86,6 +85,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jaegerencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
@@ -121,6 +121,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
@@ -165,6 +166,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
@@ -250,6 +252,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/journaldreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8slogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver

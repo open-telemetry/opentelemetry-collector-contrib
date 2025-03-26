@@ -5,6 +5,7 @@ package redisreceiver
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,9 @@ import (
 )
 
 func TestRedisRunnable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38955")
+	}
 	logger, _ := zap.NewDevelopment()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger

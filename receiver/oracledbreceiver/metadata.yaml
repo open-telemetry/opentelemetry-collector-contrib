@@ -109,6 +109,51 @@ metrics:
       value_type: int
       input_type: string
     unit: "{reads}"
+  oracledb.physical_reads_direct:
+    description: Number of reads directly from disk, bypassing the buffer cache
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{reads}"
+  oracledb.physical_read_io_requests:
+    description: Number of read requests for application activity
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
+  oracledb.physical_writes:
+    description: Number of physical writes
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{writes}"
+  oracledb.physical_writes_direct:
+    description: Number of writes directly to disk, bypassing the buffer cache
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{writes}"
+  oracledb.physical_write_io_requests:
+    description: Number of write requests for application activity
+    enabled: false
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: int
+      input_type: string
+    unit: "{requests}"
   oracledb.user_commits:
     description: Number of user commits. When a user commits a transaction, the redo
       generated that reflects the changes made to database blocks must be written

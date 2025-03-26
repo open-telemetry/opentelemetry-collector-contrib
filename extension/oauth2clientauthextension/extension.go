@@ -9,6 +9,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
@@ -18,7 +19,11 @@ import (
 	grpcOAuth "google.golang.org/grpc/credentials/oauth"
 )
 
-var _ extensionauth.Client = (*clientAuthenticator)(nil)
+var (
+	_ extension.Extension      = (*clientAuthenticator)(nil)
+	_ extensionauth.HTTPClient = (*clientAuthenticator)(nil)
+	_ extensionauth.GRPCClient = (*clientAuthenticator)(nil)
+)
 
 // clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.

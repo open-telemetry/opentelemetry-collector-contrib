@@ -10,6 +10,7 @@ import (
 	"net/http"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
@@ -23,7 +24,11 @@ type Header struct {
 	source source.Source
 }
 
-var _ extensionauth.Client = (*headerSetterExtension)(nil)
+var (
+	_ extension.Extension      = (*headerSetterExtension)(nil)
+	_ extensionauth.HTTPClient = (*headerSetterExtension)(nil)
+	_ extensionauth.GRPCClient = (*headerSetterExtension)(nil)
+)
 
 type headerSetterExtension struct {
 	component.StartFunc
@@ -32,12 +37,12 @@ type headerSetterExtension struct {
 	headers []Header
 }
 
-// PerRPCCredentials implements extensionauth.Client.
+// PerRPCCredentials implements extensionauth.GRPCClient.
 func (h *headerSetterExtension) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	return &headersPerRPC{headers: h.headers}, nil
 }
 
-// RoundTripper implements extensionauth.Client.
+// RoundTripper implements extensionauth.HTTPClient.
 func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &headersRoundTripper{
 		base:    base,
@@ -45,7 +50,7 @@ func (h *headerSetterExtension) RoundTripper(base http.RoundTripper) (http.Round
 	}, nil
 }
 
-func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (extensionauth.Client, error) {
+func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterExtension, error) {
 	if cfg == nil {
 		return nil, errors.New("extension configuration is not provided")
 	}

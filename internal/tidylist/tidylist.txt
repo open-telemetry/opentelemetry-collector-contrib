@@ -80,8 +80,6 @@ connector/roundrobinconnector
 connector/servicegraphconnector
 connector/signaltometricsconnector
 connector/sumconnector
-examples/demo/client
-examples/demo/server
 exporter/alertmanagerexporter
 exporter/alibabacloudlogserviceexporter
 internal/aws/awsutil
@@ -106,6 +104,7 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
 exporter/fileexporter
@@ -151,6 +150,7 @@ extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+extension/encoding/awslogsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -184,6 +184,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -195,6 +196,7 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
+pkg/translator/faro
 pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
@@ -260,6 +262,7 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
+receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver

@@ -740,6 +740,18 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
+			statement: `set(attributes["test"], IsValidLuhn("17893729974"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", true)
+			},
+		},
+		{
+			statement: `set(attributes["test"], IsValidLuhn(17893729975))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutBool("test", false)
+			},
+		},
+		{
 			statement: `set(attributes["test"], MD5("pass"))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutStr("test", "1a1dc91c907325c69271ddf0c944bc72")
@@ -761,6 +773,18 @@ func Test_e2e_converters(t *testing.T) {
 			statement: `set(attributes["test"], Minutes(Duration("1h")))`,
 			want: func(tCtx ottllog.TransformContext) {
 				tCtx.GetLogRecord().Attributes().PutDouble("test", 60)
+			},
+		},
+		{
+			statement: `set(attributes["test"], Murmur3Hash128("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "dbc2a0c1ab26631a27b4c09fcf1fe683")
+			},
+		},
+		{
+			statement: `set(attributes["test"], Murmur3Hash("Hello World"))`,
+			want: func(tCtx ottllog.TransformContext) {
+				tCtx.GetLogRecord().Attributes().PutStr("test", "ce837619")
 			},
 		},
 		{
@@ -1599,9 +1623,9 @@ func parseStatementWithAndWithoutPathContext(statement string) ([]*ottl.Statemen
 		ottl.WithParserCollectionContext[ottllog.TransformContext, *ottl.Statement[ottllog.TransformContext]](
 			ottllog.ContextName,
 			&parserWithPathCtx,
-			func(_ *ottl.ParserCollection[*ottl.Statement[ottllog.TransformContext]], _ *ottl.Parser[ottllog.TransformContext], _ string, _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottllog.TransformContext]) (*ottl.Statement[ottllog.TransformContext], error) {
+			ottl.WithStatementConverter(func(_ *ottl.ParserCollection[*ottl.Statement[ottllog.TransformContext]], _ ottl.StatementsGetter, parsedStatements []*ottl.Statement[ottllog.TransformContext]) (*ottl.Statement[ottllog.TransformContext], error) {
 				return parsedStatements[0], nil
-			}))
+			})))
 	if err != nil {
 		return nil, err
 	}
