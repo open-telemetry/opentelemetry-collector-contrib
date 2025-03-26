@@ -49,6 +49,9 @@ type AgentDescription struct {
 	// NonIdentifyingAttributes are a map of key-value pairs that may be specified to provide
 	// extra information about the agent to the OpAMP server.
 	NonIdentifyingAttributes map[string]string `mapstructure:"non_identifying_attributes"`
+	// IncludeResourceAttributes determines whether the agent should copy its resource attributes
+	// to the non identifying attributes. (default: false)
+	IncludeResourceAttributes bool `mapstructure:"include_resource_attributes"`
 }
 
 type Capabilities struct {
