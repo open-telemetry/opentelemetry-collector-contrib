@@ -23,6 +23,7 @@ var (
 	errEmptyClientCredential   = errors.New(`both "client_secret" and "client_certificate_path" fields are empty`)
 	errEmptyFederatedTokenFile = errors.New(`empty "federated_token_file" field`)
 	errEmptyAuthentication     = fmt.Errorf("authentication configuration is empty, please choose one of %s", validOptions)
+	errEmptyScope              = errors.New(`the "scope" field for the token permissions is empty`)
 )
 
 type Config struct {
@@ -30,6 +31,10 @@ type Config struct {
 	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
 	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
 	UseDefault       bool              `mapstructure:"use_default"`
+
+	// Scope for the token.
+	// See https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc.
+	Scope string `mapstructure:"scope"`
 }
 
 type ManagedIdentity struct {
@@ -93,8 +98,15 @@ func (cfg *ServicePrincipal) Validate() error {
 }
 
 func (cfg *Config) Validate() error {
+	var errs []error
 	if !cfg.UseDefault && cfg.ServicePrincipal == nil && cfg.Workload == nil && cfg.Managed == nil {
-		return errEmptyAuthentication
+		errs = append(errs, errEmptyAuthentication)
+	}
+	if cfg.Scope == "" {
+		errs = append(errs, errEmptyScope)
+	}
+	if len(errs) > 0 {
+		return errors.Join(errs...)
 	}
 	return nil
 }
