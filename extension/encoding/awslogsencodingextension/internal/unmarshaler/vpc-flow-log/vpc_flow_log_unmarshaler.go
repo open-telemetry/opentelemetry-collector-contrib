@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/metadata"
 )
@@ -38,9 +39,10 @@ type vpcFlowLogUnmarshaler struct {
 	gzipPool sync.Pool
 
 	buildInfo component.BuildInfo
+	logger    *zap.Logger
 }
 
-func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo) (plog.Unmarshaler, error) {
+func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo, logger *zap.Logger) (plog.Unmarshaler, error) {
 	switch format {
 	case fileFormatParquet:
 		// TODO
@@ -57,6 +59,7 @@ func NewVPCFlowLogUnmarshaler(format string, buildInfo component.BuildInfo) (plo
 		fileFormat: format,
 		gzipPool:   sync.Pool{},
 		buildInfo:  buildInfo,
+		logger:     logger,
 	}, nil
 }
 
@@ -175,9 +178,20 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		_, err := handleField(field, values[i], record, key)
+		if strings.HasPrefix(field, "ecs-") {
+			v.logger.Warn("currently there is no support for ECS fields")
+			continue
+		}
+
+		found, err := handleField(field, values[i], record, key)
 		if err != nil {
 			return err
+		}
+		if !found {
+			v.logger.Warn("field is not an available field for a flow log record",
+				zap.String("field", field),
+				zap.String("documentation", "https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html"),
+			)
 		}
 	}
 
@@ -218,20 +232,17 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 	}
 
 	switch field {
+	// TODO Add support for ECS fields
 	case "account-id":
 		key.accountID = value
 	case "vpc-id":
 		record.Attributes().PutStr("aws.vpc.id", value)
 	case "subnet-id":
-		record.Attributes().PutStr("aws.subnet.id", value)
+		record.Attributes().PutStr("aws.vpc.subnet.id", value)
 	case "instance-id":
-		record.Attributes().PutStr("aws.instance.id", value)
+		record.Attributes().PutStr(conventions.AttributeHostID, value)
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
-	case "ecs-cluster-arn":
-		record.Attributes().PutStr(conventions.AttributeAWSECSClusterARN, value)
-	case "ecs-task-arn":
-		record.Attributes().PutStr(conventions.AttributeAWSECSTaskARN, value)
 	case "interface-id":
 		record.Attributes().PutStr("aws.eni.id", value)
 	case "pkt-srcaddr":
@@ -256,10 +267,8 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 		key.region = value
 	case "flow-direction":
 		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, value)
-	case "ecs-task-id":
-		record.Attributes().PutStr(conventions.AttributeAWSECSTaskID, value)
 	case "version":
-		if err := addNumber(field, value, "aws.flow.log.version"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.version"); err != nil {
 			return false, err
 		}
 	case "srcaddr":
@@ -267,25 +276,25 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 	case "dstaddr":
 		record.Attributes().PutStr("destination.layer.address", value)
 	case "packets":
-		if err := addNumber(field, value, "aws.flow.log.packets"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
 			return false, err
 		}
 	case "bytes":
-		if err := addNumber(field, value, "aws.flow.log.bytes"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.bytes"); err != nil {
 			return false, err
 		}
 	case "start":
-		if err := addNumber(field, value, "aws.flow.log.start"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.start"); err != nil {
 			return false, err
 		}
 	case "end":
-		if err := addNumber(field, value, "aws.flow.log.end"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.end"); err != nil {
 			return false, err
 		}
 	case "action":
-		record.Attributes().PutStr("aws.flow.log.action", value)
+		record.Attributes().PutStr("aws.vpc.flow.action", value)
 	case "log-status":
-		record.Attributes().PutStr("aws.flow.log.status", value)
+		record.Attributes().PutStr("aws.vpc.flow.status", value)
 	case "tcp-flags":
 		record.Attributes().PutStr("network.tcp.flags", value)
 	case "sublocation-type":
@@ -293,27 +302,13 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 	case "sublocation-id":
 		record.Attributes().PutStr("aws.sublocation.id", value)
 	case "pkt-src-aws-service":
-		record.Attributes().PutStr("aws.flow.log.source.service", value)
+		record.Attributes().PutStr("aws.vpc.flow.source.service", value)
 	case "pkt-dst-aws-service":
-		record.Attributes().PutStr("aws.flow.log.destination.service", value)
+		record.Attributes().PutStr("aws.vpc.flow.destination.service", value)
 	case "traffic-path":
-		record.Attributes().PutStr("aws.flow.log.traffic.path", value)
-	case "ecs-cluster-name":
-		record.Attributes().PutStr("aws.ecs.cluster.name", value)
-	case "ecs-container-instance-arn":
-		record.Attributes().PutStr("aws.ecs.container.instance.arn", value)
-	case "ecs-container-instance-id":
-		record.Attributes().PutStr("aws.ecs.container.instance.id", value)
-	case "ecs-container-id":
-		record.Attributes().PutStr("aws.ecs.container.id", value)
-	case "ecs-second-container-id":
-		record.Attributes().PutStr("aws.ecs.second.container.arn", value)
-	case "ecs-service-name":
-		record.Attributes().PutStr("aws.ecs.service.name", value)
-	case "ecs-task-definition-arn":
-		record.Attributes().PutStr("aws.ecs.task.definition.arn", value)
+		record.Attributes().PutStr("aws.vpc.flow.traffic.path", value)
 	case "reject-reason":
-		record.Attributes().PutStr("aws.flow.log.reject_reason", value)
+		record.Attributes().PutStr("aws.vpc.flow.reject_reason", value)
 	default:
 		return false, nil
 	}

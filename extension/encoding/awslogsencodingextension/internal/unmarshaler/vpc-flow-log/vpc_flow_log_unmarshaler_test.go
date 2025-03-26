@@ -12,6 +12,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -60,7 +61,7 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 		},
 	}
 
-	u, errCreate := NewVPCFlowLogUnmarshaler(fileFormatPlainText, component.BuildInfo{})
+	u, errCreate := NewVPCFlowLogUnmarshaler(fileFormatPlainText, component.BuildInfo{}, zap.NewNop())
 	require.NoError(t, errCreate)
 
 	for name, test := range tests {
@@ -82,11 +83,11 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 }
 
 func TestUnmarshalLogs_Parquet(t *testing.T) {
-	_, errCreate := NewVPCFlowLogUnmarshaler(fileFormatParquet, component.BuildInfo{})
+	_, errCreate := NewVPCFlowLogUnmarshaler(fileFormatParquet, component.BuildInfo{}, zap.NewNop())
 	require.ErrorContains(t, errCreate, "still needs to be implemented")
 }
 
 func TestUnmarshalLogs_Unsupported(t *testing.T) {
-	_, errCreate := NewVPCFlowLogUnmarshaler("unsupported", component.BuildInfo{})
+	_, errCreate := NewVPCFlowLogUnmarshaler("unsupported", component.BuildInfo{}, zap.NewNop())
 	require.ErrorContains(t, errCreate, `unsupported file fileFormat "unsupported" for VPC flow log`)
 }

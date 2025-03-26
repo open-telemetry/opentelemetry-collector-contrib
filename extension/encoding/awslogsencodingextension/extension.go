@@ -31,7 +31,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 			format:      formatCloudWatchLogsSubscriptionFilter,
 		}, nil
 	case formatVPCFlowLog:
-		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(cfg.VPCFlowLogConfig.FileFormat, settings.BuildInfo)
+		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
+			cfg.VPCFlowLogConfig.FileFormat,
+			settings.BuildInfo,
+			settings.Logger,
+		)
 		if err != nil {
 			return nil, fmt.Errorf("failed to create encoding extension for %q format: %w", formatVPCFlowLog, err)
 		}
