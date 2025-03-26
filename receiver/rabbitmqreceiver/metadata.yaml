@@ -8,39 +8,39 @@ tests:              # generated_component_test.go looking for test.config from m
     collection_interval: 10s
     metrics:
       rabbitmq.node.disk_free:
-        enabled: true
+        enabled: false
       rabbitmq.node.disk_free_limit:
-        enabled: true
+        enabled: false
       rabbitmq.node.disk_free_alarm:
-        enabled: true
+        enabled: false
       rabbitmq.node.disk_free_details.rate:
-        enabled: true
+        enabled: false
       rabbitmq.node.mem_used:
-        enabled: true
+        enabled: false
       rabbitmq.node.mem_limit:
         enabled: true
       rabbitmq.node.mem_alarm:
-        enabled: true
+        enabled: false
       rabbitmq.node.mem_used_details.rate:
         enabled: true
       rabbitmq.node.fd_used:
-        enabled: true
+        enabled: false
       rabbitmq.node.fd_total:
-        enabled: true
+        enabled: false
       rabbitmq.node.fd_used_details.rate:
-        enabled: true
+        enabled: false
       rabbitmq.node.sockets_used:
-        enabled: true
+        enabled: false
       rabbitmq.node.sockets_total:
-        enabled: true
+        enabled: false
       rabbitmq.node.sockets_used_details.rate:
-        enabled: true
+        enabled: false
       rabbitmq.node.proc_used:
-        enabled: true
+        enabled: false
       rabbitmq.node.proc_total:
-        enabled: true
+        enabled: false
       rabbitmq.node.proc_used_details.rate:
-        enabled: true
+        enabled: false
 
 status:
   class: receiver
