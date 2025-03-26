@@ -7,20 +7,15 @@ import (
 	"testing"
 	"time"
 
-	"github.com/cespare/xxhash"
-	"github.com/elastic/go-freelru"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
 
 func TestLRUSet(t *testing.T) {
-	lru, err := freelru.New[string, Void](5, func(s string) uint32 {
-		return uint32(xxhash.Sum64String(s))
-	})
+	cache, err := NewLRUSet(5, time.Minute)
 	require.NoError(t, err)
-	cache := NewLRUSet(lru)
 
-	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		assert.False(t, lock.CheckAndAdd("b"))
@@ -37,16 +32,10 @@ func TestLRUSet(t *testing.T) {
 
 func TestLRUSetLifeTime(t *testing.T) {
 	const lifetime = 100 * time.Millisecond
-
-	lru, err := freelru.New[string, Void](5, func(s string) uint32 {
-		return uint32(xxhash.Sum64String(s))
-	})
+	cache, err := NewLRUSet(5, lifetime)
 	require.NoError(t, err)
-	lru.SetLifetime(lifetime)
 
-	cache := NewLRUSet(lru)
-
-	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
@@ -55,7 +44,7 @@ func TestLRUSetLifeTime(t *testing.T) {
 
 	// Wait until cache item is expired.
 	time.Sleep(lifetime)
-	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
@@ -64,7 +53,7 @@ func TestLRUSetLifeTime(t *testing.T) {
 
 	// Wait 50% of the lifetime, so the item is not expired.
 	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.True(t, lock.CheckAndAdd("a"))
 		return nil
 	})
@@ -72,7 +61,7 @@ func TestLRUSetLifeTime(t *testing.T) {
 
 	// Wait another 50% of the lifetime, so the item should be expired.
 	time.Sleep(lifetime / 2)
-	err = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err = cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
 		return nil
 	})
@@ -80,9 +69,9 @@ func TestLRUSetLifeTime(t *testing.T) {
 }
 
 func TestNilLRUSet(t *testing.T) {
-	cache := &LRUSet[string]{}
+	cache := &LRUSet{}
 
-	err := cache.WithLock(func(lock LockedLRUSet[string]) error {
+	err := cache.WithLock(func(lock LockedLRUSet) error {
 		assert.False(t, lock.CheckAndAdd("a"))
 		assert.False(t, lock.CheckAndAdd("a"))
 		assert.False(t, lock.CheckAndAdd("b"))
@@ -98,13 +87,10 @@ func TestNilLRUSet(t *testing.T) {
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
-	lru, err := freelru.New[string, Void](5, func(s string) uint32 {
-		return uint32(xxhash.Sum64String(s))
-	})
+	cache, err := NewLRUSet(5, time.Minute)
 	require.NoError(b, err)
-	cache := NewLRUSet(lru)
 
-	_ = cache.WithLock(func(lock LockedLRUSet[string]) error {
+	_ = cache.WithLock(func(lock LockedLRUSet) error {
 		b.ReportAllocs()
 		b.ResetTimer()
 		for i := 0; i < b.N; i++ {

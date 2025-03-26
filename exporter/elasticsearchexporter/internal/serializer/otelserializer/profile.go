@@ -6,12 +6,10 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"encoding/json"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
-	"github.com/cespare/xxhash"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
 )
@@ -24,20 +22,7 @@ const (
 
 	ExecutablesSymQueueIndex = "profiling-sq-executables"
 	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
-
-	KiB = 1024
-	MiB = 1024 * KiB
-
-	knownExecutablesCacheSize = 128 * KiB
-	knownFramesCacheSize      = 128 * KiB
-	knownTracesCacheSize      = 128 * KiB
-
-	minILMRolloverTime = 3 * time.Hour
 )
-
-var stringHashFn = func(s string) uint32 {
-	return uint32(xxhash.Sum64String(s))
-}
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
 func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
@@ -53,9 +38,9 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 	if err != nil {
 		return err
 	}
-	return s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet[string]) error {
-		return s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet[string]) error {
-			return s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet[string]) error {
+	return s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet) error {
+		return s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet) error {
+			return s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet) error {
 				for _, payload := range data {
 					event := payload.StackTraceEvent
 
