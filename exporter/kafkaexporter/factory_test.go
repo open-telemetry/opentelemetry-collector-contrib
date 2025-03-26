@@ -38,10 +38,9 @@ func TestCreateMetricExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []MetricsMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -69,8 +68,7 @@ func TestCreateMetricExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = defaultEncoding
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 
@@ -102,10 +100,9 @@ func TestCreateLogExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []LogsMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -133,8 +130,7 @@ func TestCreateLogExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = defaultEncoding
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 
@@ -166,10 +162,9 @@ func TestCreateTraceExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []TracesMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -178,8 +173,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 		{
 			name: "invalid config (validating brokers)",
@@ -187,8 +181,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        &net.DNSError{},
+			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
@@ -197,8 +190,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Metadata.Full = false
 				conf.Encoding = defaultEncoding
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 
