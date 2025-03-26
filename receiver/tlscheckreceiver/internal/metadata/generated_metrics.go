@@ -105,11 +105,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsInclude)
+	if mbc.ResourceAttributes.TlscheckTarget.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["tlscheck.endpoint"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckEndpoint.MetricsExclude)
+	if mbc.ResourceAttributes.TlscheckTarget.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsExclude)
 	}
 
 	for _, op := range options {
