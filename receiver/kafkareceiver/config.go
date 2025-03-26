@@ -35,7 +35,7 @@ type Config struct {
 	// Deprecated [v0.123.0]: Use Logs.Topic, Traces.Topic, and Metrics.Topic.
 	Topic string `mapstructure:"topic"`
 
-	// Encoding holds the expected encoding of messages (default "otlp_proto")
+	// Encoding holds the expected encoding of messages.
 	//
 	// Encoding has no default. If explicitly specified, it will take precedence
 	// over the default values of Logs.Encoding, Traces.Encoding, and
