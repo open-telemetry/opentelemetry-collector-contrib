@@ -11,15 +11,15 @@ import (
 	"strings"
 
 	faroTypes "github.com/grafana/faro/pkg/go"
-	om "github.com/wk8/go-ordered-map"
+	om "github.com/wk8/go-ordered-map/v2"
 )
 
 // keyVal is an ordered map of string to interface
-type keyVal = om.OrderedMap
+type keyVal = om.OrderedMap[string, any]
 
 // newKeyVal creates new empty keyVal
 func newKeyVal() *keyVal {
-	return om.New()
+	return om.New[string, any]()
 }
 
 // keyValFromMap will instantiate keyVal from a map[string]string
