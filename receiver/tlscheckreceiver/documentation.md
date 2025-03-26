@@ -32,4 +32,4 @@ Time in seconds until certificate expiry, as specified by `NotAfter` field in th
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
-| tlscheck.endpoint | Endpoint at which the certificate was accessed. | Any Str | true |
+| tlscheck.target | Endpoint or file path at which the certificate was accessed. | Any Str | true |

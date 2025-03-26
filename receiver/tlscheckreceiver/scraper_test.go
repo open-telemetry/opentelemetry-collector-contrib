@@ -5,9 +5,14 @@ package tlscheckreceiver
 
 import (
 	"context"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/tls"
 	"crypto/x509"
 	"crypto/x509/pkix"
+	"encoding/pem"
+	"math/big"
+	"os"
 	"testing"
 	"time"
 
@@ -49,8 +54,8 @@ func mockGetConnectionStateExpired(endpoint string) (tls.ConnectionState, error)
 //nolint:revive
 func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, error) {
 	cert := &x509.Certificate{
-		NotBefore: time.Now().Add(48 * time.Hour),
-		NotAfter:  time.Now().Add(24 * time.Hour),
+		NotBefore: time.Now().Add(24 * time.Hour),
+		NotAfter:  time.Now().Add(48 * time.Hour),
 		Subject:   pkix.Name{CommonName: "notyetvalid.com"},
 		Issuer:    pkix.Name{CommonName: "NotYetValidIssuer"},
 	}
@@ -59,42 +64,61 @@ func mockGetConnectionStateNotYetValid(endpoint string) (tls.ConnectionState, er
 	}, nil
 }
 
-func TestScrape_ValidCertificate(t *testing.T) {
-	metricConfig := metadata.DefaultMetricsBuilderConfig()
-	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "example.com:443"},
-		},
-		MetricsBuilderConfig: metricConfig,
-	}
-	factory := receivertest.NewNopFactory()
-	settings := receivertest.NewNopSettings(factory.Type())
-	s := newScraper(cfg, settings, mockGetConnectionStateValid)
-
-	metrics, err := s.scrape(context.Background())
+func createMockCertFile(t *testing.T, expiry time.Time) string {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 2048)
 	require.NoError(t, err)
 
-	assert.Equal(t, 1, metrics.DataPointCount())
+	// issuer cert
+	issuerTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(123456789),
+		Subject:      pkix.Name{CommonName: "FooIssuer"},
+		NotBefore:    time.Now(),
+		NotAfter:     expiry,
+		IsCA:         true,
+	}
+	issuerCertBytes, err := x509.CreateCertificate(rand.Reader, issuerTemplate, issuerTemplate, &privateKey.PublicKey, privateKey)
+	require.NoError(t, err)
+	issuerCert, err := x509.ParseCertificate(issuerCertBytes)
+	require.NoError(t, err)
 
-	rm := metrics.ResourceMetrics().At(0)
-	ilms := rm.ScopeMetrics().At(0)
-	metric := ilms.Metrics().At(0)
-	dp := metric.Gauge().DataPoints().At(0)
+	// leaf cert
+	leafTemplate := &x509.Certificate{
+		SerialNumber: big.NewInt(123456789),
+		NotBefore:    time.Now(),
+		NotAfter:     expiry,
+		Subject:      pkix.Name{CommonName: "test.example.com"},
+		Issuer:       pkix.Name{CommonName: "FooIssuer"},
+	}
+	leafCertBytes, err := x509.CreateCertificate(rand.Reader, leafTemplate, issuerTemplate, &privateKey.PublicKey, privateKey)
+	require.NoError(t, err)
+	leafCert, err := x509.ParseCertificate(leafCertBytes)
+	require.NoError(t, err)
+	tmpFile, err := os.CreateTemp(t.TempDir(), "test-cert-*.pem")
+	require.NoError(t, err)
+	t.Cleanup(func() { os.Remove(tmpFile.Name()) })
 
-	attributes := dp.Attributes()
-	issuer, _ := attributes.Get("tlscheck.x509.issuer")
-	commonName, _ := attributes.Get("tlscheck.x509.cn")
-	sans, _ := attributes.Get("tlscheck.x509.san")
+	for _, cert := range []*x509.Certificate{leafCert, issuerCert} {
+		err = pem.Encode(tmpFile, &pem.Block{
+			Type:  "CERTIFICATE",
+			Bytes: cert.Raw,
+		})
+		require.NoError(t, err)
+	}
 
-	assert.Equal(t, "CN=ValidIssuer", issuer.AsString())
-	assert.Equal(t, "valid.com", commonName.AsString())
-	assert.Equal(t, "[\"foo.example.com\",\"bar.example.com\",\"*.example.com\"]", sans.AsString())
+	err = tmpFile.Close()
+	require.NoError(t, err)
+
+	return tmpFile.Name()
 }
 
-func TestScrape_ExpiredCertificate(t *testing.T) {
+func TestScrape_ExpiredEndpointCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "expired.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -124,10 +148,14 @@ func TestScrape_ExpiredCertificate(t *testing.T) {
 	assert.Negative(t, timeLeft, int64(0), "Time left should be negative for an expired certificate")
 }
 
-func TestScrape_NotYetValidCertificate(t *testing.T) {
+func TestScrape_NotYetValidEndpointCertificate(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "expired.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "expired.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -159,10 +187,22 @@ func TestScrape_NotYetValidCertificate(t *testing.T) {
 
 func TestScrape_MultipleEndpoints(t *testing.T) {
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{Endpoint: "example1.com:443"},
-			{Endpoint: "example2.com:443"},
-			{Endpoint: "example3.com:443"},
+		Targets: []*CertificateTarget{
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example1.com:443",
+				},
+			},
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example2.com:443",
+				},
+			},
+			{
+				TCPAddrConfig: confignet.TCPAddrConfig{
+					Endpoint: "example3.com:443",
+				},
+			},
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
@@ -199,18 +239,18 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
 
-		// Get the endpoint resource attribute
-		endpoint, exists := rm.Resource().Attributes().Get("tlscheck.endpoint")
-		require.True(t, exists, "Resource should have tlscheck.endpoint attribute")
+		// Get the target resource attribute
+		target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+		require.True(t, exists, "Resource should have tlscheck.target attribute")
 
-		endpointStr := endpoint.AsString()
-		expected, ok := expectedMetrics[endpointStr]
-		require.True(t, ok, "Unexpected endpoint found: %s", endpointStr)
+		targetStr := target.AsString()
+		expected, ok := expectedMetrics[targetStr]
+		require.True(t, ok, "Unexpected target found: %s", targetStr)
 
-		// Remove the endpoint from expected metrics as we've found it
-		delete(expectedMetrics, endpointStr)
+		// Remove the target from expected metrics as we've found it
+		delete(expectedMetrics, targetStr)
 
-		// Verify we have the expected metrics for this endpoint
+		// Verify we have the expected metrics for this target
 		ilms := rm.ScopeMetrics().At(0)
 		metric := ilms.Metrics().At(0)
 		dp := metric.Gauge().DataPoints().At(0)
@@ -220,10 +260,79 @@ func TestScrape_MultipleEndpoints(t *testing.T) {
 		issuer, _ := attributes.Get("tlscheck.x509.issuer")
 		commonName, _ := attributes.Get("tlscheck.x509.cn")
 
-		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for endpoint %s", endpointStr)
-		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for endpoint %s", endpointStr)
+		assert.Equal(t, expected.issuer, issuer.AsString(), "Incorrect issuer for target %s", targetStr)
+		assert.Equal(t, expected.commonName, commonName.AsString(), "Incorrect common name for target %s", targetStr)
 	}
 
 	// Verify we found all expected endpoints
 	assert.Empty(t, expectedMetrics, "All expected endpoints should have been found")
+}
+
+func TestScrape_ExpiredFilepathCertificate(t *testing.T) {
+	caCertFile := createMockCertFile(t, time.Date(1999, 1, 1, 0, 0, 0, 0, time.UTC))
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath: caCertFile,
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	ilms := rm.ScopeMetrics().At(0)
+	metric := ilms.Metrics().At(0)
+	dp := metric.Gauge().DataPoints().At(0)
+	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+	require.True(t, exists)
+	assert.Equal(t, caCertFile, target.AsString())
+
+	// Verify negative time left on cert
+	timeLeft := dp.IntValue()
+	assert.Negative(t, timeLeft, "Time left should be negative for an expired cert")
+}
+
+func TestScrape_ValidFilepathCertificate(t *testing.T) {
+	caCertFile := createMockCertFile(t, time.Date(2099, 1, 1, 0, 0, 0, 0, time.UTC))
+	cfg := &Config{
+		Targets: []*CertificateTarget{
+			{
+				FilePath: caCertFile,
+			},
+		},
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	factory := receivertest.NewNopFactory()
+	settings := receivertest.NewNopSettings(factory.Type())
+	s := newScraper(cfg, settings, mockGetConnectionStateValid)
+
+	metrics, err := s.scrape(context.Background())
+	require.NoError(t, err)
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+
+	rm := metrics.ResourceMetrics().At(0)
+	ilms := rm.ScopeMetrics().At(0)
+	metric := ilms.Metrics().At(0)
+	dp := metric.Gauge().DataPoints().At(0)
+	target, exists := rm.Resource().Attributes().Get("tlscheck.target")
+	require.True(t, exists)
+	assert.Equal(t, caCertFile, target.AsString())
+
+	// Verify the metric attributes
+	attributes := dp.Attributes()
+	issuer, _ := attributes.Get("tlscheck.x509.issuer")
+	commonName, _ := attributes.Get("tlscheck.x509.cn")
+	assert.Equal(t, "CN=FooIssuer", issuer.AsString(), "Incorrect issuer for target %s", caCertFile)
+	assert.Equal(t, "test.example.com", commonName.AsString(), "Incorrect common name for target %s", caCertFile)
+
+	// Verify positive time left on cert
+	timeLeft := dp.IntValue()
+	assert.Positive(t, timeLeft, "Time left should be positive for a valid cert")
 }

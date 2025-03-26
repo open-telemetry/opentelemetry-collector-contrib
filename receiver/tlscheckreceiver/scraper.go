@@ -6,7 +6,11 @@ package tlscheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"crypto/tls"
+	"crypto/x509"
+	"encoding/pem"
 	"errors"
+	"io"
+	"os"
 	"sync"
 	"time"
 
@@ -85,7 +89,92 @@ func (s *scraper) scrapeEndpoint(endpoint string, metrics *pmetric.Metrics, wg *
 
 	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
 	rb := mb.NewResourceBuilder()
-	rb.SetTlscheckEndpoint(endpoint)
+	rb.SetTlscheckTarget(endpoint)
+	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
+	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
+	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
+}
+
+func (s *scraper) scrapeFile(filePath string, metrics *pmetric.Metrics, wg *sync.WaitGroup, mux *sync.Mutex) {
+	defer wg.Done()
+
+	file, err := os.Open(filePath)
+	if err != nil {
+		s.settings.Logger.Error("Failed to open certificate file", zap.String("file_path", filePath), zap.Error(err))
+		return
+	}
+	defer file.Close()
+	data, err := io.ReadAll(file)
+	if err != nil {
+		s.settings.Logger.Error("Failed to read certificate file", zap.String("file_path", filePath), zap.Error(err))
+		return
+	}
+
+	var certs []*x509.Certificate
+	remaining := data
+
+	for len(remaining) > 0 {
+		var block *pem.Block
+		block, remaining = pem.Decode(remaining)
+		if block == nil {
+			break
+		}
+
+		if block.Type != "CERTIFICATE" {
+			continue
+		}
+
+		cert, err := x509.ParseCertificate(block.Bytes)
+		if err != nil {
+			s.settings.Logger.Error("Failed to parse certificate", zap.String("file_path", filePath), zap.Error(err))
+			return
+		}
+		certs = append(certs, cert)
+	}
+
+	if len(certs) == 0 {
+		s.settings.Logger.Error("No valid certificates found in file", zap.String("file_path", filePath))
+		return
+	}
+
+	s.settings.Logger.Debug("Found certificates in chain", zap.String("file_path", filePath), zap.Int("count", len(certs)))
+
+	cert := certs[0] // Use the leaf certificate
+	issuer := cert.Issuer.String()
+	commonName := cert.Subject.CommonName
+	sans := make([]any, len(cert.DNSNames)+len(cert.IPAddresses)+len(cert.URIs)+len(cert.EmailAddresses))
+	i := 0
+	for _, ip := range cert.IPAddresses {
+		sans[i] = ip.String()
+		i++
+	}
+
+	for _, uri := range cert.URIs {
+		sans[i] = uri.String()
+		i++
+	}
+
+	for _, dnsName := range cert.DNSNames {
+		sans[i] = dnsName
+		i++
+	}
+
+	for _, emailAddress := range cert.EmailAddresses {
+		sans[i] = emailAddress
+		i++
+	}
+
+	currentTime := time.Now()
+	timeLeft := cert.NotAfter.Sub(currentTime).Seconds()
+	timeLeftInt := int64(timeLeft)
+	now := pcommon.NewTimestampFromTime(time.Now())
+
+	mux.Lock()
+	defer mux.Unlock()
+
+	mb := metadata.NewMetricsBuilder(s.cfg.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.NewTimestampFromTime(time.Now())))
+	rb := mb.NewResourceBuilder()
+	rb.SetTlscheckTarget(filePath)
 	mb.RecordTlscheckTimeLeftDataPoint(now, timeLeftInt, issuer, commonName, sans)
 	resourceMetrics := mb.Emit(metadata.WithResource(rb.Emit()))
 	resourceMetrics.ResourceMetrics().At(0).MoveTo(metrics.ResourceMetrics().AppendEmpty())
@@ -103,7 +192,11 @@ func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 	metrics := pmetric.NewMetrics()
 
 	for _, target := range s.cfg.Targets {
-		go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux)
+		if target.FilePath != "" {
+			go s.scrapeFile(target.FilePath, &metrics, &wg, &mux)
+		} else {
+			go s.scrapeEndpoint(target.Endpoint, &metrics, &wg, &mux)
+		}
 	}
 
 	wg.Wait()
