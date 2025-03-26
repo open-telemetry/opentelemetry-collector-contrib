@@ -166,14 +166,37 @@ func (r *rabbitmqScraper) collectQueue(queue *models.Queue, now pcommon.Timestam
 // collectNode collects metrics for a specific RabbitMQ node
 func (r *rabbitmqScraper) collectNode(node *models.Node, now pcommon.Timestamp) {
 	r.mb.RecordRabbitmqNodeDiskFreeDataPoint(now, node.DiskFree)
+	r.mb.RecordRabbitmqNodeDiskFreeLimitDataPoint(now, node.DiskFreeLimit)
+	r.mb.RecordRabbitmqNodeDiskFreeAlarmDataPoint(now, boolToInt64(node.DiskFreeAlarm))
+	r.mb.RecordRabbitmqNodeDiskFreeDetailsRateDataPoint(now, node.DiskFreeRate)
+
 	r.mb.RecordRabbitmqNodeFdUsedDataPoint(now, node.FDUsed)
-	r.mb.RecordRabbitmqNodeMemLimitDataPoint(now, node.MemLimit)
+	r.mb.RecordRabbitmqNodeFdTotalDataPoint(now, node.FDTotal)
+	r.mb.RecordRabbitmqNodeFdUsedDetailsRateDataPoint(now, node.FDUsedRate)
+
+	r.mb.RecordRabbitmqNodeSocketsUsedDataPoint(now, node.SocketsUsed)
+	r.mb.RecordRabbitmqNodeSocketsTotalDataPoint(now, node.SocketsTotal)
+	r.mb.RecordRabbitmqNodeSocketsUsedDetailsRateDataPoint(now, node.SocketsUsedRate)
+
+	r.mb.RecordRabbitmqNodeProcUsedDataPoint(now, node.ProcUsed)
+	r.mb.RecordRabbitmqNodeProcTotalDataPoint(now, node.ProcTotal)
+	r.mb.RecordRabbitmqNodeProcUsedDetailsRateDataPoint(now, node.ProcUsedRate)
+
 	r.mb.RecordRabbitmqNodeMemUsedDataPoint(now, node.MemUsed)
+	r.mb.RecordRabbitmqNodeMemUsedDetailsRateDataPoint(now, node.MemUsedRate)
+	r.mb.RecordRabbitmqNodeMemLimitDataPoint(now, node.MemLimit)
+	r.mb.RecordRabbitmqNodeMemAlarmDataPoint(now, boolToInt64(node.MemAlarm))
 
 	rb := r.mb.NewResourceBuilder()
 	rb.SetRabbitmqNodeName(node.Name)
-
 	r.mb.EmitForResource(metadata.WithResource(rb.Emit()))
+}
+
+func boolToInt64(b bool) int64 {
+	if b {
+		return 1
+	}
+	return 0
 }
 
 // convertValToInt64 values from message state unmarshal as float64s but should be int64.

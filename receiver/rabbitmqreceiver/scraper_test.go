@@ -134,30 +134,31 @@ func TestScraperScrape(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			desc: "Successful Node Metrics Collection",
+			desc: "Successful Queue + Node Metrics Collection",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
 
-				// Mock data for nodes
-				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-				var nodes []*models.Node
-				err := json.Unmarshal(nodeData, &nodes)
-				require.NoError(t, err)
-
-				// Mock data for queues
+				// Fixed: relative path only
 				queueData := loadAPIResponseData(t, queuesAPIResponseFile)
 				var queues []*models.Queue
-				err = json.Unmarshal(queueData, &queues)
+				err := json.Unmarshal(queueData, &queues)
 				require.NoError(t, err)
 
-				// Mock client methods
-				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+
+				var nodes []*models.Node
+				err = json.Unmarshal(nodeData, &nodes)
+				require.NoError(t, err)
+
+				require.NotEmpty(t, nodes, "Mock node list should not be empty")
+
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
 
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -168,7 +169,32 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
+			cfg := createDefaultConfig().(*Config)
+
+			// Enable all 17 node metrics
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFree.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeLimit.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeAlarm.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeDiskFreeDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemLimit.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemAlarm.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeMemUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeFdUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeSocketsUsedDetailsRate.Enabled = true
+
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcUsed.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcTotal.Enabled = true
+			cfg.MetricsBuilderConfig.Metrics.RabbitmqNodeProcUsedDetailsRate.Enabled = true
+
+			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -184,6 +210,7 @@ func TestScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
 	}
