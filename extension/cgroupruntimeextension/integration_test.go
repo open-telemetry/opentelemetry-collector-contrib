@@ -23,12 +23,13 @@ import (
 	"testing"
 
 	"github.com/containerd/cgroups/v3/cgroup2"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	"golang.org/x/sys/unix"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 )
 
 const (
