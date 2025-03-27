@@ -4,6 +4,21 @@
 const simpleGit = require('simple-git');
 const git = simpleGit("../../../");
 
+function getUniqueCombinations(data) {
+    const uniqueSet = new Set();
+    const uniqueArray = [];
+
+    data.forEach(item => {
+        const combination = `${item.name}-${item.email}`;
+        if (!uniqueSet.has(combination)) {
+            uniqueSet.add(combination);
+            uniqueArray.push(item);
+        }
+    });
+
+    return uniqueArray;
+}
+
 async function getFirstTimeContributors(fromTag, toTag) {
     try {
         const fromCommit = await git.revparse(fromTag)
@@ -45,18 +60,3 @@ getFirstTimeContributors('v0.121.0', 'v0.122.0').then(contributors => {
     console.log('First-time contributors:', contributors);
     console.log('Number of first-time contributors: ', contributors.length);
 });
-
-function getUniqueCombinations(data) {
-    const uniqueSet = new Set();
-    const uniqueArray = [];
-
-    data.forEach(item => {
-        const combination = `${item.name}-${item.email}`;
-        if (!uniqueSet.has(combination)) {
-            uniqueSet.add(combination);
-            uniqueArray.push(item);
-        }
-    });
-
-    return uniqueArray;
-}
