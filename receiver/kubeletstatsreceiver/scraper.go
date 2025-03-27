@@ -47,7 +47,7 @@ type kubeletScraper struct {
 	m                     sync.RWMutex
 
 	// A struct that keeps Node's resource information
-	nodeLimits *kubelet.NodeInfo
+	nodeInfo *kubelet.NodeInfo
 }
 
 func newKubeletScraper(
@@ -79,8 +79,8 @@ func newKubeletScraper(
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
-		stopCh:     make(chan struct{}),
-		nodeLimits: &kubelet.NodeInfo{},
+		stopCh:   make(chan struct{}),
+		nodeInfo: &kubelet.NodeInfo{},
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
@@ -161,7 +161,7 @@ func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBui
 func (r *kubeletScraper) node() kubelet.NodeInfo {
 	r.m.RLock()
 	defer r.m.RUnlock()
-	return *r.nodeLimits
+	return *r.nodeInfo
 }
 
 func (r *kubeletScraper) start(_ context.Context, _ component.Host) error {
@@ -208,33 +208,27 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 
 	if cpu, ok := node.Status.Capacity["cpu"]; ok {
 		if q, err := resource.ParseQuantity(cpu.String()); err == nil {
-			r.nodeLimits.CPUCapacity = float64(q.MilliValue()) / 1000
+			r.nodeInfo.CPUCapacity = float64(q.MilliValue()) / 1000
 		}
 	}
 	if memory, ok := node.Status.Capacity["memory"]; ok {
 		// ie: 32564740Ki
 		if q, err := resource.ParseQuantity(memory.String()); err == nil {
-			r.nodeLimits.MemoryCapacity = float64(q.Value())
+			r.nodeInfo.MemoryCapacity = float64(q.Value())
 		}
 	}
 
-	r.nodeLimits.Name = node.Name
+	r.nodeInfo.Name = node.Name
 
-	//newLabels := make(map[string]any)
-	// for key, value := range node.Labels {
-	// 	newLabels[key] = value
-	// }
-	newLabels := map[string]any{
-		"data1": "custom1",
+	newLabels := make(map[string]any)
+	for key, value := range node.Labels {
+		newLabels[key] = value
 	}
-	r.nodeLimits.Labels = newLabels
+	r.nodeInfo.Labels = newLabels
 
-	//newAnnotations := make(map[string]any)
-	// for key, value := range node.Annotations {
-	// 	newAnnotations[key] = value
-	// }
-	newAnnotations := map[string]any{
-		"data2": "custom2",
+	newAnnotations := make(map[string]any)
+	for key, value := range node.Annotations {
+		newAnnotations[key] = value
 	}
-	r.nodeLimits.Annotations = newAnnotations
+	r.nodeInfo.Annotations = newAnnotations
 }
