@@ -12,6 +12,7 @@ import (
 
 func TestNewAzureAuthenticator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	ext := newAzureAuthenticator(cfg, zap.NewNop())
+	ext, err := newAzureAuthenticator(cfg, zap.NewNop())
+	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
