@@ -11,9 +11,11 @@ import (
 	"strconv"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
@@ -254,10 +256,6 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
 		record.Attributes().PutStr("aws.eni.id", value)
-	case "pkt-srcaddr":
-		record.Attributes().PutStr(conventions.AttributeSourceAddress, value)
-	case "pkt-dstaddr":
-		record.Attributes().PutStr(conventions.AttributeDestinationAddress, value)
 	case "srcport":
 		if err := addNumber(field, value, conventions.AttributeSourcePort); err != nil {
 			return false, err
@@ -271,25 +269,57 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 		if err != nil {
 			return false, err
 		}
-		name, ok := protocolNames[int(n)]
-		if !ok {
-			return true, fmt.Errorf("number %d does not correspond to a IANA protocol number", n)
+		protocolNumber := int(n)
+		if protocolNumber < 0 || protocolNumber >= len(protocolNames) {
+			return false, fmt.Errorf("protocol number %d does not have a protocol name", protocolNumber)
 		}
-		record.Attributes().PutStr(conventions.AttributeNetworkProtocolName, name)
+		record.Attributes().PutStr(conventions.AttributeNetworkProtocolName, protocolNames[protocolNumber])
 	case "type":
 		record.Attributes().PutStr(conventions.AttributeNetworkType, strings.ToLower(value))
 	case "region":
 		key.region = value
 	case "flow-direction":
-		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, value)
+		switch value {
+		case "ingress":
+			record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "receive")
+		case "egress":
+			record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "transmit")
+		default:
+			return true, fmt.Errorf("value %s not valid for field %s", value, field)
+		}
 	case "version":
-		if err := addNumber(field, value, "aws.vpc.flow.version"); err != nil {
+		if err := addNumber(field, value, "aws.vpc.flow.log.version"); err != nil {
 			return false, err
 		}
 	case "srcaddr":
-		record.Attributes().PutStr("source.layer.address", value)
+		// If pkt-srcaddr exists, then this is might be an intermediary address.
+		// Otherwise, place it in source.address.
+		_, found := record.Attributes().Get(conventions.AttributeSourceAddress)
+		if found {
+			record.Attributes().PutStr("source.layer.address", value)
+		} else {
+			record.Attributes().PutStr(conventions.AttributeSourceAddress, value)
+		}
+	case "pkt-srcaddr":
+		// contrary to srcaddr logic
+		if intermediary, found := record.Attributes().Get(conventions.AttributeSourceAddress); found {
+			record.Attributes().PutStr("source.layer.address", intermediary.Str())
+		}
+		record.Attributes().PutStr(conventions.AttributeSourceAddress, value)
 	case "dstaddr":
-		record.Attributes().PutStr("destination.layer.address", value)
+		// same as srcaddr
+		_, found := record.Attributes().Get(conventions.AttributeDestinationAddress)
+		if found {
+			record.Attributes().PutStr("destination.layer.address", value)
+		} else {
+			record.Attributes().PutStr(conventions.AttributeDestinationAddress, value)
+		}
+	case "pkt-dstaddr":
+		// same logic as pkt-srcaddr
+		if intermediary, found := record.Attributes().Get(conventions.AttributeSourceAddress); found {
+			record.Attributes().PutStr("destination.layer.address", intermediary.Str())
+		}
+		record.Attributes().PutStr(conventions.AttributeDestinationAddress, value)
 	case "packets":
 		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
 			return false, err
@@ -303,9 +333,12 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 			return false, err
 		}
 	case "end":
-		if err := addNumber(field, value, "aws.vpc.flow.end"); err != nil {
-			return false, err
+		unixSeconds, err := getNumber(value)
+		if err != nil {
+			return true, fmt.Errorf("value %s for field %s does not correspond to a valid timestamp", value, field)
 		}
+		timestamp := time.Unix(unixSeconds, 0)
+		record.SetTimestamp(pcommon.NewTimestampFromTime(timestamp))
 	case "action":
 		record.Attributes().PutStr("aws.vpc.flow.action", value)
 	case "log-status":
@@ -321,7 +354,7 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 	case "pkt-dst-aws-service":
 		record.Attributes().PutStr("aws.vpc.flow.destination.service", value)
 	case "traffic-path":
-		record.Attributes().PutStr("aws.vpc.flow.traffic.path", value)
+		record.Attributes().PutStr("aws.vpc.flow.traffic_path", value)
 	case "reject-reason":
 		record.Attributes().PutStr("aws.vpc.flow.reject_reason", value)
 	default:
