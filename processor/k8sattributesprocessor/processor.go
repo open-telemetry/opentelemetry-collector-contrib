@@ -260,7 +260,6 @@ func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Con
 
 	if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
 		resource.Attributes().PutStr("source", "kubernetes")
-		resource.Attributes().PutStr("level", "Unknown")
 		resource.Attributes().PutStr("cluster_name", kp.redisConfig.ClusterName)
 		resource.Attributes().PutStr("host", kp.redisConfig.ClusterName)
 		resource.Attributes().PutStr("resourceUUID", kp.redisConfig.ClusterUid)
@@ -372,7 +371,7 @@ func (kp *kubernetesprocessor) processTraceResources(ctx context.Context, resour
 		} else {
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
 		}
-	} 
+	}
 
 	if resourceUuid != "" {
 		resource.Attributes().PutStr("resourceUUID", resourceUuid)
