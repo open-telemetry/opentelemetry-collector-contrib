@@ -85,7 +85,7 @@ resourceSpans:
           - attributes:
               - key: db.name
                 value:
-                  stringValue: main
+                  stringValue: main_v2
               - key: db.system
                 value:
                   stringValue: mysql

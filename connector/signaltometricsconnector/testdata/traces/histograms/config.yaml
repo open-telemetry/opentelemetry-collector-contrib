@@ -51,3 +51,14 @@ signaltometrics:
       histogram:
         count: "Int(AdjustedCount())"
         value: Milliseconds(end_time - start_time)
+    - name: optional.histogram
+      description: The configured optional attribute will be added as-is
+      unit: ms
+      include_resource_attributes:
+        - key: resource.foo
+      attributes:
+        - key: db.name # All spans with db.name set will be bucketed and a separate bucket will be created with no db.name
+          optional: true
+      histogram:
+        count: "Int(AdjustedCount())"
+        value: Milliseconds(end_time - start_time)
