@@ -389,7 +389,7 @@ func TestStartListenerClosed(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "sock")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

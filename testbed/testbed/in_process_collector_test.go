@@ -44,7 +44,7 @@ service:
 		sender.ProtocolName(),
 		receiver.ProtocolName(),
 	)
-	configCleanup, cfgErr := runner.PrepareConfig(config)
+	configCleanup, cfgErr := runner.PrepareConfig(t, config)
 	defer configCleanup()
 	assert.NoError(t, cfgErr)
 	assert.NotNil(t, configCleanup)

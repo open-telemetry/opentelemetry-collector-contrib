@@ -5,12 +5,18 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"fmt"
+	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
 
 func TestValidate(t *testing.T) {
@@ -118,6 +124,58 @@ func TestValidate(t *testing.T) {
 			} else {
 				require.NoError(t, actualErr)
 			}
+		})
+	}
+}
+
+func compareConfigs(t *testing.T, expected, actual *Config) {
+	assert.Equal(t, len(expected.Targets), len(actual.Targets))
+	assert.Equal(t, expected.ControllerConfig, actual.ControllerConfig)
+	assert.ElementsMatch(t, expected.Targets, actual.Targets)
+}
+
+func TestLoadConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	require.NoError(t, err)
+
+	tests := []struct {
+		id       component.ID
+		expected component.Config
+	}{
+		{
+			id: component.NewID(metadata.Type),
+			expected: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: 1 * time.Minute,
+					InitialDelay:       1 * time.Second,
+				},
+				Targets: []*confignet.TCPAddrConfig{
+					{
+						Endpoint: "google.com:443",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 3 * time.Second,
+						},
+					},
+					{
+						Endpoint: "localhost:8080",
+						DialerConfig: confignet.DialerConfig{
+							Timeout: 5 * time.Second,
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.id.String(), func(t *testing.T) {
+			tempCfg := &Config{}
+			receivers, err := cm.Sub("receivers")
+			require.NoError(t, err)
+			receiver, err := receivers.Sub(tt.id.String())
+			require.NoError(t, err)
+			require.NoError(t, receiver.Unmarshal(tempCfg))
+			compareConfigs(t, tt.expected.(*Config), tempCfg)
 		})
 	}
 }

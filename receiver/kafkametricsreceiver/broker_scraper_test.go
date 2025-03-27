@@ -14,6 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -48,28 +49,25 @@ func TestBrokerShutdown_closed(t *testing.T) {
 }
 
 func TestBrokerScraper_createBrokerScraper(t *testing.T) {
-	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }
 
 func TestBrokerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	assert.NoError(t, bs.Start(context.Background(), nil))
 }
 
 func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	_, err = bs.ScrapeMetrics(context.Background())
@@ -77,11 +75,10 @@ func TestBrokerScraper_scrape_handles_client_error(t *testing.T) {
 }
 
 func TestBrokerScraper_shutdown_handles_nil_client(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	sc := sarama.NewConfig()
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 	err = bs.Shutdown(context.Background())
@@ -141,9 +138,8 @@ func TestBrokerScraper_scrape(t *testing.T) {
 }
 
 func TestBrokersScraper_createBrokerScraper(t *testing.T) {
-	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	bs, err := createBrokerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	bs, err := createBrokerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, bs)
 }

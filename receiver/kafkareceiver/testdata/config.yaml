@@ -4,17 +4,8 @@ kafka:
     - "foo:123"
     - "bar:456"
   resolve_canonical_bootstrap_servers_only: true
-  client_id: otel-collector
-  group_id: otel-collector
-  auth:
-    tls:
-      ca_file: ca.pem
-      cert_file: cert.pem
-      key_file: key.pem
-  metadata:
-    retry:
-      max: 10
-      backoff: 5s
+  client_id: the_client_id
+  group_id: the_group_id
 kafka/logs:
   topic: logs
   session_timeout: 45s

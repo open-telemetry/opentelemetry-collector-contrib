@@ -48,11 +48,37 @@ receivers:
      metrics:  # Enable node metrics by explicitly setting them to true
       rabbitmq.node.disk_free:
         enabled: true
-      rabbitmq.node.fd_used:
+      rabbitmq.node.disk_free_limit:
+        enabled: true
+      rabbitmq.node.disk_free_alarm:
+        enabled: true
+      rabbitmq.node.mem_used:
         enabled: true
       rabbitmq.node.mem_limit:
         enabled: true
-      rabbitmq.node.mem_used:
+      rabbitmq.node.mem_alarm:
+        enabled: true
+      rabbitmq.node.fd_used:
+        enabled: true
+      rabbitmq.node.fd_total:
+        enabled: true
+      rabbitmq.node.sockets_used:
+        enabled: true
+      rabbitmq.node.sockets_total:
+        enabled: true
+      rabbitmq.node.proc_used:
+        enabled: true
+      rabbitmq.node.proc_total:
+        enabled: true
+      rabbitmq.node.disk_free_details.rate:
+        enabled: true
+      rabbitmq.node.fd_used_details.rate:
+        enabled: true
+      rabbitmq.node.mem_used_details.rate:
+        enabled: true
+      rabbitmq.node.proc_used_details.rate:
+        enabled: true
+      rabbitmq.node.sockets_used_details.rate:
         enabled: true
 ```
 
@@ -60,4 +86,13 @@ The full list of settings exposed for this receiver are documented in [config.go
 
 ## Metrics
 
-Details about the metrics produced by this receiver can be found in [metadata.yaml](./metadata.yaml)
+This receiver collects RabbitMQ node-level metrics from the `/api/nodes` endpoint. Metrics are categorized into the following groups:
+
+- **Memory usage**: `rabbitmq.node.mem_used`, `rabbitmq.node.mem_limit`, `rabbitmq.node.mem_alarm`
+- **Disk space**: `rabbitmq.node.disk_free`, `rabbitmq.node.disk_free_limit`, `rabbitmq.node.disk_free_alarm`
+- **File descriptors & sockets**: `rabbitmq.node.fd_used`, `rabbitmq.node.sockets_used`, etc.
+- **Process & scheduling**: `rabbitmq.node.proc_used`, `rabbitmq.node.run_queue`, `rabbitmq.node.context_switches`
+- **Garbage collection & I/O**: `rabbitmq.node.gc.num`, `rabbitmq.node.io_read_avg_time`, etc.
+- **Cluster & node metadata**: `rabbitmq.node.uptime`, `rabbitmq.node.processors`, etc.
+
+Details about the metrics produced by this receiver and full list of supported metrics can be found in [metadata.yaml](./metadata.yaml)

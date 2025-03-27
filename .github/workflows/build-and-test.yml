@@ -6,6 +6,9 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
+
+permissions: read-all
+
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # Make sure to exit early if cache segment download times out after 2 minutes.

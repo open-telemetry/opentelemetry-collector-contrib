@@ -39,7 +39,8 @@ func TestClientConfig(t *testing.T) {
 					},
 				},
 				Metadata: MetadataConfig{
-					Full: false,
+					Full:            false,
+					RefreshInterval: 10 * time.Minute,
 					Retry: MetadataRetryConfig{
 						Max:     10,
 						Backoff: 5 * time.Second,

@@ -95,6 +95,10 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "less_than_1_max_batch_request_parallelism"),
 			errorMessage: "max_batch_request_parallelism can't be set to below 1",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "non_snappy_compression_type"),
+			errorMessage: "compression type must be snappy",
+		},
 	}
 
 	for _, tt := range tests {

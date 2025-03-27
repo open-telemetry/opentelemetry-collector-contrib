@@ -37,6 +37,8 @@ The following exporter configuration parameters are supported.
 | `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false       |
 | `compression`             | should the file be compressed                                                                                                              | none        |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled    |
+| `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s          |
+
 
 ### Marshaler
 
@@ -76,6 +78,9 @@ exporters:
       enabled: true
       num_consumers: 10
       queue_size: 100
+
+    # Optional (5s by default)
+    timeout: 20s      
 ```
 
 Logs and traces will be stored inside 'databucket' in the following path format.
