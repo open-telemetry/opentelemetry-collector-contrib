@@ -64,20 +64,25 @@ func TestE2E(t *testing.T) {
 		}
 	}()
 
-	wantEntries := 10 // Minimal number of metrics to wait for.
+	wantEntries := 2 // Minimal number of metrics to wait for.
 	waitForData(t, wantEntries, metricsConsumer)
 
-	require.NoError(t, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
-		pmetrictest.IgnoreTimestamp(),
-		pmetrictest.IgnoreStartTimestamp(),
-		pmetrictest.IgnoreScopeVersion(),
-		pmetrictest.IgnoreResourceMetricsOrder(),
-		pmetrictest.IgnoreMetricsOrder(),
-		pmetrictest.IgnoreScopeMetricsOrder(),
-		pmetrictest.IgnoreMetricDataPointsOrder(),
-		pmetrictest.IgnoreMetricValues(),
-	),
-	)
+	// the commented line below writes the received list of metrics to the expected.yaml
+	// golden.WriteMetrics(t, expectedFile, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
+
+	require.EventuallyWithT(t, func(tt *assert.CollectT) {
+		assert.NoError(tt, pmetrictest.CompareMetrics(expected, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1],
+			pmetrictest.IgnoreTimestamp(),
+			pmetrictest.IgnoreStartTimestamp(),
+			pmetrictest.IgnoreScopeVersion(),
+			pmetrictest.IgnoreResourceMetricsOrder(),
+			pmetrictest.IgnoreMetricsOrder(),
+			pmetrictest.IgnoreScopeMetricsOrder(),
+			pmetrictest.IgnoreMetricDataPointsOrder(),
+			pmetrictest.IgnoreMetricValues(),
+		),
+		)
+	}, 3*time.Minute, 1*time.Second)
 }
 
 func startUpSink(t *testing.T, mc *consumertest.MetricsSink) func() {

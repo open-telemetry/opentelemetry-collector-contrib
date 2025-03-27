@@ -1,15 +1,44 @@
 resourceMetrics:
   - resource:
       attributes:
+        - key: k8s.node.annotations
+          value:
+            kvlistValue:
+              values:
+                - key: volumes.kubernetes.io/controller-managed-attach-detach
+                  value:
+                    stringValue: "true"
+                - key: kubeadm.alpha.kubernetes.io/cri-socket
+                  value:
+                    stringValue: unix:///run/containerd/containerd.sock
+                - key: node.alpha.kubernetes.io/ttl
+                  value:
+                    stringValue: "0"
+        - key: k8s.node.labels
+          value:
+            kvlistValue:
+              values:
+                - key: beta.kubernetes.io/arch
+                  value:
+                    stringValue: arm64
+                - key: beta.kubernetes.io/os
+                  value:
+                    stringValue: linux
+                - key: kubernetes.io/arch
+                  value:
+                    stringValue: arm64
+                - key: kubernetes.io/hostname
+                  value:
+                    stringValue: kind-control-plane
+                - key: kubernetes.io/os
+                  value:
+                    stringValue: linux
+                - key: node-role.kubernetes.io/control-plane
+                  value:
+                    stringValue: ""
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
-        - key: k8s.node.labels
-          value:
-            kvlistValue: {}
-        - key: k8s.node.annotations
-          value:
-            kvlistValue: {}
     scopeMetrics:
       - scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
