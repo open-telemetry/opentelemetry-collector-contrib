@@ -303,3 +303,45 @@ func CreateMetricMatchPropertiesFromDefault(properties *MatchProperties) (*Metri
 		ResourceAttributes: properties.Resources,
 	}, nil
 }
+
+// ProfileMatchType specifies the strategy for matching against `pprofile.Profile`s. This
+// is distinct from filterset.MatchType which matches against metric (and
+// tracing) names only. To support matching against profile names and
+// `pprofile.Profile`s, filtermetric.MatchType is effectively a superset of
+// filterset.MatchType.
+type ProfileMatchType string
+
+// These are the ProfileMatchType that users can specify for filtering
+// `pprofile.Profile`s.
+const (
+	ProfileRegexp = ProfileMatchType(filterset.Regexp)
+)
+
+// ProfileMatchProperties specifies the set of properties in a profile to match against and the
+// type of string pattern matching to use.
+type ProfileMatchProperties struct {
+	// MatchType specifies the type of matching desired
+	MatchType ProfileMatchType `mapstructure:"match_type"`
+	// RegexpConfig specifies options for the MetricRegexp match type
+	RegexpConfig *regexp.Config `mapstructure:"regexp"`
+
+	// Expressions specifies the list of expr expressions to match profiles against.
+	// A match occurs if any datapoint in a profile matches at least one expression in this list.
+	Expressions []string `mapstructure:"expressions"`
+
+	// ResourceAttributes defines a list of possible resource attributes to match profiles against.
+	// A match occurs if any resource attribute matches all expressions in this given list.
+	ResourceAttributes []Attribute `mapstructure:"resource_attributes"`
+}
+
+func CreateProfileMatchPropertiesFromDefault(properties *MatchProperties) *ProfileMatchProperties {
+	if properties == nil {
+		return nil
+	}
+
+	return &ProfileMatchProperties{
+		MatchType:          ProfileMatchType(properties.Config.MatchType),
+		RegexpConfig:       properties.Config.RegexpConfig,
+		ResourceAttributes: properties.Resources,
+	}
+}
