@@ -159,6 +159,64 @@ func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precisio
 	}
 }
 
+// IgnoreExemplars is a CompareMetricsOption that clears exemplar fields on all the Sum data points.
+func IgnoreExemplars() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplars(expected)
+		maskExemplars(actual)
+	})
+}
+
+func maskExemplars(metrics pmetric.Metrics) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		ilms := rms.At(i).ScopeMetrics()
+		for j := 0; j < ilms.Len(); j++ {
+			metrics := ilms.At(j).Metrics()
+			for g := 0; g < metrics.Len(); g++ {
+				switch metrics.At(g).Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := metrics.At(g).Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						exemplars := datapoints.At(k).Exemplars()
+						for f := 0; f < exemplars.Len(); f++ {
+							emptyExemplar := pmetric.NewExemplar()
+							emptyExemplar.CopyTo(exemplars.At(f))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := metrics.At(g).Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						exemplars := datapoints.At(k).Exemplars()
+						for f := 0; f < exemplars.Len(); f++ {
+							emptyExemplar := pmetric.NewExemplar()
+							emptyExemplar.CopyTo(exemplars.At(f))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := metrics.At(g).Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						exemplars := datapoints.At(k).Exemplars()
+						for f := 0; f < exemplars.Len(); f++ {
+							emptyExemplar := pmetric.NewExemplar()
+							emptyExemplar.CopyTo(exemplars.At(f))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := metrics.At(g).ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						exemplars := datapoints.At(k).Exemplars()
+						for f := 0; f < exemplars.Len(); f++ {
+							emptyExemplar := pmetric.NewExemplar()
+							emptyExemplar.CopyTo(exemplars.At(f))
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // IgnoreTimestamp is a CompareMetricsOption that clears Timestamp fields on all the data points.
 func IgnoreTimestamp() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
