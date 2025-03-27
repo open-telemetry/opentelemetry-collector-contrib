@@ -6,7 +6,7 @@ package vpcflowlog // import "github.com/open-telemetry/opentelemetry-collector-
 // protocolNames are needed to know the name of the protocol number given by the field
 // protocol in a flow log record.
 // See https://www.iana.org/assignments/protocol-numbers/protocol-numbers.xhtml.
-var protocolNames = [143]string{
+var protocolNames = [257]string{
 	"hopopt",
 	"icmp",
 	"igmp",
@@ -68,11 +68,14 @@ var protocolNames = [143]string{
 	"ipv6-icmp",
 	"ipv6-nonxt",
 	"ipv6-opts",
+	"",
 	"cftp",
+	"",
 	"sat-expak",
 	"kryptolan",
 	"rvd",
 	"ippc",
+	"",
 	"sat-mon",
 	"visa",
 	"ipcv",
@@ -103,6 +106,7 @@ var protocolNames = [143]string{
 	"scc-sp",
 	"etherip",
 	"encap",
+	"",
 	"gmtp",
 	"ifmp",
 	"pnni",
@@ -117,6 +121,7 @@ var protocolNames = [143]string{
 	"ipx-in-ip",
 	"vrrp",
 	"pgm",
+	"",
 	"l2tp",
 	"ddx",
 	"iatp",
@@ -149,5 +154,17 @@ var protocolNames = [143]string{
 	"aggfrag",
 	"nsis",
 	"nsh",
+	// empty between 147-254
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "", "", "",
+	"", "", "", "", "", "", "", "",
 	"reserved",
 }

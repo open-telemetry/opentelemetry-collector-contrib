@@ -12,6 +12,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -78,6 +79,61 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.logsExpectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+		})
+	}
+}
+
+func TestHandleAddresses(t *testing.T) {
+	t.Parallel()
+
+	// We will test the addresses using the examples at
+	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
+	tests := map[string]struct {
+		original map[string]string
+		expected map[string]string
+	}{
+		"no_pkt": {
+			original: map[string]string{
+				"srcaddr": "10.40.1.175",
+				"dstaddr": "10.40.2.236",
+			},
+			expected: map[string]string{
+				conventions.AttributeSourceAddress:      "10.40.1.175",
+				conventions.AttributeDestinationAddress: "10.40.2.236",
+			},
+		},
+		"different_source": {
+			original: map[string]string{
+				"srcaddr":     "10.40.1.175",
+				"dstaddr":     "10.40.2.236",
+				"pkt-srcaddr": "10.20.33.164",
+				"pkt-dstaddr": "10.40.2.236",
+			},
+			expected: map[string]string{
+				conventions.AttributeSourceAddress:      "10.20.33.164",
+				conventions.AttributeDestinationAddress: "10.40.2.236",
+				conventions.AttributeNetworkPeerAddress: "10.40.1.175",
+			},
+		},
+		"different_destination": {
+			original: map[string]string{
+				"srcaddr":     "10.40.2.236",
+				"dstaddr":     "10.40.2.31",
+				"pkt-srcaddr": "10.40.2.236",
+				"pkt-dstaddr": "10.20.33.164",
+			},
+			expected: map[string]string{
+				conventions.AttributeSourceAddress:      "10.40.2.236",
+				conventions.AttributeDestinationAddress: "10.20.33.164",
+				conventions.AttributeNetworkPeerAddress: "10.40.2.31",
+			},
+		},
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			result := handleAddresses(test.original)
+			require.Equal(t, test.expected, result)
 		})
 	}
 }

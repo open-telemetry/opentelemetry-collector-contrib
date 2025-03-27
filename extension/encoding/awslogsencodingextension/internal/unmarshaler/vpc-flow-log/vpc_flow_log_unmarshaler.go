@@ -170,6 +170,13 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	key := &resourceKey{}
 	record := plog.NewLogRecord()
 
+	// There are 4 fields for the addresses: srcaddr, pkt-srcaddr,
+	// dstaddr, pkt-dstaddr. We will save these fields in a
+	// map, so we can use the right conventions in the end.
+	//
+	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
+	ips := make(map[string]string, 4)
+
 	// range over the fields of the log line
 	for i, field := range fields {
 		if values[i] == "-" {
@@ -185,7 +192,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := handleField(field, values[i], record, key)
+		found, err := handleField(field, values[i], record, ips, key)
 		if err != nil {
 			return err
 		}
@@ -197,11 +204,54 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 		}
 	}
 
+	// get the address fields
+	addresses := handleAddresses(ips)
+	for field, value := range addresses {
+		record.Attributes().PutStr(field, value)
+	}
+
 	scopeLogs := v.getScopeLogs(*key, scopeLogsByResource)
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	record.MoveTo(rScope)
 
 	return nil
+}
+
+// handleAddresses creates a new map where the original field
+// names will be the known conventions for the fields
+func handleAddresses(addresses map[string]string) map[string]string {
+	// max is 3 fields, see example in
+	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
+	recordAttr := make(map[string]string, 3)
+	srcaddr, foundSrc := addresses["srcaddr"]
+	pktSrcaddr, foundSrcPkt := addresses["pkt-srcaddr"]
+	if !foundSrcPkt && foundSrc {
+		// there is no middle layer, and "srcaddr" field
+		// corresponds to the original source address.
+		recordAttr[conventions.AttributeSourceAddress] = srcaddr
+	} else if foundSrcPkt && foundSrc {
+		recordAttr[conventions.AttributeSourceAddress] = pktSrcaddr
+		if srcaddr != pktSrcaddr {
+			// srcaddr is the middle layer
+			recordAttr[conventions.AttributeNetworkPeerAddress] = srcaddr
+		}
+	}
+
+	dstaddr, foundDst := addresses["dstaddr"]
+	pktDstaddr, foundDstPkt := addresses["pkt-dstaddr"]
+	if !foundDstPkt && foundDst {
+		// there is no middle layer, and "dstaddr" field
+		// corresponds to the original destination address.
+		recordAttr[conventions.AttributeDestinationAddress] = dstaddr
+	} else if foundDstPkt && foundDst {
+		recordAttr[conventions.AttributeDestinationAddress] = pktDstaddr
+		if pktDstaddr != dstaddr {
+			// dstaddr is the middle layer
+			recordAttr[conventions.AttributeNetworkPeerAddress] = dstaddr
+		}
+	}
+
+	return recordAttr
 }
 
 // getScopeLogs for the given key. If it does not exist yet,
@@ -221,7 +271,13 @@ func (v *vpcFlowLogUnmarshaler) getScopeLogs(key resourceKey, logs map[resourceK
 // adds its value to the resourceKey or puts the
 // field and its value in the attributes map. If the
 // field is not recognized, it returns false.
-func handleField(field string, value string, record plog.LogRecord, key *resourceKey) (bool, error) {
+func handleField(
+	field string,
+	value string,
+	record plog.LogRecord,
+	ips map[string]string,
+	key *resourceKey,
+) (bool, error) {
 	// convert string to number
 	getNumber := func(value string) (int64, error) {
 		n, err := strconv.ParseInt(value, 10, 64)
@@ -244,6 +300,9 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 
 	switch field {
 	// TODO Add support for ECS fields
+	case "srcaddr", "pkt-srcaddr", "dstaddr", "pkt-dstaddr":
+		// handled later
+		ips[field] = value
 	case "account-id":
 		key.accountID = value
 	case "vpc-id":
@@ -291,35 +350,6 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 		if err := addNumber(field, value, "aws.vpc.flow.log.version"); err != nil {
 			return false, err
 		}
-	case "srcaddr":
-		// If pkt-srcaddr exists, then this might be an intermediary address.
-		// Otherwise, place it in source.address.
-		_, found := record.Attributes().Get(conventions.AttributeSourceAddress)
-		if found {
-			record.Attributes().PutStr("source.layer.address", value)
-		} else {
-			record.Attributes().PutStr(conventions.AttributeSourceAddress, value)
-		}
-	case "pkt-srcaddr":
-		// contrary to srcaddr logic
-		if intermediary, found := record.Attributes().Get(conventions.AttributeSourceAddress); found {
-			record.Attributes().PutStr("source.layer.address", intermediary.Str())
-		}
-		record.Attributes().PutStr(conventions.AttributeSourceAddress, value)
-	case "dstaddr":
-		// same as srcaddr
-		_, found := record.Attributes().Get(conventions.AttributeDestinationAddress)
-		if found {
-			record.Attributes().PutStr("destination.layer.address", value)
-		} else {
-			record.Attributes().PutStr(conventions.AttributeDestinationAddress, value)
-		}
-	case "pkt-dstaddr":
-		// same logic as pkt-srcaddr
-		if intermediary, found := record.Attributes().Get(conventions.AttributeSourceAddress); found {
-			record.Attributes().PutStr("destination.layer.address", intermediary.Str())
-		}
-		record.Attributes().PutStr(conventions.AttributeDestinationAddress, value)
 	case "packets":
 		if err := addNumber(field, value, "aws.vpc.flow.packets"); err != nil {
 			return false, err
