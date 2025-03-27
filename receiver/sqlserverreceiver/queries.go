@@ -372,12 +372,12 @@ var sqlServerQuerySamplesWithTop string
 //go:embed templates/sqlServerQuerySampleWithoutTop.tmpl
 var sqlServerQuerySamplesWithoutTop string
 
-func getSQLServerQuerySamplesQuery(maxResultPerQuery uint64) string {
+func getSQLServerQuerySamplesQuery(maxRowsPerQuery uint64) string {
 	buf := bytes.Buffer{}
 
 	tmpl := template.Must(template.New("sqlServerQuerySample").Option("missingkey=error").Parse(sqlServerQuerySamplesWithTop))
 	if err := tmpl.Execute(&buf, map[string]any{
-		"Limit": maxResultPerQuery,
+		"Limit": maxRowsPerQuery,
 	}); err != nil {
 		return sqlServerQuerySamplesWithoutTop
 	}

@@ -264,7 +264,7 @@ type mockClient struct {
 	maxQuerySampleCount uint
 	lookbackTime        uint
 	topQueryCount       uint
-	maxResultPerQuery   uint64
+	maxRowsPerQuery     uint64
 }
 
 type mockInvalidClient struct {
@@ -303,7 +303,7 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("propertyQueryData.txt")
 	case queryTextAndPlanQuery:
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
-	case getSQLServerQuerySamplesQuery(mc.maxResultPerQuery):
+	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -324,7 +324,7 @@ func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.Strin
 	}
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery(mc.maxResultPerQuery):
+	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
 	case queryTextAndPlanQuery:
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
@@ -457,9 +457,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
 			mockClient: func(instance, sql string) sqlquery.DbClient {
 				return mockClient{
-					instanceName:      instance,
-					SQL:               sql,
-					maxResultPerQuery: 100,
+					instanceName:    instance,
+					SQL:             sql,
+					maxRowsPerQuery: 100,
 				}
 			},
 		},
@@ -468,9 +468,9 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			mockClient: func(instance, sql string) sqlquery.DbClient {
 				return mockInvalidClient{
 					mockClient{
-						instanceName:      instance,
-						SQL:               sql,
-						maxResultPerQuery: 100,
+						instanceName:    instance,
+						SQL:             sql,
+						maxRowsPerQuery: 100,
 					},
 				}
 			},

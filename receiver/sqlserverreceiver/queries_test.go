@@ -115,12 +115,12 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 		instanceName             string
 		getQuery                 func(uint64) string
 		expectedQueryValFilename string
-		maxResultPerQuery        uint64
+		maxRowsPerQuery          uint64
 	}{
 		{
 			name:                     "Test query sample query",
 			instanceName:             "",
-			maxResultPerQuery:        1000,
+			maxRowsPerQuery:          1000,
 			getQuery:                 getSQLServerQuerySamplesQuery,
 			expectedQueryValFilename: "testQuerySampleQuery.txt",
 		},
@@ -132,7 +132,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.NoError(t, err)
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-			actual := strings.ReplaceAll(tt.getQuery(tt.maxResultPerQuery), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(tt.maxRowsPerQuery), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}
