@@ -17,7 +17,6 @@ import (
 	"time"
 
 	faro "github.com/grafana/faro/pkg/go"
-	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -27,6 +26,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 )
 
 type faroExporter struct {
