@@ -145,7 +145,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse measurement on line %d", line)
-			return
+			continue
 		}
 
 		tags := make(map[string]string)
@@ -155,7 +155,7 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse tag on line %d", line)
-			return
+			continue
 		}
 
 		fields := make(map[string]any)
@@ -165,27 +165,27 @@ func (r *metricsReceiver) handleWrite(w http.ResponseWriter, req *http.Request) 
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse field on line %d", line)
-			return
+			continue
 		}
 
 		ts, err := lpDecoder.Time(precision, time.Time{})
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse timestamp on line %d", line)
-			return
+			continue
 		}
 
 		if err = lpDecoder.Err(); err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to parse line: %s", err.Error())
-			return
+			continue
 		}
 
 		err = batch.AddPoint(string(measurement), tags, fields, ts, common.InfluxMetricValueTypeUntyped)
 		if err != nil {
 			w.WriteHeader(http.StatusBadRequest)
 			_, _ = fmt.Fprintf(w, "failed to append to the batch: %v", err)
-			return
+			continue
 		}
 	}
 
