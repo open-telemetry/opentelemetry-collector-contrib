@@ -140,10 +140,14 @@ endif
 mod-integration-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... in `pwd`"
 	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
+
+.PHONY: mod-integration-sudo-test
+mod-integration-sudo-test: $(GOTESTSUM)
+	@echo "running $(GOCMD) integration sudo (root/privileged) test ./... in `pwd`"
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
