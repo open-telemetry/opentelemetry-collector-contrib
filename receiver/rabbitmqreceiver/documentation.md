@@ -84,6 +84,38 @@ Free disk space on the node.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {bytes} | Sum | Int | Cumulative | false |
 
+### rabbitmq.node.disk_free_alarm
+
+Whether disk usage has triggered an alarm.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {status} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.disk_free_details.rate
+
+Rate of disk usage change.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes}/s | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.disk_free_limit
+
+Minimum required free disk space before alarm.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.fd_total
+
+Maximum available file descriptors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fd} | Sum | Int | Cumulative | false |
+
 ### rabbitmq.node.fd_used
 
 The number of file descriptors used on the node.
@@ -91,6 +123,22 @@ The number of file descriptors used on the node.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {fd} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.fd_used_details.rate
+
+Rate of file descriptor usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {fd}/s | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mem_alarm
+
+Whether memory alarm is triggered.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {status} | Sum | Int | Cumulative | false |
 
 ### rabbitmq.node.mem_limit
 
@@ -107,6 +155,62 @@ The memory used on the node.
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mem_used_details.rate
+
+Rate of memory usage change.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes}/s | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.proc_total
+
+Maximum allowed Erlang processes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.proc_used
+
+Number of Erlang processes in use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.proc_used_details.rate
+
+Rate of process usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processes}/s | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.sockets_total
+
+Maximum allowed sockets.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sockets} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.sockets_used
+
+Number of sockets in use.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sockets} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.sockets_used_details.rate
+
+Rate of socket usage.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {sockets}/s | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 
