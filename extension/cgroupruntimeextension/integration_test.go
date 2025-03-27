@@ -23,6 +23,7 @@ import (
 	"testing"
 
 	"github.com/containerd/cgroups/v3/cgroup2"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension/internal/metadata"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -103,7 +104,7 @@ func cgroupMaxCPU(filename string) (quota int64, period uint64, err error) {
 func startExtension(t *testing.T, config *Config) {
 	factory := NewFactory()
 	ctx := context.Background()
-	extension, err := factory.Create(ctx, extensiontest.NewNopSettings(), config)
+	extension, err := factory.Create(ctx, extensiontest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 
 	err = extension.Start(ctx, componenttest.NewNopHost())
