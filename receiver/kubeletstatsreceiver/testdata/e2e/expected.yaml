@@ -20,13 +20,13 @@ resourceMetrics:
               values:
                 - key: beta.kubernetes.io/arch
                   value:
-                    stringValue: arm64
+                    stringValue: amd64
                 - key: beta.kubernetes.io/os
                   value:
                     stringValue: linux
                 - key: kubernetes.io/arch
                   value:
-                    stringValue: arm64
+                    stringValue: amd64
                 - key: kubernetes.io/hostname
                   value:
                     stringValue: kind-control-plane
@@ -36,9 +36,15 @@ resourceMetrics:
                 - key: node-role.kubernetes.io/control-plane
                   value:
                     stringValue: ""
+                - key: node-role.kubernetes.io/master
+                  value:
+                    stringValue: ""
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
+        - key: foo
+          value:
+            stringValue: too
     scopeMetrics:
       - scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
