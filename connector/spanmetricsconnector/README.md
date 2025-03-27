@@ -229,3 +229,41 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+
+## Known Limitation: Violation of the Single Writer Principle
+
+The `spanmetricsconnector` currently does not guarantee adherence to the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer), which is a core requirement in the OpenTelemetry metrics data model. Depending on how the collector is configured, multiple components may write to the same metric stream. This can result in inconsistent data, metric conflicts, or dropped series in metric backends.
+
+### Why this happens
+
+This issue typically arises when:
+
+* Multiple pipelines use the same instance of the `spanmetricsconnector`
+* The connector is instantiated more than once without ensuring the resulting metric streams are distinct
+* The `resource_metrics_key_attributes` field is not configured correctly or includes common/shared attributes across all instances
+
+### Recommendations
+
+To reduce the risk of conflicting writes:
+
+* Avoid using multiple instances of the `spanmetricsconnector` unless metrics are partitioned (e.g., by attribute filtering) so each stream has a single writer
+* If multiple pipelines are used, ensure each produces uniquely identified metrics (e.g., inject attributes using a processor)
+* For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
+
+More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).
+
+### About `resource_metrics_key_attributes`
+
+The `resource_metrics_key_attributes` setting controls which resource attributes are included in the metric stream identity. These attributes are used to build the key map that determines how metrics are grouped.
+
+If this field is left empty, the connector will use **all** available attributes to compute the resource metric hash.
+
+To avoid problems, be cautious when choosing which attributes to include.
+
+Avoid attributes that:
+
+* **Change frequently** – such as `request_id`, `timestamp`, or `trace_id`. These increase cardinality and create excessive metric streams.
+* **Are shared across all sources** – values like `true`, `default`, or `team:backend` offer no uniqueness and can lead to multiple writers sharing the same stream.
+* **Are optional or inconsistently applied** – if an attribute is only present in some spans, this can fragment metric streams (e.g., one stream with the attribute and one without).
+
+Instead, use attributes that are stable, present in all spans, and meaningfully distinguish each stream. Good examples include `cluster_id`, `region`, or `deployment_environment`.

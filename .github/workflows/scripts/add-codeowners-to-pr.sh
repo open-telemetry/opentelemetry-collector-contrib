@@ -104,6 +104,10 @@ main () {
         done
     done
 
+    if [[ $LABELS =~ "receiver/sqlserver" ]]; then
+      LABELS+=",Run Windows"
+    fi
+
     if [[ -n "${LABELS}" ]]; then
         echo "Adding labels: ${LABELS}"
         gh pr edit "${PR}" --add-label "${LABELS}" || echo "Failed to add labels"

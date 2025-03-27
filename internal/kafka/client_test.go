@@ -5,16 +5,33 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"encoding/pem"
+	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
 	"github.com/IBM/sarama"
+	"github.com/rcrowley/go-metrics"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"github.com/twmb/franz-go/pkg/kfake"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/kafkatest"
 )
+
+func init() {
+	// Disable the go-metrics registry, as there's a goroutine leak in the Sarama
+	// code that uses it. See this stale issue: https://github.com/IBM/sarama/issues/1321
+	//
+	// Sarama docs suggest setting UseNilMetrics to true to disable metrics if they
+	// are not needed, which is the case here. We only disable in tests to avoid
+	// affecting other components that rely on go-metrics.
+	metrics.UseNilMetrics = true
+}
 
 func TestNewSaramaClientConfig(t *testing.T) {
 	for name, tt := range map[string]struct {
@@ -107,4 +124,137 @@ func TestNewSaramaClientConfig(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNewSaramaClient(t *testing.T) {
+	_, clientConfig := kafkatest.NewCluster(t)
+	client, err := NewSaramaClient(context.Background(), clientConfig)
+	require.NoError(t, err)
+	assert.NoError(t, client.Close())
+}
+
+func TestNewSaramaClient_SASL(t *testing.T) {
+	_, clientConfig := kafkatest.NewCluster(t,
+		kfake.EnableSASL(),
+		kfake.Superuser("PLAIN", "plain_user", "plain_password"),
+		kfake.Superuser("SCRAM-SHA-256", "scramsha256_user", "scramsha256_password"),
+		kfake.Superuser("SCRAM-SHA-512", "scramsha512_user", "scramsha512_password"),
+	)
+
+	tryConnect := func(mechanism, username, password string) error {
+		clientConfig := clientConfig // copy
+		clientConfig.Authentication.SASL = &configkafka.SASLConfig{
+			Mechanism: mechanism,
+			Username:  username,
+			Password:  password,
+			Version:   1, // kfake only supports version 1
+		}
+		client, err := NewSaramaClient(context.Background(), clientConfig)
+		if err != nil {
+			return err
+		}
+		return client.Close()
+	}
+
+	type testcase struct {
+		mechanism string
+		username  string
+		password  string
+		expecErr  bool
+	}
+
+	for name, tt := range map[string]testcase{
+		"PLAIN": {
+			mechanism: "PLAIN",
+			username:  "plain_user",
+			password:  "plain_password",
+		},
+		"SCRAM-SHA-256": {
+			mechanism: "SCRAM-SHA-256",
+			username:  "scramsha256_user",
+			password:  "scramsha256_password",
+		},
+		"SCRAM-SHA-512": {
+			mechanism: "SCRAM-SHA-512",
+			username:  "scramsha512_user",
+			password:  "scramsha512_password",
+		},
+		"invalid_PLAIN": {
+			mechanism: "PLAIN",
+			username:  "scramsha256_user",
+			password:  "scramsha256_password",
+			expecErr:  true,
+		},
+		"invalid_SCRAM-SHA-256": {
+			mechanism: "SCRAM-SHA-256",
+			username:  "scramsha512_user",
+			password:  "scramsha512_password",
+			expecErr:  true,
+		},
+		"invalid_SCRAM-SHA-512": {
+			mechanism: "SCRAM-SHA-512",
+			username:  "scramsha256_user",
+			password:  "scramsha256_password",
+			expecErr:  true,
+		},
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+			err := tryConnect(tt.mechanism, tt.username, tt.password)
+			if tt.expecErr {
+				require.Error(t, err)
+			} else {
+				require.NoError(t, err)
+			}
+		})
+	}
+}
+
+func TestNewSaramaClient_TLS(t *testing.T) {
+	// We create an httptest.Server just so we can get its TLS configuration.
+	httpServer := httptest.NewTLSServer(http.NewServeMux())
+	defer httpServer.Close()
+	serverTLS := httpServer.TLS
+	caCert := httpServer.Certificate() // self-signed
+
+	_, clientConfig := kafkatest.NewCluster(t, kfake.TLS(serverTLS))
+	tryConnect := func(cfg *configtls.ClientConfig) error {
+		clientConfig := clientConfig // copy
+		clientConfig.Authentication.TLS = cfg
+		client, err := NewSaramaClient(context.Background(), clientConfig)
+		if err != nil {
+			return err
+		}
+		return client.Close()
+	}
+
+	t.Run("tls_valid_ca", func(t *testing.T) {
+		t.Parallel()
+		tlsConfig := configtls.NewDefaultClientConfig()
+		tlsConfig.CAPem = configopaque.String(
+			pem.EncodeToMemory(&pem.Block{Type: "CERTIFICATE", Bytes: caCert.Raw}),
+		)
+		assert.NoError(t, tryConnect(&tlsConfig))
+	})
+
+	t.Run("tls_insecure_skip_verify", func(t *testing.T) {
+		t.Parallel()
+		tlsConfig := configtls.NewDefaultClientConfig()
+		tlsConfig.InsecureSkipVerify = true
+		require.NoError(t, tryConnect(&tlsConfig))
+	})
+
+	t.Run("tls_unknown_ca", func(t *testing.T) {
+		t.Parallel()
+		config := configtls.NewDefaultClientConfig()
+		err := tryConnect(&config)
+		require.Error(t, err)
+		assert.ErrorContains(t, err, "x509: certificate signed by unknown authority")
+	})
+
+	t.Run("plaintext", func(t *testing.T) {
+		t.Parallel()
+		// Should fail because the server expects TLS.
+		require.Error(t, tryConnect(nil))
+	})
 }

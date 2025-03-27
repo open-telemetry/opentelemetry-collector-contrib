@@ -14,15 +14,21 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"regexp"
+	"slices"
 	"sort"
 	"strings"
+
+	"gopkg.in/yaml.v3"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
 )
 
 func main() {
 	folder := flag.String("folder", ".", "folder investigated for modules")
-	allowlistFilePath := flag.String("allowlist", "cmd/checkapi/allowlist.txt", "path to a file containing an allowlist of paths to ignore")
+	configPath := flag.String("config", "cmd/checkapi/config.yaml", "configuration file")
 	flag.Parse()
-	if err := run(*folder, *allowlistFilePath); err != nil {
+	if err := run(*folder, *configPath); err != nil {
 		log.Fatal(err)
 	}
 }
@@ -40,12 +46,28 @@ type api struct {
 	Functions []*function `json:"functions,omitempty"`
 }
 
-func run(folder string, allowlistFilePath string) error {
-	allowlistData, err := os.ReadFile(allowlistFilePath)
+type functionDescription struct {
+	Name        string   `yaml:"name"`
+	Parameters  []string `yaml:"parameters"`
+	ReturnTypes []string `yaml:"return_types"`
+}
+
+type config struct {
+	IgnoredPaths     []string              `yaml:"ignored_paths"`
+	AllowedFunctions []functionDescription `yaml:"allowed_functions"`
+	IgnoredFunctions []string              `yaml:"ignored_functions"`
+}
+
+func run(folder string, configPath string) error {
+	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
-	allowlist := strings.Split(string(allowlistData), "\n")
+	var cfg config
+	err = yaml.Unmarshal(configData, &cfg)
+	if err != nil {
+		return err
+	}
 	var errs []error
 	err = filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "go.mod" {
@@ -62,13 +84,13 @@ func run(folder string, allowlistFilePath string) error {
 				return nil
 			}
 
-			for _, a := range allowlist {
-				if a == relativeBase {
-					fmt.Printf("Ignoring %s per allowlist\n", base)
+			for _, a := range cfg.IgnoredPaths {
+				if filepath.Join(filepath.SplitList(a)...) == relativeBase {
+					fmt.Printf("Ignoring %s per denylist\n", base)
 					return nil
 				}
 			}
-			if err = walkFolder(base, componentType); err != nil {
+			if err = walkFolder(cfg, base, componentType); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -83,13 +105,17 @@ func run(folder string, allowlistFilePath string) error {
 	return nil
 }
 
-func isTestFunction(fnName string) bool {
-	return strings.HasPrefix(fnName, "Test") ||
-		strings.HasPrefix(fnName, "Benchmark") ||
-		strings.HasPrefix(fnName, "Fuzz")
+func isFunctionIgnored(cfg config, fnName string) bool {
+	for _, v := range cfg.IgnoredFunctions {
+		reg := regexp.MustCompile(v)
+		if reg.MatchString(fnName) {
+			return true
+		}
+	}
+	return false
 }
 
-func handleFile(f *ast.File, result *api) {
+func handleFile(cfg config, f *ast.File, result *api) {
 	for _, d := range f.Decls {
 		if str, isStr := d.(*ast.GenDecl); isStr {
 			for _, s := range str.Specs {
@@ -113,7 +139,7 @@ func handleFile(f *ast.File, result *api) {
 			}
 			exported := false
 			receiver := ""
-			if fn.Recv.NumFields() == 0 && !isTestFunction(fn.Name.String()) {
+			if fn.Recv.NumFields() == 0 && !isFunctionIgnored(cfg, fn.Name.String()) {
 				exported = true
 			}
 			if fn.Recv.NumFields() > 0 {
@@ -130,13 +156,13 @@ func handleFile(f *ast.File, result *api) {
 				var returnTypes []string
 				if fn.Type.Results.NumFields() > 0 {
 					for _, r := range fn.Type.Results.List {
-						returnTypes = append(returnTypes, exprToString(r.Type))
+						returnTypes = append(returnTypes, internal.ExprToString(r.Type))
 					}
 				}
 				var params []string
 				if fn.Type.Params.NumFields() > 0 {
 					for _, r := range fn.Type.Params.List {
-						params = append(params, exprToString(r.Type))
+						params = append(params, internal.ExprToString(r.Type))
 					}
 				}
 				f := &function{
@@ -151,7 +177,7 @@ func handleFile(f *ast.File, result *api) {
 	}
 }
 
-func walkFolder(folder string, componentType string) error {
+func walkFolder(cfg config, folder string, _ string) error {
 	result := &api{}
 	set := token.NewFileSet()
 	packs, err := parser.ParseDir(set, folder, nil, 0)
@@ -161,7 +187,7 @@ func walkFolder(folder string, componentType string) error {
 
 	for _, pack := range packs {
 		for _, f := range pack.Files {
-			handleFile(f, result)
+			handleFile(cfg, f, result)
 		}
 	}
 	sort.Strings(result.Structs)
@@ -177,82 +203,20 @@ func walkFolder(folder string, componentType string) error {
 		return nil
 	}
 
-	if len(result.Functions) == 0 {
-		return nil
+	functionsPresent := map[string]struct{}{}
+OUTER:
+	for _, fnDesc := range cfg.AllowedFunctions {
+		for _, fn := range result.Functions {
+			if fn.Name == fnDesc.Name &&
+				slices.Equal(fn.ParamTypes, fnDesc.Parameters) &&
+				slices.Equal(fn.ReturnTypes, fnDesc.ReturnTypes) {
+				functionsPresent[fn.Name] = struct{}{}
+				break OUTER
+			}
+		}
 	}
-	if len(result.Functions) > 1 {
-		return fmt.Errorf("%s has more than one function: %q", folder, strings.Join(fnNames, ","))
-	}
-	if err := checkFactoryFunction(result.Functions[0], folder, componentType); err != nil {
-		return err
+	if len(functionsPresent) == 0 {
+		return fmt.Errorf("[%s] no function matching configuration found", folder)
 	}
 	return nil
-}
-
-// check the only exported function of the module is NewFactory, matching the signature of the factory expected by the collector builder.
-func checkFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
-	if newFactoryFn.Name != "NewFactory" {
-		return fmt.Errorf("%s does not define a NewFactory function", folder)
-	}
-	if newFactoryFn.Receiver != "" {
-		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
-	}
-	if len(newFactoryFn.ReturnTypes) != 1 {
-		return fmt.Errorf("%s NewFactory function returns more than one result", folder)
-	}
-	returnType := newFactoryFn.ReturnTypes[0]
-
-	if returnType != fmt.Sprintf("%s.Factory", componentType) {
-		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected %s.Factory", folder, returnType, componentType)
-	}
-	return nil
-}
-
-func exprToString(expr ast.Expr) string {
-	switch e := expr.(type) {
-	case *ast.MapType:
-		return fmt.Sprintf("map[%s]%s", exprToString(e.Key), exprToString(e.Value))
-	case *ast.ArrayType:
-		return fmt.Sprintf("[%s]%s", exprToString(e.Len), exprToString(e.Elt))
-	case *ast.StructType:
-		var fields []string
-		for _, f := range e.Fields.List {
-			fields = append(fields, exprToString(f.Type))
-		}
-		return fmt.Sprintf("{%s}", strings.Join(fields, ","))
-	case *ast.InterfaceType:
-		var methods []string
-		for _, f := range e.Methods.List {
-			methods = append(methods, "func "+exprToString(f.Type))
-		}
-		return fmt.Sprintf("{%s}", strings.Join(methods, ","))
-	case *ast.ChanType:
-		return fmt.Sprintf("chan(%s)", exprToString(e.Value))
-	case *ast.FuncType:
-		var results []string
-		for _, r := range e.Results.List {
-			results = append(results, exprToString(r.Type))
-		}
-		var params []string
-		for _, r := range e.Params.List {
-			params = append(params, exprToString(r.Type))
-		}
-		return fmt.Sprintf("func(%s) %s", strings.Join(params, ","), strings.Join(results, ","))
-	case *ast.SelectorExpr:
-		return fmt.Sprintf("%s.%s", exprToString(e.X), e.Sel.Name)
-	case *ast.Ident:
-		return e.Name
-	case nil:
-		return ""
-	case *ast.StarExpr:
-		return fmt.Sprintf("*%s", exprToString(e.X))
-	case *ast.Ellipsis:
-		return fmt.Sprintf("%s...", exprToString(e.Elt))
-	case *ast.IndexExpr:
-		return fmt.Sprintf("%s[%s]", exprToString(e.X), exprToString(e.Index))
-	case *ast.BasicLit:
-		return e.Value
-	default:
-		panic(fmt.Sprintf("Unsupported expr type: %#v", expr))
-	}
 }

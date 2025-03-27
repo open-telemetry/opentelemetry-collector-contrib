@@ -20,19 +20,22 @@ By default, the TLS Check Receiver will emit a single metric, `tlscheck.time_lef
 
 ## Example Configuration
 
-Targets are 
+Targets are configured as either remote enpoints accessed via TCP, or PEM-encoded certificate files stored locally on disk.
 
 ```yaml
 receivers:
   tlscheck:
     targets:
+      # Monitor a local PEM file
+      - file_path: /etc/istio/certs/cert-chain.pem
+      
+      # Monitor a remote endpoint
       - endpoint: example.com:443
-        dialer: 
-          timeout: 15s
-      - endpoint: foobar.com:8080
-        dialer: 
-          timeout: 15s
+      
+      # Monitor a local service with a custom timeout
       - endpoint: localhost:10901
+        dialer: 
+          timeout: 15s
 ```
 
 ## Certificate Verification

@@ -130,9 +130,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbPgaMemoryDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbPhysicalReadIoRequestsDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbPhysicalReadsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalReadsDirectDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalWritesDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbPhysicalWritesDirectDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -410,6 +425,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_read_io_requests":
+					assert.False(t, validatedMetrics["oracledb.physical_read_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_read_io_requests")
+					validatedMetrics["oracledb.physical_read_io_requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of read requests for application activity", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.physical_reads":
 					assert.False(t, validatedMetrics["oracledb.physical_reads"], "Found a duplicate in the metrics slice: oracledb.physical_reads")
 					validatedMetrics["oracledb.physical_reads"] = true
@@ -417,6 +446,62 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of physical reads", ms.At(i).Description())
 					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_reads_direct":
+					assert.False(t, validatedMetrics["oracledb.physical_reads_direct"], "Found a duplicate in the metrics slice: oracledb.physical_reads_direct")
+					validatedMetrics["oracledb.physical_reads_direct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of reads directly from disk, bypassing the buffer cache", ms.At(i).Description())
+					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_write_io_requests":
+					assert.False(t, validatedMetrics["oracledb.physical_write_io_requests"], "Found a duplicate in the metrics slice: oracledb.physical_write_io_requests")
+					validatedMetrics["oracledb.physical_write_io_requests"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of write requests for application activity", ms.At(i).Description())
+					assert.Equal(t, "{requests}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_writes":
+					assert.False(t, validatedMetrics["oracledb.physical_writes"], "Found a duplicate in the metrics slice: oracledb.physical_writes")
+					validatedMetrics["oracledb.physical_writes"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of physical writes", ms.At(i).Description())
+					assert.Equal(t, "{writes}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.physical_writes_direct":
+					assert.False(t, validatedMetrics["oracledb.physical_writes_direct"], "Found a duplicate in the metrics slice: oracledb.physical_writes_direct")
+					validatedMetrics["oracledb.physical_writes_direct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of writes directly to disk, bypassing the buffer cache", ms.At(i).Description())
+					assert.Equal(t, "{writes}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)

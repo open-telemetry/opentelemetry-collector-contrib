@@ -7,7 +7,7 @@ status:
     development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek, sincejune]
+    active: [StefanKurek, sincejune, crobert-1]
     seeking_new: true
 
 resource_attributes:
@@ -331,7 +331,7 @@ metrics:
     description: The number of unrestricted full table or index scans.
     unit: "{scans}/s"
     gauge:
-      value_type: int
+      value_type: double
     attributes: []
   sqlserver.index.search.rate:
     enabled: false

@@ -4,24 +4,24 @@ all_set:
     tlscheck.time_left:
       enabled: true
   resource_attributes:
-    tlscheck.endpoint:
+    tlscheck.target:
       enabled: true
 none_set:
   metrics:
     tlscheck.time_left:
       enabled: false
   resource_attributes:
-    tlscheck.endpoint:
+    tlscheck.target:
       enabled: false
 filter_set_include:
   resource_attributes:
-    tlscheck.endpoint:
+    tlscheck.target:
       enabled: true
       metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
-    tlscheck.endpoint:
+    tlscheck.target:
       enabled: true
       metrics_exclude:
-        - strict: "tlscheck.endpoint-val"
+        - strict: "tlscheck.target-val"

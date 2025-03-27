@@ -99,7 +99,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		SessionTimeout:    10 * time.Second,
 		HeartbeatInterval: 3 * time.Second,
 		GroupID:           "otel-collector",
-		InitialOffset:     "latest",
+		InitialOffset:     LatestOffset,
 		AutoCommit: AutoCommitConfig{
 			Enable:   true,
 			Interval: time.Second,
@@ -260,6 +260,9 @@ func NewDefaultMetadataConfig() MetadataConfig {
 
 // AuthenticationConfig defines authentication-related configuration.
 type AuthenticationConfig struct {
+	// PlainText is an alias for SASL/PLAIN authentication.
+	//
+	// Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.
 	PlainText *PlainTextConfig        `mapstructure:"plain_text"`
 	SASL      *SASLConfig             `mapstructure:"sasl"`
 	TLS       *configtls.ClientConfig `mapstructure:"tls"`

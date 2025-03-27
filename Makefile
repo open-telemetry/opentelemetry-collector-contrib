@@ -122,7 +122,8 @@ genlabels:
 		awk '{ print $$1 }' | \
 		sed -E 's%(.+)/$$%\1%' | \
 		while read -r COMPONENT; do \
-			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%'); \
+			PREFIX=$$(printf '%s' "$${COMPONENT}" | sed -E 's%([^/])/.+%\1%'); \
+			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E "s%^(.+)/(.+)$${PREFIX}%\1/\2%"); \
 			if (( $${#LABEL_NAME} > 50 )); then \
 				OIFS=$${IFS}; \
 				IFS='/'; \

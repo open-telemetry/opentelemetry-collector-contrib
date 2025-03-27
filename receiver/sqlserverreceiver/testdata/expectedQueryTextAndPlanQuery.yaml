@@ -1,12 +1,12 @@
 resourceLogs:
   - resource:
-      attributes:
-        - key: db.system.type
-          value:
-            stringValue: microsoft.sql_server
+      attributes: []
     scopeLogs:
       - logRecords:
           - attributes:
+              - key: db.system.name
+                value:
+                  stringValue: microsoft.sql_server
               - key: computer_name
                 value:
                   stringValue: DESKTOP-GHAEGRD

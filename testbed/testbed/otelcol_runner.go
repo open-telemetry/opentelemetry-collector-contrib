@@ -4,6 +4,8 @@
 package testbed // import "github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 
 import (
+	"testing"
+
 	"github.com/shirou/gopsutil/v4/process"
 )
 
@@ -29,7 +31,7 @@ type OtelcolRunner interface {
 	// PrepareConfig stores the provided YAML-based otelcol configuration file in the format needed by the otelcol
 	// instance(s) this runner manages. If successful, it returns the cleanup config function to be executed after
 	// the test is executed.
-	PrepareConfig(configStr string) (configCleanup func(), err error)
+	PrepareConfig(t *testing.T, configStr string) (configCleanup func(), err error)
 	// Start starts the otelcol instance(s) if not already running which is the subject of the test to be run.
 	// It returns the host:port of the data receiver to post test data to.
 	Start(args StartParams) error

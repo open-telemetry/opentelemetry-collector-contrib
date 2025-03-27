@@ -35,11 +35,22 @@ type elasticsearchExporter struct {
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
+	encoders            map[MappingMode]documentEncoder
 }
 
-func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
+
+	encoders := map[MappingMode]documentEncoder{}
+	for i := range NumMappingModes {
+		enc, err := newEncoder(i)
+		if err != nil {
+			return nil, err
+		}
+		encoders[i] = enc
+	}
+
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
@@ -48,7 +59,8 @@ func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearc
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
-	}
+		encoders:            encoders,
+	}, nil
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
@@ -65,13 +77,21 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
+	if enc, ok := e.encoders[m]; ok {
+		return enc, nil
+	}
+
+	return nil, fmt.Errorf("no encoder setup for mapping mode %s", m)
+}
+
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	mappingMode, err := e.getMappingMode(ctx)
 	if err != nil {
 		return err
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -172,7 +192,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -335,7 +355,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -465,7 +485,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	if err != nil {
 		return err
 	}
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}

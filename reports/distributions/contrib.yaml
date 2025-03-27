@@ -43,6 +43,7 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
+        - loki
         - mezmo
         - opencensus
         - opensearch

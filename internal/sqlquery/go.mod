@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/SAP/go-hdb v1.13.4
-	github.com/go-sql-driver/mysql v1.9.0
+	github.com/go-sql-driver/mysql v1.9.1
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.8.0
 	github.com/sijms/go-ora/v2 v2.8.24

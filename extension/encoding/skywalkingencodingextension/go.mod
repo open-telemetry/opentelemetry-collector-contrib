@@ -10,7 +10,7 @@ require (
 	go.opentelemetry.io/collector/extension v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/extension/extensiontest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
-	google.golang.org/protobuf v1.36.5
+	google.golang.org/protobuf v1.36.6
 	skywalking.apache.org/repo/goapi v0.0.0-20240104145220-ba7202308dd4
 )
 

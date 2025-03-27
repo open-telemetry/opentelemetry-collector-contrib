@@ -336,8 +336,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.database.io":
 					assert.False(t, validatedMetrics["sqlserver.database.io"], "Found a duplicate in the metrics slice: sqlserver.database.io")
 					validatedMetrics["sqlserver.database.io"] = true
