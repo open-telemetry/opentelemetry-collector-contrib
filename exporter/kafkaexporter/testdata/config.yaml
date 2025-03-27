@@ -3,11 +3,6 @@ kafka:
   brokers:
     - "foo:123"
     - "bar:456"
-  client_id: "test_client_id"
-  metadata:
-    full: false
-    retry:
-      max: 15
   producer:
     max_message_bytes: 10000000
     required_acks: -1 # WaitForAll
@@ -15,10 +10,6 @@ kafka:
   partition_traces_by_id: true
   partition_metrics_by_resource_attributes: true
   partition_logs_by_resource_attributes: true
-  auth:
-    plain_text:
-      username: jdoe
-      password: pass
   sending_queue:
     enabled: true
     num_consumers: 2

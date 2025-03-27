@@ -21,3 +21,4 @@
 | host.name | The host.name | Any Str | true |
 | os.description | Human readable OS version information. | Any Str | false |
 | os.type | The os.type | Any Str | true |
+| os.version | The os.version | Any Str | false |

@@ -4,7 +4,6 @@
 package testdata
 
 import (
-	"os"
 	"testing"
 
 	"github.com/maxmind/MaxMind-DB/pkg/writer"
@@ -12,10 +11,7 @@ import (
 
 // GenerateLocalDB generates *.mmdb databases files given a source directory data. It uses the writer functionality provided by MaxMind-Db/pkg/writer
 func GenerateLocalDB(t *testing.T, sourceData string) string {
-	tmpDir, err := os.MkdirTemp("", "")
-	if err != nil {
-		t.Fatal(err)
-	}
+	tmpDir := t.TempDir()
 
 	w, err := writer.New(sourceData, tmpDir)
 	if err != nil {

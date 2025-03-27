@@ -20,11 +20,15 @@ import (
 	"github.com/coreos/go-oidc/v3/oidc"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 )
 
-var _ extensionauth.Server = (*oidcExtension)(nil)
+var (
+	_ extension.Extension  = (*oidcExtension)(nil)
+	_ extensionauth.Server = (*oidcExtension)(nil)
+)
 
 type oidcExtension struct {
 	cfg *Config
@@ -47,7 +51,7 @@ var (
 	errNotAuthenticated                  = errors.New("authentication didn't succeed")
 )
 
-func newExtension(cfg *Config, logger *zap.Logger) extensionauth.Server {
+func newExtension(cfg *Config, logger *zap.Logger) extension.Extension {
 	if cfg.Attribute == "" {
 		cfg.Attribute = defaultAttribute
 	}

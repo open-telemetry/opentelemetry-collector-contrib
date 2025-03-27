@@ -51,3 +51,7 @@ prometheusremotewrite/disabled_queue:
   remote_write_queue:
     enabled: false
     num_consumers: 10
+
+prometheusremotewrite/non_snappy_compression_type:
+  endpoint: "localhost:8888"
+  compression: "gzip"

@@ -17,6 +17,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [jpkrohling]
+    seeking_new: true
 
 tests:
   config:

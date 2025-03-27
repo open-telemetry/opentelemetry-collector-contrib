@@ -155,7 +155,7 @@ func newRecreatableOtelCol(tb testing.TB) *recreatableOtelCol {
 	}
 }
 
-func (c *recreatableOtelCol) PrepareConfig(configStr string) (func(), error) {
+func (c *recreatableOtelCol) PrepareConfig(_ *testing.T, configStr string) (func(), error) {
 	configCleanup := func() {
 		// NoOp
 	}

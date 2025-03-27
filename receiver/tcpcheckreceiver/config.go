@@ -28,7 +28,7 @@ var (
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
-	Targets                        []*confignet.TCPAddrConfig `mapstructure:",targets"`
+	Targets                        []*confignet.TCPAddrConfig `mapstructure:"targets"`
 }
 
 func validatePort(port string) error {

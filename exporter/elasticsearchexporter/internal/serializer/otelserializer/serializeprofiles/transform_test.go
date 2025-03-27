@@ -6,6 +6,8 @@ package serializeprofiles
 import (
 	"bytes"
 	"errors"
+	"fmt"
+	"sort"
 	"testing"
 	"time"
 
@@ -213,8 +215,24 @@ func TestTransform(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 				},
 				{
@@ -234,6 +252,9 @@ func TestTransform(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payload, err := Transform(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			require.NoError(t, checkAndResetTimes(payload))
+			sortPayloads(payload)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payload)
 		})
@@ -325,8 +346,24 @@ func TestStackPayloads(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 				},
 				{
@@ -410,8 +447,24 @@ func TestStackPayloads(t *testing.T) {
 							"libc.so",
 						),
 					},
-					UnsymbolizedLeafFrames: []libpf.FrameID{
-						libpf.NewFrameID(buildID, address),
+					UnsymbolizedLeafFrames: []UnsymbolizedLeafFrame{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      frameIDBase64,
+							FrameID:    []string{frameIDBase64},
+						},
+					},
+					UnsymbolizedExecutables: []UnsymbolizedExecutable{
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildIDBase64,
+							FileID:     []string{buildIDBase64},
+						},
+						{
+							EcsVersion: EcsVersion{V: EcsVersionString},
+							DocID:      buildID2Base64,
+							FileID:     []string{buildID2Base64},
+						},
 					},
 				},
 				{
@@ -430,6 +483,9 @@ func TestStackPayloads(t *testing.T) {
 			sp := rp.ScopeProfiles().At(0)
 
 			payloads, err := stackPayloads(rp.Resource(), sp.Scope(), sp.Profiles().At(0))
+			require.NoError(t, checkAndResetTimes(payloads))
+			sortPayloads(payloads)
+			sortPayloads(tt.wantPayload)
 			require.Equal(t, tt.wantErr, err)
 			assert.Equal(t, tt.wantPayload, payloads)
 		})
@@ -695,4 +751,52 @@ func mkStackTraceID(t *testing.T, frameIDs []libpf.FrameID) string {
 	require.NoError(t, err)
 
 	return traceID
+}
+
+// sortPayloads brings the payloads into a deterministic form to allow comparisons.
+func sortPayloads(payloads []StackPayload) {
+	for idx := range payloads {
+		payload := &payloads[idx]
+		sort.Slice(payload.UnsymbolizedExecutables, func(i, j int) bool {
+			return payload.UnsymbolizedExecutables[i].DocID < payload.UnsymbolizedExecutables[j].DocID
+		})
+	}
+}
+
+func checkAndResetTimes(payloads []StackPayload) error {
+	var errs []error
+	for i := range payloads {
+		payload := &payloads[i]
+		for j := range payload.UnsymbolizedLeafFrames {
+			frame := &payload.UnsymbolizedLeafFrames[j]
+			if !isWithinLastSecond(frame.Created) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Created is too old: %v",
+					i, j, frame.Created))
+			}
+			if !isWithinLastSecond(frame.Next) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedLeafFrames[%d].Next is too old: %v",
+					i, j, frame.Next))
+			}
+			frame.Created = time.Time{}
+			frame.Next = time.Time{}
+		}
+		for j := range payload.UnsymbolizedExecutables {
+			executable := &payload.UnsymbolizedExecutables[j]
+			if !isWithinLastSecond(executable.Created) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Created is too old: %v",
+					i, j, executable.Created))
+			}
+			if !isWithinLastSecond(executable.Next) {
+				errs = append(errs, fmt.Errorf("payload[%d].UnsymbolizedExecutables[%d].Next is too old: %v",
+					i, j, executable.Next))
+			}
+			executable.Created = time.Time{}
+			executable.Next = time.Time{}
+		}
+	}
+	return errors.Join(errs...)
+}
+
+func isWithinLastSecond(t time.Time) bool {
+	return time.Since(t) < time.Second
 }

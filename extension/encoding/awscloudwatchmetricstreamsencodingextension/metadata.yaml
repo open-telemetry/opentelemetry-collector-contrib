@@ -6,7 +6,7 @@ status:
     alpha: [extension]
   distributions: [contrib]
   codeowners:
-    active: [axw]
+    active: [axw, constanca-m]
 
 tests:
   config:

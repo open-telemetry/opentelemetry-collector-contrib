@@ -5,10 +5,9 @@ package nginxreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"net/http"
 	"time"
 
-	"github.com/nginxinc/nginx-prometheus-exporter/client"
+	"github.com/nginx/nginx-prometheus-exporter/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -19,9 +18,7 @@ import (
 )
 
 type nginxScraper struct {
-	httpClient *http.Client
-	client     *client.NginxClient
-
+	client   *client.NginxClient
 	settings component.TelemetrySettings
 	cfg      *Config
 	mb       *metadata.MetricsBuilder
@@ -44,22 +41,11 @@ func (r *nginxScraper) start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-	r.httpClient = httpClient
-
+	r.client = client.NewNginxClient(httpClient, r.cfg.ClientConfig.Endpoint)
 	return nil
 }
 
 func (r *nginxScraper) scrape(context.Context) (pmetric.Metrics, error) {
-	// Init client in scrape method in case there are transient errors in the constructor.
-	if r.client == nil {
-		var err error
-		r.client, err = client.NewNginxClient(r.httpClient, r.cfg.ClientConfig.Endpoint)
-		if err != nil {
-			r.client = nil
-			return pmetric.Metrics{}, err
-		}
-	}
-
 	stats, err := r.client.GetStubStats()
 	if err != nil {
 		r.settings.Logger.Error("Failed to fetch nginx stats", zap.Error(err))

@@ -25,26 +25,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 )
 
-func TestNewExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
-	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
 func TestNewExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "foo"}
 	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, texp)
 	err := texp.start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewMetricsExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	mexp := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	err := mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
 }
 
 func TestNewMetricsExporter_err_encoding(t *testing.T) {
@@ -74,14 +60,6 @@ func TestMetricsExporter_encoding_extension(t *testing.T) {
 	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
 }
 
-func TestNewLogsExporter_err_version(t *testing.T) {
-	c := Config{ProtocolVersion: "0.0.0", Encoding: defaultEncoding}
-	lexp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, lexp)
-	err := lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
 func TestNewLogsExporter_err_encoding(t *testing.T) {
 	c := Config{Encoding: "bar"}
 	lexp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
@@ -107,20 +85,6 @@ func TestLogsExporter_encoding_extension(t *testing.T) {
 	err := texp.start(context.Background(), &testComponentHost{})
 	assert.Error(t, err)
 	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
-}
-
-func TestNewExporter_err_compression(t *testing.T) {
-	c := Config{
-		Encoding: defaultEncoding,
-		Producer: Producer{
-			Compression: "idk",
-		},
-	}
-	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, texp)
-	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-	assert.ErrorContains(t, err, "producer.compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value idk")
 }
 
 func TestTracesExporter_encoding_extension(t *testing.T) {

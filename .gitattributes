@@ -4,3 +4,6 @@
 
 go.sum linguist-generated=true
 
+# To avoid git status and other tools reporting files due to different line endings
+# normalize the line endings to LF
+* text=auto eol=lf

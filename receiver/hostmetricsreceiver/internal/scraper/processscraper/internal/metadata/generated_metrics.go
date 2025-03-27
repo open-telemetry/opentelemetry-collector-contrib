@@ -393,7 +393,7 @@ type metricProcessHandles struct {
 // init fills process.handles metric with initial data.
 func (m *metricProcessHandles) init() {
 	m.data.SetName("process.handles")
-	m.data.SetDescription("Number of handles held by the process.")
+	m.data.SetDescription("Number of open handles held by the process.")
 	m.data.SetUnit("{count}")
 	m.data.SetEmptySum()
 	m.data.Sum().SetIsMonotonic(false)

@@ -9,11 +9,15 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.head_ref || github.run_id }}
   cancel-in-progress: true
 
+permissions: read-all
+
 jobs:
   changedfiles:
     name: changed files
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
       files: ${{ steps.changes.outputs.files }}
     steps:

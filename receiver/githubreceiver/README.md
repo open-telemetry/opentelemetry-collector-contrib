@@ -70,12 +70,12 @@ receivers:
         collection_interval: 60s
         scrapers:
             scraper:
-                metrics:
+                metrics: #Optional
                     vcs.contributor.count:
                         enabled: true
-                github_org: myfancyorg
-                search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
-                endpoint: "https://selfmanagedenterpriseserver.com"
+                github_org: <myfancyorg> 
+                search_query: "org:<myfancyorg> topic:<o11yalltheway>" # Recommended optional query override, defaults to "{org,user}:<github_org>"
+                endpoint: "https://selfmanagedenterpriseserver.com" # Optional
                 auth:
                     authenticator: bearertokenauth/github
 service:
@@ -86,6 +86,16 @@ service:
             processors: []
             exporters: [...]
 ```
+
+### Configuration
+
+`github_org` (**required**): Specify the GitHub organization or username to scrape.
+
+`endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com` -- SHOULD NOT include `api` subdomain or `/graphql` context path).
+
+`search_query` (optional): A filter to narrow down repositories. Defaults to `org:<github_org>` (or `user:<username>`). For example, use `repo:<org>/<repo>` to target a specific repository. Any valid GitHub search syntax is allowed.
+
+`metrics` (optional): Enable or disable metrics scraping. See the [metrics documentation](./documentation.md) for details.
 
 ### Scraping
 
@@ -99,6 +109,17 @@ For additional context on GitHub scraper limitations and inner workings please
 see the [Scraping README][ghsread].
 
 [ghsread]: internal/scraper/githubscraper/README.md#github-limitations
+
+
+### GitHub Personal Access Token (PAT) Setup
+
+To create a GitHub Personal Access Token (PAT), please refer to the official [documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
+**Organization or Personal Access:**
+When generating the PAT, select the appropriate `Resource owner` — either your personal account or the organization and choose the correct `Repository access` type. For fine-grained tokens, explicitly configure the necessary `Repository permissions` or `Organization permissions`.
+
+**Note**: 
+The PAT must have read access to the target repositories. If the PAT doesn't have permission to access repositories in the target organization, only the repository count metric will be available. Detailed repository metrics cannot be fetched.
 
 ## Traces - Getting Started
 
