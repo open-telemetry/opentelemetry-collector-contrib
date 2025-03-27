@@ -20,7 +20,7 @@ const (
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
-		typeStr,
+		component.MustNewType(typeStr),
 		createDefaultConfig,
 		receiver.WithTraces(createTraces, component.StabilityLevelDevelopment),
 	)
@@ -28,7 +28,7 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		HTTPServerSettings: &confighttp.HTTPServerSettings{
+		ServerConfig: &confighttp.ServerConfig{
 			Endpoint: defaultHTTPEndpoint,
 		},
 		EventsURLPath:    defaultEventsURLPath,
@@ -40,7 +40,7 @@ func createDefaultConfig() component.Config {
 
 func createTraces(
 	_ context.Context,
-	params receiver.CreateSettings,
+	params receiver.Settings,
 	baseCfg component.Config,
 	nextConsumer consumer.Traces,
 ) (receiver.Traces, error) {
