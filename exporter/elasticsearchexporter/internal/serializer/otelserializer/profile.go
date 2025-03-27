@@ -18,10 +18,13 @@ const (
 	StackTraceIndex  = "profiling-stacktraces"
 	StackFrameIndex  = "profiling-stackframes"
 	ExecutablesIndex = "profiling-executables"
+
+	ExecutablesSymQueueIndex = "profiling-sq-executables"
+	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
-func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+func (*Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	pushDataAsJSON := func(data any, id, index string) error {
 		c, err := toJSON(data)
 		if err != nil {
@@ -61,6 +64,18 @@ func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationSc
 
 		for _, executable := range payload.Executables {
 			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
+				return err
+			}
+		}
+
+		for _, frame := range payload.UnsymbolizedLeafFrames {
+			if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
+				return err
+			}
+		}
+
+		for _, executable := range payload.UnsymbolizedExecutables {
+			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
 				return err
 			}
 		}
