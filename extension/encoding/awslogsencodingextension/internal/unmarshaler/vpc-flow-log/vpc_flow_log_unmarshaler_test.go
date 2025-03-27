@@ -20,13 +20,13 @@ import (
 )
 
 // compressData in gzip format
-func compressData(t *testing.T, buf []byte) []byte {
+func compressData(tb testing.TB, buf []byte) []byte {
 	var compressedData bytes.Buffer
 	gzipWriter := gzip.NewWriter(&compressedData)
 	_, err := gzipWriter.Write(buf)
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	err = gzipWriter.Close()
-	require.NoError(t, err)
+	require.NoError(tb, err)
 	return compressedData.Bytes()
 }
 

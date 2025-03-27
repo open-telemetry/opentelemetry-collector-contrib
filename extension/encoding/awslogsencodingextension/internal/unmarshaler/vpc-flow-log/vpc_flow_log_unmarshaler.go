@@ -104,9 +104,6 @@ type resourceKey struct {
 func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader *gzip.Reader) (plog.Logs, error) {
 	scanner := bufio.NewScanner(reader)
 
-	// first line includes the fields
-	// TODO Replace with an iterator starting from go 1.24:
-	// https://pkg.go.dev/strings#FieldsSeq
 	var fields []string
 	if scanner.Scan() {
 		firstLine := scanner.Text()
@@ -157,6 +154,9 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	fields []string,
 	logLine string,
 ) error {
+	// first line includes the fields
+	// TODO Replace with an iterator starting from go 1.24:
+	// https://pkg.go.dev/strings#FieldsSeq
 	values := strings.Split(logLine, " ")
 	nFields := len(fields)
 	nValues := len(values)
@@ -179,7 +179,8 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 
 	// range over the fields of the log line
 	for i, field := range fields {
-		if values[i] == "-" {
+		value := values[i]
+		if value == "-" {
 			// If a field is not applicable or could not be computed for a
 			// specific record, the record displays a '-' symbol for that entry.
 			//
@@ -192,7 +193,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := handleField(field, values[i], record, ips, key)
+		found, err := handleField(field, value, record, ips, key)
 		if err != nil {
 			return err
 		}
