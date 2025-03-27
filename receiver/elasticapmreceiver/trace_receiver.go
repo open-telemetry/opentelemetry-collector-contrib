@@ -20,7 +20,7 @@ import (
 
 	"github.com/elastic/apm-data/input/elasticapm"
 	"github.com/elastic/apm-data/model/modelpb"
-	"github.com/zgsolucoes/opentelemetry-collector-contrib/receiver/elasticapmreceiver/translator"
+	"github.com/zgsolucoes/opentelemetry-collector-contrib/receiver/elasticapmreceiver"
 )
 
 type elasticapmReceiver struct {
