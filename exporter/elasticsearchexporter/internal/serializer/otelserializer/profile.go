@@ -24,7 +24,7 @@ const (
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
-func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+func (*Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
 	pushDataAsJSON := func(data any, id, index string) error {
 		c, err := toJSON(data)
 		if err != nil {

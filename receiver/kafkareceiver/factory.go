@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -18,28 +17,10 @@ import (
 )
 
 const (
-	defaultTracesTopic       = "otlp_spans"
-	defaultMetricsTopic      = "otlp_metrics"
-	defaultLogsTopic         = "otlp_logs"
-	defaultEncoding          = "otlp_proto"
-	defaultBroker            = "localhost:9092"
-	defaultClientID          = "otel-collector"
-	defaultGroupID           = defaultClientID
-	defaultInitialOffset     = offsetLatest
-	defaultSessionTimeout    = 10 * time.Second
-	defaultHeartbeatInterval = 3 * time.Second
-
-	// default from sarama.NewConfig()
-	defaultAutoCommitEnable = true
-	// default from sarama.NewConfig()
-	defaultAutoCommitInterval = 1 * time.Second
-
-	// default from sarama.NewConfig()
-	defaultMinFetchSize = int32(1)
-	// default from sarama.NewConfig()
-	defaultDefaultFetchSize = int32(1048576)
-	// default from sarama.NewConfig()
-	defaultMaxFetchSize = int32(0)
+	defaultTracesTopic  = "otlp_spans"
+	defaultMetricsTopic = "otlp_metrics"
+	defaultLogsTopic    = "otlp_logs"
+	defaultEncoding     = "otlp_proto"
 )
 
 var errUnrecognizedEncoding = errors.New("unrecognized encoding")
@@ -57,18 +38,9 @@ func NewFactory() receiver.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		Encoding:          defaultEncoding,
-		Brokers:           []string{defaultBroker},
-		ClientID:          defaultClientID,
-		GroupID:           defaultGroupID,
-		InitialOffset:     defaultInitialOffset,
-		SessionTimeout:    defaultSessionTimeout,
-		HeartbeatInterval: defaultHeartbeatInterval,
-		Metadata:          configkafka.NewDefaultMetadataConfig(),
-		AutoCommit: AutoCommit{
-			Enable:   defaultAutoCommitEnable,
-			Interval: defaultAutoCommitInterval,
-		},
+		ClientConfig:   configkafka.NewDefaultClientConfig(),
+		ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+		Encoding:       defaultEncoding,
 		MessageMarking: MessageMarking{
 			After:   false,
 			OnError: false,
@@ -76,9 +48,6 @@ func createDefaultConfig() component.Config {
 		HeaderExtraction: HeaderExtraction{
 			ExtractHeaders: false,
 		},
-		MinFetchSize:     defaultMinFetchSize,
-		DefaultFetchSize: defaultDefaultFetchSize,
-		MaxFetchSize:     defaultMaxFetchSize,
 	}
 }
 
