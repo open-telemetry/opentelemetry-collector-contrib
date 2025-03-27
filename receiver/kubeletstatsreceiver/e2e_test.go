@@ -80,6 +80,9 @@ func TestE2E(t *testing.T) {
 			pmetrictest.IgnoreScopeMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(),
 			pmetrictest.IgnoreMetricValues(),
+			// this is needed due to node-role.kubernetes.io/master label being present
+			// in the node, since it's not always the case, that the node is master
+			pmetrictest.ChangeResourceAttributeValue("k8s.node.labels", replaceWithStar),
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
@@ -105,3 +108,5 @@ func waitForData(t *testing.T, entriesNum int, mc *consumertest.MetricsSink) {
 		"failed to receive %d entries,  received %d metrics in %d minutes", entriesNum,
 		len(mc.AllMetrics()), timeoutMinutes)
 }
+
+func replaceWithStar(_ string) string { return "*" }
