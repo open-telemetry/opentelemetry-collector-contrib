@@ -110,7 +110,6 @@ func newKubeletScraper(
 		metricsConfig.ResourceAttributes.K8sNodeLabels.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
-
 	}
 
 	return scraper.NewMetrics(
