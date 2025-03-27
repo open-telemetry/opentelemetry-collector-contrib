@@ -1786,3 +1786,57 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 		s.traverseHealthDetailFeatures(feature, now)
 	}
 }
+
+// Scrape Indexer Cluster Manger Status Endpoint
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingRestartStatus.Enabled {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+
+	ept := apiDict[`SplunkIndexerClusterManagerStatus`]
+	var icms indexersClusterManagerStatus
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	if err := json.NewDecoder(res.Body).Decode(&icms); err != nil {
+		errs <- err
+		return
+	}
+
+	restartOrUpgrade := "false"
+	if icms.Entry.Content.RollingRestartOrUpgrade {
+		restartOrUpgrade = "true"
+	}
+
+	searchable := "false"
+	if icms.Entry.Content.SearchableRolling {
+		searchable = "true"
+	}
+
+	restarting := icms.Entry.Content.RollingRestartOrUpgrade || icms.Entry.Content.SearchableRolling || icms.Entry.Content.RollingRestartFlag
+
+	for _, mtsRestartOrUpgrade := range []string{"false", "true"} {
+		for _, mtsSearchable := range []string{"false", "true"} {
+			if restartOrUpgrade == mtsRestartOrUpgrade && searchable == mtsSearchable && restarting {
+				// If we're restarting, put a 1 in the gauge that matches the current state
+				s.mb.RecordSplunkIndexerRollingRestartStatusDataPoint(now, 1, mtsRestartOrUpgrade, mtsSearchable)
+			} else {
+				// Put a zero in all the other gauges
+				s.mb.RecordSplunkIndexerRollingRestartStatusDataPoint(now, 0, mtsRestartOrUpgrade, mtsSearchable)
+			}
+		}
+	}
+}

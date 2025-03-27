@@ -405,6 +405,21 @@ The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' p
 | splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
 | splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
 
+### splunk.indexer.rolling.restart.status
+
+The status of a rolling restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.searchable.restart | String that indicates if a searchable rolling restart/upgrade in progress.t | Any Str |
+| splunk.rolling.or.restart | String that indicates if there is a rolling restart or rolling upgrade in progress. | Any Str |
+
 ### splunk.indexer.throughput
 
 Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.

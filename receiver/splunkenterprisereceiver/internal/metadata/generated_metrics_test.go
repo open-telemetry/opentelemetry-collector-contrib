@@ -108,6 +108,9 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
+			mb.RecordSplunkIndexerRollingRestartStatusDataPoint(ts, 1, "splunk.searchable.restart-val", "splunk.rolling.or.restart-val")
+
+			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
 
 			defaultMetricsCount++
@@ -448,6 +451,24 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunk.indexer.rolling.restart.status":
+					assert.False(t, validatedMetrics["splunk.indexer.rolling.restart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rolling.restart.status")
+					validatedMetrics["splunk.indexer.rolling.restart.status"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The status of a rolling restart.", ms.At(i).Description())
+					assert.Equal(t, "{status}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.searchable.restart-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.rolling.or.restart")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.rolling.or.restart-val", attrVal.Str())
 				case "splunk.indexer.throughput":
 					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 					validatedMetrics["splunk.indexer.throughput"] = true

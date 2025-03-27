@@ -26,6 +26,7 @@ var apiDict = map[string]string{
 	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
 	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
 }
 
 type searchResponse struct {
@@ -158,7 +159,7 @@ type dispatchArtifactContent struct {
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
 }
 
-// '/services/server/health/splunkd/details
+// '/services/server/health/splunkd/details'
 type healthArtifacts struct {
 	Entries []healthArtifactEntry `json:"entry"`
 }
@@ -170,4 +171,21 @@ type healthArtifactEntry struct {
 type healthDetails struct {
 	Health   string                   `json:"health"`
 	Features map[string]healthDetails `json:"features,omitempty"`
+}
+
+// '/services/cluster/manager/status' 
+type indexersClusterManagerStatus struct {
+	Entry idxClusterManagerStatusEntry
+}
+type idxClusterManagerStatusEntry struct {
+	Name    string      `json:"name"`
+	Content idxClusterManagerStatusContent `json:"content"`
+}
+
+type idxClusterManagerStatusContent struct {
+	RollingRestartFlag      bool   `json:"rolling_restart_flag,omitempty"`
+	RollingRestartOrUpgrade bool   `json:"rolling_restart_or_upgrade,omitempty"`
+	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
+	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
+	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
 }

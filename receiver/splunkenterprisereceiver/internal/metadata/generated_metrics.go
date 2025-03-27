@@ -730,6 +730,58 @@ func newMetricSplunkIndexerRawWriteTime(cfg MetricConfig) metricSplunkIndexerRaw
 	return m
 }
 
+type metricSplunkIndexerRollingRestartStatus struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills splunk.indexer.rolling.restart.status metric with initial data.
+func (m *metricSplunkIndexerRollingRestartStatus) init() {
+	m.data.SetName("splunk.indexer.rolling.restart.status")
+	m.data.SetDescription("The status of a rolling restart.")
+	m.data.SetUnit("{status}")
+	m.data.SetEmptyGauge()
+	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricSplunkIndexerRollingRestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue string, splunkRollingOrRestartAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Gauge().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
+	dp.Attributes().PutStr("splunk.rolling.or.restart", splunkRollingOrRestartAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricSplunkIndexerRollingRestartStatus) updateCapacity() {
+	if m.data.Gauge().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Gauge().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricSplunkIndexerRollingRestartStatus) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricSplunkIndexerRollingRestartStatus(cfg MetricConfig) metricSplunkIndexerRollingRestartStatus {
+	m := metricSplunkIndexerRollingRestartStatus{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricSplunkIndexerThroughput struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2132,6 +2184,7 @@ type MetricsBuilder struct {
 	metricSplunkIndexerCPUTime                        metricSplunkIndexerCPUTime
 	metricSplunkIndexerQueueRatio                     metricSplunkIndexerQueueRatio
 	metricSplunkIndexerRawWriteTime                   metricSplunkIndexerRawWriteTime
+	metricSplunkIndexerRollingRestartStatus           metricSplunkIndexerRollingRestartStatus
 	metricSplunkIndexerThroughput                     metricSplunkIndexerThroughput
 	metricSplunkIndexesAvgSize                        metricSplunkIndexesAvgSize
 	metricSplunkIndexesAvgUsage                       metricSplunkIndexesAvgUsage
@@ -2198,6 +2251,7 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricSplunkIndexerCPUTime:                        newMetricSplunkIndexerCPUTime(mbc.Metrics.SplunkIndexerCPUTime),
 		metricSplunkIndexerQueueRatio:                     newMetricSplunkIndexerQueueRatio(mbc.Metrics.SplunkIndexerQueueRatio),
 		metricSplunkIndexerRawWriteTime:                   newMetricSplunkIndexerRawWriteTime(mbc.Metrics.SplunkIndexerRawWriteTime),
+		metricSplunkIndexerRollingRestartStatus:           newMetricSplunkIndexerRollingRestartStatus(mbc.Metrics.SplunkIndexerRollingRestartStatus),
 		metricSplunkIndexerThroughput:                     newMetricSplunkIndexerThroughput(mbc.Metrics.SplunkIndexerThroughput),
 		metricSplunkIndexesAvgSize:                        newMetricSplunkIndexesAvgSize(mbc.Metrics.SplunkIndexesAvgSize),
 		metricSplunkIndexesAvgUsage:                       newMetricSplunkIndexesAvgUsage(mbc.Metrics.SplunkIndexesAvgUsage),
@@ -2304,6 +2358,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricSplunkIndexerCPUTime.emit(ils.Metrics())
 	mb.metricSplunkIndexerQueueRatio.emit(ils.Metrics())
 	mb.metricSplunkIndexerRawWriteTime.emit(ils.Metrics())
+	mb.metricSplunkIndexerRollingRestartStatus.emit(ils.Metrics())
 	mb.metricSplunkIndexerThroughput.emit(ils.Metrics())
 	mb.metricSplunkIndexesAvgSize.emit(ils.Metrics())
 	mb.metricSplunkIndexesAvgUsage.emit(ils.Metrics())
@@ -2420,6 +2475,11 @@ func (mb *MetricsBuilder) RecordSplunkIndexerQueueRatioDataPoint(ts pcommon.Time
 // RecordSplunkIndexerRawWriteTimeDataPoint adds a data point to splunk.indexer.raw.write.time metric.
 func (mb *MetricsBuilder) RecordSplunkIndexerRawWriteTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
 	mb.metricSplunkIndexerRawWriteTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+}
+
+// RecordSplunkIndexerRollingRestartStatusDataPoint adds a data point to splunk.indexer.rolling.restart.status metric.
+func (mb *MetricsBuilder) RecordSplunkIndexerRollingRestartStatusDataPoint(ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue string, splunkRollingOrRestartAttributeValue string) {
+	mb.metricSplunkIndexerRollingRestartStatus.recordDataPoint(mb.startTime, ts, val, splunkSearchableRestartAttributeValue, splunkRollingOrRestartAttributeValue)
 }
 
 // RecordSplunkIndexerThroughputDataPoint adds a data point to splunk.indexer.throughput metric.
