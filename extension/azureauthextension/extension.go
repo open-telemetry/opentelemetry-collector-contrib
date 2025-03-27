@@ -19,14 +19,18 @@ import (
 	"go.uber.org/zap"
 	"net/http"
 	"os"
+	"sync"
 	"time"
 )
 
 type authenticator struct {
 	scope      string
 	credential azcore.TokenCredential
-	token      *azcore.AccessToken
-	logger     *zap.Logger
+
+	token   *azcore.AccessToken
+	tokenMu sync.RWMutex
+
+	logger *zap.Logger
 }
 
 var (
@@ -106,6 +110,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		scope:      cfg.Scope,
 		credential: credential,
 		token:      nil,
+		tokenMu:    sync.RWMutex{},
 		logger:     logger,
 	}, nil
 }
@@ -134,27 +139,39 @@ func (a *authenticator) Shutdown(_ context.Context) error {
 // updateToken makes a request to get a new token
 // if the authenticator does not have a token or
 // it has expired.
-func (a *authenticator) updateToken(ctx context.Context) error {
-	if a.token == nil || a.token.ExpiresOn.Before(time.Now().UTC()) {
-		token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
-			Scopes: []string{a.scope},
-		})
-		if err != nil {
-			return fmt.Errorf("azure authenticator failed to get token: %w", err)
-		}
-		a.token = &token
+func (a *authenticator) updateToken(ctx context.Context) (string, error) {
+	a.tokenMu.RLock()
+	if a.token != nil && a.token.ExpiresOn.After(time.Now().UTC()) {
+		token := a.token.Token
+		a.tokenMu.RUnlock()
+		return token, nil
 	}
-	return nil
+	a.tokenMu.RUnlock()
+
+	a.tokenMu.Lock()
+	defer a.tokenMu.Unlock()
+
+	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
+		Scopes: []string{a.scope},
+	})
+	if err != nil {
+		return "", fmt.Errorf("azure authenticator failed to get token: %w", err)
+	}
+	a.token = &token
+	return token.Token, nil
 }
 
 // Authenticate adds an Authorization header
 // with the bearer token
 func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	if err := a.updateToken(ctx); err != nil {
+	var token string
+	var err error
+
+	if token, err = a.updateToken(ctx); err != nil {
 		return ctx, err
 	}
 	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
-	headers["Authorization"] = []string{"Bearer " + a.token.Token}
+	headers["Authorization"] = []string{"Bearer " + token}
 
 	return ctx, nil
 }
