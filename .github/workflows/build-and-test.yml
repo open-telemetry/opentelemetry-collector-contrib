@@ -631,6 +631,7 @@ jobs:
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
+      - run: npm install simple-git
       - name: Prepare release notes
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
