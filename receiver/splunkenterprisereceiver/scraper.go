@@ -1832,10 +1832,10 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, n
 		for _, mtsSearchable := range []string{"false", "true"} {
 			if restartOrUpgrade == mtsRestartOrUpgrade && searchable == mtsSearchable && restarting {
 				// If we're restarting, put a 1 in the gauge that matches the current state
-				s.mb.RecordSplunkIndexerRollingRestartStatusDataPoint(now, 1, mtsRestartOrUpgrade, mtsSearchable)
+				s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, mtsRestartOrUpgrade, mtsSearchable)
 			} else {
 				// Put a zero in all the other gauges
-				s.mb.RecordSplunkIndexerRollingRestartStatusDataPoint(now, 0, mtsRestartOrUpgrade, mtsSearchable)
+				s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, mtsRestartOrUpgrade, mtsSearchable)
 			}
 		}
 	}

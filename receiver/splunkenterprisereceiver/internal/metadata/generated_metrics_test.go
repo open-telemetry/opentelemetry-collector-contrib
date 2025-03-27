@@ -108,7 +108,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
-			mb.RecordSplunkIndexerRollingRestartStatusDataPoint(ts, 1, "splunk.searchable.restart-val", "splunk.rolling.or.restart-val")
+			mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 1, "splunk.searchable.restart-val", "splunk.rollingorrestart-val")
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
@@ -451,9 +451,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
-				case "splunk.indexer.rolling.restart.status":
-					assert.False(t, validatedMetrics["splunk.indexer.rolling.restart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rolling.restart.status")
-					validatedMetrics["splunk.indexer.rolling.restart.status"] = true
+				case "splunk.indexer.rollingrestart.status":
+					assert.False(t, validatedMetrics["splunk.indexer.rollingrestart.status"], "Found a duplicate in the metrics slice: splunk.indexer.rollingrestart.status")
+					validatedMetrics["splunk.indexer.rollingrestart.status"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "The status of a rolling restart.", ms.At(i).Description())
@@ -466,9 +466,9 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.searchable.restart-val", attrVal.Str())
-					attrVal, ok = dp.Attributes().Get("splunk.rolling.or.restart")
+					attrVal, ok = dp.Attributes().Get("splunk.rollingorrestart")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.rolling.or.restart-val", attrVal.Str())
+					assert.EqualValues(t, "splunk.rollingorrestart-val", attrVal.Str())
 				case "splunk.indexer.throughput":
 					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 					validatedMetrics["splunk.indexer.throughput"] = true

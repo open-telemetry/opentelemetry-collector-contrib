@@ -29,7 +29,7 @@ all_set:
       enabled: true
     splunk.indexer.raw.write.time:
       enabled: true
-    splunk.indexer.rolling.restart.status:
+    splunk.indexer.rollingrestart.status:
       enabled: true
     splunk.indexer.throughput:
       enabled: true
@@ -115,7 +115,7 @@ none_set:
       enabled: false
     splunk.indexer.raw.write.time:
       enabled: false
-    splunk.indexer.rolling.restart.status:
+    splunk.indexer.rollingrestart.status:
       enabled: false
     splunk.indexer.throughput:
       enabled: false

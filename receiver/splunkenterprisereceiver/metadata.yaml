@@ -48,7 +48,7 @@ attributes:
   splunk.searchable.restart:
     description: String that indicates if a searchable rolling restart/upgrade in progress.t
     type: string
-  splunk.rolling.or.restart:
+  splunk.rollingorrestart:
     description: String that indicates if there is a rolling restart or rolling upgrade in progress.
     type: string
 
@@ -366,13 +366,13 @@ metrics:
       value_type: int
     attributes: [splunk.feature, splunk.feature.health]
   # `services/cluster/manager/status`
-  splunk.indexer.rolling.restart.status:
+  splunk.indexer.rollingrestart.status:
     enabled: false
     description: The status of a rolling restart.
     unit: "{status}"
     gauge:
       value_type: int
-    attributes: [splunk.searchable.restart, splunk.rolling.or.restart]
+    attributes: [splunk.searchable.restart, splunk.rollingorrestart]
 
 tests:
   config:
