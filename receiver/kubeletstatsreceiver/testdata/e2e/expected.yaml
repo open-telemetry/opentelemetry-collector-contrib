@@ -39,12 +39,12 @@ resourceMetrics:
                 - key: node-role.kubernetes.io/master
                   value:
                     stringValue: ""
+                - key: foo
+                  value:
+                    stringValue: too
         - key: k8s.node.name
           value:
             stringValue: kind-control-plane
-        - key: foo
-          value:
-            stringValue: too
     scopeMetrics:
       - scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
