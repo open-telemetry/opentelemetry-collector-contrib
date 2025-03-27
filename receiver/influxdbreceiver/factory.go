@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/influxdbreceiver/internal/metadata"
+	"github.com/domleb/opentelemetry-collector-contrib/receiver/influxdbreceiver/internal/metadata"
 )
 
 const defaultEndpoint = "localhost:8086"
