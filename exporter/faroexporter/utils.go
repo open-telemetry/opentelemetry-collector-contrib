@@ -1,4 +1,4 @@
-package faroexporter
+package faroexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter"
 
 import (
 	"net/http"
