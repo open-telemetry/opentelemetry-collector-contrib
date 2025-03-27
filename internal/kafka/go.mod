@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka
+module github.com/domleb/opentelemetry-collector-contrib/internal/kafka
 
 go 1.23.0
 

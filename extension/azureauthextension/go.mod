@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/azureauthextension
 
 go 1.23.0
 

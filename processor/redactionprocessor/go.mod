@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/redactionprocessor
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/logdedupprocessor
 
 go 1.23.0
 

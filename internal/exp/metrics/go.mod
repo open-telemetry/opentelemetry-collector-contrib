@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics
+module github.com/domleb/opentelemetry-collector-contrib/internal/exp/metrics
 
 go 1.23.0
 

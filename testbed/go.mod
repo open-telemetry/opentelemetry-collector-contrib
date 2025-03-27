@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
+module github.com/domleb/opentelemetry-collector-contrib/testbed
 
 go 1.23.7
 

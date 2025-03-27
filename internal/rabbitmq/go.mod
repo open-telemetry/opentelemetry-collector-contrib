@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/rabbitmq
+module github.com/domleb/opentelemetry-collector-contrib/internal/rabbitmq
 
 go 1.23.0
 

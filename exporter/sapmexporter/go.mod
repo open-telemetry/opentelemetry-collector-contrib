@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/sapmexporter
 
 go 1.23.0
 

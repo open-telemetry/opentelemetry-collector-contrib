@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/opensearchexporter
 
 go 1.23.0
 

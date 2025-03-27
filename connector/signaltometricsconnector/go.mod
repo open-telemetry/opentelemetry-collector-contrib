@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
+module github.com/domleb/opentelemetry-collector-contrib/connector/signaltometricsconnector
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
+module github.com/domleb/opentelemetry-collector-contrib/extension/storage/dbstorage
 
 go 1.23.0
 

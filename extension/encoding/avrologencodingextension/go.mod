@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
 
 go 1.23.0
 

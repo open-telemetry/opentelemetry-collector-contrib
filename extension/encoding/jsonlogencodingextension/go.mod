@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/encoding/jsonlogencodingextension
 
 go 1.23.0
 

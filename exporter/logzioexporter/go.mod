@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/logzioexporter
 
 go 1.23.7
 

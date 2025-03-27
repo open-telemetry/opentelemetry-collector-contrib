@@ -1,4 +1,4 @@
-//module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
+//module github.com/domleb/opentelemetry-collector-contrib/pkg/translator/azure
 
 go 1.23.0
 
@@ -40,6 +40,6 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil 
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pdatatest
 
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
+module github.com/domleb/opentelemetry-collector-contrib/pkg/translator/azure
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../golden

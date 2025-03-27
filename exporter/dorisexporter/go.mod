@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/dorisexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/dorisexporter
 
 go 1.23.0
 

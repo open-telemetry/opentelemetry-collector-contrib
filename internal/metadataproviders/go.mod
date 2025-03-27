@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/metadataproviders
+module github.com/domleb/opentelemetry-collector-contrib/internal/metadataproviders
 
 go 1.23.0
 

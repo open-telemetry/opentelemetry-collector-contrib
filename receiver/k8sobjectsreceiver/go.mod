@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver
 
 go 1.23.0
 

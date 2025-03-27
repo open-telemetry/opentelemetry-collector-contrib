@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx
+module github.com/domleb/opentelemetry-collector-contrib/pkg/translator/signalfx
 
 go 1.23.0
 

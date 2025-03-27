@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/fluentforwardreceiver
 
 go 1.23.0
 

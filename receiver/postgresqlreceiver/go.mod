@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/postgresqlreceiver
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/ecsutil
+module github.com/domleb/opentelemetry-collector-contrib/internal/aws/ecsutil
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/faroexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/faroexporter
 
 go 1.23.3
 

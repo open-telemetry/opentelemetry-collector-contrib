@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/resourcedetectionprocessor
 
 go 1.23.0
 

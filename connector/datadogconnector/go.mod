@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector
+module github.com/domleb/opentelemetry-collector-contrib/connector/datadogconnector
 
 go 1.23.0
 

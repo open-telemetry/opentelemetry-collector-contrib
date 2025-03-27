@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
+module github.com/domleb/opentelemetry-collector-contrib/confmap/provider/aesprovider
 
 go 1.23.0
 

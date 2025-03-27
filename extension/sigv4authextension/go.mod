@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/sigv4authextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/sigv4authextension
 
 go 1.23.0
 

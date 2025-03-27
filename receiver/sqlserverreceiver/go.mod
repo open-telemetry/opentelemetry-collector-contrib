@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/sqlserverreceiver
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/elasticsearchreceiver
 
 go 1.23.0
 

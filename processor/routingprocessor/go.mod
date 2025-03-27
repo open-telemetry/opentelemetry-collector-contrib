@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/routingprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/routingprocessor
 
 go 1.23.0
 

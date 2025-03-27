@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/textencodingextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/encoding/textencodingextension
 
 go 1.23.0
 

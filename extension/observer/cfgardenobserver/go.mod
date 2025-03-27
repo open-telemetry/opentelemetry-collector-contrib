@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
+module github.com/domleb/opentelemetry-collector-contrib/extension/observer/cfgardenobserver
 
 go 1.23.0
 
