@@ -6,9 +6,9 @@ package metrics
 import (
 	"context"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
-	"sync/atomic"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
