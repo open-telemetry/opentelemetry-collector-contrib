@@ -63,19 +63,20 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
 				TracesIndex: "trace_index",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -109,7 +110,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "none",
+					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -142,15 +143,16 @@ func TestConfig(t *testing.T) {
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -184,7 +186,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "none",
+					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -213,19 +215,20 @@ func TestConfig(t *testing.T) {
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				MetricsIndex: "my_metric_index",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -259,7 +262,7 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode:         "none",
+					Mode:         "otel",
 					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
@@ -331,18 +334,6 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size_items"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.Batcher.MinSize = 100
-				cfg.Batcher.MaxSize = 200
-				cfg.Batcher.MinSizeItems = &cfg.Batcher.MinSize //nolint:staticcheck
-				cfg.Batcher.MaxSizeItems = &cfg.Batcher.MaxSize //nolint:staticcheck
-			}),
-		},
-		{
 			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
@@ -350,14 +341,6 @@ func TestConfig(t *testing.T) {
 
 				cfg.Batcher.MinSize = 100
 				cfg.Batcher.MaxSize = 200
-
-				// TODO uncomment setting min/max_size_items in config.yaml
-				// and uncomment the below, when the fix to ignore those fields
-				// is brought into contrib.
-				// minSizeItems := 300
-				// maxSizeItems := 400
-				// cfg.Batcher.MinSizeItems = &minSizeItems
-				// cfg.Batcher.MaxSizeItems = &maxSizeItems
 			}),
 		},
 	}

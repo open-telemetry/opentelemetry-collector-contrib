@@ -15,6 +15,7 @@ import (
 
 	"github.com/fsnotify/fsnotify"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
 	"google.golang.org/grpc/credentials"
@@ -38,11 +39,13 @@ func (c *PerRPCAuth) RequireTransportSecurity() bool {
 }
 
 var (
-	_ extensionauth.Server = (*BearerTokenAuth)(nil)
-	_ extensionauth.Client = (*BearerTokenAuth)(nil)
+	_ extension.Extension      = (*BearerTokenAuth)(nil)
+	_ extensionauth.Server     = (*BearerTokenAuth)(nil)
+	_ extensionauth.HTTPClient = (*BearerTokenAuth)(nil)
+	_ extensionauth.GRPCClient = (*BearerTokenAuth)(nil)
 )
 
-// BearerTokenAuth is an implementation of extensionauth.Client. It embeds a static authorization "bearer" token in every rpc call.
+// BearerTokenAuth is an implementation of extensionauth interfaces. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
@@ -52,8 +55,6 @@ type BearerTokenAuth struct {
 	filename string
 	logger   *zap.Logger
 }
-
-var _ extensionauth.Client = (*BearerTokenAuth)(nil)
 
 func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 	if cfg.Filename != "" && (cfg.BearerToken != "" || len(cfg.Tokens) > 0) {

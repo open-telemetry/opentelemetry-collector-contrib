@@ -8,6 +8,7 @@ const yaml = require('js-yaml');
 
 const REPO_NAME = "opentelemetry-collector-contrib"
 const REPO_OWNER = "open-telemetry"
+const ISSUE_CHAR_LIMIT = 65536
 
 function debug(msg) {
   console.log(JSON.stringify(msg, null, 2))
@@ -76,6 +77,40 @@ async function getNewIssues({octokit, context}) {
     console.error('Error fetching issues:', error);
     return [];
   }
+}
+
+function addJSONDataIfEnoughChartsAreLeftInTheIssue(report, issuesData, byStatus, seekingNewCodeOwnerCounts) {
+  let reducedIssuesData = {}
+  for (const [issuesName, data] of Object.entries(issuesData)) {
+    reducedIssuesData[issuesName] = data.count
+  }
+
+  let componentData = {
+    "lookingForOwners": seekingNewCodeOwnerCounts
+  }
+  for (const [status, components] of Object.entries(byStatus)) {
+    componentData[status] = Object.keys(components).length
+  }
+  debug({mgs: "componentData", componentData})
+  out = ['', '', '## JSON Data',
+  '<!-- MACHINE GENERATED: DO NOT EDIT -->'
+  ]
+  out.push(`<details>
+<summary>Expand</summary>
+<pre>${
+  JSON.stringify({
+    issuesData: reducedIssuesData,
+    componentData: componentData
+  }, null, 2)
+}
+</pre>
+</details>`);
+
+  jsonData = out.join('\n')
+  if ((report.length + jsonData.length) < ISSUE_CHAR_LIMIT) {
+    report += jsonData
+  }
+  return report
 }
 
 async function getTargetLabelIssues({octokit, labels, filterPrs, context}) {
@@ -205,7 +240,11 @@ function generateComponentsLookingForOwnersReportSection(lookingForOwners) {
   }
 
   section.push(`</details>`)
-  return {count, section}
+  return {lookingForOwnersCount: count, section}
+}
+
+function addChangesFromPreviousWeek(li, current, previous) {
+  return li += ` (${current - previous})`
 }
 
 function generateReport({ issuesData, previousReport, componentData }) {
@@ -219,13 +258,11 @@ function generateReport({ issuesData, previousReport, componentData }) {
   for (const lbl of Object.keys(issuesData)) {
     const section = [``];
     const { count, data, title } = issuesData[lbl];
-
-    if (previousReport === null) {
-      section.push(`<li> ${title}: ${count}`);
-    } else {
-      const previousCount = previousReport.issuesData[lbl].count; 
-      section.push(`<li> ${title}: ${count} (${count - previousCount})`);
+    let li = `<li> ${title}: ${count}`
+    if (previousReport !== null) {
+      li = addChangesFromPreviousWeek(li, count, previousReport.issuesData[lbl])
     }
+    section.push(li)
 
     // generate summary if issues exist
     // NOTE: the newline after <summary> is required for markdown to render correctly
@@ -251,8 +288,11 @@ function generateReport({ issuesData, previousReport, componentData }) {
     const section = [``];
     const data = byStatus[lbl];
     const count = Object.keys(data).length;
-
-    section.push(`<li> ${lbl}: ${count}`);
+    let li = `<li> ${lbl}: ${count}`; 
+    if (previousReport !== null) {
+      li = addChangesFromPreviousWeek(li, count, previousReport.componentData[lbl])
+    }
+    section.push(li)
     if (data.length !== 0) {
     // NOTE: the newline after <summary> is required for markdown to render correctly
       section.push(`<details>
@@ -260,20 +300,29 @@ function generateReport({ issuesData, previousReport, componentData }) {
       section.push(`${Object.keys(data).map((compName) => {
         const {stability} = data[compName]
         return `- [ ] ${compName}: ${JSON.stringify(stability)}`
-      }).join('\n')}
-</details>`);
+      }).join('\n')}`)
+      section.push(`</details>`);
     }
     section.push('</li>');
     out.push(section.join('\n'));
   }
 
-  let {count, section} = generateComponentsLookingForOwnersReportSection(lookingForOwners)
-  out.push(`<li> Seeking new code owners: ${count}`)
+  let {lookingForOwnersCount, section} = generateComponentsLookingForOwnersReportSection(lookingForOwners)
+  li = `<li> Seeking new code owners: ${lookingForOwnersCount}`
+  if (previousReport !== null) {
+    li = addChangesFromPreviousWeek(li, lookingForOwnersCount, previousReport.componentData.lookingForOwners)
+  }
+  out.push(li)
   out.push(...section)
   out.push('</li>')
   out.push('</ul>');
 
-  const report = out.join('\n');
+  let report = out.join('\n');
+  
+  // Adds JSON data if there is space left in the issue
+  // We use ISSUE_CHAR_LIMIT to define the max size of the issue
+  // please add any new sections above this comment
+  report = addJSONDataIfEnoughChartsAreLeftInTheIssue(report, issuesData, byStatus, lookingForOwnersCount)
   return report;
 }
 
@@ -339,8 +388,6 @@ async function processIssues({ octokit, context, lookbackData }) {
   }
 
   return {issuesData, previousReport}
-
-
 }
 
 const findFilesByName = (startPath, filter) => {
@@ -456,7 +503,6 @@ async function main({ github, context }) {
   const lookbackData = genLookbackDates();
   const {issuesData, previousReport} = await processIssues({ octokit, context, lookbackData })
   const componentData = await processComponents()
-
   const report = generateReport({ issuesData, previousReport, componentData })
 
   await createIssue({octokit, lookbackData, report, context});

@@ -67,6 +67,13 @@ func TestUnmarshal(t *testing.T) {
 			wantResourceLogGroups:  nil, // not checking log group names because logs are unordered
 			wantResourceLogStreams: nil, // not checking log stream names because logs are unordered
 		},
+		"WithOnlyControlMessages": {
+			filename:               "only_control",
+			wantResourceCount:      0,
+			wantLogCount:           0,
+			wantResourceLogGroups:  nil,
+			wantResourceLogStreams: nil,
+		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {

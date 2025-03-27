@@ -26,13 +26,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-const (
-	// The value of "type" key in configuration.
-	defaultLogsIndex    = "logs-generic-default"
-	defaultMetricsIndex = "metrics-generic-default"
-	defaultTracesIndex  = "traces-generic-default"
-)
-
 var defaultBatcherMinSizeItems = 5000
 
 // NewFactory creates a factory for Elastic exporter.
@@ -59,19 +52,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		QueueSettings: qs,
 		ClientConfig:  httpClientConfig,
-		LogsIndex:     defaultLogsIndex,
-		LogsDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
-		MetricsIndex: defaultMetricsIndex,
-		MetricsDynamicIndex: DynamicIndexSetting{
-			Enabled: true,
-		},
-		TracesIndex: defaultTracesIndex,
-		TracesDynamicIndex: DynamicIndexSetting{
-			Enabled: false,
-		},
 		LogsDynamicID: DynamicIDSettings{
+			Enabled: false,
+		},
+		LogsDynamicPipeline: DynamicPipelineSettings{
 			Enabled: false,
 		},
 		Retry: RetrySettings{
@@ -84,7 +68,7 @@ func createDefaultConfig() component.Config {
 			},
 		},
 		Mapping: MappingsSettings{
-			Mode:         "none",
+			Mode:         "otel",
 			AllowedModes: slices.Sorted(maps.Keys(canonicalMappingModes)),
 		},
 		LogstashFormat: LogstashFormatSettings{
@@ -124,7 +108,10 @@ func createLogsExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.LogsIndex, cf.LogsDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, cf.LogsIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewLogs(
 		ctx,
@@ -143,7 +130,10 @@ func createMetricsExporter(
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.MetricsIndex, cf.MetricsDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, cf.MetricsIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -161,7 +151,10 @@ func createTracesExporter(ctx context.Context,
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, cf.TracesIndex, cf.TracesDynamicIndex.Enabled)
+	exporter, err := newExporter(cf, set, cf.TracesIndex)
+	if err != nil {
+		return nil, err
+	}
 
 	return exporterhelper.NewTraces(
 		ctx,
@@ -184,7 +177,10 @@ func createProfilesExporter(
 
 	handleDeprecatedConfig(cf, set.Logger)
 
-	exporter := newExporter(cf, set, "", false)
+	exporter, err := newExporter(cf, set, "")
+	if err != nil {
+		return nil, err
+	}
 
 	return xexporterhelper.NewProfilesExporter(
 		ctx,

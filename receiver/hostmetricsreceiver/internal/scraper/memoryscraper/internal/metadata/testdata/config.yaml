@@ -3,7 +3,11 @@ all_set:
   metrics:
     system.linux.memory.available:
       enabled: true
+    system.linux.memory.dirty:
+      enabled: true
     system.memory.limit:
+      enabled: true
+    system.memory.page_size:
       enabled: true
     system.memory.usage:
       enabled: true
@@ -13,7 +17,11 @@ none_set:
   metrics:
     system.linux.memory.available:
       enabled: false
+    system.linux.memory.dirty:
+      enabled: false
     system.memory.limit:
+      enabled: false
+    system.memory.page_size:
       enabled: false
     system.memory.usage:
       enabled: false
