@@ -92,21 +92,22 @@ func createServer(t *testing.T) *httptest.Server {
 		assert.Equal(t, "application/json", r.Header.Get("Content-Type"))
 		assert.NotEmpty(t, r.Header.Get("User-Agent"))
 
-		var reader io.Reader = r.Body
+		var reader io.Reader
 		var err error
 		encoding := r.Header.Get("Content-Encoding")
-		if encoding == "gzip" {
+		switch encoding {
+		case "gzip":
 			reader, err = gzip.NewReader(r.Body)
-			require.NoError(t, err)
-		} else if encoding == "deflate" {
+			assert.NoError(t, err)
+		case "deflate":
 			reader, err = zlib.NewReader(r.Body)
-			require.NoError(t, err)
-		} else {
+			assert.NoError(t, err)
+		default:
 			reader = r.Body
 		}
 
 		bodyBytes, err := io.ReadAll(reader)
-		require.NoError(t, err)
+		assert.NoError(t, err)
 		defer r.Body.Close()
 
 		payload := faro.Payload{}
@@ -153,7 +154,7 @@ func TestExporter_ErrorCases(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+			server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 				if tc.setRetryAfterValue {
 					w.Header().Set("Retry-After", "30")
 				}
@@ -176,9 +177,10 @@ func TestExporter_ErrorCases(t *testing.T) {
 			td := createTestTraces()
 			err = exp.ConsumeTraces(ctx, td)
 
-			if tc.expectedPermanent {
+			switch {
+			case tc.expectedPermanent:
 				assert.True(t, consumererror.IsPermanent(err), "Expected permanent error")
-			} else if tc.expectedRetryable {
+			case tc.expectedRetryable:
 				if tc.expectedThrottled {
 					errMsg := err.Error()
 					assert.Contains(t, errMsg, "Throttle", "Expected throttling error message")
@@ -188,7 +190,7 @@ func TestExporter_ErrorCases(t *testing.T) {
 				} else {
 					assert.Error(t, err, "Expected retryable error")
 				}
-			} else {
+			default:
 				assert.NoError(t, err)
 			}
 		})
@@ -200,11 +202,9 @@ func createTestTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()
 
-	// Add resource attributes
 	rs.Resource().Attributes().PutStr("service.name", "test-service")
 	rs.Resource().Attributes().PutStr("service.version", "1.0.0")
 
-	// Add a span
 	ss := rs.ScopeSpans().AppendEmpty()
 	span := ss.Spans().AppendEmpty()
 	span.SetName("test-span")
