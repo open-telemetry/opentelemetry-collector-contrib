@@ -18,7 +18,6 @@ data:
       kubeletstats:
         auth_type: "serviceAccount"
         endpoint: "https://${env:K8S_NODE_NAME}:10250"
-        insecure_skip_verify: true
         k8s_api_config:
           auth_type: kubeConfig
         metric_groups:
