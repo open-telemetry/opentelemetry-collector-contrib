@@ -1,8 +1,14 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-const simpleGit = require('simple-git');
+import { simpleGit } from 'simple-git';
+import {Octokit} from 'octokit';
 const git = simpleGit("../../../");
+
+const REPO_NAME = "opentelemetry-collector-contrib"
+const REPO_OWNER = "open-telemetry"
+
+const firstTimeContributorText = "We are thrilled to welcome our new first-time contributors to this project. Thank you for your contributions "
 
 function getUniqueCombinations(data) {
     const uniqueSet = new Set();
@@ -40,7 +46,6 @@ async function getFirstTimeContributors(fromTag, toTag) {
 
         const firstTimeContributorsAndHashes = [];
         for (const item of uniqueAuthorsAndHashes) {
-            console.log(`Handling commits of ${item.name}`)
             const authorCommits = allCommits.all.filter(commit => {
                 return commit.author_name === item.name && commit.author_email === item.email
             });
@@ -56,16 +61,41 @@ async function getFirstTimeContributors(fromTag, toTag) {
     }
 }
 
-async function main({ github }) {
-    getFirstTimeContributors('v0.121.0', 'v0.122.0').then(contributors => {
-        console.log('First-time contributors:', contributors);
-        console.log('Number of first-time contributors: ', contributors.length);
-    });
+function generateNewContributorText(newContributors) {
+    const annotatedUsernames = newContributors.map(username => "@" + username)
+    return firstTimeContributorText + annotatedUsernames.join(", ") + " ! 🎉"
 }
 
-module.exports = async ({ github }) => {
-    await main({ github })
+export const main = async ({ github }) => {
+    const newContributorsAndHashes = await getFirstTimeContributors('v0.121.0', 'v0.122.0')
+
+    const usernames = [];
+    for (const contributor of newContributorsAndHashes) {
+        const response = await github.request('GET /repos/{owner}/{repo}/commits/{ref}', {
+            owner: REPO_OWNER,
+            repo: REPO_NAME,
+            ref: contributor.hash,
+            headers: {
+                'X-GitHub-Api-Version': '2022-11-28'
+            }
+        })
+        usernames.push(response.data.author.login)
+    }
+    console.log('First-time contributors:', usernames);
+    console.log('Number of first-time contributors: ', usernames.length);
+
+    return generateNewContributorText(usernames)
 }
 
-github = undefined
-main({ github })
+export default async function () {
+    const octokit = new Octokit({
+        auth: process.env.GITHUB_TOKEN
+    })
+    await main({ octokit })
+}
+
+const octokit = new Octokit({
+    auth: process.env.GITHUB_TOKEN
+})
+const text = await main({ github: octokit })
+console.log(text)
