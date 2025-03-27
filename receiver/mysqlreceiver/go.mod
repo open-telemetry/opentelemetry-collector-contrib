@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlr
 go 1.23.0
 
 require (
-	github.com/go-sql-driver/mysql v1.9.0
+	github.com/go-sql-driver/mysql v1.9.1
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.122.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.122.0
