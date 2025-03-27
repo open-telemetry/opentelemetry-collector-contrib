@@ -8,7 +8,6 @@ import (
 	"sync"
 	"testing"
 	"time"
-
 	"sync/atomic"
 
 	"github.com/stretchr/testify/assert"
