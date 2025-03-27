@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
+	"github.com/domleb/opentelemetry-collector-contrib/internal/common/sanitize"
 )
 
 type metricsReceiver struct {
