@@ -292,7 +292,7 @@ func handleField(field string, value string, record plog.LogRecord, key *resourc
 			return false, err
 		}
 	case "srcaddr":
-		// If pkt-srcaddr exists, then this is might be an intermediary address.
+		// If pkt-srcaddr exists, then this might be an intermediary address.
 		// Otherwise, place it in source.address.
 		_, found := record.Attributes().Get(conventions.AttributeSourceAddress)
 		if found {
