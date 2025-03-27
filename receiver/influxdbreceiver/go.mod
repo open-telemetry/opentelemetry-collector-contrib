@@ -8,10 +8,10 @@ require (
 	github.com/influxdata/influxdb-observability/influx2otel v0.5.12
 	github.com/influxdata/influxdb1-client v0.0.0-20220302092344-a9ab5670611c
 	github.com/influxdata/line-protocol/v2 v2.2.1
-	github.com/domleb/opentelemetry-collector-contrib/internal/common
+	github.com/domleb/opentelemetry-collector-contrib/internal/common v0.122.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.202	50319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/config/confighttp v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
@@ -51,7 +51,7 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/oapi-codegen/runtime v1.0.0 // indirect
-	github.com/domleb/opentelemetry-collector-contrib/pkg/pdatautil
+	github.com/domleb/opentelemetry-collector-contrib/pkg/pdatautil v0.122.0 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
