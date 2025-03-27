@@ -318,7 +318,7 @@ jobs:
         run: |
           echo "Tests failed. Failing workflow."
           exit 1
-          
+
   unittest:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
