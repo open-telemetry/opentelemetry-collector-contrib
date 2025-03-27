@@ -82,11 +82,11 @@ func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) erro
 	for _, op := range ops {
 		switch op.Type {
 		case storage.Delete:
-			p.Del(ctx, op.Key)
+			p.Del(ctx, rc.prefix+op.Key)
 		case storage.Get:
-			p.Get(ctx, op.Key)
+			p.Get(ctx, rc.prefix+op.Key)
 		case storage.Set:
-			p.Set(ctx, op.Key, op.Value, rc.expiration)
+			p.Set(ctx, rc.prefix+op.Key, op.Value, rc.expiration)
 		}
 	}
 	_, err := p.Exec(ctx)

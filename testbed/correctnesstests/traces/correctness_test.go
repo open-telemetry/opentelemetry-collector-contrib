@@ -61,7 +61,7 @@ func testWithTracingGoldenDataset(
 	validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 	config := correctnesstests.CreateConfigYaml(t, sender, receiver, nil, processors)
 	log.Println(config)
-	configCleanup, cfgErr := runner.PrepareConfig(config)
+	configCleanup, cfgErr := runner.PrepareConfig(t, config)
 	require.NoError(t, cfgErr, "collector configuration resulted in: %v", cfgErr)
 	defer configCleanup()
 	tc := testbed.NewTestCase(
@@ -127,7 +127,7 @@ func TestSporadicGoldenDataset(t *testing.T) {
     sending_queue:
       enabled: false
 `)
-		_, err = runner.PrepareConfig(correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
+		_, err = runner.PrepareConfig(t, correctnesstests.CreateConfigYaml(t, sender, receiver, nil, nil))
 		require.NoError(t, err, "collector configuration resulted in: %v", err)
 		validator := testbed.NewCorrectTestValidator(sender.ProtocolName(), receiver.ProtocolName(), dataProvider)
 		tc := testbed.NewTestCase(

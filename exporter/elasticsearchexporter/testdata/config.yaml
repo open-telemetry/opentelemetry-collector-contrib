@@ -107,15 +107,8 @@ elasticsearch/compression_none:
 elasticsearch/compression_gzip:
   endpoint: https://elastic.example.com:9200
   compression: gzip
-elasticsearch/batcher_minmax_size_items:
-  endpoint: https://elastic.example.com:9200
-  batcher:
-    min_size_items: 100
-    max_size_items: 200
 elasticsearch/batcher_minmax_size:
   endpoint: https://elastic.example.com:9200
   batcher:
     min_size: 100
     max_size: 200
-    #min_size_items: 300 # min_size is set, does not carry over
-    #max_size_items: 400 # max_size is set, does not carry over

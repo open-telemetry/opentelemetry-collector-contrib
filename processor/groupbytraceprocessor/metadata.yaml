@@ -8,6 +8,7 @@ status:
   warnings: [Statefulness]
   codeowners:
     active: [jpkrohling]
+    seeking_new: true
 tests:
   config:
   goleak:

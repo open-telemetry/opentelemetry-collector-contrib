@@ -18,7 +18,8 @@ This receiver scrapes Azure Monitor API for resources metrics.
 
 The following settings are required:
 
-- `subscription_id`
+- `subscription_ids`: list of subscriptions on which the resource's metrics are collected
+- or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
 The following settings are optional:
 
@@ -78,7 +79,7 @@ Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/a
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
@@ -98,7 +99,7 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
     client_id: "${env:AZURE_CLIENT_ID}"
@@ -110,7 +111,7 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
 ```
@@ -120,7 +121,7 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "default_credentials"
 ```
 

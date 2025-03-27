@@ -208,49 +208,10 @@ func (e *kafkaLogsProducer) start(ctx context.Context, host component.Host) erro
 }
 
 func newSaramaProducer(ctx context.Context, config Config) (sarama.SyncProducer, error) {
-	c := sarama.NewConfig()
-
-	c.ClientID = config.ClientID
-
-	// These setting are required by the sarama.SyncProducer implementation.
-	c.Producer.Return.Successes = true
-	c.Producer.Return.Errors = true
-	c.Producer.RequiredAcks = config.Producer.RequiredAcks
-	// Because sarama does not accept a Context for every message, set the Timeout here.
-	c.Producer.Timeout = config.TimeoutSettings.Timeout
-	c.Metadata.Full = config.Metadata.Full
-	c.Metadata.Retry.Max = config.Metadata.Retry.Max
-	c.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	c.Producer.MaxMessageBytes = config.Producer.MaxMessageBytes
-	c.Producer.Flush.MaxMessages = config.Producer.FlushMaxMessages
-
-	if config.ResolveCanonicalBootstrapServersOnly {
-		c.Net.ResolveCanonicalBootstrapServers = true
-	}
-
-	if config.ProtocolVersion != "" {
-		version, err := sarama.ParseKafkaVersion(config.ProtocolVersion)
-		if err != nil {
-			return nil, err
-		}
-		c.Version = version
-	}
-
-	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, c); err != nil {
-		return nil, err
-	}
-
-	compression, err := saramaProducerCompressionCodec(config.Producer.Compression)
-	if err != nil {
-		return nil, err
-	}
-	c.Producer.Compression = compression
-
-	producer, err := sarama.NewSyncProducer(config.Brokers, c)
-	if err != nil {
-		return nil, err
-	}
-	return producer, nil
+	return kafka.NewSaramaSyncProducer(
+		ctx, config.ClientConfig, config.Producer,
+		config.TimeoutSettings.Timeout,
+	)
 }
 
 func newMetricsExporter(config Config, set exporter.Settings) *kafkaMetricsProducer {

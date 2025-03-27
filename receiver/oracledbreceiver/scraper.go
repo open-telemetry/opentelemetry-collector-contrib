@@ -32,6 +32,11 @@ const (
 	userCommits             = "user commits"
 	userRollbacks           = "user rollbacks"
 	physicalReads           = "physical reads"
+	physicalReadsDirect     = "physical reads direct"
+	physicalReadIORequests  = "physical read IO requests"
+	physicalWrites          = "physical writes"
+	physicalWritesDirect    = "physical writes direct"
+	physicalWriteIORequests = "physical write IO requests"
 	sessionLogicalReads     = "session logical reads"
 	cpuTime                 = "CPU used by this session"
 	pgaMemory               = "session pga memory"
@@ -106,6 +111,11 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbUserCommits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbUserRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadsDirect.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadIoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWrites.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesDirect.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWriteIoRequests.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
@@ -157,6 +167,31 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case physicalReads:
 				err := s.mb.RecordOracledbPhysicalReadsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadsDirect:
+				err := s.mb.RecordOracledbPhysicalReadsDirectDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadIORequests:
+				err := s.mb.RecordOracledbPhysicalReadIoRequestsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWrites:
+				err := s.mb.RecordOracledbPhysicalWritesDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWritesDirect:
+				err := s.mb.RecordOracledbPhysicalWritesDirectDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteIORequests:
+				err := s.mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}

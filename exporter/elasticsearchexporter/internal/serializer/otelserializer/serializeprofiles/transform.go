@@ -77,7 +77,8 @@ func checkProfileType(profile pprofile.Profile) error {
 // stackPayloads creates a slice of StackPayloads from the given ResourceProfiles,
 // ScopeProfiles, and ProfileContainer.
 func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile) ([]StackPayload, error) {
-	unsymbolizedLeafFrames := make([]libpf.FrameID, 0, profile.Sample().Len())
+	unsymbolizedLeafFramesSet := make(map[libpf.FrameID]struct{}, profile.Sample().Len())
+	unsymbolizedExecutablesSet := make(map[libpf.FileID]struct{})
 	stackPayload := make([]StackPayload, 0, profile.Sample().Len())
 
 	hostMetadata := newHostMetadata(resource, scope, profile)
@@ -108,7 +109,23 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 		})
 
 		if !isFrameSymbolized(frames[len(frames)-1]) && leafFrame != nil {
-			unsymbolizedLeafFrames = append(unsymbolizedLeafFrames, *leafFrame)
+			unsymbolizedLeafFramesSet[*leafFrame] = struct{}{}
+		}
+
+		for j := range frames {
+			if frameTypes[j].IsError() {
+				// Artificial error frames can't be symbolized.
+				continue
+			}
+			if isFrameSymbolized(frames[j]) {
+				// Skip interpreted frames and already symbolized native frames (kernel, Golang is planned).
+				continue
+			}
+			frameID, err := libpf.NewFrameIDFromString(frames[j].DocID)
+			if err != nil {
+				return nil, fmt.Errorf("stackPayloads: %w", err)
+			}
+			unsymbolizedExecutablesSet[frameID.FileID()] = struct{}{}
 		}
 
 		// Add one event per timestamp and its count value.
@@ -138,10 +155,43 @@ func stackPayloads(resource pcommon.Resource, scope pcommon.InstrumentationScope
 
 			stackPayload[0].Executables = exeMetadata
 		}
-		stackPayload[0].UnsymbolizedLeafFrames = unsymbolizedLeafFrames
+		stackPayload[0].UnsymbolizedLeafFrames = unsymbolizedLeafFrames(unsymbolizedLeafFramesSet)
+		stackPayload[0].UnsymbolizedExecutables = unsymbolizedExecutables(unsymbolizedExecutablesSet)
 	}
 
 	return stackPayload, nil
+}
+
+func unsymbolizedExecutables(executables map[libpf.FileID]struct{}) []UnsymbolizedExecutable {
+	now := time.Now()
+	unsymbolized := make([]UnsymbolizedExecutable, 0, len(executables))
+	for fileID := range executables {
+		unsymbolized = append(unsymbolized, UnsymbolizedExecutable{
+			EcsVersion: EcsVersion{V: EcsVersionString},
+			DocID:      fileID.Base64(),
+			FileID:     []string{fileID.Base64()},
+			Created:    now,
+			Next:       now,
+			Retries:    0,
+		})
+	}
+	return unsymbolized
+}
+
+func unsymbolizedLeafFrames(frameIDs map[libpf.FrameID]struct{}) []UnsymbolizedLeafFrame {
+	now := time.Now()
+	unsymbolized := make([]UnsymbolizedLeafFrame, 0, len(frameIDs))
+	for frameID := range frameIDs {
+		unsymbolized = append(unsymbolized, UnsymbolizedLeafFrame{
+			EcsVersion: EcsVersion{V: EcsVersionString},
+			DocID:      frameID.String(),
+			FrameID:    []string{frameID.String()},
+			Created:    now,
+			Next:       now,
+			Retries:    0,
+		})
+	}
+	return unsymbolized
 }
 
 // symbolizedFrames returns a slice of StackFrames that have symbols.
