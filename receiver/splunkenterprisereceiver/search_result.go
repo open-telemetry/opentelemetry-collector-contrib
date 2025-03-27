@@ -159,7 +159,7 @@ type dispatchArtifactContent struct {
 	CacheTotalEntries  string `json:"cached_job_status_total_entries"`
 }
 
-// '/services/server/health/splunkd/details'
+// '/services/server/health/splunkd/details
 type healthArtifacts struct {
 	Entries []healthArtifactEntry `json:"entry"`
 }
@@ -175,7 +175,7 @@ type healthDetails struct {
 
 // '/services/cluster/manager/status' 
 type indexersClusterManagerStatus struct {
-	Entry idxClusterManagerStatusEntry
+	Entries []idxClusterManagerStatusEntry `json:"entry"`
 }
 type idxClusterManagerStatusEntry struct {
 	Name    string      `json:"name"`

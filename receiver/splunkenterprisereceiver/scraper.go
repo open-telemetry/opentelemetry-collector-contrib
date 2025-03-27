@@ -102,6 +102,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeKVStoreStatus,
 		s.scrapeSearchArtifacts,
 		s.scrapeHealth,
+		s.scrapeIndexerClusterManagerStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1789,7 +1790,7 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 
 // Scrape Indexer Cluster Manger Status Endpoint
 func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingRestartStatus.Enabled {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
 		return
 	}
 
@@ -1816,27 +1817,11 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, n
 		return
 	}
 
-	restartOrUpgrade := "false"
-	if icms.Entry.Content.RollingRestartOrUpgrade {
-		restartOrUpgrade = "true"
-	}
 
-	searchable := "false"
-	if icms.Entry.Content.SearchableRolling {
-		searchable = "true"
-	}
-
-	restarting := icms.Entry.Content.RollingRestartOrUpgrade || icms.Entry.Content.SearchableRolling || icms.Entry.Content.RollingRestartFlag
-
-	for _, mtsRestartOrUpgrade := range []string{"false", "true"} {
-		for _, mtsSearchable := range []string{"false", "true"} {
-			if restartOrUpgrade == mtsRestartOrUpgrade && searchable == mtsSearchable && restarting {
-				// If we're restarting, put a 1 in the gauge that matches the current state
-				s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, mtsRestartOrUpgrade, mtsSearchable)
-			} else {
-				// Put a zero in all the other gauges
-				s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, mtsRestartOrUpgrade, mtsSearchable)
-			}
+	for _, ic := range icms.Entries {
+		if ic.Content.RollingRestartOrUpgrade {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
 		}
+		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
 	}
 }

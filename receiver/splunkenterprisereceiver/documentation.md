@@ -417,8 +417,8 @@ The status of a rolling restart.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| splunk.searchable.restart | String that indicates if a searchable rolling restart/upgrade in progress.t | Any Str |
-| splunk.rollingorrestart | String that indicates if there is a rolling restart or rolling upgrade in progress. | Any Str |
+| splunk.searchable.restart | Boolean that indicates if a searchable rolling restart/upgrade in progress.t | Any Bool |
+| splunk.rollingorrestart | Boolean that indicates if there is a rolling restart or rolling upgrade in progress. | Any Bool |
 
 ### splunk.indexer.throughput
 

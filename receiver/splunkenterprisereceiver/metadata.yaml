@@ -46,11 +46,11 @@ attributes:
     description: The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint
     type: string
   splunk.searchable.restart:
-    description: String that indicates if a searchable rolling restart/upgrade in progress.t
-    type: string
+    description: Boolean that indicates if a searchable rolling restart/upgrade in progress.t
+    type: bool
   splunk.rollingorrestart:
-    description: String that indicates if there is a rolling restart or rolling upgrade in progress.
-    type: string
+    description: Boolean that indicates if there is a rolling restart or rolling upgrade in progress.
+    type: bool
 
 metrics:
   splunk.license.index.usage:

@@ -745,7 +745,7 @@ func (m *metricSplunkIndexerRollingrestartStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue string, splunkRollingorrestartAttributeValue string) {
+func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool) {
 	if !m.config.Enabled {
 		return
 	}
@@ -753,8 +753,8 @@ func (m *metricSplunkIndexerRollingrestartStatus) recordDataPoint(start pcommon.
 	dp.SetStartTimestamp(start)
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
-	dp.Attributes().PutStr("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
-	dp.Attributes().PutStr("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
+	dp.Attributes().PutBool("splunk.searchable.restart", splunkSearchableRestartAttributeValue)
+	dp.Attributes().PutBool("splunk.rollingorrestart", splunkRollingorrestartAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2478,7 +2478,7 @@ func (mb *MetricsBuilder) RecordSplunkIndexerRawWriteTimeDataPoint(ts pcommon.Ti
 }
 
 // RecordSplunkIndexerRollingrestartStatusDataPoint adds a data point to splunk.indexer.rollingrestart.status metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerRollingrestartStatusDataPoint(ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue string, splunkRollingorrestartAttributeValue string) {
+func (mb *MetricsBuilder) RecordSplunkIndexerRollingrestartStatusDataPoint(ts pcommon.Timestamp, val int64, splunkSearchableRestartAttributeValue bool, splunkRollingorrestartAttributeValue bool) {
 	mb.metricSplunkIndexerRollingrestartStatus.recordDataPoint(mb.startTime, ts, val, splunkSearchableRestartAttributeValue, splunkRollingorrestartAttributeValue)
 }
 

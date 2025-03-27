@@ -108,7 +108,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
-			mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 1, "splunk.searchable.restart-val", "splunk.rollingorrestart-val")
+			mb.RecordSplunkIndexerRollingrestartStatusDataPoint(ts, 1, false, false)
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
@@ -465,10 +465,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.searchable.restart")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.searchable.restart-val", attrVal.Str())
+					assert.False(t, attrVal.Bool())
 					attrVal, ok = dp.Attributes().Get("splunk.rollingorrestart")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.rollingorrestart-val", attrVal.Str())
+					assert.False(t, attrVal.Bool())
 				case "splunk.indexer.throughput":
 					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 					validatedMetrics["splunk.indexer.throughput"] = true
