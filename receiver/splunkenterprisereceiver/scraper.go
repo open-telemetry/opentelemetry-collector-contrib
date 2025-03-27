@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
@@ -31,14 +33,15 @@ type splunkScraper struct {
 	settings      component.TelemetrySettings
 	conf          *Config
 	mb            *metadata.MetricsBuilder
-	failedScrapes int64
+	failedScrapes *atomic.Int64
 }
 
 func newSplunkMetricsScraper(params receiver.Settings, cfg *Config) splunkScraper {
 	return splunkScraper{
-		settings: params.TelemetrySettings,
-		conf:     cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		settings:      params.TelemetrySettings,
+		conf:          cfg,
+		mb:            metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		failedScrapes: &atomic.Int64{},
 	}
 }
 
@@ -130,9 +133,9 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs = <-errOut
 	combinedErrs := errs.Combine()
 	if combinedErrs != nil {
-		s.settings.Logger.Error(fmt.Sprintf("Scrape errors: %v", combinedErrs.Error()))
-		s.failedScrapes++
-		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes)
+		s.settings.Logger.Error("Scrape errors", zap.Error(combinedErrs))
+		s.failedScrapes.Add(1)
+		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes.Load())
 	}
 	return s.mb.Emit(), nil
 }
