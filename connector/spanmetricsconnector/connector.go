@@ -28,11 +28,13 @@ import (
 )
 
 const (
-	serviceNameKey     = conventions.AttributeServiceName
-	spanNameKey        = "span.name"   // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
-	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
-	metricKeySeparator = string(byte(0))
+	serviceNameKey                 = conventions.AttributeServiceName
+	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
+	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
+	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
+	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
+	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
+	metricKeySeparator             = string(byte(0))
 
 	defaultDimensionsCacheSize      = 1000
 	defaultResourceMetricsCacheSize = 1000
@@ -401,7 +403,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
 				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions)
+					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
 				if !p.config.Histogram.Disable {
@@ -432,7 +434,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
 						if !ok {
-							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions)
+							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
 						e := events.GetOrCreate(eKey, eAttributes)
@@ -505,7 +507,7 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension, instrumentationScope pcommon.InstrumentationScope) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -520,11 +522,20 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
+
 	for _, d := range dimensions {
 		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
+
+	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
+		attr.PutStr(instrumentationScopeNameKey, instrumentationScope.Name())
+		if instrumentationScope.Version() != "" {
+			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
+		}
+	}
+
 	return attr
 }
 
