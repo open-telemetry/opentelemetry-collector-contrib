@@ -12,7 +12,6 @@ import (
 	"time"
 
 	gojson "github.com/goccy/go-json"
-
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
