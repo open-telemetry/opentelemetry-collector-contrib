@@ -30,6 +30,7 @@ type Input struct {
 	startAt             string
 	raw                 bool
 	excludeProviders    map[string]struct{}
+	includeProviders    map[string]struct{}
 	pollInterval        time.Duration
 	persister           operator.Persister
 	publisherCache      publisherCache
@@ -241,6 +242,14 @@ func (i *Input) getPublisherName(event Event) (name string, excluded bool) {
 		i.Logger().Error("Failed to get provider name", zap.Error(err))
 		return "", true
 	}
+
+	// Check first for includeProviders
+	if len(i.includeProviders) != 0 {
+		if _, include := i.includeProviders[providerName]; !include {
+			return "", true
+		}
+	}
+
 	if _, exclude := i.excludeProviders[providerName]; exclude {
 		return "", true
 	}
@@ -269,7 +278,7 @@ func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Pu
 
 // processEvent will process and send an event retrieved from windows event log.
 func (i *Input) processEventWithoutRenderingInfo(ctx context.Context, event Event) error {
-	if len(i.excludeProviders) == 0 {
+	if len(i.excludeProviders) == 0 && len(i.includeProviders) == 0 {
 		return i.renderSimpleAndSend(ctx, event)
 	}
 	if _, exclude := i.getPublisherName(event); exclude {
