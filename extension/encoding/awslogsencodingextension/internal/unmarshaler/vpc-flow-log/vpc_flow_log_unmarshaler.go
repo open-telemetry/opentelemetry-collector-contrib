@@ -241,7 +241,7 @@ func handleAddresses(addresses map[string]string) map[string]string {
 	dstaddr, foundDst := addresses["dstaddr"]
 	pktDstaddr, foundDstPkt := addresses["pkt-dstaddr"]
 	if !foundDstPkt && foundDst {
-		// there is no middle layer, and "dstaddr" field
+		// there is no middle layer, assume "dstaddr" field
 		// corresponds to the original destination address.
 		recordAttr[conventions.AttributeDestinationAddress] = dstaddr
 	} else if foundDstPkt && foundDst {
