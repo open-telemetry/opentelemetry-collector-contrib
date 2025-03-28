@@ -146,6 +146,9 @@ func startExtension(t *testing.T, config *Config) {
 func TestCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 
+	// 512 Mb
+	var maxMem int64 = 536870912
+
 	tests := []struct {
 		name string
 		// nil CPU quota == "max" cgroup string value
@@ -160,8 +163,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			name:            "90% the max cgroup memory and 12 GOMAXPROCS",
 			cgroupCPUQuota:  pointerInt64(100000),
 			cgroupCPUPeriod: 8000,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -173,15 +175,13 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			},
 			// 100000 / 8000
 			expectedGoMaxProcs: 12,
-			// 134217728 * 0.9
-			expectedGoMemLimit: 120795955,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.9),
 		},
 		{
 			name:            "80% of the max cgroup memory and 1 GOMAXPROCS",
 			cgroupCPUQuota:  pointerInt64(100000),
 			cgroupCPUPeriod: 100000,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -193,15 +193,13 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			},
 			// 100000 / 100000
 			expectedGoMaxProcs: 1,
-			// 134217728 * 0.8
-			expectedGoMemLimit: 107374182,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.8),
 		},
 		{
 			name:            "80% of the max cgroup memory, max cpu, default GOMAXPROCS",
 			cgroupCPUQuota:  nil,
 			cgroupCPUPeriod: 100000,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -215,8 +213,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			// If cpu.max is set to max, GOMAXPROCS should not be
 			// modified
 			expectedGoMaxProcs: runtime.GOMAXPROCS(-1),
-			// 134217728 * 0.8
-			expectedGoMemLimit: 107374182,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.8),
 		},
 	}
 
@@ -306,6 +303,9 @@ func testServerECSMetadata(t *testing.T, containerCPU, taskCPU int) *httptest.Se
 func TestECSCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 
+	// 512 Mb
+	var maxMem int64 = 536870912
+
 	tests := []struct {
 		name               string
 		containerCPU       int
@@ -316,11 +316,10 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 		expectedGoMemLimit int64
 	}{
 		{
-			name:         "90% the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 16 task cpu",
-			containerCPU: 4096,
-			taskCPU:      16,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			name:            "90% the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 16 task cpu",
+			containerCPU:    4096,
+			taskCPU:         16,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -331,15 +330,13 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 			},
 			expectedGoMaxProcs: 4,
-			// 134217728 * 0.9
-			expectedGoMemLimit: 120795955,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.9),
 		},
 		{
-			name:         "70% of the max cgroup memory and 1 GOMAXPROCS w/ 2048 container cpu 2 task cpu",
-			containerCPU: 2048,
-			taskCPU:      2,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			name:            "70% of the max cgroup memory and 1 GOMAXPROCS w/ 2048 container cpu 2 task cpu",
+			containerCPU:    2048,
+			taskCPU:         2,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -350,15 +347,13 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 			},
 			expectedGoMaxProcs: 2,
-			// 134217728 * 0.7
-			expectedGoMemLimit: 93952409,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.7),
 		},
 		{
-			name:         "70% of the max cgroup memory and 1 GOMAXPROCS w/ 1024 container cpu 4 task cpu",
-			containerCPU: 1024,
-			taskCPU:      4,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			name:            "70% of the max cgroup memory and 1 GOMAXPROCS w/ 1024 container cpu 4 task cpu",
+			containerCPU:    1024,
+			taskCPU:         4,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -369,15 +364,13 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 			},
 			expectedGoMaxProcs: 1,
-			// 134217728 * 0.7
-			expectedGoMemLimit: 93952409,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.7),
 		},
 		{
-			name:         "80% of the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 0 task cpu",
-			containerCPU: 4096,
-			taskCPU:      0,
-			// 128 Mb
-			cgroupMaxMemory: 134217728,
+			name:            "80% of the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 0 task cpu",
+			containerCPU:    4096,
+			taskCPU:         0,
+			cgroupMaxMemory: maxMem,
 			config: &Config{
 				GoMaxProcs: GoMaxProcsConfig{
 					Enabled: true,
@@ -388,8 +381,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 			},
 			expectedGoMaxProcs: 4,
-			// 134217728 * 0.8
-			expectedGoMemLimit: 107374182,
+			expectedGoMemLimit: int64(float64(maxMem) * 0.8),
 		},
 	}
 
