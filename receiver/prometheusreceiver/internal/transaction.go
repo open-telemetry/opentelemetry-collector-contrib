@@ -126,11 +126,11 @@ func (t *transaction) Append(_ storage.SeriesRef, ls labels.Labels, atMs int64, 
 	// But it can also be a staleNaN, which is inserted when the target goes away.
 	if metricName == scrapeUpMetricName && val != 1.0 && !value.IsStaleNaN(val) {
 		if val == 0.0 {
-			t.logger.Warn("Failed to scrape Prometheus endpoint",
+			t.logger.Debug("Failed to scrape Prometheus endpoint",
 				zap.Int64("scrape_timestamp", atMs),
 				zap.Stringer("target_labels", ls))
 		} else {
-			t.logger.Warn("The 'up' metric contains invalid value",
+			t.logger.Debug("The 'up' metric contains invalid value",
 				zap.Float64("value", val),
 				zap.Int64("scrape_timestamp", atMs),
 				zap.Stringer("target_labels", ls))
