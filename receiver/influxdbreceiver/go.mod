@@ -11,7 +11,7 @@ require (
 	github.com/domleb/opentelemetry-collector-contrib/internal/common v0.122.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.202	50319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/config/confighttp v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
