@@ -39,14 +39,11 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 	tests := map[string]struct {
 		nLogs int
 	}{
-		"small_file": {
-			nLogs: 1_000, // 80K
+		"1_log": {
+			nLogs: 1,
 		},
-		"medium_file": {
-			nLogs: 100_000, // 8MB
-		},
-		"large_file": {
-			nLogs: 1_000_000, // 80MB
+		"1000_logs": {
+			nLogs: 1_000,
 		},
 	}
 
