@@ -426,6 +426,18 @@ jobs:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
         run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
+      - name: Check for OOM Kills
+        if: always()
+        run: |
+          echo "==== Kernel Messages (Last 100 lines) ===="
+          sudo dmesg --ctime | tail -n 100
+
+          echo "==== Checking OOM Killer Logs ===="
+          sudo dmesg --ctime | grep -i 'oom' || echo "No OOM kill detected"
+
+          echo "==== Checking system logs for kills ===="
+          sudo journalctl -k -n 50 | grep -i 'oom' || echo "No OOM kill detected in journal logs"
+
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
