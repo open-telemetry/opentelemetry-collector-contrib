@@ -33,10 +33,14 @@ receivers:
       port: 2055
       sockets: 16
       workers: 32
-      send_raw: true
   netflow/sflow:
     - scheme: sflow
       port: 6343
+      sockets: 16
+      workers: 32
+  netflow/raw:
+    - scheme: netflow
+      port: 2055
       sockets: 16
       workers: 32
       send_raw: true
