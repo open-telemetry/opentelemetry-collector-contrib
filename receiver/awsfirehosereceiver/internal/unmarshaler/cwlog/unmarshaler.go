@@ -4,10 +4,10 @@
 package cwlog // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwlog"
 
 import (
-	"bufio"
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"sync"
 	"time"
 
@@ -67,95 +67,59 @@ func (u *Unmarshaler) UnmarshalLogs(compressedRecord []byte) (plog.Logs, error) 
 	}
 	defer u.gzipPool.Put(r)
 
-	type resourceKey struct {
-		owner     string
-		logGroup  string
-		logStream string
+	data, err := io.ReadAll(r)
+	if err != nil {
+		u.logger.Error("Error reading log data", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("error reading log data: %w", err)
 	}
-	byResource := make(map[resourceKey]plog.LogRecordSlice)
 
-	// Multiple logs in each record separated by newline character
-	var anyErrors bool
-	scanner := bufio.NewScanner(r)
-	for datumIndex := 0; scanner.Scan(); datumIndex++ {
-		log, control, err := parseLog(scanner.Bytes())
-		if err != nil {
-			anyErrors = true
-			u.logger.Error(
-				"Unable to unmarshal input",
-				zap.Error(err),
-				zap.Int("datum_index", datumIndex),
+	cwLog, control, err := parseLog(data)
+	if err != nil {
+		u.logger.Error("Error unmarshalling log message", zap.Error(err))
+		return plog.Logs{}, fmt.Errorf("%w: %w", errInvalidRecords, err)
+	}
+
+	if control {
+		for _, event := range cwLog.LogEvents {
+			u.logger.Debug(
+				"Skipping CloudWatch control message event",
+				zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
+				zap.String("message", event.Message),
 			)
-			continue
 		}
-		if control {
-			for _, event := range log.LogEvents {
-				u.logger.Debug(
-					"Skipping CloudWatch control message event",
-					zap.Time("timestamp", time.UnixMilli(event.Timestamp)),
-					zap.String("message", event.Message),
-					zap.Int("datum_index", datumIndex),
-				)
-			}
-			continue
-		}
-
-		key := resourceKey{
-			owner:     log.Owner,
-			logGroup:  log.LogGroup,
-			logStream: log.LogStream,
-		}
-		logRecords, ok := byResource[key]
-		if !ok {
-			logRecords = plog.NewLogRecordSlice()
-			byResource[key] = logRecords
-		}
-
-		for _, event := range log.LogEvents {
-			logRecord := logRecords.AppendEmpty()
-			// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
-			// but timestamp in cloudwatch logs are in milliseconds.
-			logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
-			logRecord.Body().SetStr(event.Message)
-		}
-	}
-	if err := scanner.Err(); err != nil {
-		// Treat this as a non-fatal error, and handle the data below.
-		anyErrors = true
-		u.logger.Error("Error scanning for newline-delimited JSON", zap.Error(err))
-	}
-	if anyErrors && len(byResource) == 0 {
-		// Note that there is a valid scenario where there are no errors
-		// but also byResource is empty: when there are only control messages
-		// in the record. In this case we want to return an initialized but
-		// empty plog.Logs below.
-		return plog.Logs{}, errInvalidRecords
+		return plog.NewLogs(), nil
 	}
 
 	logs := plog.NewLogs()
-	for resourceKey, logRecords := range byResource {
-		rl := logs.ResourceLogs().AppendEmpty()
-		resourceAttrs := rl.Resource().Attributes()
-		resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		resourceAttrs.PutStr(conventions.AttributeCloudAccountID, resourceKey.owner)
-		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames).AppendEmpty().SetStr(resourceKey.logGroup)
-		resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames).AppendEmpty().SetStr(resourceKey.logStream)
-		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogGroupNames` instead
-		resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, resourceKey.logGroup)
-		// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogStreamNames` instead
-		resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, resourceKey.logStream)
+	rl := logs.ResourceLogs().AppendEmpty()
+	resourceAttrs := rl.Resource().Attributes()
+	resourceAttrs.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	resourceAttrs.PutStr(conventions.AttributeCloudAccountID, cwLog.Owner)
+	resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogGroupNames).AppendEmpty().SetStr(cwLog.LogGroup)
+	resourceAttrs.PutEmptySlice(conventions.AttributeAWSLogStreamNames).AppendEmpty().SetStr(cwLog.LogStream)
+	// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogGroupNames` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogGroupName, cwLog.LogGroup)
+	// Deprecated: [v0.121.0] Use `conventions.AttributeAWSLogStreamNames` instead
+	resourceAttrs.PutStr(attributeAWSCloudWatchLogStreamName, cwLog.LogStream)
 
-		sl := rl.ScopeLogs().AppendEmpty()
-		sl.Scope().SetName(metadata.ScopeName)
-		sl.Scope().SetVersion(u.buildInfo.Version)
-		logRecords.MoveAndAppendTo(sl.LogRecords())
+	sl := rl.ScopeLogs().AppendEmpty()
+	sl.Scope().SetName(metadata.ScopeName)
+	sl.Scope().SetVersion(u.buildInfo.Version)
+
+	for _, event := range cwLog.LogEvents {
+		logRecord := sl.LogRecords().AppendEmpty()
+		// pcommon.Timestamp is a time specified as UNIX Epoch time in nanoseconds
+		// but timestamp in cloudwatch logs are in milliseconds.
+		logRecord.SetTimestamp(pcommon.Timestamp(event.Timestamp * int64(time.Millisecond)))
+		logRecord.Body().SetStr(event.Message)
 	}
+
 	return logs, nil
 }
 
 func parseLog(data []byte) (log cWLog, control bool, _ error) {
 	if err := jsoniter.ConfigFastest.Unmarshal(data, &log); err != nil {
-		return cWLog{}, false, fmt.Errorf("error unmarshalling JSON: %w", err)
+		return cWLog{}, false, err
 	}
 	switch log.MessageType {
 	case "DATA_MESSAGE":

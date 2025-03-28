@@ -286,6 +286,7 @@ receiver/sqlqueryreceiver receiver/sqlquery
 receiver/sqlserverreceiver receiver/sqlserver
 receiver/sshcheckreceiver receiver/sshcheck
 receiver/statsdreceiver receiver/statsd
+receiver/stefreceiver receiver/stef
 receiver/syslogreceiver receiver/syslog
 receiver/systemdreceiver receiver/systemd
 receiver/tcpcheckreceiver receiver/tcpcheck

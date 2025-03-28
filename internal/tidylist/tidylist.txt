@@ -309,6 +309,7 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
+receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver

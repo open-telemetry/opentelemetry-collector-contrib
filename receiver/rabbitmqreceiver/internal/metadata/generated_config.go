@@ -28,29 +28,86 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for rabbitmq metrics.
 type MetricsConfig struct {
-	RabbitmqConsumerCount              MetricConfig `mapstructure:"rabbitmq.consumer.count"`
-	RabbitmqMessageAcknowledged        MetricConfig `mapstructure:"rabbitmq.message.acknowledged"`
-	RabbitmqMessageCurrent             MetricConfig `mapstructure:"rabbitmq.message.current"`
-	RabbitmqMessageDelivered           MetricConfig `mapstructure:"rabbitmq.message.delivered"`
-	RabbitmqMessageDropped             MetricConfig `mapstructure:"rabbitmq.message.dropped"`
-	RabbitmqMessagePublished           MetricConfig `mapstructure:"rabbitmq.message.published"`
-	RabbitmqNodeDiskFree               MetricConfig `mapstructure:"rabbitmq.node.disk_free"`
-	RabbitmqNodeDiskFreeAlarm          MetricConfig `mapstructure:"rabbitmq.node.disk_free_alarm"`
-	RabbitmqNodeDiskFreeDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.disk_free_details.rate"`
-	RabbitmqNodeDiskFreeLimit          MetricConfig `mapstructure:"rabbitmq.node.disk_free_limit"`
-	RabbitmqNodeFdTotal                MetricConfig `mapstructure:"rabbitmq.node.fd_total"`
-	RabbitmqNodeFdUsed                 MetricConfig `mapstructure:"rabbitmq.node.fd_used"`
-	RabbitmqNodeFdUsedDetailsRate      MetricConfig `mapstructure:"rabbitmq.node.fd_used_details.rate"`
-	RabbitmqNodeMemAlarm               MetricConfig `mapstructure:"rabbitmq.node.mem_alarm"`
-	RabbitmqNodeMemLimit               MetricConfig `mapstructure:"rabbitmq.node.mem_limit"`
-	RabbitmqNodeMemUsed                MetricConfig `mapstructure:"rabbitmq.node.mem_used"`
-	RabbitmqNodeMemUsedDetailsRate     MetricConfig `mapstructure:"rabbitmq.node.mem_used_details.rate"`
-	RabbitmqNodeProcTotal              MetricConfig `mapstructure:"rabbitmq.node.proc_total"`
-	RabbitmqNodeProcUsed               MetricConfig `mapstructure:"rabbitmq.node.proc_used"`
-	RabbitmqNodeProcUsedDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.proc_used_details.rate"`
-	RabbitmqNodeSocketsTotal           MetricConfig `mapstructure:"rabbitmq.node.sockets_total"`
-	RabbitmqNodeSocketsUsed            MetricConfig `mapstructure:"rabbitmq.node.sockets_used"`
-	RabbitmqNodeSocketsUsedDetailsRate MetricConfig `mapstructure:"rabbitmq.node.sockets_used_details.rate"`
+	RabbitmqConsumerCount                       MetricConfig `mapstructure:"rabbitmq.consumer.count"`
+	RabbitmqMessageAcknowledged                 MetricConfig `mapstructure:"rabbitmq.message.acknowledged"`
+	RabbitmqMessageCurrent                      MetricConfig `mapstructure:"rabbitmq.message.current"`
+	RabbitmqMessageDelivered                    MetricConfig `mapstructure:"rabbitmq.message.delivered"`
+	RabbitmqMessageDropped                      MetricConfig `mapstructure:"rabbitmq.message.dropped"`
+	RabbitmqMessagePublished                    MetricConfig `mapstructure:"rabbitmq.message.published"`
+	RabbitmqNodeChannelClosed                   MetricConfig `mapstructure:"rabbitmq.node.channel_closed"`
+	RabbitmqNodeChannelClosedDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.channel_closed_details.rate"`
+	RabbitmqNodeChannelCreated                  MetricConfig `mapstructure:"rabbitmq.node.channel_created"`
+	RabbitmqNodeChannelCreatedDetailsRate       MetricConfig `mapstructure:"rabbitmq.node.channel_created_details.rate"`
+	RabbitmqNodeConnectionClosed                MetricConfig `mapstructure:"rabbitmq.node.connection_closed"`
+	RabbitmqNodeConnectionClosedDetailsRate     MetricConfig `mapstructure:"rabbitmq.node.connection_closed_details.rate"`
+	RabbitmqNodeConnectionCreated               MetricConfig `mapstructure:"rabbitmq.node.connection_created"`
+	RabbitmqNodeConnectionCreatedDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.connection_created_details.rate"`
+	RabbitmqNodeContextSwitches                 MetricConfig `mapstructure:"rabbitmq.node.context_switches"`
+	RabbitmqNodeContextSwitchesDetailsRate      MetricConfig `mapstructure:"rabbitmq.node.context_switches_details.rate"`
+	RabbitmqNodeDiskFree                        MetricConfig `mapstructure:"rabbitmq.node.disk_free"`
+	RabbitmqNodeDiskFreeAlarm                   MetricConfig `mapstructure:"rabbitmq.node.disk_free_alarm"`
+	RabbitmqNodeDiskFreeDetailsRate             MetricConfig `mapstructure:"rabbitmq.node.disk_free_details.rate"`
+	RabbitmqNodeDiskFreeLimit                   MetricConfig `mapstructure:"rabbitmq.node.disk_free_limit"`
+	RabbitmqNodeFdTotal                         MetricConfig `mapstructure:"rabbitmq.node.fd_total"`
+	RabbitmqNodeFdUsed                          MetricConfig `mapstructure:"rabbitmq.node.fd_used"`
+	RabbitmqNodeFdUsedDetailsRate               MetricConfig `mapstructure:"rabbitmq.node.fd_used_details.rate"`
+	RabbitmqNodeGcBytesReclaimed                MetricConfig `mapstructure:"rabbitmq.node.gc_bytes_reclaimed"`
+	RabbitmqNodeGcBytesReclaimedDetailsRate     MetricConfig `mapstructure:"rabbitmq.node.gc_bytes_reclaimed_details.rate"`
+	RabbitmqNodeGcNum                           MetricConfig `mapstructure:"rabbitmq.node.gc_num"`
+	RabbitmqNodeGcNumDetailsRate                MetricConfig `mapstructure:"rabbitmq.node.gc_num_details.rate"`
+	RabbitmqNodeIoReadAvgTime                   MetricConfig `mapstructure:"rabbitmq.node.io_read_avg_time"`
+	RabbitmqNodeIoReadAvgTimeDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.io_read_avg_time_details.rate"`
+	RabbitmqNodeIoReadBytes                     MetricConfig `mapstructure:"rabbitmq.node.io_read_bytes"`
+	RabbitmqNodeIoReadBytesDetailsRate          MetricConfig `mapstructure:"rabbitmq.node.io_read_bytes_details.rate"`
+	RabbitmqNodeIoReadCount                     MetricConfig `mapstructure:"rabbitmq.node.io_read_count"`
+	RabbitmqNodeIoReadCountDetailsRate          MetricConfig `mapstructure:"rabbitmq.node.io_read_count_details.rate"`
+	RabbitmqNodeIoReopenCount                   MetricConfig `mapstructure:"rabbitmq.node.io_reopen_count"`
+	RabbitmqNodeIoReopenCountDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.io_reopen_count_details.rate"`
+	RabbitmqNodeIoSeekAvgTime                   MetricConfig `mapstructure:"rabbitmq.node.io_seek_avg_time"`
+	RabbitmqNodeIoSeekAvgTimeDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.io_seek_avg_time_details.rate"`
+	RabbitmqNodeIoSeekCount                     MetricConfig `mapstructure:"rabbitmq.node.io_seek_count"`
+	RabbitmqNodeIoSeekCountDetailsRate          MetricConfig `mapstructure:"rabbitmq.node.io_seek_count_details.rate"`
+	RabbitmqNodeIoSyncAvgTime                   MetricConfig `mapstructure:"rabbitmq.node.io_sync_avg_time"`
+	RabbitmqNodeIoSyncAvgTimeDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.io_sync_avg_time_details.rate"`
+	RabbitmqNodeIoSyncCount                     MetricConfig `mapstructure:"rabbitmq.node.io_sync_count"`
+	RabbitmqNodeIoSyncCountDetailsRate          MetricConfig `mapstructure:"rabbitmq.node.io_sync_count_details.rate"`
+	RabbitmqNodeIoWriteAvgTime                  MetricConfig `mapstructure:"rabbitmq.node.io_write_avg_time"`
+	RabbitmqNodeIoWriteAvgTimeDetailsRate       MetricConfig `mapstructure:"rabbitmq.node.io_write_avg_time_details.rate"`
+	RabbitmqNodeIoWriteBytes                    MetricConfig `mapstructure:"rabbitmq.node.io_write_bytes"`
+	RabbitmqNodeIoWriteBytesDetailsRate         MetricConfig `mapstructure:"rabbitmq.node.io_write_bytes_details.rate"`
+	RabbitmqNodeIoWriteCount                    MetricConfig `mapstructure:"rabbitmq.node.io_write_count"`
+	RabbitmqNodeIoWriteCountDetailsRate         MetricConfig `mapstructure:"rabbitmq.node.io_write_count_details.rate"`
+	RabbitmqNodeMemAlarm                        MetricConfig `mapstructure:"rabbitmq.node.mem_alarm"`
+	RabbitmqNodeMemLimit                        MetricConfig `mapstructure:"rabbitmq.node.mem_limit"`
+	RabbitmqNodeMemUsed                         MetricConfig `mapstructure:"rabbitmq.node.mem_used"`
+	RabbitmqNodeMemUsedDetailsRate              MetricConfig `mapstructure:"rabbitmq.node.mem_used_details.rate"`
+	RabbitmqNodeMnesiaDiskTxCount               MetricConfig `mapstructure:"rabbitmq.node.mnesia_disk_tx_count"`
+	RabbitmqNodeMnesiaDiskTxCountDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.mnesia_disk_tx_count_details.rate"`
+	RabbitmqNodeMnesiaRAMTxCount                MetricConfig `mapstructure:"rabbitmq.node.mnesia_ram_tx_count"`
+	RabbitmqNodeMnesiaRAMTxCountDetailsRate     MetricConfig `mapstructure:"rabbitmq.node.mnesia_ram_tx_count_details.rate"`
+	RabbitmqNodeMsgStoreReadCount               MetricConfig `mapstructure:"rabbitmq.node.msg_store_read_count"`
+	RabbitmqNodeMsgStoreReadCountDetailsRate    MetricConfig `mapstructure:"rabbitmq.node.msg_store_read_count_details.rate"`
+	RabbitmqNodeMsgStoreWriteCount              MetricConfig `mapstructure:"rabbitmq.node.msg_store_write_count"`
+	RabbitmqNodeMsgStoreWriteCountDetailsRate   MetricConfig `mapstructure:"rabbitmq.node.msg_store_write_count_details.rate"`
+	RabbitmqNodeProcTotal                       MetricConfig `mapstructure:"rabbitmq.node.proc_total"`
+	RabbitmqNodeProcUsed                        MetricConfig `mapstructure:"rabbitmq.node.proc_used"`
+	RabbitmqNodeProcUsedDetailsRate             MetricConfig `mapstructure:"rabbitmq.node.proc_used_details.rate"`
+	RabbitmqNodeProcessors                      MetricConfig `mapstructure:"rabbitmq.node.processors"`
+	RabbitmqNodeQueueCreated                    MetricConfig `mapstructure:"rabbitmq.node.queue_created"`
+	RabbitmqNodeQueueCreatedDetailsRate         MetricConfig `mapstructure:"rabbitmq.node.queue_created_details.rate"`
+	RabbitmqNodeQueueDeclared                   MetricConfig `mapstructure:"rabbitmq.node.queue_declared"`
+	RabbitmqNodeQueueDeclaredDetailsRate        MetricConfig `mapstructure:"rabbitmq.node.queue_declared_details.rate"`
+	RabbitmqNodeQueueDeleted                    MetricConfig `mapstructure:"rabbitmq.node.queue_deleted"`
+	RabbitmqNodeQueueDeletedDetailsRate         MetricConfig `mapstructure:"rabbitmq.node.queue_deleted_details.rate"`
+	RabbitmqNodeQueueIndexReadCount             MetricConfig `mapstructure:"rabbitmq.node.queue_index_read_count"`
+	RabbitmqNodeQueueIndexReadCountDetailsRate  MetricConfig `mapstructure:"rabbitmq.node.queue_index_read_count_details.rate"`
+	RabbitmqNodeQueueIndexWriteCount            MetricConfig `mapstructure:"rabbitmq.node.queue_index_write_count"`
+	RabbitmqNodeQueueIndexWriteCountDetailsRate MetricConfig `mapstructure:"rabbitmq.node.queue_index_write_count_details.rate"`
+	RabbitmqNodeRunQueue                        MetricConfig `mapstructure:"rabbitmq.node.run_queue"`
+	RabbitmqNodeSocketsTotal                    MetricConfig `mapstructure:"rabbitmq.node.sockets_total"`
+	RabbitmqNodeSocketsUsed                     MetricConfig `mapstructure:"rabbitmq.node.sockets_used"`
+	RabbitmqNodeSocketsUsedDetailsRate          MetricConfig `mapstructure:"rabbitmq.node.sockets_used_details.rate"`
+	RabbitmqNodeUptime                          MetricConfig `mapstructure:"rabbitmq.node.uptime"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -73,6 +130,36 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqMessagePublished: MetricConfig{
 			Enabled: true,
 		},
+		RabbitmqNodeChannelClosed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeChannelClosedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeChannelCreated: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeChannelCreatedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeConnectionClosed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeConnectionClosedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeConnectionCreated: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeConnectionCreatedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeContextSwitches: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeContextSwitchesDetailsRate: MetricConfig{
+			Enabled: false,
+		},
 		RabbitmqNodeDiskFree: MetricConfig{
 			Enabled: false,
 		},
@@ -94,6 +181,84 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqNodeFdUsedDetailsRate: MetricConfig{
 			Enabled: false,
 		},
+		RabbitmqNodeGcBytesReclaimed: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeGcBytesReclaimedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeGcNum: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeGcNumDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadAvgTime: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadAvgTimeDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadBytes: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadBytesDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReadCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReopenCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoReopenCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSeekAvgTime: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSeekAvgTimeDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSeekCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSeekCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSyncAvgTime: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSyncAvgTimeDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSyncCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoSyncCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteAvgTime: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteAvgTimeDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteBytes: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteBytesDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeIoWriteCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
 		RabbitmqNodeMemAlarm: MetricConfig{
 			Enabled: false,
 		},
@@ -106,6 +271,30 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqNodeMemUsedDetailsRate: MetricConfig{
 			Enabled: false,
 		},
+		RabbitmqNodeMnesiaDiskTxCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMnesiaDiskTxCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMnesiaRAMTxCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMnesiaRAMTxCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMsgStoreReadCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMsgStoreReadCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMsgStoreWriteCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeMsgStoreWriteCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
 		RabbitmqNodeProcTotal: MetricConfig{
 			Enabled: false,
 		},
@@ -115,6 +304,42 @@ func DefaultMetricsConfig() MetricsConfig {
 		RabbitmqNodeProcUsedDetailsRate: MetricConfig{
 			Enabled: false,
 		},
+		RabbitmqNodeProcessors: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueCreated: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueCreatedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueDeclared: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueDeclaredDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueDeleted: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueDeletedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueIndexReadCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueIndexReadCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueIndexWriteCount: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeQueueIndexWriteCountDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeRunQueue: MetricConfig{
+			Enabled: false,
+		},
 		RabbitmqNodeSocketsTotal: MetricConfig{
 			Enabled: false,
 		},
@@ -122,6 +347,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RabbitmqNodeSocketsUsedDetailsRate: MetricConfig{
+			Enabled: false,
+		},
+		RabbitmqNodeUptime: MetricConfig{
 			Enabled: false,
 		},
 	}
