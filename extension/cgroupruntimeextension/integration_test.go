@@ -103,8 +103,6 @@ func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath
 		assert.NoError(t, err)
 	}
 
-	fmt.Printf("Initial max memory: %d MB\n", initialMaxMemory)
-
 	if initialMaxMemory == math.MaxUint64 || initialMaxMemory == 0 {
 		// fallback solution to set cgroup's max memory to "max"
 		memoryCgroupCleanUp = func() {
