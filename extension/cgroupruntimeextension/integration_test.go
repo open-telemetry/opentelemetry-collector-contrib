@@ -115,8 +115,7 @@ func startExtension(t *testing.T, config *Config) {
 func TestCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 
-	// 128 Mb
-	var maxMem int64 = 134217728
+	var maxMem int64 = 4294967296 // 4GB in bytes
 
 	tests := []struct {
 		name string
@@ -271,8 +270,7 @@ func testServerECSMetadata(t *testing.T, containerCPU, taskCPU int) *httptest.Se
 func TestECSCgroupV2SudoIntegration(t *testing.T) {
 	checkCgroupSystem(t)
 
-	// 128 Mb
-	var maxMem int64 = 134217728
+	var maxMem int64 = 4294967296 // 4GB in bytes
 
 	tests := []struct {
 		name               string
