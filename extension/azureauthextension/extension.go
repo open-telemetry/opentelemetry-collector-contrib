@@ -155,6 +155,9 @@ func (a *authenticator) updateToken(ctx context.Context) (time.Time, error) {
 	a.tokenMu.Lock()
 	defer a.tokenMu.Unlock()
 
+	if a.credential == nil {
+		return time.Time{}, errors.New("authenticator does not have credentials configured")
+	}
 	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
 		Scopes: []string{a.scope},
 	})
