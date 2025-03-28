@@ -147,7 +147,7 @@ mod-integration-test: $(GOTESTSUM)
 .PHONY: mod-integration-sudo-test
 mod-integration-sudo-test: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration sudo (root/privileged) test ./... in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
