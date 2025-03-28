@@ -799,6 +799,14 @@ func retrieveInt(row sqlquery.StringMap, columnName string) (any, error) {
 	return int64(result), err
 }
 
+func retrieveIntAndConvert(convert func(int64) any) func(row sqlquery.StringMap, columnName string) (any, error) {
+	return func(row sqlquery.StringMap, columnName string) (any, error) {
+		result, err := retrieveInt(row, columnName)
+		// need to convert even if it failed
+		return convert(result.(int64)), err
+	}
+}
+
 func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
 	var err error
 	var result float64
@@ -936,10 +944,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:            dbPrefix + cpuTime,
-				columnName:     cpuTime,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + cpuTime,
+				columnName: cpuTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + deadlockPriority,
@@ -948,10 +958,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setInt,
 			},
 			{
-				key:            dbPrefix + estimatedCompletionTime,
-				columnName:     estimatedCompletionTime,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + estimatedCompletionTime,
+				columnName: estimatedCompletionTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + lockTimeout,
@@ -1024,10 +1036,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:            dbPrefix + totalElapsedTime,
-				columnName:     totalElapsedTime,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + totalElapsedTime,
+				columnName: totalElapsedTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + transactionID,
@@ -1054,10 +1068,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:            dbPrefix + waitTime,
-				columnName:     waitTime,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + waitTime,
+				columnName: waitTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + waitType,
@@ -1090,6 +1106,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		} else {
 			record.Attributes().PutStr("client.address", row[clientAddress])
 		}
+
+		record.SetEventName("query sample")
 
 		record.Body().SetStr("sample")
 	}

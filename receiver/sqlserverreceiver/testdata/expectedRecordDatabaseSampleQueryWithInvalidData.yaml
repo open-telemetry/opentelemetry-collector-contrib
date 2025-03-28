@@ -48,7 +48,7 @@ resourceLogs:
                   stringValue: ""
               - key: sqlserver.wait_time
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.wait_resource
                 value:
                   stringValue: ""
@@ -63,13 +63,13 @@ resourceLogs:
                   doubleValue: 0
               - key: sqlserver.estimated_completion_time
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.cpu_time
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.total_elapsed_time
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.reads
                 value:
                   intValue: 0

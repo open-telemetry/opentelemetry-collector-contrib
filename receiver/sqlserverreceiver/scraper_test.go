@@ -501,9 +501,10 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			actualLogs, err := scraper.ScrapeLogs(context.Background())
 			assert.NoError(t, err)
 
-			expectedLogs, _ := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
+			assert.NoError(t, err)
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
-
+			assert.Equal(t, "query sample", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 			assert.NoError(t, errs)
 		})
 	}
