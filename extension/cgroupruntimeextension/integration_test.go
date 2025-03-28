@@ -146,7 +146,7 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			expectedGoMemLimit: 120795955,
 		},
 		{
-			name:            "50% of the max cgroup memory and 1 GOMAXPROCS",
+			name:            "80% of the max cgroup memory and 1 GOMAXPROCS",
 			cgroupCPUQuota:  pointerInt64(100000),
 			cgroupCPUPeriod: 100000,
 			// 128 Mb
@@ -157,16 +157,16 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.5,
+					Ratio:   0.8,
 				},
 			},
 			// 100000 / 100000
 			expectedGoMaxProcs: 1,
-			// 134217728 * 0.5
-			expectedGoMemLimit: 67108864,
+			// 134217728 * 0.8
+			expectedGoMemLimit: 107374182,
 		},
 		{
-			name:            "10% of the max cgroup memory, max cpu, default GOMAXPROCS",
+			name:            "80% of the max cgroup memory, max cpu, default GOMAXPROCS",
 			cgroupCPUQuota:  nil,
 			cgroupCPUPeriod: 100000,
 			// 128 Mb
@@ -177,15 +177,15 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.1,
+					Ratio:   0.8,
 				},
 			},
 			// GOMAXPROCS is set to the value of  `cpu.max / cpu.period`
 			// If cpu.max is set to max, GOMAXPROCS should not be
 			// modified
 			expectedGoMaxProcs: runtime.GOMAXPROCS(-1),
-			// 134217728 * 0.1
-			expectedGoMemLimit: 13421772,
+			// 134217728 * 0.8
+			expectedGoMemLimit: 107374182,
 		},
 	}
 
@@ -304,7 +304,7 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 			expectedGoMemLimit: 120795955,
 		},
 		{
-			name:         "50% of the max cgroup memory and 1 GOMAXPROCS w/ 2048 container cpu 2 task cpu",
+			name:         "70% of the max cgroup memory and 1 GOMAXPROCS w/ 2048 container cpu 2 task cpu",
 			containerCPU: 2048,
 			taskCPU:      2,
 			// 128 Mb
@@ -315,15 +315,15 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.5,
+					Ratio:   0.7,
 				},
 			},
 			expectedGoMaxProcs: 2,
-			// 134217728 * 0.5
-			expectedGoMemLimit: 67108864,
+			// 134217728 * 0.7
+			expectedGoMemLimit: 93952409,
 		},
 		{
-			name:         "50% of the max cgroup memory and 1 GOMAXPROCS w/ 1024 container cpu 4 task cpu",
+			name:         "70% of the max cgroup memory and 1 GOMAXPROCS w/ 1024 container cpu 4 task cpu",
 			containerCPU: 1024,
 			taskCPU:      4,
 			// 128 Mb
@@ -334,15 +334,15 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.5,
+					Ratio:   0.7,
 				},
 			},
 			expectedGoMaxProcs: 1,
-			// 134217728 * 0.5
-			expectedGoMemLimit: 67108864,
+			// 134217728 * 0.7
+			expectedGoMemLimit: 93952409,
 		},
 		{
-			name:         "10% of the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 0 task cpu",
+			name:         "80% of the max cgroup memory and 4 GOMAXPROCS w/ 4096 container cpu 0 task cpu",
 			containerCPU: 4096,
 			taskCPU:      0,
 			// 128 Mb
@@ -353,12 +353,12 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 				},
 				GoMemLimit: GoMemLimitConfig{
 					Enabled: true,
-					Ratio:   0.1,
+					Ratio:   0.8,
 				},
 			},
 			expectedGoMaxProcs: 4,
-			// 134217728 * 0.1
-			expectedGoMemLimit: 13421772,
+			// 134217728 * 0.8
+			expectedGoMemLimit: 107374182,
 		},
 	}
 
