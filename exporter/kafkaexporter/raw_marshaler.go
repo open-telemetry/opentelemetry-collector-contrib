@@ -50,7 +50,11 @@ func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerM
 func (r rawMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
-		return r.interfaceAsBytes(value.Str())
+		strContent := value.Str()
+		if json.Valid([]byte(strContent)) {
+			return []byte(strContent), nil
+		}
+		return r.interfaceAsBytes(strContent)
 	case pcommon.ValueTypeBytes:
 		return value.Bytes().AsRaw(), nil
 	case pcommon.ValueTypeBool:

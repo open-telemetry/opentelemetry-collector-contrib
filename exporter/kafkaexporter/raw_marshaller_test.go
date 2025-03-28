@@ -35,6 +35,16 @@ func Test_RawMarshaler(t *testing.T) {
 			marshaled:     []byte("\"foo\""),
 		},
 		{
+			name: "stringified json",
+			logRecord: func() plog.LogRecord {
+				lr := plog.NewLogRecord()
+				lr.Body().SetStr(`[{"foo":"bar"}]`)
+				return lr
+			},
+			errorExpected: false,
+			marshaled:     []byte("[{\"foo\":\"bar\"}]"),
+		},
+		{
 			name: "[]byte",
 			logRecord: func() plog.LogRecord {
 				lr := plog.NewLogRecord()
