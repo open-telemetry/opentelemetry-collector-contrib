@@ -6,6 +6,7 @@ package k8s // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -14,7 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata/provider"
 )
 
-var _ source.Provider = (*Provider)(nil)
+var (
+	_             source.Provider = (*Provider)(nil)
+	eksFargateErr                 = errors.New("EKS Fargate")
+)
 
 type Provider struct {
 	logger              *zap.Logger
@@ -25,7 +29,10 @@ type Provider struct {
 // Hostname returns the Kubernetes node name followed by the cluster name if available.
 func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	nodeName, err := p.nodeNameProvider.NodeName(ctx)
-	if err != nil {
+	if err == eksFargateErr {
+		src := source.Source{Kind: "eks_fargate", Identifier: nodeName}
+		return src, nil
+	} else if err != nil {
 		return source.Source{}, fmt.Errorf("node name not available: %w", err)
 	}
 
