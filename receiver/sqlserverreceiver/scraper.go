@@ -572,6 +572,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(timestamp)
+		record.SetEventName("top query")
 		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
 
 		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
@@ -584,7 +585,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
-		record.Attributes().PutInt(dbPrefix+totalElapsedTime, totalElapsedTimeDiffs[i])
+		record.Attributes().PutDouble(dbPrefix+totalElapsedTime, float64(totalElapsedTimeDiffs[i])/1000)
 
 		// handling `total_rows`
 		rowsReturnVal, err := strconv.ParseInt(row[rowsReturned], 10, 64)
@@ -644,7 +645,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTime/1000); cached {
-				record.Attributes().PutInt(dbPrefix+totalWorkerTime, diff)
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diff)/1000)
 			}
 		}
 
