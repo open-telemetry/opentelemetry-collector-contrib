@@ -569,7 +569,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(timestamp)
-		record.SetEventName("query event")
+		record.SetEventName("top query")
 		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
 
 		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
