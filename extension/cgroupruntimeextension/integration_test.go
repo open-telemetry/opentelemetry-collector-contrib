@@ -103,7 +103,9 @@ func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath
 		assert.NoError(t, err)
 	}
 
-	if initialMaxMemory == math.MaxUint64 {
+	fmt.Printf("Initial max memory: %d MB\n", initialMaxMemory)
+
+	if initialMaxMemory == math.MaxUint64 || initialMaxMemory == 0 {
 		// fallback solution to set cgroup's max memory to "max"
 		memoryCgroupCleanUp = func() {
 			err = os.WriteFile(path.Join(defaultCgroup2Path, cgroupPath, "memory.max"), []byte("max"), 0o600)
@@ -229,7 +231,6 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 	initialCPUQuota, initialCPUPeriod, err := cgroupMaxCPU(cgroupPath)
 	require.NoError(t, err)
 	cpuCgroupCleanUp := func() {
-		fmt.Println(initialCPUQuota)
 		err = manager.Update(&cgroup2.Resources{
 			CPU: &cgroup2.CPU{
 				Max: cgroup2.NewCPUMax(pointerInt64(initialCPUQuota), pointerUint64(initialCPUPeriod)),
