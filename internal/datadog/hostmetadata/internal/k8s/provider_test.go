@@ -25,6 +25,12 @@ type StringProvider string
 func (p StringProvider) ClusterName(context.Context) (string, error) { return string(p), nil }
 func (p StringProvider) NodeName(context.Context) (string, error)    { return string(p), nil }
 
+type EksNodeNameProvider string
+
+func (p EksNodeNameProvider) NodeName(context.Context) (string, error) {
+	return string(p), eksFargateErr
+}
+
 var (
 	_ provider.ClusterNameProvider = (*ErrorProvider)(nil)
 	_ nodeNameProvider             = (*ErrorProvider)(nil)
@@ -62,6 +68,12 @@ func TestProvider(t *testing.T) {
 			nodeNameProvider:    StringProvider("nodeName"),
 			clusterNameProvider: StringProvider("clusterName"),
 			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName-clusterName"},
+		},
+		{
+			name:                "node and cluster name",
+			nodeNameProvider:    EksNodeNameProvider("virtual_node:fargate-12345,pod_name:abcde-333"),
+			clusterNameProvider: nil,
+			src:                 source.Source{Kind: "eks_fargate", Identifier: "virtual_node:fargate-12345,pod_name:abcde-333"},
 		},
 	}
 
