@@ -90,6 +90,7 @@ body:
       - extension/ack
       - extension/asapauth
       - extension/awsproxy
+      - extension/azureauth
       - extension/basicauth
       - extension/bearertokenauth
       - extension/cgroupruntime
@@ -314,6 +315,7 @@ body:
       - receiver/sqlserver
       - receiver/sshcheck
       - receiver/statsd
+      - receiver/stef
       - receiver/syslog
       - receiver/systemd
       - receiver/tcpcheck
