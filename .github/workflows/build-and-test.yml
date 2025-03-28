@@ -394,12 +394,14 @@ jobs:
       - name: Run Integration Tests
         run: make gointegration-test GROUP=${{ matrix.group }}
 
-  integration-sudo-tests:
+  integration-sudo-tests-matrix:
     strategy:
       fail-fast: false
       matrix:
         group:
-          - extension
+          # list of components that require privileged (sudo) access for
+          # its integration tests `go test -exec sudo -run Sudo -tags=integration`
+          - extension/cgroupruntimeextension
     runs-on: ubuntu-24.04
     needs: [setup-environment]
     steps:
@@ -423,12 +425,12 @@ jobs:
         with:
           key: docker-${{ matrix.group }}
       - name: Run Integration Tests
-        run: make gointegration-sudo-test GROUP=${{ matrix.group }}
+        run: make --no-print-directory -C ${{ matrix.group }} mod-integration-sudo-test
 
   integration-tests:
     if: ${{ github.actor != 'dependabot[bot]' && always() }}
     runs-on: ubuntu-24.04
-    needs: [setup-environment, integration-tests-matrix]
+    needs: [setup-environment, integration-tests-matrix, integration-sudo-tests-matrix]
     steps:
       - name: Print result
         run: echo ${{ needs.integration-tests-matrix.result }}
