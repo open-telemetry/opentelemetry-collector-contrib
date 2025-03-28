@@ -206,7 +206,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	}
 
 	// get the address fields
-	addresses := handleAddresses(ips)
+	addresses := v.handleAddresses(ips)
 	for field, value := range addresses {
 		record.Attributes().PutStr(field, value)
 	}
@@ -220,7 +220,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 
 // handleAddresses creates a new map where the original field
 // names will be the known conventions for the fields
-func handleAddresses(addresses map[string]string) map[string]string {
+func (v *vpcFlowLogUnmarshaler) handleAddresses(addresses map[string]string) map[string]string {
 	// max is 3 fields, see example in
 	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
 	recordAttr := make(map[string]string, 3)
@@ -247,6 +247,9 @@ func handleAddresses(addresses map[string]string) map[string]string {
 	} else if foundDstPkt && foundDst {
 		recordAttr[conventions.AttributeDestinationAddress] = pktDstaddr
 		if pktDstaddr != dstaddr {
+			if _, found := recordAttr[conventions.AttributeNetworkPeerAddress]; found {
+				v.logger.Warn("unexpected: srcaddr, dstaddr, pkt-srcaddr and pkt-dstaddr are all different")
+			}
 			// dstaddr is the middle layer
 			recordAttr[conventions.AttributeNetworkPeerAddress] = dstaddr
 		}

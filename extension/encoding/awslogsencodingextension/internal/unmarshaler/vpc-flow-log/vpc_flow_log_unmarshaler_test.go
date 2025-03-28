@@ -102,6 +102,18 @@ func TestHandleAddresses(t *testing.T) {
 				conventions.AttributeDestinationAddress: "10.40.2.236",
 			},
 		},
+		"pkt_same_as_src-dst": {
+			original: map[string]string{
+				"srcaddr":     "10.40.1.175",
+				"dstaddr":     "10.40.2.236",
+				"pkt-srcaddr": "10.40.1.175",
+				"pkt-dstaddr": "10.40.2.236",
+			},
+			expected: map[string]string{
+				conventions.AttributeSourceAddress:      "10.40.1.175",
+				conventions.AttributeDestinationAddress: "10.40.2.236",
+			},
+		},
 		"different_source": {
 			original: map[string]string{
 				"srcaddr":     "10.40.1.175",
@@ -130,9 +142,10 @@ func TestHandleAddresses(t *testing.T) {
 		},
 	}
 
+	v := &vpcFlowLogUnmarshaler{logger: zap.NewNop()}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			result := handleAddresses(test.original)
+			result := v.handleAddresses(test.original)
 			require.Equal(t, test.expected, result)
 		})
 	}
