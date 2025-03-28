@@ -63,7 +63,7 @@ func (l lockedLRUSet) CheckAndAdd(entry string) bool {
 	if _, exclude := (l.excluded).Get(entry); exclude {
 		return true
 	}
-	defer (l.excluded).Add(entry, void{})
+	(l.excluded).Add(entry, void{})
 	return false
 }
 
