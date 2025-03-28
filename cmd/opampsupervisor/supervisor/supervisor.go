@@ -386,7 +386,8 @@ func (s *Supervisor) getFeatureGates() error {
 		return err
 	}
 
-	stdout, _, err := cmd.StartOneShot()
+	stdout, stderr, err := cmd.StartOneShot()
+	fmt.Println(stdout, stderr)
 	if err != nil {
 		return err
 	}
