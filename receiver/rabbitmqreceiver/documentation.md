@@ -76,6 +76,86 @@ metrics:
     enabled: true
 ```
 
+### rabbitmq.node.channel_closed
+
+Number of channels closed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {channels} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.channel_closed_details.rate
+
+Rate of channels closed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {channels}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.channel_created
+
+Number of channels created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {channels} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.channel_created_details.rate
+
+Rate of channels created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {channels}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.connection_closed
+
+Number of connections closed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.connection_closed_details.rate
+
+Rate of connections closed.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.connection_created
+
+Number of connections created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.connection_created_details.rate
+
+Rate of connections created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {connections}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.context_switches
+
+Total number of context switches.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {switches} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.context_switches_details.rate
+
+Rate of context switches.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {switches}/s | Sum | Double | Cumulative | false |
+
 ### rabbitmq.node.disk_free
 
 Free disk space on the node.
@@ -98,7 +178,7 @@ Rate of disk usage change.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {bytes}/s | Sum | Int | Cumulative | false |
+| {bytes}/s | Sum | Double | Cumulative | false |
 
 ### rabbitmq.node.disk_free_limit
 
@@ -110,7 +190,7 @@ Minimum required free disk space before alarm.
 
 ### rabbitmq.node.fd_total
 
-Maximum available file descriptors.
+Maximum number of file descriptors available.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -118,7 +198,7 @@ Maximum available file descriptors.
 
 ### rabbitmq.node.fd_used
 
-The number of file descriptors used on the node.
+Number of file descriptors used.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
@@ -130,7 +210,215 @@ Rate of file descriptor usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {fd}/s | Sum | Int | Cumulative | false |
+| {fd}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.gc_bytes_reclaimed
+
+Bytes reclaimed by garbage collection.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.gc_bytes_reclaimed_details.rate
+
+Rate of bytes reclaimed by GC.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.gc_num
+
+Number of garbage collections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {collections} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.gc_num_details.rate
+
+Rate of garbage collections.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {collections}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_read_avg_time
+
+Average read time in microseconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds} | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_read_avg_time_details.rate
+
+Rate of change of average read time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_read_bytes
+
+Total bytes read.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_read_bytes_details.rate
+
+Rate of bytes read.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_read_count
+
+Number of read operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_read_count_details.rate
+
+Rate of read operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_reopen_count
+
+Number of file reopen operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_reopen_count_details.rate
+
+Rate of file reopen operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_seek_avg_time
+
+Average seek time in microseconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds} | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_seek_avg_time_details.rate
+
+Rate of change of average seek time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_seek_count
+
+Number of seek operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_seek_count_details.rate
+
+Rate of seek operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_sync_avg_time
+
+Average sync time in microseconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds} | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_sync_avg_time_details.rate
+
+Rate of change of average sync time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_sync_count
+
+Number of sync operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_sync_count_details.rate
+
+Rate of sync operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_write_avg_time
+
+Average write time in microseconds.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds} | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_write_avg_time_details.rate
+
+Rate of change of average write time.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {microseconds}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_write_bytes
+
+Total bytes written.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_write_bytes_details.rate
+
+Rate of bytes written.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {bytes}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.io_write_count
+
+Number of write operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.io_write_count_details.rate
+
+Rate of write operations.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
 
 ### rabbitmq.node.mem_alarm
 
@@ -162,7 +450,71 @@ Rate of memory usage change.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {bytes}/s | Sum | Int | Cumulative | false |
+| {bytes}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.mnesia_disk_tx_count
+
+Number of disk transactions in Mnesia.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tx} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mnesia_disk_tx_count_details.rate
+
+Rate of disk transactions in Mnesia.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tx}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.mnesia_ram_tx_count
+
+Number of RAM transactions in Mnesia.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tx} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.mnesia_ram_tx_count_details.rate
+
+Rate of RAM transactions in Mnesia.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {tx}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.msg_store_read_count
+
+Number of message store reads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.msg_store_read_count_details.rate
+
+Rate of message store reads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.msg_store_write_count
+
+Number of message store writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.msg_store_write_count_details.rate
+
+Rate of message store writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
 
 ### rabbitmq.node.proc_total
 
@@ -186,7 +538,103 @@ Rate of process usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {processes}/s | Sum | Int | Cumulative | false |
+| {processes}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.processors
+
+Number of processors available to the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {processors} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_created
+
+Number of queues created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_created_details.rate
+
+Rate of queues created.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.queue_declared
+
+Number of queues declared.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_declared_details.rate
+
+Rate of queues declared.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.queue_deleted
+
+Number of queues deleted.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_deleted_details.rate
+
+Rate of queues deleted.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queues}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.queue_index_read_count
+
+Number of queue index reads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_index_read_count_details.rate
+
+Rate of queue index reads.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.queue_index_write_count
+
+Number of queue index writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops} | Sum | Int | Cumulative | false |
+
+### rabbitmq.node.queue_index_write_count_details.rate
+
+Rate of queue index writes.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {ops}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.run_queue
+
+Run queue length of the Erlang scheduler.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {threads} | Sum | Int | Cumulative | false |
 
 ### rabbitmq.node.sockets_total
 
@@ -210,7 +658,15 @@ Rate of socket usage.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
-| {sockets}/s | Sum | Int | Cumulative | false |
+| {sockets}/s | Sum | Double | Cumulative | false |
+
+### rabbitmq.node.uptime
+
+Uptime of the node.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| ms | Sum | Int | Cumulative | false |
 
 ## Resource Attributes
 

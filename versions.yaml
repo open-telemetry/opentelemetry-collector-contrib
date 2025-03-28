@@ -301,6 +301,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
@@ -324,3 +325,7 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/badpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver

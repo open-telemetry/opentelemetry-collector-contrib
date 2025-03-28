@@ -41,6 +41,120 @@ tests:              # generated_component_test.go looking for test.config from m
         enabled: false
       rabbitmq.node.proc_used_details.rate:
         enabled: false
+      rabbitmq.node.uptime:
+        enabled: false
+      rabbitmq.node.run_queue:
+        enabled: false
+      rabbitmq.node.processors:
+        enabled: false
+      rabbitmq.node.context_switches:
+        enabled: false
+      rabbitmq.node.context_switches_details.rate:
+        enabled: false
+      rabbitmq.node.gc_num:
+        enabled: false
+      rabbitmq.node.gc_num_details.rate:
+        enabled: false
+      rabbitmq.node.gc_bytes_reclaimed:
+        enabled: false
+      rabbitmq.node.gc_bytes_reclaimed_details.rate:
+        enabled: false
+      rabbitmq.node.io_read_count:
+        enabled: false
+      rabbitmq.node.io_read_bytes:
+        enabled: false
+      rabbitmq.node.io_read_avg_time:
+        enabled: false
+      rabbitmq.node.io_write_count:
+        enabled: false
+      rabbitmq.node.io_write_bytes:
+        enabled: false
+      rabbitmq.node.io_write_avg_time:
+        enabled: false
+      rabbitmq.node.io_sync_count:
+        enabled: false
+      rabbitmq.node.io_sync_avg_time:
+        enabled: false
+      rabbitmq.node.io_seek_count:
+        enabled: false
+      rabbitmq.node.io_seek_avg_time:
+        enabled: false
+      rabbitmq.node.io_reopen_count:
+        enabled: false
+      rabbitmq.node.mnesia_ram_tx_count:
+        enabled: false
+      rabbitmq.node.mnesia_disk_tx_count:
+        enabled: false
+      rabbitmq.node.msg_store_read_count:
+        enabled: false
+      rabbitmq.node.msg_store_write_count:
+        enabled: false
+      rabbitmq.node.queue_index_write_count:
+        enabled: false
+      rabbitmq.node.queue_index_read_count:
+        enabled: false
+      rabbitmq.node.connection_created:
+        enabled: false
+      rabbitmq.node.connection_closed:
+        enabled: false
+      rabbitmq.node.channel_created:
+        enabled: false
+      rabbitmq.node.channel_closed:
+        enabled: false
+      rabbitmq.node.queue_declared:
+        enabled: false
+      rabbitmq.node.queue_created:
+        enabled: false
+      rabbitmq.node.queue_deleted:
+        enabled: false
+      rabbitmq.node.io_read_count_details.rate:
+        enabled: false
+      rabbitmq.node.io_read_bytes_details.rate:
+        enabled: false
+      rabbitmq.node.io_read_avg_time_details.rate:
+        enabled: false
+      rabbitmq.node.io_write_count_details.rate:
+        enabled: false
+      rabbitmq.node.io_write_bytes_details.rate:
+        enabled: false
+      rabbitmq.node.io_write_avg_time_details.rate:
+        enabled: false
+      rabbitmq.node.io_sync_count_details.rate:
+        enabled: false
+      rabbitmq.node.io_sync_avg_time_details.rate:
+        enabled: false
+      rabbitmq.node.io_seek_count_details.rate:
+        enabled: false
+      rabbitmq.node.io_seek_avg_time_details.rate:
+        enabled: false
+      rabbitmq.node.io_reopen_count_details.rate:
+        enabled: false
+      rabbitmq.node.mnesia_ram_tx_count_details.rate:
+        enabled: false
+      rabbitmq.node.mnesia_disk_tx_count_details.rate:
+        enabled: false
+      rabbitmq.node.msg_store_read_count_details.rate:
+        enabled: false
+      rabbitmq.node.msg_store_write_count_details.rate:
+        enabled: false
+      rabbitmq.node.queue_index_write_count_details.rate:
+        enabled: false
+      rabbitmq.node.queue_index_read_count_details.rate:
+        enabled: false
+      rabbitmq.node.connection_created_details.rate:
+        enabled: false
+      rabbitmq.node.connection_closed_details.rate:
+        enabled: false
+      rabbitmq.node.channel_created_details.rate:
+        enabled: false
+      rabbitmq.node.channel_closed_details.rate:
+        enabled: false
+      rabbitmq.node.queue_declared_details.rate:
+        enabled: false
+      rabbitmq.node.queue_created_details.rate:
+        enabled: false
+      rabbitmq.node.queue_deleted_details.rate:
+        enabled: false
 
 status:
   class: receiver
@@ -125,7 +239,7 @@ metrics:
     enabled: true
   rabbitmq.node.disk_free:
     description: Free disk space on the node.
-    unit: "{bytes}"
+    unit: '{bytes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -133,7 +247,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_limit:
     description: Minimum required free disk space before alarm.
-    unit: "{bytes}"
+    unit: '{bytes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -141,7 +255,7 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_alarm:
     description: Whether disk usage has triggered an alarm.
-    unit: "{status}"
+    unit: '{status}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -149,16 +263,15 @@ metrics:
     enabled: false
   rabbitmq.node.disk_free_details.rate:
     description: Rate of disk usage change.
-    unit: "{bytes}/s"
+    unit: '{bytes}/s'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     enabled: false
-
   rabbitmq.node.mem_used:
     description: The memory used on the node.
-    unit: "{bytes}"
+    unit: '{bytes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -166,7 +279,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_limit:
     description: The memory limit on the node.
-    unit: "{bytes}"
+    unit: '{bytes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -174,7 +287,7 @@ metrics:
     enabled: false
   rabbitmq.node.mem_alarm:
     description: Whether memory alarm is triggered.
-    unit: "{status}"
+    unit: '{status}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -182,24 +295,23 @@ metrics:
     enabled: false
   rabbitmq.node.mem_used_details.rate:
     description: Rate of memory usage change.
-    unit: "{bytes}/s"
+    unit: '{bytes}/s'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     enabled: false
-
   rabbitmq.node.fd_used:
-    description: The number of file descriptors used on the node.
-    unit: "{fd}"
+    description: Number of file descriptors used.
+    unit: '{fd}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
     enabled: false
   rabbitmq.node.fd_total:
-    description: Maximum available file descriptors.
-    unit: "{fd}"
+    description: Maximum number of file descriptors available.
+    unit: '{fd}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -207,16 +319,15 @@ metrics:
     enabled: false
   rabbitmq.node.fd_used_details.rate:
     description: Rate of file descriptor usage.
-    unit: "{fd}/s"
+    unit: '{fd}/s'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     enabled: false
-
   rabbitmq.node.sockets_used:
     description: Number of sockets in use.
-    unit: "{sockets}"
+    unit: '{sockets}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -224,7 +335,7 @@ metrics:
     enabled: false
   rabbitmq.node.sockets_total:
     description: Maximum allowed sockets.
-    unit: "{sockets}"
+    unit: '{sockets}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -232,16 +343,15 @@ metrics:
     enabled: false
   rabbitmq.node.sockets_used_details.rate:
     description: Rate of socket usage.
-    unit: "{sockets}/s"
+    unit: '{sockets}/s'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
-      value_type: int
+      value_type: double
     enabled: false
-
   rabbitmq.node.proc_used:
     description: Number of Erlang processes in use.
-    unit: "{processes}"
+    unit: '{processes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -249,7 +359,7 @@ metrics:
     enabled: false
   rabbitmq.node.proc_total:
     description: Maximum allowed Erlang processes.
-    unit: "{processes}"
+    unit: '{processes}'
     sum:
       monotonic: false
       aggregation_temporality: cumulative
@@ -257,9 +367,465 @@ metrics:
     enabled: false
   rabbitmq.node.proc_used_details.rate:
     description: Rate of process usage.
-    unit: "{processes}/s"
+    unit: '{processes}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.uptime:
+    description: Uptime of the node.
+    unit: ms
     sum:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
+    enabled: false
+  rabbitmq.node.run_queue:
+    description: Run queue length of the Erlang scheduler.
+    unit: '{threads}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.processors:
+    description: Number of processors available to the node.
+    unit: '{processors}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.context_switches:
+    description: Total number of context switches.
+    unit: '{switches}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.context_switches_details.rate:
+    description: Rate of context switches.
+    unit: '{switches}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.gc_num:
+    description: Number of garbage collections.
+    unit: '{collections}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.gc_num_details.rate:
+    description: Rate of garbage collections.
+    unit: '{collections}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.gc_bytes_reclaimed:
+    description: Bytes reclaimed by garbage collection.
+    unit: '{bytes}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.gc_bytes_reclaimed_details.rate:
+    description: Rate of bytes reclaimed by GC.
+    unit: '{bytes}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_read_count:
+    description: Number of read operations.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_read_bytes:
+    description: Total bytes read.
+    unit: '{bytes}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_read_avg_time:
+    description: Average read time in microseconds.
+    unit: '{microseconds}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_write_count:
+    description: Number of write operations.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_write_bytes:
+    description: Total bytes written.
+    unit: '{bytes}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_write_avg_time:
+    description: Average write time in microseconds.
+    unit: '{microseconds}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_sync_count:
+    description: Number of sync operations.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_sync_avg_time:
+    description: Average sync time in microseconds.
+    unit: '{microseconds}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_seek_count:
+    description: Number of seek operations.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_seek_avg_time:
+    description: Average seek time in microseconds.
+    unit: '{microseconds}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_reopen_count:
+    description: Number of file reopen operations.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.mnesia_ram_tx_count:
+    description: Number of RAM transactions in Mnesia.
+    unit: '{tx}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.mnesia_disk_tx_count:
+    description: Number of disk transactions in Mnesia.
+    unit: '{tx}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.msg_store_read_count:
+    description: Number of message store reads.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.msg_store_write_count:
+    description: Number of message store writes.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.queue_index_write_count:
+    description: Number of queue index writes.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.queue_index_read_count:
+    description: Number of queue index reads.
+    unit: '{ops}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.connection_created:
+    description: Number of connections created.
+    unit: '{connections}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.connection_closed:
+    description: Number of connections closed.
+    unit: '{connections}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.channel_created:
+    description: Number of channels created.
+    unit: '{channels}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.channel_closed:
+    description: Number of channels closed.
+    unit: '{channels}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.queue_declared:
+    description: Number of queues declared.
+    unit: '{queues}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.queue_created:
+    description: Number of queues created.
+    unit: '{queues}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.queue_deleted:
+    description: Number of queues deleted.
+    unit: '{queues}'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    enabled: false
+  rabbitmq.node.io_read_count_details.rate:
+    description: Rate of read operations.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_read_bytes_details.rate:
+    description: Rate of bytes read.
+    unit: '{bytes}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_read_avg_time_details.rate:
+    description: Rate of change of average read time.
+    unit: '{microseconds}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_write_count_details.rate:
+    description: Rate of write operations.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_write_bytes_details.rate:
+    description: Rate of bytes written.
+    unit: '{bytes}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_write_avg_time_details.rate:
+    description: Rate of change of average write time.
+    unit: '{microseconds}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_sync_count_details.rate:
+    description: Rate of sync operations.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_sync_avg_time_details.rate:
+    description: Rate of change of average sync time.
+    unit: '{microseconds}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_seek_count_details.rate:
+    description: Rate of seek operations.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_seek_avg_time_details.rate:
+    description: Rate of change of average seek time.
+    unit: '{microseconds}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.io_reopen_count_details.rate:
+    description: Rate of file reopen operations.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.mnesia_ram_tx_count_details.rate:
+    description: Rate of RAM transactions in Mnesia.
+    unit: '{tx}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.mnesia_disk_tx_count_details.rate:
+    description: Rate of disk transactions in Mnesia.
+    unit: '{tx}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.msg_store_read_count_details.rate:
+    description: Rate of message store reads.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.msg_store_write_count_details.rate:
+    description: Rate of message store writes.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.queue_index_write_count_details.rate:
+    description: Rate of queue index writes.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.queue_index_read_count_details.rate:
+    description: Rate of queue index reads.
+    unit: '{ops}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.connection_created_details.rate:
+    description: Rate of connections created.
+    unit: '{connections}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.connection_closed_details.rate:
+    description: Rate of connections closed.
+    unit: '{connections}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.channel_created_details.rate:
+    description: Rate of channels created.
+    unit: '{channels}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.channel_closed_details.rate:
+    description: Rate of channels closed.
+    unit: '{channels}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.queue_declared_details.rate:
+    description: Rate of queues declared.
+    unit: '{queues}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.queue_created_details.rate:
+    description: Rate of queues created.
+    unit: '{queues}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
+    enabled: false
+  rabbitmq.node.queue_deleted_details.rate:
+    description: Rate of queues deleted.
+    unit: '{queues}/s'
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: double
     enabled: false
