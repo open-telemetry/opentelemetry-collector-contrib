@@ -369,6 +369,10 @@ func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount 
 //go:embed templates/sqlServerQuerySampleWithTop.tmpl
 var sqlServerQuerySamplesWithTop string
 
+// This one is used when the template execution fails as a fallback.
+// Even though in theory the template function should never fail, we
+// have it just in case.
+//
 //go:embed templates/sqlServerQuerySampleWithoutTop.tmpl
 var sqlServerQuerySamplesWithoutTop string
 
