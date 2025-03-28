@@ -11,14 +11,11 @@ import (
 )
 
 const (
-	KiB = 1024
-	MiB = 1024 * KiB
-
-	knownExecutablesCacheSize             = 128 * KiB
-	knownFramesCacheSize                  = 128 * KiB
-	knownTracesCacheSize                  = 128 * KiB
-	knownUnsymbolizedFramesCacheSize      = 128 * KiB
-	knownUnsymbolizedExecutablesCacheSize = 128 * KiB
+	knownExecutablesCacheSize             = 128 * 1024
+	knownFramesCacheSize                  = 128 * 1024
+	knownTracesCacheSize                  = 128 * 1024
+	knownUnsymbolizedFramesCacheSize      = 128 * 1024
+	knownUnsymbolizedExecutablesCacheSize = 128 * 1024
 
 	minILMRolloverTime = 3 * time.Hour
 )
