@@ -116,7 +116,7 @@ func TestMetricsFromFile(t *testing.T) {
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, nil, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 

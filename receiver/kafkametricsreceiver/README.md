@@ -44,9 +44,15 @@ Optional Settings (with defaults):
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
 - `auth` (default none)
-    - `plain_text`
+    - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
         - `password`: The password to use
+    - `sasl`
+        - `username`: The username to use.
+        - `password`: The password to use.
+        - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
+        - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
+        - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
     - `tls`
         - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used
           if `insecure` is set to true.
