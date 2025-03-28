@@ -7,7 +7,6 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
-	"encoding/pem"
 	"errors"
 	"fmt"
 	"net/http"
@@ -59,10 +58,11 @@ var (
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
 	var credential azcore.TokenCredential
 	var err error
+	failMsg := "failed to create authenticator using"
 
 	if cfg.UseDefault {
 		if credential, err = azidentity.NewDefaultAzureCredential(nil); err != nil {
-			return nil, fmt.Errorf("failed to create authenticator using default identity: %w", err)
+			return nil, fmt.Errorf("%s default identity: %w", failMsg, err)
 		}
 	}
 
@@ -72,7 +72,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 			TenantID:      cfg.Workload.TenantID,
 			TokenFilePath: cfg.Workload.FederatedTokenFile,
 		}); err != nil {
-			return nil, fmt.Errorf("failed to create authenticator using workload identity: %w", err)
+			return nil, fmt.Errorf("%s workload identity: %w", failMsg, err)
 		}
 	}
 
@@ -85,20 +85,15 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 			}
 		}
 		if credential, err = azidentity.NewManagedIdentityCredential(options); err != nil {
-			return nil, fmt.Errorf("failed to create authenticator using managed identity: %w", err)
+			return nil, fmt.Errorf("%s managed identity: %w", failMsg, err)
 		}
 	}
 
 	if cfg.ServicePrincipal != nil {
 		if cfg.ServicePrincipal.ClientCertificatePath != "" {
-			// Read and parse the certificate
-			certData, errRead := os.ReadFile(cfg.ServicePrincipal.ClientCertificatePath)
-			if errRead != nil {
-				return nil, fmt.Errorf("failed to read client certificate path: %w", errRead)
-			}
-			cert, privateKey, errParse := parseCertificateAndKey(certData)
+			cert, privateKey, errParse := getCertificateAndKey(cfg.ServicePrincipal.ClientCertificatePath)
 			if errParse != nil {
-				return nil, fmt.Errorf("failed to parse certificate: %w", errParse)
+				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, errParse)
 			}
 
 			if credential, err = azidentity.NewClientCertificateCredential(
@@ -108,7 +103,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 				privateKey,
 				nil,
 			); err != nil {
-				return nil, fmt.Errorf("failed to create authenticator using service principal with certificate: %w", err)
+				return nil, fmt.Errorf("%s service principal with certificate: %w", failMsg, err)
 			}
 		}
 		if cfg.ServicePrincipal.ClientSecret != "" {
@@ -118,7 +113,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 				cfg.ServicePrincipal.ClientSecret,
 				nil,
 			); err != nil {
-				return nil, fmt.Errorf("failed to create authenticator using service principal with secret: %w", err)
+				return nil, fmt.Errorf("%s service principal with secret: %w", failMsg, err)
 			}
 		}
 	}
@@ -133,20 +128,23 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 	}, nil
 }
 
-func parseCertificateAndKey(data []byte) (*x509.Certificate, crypto.PrivateKey, error) {
-	block, _ := pem.Decode(data)
-	if block == nil {
-		return nil, nil, errors.New("failed to decode PEM block")
-	}
-	cert, err := x509.ParseCertificate(block.Bytes)
+// getCertificateAndKey from the file
+func getCertificateAndKey(filename string) (*x509.Certificate, crypto.PrivateKey, error) {
+	data, err := os.ReadFile(filename)
 	if err != nil {
-		return nil, nil, err
+		return nil, nil, fmt.Errorf("could not read the certificate file: %w", err)
 	}
-	privateKey, err := x509.ParsePKCS1PrivateKey(block.Bytes)
-	return cert, privateKey, err
+
+	certs, privateKey, err := azidentity.ParseCertificates(data, nil)
+	if err != nil {
+		return nil, nil, fmt.Errorf("failed to parse certificates: %w", err)
+	}
+
+	return certs[0], privateKey, nil
 }
 
-func (a *authenticator) Start(_ context.Context, _ component.Host) error {
+func (a *authenticator) Start(ctx context.Context, _ component.Host) error {
+	go a.trackToken(ctx)
 	return nil
 }
 
