@@ -103,7 +103,7 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 			assert.NoError(t, err)
 
 			var compressedBody []byte
-			snappy.Encode(compressedBody, pBuf.Bytes())
+			compressedBody = snappy.Encode(compressedBody, pBuf.Bytes())
 
 			req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
 
