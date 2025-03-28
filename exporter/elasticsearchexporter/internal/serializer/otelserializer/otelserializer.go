@@ -52,12 +52,12 @@ func New() (*Serializer, error) {
 
 	knownUnsymbolizedFrames, err := lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
+		return nil, fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
 	}
 
 	knownUnsymbolizedExecutables, err := lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
+		return nil, fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
 	}
 
 	return &Serializer{
