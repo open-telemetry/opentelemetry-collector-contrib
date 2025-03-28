@@ -59,35 +59,6 @@ func pointerUint64(uval uint64) *uint64 {
 	return &uval
 }
 
-func getRSSMemory() (uint64, error) {
-	data, err := os.ReadFile("/proc/self/status")
-	if err != nil {
-		return 0, err
-	}
-
-	for _, line := range strings.Split(string(data), "\n") {
-		if strings.HasPrefix(line, "VmRSS:") {
-			fields := strings.Fields(line)
-			rssKB, err := strconv.ParseUint(fields[1], 10, 64)
-			if err != nil {
-				return 0, err
-			}
-			return rssKB * 1024, nil // Convert KB to bytes
-		}
-	}
-
-	return 0, fmt.Errorf("VmRSS not found in /proc/self/status")
-}
-
-func logRSSMemory() {
-	rss, err := getRSSMemory()
-	if err != nil {
-		fmt.Printf("Error reading RSS memory: %v\n", err)
-	} else {
-		fmt.Printf("Total RSS Memory: %.2f MB\n", float64(rss)/1024/1024)
-	}
-}
-
 // setupMemoryCgroupCleanUp returns a cleanup function that restores the cgroup's max memory to its initial value
 func setupMemoryCgroupCleanUp(t *testing.T, manager *cgroup2.Manager, cgroupPath string) func() {
 	stats, err := manager.Stat()
@@ -269,7 +240,6 @@ func TestCgroupV2SudoIntegration(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			logRSSMemory()
 			startExtension(t, test.config)
 
 			assert.Equal(t, test.expectedGoMaxProcs, runtime.GOMAXPROCS(-1))
@@ -386,7 +356,6 @@ func TestECSCgroupV2SudoIntegration(t *testing.T) {
 			})
 			require.NoError(t, err)
 
-			logRSSMemory()
 			startExtension(t, test.config)
 
 			assert.Equal(t, test.expectedGoMaxProcs, runtime.GOMAXPROCS(-1))
