@@ -31,12 +31,16 @@ processors:
         # upper limit of streams to track. new streams exceeding this limit
         # will be dropped
         [ max_streams: <int> | default = 9223372036854775807 (max int) ]
-
+        
+        # flag to enable accumulation of summary metrics
+        [ accumulate_summaries: <bool> | default = false ]
 ```
 
-There is no further configuration required. All delta samples are converted to cumulative.
+## Summary Aggregation Details
+
+When accumulate_summaries is enabled, summary metrics are accumulated by adding together the sum and count values. The quantile values are not aggregated over time; instead, the quantile data from the latest sample will replace any previously stored quantile values, since they are short-lived.
 
 ## Troubleshooting
 
 When [Telemetry is
-enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md). 
+enabled](https://opentelemetry.io/docs/collector/configuration/#telemetry), this component exports [several metrics](./documentation.md).
