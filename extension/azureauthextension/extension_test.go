@@ -5,11 +5,13 @@ package azureauthextension
 
 import (
 	"context"
+	"errors"
 	"testing"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
+	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap"
 )
@@ -22,56 +24,122 @@ func TestNewAzureAuthenticator(t *testing.T) {
 }
 
 func TestUpdateToken(t *testing.T) {
-	auth := &authenticator{token: nil}
-
-	// Token is nil at the start, so token value
-	// in authenticator should be updated. We set
-	// a past time to cause the token to be expired
-	// in next call.
-	value := "first"
-	expires := time.Now().Add(-time.Hour)
-	auth.credential = mockTokenCredential{
-		value:   value,
-		expires: expires,
+	tests := map[string]struct {
+		mockSetup   func(credential *mockTokenCredential)
+		expectedErr string
+	}{
+		"successful": {
+			mockSetup: func(m *mockTokenCredential) {
+				m.On("GetToken").Return(azcore.AccessToken{}, nil)
+			},
+		},
+		"unsuccessful": {
+			mockSetup: func(m *mockTokenCredential) {
+				m.On("GetToken").Return(azcore.AccessToken{}, errors.New("test"))
+			},
+			expectedErr: "azure authenticator failed to get token",
+		},
 	}
-	token, err := auth.updateToken(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, value, token)
 
-	// Token is no longer nil, and it has expired.
-	// It should update again.
-	value = "second"
-	expires = time.Now().Add(time.Hour)
-	auth.credential = mockTokenCredential{
-		value:   value,
-		expires: expires,
-	}
-	token, err = auth.updateToken(context.Background())
-	require.NoError(t, err)
-	require.Equal(t, value, token)
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			credentials := &mockTokenCredential{}
+			test.mockSetup(credentials)
 
-	// Token hasn't expired yet, so the value
-	// should remain.
-	auth.credential = mockTokenCredential{
-		value:   "third",
-		expires: expires,
+			auth := &authenticator{credential: credentials}
+			_, err := auth.updateToken(context.Background())
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				return
+			}
+			require.ErrorContains(t, err, test.expectedErr)
+		})
 	}
-	token, err = auth.updateToken(context.Background())
+}
+
+func TestTrackToken(t *testing.T) {
+	expiresOn := time.Now().Add(time.Hour)
+	token := "token"
+
+	// GetToken is only called when the token needs to
+	// be updated. Let's ensure it's only called once,
+	// despite concurrent access.
+	mockCred := &mockTokenCredential{}
+	mockCred.On("GetToken").
+		Return(azcore.AccessToken{
+			Token:     token,
+			ExpiresOn: expiresOn,
+		}, nil).Once()
+
+	a := &authenticator{
+		credential: mockCred,
+		logger:     zap.NewNop(),
+	}
+
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+	go a.trackToken(ctx)
+
+	require.Eventuallyf(t, func() bool {
+		_, err := a.getCurrentToken()
+		return err == nil
+	}, time.Millisecond*10, time.Millisecond, "failed to wait for token to be available at start")
+
+	type result struct {
+		token azcore.AccessToken
+		err   error
+	}
+	numGoroutines := 10
+	results := make(chan result, numGoroutines)
+	for i := 0; i < numGoroutines; i++ {
+		go func() {
+			got, err := a.getCurrentToken()
+			results <- result{
+				token: got,
+				err:   err,
+			}
+		}()
+	}
+
+	for i := 0; i < numGoroutines; i++ {
+		r := <-results
+		require.NoError(t, r.err)
+		require.Equal(t, azcore.AccessToken{
+			Token:     token,
+			ExpiresOn: expiresOn,
+		}, r.token)
+	}
+
+	close(results)
+}
+
+func TestGetCurrentToken(t *testing.T) {
+	auth := authenticator{}
+	_, err := auth.getCurrentToken()
+	require.ErrorIs(t, err, errUnavailableToken)
+
+	token := &azcore.AccessToken{Token: "test"}
+	auth.token = token
+	got, err := auth.getCurrentToken()
 	require.NoError(t, err)
-	require.Equal(t, value, token)
+	require.Equal(t, *token, got)
 }
 
 func TestAuthenticate(t *testing.T) {
 	t.Parallel()
 
+	ctx, cancel := context.WithCancel(context.TODO())
+	defer cancel()
+
 	token := "token"
-	expires := time.Now().Add(time.Hour)
+	credential := &mockTokenCredential{}
+	credential.On("GetToken").Return(azcore.AccessToken{
+		Token: token,
+	})
 	auth := &authenticator{
-		token: nil,
-		credential: mockTokenCredential{
-			value:   token,
-			expires: expires,
-		},
+		token:      &azcore.AccessToken{Token: token},
+		credential: credential,
+		logger:     zap.NewNop(),
 	}
 
 	tests := map[string]struct {
@@ -115,7 +183,7 @@ func TestAuthenticate(t *testing.T) {
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			_, err := auth.Authenticate(context.Background(), test.headers)
+			_, err := auth.Authenticate(ctx, test.headers)
 			if test.expectedErr == "" {
 				require.NoError(t, err)
 				return
@@ -127,15 +195,12 @@ func TestAuthenticate(t *testing.T) {
 }
 
 type mockTokenCredential struct {
-	value   string
-	expires time.Time
+	mock.Mock
 }
 
 var _ azcore.TokenCredential = (*mockTokenCredential)(nil)
 
-func (m mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
-	return azcore.AccessToken{
-		Token:     m.value,
-		ExpiresOn: m.expires,
-	}, nil
+func (m *mockTokenCredential) GetToken(_ context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	args := m.Called()
+	return args.Get(0).(azcore.AccessToken), args.Error(1)
 }

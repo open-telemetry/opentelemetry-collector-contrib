@@ -3,7 +3,6 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/azure
 go 1.23.0
 
 require (
-	github.com/Azure/azure-amqp-common-go/v4 v4.2.0
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.17.0
 	github.com/Azure/azure-sdk-for-go/sdk/azidentity v1.7.0
 	github.com/stretchr/testify v1.10.0
@@ -37,6 +36,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/pkg/browser v0.0.0-20240102092130-5ac0b6a4141c // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
+	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
 	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
