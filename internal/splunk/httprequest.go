@@ -6,13 +6,11 @@ package splunk // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 	"net/http"
-	"net/http/httputil"
 	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
-	"go.uber.org/multierr"
 )
 
 const HeaderRetryAfter = "Retry-After"
@@ -20,7 +18,7 @@ const HeaderRetryAfter = "Retry-After"
 // HandleHTTPCode handles an http response and returns the right type of error in case of a failure.
 func HandleHTTPCode(resp *http.Response) error {
 	// Splunk accepts all 2XX codes.
-	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
+	if resp.StatusCode/100 == 2 {
 		return nil
 	}
 
@@ -28,7 +26,8 @@ func HandleHTTPCode(resp *http.Response) error {
 		"HTTP %q %d %q",
 		resp.Request.URL.String(),
 		resp.StatusCode,
-		http.StatusText(resp.StatusCode))
+		http.StatusText(resp.StatusCode),
+	)
 
 	switch resp.StatusCode {
 	// Check for responses that may include "Retry-After" header.
@@ -45,12 +44,7 @@ func HandleHTTPCode(resp *http.Response) error {
 		err = exporterhelper.NewThrottleRetry(err, time.Duration(retryAfter)*time.Second)
 	// Check for permanent errors.
 	case http.StatusBadRequest, http.StatusUnauthorized:
-		dump, err2 := httputil.DumpResponse(resp, true)
-		if err2 == nil {
-			err = consumererror.NewPermanent(fmt.Errorf("%w", fmt.Errorf("%q", dump)))
-		} else {
-			err = multierr.Append(err, err2)
-		}
+		err = consumererror.NewPermanent(err)
 	}
 
 	return err
