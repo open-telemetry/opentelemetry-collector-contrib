@@ -59,6 +59,7 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1739690452135336000"
             traceId: ""
+            eventName: "query event"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: 0.0.1
