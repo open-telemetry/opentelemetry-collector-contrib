@@ -227,7 +227,7 @@ func handleAddresses(addresses map[string]string) map[string]string {
 	srcaddr, foundSrc := addresses["srcaddr"]
 	pktSrcaddr, foundSrcPkt := addresses["pkt-srcaddr"]
 	if !foundSrcPkt && foundSrc {
-		// there is no middle layer, and "srcaddr" field
+		// there is no middle layer, assume "srcaddr" field
 		// corresponds to the original source address.
 		recordAttr[conventions.AttributeSourceAddress] = srcaddr
 	} else if foundSrcPkt && foundSrc {
