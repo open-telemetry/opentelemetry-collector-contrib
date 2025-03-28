@@ -14,18 +14,22 @@ const (
 	KiB = 1024
 	MiB = 1024 * KiB
 
-	knownExecutablesCacheSize = 128 * KiB
-	knownFramesCacheSize      = 128 * KiB
-	knownTracesCacheSize      = 128 * KiB
+	knownExecutablesCacheSize             = 128 * KiB
+	knownFramesCacheSize                  = 128 * KiB
+	knownTracesCacheSize                  = 128 * KiB
+	knownUnsymbolizedFramesCacheSize      = 128 * KiB
+	knownUnsymbolizedExecutablesCacheSize = 128 * KiB
 
 	minILMRolloverTime = 3 * time.Hour
 )
 
 type Serializer struct {
 	// Data cache for profiles
-	knownTraces      *lru.LRUSet
-	knownFrames      *lru.LRUSet
-	knownExecutables *lru.LRUSet
+	knownTraces                  *lru.LRUSet
+	knownFrames                  *lru.LRUSet
+	knownExecutables             *lru.LRUSet
+	knownUnsymbolizedFrames      *lru.LRUSet
+	knownUnsymbolizedExecutables *lru.LRUSet
 }
 
 // New builds a new Serializer
@@ -46,9 +50,21 @@ func New() (*Serializer, error) {
 		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
 	}
 
+	knownUnsymbolizedFrames, err := lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
+	}
+
+	knownUnsymbolizedExecutables, err := lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create executables LRU: %w", err)
+	}
+
 	return &Serializer{
-		knownTraces:      knownTraces,
-		knownFrames:      knownFrames,
-		knownExecutables: knownExecutables,
+		knownTraces:                  knownTraces,
+		knownFrames:                  knownFrames,
+		knownExecutables:             knownExecutables,
+		knownUnsymbolizedFrames:      knownUnsymbolizedFrames,
+		knownUnsymbolizedExecutables: knownUnsymbolizedExecutables,
 	}, nil
 }
