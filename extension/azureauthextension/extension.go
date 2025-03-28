@@ -10,6 +10,11 @@ import (
 	"encoding/pem"
 	"errors"
 	"fmt"
+	"net/http"
+	"os"
+	"sync"
+	"time"
+
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
@@ -17,10 +22,6 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
-	"net/http"
-	"os"
-	"sync"
-	"time"
 )
 
 type authenticator struct {
@@ -37,6 +38,7 @@ var (
 	_ extension.Extension      = (*authenticator)(nil)
 	_ extensionauth.HTTPClient = (*authenticator)(nil)
 	_ extensionauth.Server     = (*authenticator)(nil)
+	_ azcore.TokenCredential   = (*authenticator)(nil)
 )
 
 func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, error) {
@@ -161,6 +163,20 @@ func (a *authenticator) updateToken(ctx context.Context) (string, error) {
 	return token.Token, nil
 }
 
+func (a *authenticator) GetToken(ctx context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	var token string
+	var err error
+
+	if token, err = a.updateToken(ctx); err != nil {
+		a.logger.Error("failed to update token", zap.Error(err))
+		return azcore.AccessToken{}, err
+	}
+
+	return azcore.AccessToken{
+		Token: token,
+	}, nil
+}
+
 // Authenticate adds an Authorization header
 // with the bearer token
 func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
@@ -168,11 +184,12 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 	var err error
 
 	if token, err = a.updateToken(ctx); err != nil {
+		a.logger.Error("failed to update token", zap.Error(err))
 		return ctx, err
 	}
+
 	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
 	headers["Authorization"] = []string{"Bearer " + token}
-
 	return ctx, nil
 }
 
