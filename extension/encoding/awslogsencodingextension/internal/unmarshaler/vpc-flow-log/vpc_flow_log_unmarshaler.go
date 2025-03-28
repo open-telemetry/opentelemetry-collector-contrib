@@ -158,9 +158,8 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	// first line includes the fields
 	// TODO Replace with an iterator starting from go 1.24:
 	// https://pkg.go.dev/strings#FieldsSeq
-	values := strings.Split(logLine, " ")
 	nFields := len(fields)
-	nValues := len(values)
+	nValues := strings.Count(logLine, " ") + 1
 	if nFields != nValues {
 		return fmt.Errorf("expect %d fields per log line, got log line with %d fields", nFields, nValues)
 	}
@@ -178,9 +177,17 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
 	ips := make(map[string]string, 4)
 
-	// range over the fields of the log line
-	for i, field := range fields {
-		value := values[i]
+	start := 0
+	for _, field := range fields {
+		var value string
+		end := strings.Index(logLine[start:], " ")
+		if end == -1 {
+			value = logLine[start:]
+		} else {
+			value = logLine[start : start+end]
+			start += end + 1 // skip the space
+		}
+
 		if value == "-" {
 			// If a field is not applicable or could not be computed for a
 			// specific record, the record displays a '-' symbol for that entry.
