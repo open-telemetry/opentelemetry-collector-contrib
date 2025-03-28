@@ -394,6 +394,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.Equal(t, "top query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
 }
 
