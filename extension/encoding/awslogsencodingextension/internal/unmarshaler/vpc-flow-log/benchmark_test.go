@@ -8,7 +8,6 @@ import (
 	"os"
 	"testing"
 
-	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -30,9 +29,7 @@ func createVPCFlowLogContent(b *testing.B, filename string, nLogs int) []byte {
 	for i := 0; i < nLogs; i++ {
 		result[i+1] = flowLog
 	}
-	final := bytes.Join(result, []byte{'\n'})
-
-	return compressData(b, final)
+	return bytes.Join(result, []byte{'\n'})
 }
 
 func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
@@ -61,13 +58,11 @@ func BenchmarkUnmarshalUnmarshalPlainTextLogs(b *testing.B) {
 
 	for name, test := range tests {
 		data := createVPCFlowLogContent(b, filename, test.nLogs)
-		gzipReader, errGzipReader := gzip.NewReader(bytes.NewReader(data))
-		require.NoError(b, errGzipReader)
 
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {
-				_, err := u.unmarshalPlainTextLogs(gzipReader)
+				_, err := u.unmarshalPlainTextLogs(bytes.NewReader(data))
 				require.NoError(b, err)
 			}
 		})

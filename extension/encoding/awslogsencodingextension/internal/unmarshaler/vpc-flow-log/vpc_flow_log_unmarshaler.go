@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"sync"
@@ -101,7 +102,7 @@ type resourceKey struct {
 	region    string
 }
 
-func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader *gzip.Reader) (plog.Logs, error) {
+func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.Logs, error) {
 	scanner := bufio.NewScanner(reader)
 
 	var fields []string
