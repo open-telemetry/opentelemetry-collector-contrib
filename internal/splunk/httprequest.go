@@ -25,7 +25,8 @@ func HandleHTTPCode(resp *http.Response) error {
 	}
 
 	err := fmt.Errorf(
-		"HTTP %d %q",
+		"HTTP %q %d %q",
+		resp.Request.URL.String(),
 		resp.StatusCode,
 		http.StatusText(resp.StatusCode))
 
