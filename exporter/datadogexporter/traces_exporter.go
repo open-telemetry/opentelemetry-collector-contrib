@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -145,6 +146,10 @@ func (exp *traceExporter) consumeTraces(
 			hosts[src.Identifier] = struct{}{}
 		case source.AWSECSFargateKind:
 			tags[src.Tag()] = struct{}{}
+		case "eks_fargate":
+			t := strings.Split(src.Identifier, ",")
+			tags[t[0]] = struct{}{}
+			tags[t[1]] = struct{}{}
 		case source.InvalidKind:
 		}
 	}
