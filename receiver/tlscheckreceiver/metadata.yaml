@@ -9,9 +9,9 @@ status:
     active: [atoulme, michael-burt]
 
 resource_attributes:
-  tlscheck.endpoint:
+  tlscheck.target:
     enabled: true
-    description: Endpoint at which the certificate was accessed.
+    description: Endpoint or file path at which the certificate was accessed.
     type: string
 
 attributes:
