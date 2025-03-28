@@ -70,7 +70,7 @@ func TestProvider(t *testing.T) {
 			src:                 source.Source{Kind: source.HostnameKind, Identifier: "nodeName-clusterName"},
 		},
 		{
-			name:                "node and cluster name",
+			name:                "eks fargate",
 			nodeNameProvider:    EksNodeNameProvider("virtual_node:fargate-12345,pod_name:abcde-333"),
 			clusterNameProvider: nil,
 			src:                 source.Source{Kind: "eks_fargate", Identifier: "virtual_node:fargate-12345,pod_name:abcde-333"},
