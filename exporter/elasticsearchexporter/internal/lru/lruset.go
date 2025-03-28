@@ -13,7 +13,7 @@ import (
 
 type void struct{}
 
-var stringHashFn = func(s string) uint32 {
+func stringHashFn(s string) uint32 {
 	return uint32(xxhash.Sum64String(s))
 }
 
