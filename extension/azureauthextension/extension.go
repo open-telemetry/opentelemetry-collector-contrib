@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 	"sync"
 	"time"
 
@@ -22,6 +23,18 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.uber.org/zap"
+)
+
+const (
+	scheme              = "Bearer"
+	authorizationHeader = "Authorization"
+)
+
+var (
+	errEmptyAuthorizationHeader      = errors.New("empty authorization header")
+	errMissingAuthorizationHeader    = errors.New("missing authorization header")
+	errUnexpectedAuthorizationFormat = errors.New(`unexpected authorization value format, expected to be of format "Bearer <token>"`)
+	errUnexpectedToken               = errors.New("received token does not match the expected one")
 )
 
 type authenticator struct {
@@ -163,6 +176,8 @@ func (a *authenticator) updateToken(ctx context.Context) (string, error) {
 	return token.Token, nil
 }
 
+// GetToken returns an access token with a
+// valid token for authorization
 func (a *authenticator) GetToken(ctx context.Context, _ policy.TokenRequestOptions) (azcore.AccessToken, error) {
 	var token string
 	var err error
@@ -180,6 +195,25 @@ func (a *authenticator) GetToken(ctx context.Context, _ policy.TokenRequestOptio
 // Authenticate adds an Authorization header
 // with the bearer token
 func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	auth, ok := headers[authorizationHeader]
+	if !ok {
+		auth, ok = headers[strings.ToLower(authorizationHeader)]
+	}
+	if !ok {
+		return ctx, errMissingAuthorizationHeader
+	}
+	if len(auth) == 0 {
+		return ctx, errEmptyAuthorizationHeader
+	}
+
+	firstAuth := strings.Split(auth[0], " ")
+	if len(firstAuth) != 2 {
+		return ctx, errUnexpectedAuthorizationFormat
+	}
+	if firstAuth[0] != scheme {
+		return ctx, fmt.Errorf("expected %q scheme, got %q", scheme, firstAuth[0])
+	}
+
 	var token string
 	var err error
 
@@ -188,12 +222,15 @@ func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]s
 		return ctx, err
 	}
 
-	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
-	headers["Authorization"] = []string{"Bearer " + token}
+	if firstAuth[1] != token {
+		return ctx, errUnexpectedToken
+	}
+
 	return ctx, nil
 }
 
 func (a *authenticator) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
 	// TODO
+	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
 	return nil, nil
 }

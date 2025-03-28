@@ -62,23 +62,68 @@ func TestUpdateToken(t *testing.T) {
 }
 
 func TestAuthenticate(t *testing.T) {
-	value := "first"
+	t.Parallel()
+
+	token := "token"
 	expires := time.Now().Add(time.Hour)
 	auth := &authenticator{
 		token: nil,
 		credential: mockTokenCredential{
-			value:   value,
+			value:   token,
 			expires: expires,
 		},
 	}
-	headers := map[string][]string{}
-	_, err := auth.Authenticate(context.Background(), headers)
-	require.NoError(t, err)
 
-	expected := map[string][]string{
-		"Authorization": {"Bearer first"},
+	tests := map[string]struct {
+		headers     map[string][]string
+		expectedErr string
+	}{
+		"missing_authorization_header": {
+			headers:     map[string][]string{},
+			expectedErr: errMissingAuthorizationHeader.Error(),
+		},
+		"empty_authorization_header": {
+			headers: map[string][]string{
+				authorizationHeader: {},
+			},
+			expectedErr: errEmptyAuthorizationHeader.Error(),
+		},
+		"unexpected_authorization_value_format": {
+			headers: map[string][]string{
+				authorizationHeader: {"unexpected-format"},
+			},
+			expectedErr: errUnexpectedAuthorizationFormat.Error(),
+		},
+		"wrong_scheme": {
+			headers: map[string][]string{
+				authorizationHeader: {"wrong scheme"},
+			},
+			expectedErr: `expected "Bearer" scheme, got "wrong"`,
+		},
+		"invalid_token": {
+			headers: map[string][]string{
+				authorizationHeader: {"Bearer invalid"},
+			},
+			expectedErr: errUnexpectedToken.Error(),
+		},
+		"valid_token": {
+			headers: map[string][]string{
+				authorizationHeader: {"Bearer " + token},
+			},
+		},
 	}
-	require.Equal(t, expected, headers)
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			_, err := auth.Authenticate(context.Background(), test.headers)
+			if test.expectedErr == "" {
+				require.NoError(t, err)
+				return
+			}
+
+			require.ErrorContains(t, err, test.expectedErr)
+		})
+	}
 }
 
 type mockTokenCredential struct {
