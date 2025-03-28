@@ -38,6 +38,7 @@ type sqlServerScraperHelper struct {
 	id                 component.ID
 	config             *Config
 	sqlQuery           string
+	instanceName       string
 	clientProviderFunc sqlquery.ClientProviderFunc
 	dbProviderFunc     sqlquery.DbProviderFunc
 	logger             *zap.Logger
@@ -120,6 +121,8 @@ func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, err
 	switch s.sqlQuery {
 	case queryTextAndPlanQuery:
 		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
+	case getSQLServerQuerySamplesQuery(s.config.MaxRowsPerQuery):
+		return s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
@@ -768,4 +771,345 @@ func sortRows(rows []sqlquery.StringMap, values []int64, maximum uint) []sqlquer
 		results = append(results, item.row)
 	}
 	return results
+}
+
+type internalAttribute struct {
+	key            string
+	columnName     string
+	valueRetriever func(row sqlquery.StringMap, columnName string) (any, error)
+	valueSetter    func(attributes pcommon.Map, key string, value any)
+}
+
+func defaultValueRetriever(defaultValue any) func(row sqlquery.StringMap, columnName string) (any, error) {
+	return func(_ sqlquery.StringMap, _ string) (any, error) {
+		return defaultValue, nil
+	}
+}
+
+func vanillaRetriever(row sqlquery.StringMap, columnName string) (any, error) {
+	return row[columnName], nil
+}
+
+func retrieveInt(row sqlquery.StringMap, columnName string) (any, error) {
+	var err error
+	result := 0
+	if row[columnName] != "" {
+		result, err = strconv.Atoi(row[columnName])
+	}
+	return int64(result), err
+}
+
+func retrieveIntAndConvert(convert func(int64) any) func(row sqlquery.StringMap, columnName string) (any, error) {
+	return func(row sqlquery.StringMap, columnName string) (any, error) {
+		result, err := retrieveInt(row, columnName)
+		// need to convert even if it failed
+		return convert(result.(int64)), err
+	}
+}
+
+func retrieveFloat(row sqlquery.StringMap, columnName string) (any, error) {
+	var err error
+	var result float64
+	if row[columnName] != "" {
+		result, err = strconv.ParseFloat(row[columnName], 64)
+	}
+	return result, err
+}
+
+func setString(attributes pcommon.Map, key string, value any) {
+	attributes.PutStr(key, value.(string))
+}
+
+func setInt(attributes pcommon.Map, key string, value any) {
+	attributes.PutInt(key, value.(int64))
+}
+
+func setDouble(attributes pcommon.Map, key string, value any) {
+	attributes.PutDouble(key, value.(float64))
+}
+
+func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
+	const blockingSessionID = "blocking_session_id"
+	const clientAddress = "client_address"
+	const clientPort = "client_port"
+	const command = "command"
+	const contextInfo = "context_info"
+	const cpuTime = "cpu_time"
+	const dbName = "db_name"
+	const dbPrefix = "sqlserver."
+	const deadlockPriority = "deadlock_priority"
+	const estimatedCompletionTime = "estimated_completion_time"
+	const hostName = "host_name"
+	const lockTimeout = "lock_timeout"
+	const logicalReads = "logical_reads"
+	const openTransactionCount = "open_transaction_count"
+	const percentComplete = "percent_complete"
+	const queryHash = "query_hash"
+	const queryPlanHash = "query_plan_hash"
+	const queryStart = "query_start"
+	const reads = "reads"
+	const requestStatus = "request_status"
+	const rowCount = "row_count"
+	const sessionID = "session_id"
+	const sessionStatus = "session_status"
+	const statementText = "statement_text"
+	const totalElapsedTime = "total_elapsed_time"
+	const transactionID = "transaction_id"
+	const transactionIsolationLevel = "transaction_isolation_level"
+	const username = "username"
+	const waitResource = "wait_resource"
+	const waitTime = "wait_time"
+	const waitType = "wait_type"
+	const writes = "writes"
+
+	rows, err := s.client.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	var errs []error
+	logs := plog.NewLogs()
+
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName(metadata.ScopeName)
+	scopedLog.Scope().SetVersion("v0.0.1")
+	for _, row := range rows {
+		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
+		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
+		contextInfoVal := hex.EncodeToString([]byte(row[contextInfo]))
+
+		record := scopedLog.LogRecords().AppendEmpty()
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+		attributes := []internalAttribute{
+			{
+				key:            "client.port",
+				columnName:     clientPort,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            "db.namespace",
+				columnName:     dbName,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:        "db.query.text",
+				columnName: statementText,
+				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
+					return obfuscateSQL(row[columnName])
+				},
+				valueSetter: setString,
+			},
+			{
+				key:            "db.system.name",
+				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
+				valueSetter:    setString,
+			},
+			{
+				key:            "network.peer.address",
+				columnName:     clientAddress,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            "network.peer.port",
+				columnName:     clientPort,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			// the following ones are the attributes that are not in the semantic conventions
+			{
+				key:            dbPrefix + blockingSessionID,
+				columnName:     blockingSessionID,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + command,
+				columnName:     command,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + contextInfo,
+				valueRetriever: defaultValueRetriever(contextInfoVal),
+				valueSetter:    setString,
+			},
+			{
+				key:        dbPrefix + cpuTime,
+				columnName: cpuTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
+			},
+			{
+				key:            dbPrefix + deadlockPriority,
+				columnName:     deadlockPriority,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:        dbPrefix + estimatedCompletionTime,
+				columnName: estimatedCompletionTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
+			},
+			{
+				key:            dbPrefix + lockTimeout,
+				columnName:     lockTimeout,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + logicalReads,
+				columnName:     logicalReads,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + openTransactionCount,
+				columnName:     openTransactionCount,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + percentComplete,
+				columnName:     percentComplete,
+				valueRetriever: retrieveFloat,
+				valueSetter:    setDouble,
+			},
+			{
+				key:            dbPrefix + queryHash,
+				valueRetriever: defaultValueRetriever(queryHashVal),
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + queryPlanHash,
+				valueRetriever: defaultValueRetriever(queryPlanHashVal),
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + queryStart,
+				columnName:     queryStart,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + reads,
+				columnName:     reads,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + requestStatus,
+				columnName:     requestStatus,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + rowCount,
+				columnName:     rowCount,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + sessionID,
+				columnName:     sessionID,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + sessionStatus,
+				columnName:     sessionStatus,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:        dbPrefix + totalElapsedTime,
+				columnName: totalElapsedTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
+			},
+			{
+				key:            dbPrefix + transactionID,
+				columnName:     transactionID,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + transactionIsolationLevel,
+				columnName:     transactionIsolationLevel,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + username,
+				columnName:     username,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + waitResource,
+				columnName:     waitResource,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:        dbPrefix + waitTime,
+				columnName: waitTime,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
+			},
+			{
+				key:            dbPrefix + waitType,
+				columnName:     waitType,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + writes,
+				columnName:     writes,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+		}
+
+		for _, attr := range attributes {
+			value, err := attr.valueRetriever(row, attr.columnName)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[clientPort], err))
+			}
+			attr.valueSetter(record.Attributes(), attr.key, value)
+		}
+
+		// client.address: use host_name if it has value, if not, use client_net_address.
+		// this value may not be accurate if
+		// - there is proxy in the middle of sql client and sql server. Or
+		// - host_name value is empty or not accurate.
+		if row[hostName] != "" {
+			record.Attributes().PutStr("client.address", row[hostName])
+		} else {
+			record.Attributes().PutStr("client.address", row[clientAddress])
+		}
+
+		record.SetEventName("query sample")
+
+		record.Body().SetStr("sample")
+	}
+	return logs, errors.Join(errs...)
 }
