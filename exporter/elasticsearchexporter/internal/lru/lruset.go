@@ -38,10 +38,10 @@ func (l *LRUSet) WithLock(fn func(LockedLRUSet) error) error {
 		return fn(nilLockedLRUSet{})
 	}
 
-	excluded := l.syncMu.WLock()
-	defer l.syncMu.WUnlock(&excluded)
+	lru := l.syncMu.WLock()
+	defer l.syncMu.WUnlock(&lru)
 
-	return fn(lockedLRUSet{*excluded})
+	return fn(lockedLRUSet{*lru})
 }
 
 func NewLRUSet(size uint32, rollover time.Duration) (*LRUSet, error) {
@@ -56,14 +56,14 @@ func NewLRUSet(size uint32, rollover time.Duration) (*LRUSet, error) {
 }
 
 type lockedLRUSet struct {
-	excluded *freelru.LRU[string, void]
+	lru *freelru.LRU[string, void]
 }
 
-func (l lockedLRUSet) CheckAndAdd(entry string) bool {
-	if _, exclude := (l.excluded).Get(entry); exclude {
+func (l lockedLRUSet) CheckAndAdd(entry string) (excluded bool) {
+	if _, exclude := (l.lru).Get(entry); exclude {
 		return true
 	}
-	(l.excluded).Add(entry, void{})
+	(l.lru).Add(entry, void{})
 	return false
 }
 
