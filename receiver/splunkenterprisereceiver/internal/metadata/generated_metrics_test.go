@@ -201,6 +201,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val")
 
+			allMetricsCount++
+			mb.RecordSplunkenterpriseErrorDataPoint(ts, 1)
+
 			res := pcommon.NewResource()
 			metrics := mb.Emit(WithResource(res))
 
@@ -862,6 +865,20 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+				case "splunkenterprise.error":
+					assert.False(t, validatedMetrics["splunkenterprise.error"], "Found a duplicate in the metrics slice: splunkenterprise.error")
+					validatedMetrics["splunkenterprise.error"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Increments every time a splunkenterprisereceiver scrape contains errors.", ms.At(i).Description())
+					assert.Equal(t, "{error}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				}
 			}
 		})

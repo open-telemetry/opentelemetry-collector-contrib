@@ -603,3 +603,11 @@ Gauge tracking number of scheduled search artifacts currently on disk. Note:* Mu
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.host | The name of the splunk host | Any Str |
+
+### splunkenterprise.error
+
+Increments every time a splunkenterprisereceiver scrape contains errors.
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {error} | Sum | Int | Cumulative | true |

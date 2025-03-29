@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"strconv"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -20,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
@@ -27,17 +29,19 @@ import (
 var errMaxSearchWaitTimeExceeded = errors.New("maximum search wait time exceeded for metric")
 
 type splunkScraper struct {
-	splunkClient *splunkEntClient
-	settings     component.TelemetrySettings
-	conf         *Config
-	mb           *metadata.MetricsBuilder
+	splunkClient  *splunkEntClient
+	settings      component.TelemetrySettings
+	conf          *Config
+	mb            *metadata.MetricsBuilder
+	failedScrapes *atomic.Int64
 }
 
 func newSplunkMetricsScraper(params receiver.Settings, cfg *Config) splunkScraper {
 	return splunkScraper{
-		settings: params.TelemetrySettings,
-		conf:     cfg,
-		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		settings:      params.TelemetrySettings,
+		conf:          cfg,
+		mb:            metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		failedScrapes: &atomic.Int64{},
 	}
 }
 
@@ -78,6 +82,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errOut := make(chan *scrapererror.ScrapeErrors)
 	var errs *scrapererror.ScrapeErrors
 	now := pcommon.NewTimestampFromTime(time.Now())
+
 	metricScrapes := []func(context.Context, pcommon.Timestamp, chan error){
 		s.scrapeLicenseUsageByIndex,
 		s.scrapeIndexThroughput,
@@ -126,7 +131,13 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	wg.Wait()
 	close(errChan)
 	errs = <-errOut
-	return s.mb.Emit(), errs.Combine()
+	combinedErrs := errs.Combine()
+	if combinedErrs != nil {
+		s.settings.Logger.Error("Scrape errors", zap.Error(combinedErrs))
+		s.failedScrapes.Add(1)
+		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes.Load())
+	}
+	return s.mb.Emit(), nil
 }
 
 // Each metric has its own scrape function associated with it
