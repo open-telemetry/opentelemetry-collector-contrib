@@ -1,12 +1,11 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkaexporter
+package marshaler
 
 import (
 	"testing"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -21,7 +20,7 @@ func Test_RawMarshaler(t *testing.T) {
 		name          string
 		countExpected *int
 		logRecord     func() plog.LogRecord
-		marshaled     sarama.ByteEncoder
+		marshaled     []byte
 		errorExpected bool
 	}{
 		{
@@ -114,11 +113,11 @@ func Test_RawMarshaler(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
-			r := newRawMarshaler()
+			r := RawLogsMarshaler{}
 			logs := plog.NewLogs()
 			lr := test.logRecord()
 			lr.MoveTo(logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty())
-			messages, err := r.Marshal(logs, "foo")
+			messages, err := r.MarshalLogs(logs)
 			if test.errorExpected {
 				require.Error(t, err)
 			} else {
@@ -130,9 +129,7 @@ func Test_RawMarshaler(t *testing.T) {
 			}
 			assert.Len(t, messages, countExpected)
 			if countExpected > 0 {
-				bytes, ok := messages[0].Value.(sarama.ByteEncoder)
-				require.True(t, ok)
-				assert.Equal(t, test.marshaled, bytes)
+				assert.Equal(t, test.marshaled, messages[0].Value)
 			}
 		})
 	}

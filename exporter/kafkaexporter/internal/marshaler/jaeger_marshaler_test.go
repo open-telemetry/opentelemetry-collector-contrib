@@ -1,13 +1,12 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkaexporter
+package marshaler
 
 import (
 	"bytes"
 	"testing"
 
-	"github.com/IBM/sarama"
 	"github.com/gogo/protobuf/jsonpb"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -38,33 +37,24 @@ func TestJaegerMarshaler(t *testing.T) {
 	require.NoError(t, jsonMarshaler.Marshal(jsonByteBuffer, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaler TracesMarshaler
-		encoding    string
-		messages    []*sarama.ProducerMessage
+		marshaler TracesMarshaler
+		encoding  string
+		messages  []Message
 	}{
 		{
-			unmarshaler: jaegerMarshaler{
-				marshaler: jaegerProtoSpanMarshaler{},
-			},
-			encoding: "jaeger_proto",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jaegerProtoBytes), Key: sarama.ByteEncoder(messageKey)}},
+			marshaler: JaegerProtoSpanMarshaler{},
+			messages:  []Message{{Value: jaegerProtoBytes, Key: messageKey}},
 		},
 		{
-			unmarshaler: jaegerMarshaler{
-				marshaler: jaegerJSONSpanMarshaler{
-					pbMarshaler: &jsonpb.Marshaler{},
-				},
-			},
-			encoding: "jaeger_json",
-			messages: []*sarama.ProducerMessage{{Topic: "topic", Value: sarama.ByteEncoder(jsonByteBuffer.Bytes()), Key: sarama.ByteEncoder(messageKey)}},
+			marshaler: JaegerJSONSpanMarshaler{},
+			messages:  []Message{{Value: jsonByteBuffer.Bytes(), Key: messageKey}},
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			messages, err := test.unmarshaler.Marshal(td, "topic")
+			messages, err := test.marshaler.MarshalTraces(td)
 			require.NoError(t, err)
 			assert.Equal(t, test.messages, messages)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
 }
