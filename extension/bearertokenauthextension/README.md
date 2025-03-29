@@ -21,6 +21,8 @@ The authenticator type has to be set to `bearertokenauth`.
 
 ## Configuration
 
+- `header`: Specifies the auth header name. Defaults to "Authorization". Optional.
+
 - `scheme`: Specifies the auth scheme name. Defaults to "Bearer". Optional.
 
 - `token`: Static authorization token that needs to be sent on every gRPC client call as metadata.
