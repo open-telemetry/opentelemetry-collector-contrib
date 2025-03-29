@@ -118,11 +118,11 @@ func TestGetCurrentToken(t *testing.T) {
 	_, err := auth.getCurrentToken()
 	require.ErrorIs(t, err, errUnavailableToken)
 
-	token := &azcore.AccessToken{Token: "test"}
-	auth.token = token
+	token := azcore.AccessToken{Token: "test"}
+	auth.token.Store(token)
 	got, err := auth.getCurrentToken()
 	require.NoError(t, err)
-	require.Equal(t, *token, got)
+	require.Equal(t, token, got)
 }
 
 func TestAuthenticate(t *testing.T) {
@@ -137,10 +137,10 @@ func TestAuthenticate(t *testing.T) {
 		Token: token,
 	})
 	auth := &authenticator{
-		token:      &azcore.AccessToken{Token: token},
 		credential: credential,
 		logger:     zap.NewNop(),
 	}
+	auth.token.Store(azcore.AccessToken{Token: token})
 
 	tests := map[string]struct {
 		headers     map[string][]string

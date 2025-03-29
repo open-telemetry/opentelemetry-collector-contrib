@@ -12,7 +12,7 @@ import (
 	"net/http"
 	"os"
 	"strings"
-	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -41,9 +41,8 @@ type authenticator struct {
 	scope      string
 	credential azcore.TokenCredential
 
-	stopCh  chan int
-	token   *azcore.AccessToken
-	tokenMu sync.RWMutex
+	stopCh chan int
+	token  atomic.Value
 
 	logger *zap.Logger
 }
@@ -122,8 +121,7 @@ func newAzureAuthenticator(cfg *Config, logger *zap.Logger) (*authenticator, err
 		scope:      cfg.Scope,
 		credential: credential,
 		stopCh:     make(chan int, 1),
-		token:      nil,
-		tokenMu:    sync.RWMutex{},
+		token:      atomic.Value{},
 		logger:     logger,
 	}, nil
 }
@@ -152,9 +150,6 @@ func (a *authenticator) Start(ctx context.Context, _ component.Host) error {
 // if the authenticator does not have a token or
 // it has expired.
 func (a *authenticator) updateToken(ctx context.Context) (time.Time, error) {
-	a.tokenMu.Lock()
-	defer a.tokenMu.Unlock()
-
 	if a.credential == nil {
 		return time.Time{}, errors.New("authenticator does not have credentials configured")
 	}
@@ -165,12 +160,12 @@ func (a *authenticator) updateToken(ctx context.Context) (time.Time, error) {
 		// TODO Handle retries
 		return time.Time{}, fmt.Errorf("azure authenticator failed to get token: %w", err)
 	}
-	a.token = &token
-	return a.token.ExpiresOn, nil
+	a.token.Store(token)
+	return token.ExpiresOn, nil
 }
 
 // trackToken runs on the background to refresh
-// the token it expires
+// the token if it expires
 func (a *authenticator) trackToken(ctx context.Context) {
 	expiresOn, err := a.updateToken(ctx)
 	if err != nil {
@@ -224,14 +219,12 @@ func (a *authenticator) Shutdown(_ context.Context) error {
 }
 
 func (a *authenticator) getCurrentToken() (azcore.AccessToken, error) {
-	a.tokenMu.RLock()
-	defer a.tokenMu.RUnlock()
-
-	if a.token == nil {
+	token := a.token.Load()
+	if token == nil {
 		return azcore.AccessToken{}, errUnavailableToken
 	}
 
-	return *a.token, nil
+	return token.(azcore.AccessToken), nil
 }
 
 // GetToken returns an access token with a
