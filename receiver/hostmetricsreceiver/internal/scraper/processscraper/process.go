@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -84,17 +83,16 @@ type processHandle interface {
 	CmdlineWithContext(context.Context) (string, error)
 	CmdlineSliceWithContext(context.Context) ([]string, error)
 	TimesWithContext(context.Context) (*cpu.TimesStat, error)
-	PercentWithContext(context.Context, time.Duration) (float64, error)
 	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
 	CreateTimeWithContext(context.Context) (int64, error)
-	ParentWithContext(context.Context) (*process.Process, error)
 	PpidWithContext(context.Context) (int32, error)
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
 	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
 	NumFDsWithContext(context.Context) (int32, error)
+	GetProcessHandleCountWithContext(context.Context) (int64, error)
 	// If gatherUsed is true, the currently used value will be gathered and added to the resulting RlimitStat.
 	RlimitUsageWithContext(ctx context.Context, gatherUsed bool) ([]process.RlimitStat, error)
 	CgroupWithContext(ctx context.Context) (string, error)

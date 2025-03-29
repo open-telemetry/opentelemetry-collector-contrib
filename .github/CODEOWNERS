@@ -88,6 +88,7 @@ exporter/zipkinexporter/                                         @open-telemetry
 extension/ackextension/                                          @open-telemetry/collector-contrib-approvers @zpzhuSplunk @splunkericl
 extension/asapauthextension/                                     @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 extension/awsproxy/                                              @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
+extension/azureauthextension/                                    @open-telemetry/collector-contrib-approvers @constanca-m
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/bearertokenauthextension/                              @open-telemetry/collector-contrib-approvers @jpkrohling @frzifus
 extension/cgroupruntimeextension/                                @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
@@ -167,6 +168,7 @@ pkg/stanza/fileconsumer/                                         @open-telemetry
 pkg/status/                                                      @open-telemetry/collector-contrib-approvers @jpkrohling @mwear
 pkg/translator/azure/                                            @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @atoulme @cparkins
 pkg/translator/azurelogs/                                        @open-telemetry/collector-contrib-approvers @atoulme @cparkins @MikeGoldsmith
+pkg/translator/faro/                                             @open-telemetry/collector-contrib-approvers @mar4uk @rlankfo
 pkg/translator/jaeger/                                           @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers @frzifus
 pkg/translator/loki/                                             @open-telemetry/collector-contrib-approvers @gouthamve @mar4uk
 pkg/translator/opencensus/                                       @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
@@ -303,9 +305,10 @@ receiver/sqlqueryreceiver/                                       @open-telemetry
 receiver/sqlserverreceiver/                                      @open-telemetry/collector-contrib-approvers @StefanKurek @sincejune @crobert-1
 receiver/sshcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @nslaughter
 receiver/statsdreceiver/                                         @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
+receiver/stefreceiver/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @MovieStoreGuy @dmitryax @atoulme @pjanotti @crobert-1
 receiver/syslogreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
 receiver/systemdreceiver/                                        @open-telemetry/collector-contrib-approvers @Hemansh31 @atoulme
-receiver/tcpcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt @chengchuanpeng
+receiver/tcpcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt @chengchuanpeng @yanfeng1992
 receiver/tcplogreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tlscheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt
 receiver/udplogreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski

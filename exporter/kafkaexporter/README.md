@@ -40,7 +40,7 @@ The following settings can be optionally configured:
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
 - `auth`
-  - `plain_text`
+  - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
     - `password`: The password to use
   - `sasl`

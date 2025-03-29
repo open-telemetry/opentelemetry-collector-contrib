@@ -16,6 +16,8 @@ jobs:
     name: changed files
     runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
       files: ${{ steps.changes.outputs.files }}
     steps:
