@@ -31,6 +31,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 
 	contentStr := strings.ReplaceAll(string(content), "<METRICS_APP_TOKEN>", metricsAppToken)
+	contentStr = strings.ReplaceAll(contentStr, "<LOGS_APP_TOKEN>", logsAppToken)
 
 	tmpConfigPath := filepath.Join("testdata", "config_tmp.yaml")
 	err = os.WriteFile(tmpConfigPath, []byte(contentStr), 0o600)
@@ -64,6 +65,10 @@ func TestLoadConfig(t *testing.T) {
 					MetricsSchema:   "telegraf-prometheus-v2",
 					PayloadMaxLines: 72,
 					PayloadMaxBytes: 27,
+				},
+				LogsConfig: LogsConfig{
+					LogsEndpoint: usLogsEndpoint,
+					AppToken:     logsAppToken,
 				},
 
 				BackOffConfig: configretry.BackOffConfig{
@@ -107,6 +112,9 @@ func TestConfigValidation(t *testing.T) {
 				MetricsConfig: MetricsConfig{
 					AppToken: metricsAppToken,
 				},
+				LogsConfig: LogsConfig{
+					AppToken: logsAppToken,
+				},
 			},
 			expectError: false,
 		},
@@ -116,6 +124,9 @@ func TestConfigValidation(t *testing.T) {
 				Region: euRegion,
 				MetricsConfig: MetricsConfig{
 					AppToken: metricsAppToken,
+				},
+				LogsConfig: LogsConfig{
+					AppToken: logsAppToken,
 				},
 			},
 			expectError: false,
@@ -127,6 +138,9 @@ func TestConfigValidation(t *testing.T) {
 				MetricsConfig: MetricsConfig{
 					AppToken: metricsAppToken,
 				},
+				LogsConfig: LogsConfig{
+					AppToken: logsAppToken,
+				},
 			},
 			expectError: true,
 		},
@@ -135,6 +149,16 @@ func TestConfigValidation(t *testing.T) {
 			config: &Config{
 				Region: usRegion,
 				MetricsConfig: MetricsConfig{
+					AppToken: "short-token",
+				},
+			},
+			expectError: true,
+		},
+		{
+			name: "Invalid logs AppToken",
+			config: &Config{
+				Region: usRegion,
+				LogsConfig: LogsConfig{
 					AppToken: "short-token",
 				},
 			},
