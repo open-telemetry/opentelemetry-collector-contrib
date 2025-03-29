@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/roundrobinconnector
+module github.com/domleb/opentelemetry-collector-contrib/connector/roundrobinconnector
 
 go 1.23.0
 

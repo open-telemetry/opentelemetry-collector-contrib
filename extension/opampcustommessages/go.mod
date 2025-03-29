@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
+module github.com/domleb/opentelemetry-collector-contrib/extension/opampcustommessages
 
 go 1.23.0
 

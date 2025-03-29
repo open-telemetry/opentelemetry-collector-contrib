@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
+module github.com/domleb/opentelemetry-collector-contrib/pkg/status
 
 go 1.23.0
 

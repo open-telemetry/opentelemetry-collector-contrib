@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/jaegerreceiver
 
 go 1.23.7
 

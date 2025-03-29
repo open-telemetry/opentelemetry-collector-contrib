@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/loadbalancingexporter
 
 go 1.23.0
 

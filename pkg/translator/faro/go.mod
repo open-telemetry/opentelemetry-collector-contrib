@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
+module github.com/domleb/opentelemetry-collector-contrib/pkg/translator/faro
 
 go 1.23.3
 

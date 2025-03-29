@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azureblobexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/azureblobexporter
 
 go 1.23.0
 

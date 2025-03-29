@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/bigipreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/bigipreceiver
 
 go 1.23.0
 

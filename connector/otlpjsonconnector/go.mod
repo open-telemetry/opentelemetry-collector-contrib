@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector
+module github.com/domleb/opentelemetry-collector-contrib/connector/otlpjsonconnector
 
 go 1.23.0
 

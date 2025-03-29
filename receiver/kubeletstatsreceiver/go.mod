@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/kubeletstatsreceiver
 
 go 1.23.0
 

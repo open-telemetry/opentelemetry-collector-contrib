@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/processor/spanprocessor
+module github.com/domleb/opentelemetry-collector-contrib/processor/spanprocessor
 
 go 1.23.0
 
