@@ -46,8 +46,8 @@ type kubeletScraper struct {
 	stopCh                chan struct{}
 	m                     sync.RWMutex
 
-	// A struct that keeps Node's resource capacities
-	nodeLimits *kubelet.NodeCapacity
+	// A struct that keeps Node's resource information
+	nodeInfo *kubelet.NodeInfo
 }
 
 func newKubeletScraper(
@@ -79,13 +79,15 @@ func newKubeletScraper(
 			metricsConfig.Metrics.K8sPodMemoryRequestUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryLimitUtilization.Enabled ||
 			metricsConfig.Metrics.K8sContainerMemoryRequestUtilization.Enabled,
-		stopCh:     make(chan struct{}),
-		nodeLimits: &kubelet.NodeCapacity{},
+		stopCh:   make(chan struct{}),
+		nodeInfo: &kubelet.NodeInfo{},
 	}
 
 	if metricsConfig.Metrics.K8sContainerCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sPodCPUNodeUtilization.Enabled ||
 		metricsConfig.Metrics.K8sContainerMemoryNodeUtilization.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeAnnotations.Enabled ||
+		metricsConfig.ResourceAttributes.K8sNodeLabels.Enabled ||
 		metricsConfig.Metrics.K8sPodMemoryNodeUtilization.Enabled {
 		ks.nodeInformer = k8sconfig.NewNodeSharedInformer(rOptions.k8sAPIClient, nodeName, 5*time.Minute)
 	}
@@ -114,12 +116,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
-	var node kubelet.NodeCapacity
-	if r.nodeInformer != nil {
-		node = r.node()
-	}
-
-	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, node, r.detailedPVCLabelsSetter())
+	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, r.node(), r.detailedPVCLabelsSetter())
 
 	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.mbs)
 	md := pmetric.NewMetrics()
@@ -160,10 +157,10 @@ func (r *kubeletScraper) detailedPVCLabelsSetter() func(rb *metadata.ResourceBui
 	}
 }
 
-func (r *kubeletScraper) node() kubelet.NodeCapacity {
+func (r *kubeletScraper) node() kubelet.NodeInfo {
 	r.m.RLock()
 	defer r.m.RUnlock()
-	return *r.nodeLimits
+	return *r.nodeInfo
 }
 
 func (r *kubeletScraper) start(_ context.Context, _ component.Host) error {
@@ -210,13 +207,27 @@ func (r *kubeletScraper) addOrUpdateNode(node *v1.Node) {
 
 	if cpu, ok := node.Status.Capacity["cpu"]; ok {
 		if q, err := resource.ParseQuantity(cpu.String()); err == nil {
-			r.nodeLimits.CPUCapacity = float64(q.MilliValue()) / 1000
+			r.nodeInfo.CPUCapacity = float64(q.MilliValue()) / 1000
 		}
 	}
 	if memory, ok := node.Status.Capacity["memory"]; ok {
 		// ie: 32564740Ki
 		if q, err := resource.ParseQuantity(memory.String()); err == nil {
-			r.nodeLimits.MemoryCapacity = float64(q.Value())
+			r.nodeInfo.MemoryCapacity = float64(q.Value())
 		}
 	}
+
+	r.nodeInfo.Name = node.Name
+
+	newLabels := make(map[string]any)
+	for key, value := range node.Labels {
+		newLabels[key] = value
+	}
+	r.nodeInfo.Labels = newLabels
+
+	newAnnotations := make(map[string]any)
+	for key, value := range node.Annotations {
+		newAnnotations[key] = value
+	}
+	r.nodeInfo.Annotations = newAnnotations
 }
