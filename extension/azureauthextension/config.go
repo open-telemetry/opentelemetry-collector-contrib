@@ -24,6 +24,7 @@ var (
 	errEmptyFederatedTokenFile = errors.New(`empty "federated_token_file" field`)
 	errEmptyAuthentication     = fmt.Errorf("authentication configuration is empty, please choose one of %s", validOptions)
 	errEmptyScope              = errors.New(`the "scope" field for the token permissions is empty`)
+	errMutuallyExclusiveAuth   = errors.New(`"client_secret" and "client_certificate_path" are mutually exclusive`)
 )
 
 type Config struct {
@@ -89,6 +90,8 @@ func (cfg *ServicePrincipal) Validate() error {
 	}
 	if cfg.ClientCertificatePath == "" && cfg.ClientSecret == "" {
 		errs = append(errs, errEmptyClientCredential)
+	} else if cfg.ClientCertificatePath != "" && cfg.ClientSecret != "" {
+		errs = append(errs, errMutuallyExclusiveAuth)
 	}
 
 	if len(errs) > 0 {

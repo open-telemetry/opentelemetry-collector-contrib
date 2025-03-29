@@ -62,6 +62,10 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id:          component.NewIDWithName(metadata.Type, "service_principal_mutually_exclusive"),
+			expectedErr: fmt.Sprintf("%s: %s", "service_principal", errMutuallyExclusiveAuth.Error()),
+		},
+		{
 			id:          component.NewIDWithName(metadata.Type, "service_principal_empty_client_id"),
 			expectedErr: fmt.Sprintf("%s: %s", "service_principal", errEmptyClientID.Error()),
 		},
