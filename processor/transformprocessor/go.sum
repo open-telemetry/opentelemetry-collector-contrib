@@ -120,6 +120,8 @@ go.opentelemetry.io/collector/pipeline v0.122.2-0.20250319144947-41a9ea7f7402 h1
 go.opentelemetry.io/collector/pipeline v0.122.2-0.20250319144947-41a9ea7f7402/go.mod h1:TO02zju/K6E+oFIOdi372Wk0MXd+Szy72zcTsFQwXl4=
 go.opentelemetry.io/collector/processor v0.122.2-0.20250319144947-41a9ea7f7402 h1:An8vb5HuCmnwIYyeeMfkbvh5dY5IT8vMnu1rdrD4rNw=
 go.opentelemetry.io/collector/processor v0.122.2-0.20250319144947-41a9ea7f7402/go.mod h1:nYKctftba7SbdLml6LxgIrnYRXCShDe2bnNWjTIpF7g=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.122.1 h1:Zf8jVQHp61RNhSaqWdehR2JeW8u8DOqt/II/aJ5w9Oo=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.122.1/go.mod h1:wxBFuB3WbKI3hh1JhLET0Yzi7yIEOXHsPJ/DfZgr394=
 go.opentelemetry.io/collector/processor/processortest v0.122.2-0.20250319144947-41a9ea7f7402 h1:ogoYCuCCxGZ7yyGlZOoai+UxxUy3WVrDBUl3hWeh0ao=
 go.opentelemetry.io/collector/processor/processortest v0.122.2-0.20250319144947-41a9ea7f7402/go.mod h1:8/NRWx18tNJMBwCQ8/YPWr4qsFUrwk27qE7/dXoJb1M=
 go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250319144947-41a9ea7f7402 h1:xVoO+wYRA78EuzaCe0hGd4jOeLPkfcZ41PMQpsZ02Zo=
@@ -229,8 +231,8 @@ golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f h1:OxYkA3wjPsZyBylwymxSHa7ViiW1Sml4ToBrncvFehI=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f/go.mod h1:+2Yz8+CLJbIfL9z73EW45avw8Lmge3xVElCP9zEKi50=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e h1:YA5lmSs3zc/5w+xsRcHqpETkaYyK63ivEPzNTcUUlSA=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e/go.mod h1:LuRYeWDFV6WOn90g357N17oMCaxpgCnbi/44qJvDn2I=
 google.golang.org/grpc v1.71.0 h1:kF77BGdPTQ4/JZWMlb9VpJ5pa25aqvVqogsxNHHdeBg=
 google.golang.org/grpc v1.71.0/go.mod h1:H0GRtasmQOh9LkFoCPDu3ZrwUtD1YGE+b2vYBYd/8Ec=
 google.golang.org/protobuf v1.36.5 h1:tPhr+woSbjfYvY6/GPufUoYizxw1cF/yFoxJ2fmpwlM=
