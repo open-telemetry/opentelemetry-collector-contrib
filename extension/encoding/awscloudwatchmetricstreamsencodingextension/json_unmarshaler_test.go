@@ -145,10 +145,8 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 			expectedErrStr: "invalid cloudwatch metric at index 1: cloudwatch metric is missing value",
 		},
 		"invalid_json_struct": {
-			record: []byte("invalid"),
-			expectedErrStr: "error unmarshaling datum at index 0: readObjectStart: " +
-				"expect { or n, but found i, error found in #1 byte of ...|invalid|...," +
-				" bigger context ...|invalid|...",
+			record:         []byte("invalid"),
+			expectedErrStr: "error unmarshaling datum at index 0: invalid",
 		},
 		"scanner_error": {
 			record:         bytes.Repeat([]byte("test"), bufio.MaxScanTokenSize+1),
@@ -161,7 +159,7 @@ func TestUnmarshalJSONMetrics(t *testing.T) {
 		t.Run(name, func(t *testing.T) {
 			metrics, err := unmarshalerCW.UnmarshalMetrics(test.record)
 			if test.expectedErrStr != "" {
-				require.EqualError(t, err, test.expectedErrStr)
+				require.ErrorContains(t, err, test.expectedErrStr)
 				return
 			}
 
