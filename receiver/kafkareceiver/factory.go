@@ -5,8 +5,6 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
-	"errors"
-	"strings"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -22,8 +20,6 @@ const (
 	defaultLogsTopic    = "otlp_logs"
 	defaultEncoding     = "otlp_proto"
 )
-
-var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
 // NewFactory creates Kafka receiver factory.
 func NewFactory() receiver.Factory {
@@ -103,31 +99,4 @@ func createLogsReceiver(
 		return nil, err
 	}
 	return r, nil
-}
-
-func getLogsUnmarshaler(encoding string, unmarshalers map[string]LogsUnmarshaler) (LogsUnmarshaler, error) {
-	var enc string
-	unmarshaler, ok := unmarshalers[encoding]
-	if !ok {
-		split := strings.SplitN(encoding, "_", 2)
-		prefix := split[0]
-		if len(split) > 1 {
-			enc = split[1]
-		}
-		unmarshaler, ok = unmarshalers[prefix].(LogsUnmarshalerWithEnc)
-		if !ok {
-			return nil, errUnrecognizedEncoding
-		}
-	}
-
-	if unmarshalerWithEnc, ok := unmarshaler.(LogsUnmarshalerWithEnc); ok {
-		// This should be called even when enc is an empty string to initialize the encoding.
-		unmarshaler, err := unmarshalerWithEnc.WithEnc(enc)
-		if err != nil {
-			return nil, err
-		}
-		return unmarshaler, nil
-	}
-
-	return unmarshaler, nil
 }
