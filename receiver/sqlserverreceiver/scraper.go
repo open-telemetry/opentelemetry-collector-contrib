@@ -967,10 +967,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter: setDouble,
 			},
 			{
-				key:            dbPrefix + lockTimeout,
-				columnName:     lockTimeout,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + lockTimeout,
+				columnName: lockTimeout,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + logicalReads,
@@ -1093,7 +1095,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		for _, attr := range attributes {
 			value, err := attr.valueRetriever(row, attr.columnName)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[clientPort], err))
+				errs = append(errs, err)
+				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
 			}
 			attr.valueSetter(record.Attributes(), attr.key, value)
 		}
