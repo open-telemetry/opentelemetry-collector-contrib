@@ -1,0 +1,3 @@
+exporters:
+  file/2:
+    path: ./foo
