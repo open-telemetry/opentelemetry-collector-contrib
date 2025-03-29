@@ -5,6 +5,7 @@ package tcp
 
 import (
 	"path/filepath"
+	"regexp"
 	"testing"
 
 	"go.opentelemetry.io/collector/config/configtls"
@@ -31,7 +32,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg.ListenAddress = "10.0.0.1:9000"
 					cfg.AddAttributes = true
 					cfg.Encoding = "utf-8"
-					cfg.SplitConfig.LineStartPattern = "ABC"
+					cfg.SplitConfig.LineStartPattern = regexp.MustCompile("ABC")
 					cfg.TLS = &configtls.ServerConfig{
 						Config: configtls.Config{
 							CertFile: "foo",

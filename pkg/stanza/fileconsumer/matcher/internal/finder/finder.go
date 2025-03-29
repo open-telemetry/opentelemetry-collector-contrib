@@ -12,16 +12,6 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 )
 
-func Validate(globs []string) error {
-	for _, glob := range globs {
-		_, err := doublestar.PathMatch(glob, "matchstring")
-		if err != nil {
-			return fmt.Errorf("parse glob: %w", err)
-		}
-	}
-	return nil
-}
-
 // FindFiles gets a list of paths given an array of glob patterns to include and exclude
 func FindFiles(includes []string, excludes []string) ([]string, error) {
 	var errs error

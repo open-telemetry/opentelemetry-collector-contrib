@@ -211,8 +211,10 @@ func testdataConfigYamlAsMap() *Config {
 			MaxConcurrentFiles: 1024,
 			FlushPeriod:        500 * time.Millisecond,
 			Criteria: matcher.Criteria{
-				Include: []string{"/var/log/*.log"},
-				Exclude: []string{"/var/log/example.log"},
+				FinderConfig: matcher.FinderConfig{
+					Include: []string{"/var/log/*.log"},
+					Exclude: []string{"/var/log/example.log"},
+				},
 			},
 		},
 	}

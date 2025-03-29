@@ -5,6 +5,7 @@ package reader
 
 import (
 	"context"
+	"regexp"
 	"testing"
 	"time"
 
@@ -170,7 +171,7 @@ func TestTokenizationTooLongWithLineStartPattern(t *testing.T) {
 		[]byte("2023-01-01 2"),
 	}
 
-	sCfg := split.Config{LineStartPattern: `\d+-\d+-\d+`}
+	sCfg := split.Config{LineStartPattern: regexp.MustCompile(`\d+-\d+-\d+`)}
 	f, sink := testFactory(t, withSplitConfig(sCfg), withMaxLogSize(15))
 
 	temp := filetest.OpenTemp(t, t.TempDir())
