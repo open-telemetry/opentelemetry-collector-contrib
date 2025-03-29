@@ -5,6 +5,8 @@ package metrics
 
 import (
 	"context"
+	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -13,7 +15,9 @@ import (
 	"go.opentelemetry.io/otel/attribute"
 	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/resource"
 	"go.uber.org/zap"
+	"golang.org/x/time/rate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/common"
 )
@@ -469,5 +473,66 @@ func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 		},
 		NumMetrics: qty,
 		MetricType: metric,
+	}
+}
+
+func TestTemporalityStartTimes(t *testing.T) {
+	tests := []struct {
+		name        string
+		temporality AggregationTemporality
+		checkTimes  func(t *testing.T, firstTime, secondTime time.Time)
+	}{
+		{
+			name:        "Cumulative temporality keeps same start timestamp",
+			temporality: AggregationTemporality(metricdata.CumulativeTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				assert.Equal(t, firstTime, secondTime,
+					"cumulative metrics should have same start time")
+			},
+		},
+		{
+			name:        "Delta temporality has different start timestamps",
+			temporality: AggregationTemporality(metricdata.DeltaTemporality),
+			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
+				assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := &mockExporter{}
+			running := &atomic.Bool{}
+			running.Store(true)
+
+			wg := &sync.WaitGroup{}
+			wg.Add(1)
+
+			w := worker{
+				metricName:             "test_metric",
+				metricType:             MetricTypeSum,
+				aggregationTemporality: tt.temporality,
+				numMetrics:             2,
+				running:                running,
+				limitPerSecond:         rate.Inf,
+				logger:                 zap.NewNop(),
+				wg:                     wg,
+			}
+
+			w.simulateMetrics(resource.Default(), m, nil)
+
+			wg.Wait()
+
+			require.GreaterOrEqual(t, len(m.rms), 2, "should have at least 2 metric points")
+
+			firstMetric := m.rms[0].ScopeMetrics[0].Metrics[0]
+			secondMetric := m.rms[1].ScopeMetrics[0].Metrics[0]
+
+			firstStartTime := firstMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+			secondStartTime := secondMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
+
+			tt.checkTimes(t, firstStartTime, secondStartTime)
+		})
 	}
 }
