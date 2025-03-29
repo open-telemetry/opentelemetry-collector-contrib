@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"runtime"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -26,6 +27,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -52,8 +54,9 @@ type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
 
-	agentType    string
-	agentVersion string
+	agentType     string
+	agentVersion  string
+	resourceAttrs pcommon.Map
 
 	instanceID uuid.UUID
 
@@ -89,6 +92,14 @@ var (
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+
+	// identifyingAttributeList is the list of semantic convention keys that are used
+	// for the agent description's identifying attributes.
+	identifyingAttributeList = []string{
+		semconv.AttributeServiceName,
+		semconv.AttributeServiceVersion,
+		semconv.AttributeServiceInstanceID,
+	}
 )
 
 // moduleInfo exposes the internal collector moduleInfo interface
@@ -313,6 +324,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
+		resourceAttrs:            set.Resource.Attributes(),
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
@@ -374,6 +386,16 @@ func (o *opampAgent) createAgentDescription() error {
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
+	}
+	if o.cfg.AgentDescription.IncludeResourceAttributes {
+		o.resourceAttrs.Range(func(k string, v pcommon.Value) bool {
+			// skip the attributes that are being used in the identifying attributes.
+			if slices.Contains(identifyingAttributeList, k) {
+				return true
+			}
+			nonIdentifyingAttributeMap[k] = v.AsString()
+			return true
+		})
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
