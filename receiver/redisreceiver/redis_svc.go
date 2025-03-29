@@ -22,14 +22,10 @@ func newRedisSvc(client client) *redisSvc {
 	}
 }
 
-// Calls the Redis INFO command on the client and returns an `info` map.
-func (p *redisSvc) info() (info, error) {
-	str, err := p.client.retrieveInfo()
-	if err != nil {
-		return nil, err
-	}
-	lines := strings.Split(str, p.delimiter)
+func (p *redisSvc) retrievePairsFromString(str string) info {
 	attrs := make(map[string]string)
+
+	lines := strings.Split(str, p.delimiter)
 	for _, line := range lines {
 		if len(line) == 0 || strings.HasPrefix(line, "#") {
 			continue
@@ -39,5 +35,25 @@ func (p *redisSvc) info() (info, error) {
 			attrs[pair[0]] = pair[1]
 		}
 	}
-	return attrs, nil
+
+	return attrs
+}
+
+// Calls the Redis INFO command on the client and returns an `info` map.
+func (p *redisSvc) info() (info, error) {
+	strInfo, err := p.client.retrieveInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return p.retrievePairsFromString(strInfo), nil
+}
+
+func (p *redisSvc) clusterInfo() (info, error) {
+	strClusterInfo, err := p.client.retrieveClusterInfo()
+	if err != nil {
+		return nil, err
+	}
+
+	return p.retrievePairsFromString(strClusterInfo), nil
 }

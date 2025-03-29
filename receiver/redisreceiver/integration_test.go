@@ -28,6 +28,7 @@ func TestIntegrationV6(t *testing.T) {
 			testcontainers.ContainerRequest{
 				Image:        "redis:6.0.3",
 				ExposedPorts: []string{redisPort},
+				Cmd:          []string{"redis-server", "--cluster-enabled", "yes"},
 				WaitingFor:   wait.ForListeningPort(redisPort),
 			}),
 		scraperinttest.WithCustomConfig(
