@@ -28,7 +28,7 @@ to connect and authenticate to the API server and how often to collect data
 and send it to the next consumer.
 
 Kubelet Stats Receiver supports both secure Kubelet endpoint exposed at port 10250 by default and read-only
-Kubelet endpoint exposed at port 10255. If `auth_type` set to `none`, the read-only endpoint will be used. The secure 
+Kubelet endpoint exposed at port 10255. If `auth_type` set to `none`, the read-only endpoint will be used. The secure
 endpoint will be used if `auth_type` set to any of the following values:
 
 - `tls` tells the receiver to use TLS for auth and requires that the fields
@@ -144,6 +144,7 @@ service:
       receivers: [kubeletstats]
       exporters: [file]
 ```
+
 Note that using `auth_type` `kubeConfig`, the endpoint should only be the node name as the communication to the kubelet is proxied by the API server configured in the `kubeConfig`.
 `insecure_skip_verify` still applies by overriding the `kubeConfig` settings.
 If no `context` is specified, the current context or the default context is used.
@@ -219,6 +220,23 @@ receivers:
       - pod
 ```
 
+### Network metrics from all interfaces for Node and Pod
+
+By default, `k8s.[node|pod].network.*` metrics are collected only for default network interface (e.g. `eth0`). To enable network IO/error metrics collection from all available interfaces on Node/Pod level - you can use `add_all_interfaces_metrics` configuration parameters. Please be aware that enabling this options will increase amount of produced network metrics and increase network metrics cardinality, because of `interface` attribute.
+For example, if you would like to have network IO/error metrics from all network interfaces for both Pod and Node level you can use following configuration.following configuration.
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 10s
+    auth_type: "serviceAccount"
+    endpoint: "${env:K8S_NODE_NAME}:10250"
+    insecure_skip_verify: true
+    add_all_interfaces_metrics:
+      pod: true
+      node: true
+```
+
 ### Collect `k8s.{container,pod}.{cpu,memory}.node.utilization` as ratio of total node's capacity
 
 In order to calculate the `k8s.container.cpu.node.utilization`, `k8s.pod.cpu.node.utilization`,
@@ -234,6 +252,7 @@ env:
       fieldRef:
         fieldPath: spec.nodeName
 ```
+
 Then set `node` value to `${env:K8S_NODE_NAME}` in the receiver's configuration:
 
 ```yaml
@@ -279,7 +298,7 @@ rules:
   - apiGroups: [""]
     resources: ["nodes/stats"]
     verbs: ["get"]
-    
+
   # Only needed if you are using extra_metadata_labels or
   # are collecting the request/limit utilization metrics
   - apiGroups: [""]
@@ -290,6 +309,7 @@ rules:
 ### Warning about metrics' deprecation
 
 The following metrics will be renamed in a future version:
+
 - `k8s.node.cpu.utilization` (renamed to `k8s.node.cpu.usage`)
 - `k8s.pod.cpu.utilization` (renamed to `k8s.pod.cpu.usage`)
 - `container.cpu.utilization` (renamed to `container.cpu.usage`)
@@ -305,4 +325,4 @@ These metrics were previously incorrectly named using the utilization term.
 - removed three releases after stable.
 
 More information about the deprecation plan and
-the background reasoning can be found at https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885.
+the background reasoning can be found at <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885>.
