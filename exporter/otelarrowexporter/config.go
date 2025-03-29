@@ -28,8 +28,8 @@ type Config struct {
 	// inherited from exporterhelper using field names
 	// intentionally identical to the core OTLP exporter.
 
-	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	RetryConfig configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 

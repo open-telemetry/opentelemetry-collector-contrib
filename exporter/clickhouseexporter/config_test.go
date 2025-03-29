@@ -76,7 +76,7 @@ func TestLoadConfig(t *testing.T) {
 					ExponentialHistogram: internal.MetricTypeConfig{Name: "otel_metrics_custom_exp_histogram"},
 				},
 				ConnectionParams: map[string]string{},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 10,
 					QueueSize:    100,

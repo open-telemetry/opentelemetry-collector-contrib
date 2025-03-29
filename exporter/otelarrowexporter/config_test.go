@@ -58,7 +58,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueConfig{
+			QueueSettings: exporterhelper.QueueBatchConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,

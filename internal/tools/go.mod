@@ -281,6 +281,3 @@ retract (
 	v0.76.1
 	v0.65.0
 )
-
-// TODO: Remove once Collector Core 0.123.0 released
-replace go.opentelemetry.io/collector/component => go.opentelemetry.io/collector/component v1.28.2-0.20250328163324-c56d8f6beeab

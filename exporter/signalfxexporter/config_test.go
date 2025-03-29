@@ -143,7 +143,7 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
@@ -450,7 +450,7 @@ func TestConfigValidateErrors(t *testing.T) {
 			cfg: &Config{
 				Realm:       "us0",
 				AccessToken: "access_token",
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:   true,
 					QueueSize: -1,
 				},

@@ -43,7 +43,7 @@ func TestLoadConfig(t *testing.T) {
 					config.MaxElapsedTime = 10 * time.Minute
 					return config
 				}(),
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,

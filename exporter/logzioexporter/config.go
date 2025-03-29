@@ -16,7 +16,7 @@ import (
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`          // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ClientConfig
-	QueueSettings             exporterhelper.QueueConfig        `mapstructure:"sending_queue"` // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
+	QueueSettings             exporterhelper.QueueBatchConfig   `mapstructure:"sending_queue"` // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"` // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
 	Token                     configopaque.String               `mapstructure:"account_token"`    // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
 	Region                    string                            `mapstructure:"region"`           // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions

@@ -53,7 +53,7 @@ func TestLoadConfig(t *testing.T) {
 			RandomizationFactor: backoff.DefaultRandomizationFactor,
 			Multiplier:          backoff.DefaultMultiplier,
 		},
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:      true,
 			NumConsumers: 10,
 			QueueSize:    1000,

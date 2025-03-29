@@ -57,7 +57,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -133,7 +133,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -209,7 +209,7 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
