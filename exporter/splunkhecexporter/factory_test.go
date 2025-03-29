@@ -111,7 +111,7 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.BatcherConfig = exporterbatcher.NewDefaultConfig()
+	config.BatcherConfig = exporterbatcher.NewDefaultConfig() //nolint:staticcheck
 
 	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)

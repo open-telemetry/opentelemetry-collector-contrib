@@ -22,7 +22,7 @@ const (
 
 // Config defines by Coralogix.
 type Config struct {
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 
@@ -63,7 +63,7 @@ type Config struct {
 
 	// Reference:
 	// 	https://github.com/open-telemetry/opentelemetry-collector/issues/8122
-	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"`
+	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"` //nolint:staticcheck
 }
 
 func isEmpty(endpoint string) bool {

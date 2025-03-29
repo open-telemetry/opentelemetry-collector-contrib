@@ -91,11 +91,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterbatcher.Config{
+				BatcherConfig: exporterbatcher.Config{ //nolint:staticcheck
 					Enabled:      false,
 					FlushTimeout: 200 * time.Millisecond,
-					SizeConfig: exporterbatcher.SizeConfig{
-						Sizer:   exporterbatcher.SizerTypeItems,
+					SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+						Sizer:   exporterhelper.RequestSizerTypeItems,
 						MinSize: 8192,
 					},
 				},
@@ -156,11 +156,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterbatcher.Config{
+				BatcherConfig: exporterbatcher.Config{ //nolint:staticcheck
 					Enabled:      true,
 					FlushTimeout: 3 * time.Second,
-					SizeConfig: exporterbatcher.SizeConfig{
-						Sizer:   exporterbatcher.SizerTypeItems,
+					SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+						Sizer:   exporterhelper.RequestSizerTypeItems,
 						MinSize: 8888,
 					},
 				},
