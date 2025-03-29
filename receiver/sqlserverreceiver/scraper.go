@@ -688,13 +688,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// it is a little bit tricky to put this to the array based workflow,
 		// as the value need to be divided -> type assertion -> check cache.
 		// hence handle it separately.
-		workerTimeMilliSecond, err := strconv.ParseInt(row[totalWorkerTimeMilliSecond], 10, 64)
+		workerTimeMicroSecond, err := strconv.ParseInt(row[totalWorkerTimeMilliSecond], 10, 64)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTimeMilliSecond, workerTimeMilliSecond/1000); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTimeMilliSecond, float64(diff)/1000)
+			if cached, diffMilliSecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTimeMilliSecond, workerTimeMicroSecond/1000); cached {
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTimeMilliSecond, float64(diffMilliSecond)/1000)
 			}
 		}
 
