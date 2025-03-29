@@ -36,7 +36,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg := exporterbatcher.NewDefaultConfig() //nolint:staticcheck
 	batcherCfg.Enabled = false
 
 	return &Config{
@@ -77,7 +77,7 @@ func helperOptions(e exp) []exporterhelper.Option {
 		exporterhelper.WithRetry(cfg.RetryConfig),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(e.start),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 		exporterhelper.WithShutdown(e.shutdown),
 	}
 }
