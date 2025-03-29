@@ -505,9 +505,9 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
 	const dbPrefix = "sqlserver."
-	const totalElapsedTime = "total_elapsed_time"
+	const totalElapsedTimeSecond = "total_elapsed_time"
 	const rowsReturned = "total_rows"
-	const totalWorkerTime = "total_worker_time"
+	const totalWorkerTimeMilliSecond = "total_worker_time"
 	const queryHash = "query_hash"
 	const queryPlanHash = "query_plan_hash"
 	const logicalReads = "total_logical_reads"
@@ -526,31 +526,31 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	var errs []error
 
-	totalElapsedTimeDiffs := make([]int64, len(rows))
+	totalElapsedTimeDiffsMilliSecond := make([]int64, len(rows))
 
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		elapsedTime, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
+		elapsedTimeMicroSecond, err := strconv.ParseInt(row[totalElapsedTimeSecond], 10, 64)
 		if err != nil {
 			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting rows: %s", err))
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
 			// caching the total elapsed time (in millisecond) and compare in the next scrape.
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTime/1000); cached && diff > 0 {
-				totalElapsedTimeDiffs[i] = diff
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTimeSecond, elapsedTimeMicroSecond/1000); cached && diff > 0 {
+				totalElapsedTimeDiffsMilliSecond[i] = diff
 			}
 		}
 	}
 
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffs, topQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMilliSecond, topQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
-	sort.Slice(totalElapsedTimeDiffs, func(i, j int) bool { return totalElapsedTimeDiffs[i] > totalElapsedTimeDiffs[j] })
+	sort.Slice(totalElapsedTimeDiffsMilliSecond, func(i, j int) bool { return totalElapsedTimeDiffsMilliSecond[i] > totalElapsedTimeDiffsMilliSecond[j] })
 
 	logs := plog.NewLogs()
 	resourceLog := logs.ResourceLogs().AppendEmpty()
@@ -562,7 +562,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
-		if totalElapsedTimeDiffs[i] == 0 {
+		if totalElapsedTimeDiffsMilliSecond[i] == 0 {
 			break
 		}
 
@@ -613,8 +613,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 				valueSetter:    setString,
 			},
 			{
-				key:            dbPrefix + totalElapsedTime,
-				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffs[i]) / 1000),
+				key:            dbPrefix + totalElapsedTimeSecond,
+				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMilliSecond[i]) / 1000),
 				valueSetter:    setDouble,
 			},
 			{
@@ -686,13 +686,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// it is a little bit tricky to put this to the array based workflow,
 		// as the value need to be divided -> type assertion -> check cache.
 		// hence handle it separately.
-		workerTime, err := strconv.ParseInt(row[totalWorkerTime], 10, 64)
+		workerTimeMilliSecond, err := strconv.ParseInt(row[totalWorkerTimeMilliSecond], 10, 64)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTime/1000); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diff)/1000)
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTimeMilliSecond, workerTimeMilliSecond/1000); cached {
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTimeMilliSecond, float64(diff)/1000)
 			}
 		}
 
@@ -874,9 +874,9 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const dbName = "db_name"
 	const dbPrefix = "sqlserver."
 	const deadlockPriority = "deadlock_priority"
-	const estimatedCompletionTime = "estimated_completion_time"
+	const estimatedCompletionTimeMilliSecond = "estimated_completion_time"
 	const hostName = "host_name"
-	const lockTimeout = "lock_timeout"
+	const lockTimeoutMilliSecond = "lock_timeout"
 	const logicalReads = "logical_reads"
 	const openTransactionCount = "open_transaction_count"
 	const percentComplete = "percent_complete"
@@ -889,12 +889,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
-	const totalElapsedTime = "total_elapsed_time"
+	const totalElapsedTimeMilliSecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
 	const transactionIsolationLevel = "transaction_isolation_level"
 	const username = "username"
 	const waitResource = "wait_resource"
-	const waitTime = "wait_time"
+	const waitTimeMilliSecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
 
@@ -994,16 +994,16 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setInt,
 			},
 			{
-				key:        dbPrefix + estimatedCompletionTime,
-				columnName: estimatedCompletionTime,
+				key:        dbPrefix + estimatedCompletionTimeMilliSecond,
+				columnName: estimatedCompletionTimeMilliSecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
 				valueSetter: setDouble,
 			},
 			{
-				key:        dbPrefix + lockTimeout,
-				columnName: lockTimeout,
+				key:        dbPrefix + lockTimeoutMilliSecond,
+				columnName: lockTimeoutMilliSecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
@@ -1074,8 +1074,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:        dbPrefix + totalElapsedTime,
-				columnName: totalElapsedTime,
+				key:        dbPrefix + totalElapsedTimeMilliSecond,
+				columnName: totalElapsedTimeMilliSecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
@@ -1106,8 +1106,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:        dbPrefix + waitTime,
-				columnName: waitTime,
+				key:        dbPrefix + waitTimeMilliSecond,
+				columnName: waitTimeMilliSecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
