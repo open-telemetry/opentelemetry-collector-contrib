@@ -504,19 +504,21 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
-	const dbPrefix = "sqlserver."
-	const totalElapsedTimeSecond = "total_elapsed_time"
-	const rowsReturned = "total_rows"
-	const totalWorkerTimeMilliSecond = "total_worker_time"
-	const queryHash = "query_hash"
-	const queryPlanHash = "query_plan_hash"
-	const logicalReads = "total_logical_reads"
-	const logicalWrites = "total_logical_writes"
-	const physicalReads = "total_physical_reads"
-	const executionCount = "execution_count"
-	const totalGrant = "total_grant_kb"
-	const queryText = "query_text"
-	const queryPlan = "query_plan"
+	const (
+		dbPrefix                   = "sqlserver."
+		executionCount             = "execution_count"
+		logicalReads               = "total_logical_reads"
+		logicalWrites              = "total_logical_writes"
+		physicalReads              = "total_physical_reads"
+		queryHash                  = "query_hash"
+		queryPlan                  = "query_plan"
+		queryPlanHash              = "query_plan_hash"
+		queryText                  = "query_text"
+		rowsReturned               = "total_rows"
+		totalElapsedTimeSecond     = "total_elapsed_time"
+		totalGrant                 = "total_grant_kb"
+		totalWorkerTimeMilliSecond = "total_worker_time"
+	)
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -576,50 +578,22 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		attributes := []internalAttribute{
 			{
-				key:            "db.system.name",
-				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
-				valueSetter:    setString,
-			},
-			{
 				key:            computerNameKey,
 				columnName:     computerNameKey,
 				valueRetriever: vanillaRetriever,
 				valueSetter:    setString,
 			},
 			{
-				key:            instanceNameKey,
-				columnName:     instanceNameKey,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
+				key:        "db.query.text",
+				columnName: queryText,
+				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
+					return obfuscateSQL(row[columnName])
+				},
+				valueSetter: setString,
 			},
 			{
-				key:            serverAddressKey,
-				valueRetriever: defaultValueRetriever(s.config.Server),
-				valueSetter:    setString,
-			},
-			{
-				key:            serverPortKey,
-				valueRetriever: defaultValueRetriever((int64(s.config.Port))),
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + queryHash,
-				valueRetriever: defaultValueRetriever(queryHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + queryPlanHash,
-				valueRetriever: defaultValueRetriever(queryPlanHashVal),
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + totalElapsedTimeSecond,
-				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMilliSecond[i]) / 1000),
-				valueSetter:    setDouble,
-			},
-			{
-				key:            dbPrefix + rowsReturned,
-				columnName:     rowsReturned,
+				key:            dbPrefix + executionCount,
+				columnName:     executionCount,
 				valueRetriever: retrieveInt,
 				valueSetter:    setInt,
 			},
@@ -642,24 +616,9 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 				valueSetter:    setInt,
 			},
 			{
-				key:            dbPrefix + executionCount,
-				columnName:     executionCount,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:            dbPrefix + totalGrant,
-				columnName:     totalGrant,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
-			},
-			{
-				key:        "db.query.text",
-				columnName: queryText,
-				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
-					return obfuscateSQL(row[columnName])
-				},
-				valueSetter: setString,
+				key:            dbPrefix + queryHash,
+				valueRetriever: defaultValueRetriever(queryHashVal),
+				valueSetter:    setString,
 			},
 			{
 				key:        dbPrefix + queryPlan,
@@ -668,6 +627,49 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 					return obfuscateXMLPlan(row[columnName])
 				},
 				valueSetter: setString,
+			},
+			{
+				key:            dbPrefix + queryPlanHash,
+				valueRetriever: defaultValueRetriever(queryPlanHashVal),
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + rowsReturned,
+				columnName:     rowsReturned,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + totalElapsedTimeSecond,
+				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMilliSecond[i]) / 1000),
+				valueSetter:    setDouble,
+			},
+			{
+				key:            dbPrefix + totalGrant,
+				columnName:     totalGrant,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            "db.system.name",
+				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
+				valueSetter:    setString,
+			},
+			{
+				key:            instanceNameKey,
+				columnName:     instanceNameKey,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            serverAddressKey,
+				valueRetriever: defaultValueRetriever(s.config.Server),
+				valueSetter:    setString,
+			},
+			{
+				key:            serverPortKey,
+				valueRetriever: defaultValueRetriever((int64(s.config.Port))),
+				valueSetter:    setInt,
 			},
 		}
 
@@ -921,6 +923,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
+		// Attributes sorted alphabetically by key
 		attributes := []internalAttribute{
 			{
 				key:            "client.port",
