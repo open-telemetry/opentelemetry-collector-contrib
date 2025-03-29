@@ -7,24 +7,18 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"go/ast"
-	"go/parser"
-	"go/token"
 	"io/fs"
 	"log"
 	"os"
 	"path/filepath"
-	"regexp"
 	"slices"
 	"sort"
 	"strings"
 	"unicode"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal"
-)
 
-const (
-	unkeyedFieldsLimit = 6
+	"gopkg.in/yaml.v3"
 )
 
 func main() {
@@ -36,42 +30,12 @@ func main() {
 	}
 }
 
-type function struct {
-	Name        string   `json:"name"`
-	Receiver    string   `json:"receiver"`
-	ReturnTypes []string `json:"return_types,omitempty"`
-	ParamTypes  []string `json:"param_types,omitempty"`
-}
-
-type apistruct struct {
-	Name   string   `json:"name"`
-	Fields []string `json:"fields"`
-}
-
-type api struct {
-	Values    []string     `json:"values,omitempty"`
-	Structs   []*apistruct `json:"structs,omitempty"`
-	Functions []*function  `json:"functions,omitempty"`
-}
-
-type functionDescription struct {
-	Name        string   `yaml:"name"`
-	Parameters  []string `yaml:"parameters"`
-	ReturnTypes []string `yaml:"return_types"`
-}
-
-type config struct {
-	IgnoredPaths     []string              `yaml:"ignored_paths"`
-	AllowedFunctions []functionDescription `yaml:"allowed_functions"`
-	IgnoredFunctions []string              `yaml:"ignored_functions"`
-}
-
 func run(folder string, configPath string) error {
 	configData, err := os.ReadFile(configPath)
 	if err != nil {
 		return err
 	}
-	var cfg config
+	var cfg internal.Config
 	err = yaml.Unmarshal(configData, &cfg)
 	if err != nil {
 		return err
@@ -80,28 +44,13 @@ func run(folder string, configPath string) error {
 	err = filepath.Walk(folder, func(path string, info fs.FileInfo, _ error) error {
 		if info.Name() == "go.mod" {
 			base := filepath.Dir(path)
-			var relativeBase string
-			relativeBase, err = filepath.Rel(folder, base)
-			if err != nil {
-				return err
+			relativeBase, err2 := filepath.Rel(folder, base)
+			if err2 != nil {
+				return err2
 			}
+			// no code paths under internal need to be inspected
 			if strings.HasPrefix(relativeBase, "internal") {
 				return nil
-			}
-
-			var componentType string
-			if _, err = os.Stat(filepath.Join(base, "metadata.yaml")); errors.Is(err, os.ErrNotExist) {
-				componentType = "pkg"
-			} else {
-				m, err := os.ReadFile(filepath.Join(base, "metadata.yaml"))
-				if err != nil {
-					return err
-				}
-				var componentInfo metadata
-				if err = yaml.Unmarshal(m, &componentInfo); err != nil {
-					return err
-				}
-				componentType = componentInfo.Status.Class
 			}
 
 			for _, a := range cfg.IgnoredPaths {
@@ -110,7 +59,11 @@ func run(folder string, configPath string) error {
 					return nil
 				}
 			}
-			if err = walkFolder(base, componentType); err != nil {
+			componentType, err3 := internal.ReadComponentType(base)
+			if err3 != nil {
+				return err3
+			}
+			if err = walkFolder(cfg, base, componentType); err != nil {
 				errs = append(errs, err)
 			}
 		}
@@ -125,99 +78,12 @@ func run(folder string, configPath string) error {
 	return nil
 }
 
-func isFunctionIgnored(cfg config, fnName string) bool {
-	for _, v := range cfg.IgnoredFunctions {
-		reg := regexp.MustCompile(v)
-		if reg.MatchString(fnName) {
-			return true
-		}
-	}
-	return false
-}
-
-func handleFile(cfg config, f *ast.File, result *api) {
-	for _, d := range f.Decls {
-		if str, isStr := d.(*ast.GenDecl); isStr {
-			for _, s := range str.Specs {
-				if values, ok := s.(*ast.ValueSpec); ok {
-					for _, v := range values.Names {
-						if v.IsExported() {
-							result.Values = append(result.Values, v.Name)
-						}
-					}
-				}
-				if t, ok := s.(*ast.TypeSpec); ok {
-					var fieldNames []string
-					if t.TypeParams != nil {
-						fieldNames = make([]string, len(t.TypeParams.List))
-						for i, f := range t.TypeParams.List {
-							fieldNames[i] = f.Names[0].Name
-						}
-					}
-					result.Structs = append(result.Structs, &apistruct{
-						Name:   t.Name.String(),
-						Fields: fieldNames,
-					})
-				}
-			}
-		}
-		if fn, isFn := d.(*ast.FuncDecl); isFn {
-			if !fn.Name.IsExported() {
-				continue
-			}
-			exported := false
-			receiver := ""
-			if fn.Recv.NumFields() == 0 && !isFunctionIgnored(cfg, fn.Name.String()) {
-				exported = true
-			}
-			if fn.Recv.NumFields() > 0 {
-				for _, t := range fn.Recv.List {
-					for _, n := range t.Names {
-						exported = exported || n.IsExported()
-						if n.IsExported() {
-							receiver = n.Name
-						}
-					}
-				}
-			}
-			if exported {
-				var returnTypes []string
-				if fn.Type.Results.NumFields() > 0 {
-					for _, r := range fn.Type.Results.List {
-						returnTypes = append(returnTypes, internal.ExprToString(r.Type))
-					}
-				}
-				var params []string
-				if fn.Type.Params.NumFields() > 0 {
-					for _, r := range fn.Type.Params.List {
-						params = append(params, internal.ExprToString(r.Type))
-					}
-				}
-				f := &function{
-					Name:        fn.Name.Name,
-					Receiver:    receiver,
-					ParamTypes:  params,
-					ReturnTypes: returnTypes,
-				}
-				result.Functions = append(result.Functions, f)
-			}
-		}
-	}
-}
-
-func walkFolder(cfg config, folder string, _ string) error {
-	result := &api{}
-	set := token.NewFileSet()
-	packs, err := parser.ParseDir(set, folder, nil, 0)
+func walkFolder(cfg internal.Config, folder string, componentType string) error {
+	result, err := internal.Read(folder, cfg.IgnoredFunctions)
 	if err != nil {
 		return err
 	}
 
-	for _, pack := range packs {
-		for _, f := range pack.Files {
-			handleFile(cfg, f, result)
-		}
-	}
 	sort.Slice(result.Structs, func(i int, j int) bool {
 		return strings.Compare(result.Structs[i].Name, result.Structs[j].Name) > 0
 	})
@@ -230,74 +96,58 @@ func walkFolder(cfg config, folder string, _ string) error {
 		fnNames[i] = fn.Name
 	}
 	if len(result.Structs) == 0 && len(result.Values) == 0 && len(result.Functions) == 0 {
+		// nothing to validate, return
 		return nil
 	}
 
-	functionsPresent := map[string]struct{}{}
-OUTER:
-	for _, fnDesc := range cfg.AllowedFunctions {
-		for _, fn := range result.Functions {
-			if fn.Name == fnDesc.Name &&
-				slices.Equal(fn.ParamTypes, fnDesc.Parameters) &&
-				slices.Equal(fn.ReturnTypes, fnDesc.ReturnTypes) {
-				functionsPresent[fn.Name] = struct{}{}
-				break OUTER
+	var errs []error
+
+	if len(cfg.AllowedFunctions) > 0 {
+
+		functionsPresent := map[string]struct{}{}
+	OUTER:
+		for _, fnDesc := range cfg.AllowedFunctions {
+			matchComponentType := false
+			for _, c := range fnDesc.Classes {
+				if c == componentType {
+					matchComponentType = true
+					break
+				}
+			}
+			if !matchComponentType {
+				continue
+			}
+			for _, fn := range result.Functions {
+				if fn.Name == fnDesc.Name &&
+					slices.Equal(fn.ParamTypes, fnDesc.Parameters) &&
+					slices.Equal(fn.ReturnTypes, fnDesc.ReturnTypes) {
+					functionsPresent[fn.Name] = struct{}{}
+					break OUTER
+				}
+			}
+		}
+
+		if len(functionsPresent) == 0 {
+			errs = append(errs, fmt.Errorf("[%s] no function matching configuration found", folder))
+		}
+	}
+
+	if cfg.UnkeyedLiteral.Enabled {
+		for _, s := range result.Structs {
+			if err := checkStructDisallowUnkeyedLiteral(cfg, s, folder); err != nil {
+				errs = append(errs, err)
 			}
 		}
 	}
-	if len(functionsPresent) == 0 {
-		return fmt.Errorf("[%s] no function matching configuration found", folder)
-	}
 
-	for _, s := range result.Structs {
-		if err := checkStructDisallowUnkeyedLiteral(s, folder); err != nil {
-			return err
-		}
-	}
-	return nil
+	return errors.Join(errs...)
 }
 
-func checkProviderFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
-	if newFactoryFn.Name != "NewFactory" {
-		return fmt.Errorf("%s does not define a NewFactory function as a %s", folder, componentType)
-	}
-	if newFactoryFn.Receiver != "" {
-		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
-	}
-	if len(newFactoryFn.ReturnTypes) != 1 {
-		return fmt.Errorf("%s NewFactory function returns more than one result", folder)
-	}
-	returnType := newFactoryFn.ReturnTypes[0]
-
-	if returnType != "confmap.ProviderFactory" {
-		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected confmap.ProviderFactory", folder, returnType)
-	}
-	return nil
-}
-
-func checkComponentFactoryFunction(newFactoryFn *function, folder string, componentType string) error {
-	if newFactoryFn.Name != "NewFactory" {
-		return fmt.Errorf("%s does not define a NewFactory function as a %s", folder, componentType)
-	}
-	if newFactoryFn.Receiver != "" {
-		return fmt.Errorf("%s associated NewFactory with a receiver type", folder)
-	}
-	if len(newFactoryFn.ReturnTypes) != 1 {
-		return fmt.Errorf("%s NewFactory function returns more than one result", folder)
-	}
-	returnType := newFactoryFn.ReturnTypes[0]
-
-	if returnType != fmt.Sprintf("%s.Factory", componentType) {
-		return fmt.Errorf("%s NewFactory function does not return a valid type: %s, expected %s.Factory", folder, returnType, componentType)
-	}
-	return nil
-}
-
-func checkStructDisallowUnkeyedLiteral(s *apistruct, folder string) error {
+func checkStructDisallowUnkeyedLiteral(cfg internal.Config, s *internal.Apistruct, folder string) error {
 	if !unicode.IsUpper(rune(s.Name[0])) {
 		return nil
 	}
-	if len(s.Fields) > unkeyedFieldsLimit {
+	if len(s.Fields) > cfg.UnkeyedLiteral.Limit {
 		return nil
 	}
 	for _, f := range s.Fields {

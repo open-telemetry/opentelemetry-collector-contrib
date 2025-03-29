@@ -2,9 +2,13 @@ ignored_paths:
   - receiver/badreceiver
 allowed_functions:
   - name: MyFoo
+    classes:
+      - receiver
     parameters: [string]
     return_types: [bool]
   - name: MyBar
+    classes:
+      - receiver
     parameters: [ bool ]
     return_types: [ string ]
 

@@ -6,20 +6,33 @@ ignored_paths:
   - receiver/pulsarreceiver # 38930
   - exporter/pulsarexporter # 38929
   - exporter/elasticsearchexporter/integrationtest
+unkeyed_literal_initialization:
+  enabled: true
+  limit: 6
 allowed_functions:
-  - name: NewFactory
+  - classes:
+      - connector
+    name: NewFactory
     parameters:
     return_types: [connector.Factory]
-  - name: NewFactory
+  - classes:
+      - exporter
+    name: NewFactory
     parameters:
     return_types: [exporter.Factory]
-  - name: NewFactory
+  - classes:
+      - extension
+    name: NewFactory
     parameters:
     return_types: [extension.Factory]
-  - name: NewFactory
+  - classes:
+      - processor
+    name: NewFactory
     parameters:
     return_types: [processor.Factory]
-  - name: NewFactory
+  - classes:
+      - receiver
+    name: NewFactory
     parameters:
     return_types: [receiver.Factory]
 
