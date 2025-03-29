@@ -197,8 +197,6 @@ SETTINGS index_granularity = 8192, ttl_only_drop_parts = 1;
                                   )`
 )
 
-var driverName = "clickhouse" // for testing
-
 // newClickhouseClient create a clickhouse client.
 func newClickhouseClient(cfg *Config) (*sql.DB, error) {
 	db, err := cfg.buildDB()
