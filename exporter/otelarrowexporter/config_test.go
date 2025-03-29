@@ -62,6 +62,7 @@ func TestUnmarshalConfig(t *testing.T) {
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
@@ -86,11 +87,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				BalancerName:    "experimental",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
-			BatcherConfig: exporterbatcher.Config{
+			BatcherConfig: exporterbatcher.Config{ //nolint:staticcheck
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				SizeConfig: exporterbatcher.SizeConfig{
-					Sizer:   exporterbatcher.SizerTypeItems,
+				SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+					Sizer:   exporterhelper.RequestSizerTypeItems,
 					MinSize: 1000,
 					MaxSize: 10000,
 				},

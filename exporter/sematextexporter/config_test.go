@@ -57,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 3,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,

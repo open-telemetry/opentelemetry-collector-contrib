@@ -32,6 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 			Enabled:      false,
 			NumConsumers: 10,
 			QueueSize:    1000,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		},
 		BackOffConfig: configretry.BackOffConfig{
 			Enabled:             true,

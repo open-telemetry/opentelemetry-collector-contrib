@@ -43,7 +43,7 @@ func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
 		logger.Warn("You are using the deprecated `queue_max_length` option that will be removed in the next release; use exporter helper `queue_size` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
 		c.QueueSettings.Enabled = true
 		logger.Warn("Mapping `queue_max_length` -> `QueueSettings.QueueSize`")
-		c.QueueSettings.QueueSize = c.QueueMaxLength
+		c.QueueSettings.QueueSize = int64(c.QueueMaxLength)
 	}
 	if c.DrainInterval != 0 {
 		logger.Warn("You are using the deprecated `drain_interval` option that will be removed in the next release; use batch processor `timeout` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor#batch-processor")

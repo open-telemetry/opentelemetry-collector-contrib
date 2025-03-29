@@ -81,6 +81,7 @@ func TestLoadConfig(t *testing.T) {
 					NumConsumers: 10,
 					QueueSize:    100,
 					StorageID:    &storageID,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				AsyncInsert: true,
 			},

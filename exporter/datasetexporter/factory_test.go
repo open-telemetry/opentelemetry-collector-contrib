@@ -133,6 +133,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 14,
 					QueueSize:    15,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 16 * time.Nanosecond,

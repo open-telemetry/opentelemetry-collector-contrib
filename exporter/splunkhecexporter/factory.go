@@ -12,7 +12,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
@@ -59,7 +58,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherCfg := exporterbatcher.NewDefaultConfig()
+	batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 	batcherCfg.Enabled = false
 
 	defaultMaxConns := defaultMaxIdleCons
@@ -133,7 +132,7 @@ func createTracesExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err
@@ -167,7 +166,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err
@@ -201,7 +200,7 @@ func createLogsExporter(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(c.start),
 		exporterhelper.WithShutdown(c.stop),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 	if err != nil {
 		return nil, err

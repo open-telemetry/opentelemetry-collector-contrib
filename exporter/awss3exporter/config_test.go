@@ -69,6 +69,7 @@ func TestConfig(t *testing.T) {
 		Enabled:      true,
 		NumConsumers: 23,
 		QueueSize:    42,
+		Sizer:        exporterhelper.RequestSizerTypeRequests,
 	}
 
 	timeoutCfg := exporterhelper.TimeoutConfig{

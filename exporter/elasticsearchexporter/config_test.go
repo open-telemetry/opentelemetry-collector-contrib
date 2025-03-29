@@ -61,6 +61,7 @@ func TestConfig(t *testing.T) {
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -119,10 +120,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					Config: exporterbatcher.Config{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
@@ -137,6 +138,7 @@ func TestConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
@@ -195,10 +197,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					Config: exporterbatcher.Config{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
@@ -213,6 +215,7 @@ func TestConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -271,10 +274,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					Config: exporterbatcher.Config{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},

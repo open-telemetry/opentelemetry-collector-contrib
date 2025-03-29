@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoint:                "pulsar://localhost:6650",
 				Topic:                   "spans",

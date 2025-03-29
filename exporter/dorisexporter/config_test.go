@@ -57,6 +57,7 @@ func TestLoadConfig(t *testing.T) {
 			Enabled:      true,
 			NumConsumers: 10,
 			QueueSize:    1000,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		},
 		Table: Table{
 			Logs:    "otel_logs",

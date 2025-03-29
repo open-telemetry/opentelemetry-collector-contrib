@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 3,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,

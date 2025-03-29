@@ -66,6 +66,7 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				DefaultLabelsEnabled: map[string]bool{
 					"exporter": false,

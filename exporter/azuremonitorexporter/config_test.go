@@ -48,6 +48,7 @@ func TestLoadConfig(t *testing.T) {
 					Enabled:      true,
 					NumConsumers: 10,
 					StorageID:    &disk,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				ShutdownTimeout: 2 * time.Second,
 			},
