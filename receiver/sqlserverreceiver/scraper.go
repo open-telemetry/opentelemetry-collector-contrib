@@ -705,8 +705,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			if _, ok := updatedOnly[attr.columnName]; ok {
 				if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, attr.columnName, value.(int64)); cached {
 					attr.valueSetter(record.Attributes(), attr.key, diff)
-				} else {
-					continue
 				}
 			} else {
 				attr.valueSetter(record.Attributes(), attr.key, value)
