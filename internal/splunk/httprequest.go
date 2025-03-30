@@ -18,7 +18,7 @@ const HeaderRetryAfter = "Retry-After"
 // HandleHTTPCode handles an http response and returns the right type of error in case of a failure.
 func HandleHTTPCode(resp *http.Response) error {
 	// Splunk accepts all 2XX codes.
-	if resp.StatusCode/100 == 2 {
+	if resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
 		return nil
 	}
 

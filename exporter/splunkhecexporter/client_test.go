@@ -66,6 +66,7 @@ func newTestClientWithPresetResponses(codes []int, bodies []string) (*http.Clien
 
 			return &http.Response{
 				StatusCode: code,
+				Request:    req,
 				Body:       io.NopCloser(bytes.NewBufferString(body)),
 				Header:     make(http.Header),
 			}
@@ -1316,7 +1317,12 @@ func TestErrorReceived(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
-	assert.EqualError(t, err, "HTTP 500 \"Internal Server Error\"")
+	errMsg := fmt.Sprintf("HTTP %q %d %q",
+		cfg.ClientConfig.Endpoint,
+		http.StatusInternalServerError,
+		http.StatusText(http.StatusInternalServerError),
+	)
+	assert.EqualError(t, err, errMsg)
 }
 
 func TestInvalidLogs(t *testing.T) {
@@ -1394,7 +1400,10 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: HTTP 403 \"Forbidden\"", params.ID.String()),
+		fmt.Sprintf("%s: heartbeat on startup failed: HTTP %q 403 \"Forbidden\"",
+			params.ID.String(),
+			cfg.ClientConfig.Endpoint,
+		),
 	)
 	assert.NoError(t, exporter.Shutdown(context.Background()))
 }
@@ -1605,9 +1614,8 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.ErrorContains(t, err, "HTTP/0.0 400")
+	require.EqualError(t, err, "Permanent error: HTTP \"http://splunk\" 400 \"Bad Request\"")
 	// The returned error should contain the response body responseBody.
-	assert.ErrorContains(t, err, responseBody)
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
 	httpClient, _ = newTestClient(500, responseBody)
@@ -1615,7 +1623,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.ErrorContains(t, err, "HTTP 500")
+	require.EqualError(t, err, "HTTP \"http://splunk\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
 }
