@@ -368,7 +368,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 846)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)

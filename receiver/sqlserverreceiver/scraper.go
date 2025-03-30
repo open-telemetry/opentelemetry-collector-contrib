@@ -505,19 +505,19 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
 	const (
-		dbPrefix                   = "sqlserver."
-		executionCount             = "execution_count"
-		logicalReads               = "total_logical_reads"
-		logicalWrites              = "total_logical_writes"
-		physicalReads              = "total_physical_reads"
-		queryHash                  = "query_hash"
-		queryPlan                  = "query_plan"
-		queryPlanHash              = "query_plan_hash"
-		queryText                  = "query_text"
-		rowsReturned               = "total_rows"
-		totalElapsedTimeSecond     = "total_elapsed_time"
-		totalGrant                 = "total_grant_kb"
-		totalWorkerTimeMilliSecond = "total_worker_time"
+		dbPrefix         = "sqlserver."
+		executionCount   = "execution_count"
+		logicalReads     = "total_logical_reads"
+		logicalWrites    = "total_logical_writes"
+		physicalReads    = "total_physical_reads"
+		queryHash        = "query_hash"
+		queryPlan        = "query_plan"
+		queryPlanHash    = "query_plan_hash"
+		queryText        = "query_text"
+		rowsReturned     = "total_rows"
+		totalElapsedTime = "total_elapsed_time"
+		totalGrant       = "total_grant_kb"
+		totalWorkerTime  = "total_worker_time"
 	)
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -528,31 +528,31 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	var errs []error
 
-	totalElapsedTimeDiffsMilliSecond := make([]int64, len(rows))
+	totalElapsedTimeDiffsMicroSecond := make([]int64, len(rows))
 
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		elapsedTimeMicroSecond, err := strconv.ParseInt(row[totalElapsedTimeSecond], 10, 64)
+		elapsedTimeMicroSecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
 			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting rows: %s", err))
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
 			// caching the total elapsed time (in millisecond) and compare in the next scrape.
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTimeSecond, elapsedTimeMicroSecond/1000); cached && diff > 0 {
-				totalElapsedTimeDiffsMilliSecond[i] = diff
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTimeMicroSecond); cached && diff > 0 {
+				totalElapsedTimeDiffsMicroSecond[i] = diff
 			}
 		}
 	}
 
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffsMilliSecond, topQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMicroSecond, topQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
-	sort.Slice(totalElapsedTimeDiffsMilliSecond, func(i, j int) bool { return totalElapsedTimeDiffsMilliSecond[i] > totalElapsedTimeDiffsMilliSecond[j] })
+	sort.Slice(totalElapsedTimeDiffsMicroSecond, func(i, j int) bool { return totalElapsedTimeDiffsMicroSecond[i] > totalElapsedTimeDiffsMicroSecond[j] })
 
 	logs := plog.NewLogs()
 	resourceLog := logs.ResourceLogs().AppendEmpty()
@@ -564,7 +564,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
-		if totalElapsedTimeDiffsMilliSecond[i] == 0 {
+		if totalElapsedTimeDiffsMicroSecond[i] == 0 {
 			break
 		}
 
@@ -640,8 +640,8 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 				valueSetter:    setInt,
 			},
 			{
-				key:            dbPrefix + totalElapsedTimeSecond,
-				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMilliSecond[i]) / 1000),
+				key:            dbPrefix + totalElapsedTime,
+				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMicroSecond[i]) / 1000 / 1000),
 				valueSetter:    setDouble,
 			},
 			{
@@ -688,13 +688,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// it is a little bit tricky to put this to the array based workflow,
 		// as the value need to be divided -> type assertion -> check cache.
 		// hence handle it separately.
-		workerTimeMicroSecond, err := strconv.ParseInt(row[totalWorkerTimeMilliSecond], 10, 64)
+		workerTimeMicroSecond, err := strconv.ParseInt(row[totalWorkerTime], 10, 64)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			if cached, diffMilliSecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTimeMilliSecond, workerTimeMicroSecond/1000); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTimeMilliSecond, float64(diffMilliSecond)/1000)
+			if cached, diffMilliSecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTimeMicroSecond/1000); cached {
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diffMilliSecond)/1000)
 			}
 		}
 
