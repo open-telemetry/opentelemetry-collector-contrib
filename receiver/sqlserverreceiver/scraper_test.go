@@ -374,7 +374,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 845)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
 
 	scraper.client = mockClient{
