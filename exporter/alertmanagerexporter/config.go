@@ -22,6 +22,7 @@ type Config struct {
 	GeneratorURL            string                   `mapstructure:"generator_url"`
 	DefaultSeverity         string                   `mapstructure:"severity"`
 	SeverityAttribute       string                   `mapstructure:"severity_attribute"`
+	ApiVersion              string                   `mapstructure:"api_version"`
 }
 
 var _ component.Config = (*Config)(nil)
