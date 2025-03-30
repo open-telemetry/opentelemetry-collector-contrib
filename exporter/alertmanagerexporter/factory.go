@@ -34,7 +34,7 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		GeneratorURL:    "opentelemetry-collector",
 		DefaultSeverity: "info",
-		ApiVersion:      "v2",
+		APIVersion:      "v2",
 		TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
 		BackoffConfig:   configretry.NewDefaultBackOffConfig(),
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),

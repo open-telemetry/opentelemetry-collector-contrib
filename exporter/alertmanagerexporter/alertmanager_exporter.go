@@ -195,11 +195,11 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 		config:            cfg,
 		settings:          set,
 		tracesMarshaler:   &ptrace.JSONMarshaler{},
-		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.ClientConfig.Endpoint, cfg.ApiVersion),
+		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.ClientConfig.Endpoint, cfg.APIVersion),
 		generatorURL:      cfg.GeneratorURL,
 		defaultSeverity:   cfg.DefaultSeverity,
 		severityAttribute: cfg.SeverityAttribute,
-		apiVersion:        cfg.ApiVersion,
+		apiVersion:        cfg.APIVersion,
 	}
 }
 

@@ -46,7 +46,7 @@ func TestLoadConfig(t *testing.T) {
 				GeneratorURL:      "opentelemetry-collector",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
-				ApiVersion:        "v2",
+				APIVersion:        "v2",
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
