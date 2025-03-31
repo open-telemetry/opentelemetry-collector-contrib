@@ -21,6 +21,7 @@ import (
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -95,7 +96,8 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
 
-	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
+	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux,
+		confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
@@ -152,14 +154,14 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		prw.settings.Logger.Warn("Error reading remote write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	decompressedBody, err := snappy.Decode(nil, body)
 	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request to snappy", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		prw.settings.Logger.Warn("Error decoding snappy-compressed remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
