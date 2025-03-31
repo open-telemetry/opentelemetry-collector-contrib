@@ -59,10 +59,11 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: 7,
 					QueueSize:    17,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
 				IngestKey: "1234509876",
