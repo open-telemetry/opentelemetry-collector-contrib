@@ -6,16 +6,17 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.1
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/consumer v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/consumer/consumertest v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/processor v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/processor/processortest v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/semconv v0.122.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component/componentstatus v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/confmap v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/consumer v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/consumer/consumertest v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/processor v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/processor/processortest v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/semconv v0.122.2-0.20250331035457-68e964a2f185
 )
 
 require (
@@ -66,13 +67,16 @@ require (
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/pipeline v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/pipeline v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
@@ -86,7 +90,7 @@ require (
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250212204824-5a70512c5d8b // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
