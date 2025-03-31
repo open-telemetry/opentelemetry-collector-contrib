@@ -9,6 +9,7 @@ import (
 	"net/url"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -20,14 +21,16 @@ var (
 
 // Config is the overall config structure for the awscloudwatchreceiver
 type Config struct {
-	Region       string      `mapstructure:"region"`
-	Profile      string      `mapstructure:"profile"`
-	IMDSEndpoint string      `mapstructure:"imds_endpoint"`
-	Logs         *LogsConfig `mapstructure:"logs"`
+	Region       string        `mapstructure:"region"`
+	Profile      string        `mapstructure:"profile"`
+	IMDSEndpoint string        `mapstructure:"imds_endpoint"`
+	Logs         *LogsConfig   `mapstructure:"logs"`
+	StorageID    *component.ID `mapstructure:"storage"`
 }
 
 // LogsConfig is the configuration for the logs portion of this receiver
 type LogsConfig struct {
+	StartFrom           string        `mapstructure:"start_from"`
 	PollInterval        time.Duration `mapstructure:"poll_interval"`
 	MaxEventsPerRequest int           `mapstructure:"max_events_per_request"`
 	Groups              GroupConfig   `mapstructure:"groups"`
@@ -104,6 +107,7 @@ func (c *Config) validateLogsConfig() error {
 	if c.Logs.MaxEventsPerRequest <= 0 {
 		return errInvalidEventLimit
 	}
+
 	if c.Logs.PollInterval < time.Second {
 		return errInvalidPollInterval
 	}
