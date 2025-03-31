@@ -470,11 +470,6 @@ func (p *processHandleMock) TimesWithContext(ctx context.Context) (*cpu.TimesSta
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)
 }
 
-func (p *processHandleMock) PercentWithContext(ctx context.Context, d time.Duration) (float64, error) {
-	args := p.MethodCalled("PercentWithContext", ctx, d)
-	return args.Get(0).(float64), args.Error(1)
-}
-
 func (p *processHandleMock) MemoryInfoWithContext(ctx context.Context) (*process.MemoryInfoStat, error) {
 	args := p.MethodCalled("MemoryInfoWithContext", ctx)
 	return args.Get(0).(*process.MemoryInfoStat), args.Error(1)
@@ -498,11 +493,6 @@ func (p *processHandleMock) NumThreadsWithContext(ctx context.Context) (int32, e
 func (p *processHandleMock) CreateTimeWithContext(ctx context.Context) (int64, error) {
 	args := p.MethodCalled("CreateTimeWithContext", ctx)
 	return args.Get(0).(int64), args.Error(1)
-}
-
-func (p *processHandleMock) ParentWithContext(ctx context.Context) (*process.Process, error) {
-	args := p.MethodCalled("ParentWithContext", ctx)
-	return args.Get(0).(*process.Process), args.Error(1)
 }
 
 func (p *processHandleMock) PpidWithContext(ctx context.Context) (int32, error) {
@@ -550,9 +540,6 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "TimesWithContext", mock.Anything) {
 		handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, nil)
-	}
-	if !handleMock.IsMethodCallable(t, "PercentWithContext", mock.Anything, mock.Anything) {
-		handleMock.On("PercentWithContext", mock.Anything, mock.Anything).Return(float64(0), nil)
 	}
 	if !handleMock.IsMethodCallable(t, "MemoryInfoWithContext", mock.Anything) {
 		handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, nil)
@@ -949,7 +936,6 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("CmdlineWithContext", mock.Anything).Return("cmdline", test.cmdlineError)
 			handleMock.On("CmdlineSliceWithContext", mock.Anything).Return([]string{"cmdline"}, test.cmdlineError)
 			handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, test.timesError)
-			handleMock.On("PercentWithContext", mock.Anything).Return(float64(0), nil)
 			handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("MemoryPercentWithContext", mock.Anything).Return(float32(0), test.memoryPercentError)
 			handleMock.On("IOCountersWithContext", mock.Anything).Return(&process.IOCountersStat{}, test.ioCountersError)
@@ -1263,7 +1249,6 @@ func newErroringHandleMock() *processHandleMock {
 	handleMock.On("CmdlineWithContext", mock.Anything).Return("cmdline", nil)
 	handleMock.On("CmdlineSliceWithContext", mock.Anything).Return([]string{"cmdline"}, nil)
 	handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, &ProcessReadError{})
-	handleMock.On("PercentWithContext", mock.Anything).Return(float64(0), nil)
 	handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, &ProcessReadError{})
 	handleMock.On("IOCountersWithContext", mock.Anything).Return(&process.IOCountersStat{}, &ProcessReadError{})
 	handleMock.On("NumThreadsWithContext", mock.Anything).Return(int32(0), &ProcessReadError{})

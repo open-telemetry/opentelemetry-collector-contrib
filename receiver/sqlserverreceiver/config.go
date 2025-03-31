@@ -12,6 +12,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
 )
 
+type QuerySample struct {
+	Enabled         bool   `mapstructure:"enabled"`
+	MaxRowsPerQuery uint64 `mapstructure:"max_rows_per_query"`
+}
+
 type TopQueryCollection struct {
 	// Enabled enables the collection of the top queries by the execution time.
 	// It will collect the top N queries based on totalElapsedTimeDiffs during the last collection interval.
@@ -34,6 +39,8 @@ type Config struct {
 	// we are reporting them as logs.
 	// The `N` is configured via `TopQueryCount`
 	TopQueryCollection `mapstructure:"top_query_collection"`
+
+	QuerySample `mapstructure:"query_sample_collection"`
 
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
