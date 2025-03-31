@@ -163,6 +163,8 @@ func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, 
 			return
 		}
 		for _, td := range batchpersignal.SplitTraces(td) {
+			// Note that batchpersignal.SplitTraces guarantees that each trace
+			// has exactly one trace, and by implication, at least one span.
 			key := []byte(traceutil.TraceIDToHexOrEmptyString(
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).TraceID(),
 			))
