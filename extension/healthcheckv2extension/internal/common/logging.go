@@ -6,8 +6,9 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"fmt"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 func HealthLogFields(prefix, instanceID string, st *status.AggregateStatus) []zap.Field {
