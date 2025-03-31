@@ -38,7 +38,7 @@ func ConvertSpan(event *modelpb.APMEvent, dest ptrace.Span) {
 	PutOptionalStr(attrs, "span.action", &span.Action)
 	PutOptionalBool(attrs, "span.sync", span.Sync)
 	PutOptionalFloat(attrs, "span.representative_count", &span.RepresentativeCount)
-	parseDb(span.Db, attrs)
+	parseDb(event, attrs)
 	// TODO: span.Stacktrace
 	// TODO: span.Links
 	// TODO: span.SelfTime
@@ -65,15 +65,14 @@ func parseDestinationService(service *modelpb.DestinationService, attrs pcommon.
 	// TODO: service.ResponseTime
 }
 
-func parseDb(db *modelpb.DB, attrs pcommon.Map) {
+func parseDb(event *modelpb.APMEvent, attrs pcommon.Map) {
+	db := event.Span.Db
 	if db == nil {
 		return
 	}
 
-	PutOptionalInt(attrs, "span.db.rows_affected", db.RowsAffected)
 	PutOptionalStr(attrs, "span.db.instance", &db.Instance)
-	PutOptionalStr(attrs, "span.db.statement", &db.Statement)
-	PutOptionalStr(attrs, "span.db.type", &db.Type)
-	PutOptionalStr(attrs, "span.db.username", &db.UserName)
-	PutOptionalStr(attrs, "span.db.link", &db.Link)
+	PutOptionalStr(attrs, "db.query.text", &db.Statement)
+	PutOptionalStr(attrs, "db.username", &db.UserName)
+	PutOptionalStr(attrs, "db.system.name", &event.Span.DestinationService.Name)
 }
