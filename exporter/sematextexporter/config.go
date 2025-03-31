@@ -23,7 +23,7 @@ const (
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	// Region specifies the Sematext region the user is operating in
 	// Options:
 	// - EU

@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [atoulme, michael-burt, chengchuanpeng]
+    active: [atoulme, michael-burt, chengchuanpeng, yanfeng1992]
 
 resource_attributes:
 

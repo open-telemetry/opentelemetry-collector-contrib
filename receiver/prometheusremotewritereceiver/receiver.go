@@ -49,6 +49,46 @@ type prometheusRemoteWriteReceiver struct {
 	wg     sync.WaitGroup
 }
 
+// MetricIdentity contains all the components that uniquely identify a metric
+// according to the OpenTelemetry Protocol data model.
+// The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
+type MetricIdentity struct {
+	ResourceID   string
+	ScopeName    string
+	ScopeVersion string
+	MetricName   string
+	Unit         string
+	Type         writev2.Metadata_MetricType
+}
+
+// createMetricIdentity creates a MetricIdentity struct from the required components
+func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) MetricIdentity {
+	return MetricIdentity{
+		ResourceID:   resourceID,
+		ScopeName:    scopeName,
+		ScopeVersion: scopeVersion,
+		MetricName:   metricName,
+		Unit:         unit,
+		Type:         metricType,
+	}
+}
+
+// Hash generates a unique hash for the metric identity
+func (mi MetricIdentity) Hash() uint64 {
+	const separator = "\xff"
+
+	combined := strings.Join([]string{
+		mi.ResourceID,
+		mi.ScopeName,
+		mi.ScopeVersion,
+		mi.MetricName,
+		mi.Unit,
+		fmt.Sprintf("%d", mi.Type),
+	}, separator)
+
+	return xxhash.Sum64String(combined)
+}
+
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
 	mux := http.NewServeMux()
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
@@ -179,8 +219,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// between requests based on the metric "target_info".
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
-		// TODO: use the appropriate hash function.
-		metricCache = make(map[string]pmetric.Metric)
+		metricCache = make(map[uint64]pmetric.Metric)
 	)
 
 	for _, ts := range req.Timeseries {
@@ -207,24 +246,31 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
 		metricName := ls.Get(labels.MetricName)
-		// TODO: Like UnitRef, we should assign the HelpRef to the metric.
 		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
 			continue
 		}
+
+		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+			continue
+		}
+
 		unit := req.Symbols[ts.Metadata.UnitRef]
+		description := req.Symbols[ts.Metadata.HelpRef]
 
 		resourceID := identity.OfResource(rm.Resource())
-		// Temporary approach to generate the metric key.
-		// TODO: Replace this with a proper hashing function.
-		// The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
-		metricKey := fmt.Sprintf("%s:%s:%s:%s:%s:%d",
+
+		metricIdentity := createMetricIdentity(
 			resourceID.String(), // Resource identity
 			scopeName,           // Scope name
 			scopeVersion,        // Scope version
 			metricName,          // Metric name
 			unit,                // Unit
-			ts.Metadata.Type)    // Metric type
+			ts.Metadata.Type,    // Metric type
+		)
+
+		metricKey := metricIdentity.Hash()
 
 		var scope pmetric.ScopeMetrics
 		var foundScope bool
@@ -248,6 +294,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			metric = scope.Metrics().AppendEmpty()
 			metric.SetName(metricName)
 			metric.SetUnit(unit)
+			metric.SetDescription(description)
 
 			switch ts.Metadata.Type {
 			case writev2.Metadata_METRIC_TYPE_GAUGE:
@@ -263,6 +310,12 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			}
 
 			metricCache[metricKey] = metric
+		}
+
+		// When the new description is longer than the existing one, we should update the metric description.
+		// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
+		if len(metric.Description()) < len(description) {
+			metric.SetDescription(description)
 		}
 
 		// Otherwise, we append the samples to the existing metric.
@@ -301,12 +354,11 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 }
 
 // addNumberDatapoints adds the labels to the datapoints attributes.
-// TODO: We're still not handling the StartTimestamp.
 func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
-
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
 		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
 		dp.SetDoubleValue(sample.Value)

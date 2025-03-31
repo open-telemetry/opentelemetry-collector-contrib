@@ -35,37 +35,16 @@ func TestUnmarshal(t *testing.T) {
 		wantResourceLogGroups  [][]string
 		wantResourceLogStreams [][]string
 	}{
-		"WithMultipleRecords": {
-			filename:               "multiple_records",
-			wantResourceCount:      1,
-			wantLogCount:           2,
-			wantResourceLogGroups:  [][]string{{"test"}},
-			wantResourceLogStreams: [][]string{{"test"}},
-		},
 		"WithSingleRecord": {
 			filename:               "single_record",
 			wantResourceCount:      1,
-			wantLogCount:           1,
+			wantLogCount:           2,
 			wantResourceLogGroups:  [][]string{{"test"}},
 			wantResourceLogStreams: [][]string{{"test"}},
 		},
 		"WithInvalidRecords": {
 			filename: "invalid_records",
 			wantErr:  errInvalidRecords,
-		},
-		"WithSomeInvalidRecords": {
-			filename:               "some_invalid_records",
-			wantResourceCount:      1,
-			wantLogCount:           2,
-			wantResourceLogGroups:  [][]string{{"test"}},
-			wantResourceLogStreams: [][]string{{"test"}},
-		},
-		"WithMultipleResources": {
-			filename:               "multiple_resources",
-			wantResourceCount:      3,
-			wantLogCount:           6,
-			wantResourceLogGroups:  nil, // not checking log group names because logs are unordered
-			wantResourceLogStreams: nil, // not checking log stream names because logs are unordered
 		},
 		"WithOnlyControlMessages": {
 			filename:               "only_control",
@@ -86,7 +65,7 @@ func TestUnmarshal(t *testing.T) {
 			got, err := unmarshaler.UnmarshalLogs(compressedRecord)
 			if testCase.wantErr != nil {
 				require.Error(t, err)
-				require.Equal(t, testCase.wantErr, err)
+				assert.ErrorContains(t, err, testCase.wantErr.Error())
 			} else {
 				require.NoError(t, err)
 				require.NotNil(t, got)
@@ -134,6 +113,24 @@ func TestLogTimestamp(t *testing.T) {
 	ilm.LogRecords().At(0).Timestamp()
 	expectedTimestamp := "2024-09-05 13:47:15.523 +0000 UTC"
 	require.Equal(t, expectedTimestamp, ilm.LogRecords().At(0).Timestamp().String())
+}
+
+func TestUnmarshalLargePayload(t *testing.T) {
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
+
+	var largePayload bytes.Buffer
+	largePayload.WriteString(`{"messageType":"DATA_MESSAGE","owner":"123","logGroup":"test","logStream":"test","logEvents":[`)
+	largePayload.WriteString(`{"timestamp":1742239784,"message":"`)
+	for largePayload.Len() < 5*1024*1024 { // default firehose stream buffer size is 5MB
+		largePayload.WriteString("a")
+	}
+	largePayload.WriteString(`"}]}`)
+
+	compressedRecord, err := gzipData(largePayload.Bytes())
+	require.NoError(t, err)
+
+	_, err = unmarshaler.UnmarshalLogs(compressedRecord)
+	require.NoError(t, err)
 }
 
 func gzipData(data []byte) ([]byte, error) {

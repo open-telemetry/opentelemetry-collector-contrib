@@ -41,7 +41,7 @@ func TestSubprocessIntegration(t *testing.T) {
 
 func (suite *SubprocessIntegrationSuite) SetupSuite() {
 	t := suite.T()
-	scriptFile, err := os.CreateTemp("", "subproc")
+	scriptFile, err := os.CreateTemp(t.TempDir(), "subproc")
 	require.NoError(t, err)
 
 	_, err = scriptFile.Write([]byte(scriptContents))
