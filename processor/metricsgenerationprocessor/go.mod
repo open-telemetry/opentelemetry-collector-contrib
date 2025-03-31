@@ -6,15 +6,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.122.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.122.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component v1.29.0
 	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/confmap v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/confmap v1.29.0
 	go.opentelemetry.io/collector/confmap/xconfmap v0.122.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/consumer v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/consumer v1.29.0
 	go.opentelemetry.io/collector/consumer/consumertest v0.122.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/processor v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/featuregate v1.29.0
+	go.opentelemetry.io/collector/pdata v1.29.0
+	go.opentelemetry.io/collector/processor v1.29.0
 	go.opentelemetry.io/collector/processor/processorhelper v0.0.0-20250331035457-68e964a2f185
 	go.opentelemetry.io/collector/processor/processortest v0.122.2-0.20250331035457-68e964a2f185
 	go.uber.org/goleak v1.3.0
