@@ -197,7 +197,37 @@ func TestExporter_ErrorCases(t *testing.T) {
 	}
 }
 
-// createTestTraces creates a simple trace with a span
+func TestExportContextCanceled(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		time.Sleep(100 * time.Millisecond)
+		w.WriteHeader(http.StatusAccepted)
+	}))
+	defer server.Close()
+
+	cfg := createDefaultConfig().(*Config)
+	cfg.Endpoint = server.URL
+	exp := &faroExporter{
+		config: cfg,
+		client: &http.Client{},
+	}
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	exp, err := newExporter(cfg, set)
+	require.NoError(t, err)
+	require.NotNil(t, exp)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	err = exp.start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	cancel()
+
+	td := createTestTraces()
+	err = exp.ConsumeTraces(ctx, td)
+
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to make an HTTP request: Post \""+server.URL+"\": context canceled")
+}
+
 func createTestTraces() ptrace.Traces {
 	traces := ptrace.NewTraces()
 	rs := traces.ResourceSpans().AppendEmpty()

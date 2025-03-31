@@ -116,15 +116,9 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 
 	var errString string
 	var formattedErr error
-	if resp.StatusCode != 0 {
-		errString = fmt.Sprintf(
-			"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s",
-			fe.config.Endpoint, resp.StatusCode, resp.Body)
-	} else {
-		errString = fmt.Sprintf(
-			"error exporting items, request to %s responded with HTTP Status Code %d",
-			fe.config.Endpoint, resp.StatusCode)
-	}
+	errString = fmt.Sprintf(
+		"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s",
+		fe.config.Endpoint, resp.StatusCode, resp.Body)
 	formattedErr = newStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
