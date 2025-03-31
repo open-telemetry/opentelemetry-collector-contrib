@@ -9,26 +9,31 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/consumer/xconsumer"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/profiles"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/traces"
 )
 
 var processorCapabilities = consumer.Capabilities{MutatesData: true}
 
 func NewFactory() processor.Factory {
-	return processor.NewFactory(
+	return xprocessor.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		processor.WithLogs(createLogsProcessor, metadata.LogsStability),
-		processor.WithTraces(createTracesProcessor, metadata.TracesStability),
-		processor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithLogs(createLogsProcessor, metadata.LogsStability),
+		xprocessor.WithTraces(createTracesProcessor, metadata.TracesStability),
+		xprocessor.WithMetrics(createMetricsProcessor, metadata.MetricsStability),
+		xprocessor.WithProfiles(createProfilesProcessor, metadata.ProfilesStability),
 	)
 }
 
@@ -103,4 +108,26 @@ func createMetricsProcessor(
 		nextConsumer,
 		proc.ProcessMetrics,
 		processorhelper.WithCapabilities(processorCapabilities))
+}
+
+func createProfilesProcessor(
+	ctx context.Context,
+	set processor.Settings,
+	cfg component.Config,
+	nextConsumer xconsumer.Profiles,
+) (xprocessor.Profiles, error) {
+	oCfg := cfg.(*Config)
+	oCfg.logger = set.Logger
+
+	proc, err := profiles.NewProcessor(oCfg.MetricStatements, oCfg.ErrorMode, set.TelemetrySettings)
+	if err != nil {
+		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
+	}
+	return xprocessorhelper.NewProfiles(
+		ctx,
+		set,
+		cfg,
+		nextConsumer,
+		proc.ProcessProfiles,
+		xprocessorhelper.WithCapabilities(processorCapabilities))
 }
