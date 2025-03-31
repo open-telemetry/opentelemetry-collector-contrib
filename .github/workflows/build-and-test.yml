@@ -34,7 +34,7 @@ jobs:
           OUT_FILE: "new-contributors.md"
         with:
           script: |
-            const script = require('.github/workflows/scripts/generate-new-contributors.js')
+            import script from "./generate-new-contributors.js"
             console.log(await script({github, context}))
 
       - run: cat new-contributors.md
