@@ -87,15 +87,16 @@ export const main = async ({ github }) => {
     return generateNewContributorText(usernames)
 }
 
-export default async function () {
-    const octokit = new Octokit({
-        auth: process.env.GITHUB_TOKEN
-    })
-    await main({ octokit })
-}
+export default async function ({github}) {
+    if(process.env.OUT_FILE === undefined || process.env.OUT_FILE === '') {
+        console.error("OUT_FILE env var is required.")
+        process.exit(1);
+    }
 
-const octokit = new Octokit({
-    auth: process.env.GITHUB_TOKEN
-})
-const text = await main({ github: octokit })
-console.log(text)
+    if (github === undefined) {
+        github = new Octokit({
+            auth: process.env.GITHUB_TOKEN
+        })
+    }
+    await main({ github })
+}
