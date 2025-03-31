@@ -86,6 +86,8 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
+
+	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 }
 
 type HistogramConfig struct {

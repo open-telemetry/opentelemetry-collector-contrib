@@ -27,7 +27,7 @@ resourceLogs:
                   stringValue: "307844333131323930393432394131423530"
               - key: sqlserver.total_elapsed_time
                 value:
-                  intValue: "2"
+                  doubleValue: "0.002"
               - key: sqlserver.total_rows
                 value:
                   intValue: "1"
@@ -45,7 +45,7 @@ resourceLogs:
                   intValue: "5"
               - key: sqlserver.total_worker_time
                 value:
-                  intValue: "2"
+                  doubleValue: "0.002"
               - key: sqlserver.total_grant_kb
                 value:
                   intValue: "3095"
@@ -59,6 +59,7 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1739690452135336000"
             traceId: ""
+            eventName: "query event"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: 0.0.1
