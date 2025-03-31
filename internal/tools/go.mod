@@ -11,7 +11,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.122.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.123.0
 	go.opentelemetry.io/build-tools/checkfile v0.21.0
 	go.opentelemetry.io/build-tools/chloggen v0.21.0
 	go.opentelemetry.io/build-tools/crosslink v0.21.0
