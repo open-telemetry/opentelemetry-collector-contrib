@@ -214,7 +214,7 @@ func TestExporter_ErrorCases(t *testing.T) {
 }
 
 func TestExportContextCanceled(t *testing.T) {
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
 		time.Sleep(100 * time.Millisecond)
 		w.WriteHeader(http.StatusAccepted)
 	}))
