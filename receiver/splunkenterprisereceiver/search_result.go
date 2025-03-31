@@ -20,12 +20,12 @@ var searchDict = map[string]string{
 }
 
 var apiDict = map[string]string{
-	`SplunkIndexerThroughput`:   `/services/server/introspection/indexer?output_mode=json`,
-	`SplunkDataIndexesExtended`: `/services/data/indexes-extended?output_mode=json&count=-1`,
-	`SplunkIntrospectionQueues`: `/services/server/introspection/queues?output_mode=json&count=-1`,
-	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
-	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
-	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkIndexerThroughput`:           `/services/server/introspection/indexer?output_mode=json`,
+	`SplunkDataIndexesExtended`:         `/services/data/indexes-extended?output_mode=json&count=-1`,
+	`SplunkIntrospectionQueues`:         `/services/server/introspection/queues?output_mode=json&count=-1`,
+	`SplunkKVStoreStatus`:               `/services/kvstore/status?output_mode=json`,
+	`SplunkDispatchArtifacts`:           `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
+	`SplunkHealth`:                      `/services/server/health/splunkd/details?output_mode=json`,
 	`SplunkIndexerClusterManagerStatus`: `/services/cluster/manager/status?output_mode=json`,
 }
 
@@ -173,12 +173,12 @@ type healthDetails struct {
 	Features map[string]healthDetails `json:"features,omitempty"`
 }
 
-// '/services/cluster/manager/status' 
+// '/services/cluster/manager/status'
 type indexersClusterManagerStatus struct {
 	Entries []idxClusterManagerStatusEntry `json:"entry"`
 }
 type idxClusterManagerStatusEntry struct {
-	Name    string      `json:"name"`
+	Name    string                         `json:"name"`
 	Content idxClusterManagerStatusContent `json:"content"`
 }
 

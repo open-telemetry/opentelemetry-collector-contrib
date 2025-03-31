@@ -1817,7 +1817,6 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, n
 		return
 	}
 
-
 	for _, ic := range icms.Entries {
 		if ic.Content.RollingRestartOrUpgrade {
 			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
