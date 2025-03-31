@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encod
 go 1.23.0
 
 require (
-	go.opentelemetry.io/collector/extension v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/pdata/pprofile v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/extension v1.29.0
+	go.opentelemetry.io/collector/pdata v1.29.0
+	go.opentelemetry.io/collector/pdata/pprofile v0.123.0
 )
 
 require (
@@ -20,9 +20,9 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/component v1.29.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect

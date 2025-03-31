@@ -6,8 +6,8 @@ require (
 	github.com/spf13/cobra v1.9.1
 	github.com/spf13/pflag v1.0.6
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/semconv v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/pdata v1.29.0
+	go.opentelemetry.io/collector/semconv v0.123.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploggrpc v0.11.0
 	go.opentelemetry.io/otel/exporters/otlp/otlplog/otlploghttp v0.11.0

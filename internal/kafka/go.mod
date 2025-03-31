@@ -11,11 +11,11 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/xdg-go/scram v1.1.2
-	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/config/configopaque v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/config/configtls v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/confmap v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/confmap/xconfmap v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component v1.29.0
+	go.opentelemetry.io/collector/config/configopaque v1.29.0
+	go.opentelemetry.io/collector/config/configtls v1.29.0
+	go.opentelemetry.io/collector/confmap v1.29.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.123.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -65,9 +65,9 @@ require (
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.29.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect

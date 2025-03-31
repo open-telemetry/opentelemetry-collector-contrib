@@ -9,12 +9,12 @@ require (
 	github.com/jackc/pgx/v5 v5.7.4
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.35.0
-	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/confmap v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/extension v1.28.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/extension/extensiontest v0.122.2-0.20250331035457-68e964a2f185
-	go.opentelemetry.io/collector/extension/xextension v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component v1.29.0
+	go.opentelemetry.io/collector/component/componenttest v0.123.0
+	go.opentelemetry.io/collector/confmap v1.29.0
+	go.opentelemetry.io/collector/extension v1.29.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.123.0
+	go.opentelemetry.io/collector/extension/xextension v0.123.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	modernc.org/sqlite v1.36.2
@@ -74,9 +74,9 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.3 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.29.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

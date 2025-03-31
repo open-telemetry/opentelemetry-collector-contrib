@@ -2,7 +2,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/in
 
 go 1.23.7
 
-require go.opentelemetry.io/collector/receiver v1.28.2-0.20250331035457-68e964a2f185
+require go.opentelemetry.io/collector/receiver v1.29.0
 
 require (
 	github.com/go-logr/logr v1.4.2 // indirect
@@ -14,12 +14,12 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/consumer v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185 // indirect
-	go.opentelemetry.io/collector/pipeline v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/component v1.29.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.29.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.123.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.29.0 // indirect
+	go.opentelemetry.io/collector/pipeline v0.123.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
