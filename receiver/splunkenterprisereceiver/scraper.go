@@ -71,7 +71,7 @@ func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrape
 				eOut <- errs
 				return
 			}
-			errs.Add(err)
+			errs.AddPartial(1, err)
 		}
 	}
 }
@@ -134,7 +134,8 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	combinedErrs := errs.Combine()
 	if combinedErrs != nil {
 		s.settings.Logger.Error("Scrape errors", zap.Error(combinedErrs))
-		s.failedScrapes.Add(1)
+		failedCount := combinedErrs.(scrapererror.PartialScrapeError).Failed
+		s.failedScrapes.Add(int64(failedCount))
 		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes.Load())
 	}
 	return s.mb.Emit(), nil
