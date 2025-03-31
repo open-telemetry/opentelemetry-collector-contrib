@@ -30,10 +30,14 @@ jobs:
       - name: Generate new contributor celebration text
         id: new-contributor-text
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          OUT_FILE: "new-contributors.md"
         with:
           script: |
             const script = require('.github/workflows/scripts/generate-new-contributors.js')
             console.log(await script({github, context}))
+
+      - run: cat new-contributors.md
 
   setup-environment:
     timeout-minutes: 30
