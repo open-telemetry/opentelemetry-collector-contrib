@@ -222,11 +222,6 @@ func TestExportContextCanceled(t *testing.T) {
 
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = server.URL
-	exp := &faroExporter{
-		config: cfg,
-		client: &http.Client{},
-	}
-
 	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := newExporter(cfg, set)
 	require.NoError(t, err)
