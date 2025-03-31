@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"runtime"
 
 	"github.com/oschwald/geoip2-golang"
 	"go.opentelemetry.io/otel/attribute"
@@ -39,7 +40,13 @@ func newMaxMindProvider(cfg *Config) (*maxMindProvider, error) {
 		return nil, fmt.Errorf("could not open geoip database: %w", err)
 	}
 
-	return &maxMindProvider{geoReader: geoReader, langCode: defaultLanguageCode}, nil
+	provider := &maxMindProvider{geoReader: geoReader, langCode: defaultLanguageCode}
+
+	runtime.AddCleanup(provider, func(geoReader *geoip2.Reader) {
+		_ = geoReader.Close()
+	}, provider.geoReader)
+
+	return provider, nil
 }
 
 // Location implements provider.GeoIPProvider for MaxMind. If a non City database type is used or no metadata is found in the database, an error will be returned.
