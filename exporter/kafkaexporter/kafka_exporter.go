@@ -58,6 +58,18 @@ type kafkaExporter[T any] struct {
 	producer sarama.SyncProducer
 }
 
+func newKafkaExporter[T any](
+	config Config,
+	set exporter.Settings,
+	newMessager func(component.Host) (kafkaMessager[T], error),
+) *kafkaExporter[T] {
+	return &kafkaExporter[T]{
+		cfg:         config,
+		logger:      set.Logger,
+		newMessager: newMessager,
+	}
+}
+
 func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) error {
 	messager, err := e.newMessager(host)
 	if err != nil {
@@ -119,20 +131,16 @@ func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptra
 	case "jaeger_proto", "jaeger_json":
 		config.PartitionTracesByID = false
 	}
-	return &kafkaExporter[ptrace.Traces]{
-		cfg:    config,
-		logger: set.Logger,
-		newMessager: func(host component.Host) (kafkaMessager[ptrace.Traces], error) {
-			marshaler, err := getTracesMarshaler(config.Encoding, host)
-			if err != nil {
-				return nil, err
-			}
-			return &kafkaTracesMessager{
-				config:    config,
-				marshaler: marshaler,
-			}, nil
-		},
-	}
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[ptrace.Traces], error) {
+		marshaler, err := getTracesMarshaler(config.Encoding, host)
+		if err != nil {
+			return nil, err
+		}
+		return &kafkaTracesMessager{
+			config:    config,
+			marshaler: marshaler,
+		}, nil
+	})
 }
 
 type kafkaTracesMessager struct {
@@ -166,20 +174,16 @@ func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, 
 }
 
 func newLogsExporter(config Config, set exporter.Settings) *kafkaExporter[plog.Logs] {
-	return &kafkaExporter[plog.Logs]{
-		cfg:    config,
-		logger: set.Logger,
-		newMessager: func(host component.Host) (kafkaMessager[plog.Logs], error) {
-			marshaler, err := getLogsMarshaler(config.Encoding, host)
-			if err != nil {
-				return nil, err
-			}
-			return &kafkaLogsMessager{
-				config:    config,
-				marshaler: marshaler,
-			}, nil
-		},
-	}
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[plog.Logs], error) {
+		marshaler, err := getLogsMarshaler(config.Encoding, host)
+		if err != nil {
+			return nil, err
+		}
+		return &kafkaLogsMessager{
+			config:    config,
+			marshaler: marshaler,
+		}, nil
+	})
 }
 
 type kafkaLogsMessager struct {
@@ -213,20 +217,16 @@ func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.L
 }
 
 func newMetricsExporter(config Config, set exporter.Settings) *kafkaExporter[pmetric.Metrics] {
-	return &kafkaExporter[pmetric.Metrics]{
-		cfg:    config,
-		logger: set.Logger,
-		newMessager: func(host component.Host) (kafkaMessager[pmetric.Metrics], error) {
-			marshaler, err := getMetricsMarshaler(config.Encoding, host)
-			if err != nil {
-				return nil, err
-			}
-			return &kafkaMetricsMessager{
-				config:    config,
-				marshaler: marshaler,
-			}, nil
-		},
-	}
+	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[pmetric.Metrics], error) {
+		marshaler, err := getMetricsMarshaler(config.Encoding, host)
+		if err != nil {
+			return nil, err
+		}
+		return &kafkaMetricsMessager{
+			config:    config,
+			marshaler: marshaler,
+		}, nil
+	})
 }
 
 type kafkaMetricsMessager struct {
