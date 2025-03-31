@@ -365,3 +365,25 @@ func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount 
 
 	return buf.String(), nil
 }
+
+//go:embed templates/sqlServerQuerySampleWithTop.tmpl
+var sqlServerQuerySamplesWithTop string
+
+// This one is used when the template execution fails as a fallback.
+// Even though in theory the template function should never fail, we
+// have it just in case.
+//
+//go:embed templates/sqlServerQuerySampleWithoutTop.tmpl
+var sqlServerQuerySamplesWithoutTop string
+
+func getSQLServerQuerySamplesQuery(maxRowsPerQuery uint64) string {
+	buf := bytes.Buffer{}
+
+	tmpl := template.Must(template.New("sqlServerQuerySample").Option("missingkey=error").Parse(sqlServerQuerySamplesWithTop))
+	if err := tmpl.Execute(&buf, map[string]any{
+		"Limit": maxRowsPerQuery,
+	}); err != nil {
+		return sqlServerQuerySamplesWithoutTop
+	}
+	return buf.String()
+}
