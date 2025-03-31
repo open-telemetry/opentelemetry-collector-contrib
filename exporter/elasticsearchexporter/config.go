@@ -93,7 +93,7 @@ type Config struct {
 // This is a slightly modified version of exporterbatcher.Config,
 // to enable tri-state Enabled: unset, false, true.
 type BatcherConfig struct {
-	exporterbatcher.Config `mapstructure:",squash"` //nolint:staticcheck
+	exporterbatcher.Config `mapstructure:",squash"`
 
 	// enabledSet tracks whether Enabled has been specified.
 	// If enabledSet is false, the exporter will perform its
