@@ -91,5 +91,6 @@ export default async function ({github}) {
         console.error("OUT_FILE env var is required.")
         process.exit(1);
     }
-    await main({ github })
+    const octokit = github.rest;
+    await main({ octokit })
 }
