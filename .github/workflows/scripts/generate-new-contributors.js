@@ -2,6 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { simpleGit } from 'simple-git';
+import fs from "fs";
 const git = simpleGit();
 
 const REPO_NAME = "opentelemetry-collector-contrib"
@@ -83,7 +84,10 @@ export const main = async ({ github }) => {
     console.log('First-time contributors:', usernames);
     console.log('Number of first-time contributors: ', usernames.length);
 
-    return generateNewContributorText(usernames)
+    const text = generateNewContributorText(usernames)
+    fs.writeFileSync(process.env.OUT_FILE, text);
+
+    return {"text": text}
 }
 
 export default async function ({github}) {
