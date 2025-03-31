@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { simpleGit } from 'simple-git';
-import {Octokit} from 'octokit';
 const git = simpleGit("../../../");
 
 const REPO_NAME = "opentelemetry-collector-contrib"
@@ -91,12 +90,6 @@ export default async function ({github}) {
     if(process.env.OUT_FILE === undefined || process.env.OUT_FILE === '') {
         console.error("OUT_FILE env var is required.")
         process.exit(1);
-    }
-
-    if (github === undefined) {
-        github = new Octokit({
-            auth: process.env.GITHUB_TOKEN
-        })
     }
     await main({ github })
 }
