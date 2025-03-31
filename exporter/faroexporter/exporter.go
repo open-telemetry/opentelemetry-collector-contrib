@@ -37,8 +37,6 @@ type faroExporter struct {
 	logger    *zap.Logger
 	settings  component.TelemetrySettings
 	userAgent string
-
-	wg sync.WaitGroup
 }
 
 const (
@@ -144,18 +142,19 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 
 func (fe *faroExporter) consume(ctx context.Context, fp []faro.Payload) error {
 	var errs error
-	fe.wg.Add(len(fp))
+	var wg sync.WaitGroup
+	wg.Add(len(fp))
 	var mu sync.Mutex
 	for _, p := range fp {
 		go func() {
-			defer fe.wg.Done()
+			defer wg.Done()
 			err := fe.export(ctx, &p)
 			mu.Lock()
 			errs = multierr.Append(errs, err)
 			mu.Unlock()
 		}()
 	}
-	fe.wg.Wait()
+	wg.Wait()
 	return errs
 }
 
