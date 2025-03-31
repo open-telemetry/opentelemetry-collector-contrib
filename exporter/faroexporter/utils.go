@@ -35,13 +35,7 @@ func newStatusFromMsgAndHTTPCode(errMsg string, statusCode int) *status.Status {
 
 func isRetryableStatusCode(code int) bool {
 	switch code {
-	case http.StatusTooManyRequests:
-		return true
-	case http.StatusBadGateway:
-		return true
-	case http.StatusServiceUnavailable:
-		return true
-	case http.StatusGatewayTimeout:
+	case http.StatusTooManyRequests, http.StatusBadGateway, http.StatusServiceUnavailable, http.StatusGatewayTimeout:
 		return true
 	default:
 		return false
