@@ -2,7 +2,7 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { simpleGit } from 'simple-git';
-const git = simpleGit("../../../");
+const git = simpleGit();
 
 const REPO_NAME = "opentelemetry-collector-contrib"
 const REPO_OWNER = "open-telemetry"
