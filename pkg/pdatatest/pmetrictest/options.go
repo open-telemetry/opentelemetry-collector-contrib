@@ -169,43 +169,37 @@ func IgnoreExemplars() CompareMetricsOption {
 
 func maskExemplars(metrics pmetric.Metrics) {
 	emptyExemplar := pmetric.NewExemplar()
-	rms := metrics.ResourceMetrics()
-	for i := 0; i < rms.Len(); i++ {
-		ilms := rms.At(i).ScopeMetrics()
-		for j := 0; j < ilms.Len(); j++ {
-			metrics := ilms.At(j).Metrics()
-			for g := 0; g < metrics.Len(); g++ {
-				switch metrics.At(g).Type() {
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
 				case pmetric.MetricTypeGauge:
-					datapoints := metrics.At(g).Gauge().DataPoints()
+					datapoints := m.Gauge().DataPoints()
 					for k := 0; k < datapoints.Len(); k++ {
-						exemplars := datapoints.At(k).Exemplars()
-						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar.CopyTo(exemplars.At(f))
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
 						}
 					}
 				case pmetric.MetricTypeSum:
-					datapoints := metrics.At(g).Sum().DataPoints()
+					datapoints := m.Sum().DataPoints()
 					for k := 0; k < datapoints.Len(); k++ {
-						exemplars := datapoints.At(k).Exemplars()
-						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar.CopyTo(exemplars.At(f))
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
 						}
 					}
 				case pmetric.MetricTypeHistogram:
-					datapoints := metrics.At(g).Histogram().DataPoints()
+					datapoints := m.Histogram().DataPoints()
 					for k := 0; k < datapoints.Len(); k++ {
-						exemplars := datapoints.At(k).Exemplars()
-						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar.CopyTo(exemplars.At(f))
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
 						}
 					}
 				case pmetric.MetricTypeExponentialHistogram:
-					datapoints := metrics.At(g).ExponentialHistogram().DataPoints()
+					datapoints := m.ExponentialHistogram().DataPoints()
 					for k := 0; k < datapoints.Len(); k++ {
-						exemplars := datapoints.At(k).Exemplars()
-						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar.CopyTo(exemplars.At(f))
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
 						}
 					}
 				}
