@@ -37,8 +37,15 @@ func (ke kafkaErrors) Error() string {
 }
 
 type kafkaMessager[T any] interface {
+	// partitionData returns an iterator that yields key-value pairs
+	// where the key is the partition key, and the value is the pdata
+	// type (plog.Logs, etc.)
 	partitionData(T) iter.Seq2[[]byte, T]
+
+	// marshalData marshals a pdata type into onr or more messages.
 	marshalData(T) ([]marshaler.Message, error)
+
+	// getTopic returns the topic name for the given context and data.
 	getTopic(context.Context, T) string
 }
 
