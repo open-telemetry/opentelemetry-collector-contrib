@@ -19,6 +19,10 @@ type pdataLogsMarshaler struct {
 	marshaler plog.Marshaler
 }
 
+// NewPdataLogsMarshaler returns a new LogsMarshaler that marshals
+// plog.Logs using the given plog.Marshaler. This can be used with
+// the standard OTLP marshalers in the plog package, or with encoding
+// extensions.
 func NewPdataLogsMarshaler(m plog.Marshaler) LogsMarshaler {
 	return pdataLogsMarshaler{marshaler: m}
 }
@@ -35,6 +39,10 @@ type pdataMetricsMarshaler struct {
 	marshaler pmetric.Marshaler
 }
 
+// NewPdataMetricsMarshaler returns a new MetricsMarshaler that marshals
+// pmetric.Metrics using the given pmetric.Marshaler. This can be used
+// with the standard OTLP marshalers in the pmetric package, or with
+// encoding extensions.
 func NewPdataMetricsMarshaler(m pmetric.Marshaler) MetricsMarshaler {
 	return pdataMetricsMarshaler{marshaler: m}
 }
@@ -51,6 +59,10 @@ type pdataTracesMarshaler struct {
 	marshaler ptrace.Marshaler
 }
 
+// NewPdataTracesMarshaler returns a new TracesMarshaler that marshals
+// ptrace.Traces using the given ptrace.Marshaler. This can be used
+// with the standard OTLP marshalers in the ptrace package, or with
+// encoding extensions.
 func NewPdataTracesMarshaler(m ptrace.Marshaler) TracesMarshaler {
 	return pdataTracesMarshaler{marshaler: m}
 }
