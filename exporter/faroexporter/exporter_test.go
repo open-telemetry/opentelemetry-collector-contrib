@@ -126,16 +126,22 @@ func TestExporter_ErrorCases(t *testing.T) {
 		expectedRetryable  bool
 		expectedThrottled  bool
 		setRetryAfterValue bool
+		responseBody       string
+		checkResponseBody  bool
 	}{
 		{
 			name:              "permanent error",
 			statusCode:        http.StatusBadRequest,
 			expectedPermanent: true,
+			responseBody:      "Bad request: invalid format",
+			checkResponseBody: true,
 		},
 		{
 			name:              "retryable error",
 			statusCode:        http.StatusInternalServerError,
 			expectedRetryable: true,
+			responseBody:      "Internal server error: try again later",
+			checkResponseBody: true,
 		},
 		{
 			name:               "throttled with retry-after",
@@ -143,12 +149,16 @@ func TestExporter_ErrorCases(t *testing.T) {
 			expectedRetryable:  true,
 			expectedThrottled:  true,
 			setRetryAfterValue: true,
+			responseBody:       "Rate limit exceeded",
+			checkResponseBody:  true,
 		},
 		{
 			name:              "service unavailable",
 			statusCode:        http.StatusServiceUnavailable,
 			expectedRetryable: true,
 			expectedThrottled: true,
+			responseBody:      "Service temporarily unavailable",
+			checkResponseBody: true,
 		},
 	}
 
@@ -159,6 +169,9 @@ func TestExporter_ErrorCases(t *testing.T) {
 					w.Header().Set("Retry-After", "30")
 				}
 				w.WriteHeader(tc.statusCode)
+				if tc.responseBody != "" {
+					_, _ = w.Write([]byte(tc.responseBody))
+				}
 			}))
 			defer server.Close()
 
@@ -177,6 +190,11 @@ func TestExporter_ErrorCases(t *testing.T) {
 			td := createTestTraces()
 			err = exp.ConsumeTraces(ctx, td)
 
+			if tc.checkResponseBody {
+				errMsg := err.Error()
+				assert.Contains(t, errMsg, tc.responseBody, "Error message should contain response body content")
+			}
+
 			switch {
 			case tc.expectedPermanent:
 				assert.True(t, consumererror.IsPermanent(err), "Expected permanent error")
@@ -190,8 +208,6 @@ func TestExporter_ErrorCases(t *testing.T) {
 				} else {
 					assert.Error(t, err, "Expected retryable error")
 				}
-			default:
-				assert.NoError(t, err)
 			}
 		})
 	}

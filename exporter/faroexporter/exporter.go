@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -116,9 +117,15 @@ func (fe *faroExporter) export(ctx context.Context, fp *faro.Payload) error {
 
 	var errString string
 	var formattedErr error
+	bodyBytes, err := io.ReadAll(resp.Body)
+	bodyContent := "unknown response"
+	if err == nil {
+		bodyContent = string(bodyBytes)
+	}
+
 	errString = fmt.Sprintf(
 		"error exporting items, request to %s responded with HTTP Status Code %d, Message=%s",
-		fe.config.Endpoint, resp.StatusCode, resp.Body)
+		fe.config.Endpoint, resp.StatusCode, bodyContent)
 	formattedErr = newStatusFromMsgAndHTTPCode(errString, resp.StatusCode).Err()
 
 	if isRetryableStatusCode(resp.StatusCode) {
