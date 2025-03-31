@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/confmap"
 )
 
@@ -166,4 +167,17 @@ func TestPeerTags(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestDeprecateHostnameSourceFirstResource(t *testing.T) {
+	cfg := CreateDefaultConfig().(*Config)
+	cfgMap := confmap.NewFromStringMap(map[string]any{
+		"host_metadata": map[string]any{
+			"hostname_source": "first_resource",
+		},
+	})
+	err := cfgMap.Unmarshal(cfg)
+	require.NoError(t, err)
+	assert.Len(t, cfg.warnings, 1)
+	assert.ErrorContains(t, cfg.warnings[0], "first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead")
 }
