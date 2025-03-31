@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
+module github.com/domleb/opentelemetry-collector-contrib/pkg/ottl
 
 go 1.23.0
 

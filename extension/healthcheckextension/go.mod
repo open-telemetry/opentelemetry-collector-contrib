@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/healthcheckextension
 
 go 1.23.0
 

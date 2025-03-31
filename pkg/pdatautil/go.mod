@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil
+module github.com/domleb/opentelemetry-collector-contrib/pkg/pdatautil
 
 go 1.23.0
 

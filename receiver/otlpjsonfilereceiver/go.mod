@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/otlpjsonfilereceiver
 
 go 1.23.0
 

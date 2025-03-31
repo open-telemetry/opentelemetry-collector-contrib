@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest
+module github.com/domleb/opentelemetry-collector-contrib/pkg/xk8stest
 
 go 1.23.0
 

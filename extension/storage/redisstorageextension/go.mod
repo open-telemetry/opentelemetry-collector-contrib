@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/storage/redisstorageextension
 
 go 1.23.0
 

@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
+module github.com/domleb/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
 
 go 1.23.0
 

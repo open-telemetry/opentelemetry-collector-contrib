@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
+module github.com/domleb/opentelemetry-collector-contrib/exporter/sematextexporter
 
 go 1.23.0
 

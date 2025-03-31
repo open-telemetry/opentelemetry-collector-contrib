@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden
+module github.com/domleb/opentelemetry-collector-contrib/pkg/golden
 
 go 1.23.0
 

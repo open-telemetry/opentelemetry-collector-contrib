@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
+module github.com/domleb/opentelemetry-collector-contrib/extension/cgroupruntimeextension
 
 go 1.23.0
 

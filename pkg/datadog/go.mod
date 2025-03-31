@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog
+module github.com/domleb/opentelemetry-collector-contrib/pkg/datadog
 
 go 1.23.0
 

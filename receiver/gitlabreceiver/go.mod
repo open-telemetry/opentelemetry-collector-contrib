@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/gitlabreceiver
 
 go 1.23.0
 

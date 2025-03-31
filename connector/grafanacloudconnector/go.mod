@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector
+module github.com/domleb/opentelemetry-collector-contrib/connector/grafanacloudconnector
 
 go 1.23.0
 

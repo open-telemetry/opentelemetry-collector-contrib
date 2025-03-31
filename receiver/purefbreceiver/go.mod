@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver
+module github.com/domleb/opentelemetry-collector-contrib/receiver/purefbreceiver
 
 go 1.23.0
 
