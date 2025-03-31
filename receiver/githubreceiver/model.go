@@ -7,7 +7,7 @@ import (
 	"errors"
 	"strings"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )

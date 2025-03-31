@@ -84,15 +84,15 @@ require (
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.2.2 // indirect
 	github.com/Code-Hex/go-generics-cache v1.5.1 // indirect
 	github.com/DataDog/agent-payload/v5 v5.0.145 // indirect
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/trace v0.64.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/trace/exportable v0.0.0-20201016145401-4646cf596b02 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.0-rc.13 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.0-rc.13 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.1 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.64.1 // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.36.1 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
@@ -101,7 +101,7 @@ require (
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/alecthomas/participle/v2 v2.1.2 // indirect
+	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/alecthomas/units v0.0.0-20240927000941-0f3dac36c52b // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
 	github.com/antchfx/xpath v1.3.3 // indirect
@@ -134,7 +134,7 @@ require (
 	github.com/emicklei/go-restful/v3 v3.11.0 // indirect
 	github.com/envoyproxy/go-control-plane/envoy v1.32.4 // indirect
 	github.com/envoyproxy/protoc-gen-validate v1.2.1 // indirect
-	github.com/expr-lang/expr v1.17.1 // indirect
+	github.com/expr-lang/expr v1.17.2 // indirect
 	github.com/facette/natsort v0.0.0-20181210072756-2cd4dd1e2dcb // indirect
 	github.com/fatih/color v1.16.0 // indirect
 	github.com/felixge/httpsnoop v1.0.4 // indirect
@@ -161,7 +161,7 @@ require (
 	github.com/goccy/go-json v0.10.5 // indirect
 	github.com/gogo/googleapis v1.4.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/golang/protobuf v1.5.4 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
@@ -358,11 +358,11 @@ require (
 	golang.org/x/term v0.30.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
 	golang.org/x/tools v0.30.0 // indirect
-	gonum.org/v1/gonum v0.15.1 // indirect
+	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.226.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250303144028-a0af3efb3deb // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/yaml.v2 v2.4.0 // indirect
