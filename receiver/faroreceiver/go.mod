@@ -60,7 +60,6 @@ require (
 	go.opentelemetry.io/collector/confmap v1.29.0
 	go.opentelemetry.io/collector/consumer v1.29.0
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.0 // indirect
-	go.opentelemetry.io/collector/extension v1.29.0 // indirect
 	go.opentelemetry.io/collector/pdata v1.29.0 // indirect
 	go.opentelemetry.io/collector/receiver v1.29.0
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0 // indirect
