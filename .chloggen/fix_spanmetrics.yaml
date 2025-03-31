@@ -5,7 +5,7 @@ change_type: bug_fix
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: connector/spanmetrics
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: This change proposes moving the start timestamp (and last seen timestamp) from the parent span level to the individual child span (metric) level. This will ensure that each metric has its own accurate start and last seen timestamps, regardless of its relationship to other spans.
+note: This change proposes moving the start timestamp (and last seen timestamp) from the resourceMetrics level to the individual metrics level. This will ensure that each metric has its own accurate start and last seen timestamps, regardless of its relationship to other spans.
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35994]
 # (Optional) One or more lines of additional information to render under the primary note.
