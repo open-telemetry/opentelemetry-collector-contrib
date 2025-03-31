@@ -11,11 +11,11 @@ require (
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thda/tds v0.1.7
-	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/pdata v1.28.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/scraper v0.122.2-0.20250319144947-41a9ea7f7402
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.122.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/component v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/pdata v1.28.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/scraper v0.122.2-0.20250331035457-68e964a2f185
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.122.2-0.20250331035457-68e964a2f185
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -59,6 +59,7 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -78,11 +79,15 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/pipeline v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/receiver v1.28.2-0.20250319144947-41a9ea7f7402 // indirect
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.122.2-0.20250319144947-41a9ea7f7402 // indirect
+	go.opentelemetry.io/collector/consumer v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/featuregate v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/pipeline v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/receiver v1.28.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.122.2-0.20250331035457-68e964a2f185 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
@@ -99,6 +104,6 @@ require (
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
