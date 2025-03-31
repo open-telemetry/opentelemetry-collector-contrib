@@ -3,11 +3,14 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmex
 go 1.23.0
 
 require (
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e
+	github.com/google/go-tpm v0.9.3
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/component/componenttest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/confmap v1.28.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/extension v1.28.2-0.20250319144947-41a9ea7f7402
+	go.opentelemetry.io/collector/extension/extensionauth v0.122.2-0.20250319144947-41a9ea7f7402
 	go.opentelemetry.io/collector/extension/extensiontest v0.122.2-0.20250319144947-41a9ea7f7402
 	go.uber.org/goleak v1.3.0
 )
@@ -36,6 +39,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap v1.27.0 // indirect
+	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect

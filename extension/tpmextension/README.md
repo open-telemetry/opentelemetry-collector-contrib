@@ -15,12 +15,29 @@
 
 The Trusted Platform Module (TPM) extension retrieves TLS certificates from the TPM device.
 
+The extension implements  `extensionauth.HTTPClient` interface therefore it can be used only with HTTP exporters (e.g. otlphttp exporter).
+
 ## Configuration
+
+* `path` (required): The path to the TPM device. For example, `/dev/tpmrm0`.
+* `key_file` (required): The path to the client TSS2 private key file.
+* `cert_file` (required): The path to the client certificate file.
+* `ca_file` (required): The path to the CA certificate file.
+* `server_name_override` (optional): The server name override for the TLS connection. This is useful when the server name does not match the certificate.
+* `owner_auth` (optional): The owner authorization password for the TPM device. This is required if the TPM device is protected by a password.
+* `auth` (optional): The password for the TPM device. This is required if the TPM device is protected by a password.
 
 Example:
 
 ```yaml
 extensions:
   tpm:
+    path: /dev/tpmrm0
+    key_file: client_key.key
+    cert_file: server.crt
+    ca_file: ca.crt
+    server_name_override: example.com
+    owner_auth: tpm-password
+    auth: password
 ```
 
