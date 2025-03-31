@@ -7,6 +7,7 @@ import (
 	"context"
 	"crypto"
 	"crypto/x509"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -127,6 +128,13 @@ func (a *authenticator) Shutdown(_ context.Context) error {
 // GetToken returns an access token with a
 // valid token for authorization
 func (a *authenticator) GetToken(ctx context.Context, options policy.TokenRequestOptions) (azcore.AccessToken, error) {
+	if a.credential == nil {
+		// This is not expected, since creating a new authenticator
+		// instance returns error if the supported credentials fail
+		// to initialize, and any unexpected ones should be prevented
+		// from validating the config.
+		return azcore.AccessToken{}, errors.New("unexpected: credentials were not initialized")
+	}
 	return a.credential.GetToken(ctx, options)
 }
 
