@@ -159,7 +159,7 @@ func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precisio
 	}
 }
 
-// IgnoreExemplars is a CompareMetricsOption that clears exemplar fields on all the Sum data points.
+// IgnoreExemplars is a CompareMetricsOption that clears exemplar fields on all data points.
 func IgnoreExemplars() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
 		maskExemplars(expected)
@@ -168,6 +168,7 @@ func IgnoreExemplars() CompareMetricsOption {
 }
 
 func maskExemplars(metrics pmetric.Metrics) {
+	emptyExemplar := pmetric.NewExemplar()
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		ilms := rms.At(i).ScopeMetrics()
@@ -180,7 +181,6 @@ func maskExemplars(metrics pmetric.Metrics) {
 					for k := 0; k < datapoints.Len(); k++ {
 						exemplars := datapoints.At(k).Exemplars()
 						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar := pmetric.NewExemplar()
 							emptyExemplar.CopyTo(exemplars.At(f))
 						}
 					}
@@ -189,7 +189,6 @@ func maskExemplars(metrics pmetric.Metrics) {
 					for k := 0; k < datapoints.Len(); k++ {
 						exemplars := datapoints.At(k).Exemplars()
 						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar := pmetric.NewExemplar()
 							emptyExemplar.CopyTo(exemplars.At(f))
 						}
 					}
@@ -198,7 +197,6 @@ func maskExemplars(metrics pmetric.Metrics) {
 					for k := 0; k < datapoints.Len(); k++ {
 						exemplars := datapoints.At(k).Exemplars()
 						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar := pmetric.NewExemplar()
 							emptyExemplar.CopyTo(exemplars.At(f))
 						}
 					}
@@ -207,7 +205,6 @@ func maskExemplars(metrics pmetric.Metrics) {
 					for k := 0; k < datapoints.Len(); k++ {
 						exemplars := datapoints.At(k).Exemplars()
 						for f := 0; f < exemplars.Len(); f++ {
-							emptyExemplar := pmetric.NewExemplar()
 							emptyExemplar.CopyTo(exemplars.At(f))
 						}
 					}
