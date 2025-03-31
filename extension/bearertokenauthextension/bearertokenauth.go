@@ -6,7 +6,6 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 import (
 	"context"
 	"crypto/subtle"
-	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -30,7 +29,7 @@ type PerRPCAuth struct {
 
 // GetRequestMetadata returns the request metadata to be used with the RPC.
 func (c *PerRPCAuth) GetRequestMetadata(context.Context, ...string) (map[string]string, error) {
-	return map[string]string{"authorization": c.auth.authorizationValue()}, nil
+	return map[string]string{strings.ToLower(c.auth.header): c.auth.authorizationValue()}, nil
 }
 
 // RequireTransportSecurity always returns true for this implementation. Passing bearer tokens in plain-text connections is a bad idea.
@@ -47,6 +46,7 @@ var (
 
 // BearerTokenAuth is an implementation of extensionauth interfaces. It embeds a static authorization "bearer" token in every rpc call.
 type BearerTokenAuth struct {
+	header                    string
 	scheme                    string
 	authorizationValuesAtomic atomic.Value
 
@@ -61,6 +61,7 @@ func newBearerTokenAuth(cfg *Config, logger *zap.Logger) *BearerTokenAuth {
 		logger.Warn("a filename is specified. Configured token(s) is ignored!")
 	}
 	a := &BearerTokenAuth{
+		header:   cfg.Header,
 		scheme:   cfg.Scheme,
 		filename: cfg.Filename,
 		logger:   logger,
@@ -211,6 +212,7 @@ func (b *BearerTokenAuth) PerRPCCredentials() (credentials.PerRPCCredentials, er
 // RoundTripper is not implemented by BearerTokenAuth
 func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	return &BearerAuthRoundTripper{
+		header:        b.header,
 		baseTransport: base,
 		auth:          b,
 	}, nil
@@ -218,12 +220,12 @@ func (b *BearerTokenAuth) RoundTripper(base http.RoundTripper) (http.RoundTrippe
 
 // Authenticate checks whether the given context contains valid auth data. Validates tokens from clients trying to access the service (incoming requests)
 func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
-	auth, ok := headers["authorization"]
+	auth, ok := headers[strings.ToLower(b.header)]
 	if !ok {
-		auth, ok = headers["Authorization"]
+		auth, ok = headers[b.header]
 	}
 	if !ok || len(auth) == 0 {
-		return ctx, errors.New("missing or empty authorization header")
+		return ctx, fmt.Errorf("missing or empty authorization header: %s", b.header)
 	}
 	token := auth[0] // Extract token from authorization header
 	expectedTokens := b.authorizationValues()
@@ -237,6 +239,7 @@ func (b *BearerTokenAuth) Authenticate(ctx context.Context, headers map[string][
 
 // BearerAuthRoundTripper intercepts and adds Bearer token Authorization headers to each http request.
 type BearerAuthRoundTripper struct {
+	header        string
 	baseTransport http.RoundTripper
 	auth          *BearerTokenAuth
 }
@@ -247,6 +250,6 @@ func (interceptor *BearerAuthRoundTripper) RoundTrip(req *http.Request) (*http.R
 	if req2.Header == nil {
 		req2.Header = make(http.Header)
 	}
-	req2.Header.Set("Authorization", interceptor.auth.authorizationValue())
+	req2.Header.Set(interceptor.header, interceptor.auth.authorizationValue())
 	return interceptor.baseTransport.RoundTrip(req2)
 }

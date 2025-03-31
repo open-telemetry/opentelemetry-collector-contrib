@@ -617,77 +617,109 @@ func TestSupervisorConfiguresCapabilities(t *testing.T) {
 }
 
 func TestSupervisorBootstrapsCollector(t *testing.T) {
-	agentDescription := atomic.Value{}
+	tests := []struct {
+		name     string
+		cfg      string
+		env      []string
+		precheck func(t *testing.T)
+	}{
+		{
+			name: "With service.AllowNoPipelines",
+			cfg:  "nocap",
+		},
+		{
+			name: "Without service.AllowNoPipelines",
+			cfg:  "no_fg",
+			env: []string{
+				"COLLECTOR_BIN=../../bin/otelcontribcol_" + runtime.GOOS + "_" + runtime.GOARCH,
+			},
+			precheck: func(t *testing.T) {
+				if runtime.GOOS == "windows" {
+					t.Skip("This test requires a shell script, which may not be supported by Windows")
+				}
+			},
+		},
+	}
 
-	// Load the Supervisor config so we can get the location of
-	// the Collector that will be run.
-	var cfg config.Supervisor
-	cfgFile := getSupervisorConfig(t, "nocap", map[string]string{})
-	k := koanf.New("::")
-	err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
-	require.NoError(t, err)
-	err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
-		Tag: "mapstructure",
-	})
-	require.NoError(t, err)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			agentDescription := atomic.Value{}
 
-	// Get the binary name and version from the Collector binary
-	// using the `components` command that prints a YAML-encoded
-	// map of information about the Collector build. Some of this
-	// information will be used as defaults for the telemetry
-	// attributes.
-	agentPath := cfg.Agent.Executable
-	componentsInfo, err := exec.Command(agentPath, "components").Output()
-	require.NoError(t, err)
-	k = koanf.New("::")
-	err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
-	require.NoError(t, err)
-	buildinfo := k.StringMap("buildinfo")
-	command := buildinfo["command"]
-	version := buildinfo["version"]
+			// Load the Supervisor config so we can get the location of
+			// the Collector that will be run.
+			var cfg config.Supervisor
+			cfgFile := getSupervisorConfig(t, tt.cfg, map[string]string{})
+			k := koanf.New("::")
+			err := k.Load(file.Provider(cfgFile.Name()), yaml.Parser())
+			require.NoError(t, err)
+			err = k.UnmarshalWithConf("", &cfg, koanf.UnmarshalConf{
+				Tag: "mapstructure",
+			})
+			require.NoError(t, err)
 
-	server := newOpAMPServer(
-		t,
-		defaultConnectingHandler,
-		types.ConnectionCallbacks{
-			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
-				if message.AgentDescription != nil {
-					agentDescription.Store(message.AgentDescription)
+			// Get the binary name and version from the Collector binary
+			// using the `components` command that prints a YAML-encoded
+			// map of information about the Collector build. Some of this
+			// information will be used as defaults for the telemetry
+			// attributes.
+			agentPath := cfg.Agent.Executable
+			cmd := exec.Command(agentPath, "components")
+			for _, env := range tt.env {
+				cmd.Env = append(cmd.Env, env)
+			}
+			componentsInfo, err := cmd.Output()
+			require.NoError(t, err)
+			k = koanf.New("::")
+			err = k.Load(rawbytes.Provider(componentsInfo), yaml.Parser())
+			require.NoError(t, err)
+			buildinfo := k.StringMap("buildinfo")
+			command := buildinfo["command"]
+			version := buildinfo["version"]
+
+			server := newOpAMPServer(
+				t,
+				defaultConnectingHandler,
+				types.ConnectionCallbacks{
+					OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+						if message.AgentDescription != nil {
+							agentDescription.Store(message.AgentDescription)
+						}
+
+						return &protobufs.ServerToAgent{}
+					},
+				})
+
+			s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
+
+			require.Nil(t, s.Start())
+			defer s.Shutdown()
+
+			waitForSupervisorConnection(server.supervisorConnected, true)
+
+			require.Eventually(t, func() bool {
+				ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
+				if !ok {
+					return false
 				}
 
-				return &protobufs.ServerToAgent{}
-			},
+				var agentName, agentVersion string
+				identAttr := ad.IdentifyingAttributes
+				for _, attr := range identAttr {
+					switch attr.Key {
+					case semconv.AttributeServiceName:
+						agentName = attr.Value.GetStringValue()
+					case semconv.AttributeServiceVersion:
+						agentVersion = attr.Value.GetStringValue()
+					}
+				}
+
+				// By default the Collector should report its name and version
+				// from the component.BuildInfo struct built into the Collector
+				// binary.
+				return agentName == command && agentVersion == version
+			}, 5*time.Second, 250*time.Millisecond)
 		})
-
-	s := newSupervisor(t, "nocap", map[string]string{"url": server.addr})
-
-	require.Nil(t, s.Start())
-	defer s.Shutdown()
-
-	waitForSupervisorConnection(server.supervisorConnected, true)
-
-	require.Eventually(t, func() bool {
-		ad, ok := agentDescription.Load().(*protobufs.AgentDescription)
-		if !ok {
-			return false
-		}
-
-		var agentName, agentVersion string
-		identAttr := ad.IdentifyingAttributes
-		for _, attr := range identAttr {
-			switch attr.Key {
-			case semconv.AttributeServiceName:
-				agentName = attr.Value.GetStringValue()
-			case semconv.AttributeServiceVersion:
-				agentVersion = attr.Value.GetStringValue()
-			}
-		}
-
-		// By default the Collector should report its name and version
-		// from the component.BuildInfo struct built into the Collector
-		// binary.
-		return agentName == command && agentVersion == version
-	}, 5*time.Second, 250*time.Millisecond)
+	}
 }
 
 func TestSupervisorBootstrapsCollectorAvailableComponents(t *testing.T) {

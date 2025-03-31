@@ -28,3 +28,7 @@ bearertokenauth/tokensandtoken:
     - "token1"
     - "thistokenalsoworks"
   token: "my-token"
+bearertokenauth/withheader:
+  header: "X-Custom-Authorization"
+  scheme: ""
+  token: "my-token"
