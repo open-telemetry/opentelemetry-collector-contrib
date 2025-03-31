@@ -36,7 +36,7 @@ func TestResourceBuilder(t *testing.T) {
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 17, res.Attributes().Len())
+				assert.Equal(t, 15, res.Attributes().Len())
 			case "all_set":
 				assert.Equal(t, 17, res.Attributes().Len())
 			case "none_set":
@@ -87,12 +87,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Equal(t, "k8s.namespace.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.annotations")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, map[string]any{"key1": "k8s.node.annotations-val1", "key2": "k8s.node.annotations-val2"}, val.Map().AsRaw())
 			}
 			val, ok = res.Attributes().Get("k8s.node.labels")
-			assert.True(t, ok)
+			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, map[string]any{"key1": "k8s.node.labels-val1", "key2": "k8s.node.labels-val2"}, val.Map().AsRaw())
 			}

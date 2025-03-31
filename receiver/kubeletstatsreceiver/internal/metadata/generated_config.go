@@ -349,10 +349,10 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 			Enabled: true,
 		},
 		K8sNodeAnnotations: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sNodeLabels: ResourceAttributeConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sNodeName: ResourceAttributeConfig{
 			Enabled: true,
