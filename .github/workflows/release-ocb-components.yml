@@ -126,12 +126,12 @@ jobs:
           docker tag ${{ env.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/ocb-release-test-collector:${{ github.sha }} ${{ env.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/ocb-release-test-collector:latest
           docker push ${{ env.ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/ocb-release-test-collector:latest
 
-      # - name: Tag OCB modules
-      #   run: |
-      #     git tag internal/aws/cwlogs/v${{ env.OCB_MODULE_VERSION }}
-      #     git tag internal/aws/awsutil/v${{ env.OCB_MODULE_VERSION }}
-      #     git tag exporter/awsemfexporter/v${{ env.OCB_MODULE_VERSION }}
-      #     git tag processor/awsapplicationsignalsprocessor/v${{ env.OCB_MODULE_VERSION }}
+      - name: Tag OCB modules
+        run: |
+          git tag internal/aws/cwlogs/v${{ env.OCB_MODULE_VERSION }}
+          git tag internal/aws/awsutil/v${{ env.OCB_MODULE_VERSION }}
+          git tag exporter/awsemfexporter/v${{ env.OCB_MODULE_VERSION }}
+          git tag processor/awsapplicationsignalsprocessor/v${{ env.OCB_MODULE_VERSION }}
 
-      # - name: Publish tags for OCB modules
-      #   run: git push --tags
+      - name: Publish tags for OCB modules
+        run: git push --tags
