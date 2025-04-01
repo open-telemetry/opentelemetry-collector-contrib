@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector/internal/metrics"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
+	utilattri "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 )
 
 const (
@@ -1958,20 +1959,14 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create connector
-			p := &connectorImp{
-				config: tt.config,
-			}
+			p := &connectorImp{config: tt.config}
 
-			// Create basic span
 			span := ptrace.NewSpan()
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			// Build attributes
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
 
-			// Verify results
 			assert.Equal(t, len(tt.want), attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
@@ -1980,4 +1975,198 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCardinalityTracker(t *testing.T) {
+	tests := []struct {
+		name          string
+		limit         int
+		metricName    string
+		dimensions    []utilattri.Dimension
+		spans         []ptrace.Span
+		excludeDims   []string
+		wantOverflows []bool
+	}{
+		{
+			name:       "no limit",
+			limit:      0,
+			metricName: metricNameCalls,
+			spans: []ptrace.Span{
+				createSpan("op1", pcommon.NewMap()),
+				createSpan("op2", pcommon.NewMap()),
+			},
+			wantOverflows: []bool{false, false},
+		},
+		{
+			name:       "under limit",
+			limit:      2,
+			metricName: metricNameCalls,
+			spans: []ptrace.Span{
+				createSpan("op1", pcommon.NewMap()),
+				createSpan("op2", pcommon.NewMap()),
+			},
+			wantOverflows: []bool{false, false},
+		},
+		{
+			name:       "at limit",
+			limit:      1,
+			metricName: metricNameCalls,
+			spans: []ptrace.Span{
+				createSpan("op1", pcommon.NewMap()),
+				createSpan("op1", pcommon.NewMap()), // Same operation, shouldn't overflow
+				createSpan("op2", pcommon.NewMap()), // Different operation, should overflow
+			},
+			wantOverflows: []bool{false, false, true},
+		},
+		{
+			name:       "separate limits per metric",
+			limit:      1,
+			metricName: metricNameCalls,
+			spans: []ptrace.Span{
+				createSpan("op1", pcommon.NewMap()),
+				createSpan("op2", pcommon.NewMap()),
+			},
+			wantOverflows: []bool{false, true},
+		},
+		{
+			name:       "with custom dimensions",
+			limit:      2,
+			metricName: metricNameCalls,
+			dimensions: []utilattri.Dimension{
+				{Name: "custom.attr"},
+			},
+			spans: []ptrace.Span{
+				createSpanWithAttributes("op1", ptrace.SpanKindServer, map[string]any{"custom.attr": "val1"}),
+				createSpanWithAttributes("op1", ptrace.SpanKindServer, map[string]any{"custom.attr": "val2"}),
+				createSpanWithAttributes("op1", ptrace.SpanKindServer, map[string]any{"custom.attr": "val3"}),
+			},
+			wantOverflows: []bool{false, false, true},
+		},
+		{
+			name:        "excluded dimensions",
+			limit:       1,
+			metricName:  metricNameCalls,
+			excludeDims: []string{spanNameKey},
+			spans: []ptrace.Span{
+				createSpan("op1", pcommon.NewMap()),
+				createSpan("op2", pcommon.NewMap()), // Different operation, but name excluded
+			},
+			wantOverflows: []bool{false, false},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tracker := newCardinalityTracker(tt.limit)
+
+			for i, span := range tt.spans {
+				got := tracker.shouldUseOverflow(tt.metricName, span, tt.dimensions, tt.excludeDims)
+				assert.Equal(t, tt.wantOverflows[i], got,
+					"span %d: expected overflow=%v, got=%v", i, tt.wantOverflows[i], got)
+			}
+		})
+	}
+}
+
+func TestConnectorWithCardinalityLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationCardinalityLimit = 2
+
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+
+	require.NotNil(t, connector)
+
+	// Create two different resources
+	resource1 := pcommon.NewResource()
+	resource1.Attributes().PutStr("service.name", "service1")
+
+	resource2 := pcommon.NewResource()
+	resource2.Attributes().PutStr("service.name", "service2")
+
+	// Create spans for the resources
+	traces := ptrace.NewTraces()
+	rspan1 := traces.ResourceSpans().AppendEmpty()
+	resource1.CopyTo(rspan1.Resource())
+	ils := rspan1.ScopeSpans().AppendEmpty()
+
+	rspan2 := traces.ResourceSpans().AppendEmpty()
+	resource2.CopyTo(rspan2.Resource())
+	ils2 := rspan2.ScopeSpans().AppendEmpty()
+
+	// Add spans with different names to trigger overflow
+	for i := 0; i < 3; i++ {
+		span := ils.Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("operation%d", i))
+		span.SetKind(ptrace.SpanKindServer)
+
+		span2 := ils2.Spans().AppendEmpty()
+		span2.SetName(fmt.Sprintf("operation%d", i))
+		span2.SetKind(ptrace.SpanKindServer)
+	}
+
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	metrics := connector.buildMetrics()
+
+	resourceMetrics := metrics.ResourceMetrics()
+	assert.Equal(t, 2, resourceMetrics.Len()) // 2 resources
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.At(i)
+		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+
+		// Each resource should have:
+		// - 2 normal metrics (under limit)
+		// - 1 overflow metric
+		metricCount := 0
+		overflowCount := 0
+
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for j := 0; j < metrics.Len(); j++ {
+			metric := metrics.At(j)
+			if metric.Name() == buildMetricName(DefaultNamespace, metricNameCalls) {
+				dps := metric.Sum().DataPoints()
+				for k := 0; k < dps.Len(); k++ {
+					dp := dps.At(k)
+					if _, exists := dp.Attributes().Get("otel.metric.overflow"); exists {
+						overflowCount++
+					} else {
+						metricCount++
+					}
+				}
+			}
+		}
+
+		assert.Equal(t, 2, metricCount, "service %s: expected 2 normal metrics. Found: %d", serviceName.Str(), metricCount)
+		assert.Equal(t, 1, overflowCount, "service %s: expected 1 overflow metric. Found: %d", serviceName.Str(), overflowCount)
+	}
+}
+
+// Helper function to create a span with attributes
+func createSpanWithAttributes(name string, kind ptrace.SpanKind, attrs map[string]any) ptrace.Span {
+	span := ptrace.NewSpan()
+	span.SetName(name)
+	span.SetKind(kind)
+
+	for k, v := range attrs {
+		switch val := v.(type) {
+		case string:
+			span.Attributes().PutStr(k, val)
+		case int64:
+			span.Attributes().PutInt(k, val)
+		case bool:
+			span.Attributes().PutBool(k, val)
+		}
+	}
+
+	return span
+}
+
+// Helper function to create a simple span
+func createSpan(name string, attrs pcommon.Map) ptrace.Span {
+	span := ptrace.NewSpan()
+	span.SetName(name)
+	attrs.CopyTo(span.Attributes())
+	return span
 }
