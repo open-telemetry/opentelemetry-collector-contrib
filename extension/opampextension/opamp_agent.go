@@ -92,12 +92,12 @@ var (
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
 
-	// identifyingAttributeList is the list of semantic convention keys that are used
+	// identifyingAttributes is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
-	identifyingAttributeList = map[string]struct{}{
-		semconv.AttributeServiceName:       struct{}{},
-		semconv.AttributeServiceVersion:    struct{}{},
-		semconv.AttributeServiceInstanceID: struct{}{},
+	identifyingAttributes = map[string]struct{}{
+		semconv.AttributeServiceName:       {},
+		semconv.AttributeServiceVersion:    {},
+		semconv.AttributeServiceInstanceID: {},
 	}
 )
 
@@ -394,7 +394,7 @@ func (o *opampAgent) createAgentDescription() error {
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
 		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
-			if _, ok := identifyingAttributeList[k]; ok {
+			if _, ok := identifyingAttributes[k]; ok {
 				continue
 			}
 			nonIdentifyingAttributeMap[k] = v
