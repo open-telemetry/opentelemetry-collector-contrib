@@ -5,6 +5,8 @@ package k8sclusterreceiver
 
 import (
 	"context"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
+	"go.opentelemetry.io/collector/extension/extensiontest"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -39,8 +41,16 @@ func (nh *nopHost) GetExporters() map[pipeline.Signal]map[component.ID]component
 
 func newNopHost() component.Host {
 	return &nopHost{
-		Host: componenttest.NewNopHost(),
+		componenttest.NewNopHost(),
 	}
+}
+
+type hostWithExtensions struct {
+	extensions map[component.ID]component.Component
+}
+
+func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
+	return h.extensions
 }
 
 func TestReceiver(t *testing.T) {
@@ -53,7 +63,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", setupExtension(""))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -102,7 +112,7 @@ func TestNamespacedReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test", setupExtension(""))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -150,7 +160,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "")
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "", setupExtension(""))
 
 	createPods(t, client, 1)
 
@@ -172,7 +182,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "")
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", setupExtension(""))
 
 	numPods := 1000
 	numQuotas := 2
@@ -213,7 +223,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "")
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "", setupExtension(""))
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -267,6 +277,67 @@ func getUpdatedPod(pod *corev1.Pod) any {
 	}
 }
 
+func TestReceiverWithK8sLeaderElector(t *testing.T) {
+	tt := componenttest.NewTelemetry()
+	defer func() {
+		require.NoError(t, tt.Shutdown(context.Background()))
+	}()
+	hwe := hostWithExtensions{
+		map[component.ID]component.Component{component.MustNewID("k8s_leader_elector"): setupK8sLeaderElectorExtension(t)},
+	}
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink1 := new(consumertest.MetricsSink)
+	sink2 := new(consumertest.MetricsSink)
+
+	r1 := setupReceiver(client, osQuotaClient, sink1, nil, 10*time.Second, tt, "", setupExtension("k8sClusterReceiver"))
+	r2 := setupReceiver(client, osQuotaClient, sink2, nil, 10*time.Second, tt, "", setupExtension("k8sClusterReceiver"))
+
+	// Setup k8s resources.
+	numPods := 2
+	numNodes := 1
+	numQuotas := 2
+	numClusterQuotaMetrics := numQuotas * 4
+	createPods(t, client, numPods)
+	createNodes(t, client, numNodes)
+	createClusterQuota(t, osQuotaClient, 2)
+
+	ctx := context.Background()
+	require.NoError(t, r1.Start(ctx, hwe))
+	require.NoError(t, r2.Start(ctx, hwe))
+
+	// Expects metric data from nodes and pods where each metric data
+	// struct corresponds to one resource.
+	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics
+	var initialDataPointCount int
+	require.Eventually(t, func() bool {
+		initialDataPointCount = sink1.DataPointCount()
+		return initialDataPointCount == expectedNumMetrics
+	}, 10*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
+	numPodsToDelete := 1
+	deletePods(t, client, numPodsToDelete)
+
+	// Expects metric data from a node, since other resources were deleted.
+	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics
+	var metricsCountDelta int
+	require.Eventually(t, func() bool {
+		metricsCountDelta = sink1.DataPointCount() - initialDataPointCount
+		return metricsCountDelta == expectedNumMetrics
+	}, 10*time.Second, 100*time.Millisecond,
+		"updated metrics not collected")
+
+	require.NoError(t, r1.Shutdown(ctx))
+	require.NoError(t, r2.Shutdown(ctx))
+
+}
+
+func setupExtension(name string) component.ID {
+	return component.NewIDWithName(metadata.Type, name)
+}
+
 func setupReceiver(
 	client *fake.Clientset,
 	osQuotaClient quotaclientset.Interface,
@@ -275,6 +346,7 @@ func setupReceiver(
 	initialSyncTimeout time.Duration,
 	tt *componenttest.Telemetry,
 	namespace string,
+	leaderElector component.ID,
 ) *kubernetesReceiver {
 	distribution := distributionKubernetes
 	if osQuotaClient != nil {
@@ -288,6 +360,7 @@ func setupReceiver(
 		Distribution:               distribution,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 		Namespace:                  namespace,
+		K8sLeaderElector:           leaderElector,
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
@@ -350,4 +423,16 @@ func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
 		Version: gvk.Version,
 		Kind:    gvk.Kind,
 	}
+}
+
+func setupK8sLeaderElectorExtension(t *testing.T) component.Component {
+	kf := k8sleaderelector.NewFactory()
+	cfg := kf.CreateDefaultConfig()
+	cfg.(*k8sleaderelector.Config).LeaseName = "foo"
+	cfg.(*k8sleaderelector.Config).LeaseNamespace = "default"
+
+	ext, err := kf.Create(context.Background(), extensiontest.NewNopSettings(kf.Type()), cfg)
+	require.NoError(t, err)
+	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+	return ext
 }
