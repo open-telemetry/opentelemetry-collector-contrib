@@ -197,9 +197,6 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 		}
 		return nil, nil
 	}
-	if m.excludeDuplicate(fp, file) {
-		return nil, nil
-	}
 	return fp, file
 }
 
@@ -213,6 +210,10 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
+			continue
+		}
+
+		if m.excludeDuplicate(fp, file) {
 			continue
 		}
 
@@ -243,23 +244,25 @@ func (m *Manager) processUnmatchedFiles(ctx context.Context, files []*os.File, f
 			continue
 		}
 
-		r, err := m.createReader(file, fp, metadata)
+		var r *reader.Reader
+		var err error
+
+		if metadata != nil {
+			r, err = m.readerFactory.NewReaderFromMetadata(file, metadata)
+		} else {
+			// If we don't match any previously known files, create a new reader from scratch.
+			m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			r, err = m.readerFactory.NewReader(file, fp)
+		}
+
 		if err != nil {
 			m.set.Logger.Error("Failed to create reader", zap.Error(err))
 			continue
 		}
+
 		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		m.tracker.Add(r)
 	}
-}
-
-func (m *Manager) createReader(file *os.File, fp *fingerprint.Fingerprint, metadata *reader.Metadata) (*reader.Reader, error) {
-	if metadata != nil {
-		return m.readerFactory.NewReaderFromMetadata(file, metadata)
-	}
-
-	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	return m.readerFactory.NewReader(file, fp)
 }
 
 func (m *Manager) excludeDuplicate(fp *fingerprint.Fingerprint, file *os.File) bool {
