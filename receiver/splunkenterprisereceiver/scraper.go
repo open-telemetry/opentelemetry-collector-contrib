@@ -1149,7 +1149,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Ti
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
 	req, err := s.splunkClient.createAPIRequest(typeIdx, ept)
@@ -1202,7 +1202,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.T
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1249,7 +1249,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1302,7 +1302,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Time
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1355,7 +1355,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1425,7 +1425,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IndexesExtended
+	var it indexesExtended
 
 	ept := apiDict[`SplunkDataIndexesExtended`]
 
@@ -1488,7 +1488,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(_ context.Context, now pcommon
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IntrospectionQueues
+	var it introspectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
 
@@ -1536,7 +1536,7 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(_ context.Context, now pc
 	}
 	i := info[typeIdx].Entries[0].Content
 
-	var it IntrospectionQueues
+	var it introspectionQueues
 
 	ept := apiDict[`SplunkIntrospectionQueues`]
 
@@ -1586,7 +1586,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Times
 	}
 	i := info[typeCm].Entries[0].Content
 
-	var kvs KVStoreStatus
+	var kvs kvStoreStatus
 
 	ept := apiDict[`SplunkKVStoreStatus`]
 
@@ -1627,14 +1627,14 @@ func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Times
 		}
 
 		if rs == "" {
-			rs = KVRestoreStatusUnknown
+			rs = kvRestoreStatusUnknown
 			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 0, rs, i.Build, i.Version)
 		} else {
 			s.mb.RecordSplunkKvstoreReplicationStatusDataPoint(now, 1, rs, i.Build, i.Version)
 		}
 
 		if brs == "" {
-			brs = KVBackupStatusFailed
+			brs = kvBackupStatusFailed
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 0, brs, i.Build, i.Version)
 		} else {
 			s.mb.RecordSplunkKvstoreBackupStatusDataPoint(now, 1, brs, i.Build, i.Version)
@@ -1654,7 +1654,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 	i := info[typeSh].Entries[0].Content
 
-	var da DispatchArtifacts
+	var da dispatchArtifacts
 
 	ept := apiDict[`SplunkDispatchArtifacts`]
 
@@ -1755,17 +1755,18 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 }
 
 // Scrape Health Introspection Endpoint
-func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.Metrics.SplunkHealth.Enabled {
+func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkHealth.Enabled {
 		return
 	}
+	i := info[typeSh].Entries[0].Content
 
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
 
 	ept := apiDict[`SplunkHealth`]
 	var ha healthArtifacts
 
-	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	req, err := s.splunkClient.createAPIRequest(typeCm, ept)
 	if err != nil {
 		errs <- err
 		return
@@ -1785,11 +1786,11 @@ func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp,
 
 	s.settings.Logger.Debug(fmt.Sprintf("Features: %s", ha.Entries))
 	for _, details := range ha.Entries {
-		s.traverseHealthDetailFeatures(details.Content, now)
+		s.traverseHealthDetailFeatures(details.Content, now, i)
 	}
 }
 
-func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now pcommon.Timestamp) {
+func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now pcommon.Timestamp, i InfoContent) {
 	if details.Features == nil {
 		return
 	}
@@ -1797,12 +1798,12 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 	for k, feature := range details.Features {
 		if feature.Health != "red" {
 			s.settings.Logger.Debug(feature.Health)
-			s.mb.RecordSplunkHealthDataPoint(now, 1, k, feature.Health)
+			s.mb.RecordSplunkHealthDataPoint(now, 1, k, feature.Health, i.Build, i.Version)
 		} else {
 			s.settings.Logger.Debug(feature.Health)
-			s.mb.RecordSplunkHealthDataPoint(now, 0, k, feature.Health)
+			s.mb.RecordSplunkHealthDataPoint(now, 0, k, feature.Health, i.Build, i.Version)
 		}
-		s.traverseHealthDetailFeatures(feature, now)
+		s.traverseHealthDetailFeatures(feature, now, i)
 	}
 }
 
