@@ -1813,7 +1813,6 @@ func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs 
 	for cliType := range s.splunkClient.clients {
 		var i Info
 
-		ctx = context.WithValue(ctx, endpointType("type"), cliType)
 		ept := apiDict[`SplunkInfo`]
 
 		req, err := s.splunkClient.createAPIRequest(cliType, ept)
