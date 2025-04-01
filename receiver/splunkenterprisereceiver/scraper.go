@@ -1761,8 +1761,6 @@ func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp,
 	}
 	i := info[typeSh].Entries[0].Content
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-
 	ept := apiDict[`SplunkHealth`]
 	var ha healthArtifacts
 
