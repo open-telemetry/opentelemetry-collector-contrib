@@ -32,14 +32,17 @@ jobs:
       - name: Generate new contributor celebration text
         id: new-contributor-text
         uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        env:
-          OUT_FILE: "new-contributors.md"
         with:
           script: |
             const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
-            console.log(await script({github, context}))
+            const text = await script({github, context})
+            console.log(text)
+            return text
 
-      - run: cat new-contributors.md
+      - name: Prepare full release notes
+        run: |
+          echo "${{ steps.new-contributor-text.outputs.result.text }}" > text.md
+          cat text.md
 
   setup-environment:
     timeout-minutes: 30
@@ -645,23 +648,16 @@ jobs:
   publish-stable:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
+    env:
+      RELEASE_NOTES: release-notes.md
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - run: npm install simple-git
 
       - name: Set Release Tag
         id: github_tag
         run: ./.github/workflows/scripts/set_release_tag.sh
-
-      - run: npm install simple-git
-
-      - name: Generate new contributor celebration text
-        id: new-contributor-text
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          script: |
-            const script = require('.github/workflows/scripts/generate-new-contributors.js')
-            return await script({github, context})
 
       - name: Prepare release notes
         env:
@@ -669,9 +665,26 @@ jobs:
           NEW_CONTRIBUTOR_TEXT: ${{ steps.new-contributor-text.outputs.result }}
         run: ./.github/workflows/scripts/prepare-release-notes.sh
 
+      - name: Generate new contributor celebration text
+        id: new-contributor-text
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        env:
+          OUT_FILE: "new-contributors.md"
+        with:
+          script: |
+            const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
+            const text = await script({github, context})
+            console.log(text)
+            return text
+
+      - name: Prepare full release notes
+        run: |
+          echo "" >> release-notes.md
+          echo "${{ steps.new-contributor-text.outputs.result.text }}" >> ${{ env.RELEASE_NOTES }}
+
       - name: Create Github Release
         run: |
-          gh release create $RELEASE_TAG -t $RELEASE_TAG -F release-notes.md
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -F ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

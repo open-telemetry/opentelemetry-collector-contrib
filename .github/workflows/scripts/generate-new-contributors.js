@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: Apache-2.0
 
 import { simpleGit } from 'simple-git';
-import fs from "fs";
 const git = simpleGit();
 
 const REPO_NAME = "opentelemetry-collector-contrib"
@@ -84,16 +83,9 @@ export const main = async ({ github }) => {
     console.log('First-time contributors:', usernames);
     console.log('Number of first-time contributors: ', usernames.length);
 
-    const text = generateNewContributorText(usernames)
-    fs.writeFileSync(process.env.OUT_FILE, text);
-
-    return {"text": text}
+    return {"text": generateNewContributorText(usernames)}
 }
 
 export default async function ({github}) {
-    if(process.env.OUT_FILE === undefined || process.env.OUT_FILE === '') {
-        console.error("OUT_FILE env var is required.")
-        process.exit(1);
-    }
     return await main({ github })
 }
