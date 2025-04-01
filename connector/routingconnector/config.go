@@ -39,6 +39,8 @@ type Config struct {
 	// Table contains the routing table for this processor.
 	// Required.
 	Table []RoutingTableItem `mapstructure:"table"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks if the processor configuration is valid.
@@ -97,4 +99,6 @@ type RoutingTableItem struct {
 	// The routing processor will fail upon the first failure from these pipelines.
 	// Optional.
 	Pipelines []pipeline.ID `mapstructure:"pipelines"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

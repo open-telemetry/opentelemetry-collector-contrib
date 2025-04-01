@@ -60,6 +60,20 @@ func TestCompareProfiles(t *testing.T) {
 			actual:   basicProfiles().Transform(),
 		},
 		{
+			name: "attribute value string is not bool",
+			expected: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "true"}
+				return p.Transform()
+			}(),
+			actual: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", true}
+				return p.Transform()
+			}(),
+			withoutOptions: errors.New(`missing expected resource: map[key1:true]; unexpected resource: map[key1:true]`),
+		},
+		{
 			name: "resource order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
@@ -707,7 +721,7 @@ func TestCompareProfile(t *testing.T) {
 			}(),
 			err: multierr.Combine(
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
-				errors.New(`stringTable does not match expected`),
+				errors.New(`stringTable '[ cpu1 nanoseconds1 samples count samples1 count1 cpu2 nanoseconds2]' does not match expected '[ cpu nanoseconds samples count]'`),
 				errors.New(`period does not match expected '1', actual '2'`),
 				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`missing expected valueType "unit: 4, type: 3, aggregationTemporality: 1"`)),
 				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`unexpected valueType "unit: 6, type: 5, aggregationTemporality: 1"`)),

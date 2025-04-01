@@ -29,16 +29,17 @@ internal/common
 
 # Start unmaintained components list
 
+exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
+receiver/carbonreceiver
 receiver/couchdbreceiver
 receiver/elasticsearchreceiver
 receiver/memcachedreceiver
 receiver/mysqlreceiver
 receiver/postgresqlreceiver
-receiver/rabbitmqreceiver
 receiver/zookeeperreceiver
 scraper/zookeeperscraper
 

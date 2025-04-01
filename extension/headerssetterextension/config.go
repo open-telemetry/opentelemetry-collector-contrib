@@ -10,8 +10,8 @@ import (
 var (
 	errMissingHeader        = fmt.Errorf("missing header name")
 	errMissingHeadersConfig = fmt.Errorf("missing headers configuration")
-	errMissingSource        = fmt.Errorf("missing header source, must be 'from_context' or 'value'")
-	errConflictingSources   = fmt.Errorf("invalid header source, must either 'from_context' or 'value'")
+	errMissingSource        = fmt.Errorf("missing header source, must be 'from_context', 'from_attribute' or 'value'")
+	errConflictingSources   = fmt.Errorf("invalid header source, must either 'from_context', 'from_attribute' or 'value'")
 )
 
 type Config struct {
@@ -19,11 +19,12 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Action       ActionValue `mapstructure:"action"`
-	Key          *string     `mapstructure:"key"`
-	Value        *string     `mapstructure:"value"`
-	FromContext  *string     `mapstructure:"from_context"`
-	DefaultValue *string     `mapstructure:"default_value"`
+	Action        ActionValue `mapstructure:"action"`
+	Key           *string     `mapstructure:"key"`
+	Value         *string     `mapstructure:"value"`
+	FromContext   *string     `mapstructure:"from_context"`
+	FromAttribute *string     `mapstructure:"from_attribute"`
+	DefaultValue  *string     `mapstructure:"default_value"`
 }
 
 // ActionValue is the enum to capture the four types of actions to perform on a header
@@ -55,10 +56,12 @@ func (cfg *Config) Validate() error {
 		}
 
 		if header.Action != DELETE {
-			if header.FromContext == nil && header.Value == nil {
+			if header.FromContext == nil && header.FromAttribute == nil && header.Value == nil {
 				return errMissingSource
 			}
-			if header.FromContext != nil && header.Value != nil {
+			if (header.FromContext != nil && header.FromAttribute != nil) ||
+				(header.FromContext != nil && header.Value != nil) ||
+				(header.Value != nil && header.FromAttribute != nil) {
 				return errConflictingSources
 			}
 		}

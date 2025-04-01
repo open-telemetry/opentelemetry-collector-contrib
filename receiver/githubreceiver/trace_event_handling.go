@@ -10,7 +10,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v70/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
@@ -214,7 +214,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 
 	span.Status().SetMessage(event.GetWorkflowJob().GetConclusion())
 
-	return parentSpanID, nil
+	return jobSpanID, nil
 }
 
 // newJobSpanId creates a deterministic Job Span ID based on the provided runID,

@@ -156,6 +156,12 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedLogs = nil
 }
 
+func (mb *MockBackend) GetReceivedLogs() []plog.Logs {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	return mb.ReceivedLogs
+}
+
 func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {
 	mb.recordMutex.Lock()
 	defer mb.recordMutex.Unlock()

@@ -70,6 +70,7 @@ func NewManager(targetSchemaURLS []string, log *zap.Logger, providers ...Provide
 }
 
 func (m *manager) RequestTranslation(ctx context.Context, schemaURL string) (Translation, error) {
+	m.log.Debug("Requesting translation for schemaURL", zap.String("schema-url", schemaURL))
 	family, version, err := GetFamilyAndVersion(schemaURL)
 	if err != nil {
 		m.log.Error("No valid schema url was provided",

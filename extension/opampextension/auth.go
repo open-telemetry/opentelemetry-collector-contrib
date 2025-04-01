@@ -46,9 +46,9 @@ func makeHeadersFunc(logger *zap.Logger, serverCfg *OpAMPServer, host component.
 		return nil, fmt.Errorf("could not find auth extension %q", extID)
 	}
 
-	authExt, ok := ext.(extensionauth.Client)
+	authExt, ok := ext.(extensionauth.HTTPClient)
 	if !ok {
-		return nil, fmt.Errorf("auth extension %q is not an extensionauth.Client", extID)
+		return nil, fmt.Errorf("auth extension %q is not an extensionauth.HTTPClient", extID)
 	}
 
 	hcrt := &headerCaptureRoundTripper{}

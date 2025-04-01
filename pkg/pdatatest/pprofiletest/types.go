@@ -3,6 +3,8 @@
 
 package pprofiletest // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 import (
+	"fmt"
+
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 )
@@ -30,7 +32,10 @@ func (rp ResourceProfile) Transform(pp pprofile.Profiles) pprofile.ResourceProfi
 		sp.Transform(prp)
 	}
 	for _, a := range rp.Resource.Attributes {
-		prp.Resource().Attributes().PutStr(a.Key, a.Value)
+		if prp.Resource().Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
+			panic(fmt.Sprintf("unsupported resource attribute value: {%s: %v (type %T)}",
+				a.Key, a.Value, a.Value))
+		}
 	}
 	return prp
 }
@@ -66,7 +71,10 @@ type Scope struct {
 func (sc Scope) Transform(psp pprofile.ScopeProfiles) pcommon.InstrumentationScope {
 	psc := psp.Scope()
 	for _, a := range sc.Attributes {
-		psc.Attributes().PutStr(a.Key, a.Value)
+		if psc.Attributes().PutEmpty(a.Key).FromRaw(a.Value) != nil {
+			panic(fmt.Sprintf("unsupported scope attribute value: {%s: %v (type %T)}",
+				a.Key, a.Value, a.Value))
+		}
 	}
 	psc.SetName(sc.Name)
 	psc.SetVersion(sc.Version)
@@ -194,8 +202,9 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 		panic("length of profile.sample_type must be equal to the length of sample.value")
 	}
 	psa := pp.Sample().AppendEmpty()
-	psa.SetLocationsStartIndex(int32(pp.LocationTable().Len()))
+	psa.SetLocationsStartIndex(int32(pp.LocationIndices().Len()))
 	for _, loc := range sa.Locations {
+		pp.LocationIndices().Append(int32(pp.LocationIndices().Len()))
 		ploc := pp.LocationTable().AppendEmpty()
 		if loc.Mapping != nil {
 			loc.Mapping.Transform(pp)
@@ -212,7 +221,7 @@ func (sa *Sample) Transform(pp pprofile.Profile) {
 			ploc.AttributeIndices().Append(at.Transform(pp))
 		}
 	}
-	psa.SetLocationsLength(int32(pp.LocationTable().Len()) - psa.LocationsStartIndex())
+	psa.SetLocationsLength(int32(pp.LocationIndices().Len()) - psa.LocationsStartIndex())
 	psa.Value().FromRaw(sa.Value)
 	for _, at := range sa.Attributes {
 		psa.AttributeIndices().Append(at.Transform(pp))
@@ -273,13 +282,16 @@ func (m *Mapping) Transform(pp pprofile.Profile) {
 
 type Attribute struct {
 	Key   string
-	Value string
+	Value any
 }
 
 func (a *Attribute) Transform(pp pprofile.Profile) int32 {
 	pa := pp.AttributeTable().AppendEmpty()
 	pa.SetKey(a.Key)
-	pa.Value().SetStr(a.Value)
+	if pa.Value().FromRaw(a.Value) != nil {
+		panic(fmt.Sprintf("unsupported attribute value: {%s: %v (type %T)}",
+			a.Key, a.Value, a.Value))
+	}
 	return int32(pp.AttributeTable().Len() - 1)
 }
 

@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
@@ -615,10 +614,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			cacheGetter := func(_ TransformContext) pcommon.Map {
 				return testCache
 			}
-			pep := pathExpressionParser{
-				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
-			}
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			log, il, resource := createTelemetry(tt.bodyType)
@@ -686,10 +682,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -796,8 +791,7 @@ func Test_InvalidBodyIndexing(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
-	accessor, err := pep.parsePath(&path)
+	accessor, err := pathExpressionParser(getCache)(&path)
 	assert.NoError(t, err)
 
 	log, il, resource := createTelemetry("string")

@@ -8,31 +8,20 @@ import (
 	"errors"
 	"testing"
 
-	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
-
-func TestNewReceiver_invalid_version_err(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.ProtocolVersion = "invalid"
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
-	assert.Error(t, err)
-	assert.Nil(t, r)
-}
 
 func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers", "cpu"}
-	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings) (scraper.Metrics, error) {
 		return scraper.NewMetrics(func(context.Context) (pmetric.Metrics, error) {
 			return pmetric.Metrics{}, nil
 		})
@@ -46,20 +35,6 @@ func TestNewReceiver_invalid_scraper_error(t *testing.T) {
 	}
 }
 
-func TestNewReceiver_invalid_auth_error(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.Authentication = kafka.Authentication{
-		TLS: &configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile: "/invalid",
-			},
-		},
-	}
-	r, err := newMetricsReceiver(context.Background(), *c, receivertest.NewNopSettings(metadata.Type), nil)
-	assert.ErrorContains(t, err, "failed to load TLS config")
-	assert.Nil(t, r)
-}
-
 func TestNewReceiver_refresh_frequency(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.RefreshFrequency = 1
@@ -71,7 +46,7 @@ func TestNewReceiver_refresh_frequency(t *testing.T) {
 func TestNewReceiver(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(_ context.Context, _ Config, _ *sarama.Config, _ receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(_ context.Context, _ Config, _ receiver.Settings) (scraper.Metrics, error) {
 		return scraper.NewMetrics(
 			func(context.Context) (pmetric.Metrics, error) {
 				return pmetric.Metrics{}, nil
@@ -86,7 +61,7 @@ func TestNewReceiver(t *testing.T) {
 func TestNewReceiver_handles_scraper_error(t *testing.T) {
 	c := createDefaultConfig().(*Config)
 	c.Scrapers = []string{"brokers"}
-	mockScraper := func(context.Context, Config, *sarama.Config, receiver.Settings) (scraper.Metrics, error) {
+	mockScraper := func(context.Context, Config, receiver.Settings) (scraper.Metrics, error) {
 		return nil, errors.New("fail")
 	}
 	allScrapers["brokers"] = mockScraper

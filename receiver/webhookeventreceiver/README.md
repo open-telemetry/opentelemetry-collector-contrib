@@ -32,6 +32,8 @@ The following settings are optional:
     * `key` (required if `required_header` config option is set): Represents the key portion of the required header.
     * `value` (required if `required_header` config option is set): Represents the value portion of the required header.
 * `split_logs_at_newline` (default: false): If true, the receiver will create a separate log record for each line in the request body.
+* `convert_headers_to_attributes` (optional): add all request headers (excluding `required_header` if also set) log attributes
+* `header_attribute_regex` (optional): add headers matching supplied regex as log attributes. Header attributes will be prefixed with `header.`
 
 ### Split logs at newline example
 
