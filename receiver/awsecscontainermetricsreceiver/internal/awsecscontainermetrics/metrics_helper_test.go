@@ -390,17 +390,22 @@ func TestAggregateTaskMetrics(t *testing.T) {
 
 func TestExtractStorageUsage(t *testing.T) {
 	v := uint64(100)
+	v2 := uint64(200)
 	disk := &DiskStats{
 		IoServiceBytesRecursives: []IoServiceBytesRecursive{
 			{Op: "Read", Value: &v},
 			{Op: "Write", Value: &v},
 			{Op: "Total", Value: &v},
+
+			{Op: "Read", Value: &v2},
+			{Op: "Write", Value: &v2},
+			{Op: "Total", Value: &v2},
 		},
 	}
 	read, write := extractStorageUsage(disk)
 
-	require.EqualValues(t, v, read)
-	require.EqualValues(t, v, write)
+	require.EqualValues(t, v+v2, read)
+	require.EqualValues(t, v+v2, write)
 
 	read, write = extractStorageUsage(nil)
 	v = uint64(0)

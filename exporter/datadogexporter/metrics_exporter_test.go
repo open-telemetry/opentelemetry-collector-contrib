@@ -501,6 +501,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 }
 
 func TestNewExporter_Zorkian(t *testing.T) {
+	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39064")
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
 		defer require.NoError(t, enableNativeMetricExport())

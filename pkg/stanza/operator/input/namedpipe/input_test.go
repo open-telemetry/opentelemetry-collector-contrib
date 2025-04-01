@@ -25,7 +25,7 @@ import (
 func filename(tb testing.TB) string {
 	tb.Helper()
 
-	file, err := os.CreateTemp("", "")
+	file, err := os.CreateTemp(tb.TempDir(), "")
 	require.NoError(tb, err)
 
 	name := file.Name()

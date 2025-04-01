@@ -33,7 +33,17 @@ all_set:
       enabled: true
     oracledb.pga_memory:
       enabled: true
+    oracledb.physical_read_io_requests:
+      enabled: true
     oracledb.physical_reads:
+      enabled: true
+    oracledb.physical_reads_direct:
+      enabled: true
+    oracledb.physical_write_io_requests:
+      enabled: true
+    oracledb.physical_writes:
+      enabled: true
+    oracledb.physical_writes_direct:
       enabled: true
     oracledb.processes.limit:
       enabled: true
@@ -92,7 +102,17 @@ none_set:
       enabled: false
     oracledb.pga_memory:
       enabled: false
+    oracledb.physical_read_io_requests:
+      enabled: false
     oracledb.physical_reads:
+      enabled: false
+    oracledb.physical_reads_direct:
+      enabled: false
+    oracledb.physical_write_io_requests:
+      enabled: false
+    oracledb.physical_writes:
+      enabled: false
+    oracledb.physical_writes_direct:
       enabled: false
     oracledb.processes.limit:
       enabled: false
