@@ -18,6 +18,14 @@ azureauth/valid_service_principal_certificate:
     client_certificate_path: test
     tenant_id: test
 
+azureauth/service_principal_mutually_exclusive:
+  scope: test
+  service_principal:
+    client_id: test
+    client_certificate_path: test
+    tenant_id: test
+    client_secret: test
+
 azureauth/service_principal_empty_client_id:
   scope: test
   service_principal:
