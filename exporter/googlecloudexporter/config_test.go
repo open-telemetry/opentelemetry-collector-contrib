@@ -64,10 +64,11 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			QueueSettings: exporterhelper.QueueConfig{
+			QueueSettings: exporterhelper.QueueBatchConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
 			},
 		},
 		sanitize(cfg.(*Config)))

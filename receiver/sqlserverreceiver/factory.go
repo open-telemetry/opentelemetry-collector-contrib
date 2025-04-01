@@ -50,6 +50,10 @@ func createDefaultConfig() component.Config {
 	return &Config{
 		ControllerConfig:     cfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		QuerySample: QuerySample{
+			Enabled:         false,
+			MaxRowsPerQuery: 100,
+		},
 		TopQueryCollection: TopQueryCollection{
 			Enabled:             false,
 			LookbackTime:        uint(2 * cfg.CollectionInterval / time.Second),
@@ -81,7 +85,11 @@ func setupLogQueries(cfg *Config) ([]string, []error) {
 	var queries []string
 	var errs []error
 
-	if cfg.Enabled {
+	if cfg.QuerySample.Enabled {
+		queries = append(queries, getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery))
+	}
+
+	if cfg.TopQueryCollection.Enabled {
 		q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
 		if err != nil {
 			errs = append(errs, err)
@@ -183,6 +191,10 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		if query == queryTextAndPlanQuery {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
 			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
+		}
+
+		if query == getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery) {
+			cache = newCache(1)
 		}
 
 		sqlServerScraper := newSQLServerScraper(id, query,
