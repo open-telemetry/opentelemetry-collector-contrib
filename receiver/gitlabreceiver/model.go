@@ -1,6 +1,7 @@
 package gitlabreceiver
 
 import (
+	"errors"
 	"fmt"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -8,12 +9,19 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
+var (
+	errSetPipelineTimestamps = errors.New("failed to set pipeline span timestamps")
+	errSetStageTimestamps    = errors.New("failed to set stage span timestamps")
+	errSetJobTimestamps      = errors.New("failed to set job span timestamps")
+	errSetSpanAttributes     = errors.New("failed to set span attributes")
+)
+
 // Wrapper is required to have a type that implements the GitlabEvent interface
-type GitlabPipelineEvent struct {
+type glPipeline struct {
 	*gitlab.PipelineEvent
 }
 
-func (p *GitlabPipelineEvent) setAttributes(span ptrace.Span) error {
+func (p *glPipeline) setSpanData(span ptrace.Span) error {
 	var pipelineName string
 	if p.ObjectAttributes.Name != "" {
 		pipelineName = p.ObjectAttributes.Name
@@ -22,27 +30,83 @@ func (p *GitlabPipelineEvent) setAttributes(span ptrace.Span) error {
 	}
 	span.SetName(pipelineName)
 
-	//ToDo: Set semconv attributes
 	err := p.setTimeStamps(span, p.ObjectAttributes.CreatedAt, p.ObjectAttributes.FinishedAt)
 	if err != nil {
-		return fmt.Errorf("failed to set pipeline span timestamps: %w", err)
+		return fmt.Errorf("%w: %w", errSetPipelineTimestamps, err)
+	}
+
+	err = p.setAttributes(span)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
 	}
 
 	return nil
 }
 
-func (p *GitlabPipelineEvent) setSpanID(span ptrace.Span, parentSpanID pcommon.SpanID) error {
-	span.SetSpanID(parentSpanID)
+// the glPipeline doesn't have a parent span ID, bc it's the root span
+func (p *glPipeline) setSpanIDs(span ptrace.Span, spanId pcommon.SpanID) error {
+	span.SetSpanID(spanId)
+	return nil
+}
+
+func (p *glPipeline) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+	return setSpanTimeStamps(span, startTime, endTime)
+}
+
+func (p *glPipeline) setAttributes(span ptrace.Span) error {
+	//ToDo in next PR: set semconv attributes
+	return nil
+}
+
+// glPipelineStage represents a stage in a pipeline event
+type glPipelineStage struct {
+	PipelineID int
+	Name       string
+	Status     string
+	StartedAt  string
+	FinishedAt string
+}
+
+func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
+	span.SetName(s.Name)
+
+	err := s.setTimeStamps(span, s.StartedAt, s.FinishedAt)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errSetStageTimestamps, err)
+	}
+
+	err = s.setAttributes(span)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
+	}
 
 	return nil
 }
 
-func (p *GitlabPipelineEvent) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (s *glPipelineStage) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
+	span.SetParentSpanID(parentSpanID)
+
+	stageSpanID, err := newStageSpanID(s.PipelineID, s.Name)
+	if err != nil {
+		return err
+	}
+	span.SetSpanID(stageSpanID)
+
+	return nil
+}
+
+func (s *glPipelineStage) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-// Build represents a job in a pipeline event (the type is not exported from the Gitlab SDK)
-type GitlabPipelineJobEvent struct {
+func (s *glPipelineStage) setAttributes(span ptrace.Span) error {
+	//ToDo in next PR: set semconv attributes
+	return nil
+}
+
+// glPipelineJob represents a job in a pipeline event
+// This is a copy of the Build struct in the gitlab api client - it's not exported as type, so we need to use this struct to represent it
+type glPipelineJob struct {
 	ID             int               `json:"id"`
 	Stage          string            `json:"stage"`
 	Name           string            `json:"name"`
@@ -76,45 +140,38 @@ type GitlabPipelineJobEvent struct {
 	} `json:"environment"`
 }
 
-func (j *GitlabPipelineJobEvent) setAttributes(span ptrace.Span) error {
-	jobName := fmt.Sprintf(gitlabJobName, j.Name, j.Status, j.Stage)
-	span.SetName(jobName)
+func (j *glPipelineJob) setSpanData(span ptrace.Span) error {
+	span.SetName(j.Name)
 
-	//ToDo: set semconv attributes
-	err := j.setTimeStamps(span, j.CreatedAt, j.FinishedAt)
+	err := j.setTimeStamps(span, j.StartedAt, j.FinishedAt)
 	if err != nil {
-		return fmt.Errorf("failed to set job span timestamps: %w", err)
+		return fmt.Errorf("%w: %w", errSetJobTimestamps, err)
 	}
+
+	err = j.setAttributes(span)
+	if err != nil {
+		return fmt.Errorf("%w: %w", errSetSpanAttributes, err)
+	}
+
 	return nil
 }
 
-func (j *GitlabPipelineJobEvent) setSpanID(span ptrace.Span, parentSpanID pcommon.SpanID) error {
+func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
 	spanID, err := newJobSpanID(j.ID)
 	if err != nil {
-		return fmt.Errorf("failed to generate job span ID: %w", err)
+		return err
 	}
 	span.SetSpanID(spanID)
 	return nil
 }
 
-func (j *GitlabPipelineJobEvent) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+func (j *glPipelineJob) setTimeStamps(span ptrace.Span, startTime string, endTime string) error {
 	return setSpanTimeStamps(span, startTime, endTime)
 }
 
-func setSpanTimeStamps(span ptrace.Span, startTime string, endTime string) error {
-	createdAt, err := newTimestampFromGitlabTime(startTime)
-	if err != nil {
-		return fmt.Errorf("failed to parse CreatedAt timestamp: %w", err)
-	}
-	span.SetStartTimestamp(createdAt)
-
-	finishedAt, err := newTimestampFromGitlabTime(endTime)
-	if err != nil {
-		return fmt.Errorf("failed to parse FinishedAt timestamp: %w", err)
-	}
-	span.SetEndTimestamp(finishedAt)
-
+func (j *glPipelineJob) setAttributes(span ptrace.Span) error {
+	//ToDo in next PR: set semconv attributes
 	return nil
 }

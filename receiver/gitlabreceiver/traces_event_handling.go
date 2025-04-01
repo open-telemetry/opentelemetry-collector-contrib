@@ -5,6 +5,7 @@ import (
 	"encoding/hex"
 	"errors"
 	"fmt"
+	"strconv"
 	"time"
 
 	gitlab "gitlab.com/gitlab-org/api/client-go"
@@ -13,68 +14,113 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
+var (
+	errTraceIDGeneration        = errors.New("failed to generate trace ID")
+	errPipelineSpanIDGeneration = errors.New("failed to generate pipeline span ID")
+	errPipelineSpanProcessing   = errors.New("failed to process pipeline span")
+	errStageSpanProcessing      = errors.New("failed to process stage span")
+	errJobSpanProcessing        = errors.New("failed to process job span")
+)
+
 const (
 	gitlabEventTimeFormat = "2006-01-02 15:04:05 UTC"
-	gitlabPipelineName    = "Pipeline: %s - %s"
-	gitlabJobName         = "Job: %s - %s - Stage: %s"
 )
 
 type GitlabEvent interface {
 	setAttributes(ptrace.Span) error
-	setSpanID(ptrace.Span, pcommon.SpanID) error
+	setSpanIDs(ptrace.Span, pcommon.SpanID) error
 	setTimeStamps(ptrace.Span, string, string) error
+	setSpanData(ptrace.Span) error
 }
 
 func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace.Traces, error) {
 	t := ptrace.NewTraces()
 	r := t.ResourceSpans().AppendEmpty()
 	r.Resource().Attributes().PutStr(semconv.AttributeServiceName, e.Project.PathWithNamespace)
-	pipelineEvent := &GitlabPipelineEvent{e}
 
-	traceId, err := newTraceID(e.ObjectAttributes.ID)
+	traceID, err := newTraceID(e.ObjectAttributes.ID)
 	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("failed to generate root span ID: %w", err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", errTraceIDGeneration, err)
 	}
 
-	//Pipeline Root Span
-	parentSpanID, err := newParentSpanID(e.ObjectAttributes.ID)
+	pipeline := &glPipeline{e}
+	pipelineSpanID, err := newPipelineSpanID(pipeline.ObjectAttributes.ID)
 	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("failed to generate parent span ID: %w", err)
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanIDGeneration, err)
 	}
 
-	err = gtr.createSpan(r, pipelineEvent, traceId, parentSpanID)
-	if err != nil {
-		return ptrace.Traces{}, fmt.Errorf("failed to create root span: %w", err)
+	if err := gtr.processPipelineSpan(r, pipeline, traceID, pipelineSpanID); err != nil {
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanProcessing, err)
 	}
 
-	for _, job := range e.Builds {
-		jobEvent := GitlabPipelineJobEvent(job)
-		if job.FinishedAt != "" {
-			err := gtr.createSpan(r, &jobEvent, traceId, parentSpanID)
-			if err != nil {
-				return ptrace.Traces{}, fmt.Errorf("failed to create job span: %w", err)
-			}
+	if err := gtr.processStageSpans(r, pipeline, traceID, pipelineSpanID); err != nil {
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", errStageSpanProcessing, err)
+	}
 
-		}
+	if err := gtr.processJobSpans(r, pipeline, traceID); err != nil {
+		return ptrace.Traces{}, fmt.Errorf("%w: %w", errJobSpanProcessing, err)
 	}
 
 	return t, nil
 }
 
-func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e GitlabEvent, traceID pcommon.TraceID, parentSpanID pcommon.SpanID) error {
+func (gtr *gitlabTracesReceiver) processPipelineSpan(r ptrace.ResourceSpans, pipeline *glPipeline, traceID pcommon.TraceID, pipelineSpanID pcommon.SpanID) error {
+	err := gtr.createSpan(r, pipeline, traceID, pipelineSpanID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (gtr *gitlabTracesReceiver) processStageSpans(r ptrace.ResourceSpans, pipeline *glPipeline, traceID pcommon.TraceID, parentSpanID pcommon.SpanID) error {
+	stages, err := gtr.newStages(pipeline)
+	if err != nil {
+		return err
+	}
+
+	for _, stage := range stages {
+		err = gtr.createSpan(r, stage, traceID, parentSpanID)
+		if err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPipeline, traceID pcommon.TraceID) error {
+	for _, job := range p.Builds {
+		jobEvent := glPipelineJob(job)
+
+		if job.FinishedAt != "" {
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage)
+			if err != nil {
+				return err
+			}
+
+			err = gtr.createSpan(r, &jobEvent, traceID, parentSpanID)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, e GitlabEvent, traceID pcommon.TraceID, spanID pcommon.SpanID) error {
 	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
 	span := scopeSpans.Spans().AppendEmpty()
 
 	span.SetTraceID(traceID)
 
-	err := e.setSpanID(span, parentSpanID)
+	err := e.setSpanIDs(span, spanID)
 	if err != nil {
-		return fmt.Errorf("failed to set span ID: %w", err)
+		return err
 	}
 
-	err = e.setAttributes(span)
+	err = e.setSpanData(span)
 	if err != nil {
-		return fmt.Errorf("failed to set span attributes: %w", err)
+		return err
 	}
 
 	return nil
@@ -97,22 +143,40 @@ func newTraceID(pipelineID int) (pcommon.TraceID, error) {
 	return id, nil
 }
 
-// newParentSpanID creates a deterministic Parent Span ID based on the provided
+// newPipelineSpanID creates a deterministic Parent Span ID based on the provided
 // pipelineID. `s` is appended to the end of the input to
 // differentiate between a deterministic traceID and the parentSpanID.
-func newParentSpanID(pipelineID int) (pcommon.SpanID, error) {
-	input := fmt.Sprintf("%d%ds", pipelineID, 0)
-	hash := sha256.Sum256([]byte(input))
+func newPipelineSpanID(pipelineID int) (pcommon.SpanID, error) {
+	spanID, err := newSpanId(strconv.Itoa(pipelineID))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
 
-	var spanID [8]byte
-	copy(spanID[:], hash[:8])
-
-	return pcommon.SpanID(spanID), nil
+	return spanID, nil
 }
 
-// creates a deterministic Job Span ID based on the provided jobId
-func newJobSpanID(jobId int) (pcommon.SpanID, error) {
-	input := fmt.Sprintf("%d", jobId)
+// creates a deterministic Stage Span ID based on the provided pipelineID and stageName
+func newStageSpanID(pipelineID int, stageName string) (pcommon.SpanID, error) {
+	spanID, err := newSpanId(fmt.Sprintf("%d%s", pipelineID, stageName))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
+}
+
+// creates a deterministic Job Span ID based on the provided jobID
+func newJobSpanID(jobID int) (pcommon.SpanID, error) {
+	spanID, err := newSpanId(strconv.Itoa(jobID))
+	if err != nil {
+		return pcommon.SpanID{}, err
+	}
+
+	return spanID, nil
+}
+
+// helper function to create a deterministic Span ID based on the provided input
+func newSpanId(input string) (pcommon.SpanID, error) {
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 
@@ -125,20 +189,101 @@ func newJobSpanID(jobId int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
-func newTimestampFromGitlabTime(t string) (pcommon.Timestamp, error) {
+// newStages extracts stage information from pipeline jobs.
+// Since GitLab doesn't provide webhook events for stages within a pipeline, we need to create a new stage for each job.
+func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*glPipelineStage, error) {
+	stages := make(map[string]*glPipelineStage)
+
+	for _, job := range pipeline.Builds {
+		stage, exists := stages[job.Stage]
+		if !exists {
+			stage = &glPipelineStage{
+				PipelineID: pipeline.ObjectAttributes.ID,
+				Name:       job.Stage,
+				Status:     job.Status,
+			}
+			stages[job.Stage] = stage
+		}
+		if err := gtr.setStageTime(stage, job); err != nil {
+			return nil, fmt.Errorf("updating stage timing for %s: %w", job.Stage, err)
+		}
+	}
+
+	return stages, nil
+}
+
+// setStageTime determines stage start/finish times by finding the earliest start and latest finish time
+func (gtr *gitlabTracesReceiver) setStageTime(stage *glPipelineStage, job glPipelineJob) error {
+	// Handle start time
+	if stage.StartedAt == "" {
+		stage.StartedAt = job.StartedAt
+	} else if job.StartedAt != "" {
+		jobStartTime, err := parseGitlabTime(job.StartedAt)
+		if err != nil {
+			return fmt.Errorf("parsing job start time: %w", err)
+		}
+
+		stageStartTime, err := parseGitlabTime(stage.StartedAt)
+		if err != nil {
+			return fmt.Errorf("parsing stage start time: %w", err)
+		}
+
+		if jobStartTime.Before(stageStartTime) {
+			stage.StartedAt = job.StartedAt
+		}
+	}
+
+	// Handle finish time
+	if stage.FinishedAt == "" {
+		stage.FinishedAt = job.FinishedAt
+	} else if job.FinishedAt != "" {
+		jobFinishTime, err := parseGitlabTime(job.FinishedAt)
+		if err != nil {
+			return fmt.Errorf("parsing job finish time: %w", err)
+		}
+
+		stageFinishTime, err := parseGitlabTime(stage.FinishedAt)
+		if err != nil {
+			return fmt.Errorf("parsing stage finish time: %w", err)
+		}
+
+		if jobFinishTime.After(stageFinishTime) {
+			stage.FinishedAt = job.FinishedAt
+		}
+	}
+
+	return nil
+}
+
+func setSpanTimeStamps(span ptrace.Span, startTime string, endTime string) error {
+	parsedStartTime, err := parseGitlabTime(startTime)
+	if err != nil {
+		return err
+	}
+	parsedEndTime, err := parseGitlabTime(endTime)
+	if err != nil {
+		return err
+	}
+
+	span.SetStartTimestamp(pcommon.NewTimestampFromTime(parsedStartTime))
+	span.SetEndTimestamp(pcommon.NewTimestampFromTime(parsedEndTime))
+	return nil
+}
+
+func parseGitlabTime(t string) (time.Time, error) {
 	if t == "" || t == "null" {
-		return 0, errors.New("time is empty")
+		return time.Time{}, errors.New("time is empty")
 	}
 
 	//For some reason the gitlab test pipeline event has a different time format which we need to support to test (and eventually reenable webhooks) therefoe we are continuing on error to handle the webhook test and the actual webhook
 	pt, err := time.Parse(gitlabEventTimeFormat, t)
 	if err == nil {
-		return pcommon.NewTimestampFromTime(pt), nil
+		return pt, nil
 	}
 
 	pt, err = time.Parse(time.RFC3339, t) //Time format of test pipeline events
 	if err == nil {
-		return pcommon.NewTimestampFromTime(pt), nil
+		return pt, nil
 	}
 
 	// pt, err = time.Parse(gitlabEventTimeFormat, t)
@@ -147,5 +292,5 @@ func newTimestampFromGitlabTime(t string) (pcommon.Timestamp, error) {
 	// }
 
 	//This return reflects the error case, not the expected case like usually
-	return 0, err
+	return time.Time{}, err
 }

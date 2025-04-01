@@ -23,6 +23,13 @@ import (
 	"go.uber.org/zap"
 )
 
+var (
+	errMissingEndpoint   = errors.New("missing a receiver endpoint")
+	errGitlabClient      = errors.New("failed to create gitlab client")
+	errUnexpectedEvent   = errors.New("unexpected event type")
+	errInvalidHTTPMethod = errors.New("invalid HTTP method")
+)
+
 const healthyResponse = `{"text": "GitLab receiver webhook is healthy"}`
 
 type gitlabTracesReceiver struct {
@@ -37,6 +44,10 @@ type gitlabTracesReceiver struct {
 }
 
 func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer consumer.Traces) (*gitlabTracesReceiver, error) {
+	if cfg.WebHook.Endpoint == "" {
+		return nil, errMissingEndpoint
+	}
+
 	transport := "http"
 	if cfg.WebHook.TLSSetting != nil {
 		transport = "https"
@@ -53,7 +64,7 @@ func newTracesReceiver(settings receiver.Settings, cfg *Config, traceConsumer co
 
 	client, err := gitlab.NewClient("")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%w: %w", errGitlabClient, err)
 	}
 
 	gtr := &gitlabTracesReceiver{
@@ -119,8 +130,16 @@ func (gtr *gitlabTracesReceiver) Shutdown(ctx context.Context) error {
 	return nil
 }
 
-// Simple healthcheck endpoint.
-func (gtr *gitlabTracesReceiver) handleHealthCheck(w http.ResponseWriter, _ *http.Request) {
+func (gtr *gitlabTracesReceiver) handleHealthCheck(w http.ResponseWriter, r *http.Request) {
+	if r.Body != nil {
+		_, err := io.Copy(io.Discard, r.Body)
+		if err != nil {
+			gtr.failBadReq(r.Context(), w, http.StatusInternalServerError, err, 0)
+			return
+		}
+		_ = r.Body.Close()
+	}
+
 	w.Header().Add("Content-Type", "application/json")
 	w.WriteHeader(http.StatusOK)
 
@@ -151,7 +170,7 @@ func (gtr *gitlabTracesReceiver) handleWebhook(w http.ResponseWriter, r *http.Re
 
 	e, ok := event.(*gitlab.PipelineEvent)
 	if !ok {
-		gtr.failBadReq(ctx, w, http.StatusBadRequest, fmt.Errorf("unexpected event type: %T", event), 0)
+		gtr.failBadReq(ctx, w, http.StatusBadRequest, fmt.Errorf("%w: %T", errUnexpectedEvent, event), 0)
 		return
 	}
 
@@ -167,26 +186,35 @@ func (gtr *gitlabTracesReceiver) handleWebhook(w http.ResponseWriter, r *http.Re
 		return
 	}
 
-	spanCount := traces.SpanCount()
-	err = gtr.traceConsumer.ConsumeTraces(ctx, traces)
-	if err != nil {
-		gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
-		return
+	if traces.SpanCount() > 0 {
+		err = gtr.traceConsumer.ConsumeTraces(ctx, traces)
+		if err != nil {
+			gtr.failBadReq(ctx, w, http.StatusInternalServerError, err, 0)
+			return
+		}
+		w.WriteHeader(http.StatusOK)
+	} else {
+		w.WriteHeader(http.StatusNoContent)
 	}
 
-	w.WriteHeader(http.StatusOK)
-	gtr.obsrecv.EndTracesOp(ctx, metadata.Type.String(), spanCount, nil)
+	gtr.obsrecv.EndTracesOp(ctx, metadata.Type.String(), traces.SpanCount(), nil)
 }
 
 func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType, error) {
 	if r.Method != http.MethodPost {
-		return "", errors.New("invalid HTTP method")
+		return "", errInvalidHTTPMethod
 	}
 
 	if gtr.cfg.WebHook.Secret != "" {
 		secret := r.Header.Get(defaultGitlabTokenHeader)
 		if secret != gtr.cfg.WebHook.Secret {
 			return "", fmt.Errorf("invalid %s header", defaultGitlabTokenHeader)
+		}
+	}
+
+	for key, value := range gtr.cfg.WebHook.RequiredHeaders {
+		if r.Header.Get(key) != string(value) {
+			return "", fmt.Errorf("invalid %s header", key)
 		}
 	}
 
