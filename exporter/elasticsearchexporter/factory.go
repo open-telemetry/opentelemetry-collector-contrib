@@ -26,7 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
 
-var defaultBatcherMinSizeItems = 5000
+var defaultBatcherMinSizeItems = int64(5000)
 
 // NewFactory creates a factory for Elastic exporter.
 func NewFactory() exporter.Factory {
@@ -81,10 +81,10 @@ func createDefaultConfig() component.Config {
 			LogResponseBody: false,
 		},
 		Batcher: BatcherConfig{
-			Config: exporterbatcher.Config{
+			Config: exporterbatcher.Config{ //nolint:staticcheck
 				FlushTimeout: 30 * time.Second,
-				SizeConfig: exporterbatcher.SizeConfig{
-					Sizer:   exporterbatcher.SizerTypeItems,
+				SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+					Sizer:   exporterhelper.RequestSizerTypeItems,
 					MinSize: defaultBatcherMinSizeItems,
 				},
 			},
@@ -203,7 +203,7 @@ func exporterhelperOptions(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
 	if cfg.Batcher.enabledSet {
-		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config))
+		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config)) //nolint:staticcheck
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
