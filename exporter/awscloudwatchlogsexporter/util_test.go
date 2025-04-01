@@ -181,7 +181,6 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 }
 
 func TestIsPatternValid(t *testing.T) {
-
 	tests := []struct {
 		name     string
 		pattern  string

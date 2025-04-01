@@ -26,7 +26,6 @@ var patternKeyToAttributeMap = map[string]string{
 }
 
 func isPatternValid(s string) bool {
-
 	if !strings.Contains(s, "{") && !strings.Contains(s, "}") {
 		return true
 	}
