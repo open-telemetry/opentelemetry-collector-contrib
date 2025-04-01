@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -120,9 +119,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{ //nolint:staticcheck
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
@@ -197,9 +196,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{ //nolint:staticcheck
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
@@ -274,9 +273,9 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{ //nolint:staticcheck
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
