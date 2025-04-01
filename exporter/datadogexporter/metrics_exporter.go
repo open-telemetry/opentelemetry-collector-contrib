@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strings"
 	"sync"
 	"time"
 
@@ -199,6 +200,11 @@ func (exp *metricsExporter) PushMetricsData(ctx context.Context, md pmetric.Metr
 	var tags []string
 	if src.Kind == source.AWSECSFargateKind {
 		tags = append(tags, exp.cfg.HostMetadata.Tags...)
+	}
+	if src.Kind == "eks_fargate" {
+		t := strings.Split(src.Identifier, ",")
+		tags = append(tags, t[0])
+		tags = append(tags, t[1])
 	}
 
 	var sl sketches.SketchSeriesList
