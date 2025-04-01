@@ -1806,7 +1806,7 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 }
 
 // somewhat unique scrape function for gathering the info attribute
-func (s *splunkScraper) scrapeInfo(ctx context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
+func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
 	// there could be an endpoint configured for each type (never more than 3)
 	info := make(map[any]Info)
 
