@@ -12,6 +12,7 @@ honeycombmarker/all_fields:
     enabled: true
     num_consumers: 10
     queue_size: 1000
+    sizer: requests
   retry_on_failure:
     enabled: true
     initial_interval: 5000000000

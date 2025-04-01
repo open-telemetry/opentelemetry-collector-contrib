@@ -43,7 +43,7 @@ type Config struct {
 	Tags map[string]*string `mapstructure:"tags"`
 
 	// Queue settings frm the exporterhelper
-	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	logger *zap.Logger
 

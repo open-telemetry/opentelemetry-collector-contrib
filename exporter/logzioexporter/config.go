@@ -16,7 +16,7 @@ import (
 // Config contains Logz.io specific configuration such as Account TracesToken, Region, etc.
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`          // confighttp client settings https://pkg.go.dev/go.opentelemetry.io/collector/config/confighttp#ClientConfig
-	QueueSettings             exporterhelper.QueueConfig        `mapstructure:"sending_queue"` // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
+	QueueSettings             exporterhelper.QueueBatchConfig   `mapstructure:"sending_queue"` // exporter helper queue settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#QueueSettings
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"` // exporter helper retry settings https://pkg.go.dev/go.opentelemetry.io/collector/exporter/exporterhelper#RetrySettings
 	Token                     configopaque.String               `mapstructure:"account_token"`    // Your Logz.io Account Token, can be found at https://app.logz.io/#/dashboard/settings/general
 	Region                    string                            `mapstructure:"region"`           // Your Logz.io 2-letter region code, can be found at https://docs.logz.io/user-guide/accounts/account-region.html#available-regions
@@ -43,7 +43,7 @@ func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
 		logger.Warn("You are using the deprecated `queue_max_length` option that will be removed in the next release; use exporter helper `queue_size` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md")
 		c.QueueSettings.Enabled = true
 		logger.Warn("Mapping `queue_max_length` -> `QueueSettings.QueueSize`")
-		c.QueueSettings.QueueSize = c.QueueMaxLength
+		c.QueueSettings.QueueSize = int64(c.QueueMaxLength)
 	}
 	if c.DrainInterval != 0 {
 		logger.Warn("You are using the deprecated `drain_interval` option that will be removed in the next release; use batch processor `timeout` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/processor/batchprocessor#batch-processor")

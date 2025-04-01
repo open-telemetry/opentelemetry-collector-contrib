@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -88,16 +87,17 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
-				BatcherConfig: exporterbatcher.Config{
+				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 					Enabled:      true,
 					FlushTimeout: time.Second,
-					SizeConfig: exporterbatcher.SizeConfig{
-						Sizer:   exporterbatcher.SizerTypeItems,
+					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+						Sizer:   exporterhelper.RequestSizerTypeItems,
 						MinSize: 1,
 						MaxSize: 10,
 					},

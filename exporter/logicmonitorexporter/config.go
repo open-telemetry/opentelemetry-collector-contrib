@@ -20,7 +20,7 @@ import (
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
 
-	QueueSettings               exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig   `mapstructure:"retry_on_failure"`
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
 

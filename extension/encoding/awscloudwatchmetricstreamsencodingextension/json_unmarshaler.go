@@ -11,7 +11,7 @@ import (
 	"strings"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -105,7 +105,7 @@ func validateMetric(metric cloudwatchMetric) error {
 // and sets isSet to true upon a successful execution
 func (v *cloudwatchMetricValue) UnmarshalJSON(data []byte) error {
 	type valueType cloudwatchMetricValue
-	if err := jsoniter.ConfigFastest.Unmarshal(data, (*valueType)(v)); err != nil {
+	if err := gojson.Unmarshal(data, (*valueType)(v)); err != nil {
 		return err
 	}
 	v.isSet = true
@@ -138,7 +138,7 @@ func (c *formatJSONUnmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics
 	scanner := bufio.NewScanner(bytes.NewReader(record))
 	for datumIndex := 0; scanner.Scan(); datumIndex++ {
 		var cwMetric cloudwatchMetric
-		if err := jsoniter.ConfigFastest.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
+		if err := gojson.Unmarshal(scanner.Bytes(), &cwMetric); err != nil {
 			errs = append(errs, fmt.Errorf("error unmarshaling datum at index %d: %w", datumIndex, err))
 			byResource = map[resourceKey]map[metricKey]pmetric.Metric{} // free the memory
 			continue
