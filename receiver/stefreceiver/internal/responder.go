@@ -34,6 +34,9 @@ type Responder struct {
 	// Channel to receive bad data information from. Data written to this channel
 	// will be sent as a response to the client.
 	badDataCh chan BadData
+
+	// Interval at which the responder sends acks.
+	ackInterval time.Duration
 }
 
 // BadData describes a range of records that were bad.
@@ -48,12 +51,13 @@ type BadData struct {
 // don't need a large buffer.
 const badDataMaxBatchSize = 10
 
-func NewResponder(logger *zap.Logger, stream stefgrpc.STEFStream) *Responder {
+func NewResponder(logger *zap.Logger, stream stefgrpc.STEFStream, ackInterval time.Duration) *Responder {
 	return &Responder{
-		logger:    logger,
-		stream:    stream,
-		stopCh:    make(chan struct{}),
-		badDataCh: make(chan BadData, badDataMaxBatchSize),
+		logger:      logger,
+		stream:      stream,
+		stopCh:      make(chan struct{}),
+		badDataCh:   make(chan BadData, badDataMaxBatchSize),
+		ackInterval: ackInterval,
 	}
 }
 
@@ -91,13 +95,13 @@ func (r *Responder) Stop() {
 // until stopped by calling Stop().
 func (r *Responder) Run() {
 	// Time interval to wait before sending an ack.
-	t := time.NewTicker(10 * time.Millisecond)
+	t := time.NewTicker(r.ackInterval)
 
-	var lastAckedID uint64
+	lastAckedID := &atomic.Uint64{}
 
 	// Preallocate to avoid allocations in the loop.
 	badDataResponse := &stef_proto.STEFDataResponse{
-		BadDataRecordIdRanges: []*stef_proto.STEFIDRange{{}},
+		BadDataRecordIdRanges: make([]*stef_proto.STEFIDRange, 0, 8),
 	}
 	ackResponse := &stef_proto.STEFDataResponse{}
 
@@ -109,14 +113,14 @@ func (r *Responder) Run() {
 				r.logger.Error("Error acking STEF gRPC connection", zap.Error(err))
 				r.lastError.Store(err)
 			} else {
-				lastAckedID = badDataResponse.AckRecordId
+				lastAckedID.Store(badDataResponse.AckRecordId)
 			}
 
 		case <-t.C:
 			readRecordID := r.nextAckID.Load()
-			if readRecordID > lastAckedID {
-				lastAckedID = readRecordID
-				ackResponse.AckRecordId = lastAckedID
+			oldValue := lastAckedID.Swap(readRecordID)
+			if readRecordID > oldValue {
+				ackResponse.AckRecordId = readRecordID
 				if err := r.stream.SendDataResponse(ackResponse); err != nil {
 					st, ok := status.FromError(err)
 					// This is not a regular disconnection case, as in the client closed the connection.

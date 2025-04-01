@@ -5,6 +5,7 @@ package stefreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configgrpc"
@@ -36,6 +37,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ServerConfig: *grpcCfg,
+		AckInterval:  10 * time.Millisecond,
 	}
 }
 
@@ -43,12 +45,12 @@ func createMetricsReceiver(
 	_ context.Context,
 	set receiver.Settings,
 	cfg component.Config,
-	nextMetrics consumer.Metrics,
+	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	oCfg := cfg.(*Config)
 	return &stefReceiver{
-		cfg:         oCfg,
-		nextMetrics: nextMetrics,
-		settings:    set,
+		cfg:                 oCfg,
+		nextMetricsConsumer: nextConsumer,
+		settings:            set,
 	}, nil
 }

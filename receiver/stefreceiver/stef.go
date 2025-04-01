@@ -6,7 +6,6 @@ import (
 	"context"
 	"errors"
 	"net"
-	"sync"
 
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
@@ -18,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -29,10 +29,10 @@ type stefReceiver struct {
 	cfg        *Config
 	serverGRPC *grpc.Server
 
-	nextMetrics consumer.Metrics
-	shutdownWG  sync.WaitGroup
+	nextMetricsConsumer consumer.Metrics
+	settings            receiver.Settings
 
-	settings receiver.Settings
+	eg errgroup.Group
 }
 
 // Start runs the STEF gRPC receiver.
@@ -67,13 +67,12 @@ func (r *stefReceiver) Start(_ context.Context, host component.Host) error {
 	stefSrv := stefgrpc.NewStreamServer(settings)
 	stef_proto.RegisterSTEFDestinationServer(r.serverGRPC, stefSrv)
 
-	r.shutdownWG.Add(1)
-	go func() {
-		defer r.shutdownWG.Done()
+	r.eg.Go(func() error {
 		if errGrpc := r.serverGRPC.Serve(gln); errGrpc != nil && !errors.Is(errGrpc, grpc.ErrServerStopped) {
 			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(errGrpc))
 		}
-	}()
+		return nil
+	})
 	return nil
 }
 
@@ -83,12 +82,11 @@ func (r *stefReceiver) Shutdown(_ context.Context) error {
 		r.serverGRPC.GracefulStop()
 	}
 
-	r.shutdownWG.Wait()
-	return nil
+	return r.eg.Wait()
 }
 
 func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.STEFStream) error {
-	r.settings.Logger.Info("Incoming STEF/gRPC connection.")
+	r.settings.Logger.Debug("Incoming STEF/gRPC connection.")
 
 	reader, err := oteltef.NewMetricsReader(grpcReader)
 	if err != nil {
@@ -97,7 +95,7 @@ func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.
 	}
 
 	// Create a responder for this stream and run it in a separate goroutine.
-	resp := internal.NewResponder(r.settings.Logger, stream)
+	resp := internal.NewResponder(r.settings.Logger, stream, r.cfg.AckInterval)
 	defer resp.Stop()
 	go resp.Run()
 
@@ -137,7 +135,7 @@ func (r *stefReceiver) onStream(grpcReader stefgrpc.GrpcReader, stream stefgrpc.
 		toRecordID := reader.RecordCount()
 
 		// Push converted data to the next consumer.
-		if err := r.nextMetrics.ConsumeMetrics(context.Background(), mdata); err != nil {
+		if err := r.nextMetricsConsumer.ConsumeMetrics(context.Background(), mdata); err != nil {
 			r.settings.Logger.Error(
 				"Error pushing data to consumer",
 				zap.Error(err),
