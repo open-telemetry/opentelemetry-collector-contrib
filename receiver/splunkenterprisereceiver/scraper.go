@@ -1811,6 +1811,7 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 		}
 		s.traverseHealthDetailFeatures(feature, now)
 	}
+}
 
 // somewhat unique scrape function for gathering the info attribute
 func (s *splunkScraper) scrapeInfo(ctx context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
