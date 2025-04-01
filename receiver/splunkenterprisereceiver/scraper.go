@@ -133,8 +133,12 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	errs = <-errOut
 	combinedErrs := errs.Combine()
 	if combinedErrs != nil {
+		failedCount := 1
 		s.settings.Logger.Error("Scrape errors", zap.Error(combinedErrs))
-		failedCount := combinedErrs.(scrapererror.PartialScrapeError).Failed
+		var partialError scrapererror.PartialScrapeError
+		if errors.As(combinedErrs, &partialError) {
+			failedCount = partialError.Failed
+		}
 		s.failedScrapes.Add(int64(failedCount))
 		s.mb.RecordSplunkenterpriseErrorDataPoint(now, s.failedScrapes.Load())
 	}
