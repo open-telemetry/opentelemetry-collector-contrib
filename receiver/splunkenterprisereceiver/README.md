@@ -20,7 +20,7 @@ jobs.
 
 ## Configuration
 
-By default the Splunk Enterprise receiver is not configured to gather any metrics (i.e. there are no metrics enabled by default).
+**By default the Splunk Enterprise receiver is not configured to gather any metrics other than `splunk.health`**
 
 The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. 
 

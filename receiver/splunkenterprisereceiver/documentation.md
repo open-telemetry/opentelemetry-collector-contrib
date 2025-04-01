@@ -12,6 +12,21 @@ metrics:
     enabled: false
 ```
 
+### splunk.health
+
+The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
+| splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
+
 ## Optional Metrics
 
 The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
@@ -151,21 +166,6 @@ Size in bytes on disk of this index *Note:** Must be pointed at specific indexer
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | splunk.index.name | The name of the index reporting a specific KPI | Any Str |
-
-### splunk.health
-
-The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {status} | Gauge | Int |
-
-#### Attributes
-
-| Name | Description | Values |
-| ---- | ----------- | ------ |
-| splunk.feature | The Feature name from the Splunk Health Introspection Endpoint | Any Str |
-| splunk.feature.health | The Health (in color form) of a Splunk Feature from the Splunk Health Introspection Endpoint | Any Str |
 
 ### splunk.indexer.avg.rate
 
