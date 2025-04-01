@@ -36,8 +36,16 @@ exporters:
 service:
   telemetry:
     metrics:
-      level: basic
-      address: ${env:PROM_SERVER}
+      level: "basic"
+      readers:
+        - pull:
+            exporter:
+              prometheus:
+                host: "localhost"
+                port: ${env:PROM_SERVER_PORT}
+                without_scope_info: true
+                without_type_suffix: true
+                without_units: true
   pipelines:
     logs:
       receivers: [otlp]
