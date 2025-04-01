@@ -1755,7 +1755,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 }
 
 // Scrape Health Introspection Endpoint
-func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkHealth.Enabled {
 		return
 	}
