@@ -60,11 +60,12 @@ func (p *glPipeline) setAttributes(span ptrace.Span) error {
 
 // glPipelineStage represents a stage in a pipeline event
 type glPipelineStage struct {
-	PipelineID int
-	Name       string
-	Status     string
-	StartedAt  string
-	FinishedAt string
+	PipelineID         int
+	Name               string
+	Status             string
+	PipelineFinishedAt string
+	StartedAt          string
+	FinishedAt         string
 }
 
 func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
@@ -86,7 +87,7 @@ func (s *glPipelineStage) setSpanData(span ptrace.Span) error {
 func (s *glPipelineStage) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
-	stageSpanID, err := newStageSpanID(s.PipelineID, s.Name)
+	stageSpanID, err := newStageSpanID(s.PipelineID, s.Name, s.PipelineFinishedAt)
 	if err != nil {
 		return err
 	}

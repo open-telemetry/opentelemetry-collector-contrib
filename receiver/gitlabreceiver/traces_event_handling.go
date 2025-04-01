@@ -38,13 +38,13 @@ func (gtr *gitlabTracesReceiver) handlePipeline(e *gitlab.PipelineEvent) (ptrace
 	r := t.ResourceSpans().AppendEmpty()
 	r.Resource().Attributes().PutStr(semconv.AttributeServiceName, e.Project.PathWithNamespace)
 
-	traceID, err := newTraceID(e.ObjectAttributes.ID)
+	traceID, err := newTraceID(e.ObjectAttributes.ID, e.ObjectAttributes.FinishedAt)
 	if err != nil {
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errTraceIDGeneration, err)
 	}
 
 	pipeline := &glPipeline{e}
-	pipelineSpanID, err := newPipelineSpanID(pipeline.ObjectAttributes.ID)
+	pipelineSpanID, err := newPipelineSpanID(pipeline.ObjectAttributes.ID, pipeline.ObjectAttributes.FinishedAt)
 	if err != nil {
 		return ptrace.Traces{}, fmt.Errorf("%w: %w", errPipelineSpanIDGeneration, err)
 	}
@@ -93,7 +93,7 @@ func (gtr *gitlabTracesReceiver) processJobSpans(r ptrace.ResourceSpans, p *glPi
 		jobEvent := glPipelineJob(job)
 
 		if job.FinishedAt != "" {
-			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage)
+			parentSpanID, err := newStageSpanID(p.ObjectAttributes.ID, job.Stage, p.ObjectAttributes.FinishedAt)
 			if err != nil {
 				return err
 			}
@@ -129,8 +129,8 @@ func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, 
 // newTraceID creates a deterministic Trace ID based on the provided inputs of
 // pipelineID. `t` is appended to the end of the input to
 // differentiate between a deterministic traceID and the parentSpanID.
-func newTraceID(pipelineID int) (pcommon.TraceID, error) {
-	input := fmt.Sprintf("%dt", pipelineID)
+func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
+	input := fmt.Sprintf("%dt%s", pipelineID, finishedAt)
 	hash := sha256.Sum256([]byte(input))
 	idHex := hex.EncodeToString(hash[:])
 
@@ -146,8 +146,8 @@ func newTraceID(pipelineID int) (pcommon.TraceID, error) {
 // newPipelineSpanID creates a deterministic Parent Span ID based on the provided
 // pipelineID. `s` is appended to the end of the input to
 // differentiate between a deterministic traceID and the parentSpanID.
-func newPipelineSpanID(pipelineID int) (pcommon.SpanID, error) {
-	spanID, err := newSpanId(strconv.Itoa(pipelineID))
+func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error) {
+	spanID, err := newSpanId(fmt.Sprintf("%d%s", pipelineID, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -156,8 +156,8 @@ func newPipelineSpanID(pipelineID int) (pcommon.SpanID, error) {
 }
 
 // creates a deterministic Stage Span ID based on the provided pipelineID and stageName
-func newStageSpanID(pipelineID int, stageName string) (pcommon.SpanID, error) {
-	spanID, err := newSpanId(fmt.Sprintf("%d%s", pipelineID, stageName))
+func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommon.SpanID, error) {
+	spanID, err := newSpanId(fmt.Sprintf("%d%s%s", pipelineID, stageName, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -198,9 +198,10 @@ func (gtr *gitlabTracesReceiver) newStages(pipeline *glPipeline) (map[string]*gl
 		stage, exists := stages[job.Stage]
 		if !exists {
 			stage = &glPipelineStage{
-				PipelineID: pipeline.ObjectAttributes.ID,
-				Name:       job.Stage,
-				Status:     job.Status,
+				PipelineID:         pipeline.ObjectAttributes.ID,
+				Name:               job.Stage,
+				Status:             job.Status,
+				PipelineFinishedAt: pipeline.ObjectAttributes.FinishedAt,
 			}
 			stages[job.Stage] = stage
 		}

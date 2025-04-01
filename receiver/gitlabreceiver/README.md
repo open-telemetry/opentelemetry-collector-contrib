@@ -24,7 +24,8 @@ success, and failure rates.
 
 ### Configuration
 
-**IMPORTANT: At this time the tracing portion of this receiver only serves a health check endpoint.**
+**IMPORTANT**: Ensure your WebHook endpoint is secured with a secret and a Web
+Application Firewall (WAF) or other security measure.
 
 The WebHook configuration exposes the following settings:
 
