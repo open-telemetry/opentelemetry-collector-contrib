@@ -681,7 +681,7 @@ func (m *metricSplunkHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string) {
+func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -691,6 +691,8 @@ func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.feature", splunkFeatureAttributeValue)
 	dp.Attributes().PutStr("splunk.feature.health", splunkFeatureHealthAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2113,7 +2115,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2122,6 +2124,8 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2650,8 +2654,8 @@ func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts p
 }
 
 // RecordSplunkHealthDataPoint adds a data point to splunk.health metric.
-func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string) {
-	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerAvgRateDataPoint adds a data point to splunk.indexer.avg.rate metric.
@@ -2785,8 +2789,8 @@ func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsInvalidDataPoint(ts p
 }
 
 // RecordSplunkServerSearchartifactsJobCacheCountDataPoint adds a data point to splunk.server.searchartifacts.job.cache.count metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsJobCacheCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsJobCacheCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsJobCacheSizeDataPoint adds a data point to splunk.server.searchartifacts.job.cache.size metric.

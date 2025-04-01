@@ -88,7 +88,7 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
-			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val")
+			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerAvgRateDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -169,7 +169,7 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkServerSearchartifactsInvalidDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 1, "splunk.host-val")
+			mb.RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts, 1, "splunk.host-val", "splunk.searchartifacts.cache.type-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -424,6 +424,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok = dp.Attributes().Get("splunk.feature.health")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.feature.health-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.indexer.avg.rate":
 					assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
 					validatedMetrics["splunk.indexer.avg.rate"] = true
@@ -991,6 +997,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
 					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.EqualValues(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.server.searchartifacts.job.cache.size":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
 					validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
