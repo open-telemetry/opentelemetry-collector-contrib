@@ -11,7 +11,6 @@ import (
 	"net/http"
 	"os"
 	"runtime"
-	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -56,7 +55,7 @@ type opampAgent struct {
 
 	agentType     string
 	agentVersion  string
-	resourceAttrs pcommon.Map
+	resourceAttrs map[string]string
 
 	instanceID uuid.UUID
 
@@ -95,10 +94,10 @@ var (
 
 	// identifyingAttributeList is the list of semantic convention keys that are used
 	// for the agent description's identifying attributes.
-	identifyingAttributeList = []string{
-		semconv.AttributeServiceName,
-		semconv.AttributeServiceVersion,
-		semconv.AttributeServiceInstanceID,
+	identifyingAttributeList = map[string]struct{}{
+		semconv.AttributeServiceName:       struct{}{},
+		semconv.AttributeServiceVersion:    struct{}{},
+		semconv.AttributeServiceInstanceID: struct{}{},
 	}
 )
 
@@ -314,6 +313,11 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 			}
 		}
 	}
+	resourceAttrs := make(map[string]string, set.Resource.Attributes().Len())
+	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		resourceAttrs[k] = v.Str()
+		return true
+	})
 
 	opampClient := cfg.Server.GetClient(set.Logger)
 	agent := &opampAgent{
@@ -324,7 +328,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
-		resourceAttrs:            set.Resource.Attributes(),
+		resourceAttrs:            resourceAttrs,
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
@@ -388,14 +392,13 @@ func (o *opampAgent) createAgentDescription() error {
 		nonIdentifyingAttributeMap[k] = v
 	}
 	if o.cfg.AgentDescription.IncludeResourceAttributes {
-		o.resourceAttrs.Range(func(k string, v pcommon.Value) bool {
+		for k, v := range o.resourceAttrs {
 			// skip the attributes that are being used in the identifying attributes.
-			if slices.Contains(identifyingAttributeList, k) {
-				return true
+			if _, ok := identifyingAttributeList[k]; ok {
+				continue
 			}
-			nonIdentifyingAttributeMap[k] = v.AsString()
-			return true
-		})
+			nonIdentifyingAttributeMap[k] = v
+		}
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
