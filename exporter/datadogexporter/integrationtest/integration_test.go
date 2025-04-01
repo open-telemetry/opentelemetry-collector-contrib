@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -97,7 +98,9 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -292,7 +295,9 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -476,9 +481,10 @@ func TestIntegrationLogs(t *testing.T) {
 		}
 	})
 	defer server.Close()
-	thing := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", thing)
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
