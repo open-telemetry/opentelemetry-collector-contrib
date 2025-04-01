@@ -6,6 +6,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
@@ -43,7 +44,7 @@ type azblobClientImpl struct {
 }
 
 func (c *azblobClientImpl) UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
-	return c.client.UploadStream(ctx, containerName, blobName, body, nil)
+	return c.client.UploadStream(ctx, containerName, blobName, body, o)
 }
 
 func (c *azblobClientImpl) URL() string {
@@ -60,12 +61,13 @@ func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName string
 	}
 
 	// Handle BlobNotFound error by creating the blob and retrying
-	if cerr, ok := err.(*azcore.ResponseError); ok && cerr.ErrorCode == "BlobNotFound" {
-		if _, err := appendBlobClient.Create(ctx, nil); err != nil {
+	var cerr *azcore.ResponseError
+	if errors.As(err, &cerr) && cerr.ErrorCode == "BlobNotFound" {
+		if _, err = appendBlobClient.Create(ctx, nil); err != nil {
 			return fmt.Errorf("failed to create append blob: %w", err)
 		}
 
-		_, err := appendBlobClient.AppendBlock(ctx, newReadSeekCloserWrapper(data), o)
+		_, err = appendBlobClient.AppendBlock(ctx, newReadSeekCloserWrapper(data), o)
 		if err != nil {
 			return fmt.Errorf("failed to append block after creation: %w", err)
 		}
