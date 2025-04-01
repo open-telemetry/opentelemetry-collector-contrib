@@ -70,8 +70,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`

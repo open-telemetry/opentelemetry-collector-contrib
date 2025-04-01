@@ -20,8 +20,8 @@ import (
 // Config defines configuration for logging exporter.
 type Config struct {
 	exporterhelper.TimeoutConfig `mapstructure:",squash"`
-	QueueConfig                  exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-	RetryConfig                  configretry.BackOffConfig  `mapstructure:"retry_on_failure"`
+	QueueConfig                  exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	RetryConfig                  configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
 	configgrpc.ClientConfig      `mapstructure:",squash"`
 }
 
