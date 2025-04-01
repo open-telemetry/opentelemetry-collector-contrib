@@ -25,7 +25,7 @@ var patternKeyToAttributeMap = map[string]string{
 	"FaasVersion":          "faas.version",
 }
 
-func isPatternValid(s string, logger *zap.Logger) bool {
+func isPatternValid(s string) bool {
 
 	if !strings.Contains(s, "{") && !strings.Contains(s, "}") {
 		return true

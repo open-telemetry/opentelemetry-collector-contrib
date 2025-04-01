@@ -181,7 +181,6 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 }
 
 func TestIsPatternValid(t *testing.T) {
-	logger := zap.NewNop()
 
 	tests := []struct {
 		name     string
@@ -222,7 +221,7 @@ func TestIsPatternValid(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result := isPatternValid(tc.pattern, logger)
+			result := isPatternValid(tc.pattern)
 			assert.Equal(t, tc.expected, result, "Pattern: %s", tc.pattern)
 		})
 	}

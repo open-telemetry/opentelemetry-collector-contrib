@@ -65,11 +65,11 @@ func (config *Config) Validate() error {
 		return errors.New("'log_stream_name' must be set")
 	}
 
-	if !(isPatternValid(config.LogGroupName, config.logger)) {
-		return errors.New("'log_stream_name' has invalid patterns between curly brackets.")
+	if !(isPatternValid(config.LogGroupName)) {
+		return errors.New("'log_stream_name' has invalid patterns between curly brackets")
 	}
-	if !(isPatternValid(config.LogStreamName, config.logger)) {
-		return errors.New("'log_stream_name' has invalid has invalid patterns between curly brackets.")
+	if !(isPatternValid(config.LogStreamName)) {
+		return errors.New("'log_stream_name' has invalid has invalid patterns between curly brackets")
 	}
 
 	if err := config.QueueSettings.Validate(); err != nil {
