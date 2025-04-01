@@ -179,3 +179,51 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 	assert.Equal(t, "test-task-definition-family", s)
 	assert.True(t, success)
 }
+
+func TestIsPatternValid(t *testing.T) {
+	logger := zap.NewNop()
+
+	tests := []struct {
+		name     string
+		pattern  string
+		expected bool
+	}{
+		{
+			name:     "no curly brackets",
+			pattern:  "example-string",
+			expected: true,
+		},
+		{
+			name:     "valid single pattern",
+			pattern:  "prefix-{ClusterName}-suffix",
+			expected: true,
+		},
+		{
+			name:     "valid multiple patterns",
+			pattern:  "{ServiceName}-{TaskId}-{FaasName}",
+			expected: true,
+		},
+		{
+			name:     "invalid pattern key",
+			pattern:  "prefix-{RandomName}-suffix",
+			expected: false,
+		},
+		{
+			name:     "mixed valid and invalid",
+			pattern:  "{ClusterName}-{RandomName}",
+			expected: false,
+		},
+		{
+			name:     "empty curly brackets",
+			pattern:  "prefix-{}-suffix",
+			expected: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			result := isPatternValid(tc.pattern, logger)
+			assert.Equal(t, tc.expected, result, "Pattern: %s", tc.pattern)
+		})
+	}
+}

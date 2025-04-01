@@ -5,6 +5,7 @@ package awscloudwatchlogsexporter // import "github.com/open-telemetry/opentelem
 
 import (
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 
@@ -22,6 +23,26 @@ var patternKeyToAttributeMap = map[string]string{
 	"InstanceId":           "service.instance.id",
 	"FaasName":             "faas.name",
 	"FaasVersion":          "faas.version",
+}
+
+func isPatternValid(s string, logger *zap.Logger) bool {
+
+	if !strings.Contains(s, "{") && !strings.Contains(s, "}") {
+		return true
+	}
+
+	re := regexp.MustCompile(`\{([^{}]*)\}`)
+	matches := re.FindAllStringSubmatch(s, -1)
+
+	for _, match := range matches {
+		if len(match) > 1 {
+			key := match[1]
+			if _, exists := patternKeyToAttributeMap[key]; !exists {
+				return false
+			}
+		}
+	}
+	return true
 }
 
 func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
