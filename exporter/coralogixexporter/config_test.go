@@ -20,7 +20,6 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -91,10 +90,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterbatcher.Config{ //nolint:staticcheck
+				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 					Enabled:      false,
 					FlushTimeout: 200 * time.Millisecond,
-					SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 						Sizer:   exporterhelper.RequestSizerTypeItems,
 						MinSize: 8192,
 					},
@@ -156,10 +155,10 @@ func TestLoadConfig(t *testing.T) {
 					},
 					BalancerName: "",
 				},
-				BatcherConfig: exporterbatcher.Config{ //nolint:staticcheck
+				BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 					Enabled:      true,
 					FlushTimeout: 3 * time.Second,
-					SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+					SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 						Sizer:   exporterhelper.RequestSizerTypeItems,
 						MinSize: 8888,
 					},
