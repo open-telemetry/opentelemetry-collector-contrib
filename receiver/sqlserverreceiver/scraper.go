@@ -643,7 +643,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			},
 			{
 				key:            dbPrefix + totalElapsedTime,
-				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMicrosecond[i]) / 1000_000),
+				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000),
 				valueSetter:    setDouble,
 			},
 			{
@@ -696,7 +696,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			if cached, diffMicrosecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTimeMicrosecond); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diffMicrosecond)/1000_000)
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diffMicrosecond)/1_000_000)
 			}
 		}
 
