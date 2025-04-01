@@ -83,7 +83,7 @@ export const main = async ({ github }) => {
     console.log('First-time contributors:', usernames);
     console.log('Number of first-time contributors: ', usernames.length);
 
-    return {"text": generateNewContributorText(usernames)}
+    return generateNewContributorText(usernames)
 }
 
 export default async function ({github}) {
