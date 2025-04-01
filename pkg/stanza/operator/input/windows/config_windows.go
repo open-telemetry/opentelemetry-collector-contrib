@@ -46,6 +46,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		buffer:           NewBuffer(),
 		channel:          c.Channel,
 		maxReads:         c.MaxReads,
+		currentMaxReads:  c.MaxReads,
 		startAt:          c.StartAt,
 		pollInterval:     c.PollInterval,
 		raw:              c.Raw,
