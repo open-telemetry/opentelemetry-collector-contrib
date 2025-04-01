@@ -8,7 +8,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/goccy/go-json"
+	gojson "github.com/goccy/go-json"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 )
@@ -20,7 +20,7 @@ func createJSONFileContent(b *testing.B, filename string, nLogs int) []byte {
 	// remove all insignificant spaces,
 	// including new lines
 	var compacted bytes.Buffer
-	err = json.Compact(&compacted, data)
+	err = gojson.Compact(&compacted, data)
 	require.NoError(b, err)
 
 	result := make([][]byte, nLogs)
