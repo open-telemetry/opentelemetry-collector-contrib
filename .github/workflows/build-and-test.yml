@@ -41,7 +41,8 @@ jobs:
 
       - name: Prepare full release notes
         run: |
-          echo "${{ steps.new-contributor-text.outputs.result.text }}" > text.md
+          touch text.md
+          echo "${{ steps.new-contributor-text.outputs.result.text }}" >> text.md
           cat text.md
 
   setup-environment:
