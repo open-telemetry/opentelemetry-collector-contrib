@@ -208,6 +208,47 @@ func maskExemplars(metrics pmetric.Metrics) {
 	}
 }
 
+// IgnoreExemplarSlice is a CompareMetricsOption that clears exemplars slice on all data points.
+func IgnoreExemplarSlice() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplarSlice(expected)
+		maskExemplarSlice(actual)
+	})
+}
+
+func maskExemplarSlice(metrics pmetric.Metrics) {
+	emptyExemplarSlice := pmetric.NewExemplarSlice()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				}
+			}
+		}
+	}
+}
+
 // IgnoreTimestamp is a CompareMetricsOption that clears Timestamp fields on all the data points.
 func IgnoreTimestamp() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
