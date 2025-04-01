@@ -60,6 +60,20 @@ func TestCompareProfiles(t *testing.T) {
 			actual:   basicProfiles().Transform(),
 		},
 		{
+			name: "attribute value string is not bool",
+			expected: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "true"}
+				return p.Transform()
+			}(),
+			actual: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", true}
+				return p.Transform()
+			}(),
+			withoutOptions: errors.New(`missing expected resource: map[key1:true]; unexpected resource: map[key1:true]`),
+		},
+		{
 			name: "resource order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
