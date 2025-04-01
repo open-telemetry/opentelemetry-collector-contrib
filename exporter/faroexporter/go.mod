@@ -61,7 +61,6 @@ require (
 	go.opentelemetry.io/collector/config/configauth v0.123.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.29.0 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.29.0 // indirect
-	go.opentelemetry.io/collector/consumer/consumererror v0.123.0 // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.123.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.0 // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.123.0 // indirect
