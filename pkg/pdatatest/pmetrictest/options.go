@@ -661,6 +661,59 @@ func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName 
 	}
 }
 
+// ChangeDatapointAttributeValue changes the metric datapoint value with the specified key
+func ChangeDatapointAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		changeMetricsDatapointAttributeValue(expected, attributeName, changeFn)
+		changeMetricsDatapointAttributeValue(actual, attributeName, changeFn)
+	})
+}
+
+func changeMetricsDatapointAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
 // IgnoreSubsequentDataPoints is a CompareMetricsOption that ignores data points after the first.
 func IgnoreSubsequentDataPoints(metricNames ...string) CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
