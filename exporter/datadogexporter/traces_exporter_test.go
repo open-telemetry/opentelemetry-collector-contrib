@@ -147,17 +147,17 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}))
 	defer tracesServer.Close()
 
-	cfg := Config{
-		API: APIConfig{
+	cfg := datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "fallbackHostname",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: metricsServer.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: tracesServer.URL},
 			TracesConfig: datadogconfig.TracesConfig{
 				IgnoreResources: []string{},
@@ -279,19 +279,19 @@ func testTraceExporter(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}))
 
 	defer server.Close()
-	cfg := Config{
-		API: APIConfig{
+	cfg := datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: metricsServer.URL,
 			},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
@@ -325,7 +325,7 @@ func TestNewTracesExporter(t *testing.T) {
 	metricsServer := testutil.DatadogServerMock()
 	defer metricsServer.Close()
 
-	cfg := &Config{}
+	cfg := &datadogconfig.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
 	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -355,22 +355,22 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	}()
 	server := testutil.DatadogServerMock()
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
+			HostnameSource: datadogconfig.HostnameSourceFirstResource,
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
@@ -409,17 +409,17 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}
@@ -453,17 +453,17 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}
@@ -500,17 +500,17 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
 	defer server.Close()
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		TagsConfig: TagsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
 			Hostname: "test-host",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
-		Traces: TracesConfig{
+		Traces: datadogconfig.TracesExporterConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
 		},
 	}

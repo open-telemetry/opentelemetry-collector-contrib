@@ -163,7 +163,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -205,10 +205,10 @@ func (f *factory) createDefaultConfig() component.Config {
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
-	cfg, ok := c.(*Config)
+func checkAndCastConfig(c component.Config, logger *zap.Logger) *datadogconfig.Config {
+	cfg, ok := c.(*datadogconfig.Config)
 	if !ok {
-		panic("programming error: config structure is not of type *datadogexporter.Config")
+		panic("programming error: config structure is not of type *datadogconfig.Config")
 	}
 	cfg.LogWarnings(logger)
 	return cfg
