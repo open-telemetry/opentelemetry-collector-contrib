@@ -98,16 +98,14 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 		keyvals = keyvalsReplaceOrAppend(keyvals, "flags", lr.Flags())
 	}
 
-	lr.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lr.Attributes().All() {
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("attribute_%s", k), v)...)
-		return true
-	})
+	}
 
-	res.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range res.Attributes().All() {
 		// todo handle maps, slices
 		keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("resource_%s", k), v)...)
-		return true
-	})
+	}
 
 	scopeName := scope.Name()
 	scopeVersion := scope.Version()
@@ -117,10 +115,9 @@ func EncodeLogfmt(lr plog.LogRecord, res pcommon.Resource, scope pcommon.Instrum
 		if scopeVersion != "" {
 			keyvals = append(keyvals, "instrumentation_scope_version", scopeVersion)
 		}
-		scope.Attributes().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range scope.Attributes().All() {
 			keyvals = append(keyvals, valueToKeyvals(fmt.Sprintf("instrumentation_scope_attribute_%s", k), v)...)
-			return true
-		})
+		}
 	}
 
 	logfmtLine, err := logfmt.MarshalKeyvals(keyvals...)
@@ -178,10 +175,9 @@ func valueToKeyvals(key string, value pcommon.Value) []any {
 		if key != "" {
 			prefix = key + "_"
 		}
-		value.Map().Range(func(k string, v pcommon.Value) bool {
+		for k, v := range value.Map().All() {
 			keyvals = append(keyvals, valueToKeyvals(prefix+k, v)...)
-			return true
-		})
+		}
 		return keyvals
 	case pcommon.ValueTypeSlice:
 		prefix := ""

@@ -29,6 +29,8 @@ var defaultDeltaTimestampCacheSize = 1000
 type Dimension struct {
 	Name    string  `mapstructure:"name"`
 	Default *string `mapstructure:"default"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines the configuration options for spanmetricsconnector.
@@ -84,6 +86,8 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
+
+	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 }
 
 type HistogramConfig struct {
@@ -91,6 +95,8 @@ type HistogramConfig struct {
 	Unit        metrics.Unit                `mapstructure:"unit"`
 	Exponential *ExponentialHistogramConfig `mapstructure:"exponential"`
 	Explicit    *ExplicitHistogramConfig    `mapstructure:"explicit"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ExemplarsConfig struct {

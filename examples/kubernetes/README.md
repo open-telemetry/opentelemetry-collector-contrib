@@ -1,6 +1,6 @@
 # OpenTelemetry Collector Demo
 
-This demo is a sample app to build the collector and exercise its kubernetes logs scrapping functionality.
+This demo is a sample app to build the collector and exercise its kubernetes logs scraping functionality.
 
 ## Build and Run
 

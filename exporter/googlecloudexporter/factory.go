@@ -17,6 +17,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudexporter/internal/resourcemapping"
 )
 
 const (
@@ -29,6 +30,14 @@ var _ = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the googlecloud exporter translates pdata directly to google cloud monitoring's types, rather than first translating to opencensus."),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/7132"),
 	featuregate.WithRegisterToVersion("v0.69.0"),
+)
+
+var customMonitoredResourcesMetricsGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.googlecloud.CustomMonitoredResources",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, the googlecloudexporter"+
+		" will map the OTLP metrics to the monitored resource type defined by the resource label `gcp.resource_type`."+
+		" The MR labels are defined by resource labels with the prefix `gcp.<monitored_resource_type>."),
 )
 
 // NewFactory creates a factory for the googlecloud exporter
@@ -109,7 +118,11 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	eCfg := cfg.(*Config)
-	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, eCfg.Config, params, eCfg.TimeoutSettings.Timeout)
+	config := eCfg.Config
+	if customMonitoredResourcesMetricsGate.IsEnabled() {
+		config.MetricConfig.MapMonitoredResource = resourcemapping.CustomMonitoredResourceMapping
+	}
+	mExp, err := collector.NewGoogleCloudMetricsExporter(ctx, config, params, eCfg.TimeoutSettings.Timeout)
 	if err != nil {
 		return nil, err
 	}

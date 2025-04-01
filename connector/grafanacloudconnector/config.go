@@ -16,6 +16,8 @@ type Config struct {
 	// a unique `grafana.host.id` value. In most cases, this should be [ "host.id" ]
 	HostIdentifiers      []string      `mapstructure:"host_identifiers"`
 	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ xconfmap.Validator = (*Config)(nil)

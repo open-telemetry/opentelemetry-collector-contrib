@@ -28,7 +28,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckEndpoint: ResourceAttributeConfig{Enabled: true},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -39,7 +39,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckEndpoint: ResourceAttributeConfig{Enabled: false},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -75,13 +75,13 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				TlscheckEndpoint: ResourceAttributeConfig{Enabled: true},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				TlscheckEndpoint: ResourceAttributeConfig{Enabled: false},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
