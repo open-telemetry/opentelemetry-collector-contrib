@@ -21,31 +21,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  new-test-job:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-        with:
-          fetch-depth: 0
-      - run: npm install simple-git
-
-      - name: Generate new contributor celebration text
-        id: new-contributor-text
-        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
-        with:
-          result-encoding: 'string'
-          script: |
-            const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
-            const text = await script({github, context})
-            console.log(text)
-            return text
-
-      - name: Prepare full release notes
-        run: |
-          touch text.md
-          echo "${{ steps.new-contributor-text.outputs.result }}" >> text.md
-          cat text.md
-
   setup-environment:
     timeout-minutes: 30
     runs-on: ubuntu-24.04
