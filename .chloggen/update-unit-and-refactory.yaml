@@ -7,7 +7,7 @@ change_type: breaking
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: update the unit of time reported from millisecond to second
+note: update the unit of `db.lock_timeout` attribute from millisecond to second. this attribute is part of the emitted query sample collection. 
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39042]
