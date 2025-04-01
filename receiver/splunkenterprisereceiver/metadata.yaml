@@ -356,7 +356,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   #`services/server/health/splunkd/details`
   splunk.health:
     enabled: true
@@ -364,7 +364,7 @@ metrics:
     unit: "{status}"
     gauge:
       value_type: int
-    attributes: [splunk.feature, splunk.feature.health]
+    attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
 
 tests:
   config:
