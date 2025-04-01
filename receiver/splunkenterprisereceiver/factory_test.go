@@ -40,7 +40,7 @@ func TestDefaultConfig(t *testing.T) {
 			Timeout:            60 * time.Second,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		VersionInfo:          true,
+		VersionInfo:          false,
 	}
 
 	testConf := createDefaultConfig().(*Config)
