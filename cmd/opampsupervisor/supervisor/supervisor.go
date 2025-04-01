@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -74,8 +76,9 @@ var (
 )
 
 const (
-	persistentStateFileName = "persistent_state.yaml"
-	agentConfigFileName     = "effective.yaml"
+	persistentStateFileName     = "persistent_state.yaml"
+	agentConfigFileName         = "effective.yaml"
+	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
@@ -183,6 +186,8 @@ type Supervisor struct {
 	opampServerPort int
 
 	telemetrySettings telemetrySettings
+
+	featureGates map[string]struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -197,6 +202,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		doneChan:                     make(chan struct{}),
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
+		featureGates:                 map[string]struct{}{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -315,10 +321,12 @@ func (s *Supervisor) Start() error {
 		span.SetStatus(codes.Error, err.Error())
 		return err
 	}
+	if err = s.getFeatureGates(); err != nil {
+		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
+	}
 
 	if err = s.getBootstrapInfo(ctx); err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not get bootstrap info from the Collector: %s", err.Error()))
-		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
 	healthCheckPort := s.config.Agent.HealthCheckPort
@@ -372,6 +380,41 @@ func (s *Supervisor) Start() error {
 	}()
 
 	span.SetStatus(codes.Ok, "")
+	return nil
+}
+
+func (s *Supervisor) getFeatureGates() error {
+	cmd, err := commander.NewCommander(
+		s.telemetrySettings.Logger,
+		s.config.Storage.Directory,
+		s.config.Agent,
+		"featuregate",
+	)
+	if err != nil {
+		return err
+	}
+
+	stdout, _, err := cmd.StartOneShot()
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(bytes.NewBuffer(stdout))
+
+	// First line only contains headers, discard it.
+	_ = scanner.Scan()
+	for scanner.Scan() {
+		line := scanner.Text()
+		i := strings.Index(line, " ")
+		flag := line[0:i]
+
+		if flag == AllowNoPipelinesFeatureGate {
+			s.featureGates[AllowNoPipelinesFeatureGate] = struct{}{}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
 	return nil
 }
 
@@ -509,11 +552,18 @@ func (s *Supervisor) getBootstrapInfo(ctx context.Context) (err error) {
 		}
 	}()
 
+	flags := []string{
+		"--config", s.agentConfigFilePath(),
+	}
+	featuregateFlag := s.getFeatureGateFlag()
+	if len(featuregateFlag) > 0 {
+		flags = append(flags, featuregateFlag...)
+	}
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", s.agentConfigFilePath(),
+		flags...,
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
@@ -949,12 +999,12 @@ func (s *Supervisor) onOpampConnectionSettings(ctx context.Context, settings *pr
 
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
-	err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": s.opampServerPort,
-	})
-	if err != nil {
-		return nil, err
+
+	if !s.isFeatureGateSupported(AllowNoPipelinesFeatureGate) {
+		err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return cfg.Bytes(), nil
@@ -1737,6 +1787,24 @@ func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 		return s.config.Agent.OpAMPServerPort, nil
 	}
 	return s.findRandomPort()
+}
+
+func (s *Supervisor) getFeatureGateFlag() []string {
+	flags := []string{}
+	for k := range s.featureGates {
+		flags = append(flags, k)
+	}
+
+	if len(flags) == 0 {
+		return []string{}
+	}
+
+	return []string{"--feature-gates", strings.Join(flags, ",")}
+}
+
+func (s *Supervisor) isFeatureGateSupported(gate string) bool {
+	_, ok := s.featureGates[gate]
+	return ok
 }
 
 func (s *Supervisor) findRandomPort() (int, error) {
