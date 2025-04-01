@@ -66,7 +66,7 @@ func (config *Config) Validate() error {
 	}
 
 	if !(isPatternValid(config.LogGroupName)) {
-		return errors.New("'log_stream_name' has invalid patterns between curly brackets")
+		return errors.New("'log_group_name' has invalid patterns between curly brackets")
 	}
 	if !(isPatternValid(config.LogStreamName)) {
 		return errors.New("'log_stream_name' has invalid has invalid patterns between curly brackets")
