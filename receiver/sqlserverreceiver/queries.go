@@ -346,8 +346,8 @@ func getSQLServerQueryTextAndPlanQuery() string {
 }
 
 //go:embed templates/sqlServerQuerySample.tmpl
-var sqlServerQuerySamplesWithTop string
+var sqlServerQuerySamples string
 
 func getSQLServerQuerySamplesQuery() string {
-	return sqlServerQuerySamplesWithTop
+	return sqlServerQuerySamples
 }
