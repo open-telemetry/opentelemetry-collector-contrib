@@ -7,7 +7,7 @@ change_type: enhancement
 component: opampextension
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Introduces a new config element `IncludeResourceAttributes` which allows the extension to copy the agent's resource attributes to the non-identifying attributes in the agent description.
+note: Introduces a new config field `include_resource_attributes` which allows the extension to copy the agent's resource attributes to the non-identifying attributes in the agent description.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37487]
