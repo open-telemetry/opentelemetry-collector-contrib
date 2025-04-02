@@ -308,7 +308,7 @@ func TestOnlyMetadata(t *testing.T) {
 
 		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: datadogconfig.HostnameSourceFirstResource,
+			HostnameSource: datadogconfig.HostnameSourceFirstResource, //nolint:staticcheck
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
