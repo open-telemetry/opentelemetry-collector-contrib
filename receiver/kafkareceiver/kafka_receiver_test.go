@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -31,23 +30,10 @@ import (
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadatatest"
 )
-
-func TestNewTracesReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
 
 func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	c := createDefaultConfig().(*Config)
@@ -58,41 +44,6 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewTracesReceiver_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
-
-func TestNewTracesReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newTracesReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
 }
 
 func TestTracesReceiverStart(t *testing.T) {
@@ -397,17 +348,6 @@ func TestTracesReceiver_encoding_extension(t *testing.T) {
 	}, 10*time.Second, time.Millisecond*100)
 }
 
-func TestNewMetricsReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
 func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
@@ -417,41 +357,6 @@ func TestNewMetricsReceiver_encoding_err(t *testing.T) {
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewMetricsExporter_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
-
-func TestNewMetricsReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
 }
 
 func TestMetricsReceiverStartConsume(t *testing.T) {
@@ -740,18 +645,6 @@ func TestMetricsReceiver_encoding_extension(t *testing.T) {
 	}, 10*time.Second, time.Millisecond*100)
 }
 
-func TestNewLogsReceiver_version_err(t *testing.T) {
-	c := Config{
-		Encoding:        defaultEncoding,
-		ProtocolVersion: "none",
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.Error(t, err)
-}
-
 func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	c := Config{
 		Encoding: "foo",
@@ -762,41 +655,6 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 	err = r.Start(context.Background(), componenttest.NewNopHost())
 	assert.Error(t, err)
 	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewLogsExporter_err_auth_type(t *testing.T) {
-	c := Config{
-		ProtocolVersion: "2.0.0",
-		Authentication: kafka.Authentication{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile: "/nonexistent",
-				},
-			},
-		},
-		Encoding: defaultEncoding,
-		Metadata: kafkaexporter.Metadata{
-			Full: false,
-		},
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	assert.ErrorContains(t, err, "failed to load TLS config")
-}
-
-func TestNewLogsReceiver_initial_offset_err(t *testing.T) {
-	c := Config{
-		InitialOffset: "foo",
-		Encoding:      defaultEncoding,
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
-	require.NoError(t, err)
-	require.NotNil(t, r)
-	err = r.Start(context.Background(), componenttest.NewNopHost())
-	require.Error(t, err)
-	assert.EqualError(t, err, errInvalidInitialOffset.Error())
 }
 
 func TestLogsReceiverStart(t *testing.T) {
@@ -1221,33 +1079,6 @@ func TestLogsReceiver_encoding_extension(t *testing.T) {
 	assert.Eventually(t, func() bool {
 		return logObserver.FilterField(zap.Error(expectedErr)).Len() > 0
 	}, 10*time.Second, time.Millisecond*100)
-}
-
-func TestToSaramaInitialOffset_earliest(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset(offsetEarliest)
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetOldest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_latest(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset(offsetLatest)
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_default(t *testing.T) {
-	saramaInitialOffset, err := toSaramaInitialOffset("")
-
-	require.NoError(t, err)
-	assert.Equal(t, sarama.OffsetNewest, saramaInitialOffset)
-}
-
-func TestToSaramaInitialOffset_invalid(t *testing.T) {
-	_, err := toSaramaInitialOffset("other")
-
-	assert.Equal(t, err, errInvalidInitialOffset)
 }
 
 type testConsumerGroupClaim struct {

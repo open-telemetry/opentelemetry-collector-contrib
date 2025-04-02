@@ -18,56 +18,64 @@ const (
 	StackTraceIndex  = "profiling-stacktraces"
 	StackFrameIndex  = "profiling-stackframes"
 	ExecutablesIndex = "profiling-executables"
+
+	ExecutablesSymQueueIndex = "profiling-sq-executables"
+	LeafFramesSymQueueIndex  = "profiling-sq-leafframes"
 )
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
-func SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+func (*Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+	pushDataAsJSON := func(data any, id, index string) error {
+		c, err := toJSON(data)
+		if err != nil {
+			return err
+		}
+		return pushData(c, id, index)
+	}
+
 	data, err := serializeprofiles.Transform(resource, scope, profile)
 	if err != nil {
 		return err
 	}
 
 	for _, payload := range data {
-		if payload.StackTraceEvent.StackTraceID != "" {
-			c, err := toJSON(payload.StackTraceEvent)
-			if err != nil {
+		event := payload.StackTraceEvent
+
+		if event.StackTraceID != "" {
+			if err = pushDataAsJSON(event, "", AllEventsIndex); err != nil {
 				return err
 			}
-			err = pushData(c, "", AllEventsIndex)
-			if err != nil {
+			if err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON); err != nil {
 				return err
 			}
 		}
 
 		if payload.StackTrace.DocID != "" {
-			c, err := toJSON(payload.StackTrace)
-			if err != nil {
-				return err
-			}
-			err = pushData(c, payload.StackTrace.DocID, StackTraceIndex)
-			if err != nil {
+			if err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex); err != nil {
 				return err
 			}
 		}
 
 		for _, stackFrame := range payload.StackFrames {
-			c, err := toJSON(stackFrame)
-			if err != nil {
-				return err
-			}
-			err = pushData(c, stackFrame.DocID, StackFrameIndex)
-			if err != nil {
+			if err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex); err != nil {
 				return err
 			}
 		}
 
 		for _, executable := range payload.Executables {
-			c, err := toJSON(executable)
-			if err != nil {
+			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
 				return err
 			}
-			err = pushData(c, executable.DocID, ExecutablesIndex)
-			if err != nil {
+		}
+
+		for _, frame := range payload.UnsymbolizedLeafFrames {
+			if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
+				return err
+			}
+		}
+
+		for _, executable := range payload.UnsymbolizedExecutables {
+			if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
 				return err
 			}
 		}
