@@ -108,7 +108,7 @@ func (p *PodResourcesStore) updateMaps() {
 	p.resourceToPodContainerMap = make(map[ResourceInfo]ContainerInfo)
 
 	if len(p.resourceNameSet) == 0 {
-		p.logger.Warn("No resource names allowlisted thus skipping updating of maps.")
+		p.logger.Debug("No resource names allowlisted thus skipping updating of maps.")
 		return
 	}
 
