@@ -22,7 +22,7 @@ func NewFactory() extension.Factory {
 }
 
 func createExtension(_ context.Context, set extension.Settings, cfg component.Config) (extension.Extension, error) {
-	return newAzureAuthenticator(cfg.(*Config), set.Logger), nil
+	return newAzureAuthenticator(cfg.(*Config), set.Logger)
 }
 
 func createDefaultConfig() component.Config {
