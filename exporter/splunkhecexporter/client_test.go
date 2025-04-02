@@ -1317,8 +1317,7 @@ func TestErrorReceived(t *testing.T) {
 	case <-time.After(5 * time.Second):
 		t.Fatal("Should have received request")
 	}
-	errMsg := fmt.Sprintf("HTTP %q %d %q",
-		cfg.ClientConfig.Endpoint,
+	errMsg := fmt.Sprintf("HTTP \"/services/collector\" %d %q",
 		http.StatusInternalServerError,
 		http.StatusText(http.StatusInternalServerError),
 	)
@@ -1400,9 +1399,8 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	assert.NoError(t, err)
 	assert.EqualError(t,
 		exporter.Start(context.Background(), componenttest.NewNopHost()),
-		fmt.Sprintf("%s: heartbeat on startup failed: HTTP %q 403 \"Forbidden\"",
+		fmt.Sprintf("%s: heartbeat on startup failed: HTTP \"/services/collector\" 403 \"Forbidden\"",
 			params.ID.String(),
-			cfg.ClientConfig.Endpoint,
 		),
 	)
 	assert.NoError(t, exporter.Shutdown(context.Background()))
@@ -1602,7 +1600,7 @@ func Test_pushLogData_PostError(t *testing.T) {
 
 func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	config := NewFactory().CreateDefaultConfig().(*Config)
-	url := &url.URL{Scheme: "http", Host: "splunk"}
+	url := &url.URL{Scheme: "http", Host: "splunk", Path: "/v1/endpoint"}
 	splunkClient := newLogsClient(exportertest.NewNopSettings(metadata.Type), NewFactory().CreateDefaultConfig().(*Config))
 	logs := createLogData(1, 1, 1)
 
@@ -1614,7 +1612,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err := splunkClient.pushLogData(context.Background(), logs)
 	require.True(t, consumererror.IsPermanent(err), "Expecting permanent error")
-	require.EqualError(t, err, "Permanent error: HTTP \"http://splunk\" 400 \"Bad Request\"")
+	require.EqualError(t, err, "Permanent error: HTTP \"/v1/endpoint\" 400 \"Bad Request\"")
 	// The returned error should contain the response body responseBody.
 
 	// An HTTP client that returns some other status code other than 400 and response body responseBody.
@@ -1623,7 +1621,7 @@ func Test_pushLogData_ShouldAddResponseTo400Error(t *testing.T) {
 	// Sending logs using the client.
 	err = splunkClient.pushLogData(context.Background(), logs)
 	require.False(t, consumererror.IsPermanent(err), "Expecting non-permanent error")
-	require.EqualError(t, err, "HTTP \"http://splunk\" 500 \"Internal Server Error\"")
+	require.EqualError(t, err, "HTTP \"/v1/endpoint\" 500 \"Internal Server Error\"")
 	// The returned error should not contain the response body responseBody.
 	assert.NotContains(t, err.Error(), responseBody)
 }

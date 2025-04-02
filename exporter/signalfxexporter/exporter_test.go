@@ -210,8 +210,7 @@ func TestConsumeMetrics(t *testing.T) {
 				converter: c,
 			}
 
-			errMsg := fmt.Sprintf("HTTP %q %d %q",
-				serverURL.JoinPath("/v2/datapoint").String(),
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
 				tt.wantStatusCode,
 				http.StatusText(tt.wantStatusCode),
 			)
@@ -2079,8 +2078,7 @@ func TestConsumeMixedMetrics(t *testing.T) {
 			numDroppedTimeSeries, err := sfxClient.pushMetricsData(context.Background(), tt.md)
 			assert.Equal(t, tt.numDroppedTimeSeries, numDroppedTimeSeries)
 
-			errMsg := fmt.Sprintf("HTTP %q %d %q",
-				serverURL.JoinPath("/v2/datapoint").String(),
+			errMsg := fmt.Sprintf("HTTP \"/v2/datapoint\" %d %q",
 				tt.wantStatusCode,
 				http.StatusText(tt.wantStatusCode),
 			)
