@@ -16,7 +16,7 @@ var (
 	errSetSpanAttributes     = errors.New("failed to set span attributes")
 )
 
-// Wrapper is required to have a type that implements the GitlabEvent interface
+// glPipeline is a wrapper that implements the GitlabEvent interface
 type glPipeline struct {
 	*gitlab.PipelineEvent
 }
@@ -105,8 +105,8 @@ func (s *glPipelineStage) setAttributes(span ptrace.Span) error {
 	return nil
 }
 
-// glPipelineJob represents a job in a pipeline event
-// This is a copy of the Build struct in the gitlab api client - it's not exported as type, so we need to use this struct to represent it
+// glPipelineJob represents a job in a pipeline event.
+// This is a copy of the "PipelineEvent.Builds" struct in the Gitlab API client - it's not exported as type, so we need to use this struct to represent it
 type glPipelineJob struct {
 	ID             int               `json:"id"`
 	Stage          string            `json:"stage"`

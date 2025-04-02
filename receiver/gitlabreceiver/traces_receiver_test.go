@@ -32,7 +32,7 @@ const (
 	invalidPipelineWebhookEventMissingFinishedAt = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`
 )
 
-// helper function to create a gitlabTracesReceiver
+// Helper function to create a gitlabTracesReceiver
 func setupGitlabTracesReceiver(t *testing.T) *gitlabTracesReceiver {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.WebHook.Endpoint = "localhost:0"
@@ -40,20 +40,9 @@ func setupGitlabTracesReceiver(t *testing.T) *gitlabTracesReceiver {
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
-	// Log some diagnostics about our test data to help with debugging
-	if t != nil && testing.Verbose() {
-		// Parse validPipelineWebhookEvent to validate its structure
-		var pipelineEvent gitlab.PipelineEvent
-		err = json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
-		if err == nil {
-			// Count unique stages
-			stageMap := make(map[string]bool)
-			for _, build := range pipelineEvent.Builds {
-				stageMap[build.Stage] = true
-			}
-			t.Logf("Pipeline event has %d unique stages and %d jobs", len(stageMap), len(pipelineEvent.Builds))
-		}
-	}
+	var pipelineEvent gitlab.PipelineEvent
+	err = json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+	require.NoError(t, err)
 
 	return receiver
 }
