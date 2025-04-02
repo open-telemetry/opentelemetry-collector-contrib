@@ -117,7 +117,7 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 		fields = strings.Split(firstLine, " ")
 	}
 
-	scopeLogs := v.createScopeLogs()
+	logs, resourceLogs, scopeLogs := v.createLogs()
 	key := &resourceKey{}
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -130,21 +130,23 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
 	}
 
-	return v.createLogs(key, scopeLogs), nil
+	v.setResourceAttributes(key, resourceLogs)
+	return logs, nil
 }
 
-func (v *vpcFlowLogUnmarshaler) createScopeLogs() plog.ScopeLogs {
-	scopeLogs := plog.NewScopeLogs()
+// createLogs with the expected fields for the scope logs
+func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
+	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
 	scopeLogs.Scope().SetName(metadata.ScopeName)
 	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
-	return scopeLogs
+	return logs, resourceLogs, scopeLogs
 }
 
-// createLogs based on the scopeLogsByResource map
-func (v *vpcFlowLogUnmarshaler) createLogs(key *resourceKey, scopeLogs plog.ScopeLogs) plog.Logs {
-	logs := plog.NewLogs()
-	rl := logs.ResourceLogs().AppendEmpty()
-	attr := rl.Resource().Attributes()
+// setResourceAttributes based on the resourceKey
+func (v *vpcFlowLogUnmarshaler) setResourceAttributes(key *resourceKey, logs plog.ResourceLogs) {
+	attr := logs.Resource().Attributes()
 	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
 	if key.accountID != "" {
 		attr.PutStr(conventions.AttributeCloudAccountID, key.accountID)
@@ -152,8 +154,6 @@ func (v *vpcFlowLogUnmarshaler) createLogs(key *resourceKey, scopeLogs plog.Scop
 	if key.region != "" {
 		attr.PutStr(conventions.AttributeCloudRegion, key.region)
 	}
-	scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
-	return logs
 }
 
 // address stores the four fields related to the address
@@ -229,6 +229,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 
 // handleAddresses creates adds the addresses to the log record
 func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRecord) {
+	localAddrSet := false
 	// see example in
 	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
 	if addr.pktSource == "" && addr.source != "" {
@@ -240,6 +241,7 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 		if addr.pktSource != addr.source {
 			// srcaddr is the middle layer
 			record.Attributes().PutStr(conventions.AttributeNetworkLocalAddress, addr.source)
+			localAddrSet = true
 		}
 	}
 
@@ -250,7 +252,7 @@ func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRe
 	} else if addr.pktDestination != "" && addr.destination != "" {
 		record.Attributes().PutStr(conventions.AttributeDestinationAddress, addr.pktDestination)
 		if addr.pktDestination != addr.destination {
-			if _, found := record.Attributes().Get(conventions.AttributeNetworkPeerAddress); found {
+			if localAddrSet {
 				v.logger.Warn("unexpected: srcaddr, dstaddr, pkt-srcaddr and pkt-dstaddr are all different")
 			}
 			// dstaddr is the middle layer
