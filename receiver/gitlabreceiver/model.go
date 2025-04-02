@@ -1,4 +1,7 @@
-package gitlabreceiver
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
+package gitlabreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver"
 
 import (
 	"errors"
@@ -54,7 +57,7 @@ func (p *glPipeline) setTimeStamps(span ptrace.Span, startTime string, endTime s
 }
 
 func (p *glPipeline) setAttributes(span ptrace.Span) error {
-	//ToDo in next PR: set semconv attributes
+	// ToDo in next PR: set semconv attributes
 	return nil
 }
 
@@ -101,7 +104,7 @@ func (s *glPipelineStage) setTimeStamps(span ptrace.Span, startTime string, endT
 }
 
 func (s *glPipelineStage) setAttributes(span ptrace.Span) error {
-	//ToDo in next PR: set semconv attributes
+	// ToDo in next PR: set semconv attributes
 	return nil
 }
 
@@ -173,6 +176,6 @@ func (j *glPipelineJob) setTimeStamps(span ptrace.Span, startTime string, endTim
 }
 
 func (j *glPipelineJob) setAttributes(span ptrace.Span) error {
-	//ToDo in next PR: set semconv attributes
+	// ToDo in next PR: set semconv attributes
 	return nil
 }
