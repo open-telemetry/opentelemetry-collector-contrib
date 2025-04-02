@@ -96,7 +96,7 @@ func getLogInfo(resourceAttrs map[string]any, config *Config) (string, string, b
 	return logGroup, logStream, (groupReplaced && streamReplaced)
 }
 
-func anyMaptoStringMap(resourceAttrs map[string]any) map[string]string {
+func anyMapToStringMap(resourceAttrs map[string]any) map[string]string {
 	strMap := make(map[string]string)
 	for key, value := range resourceAttrs {
 		switch v := value.(type) {
