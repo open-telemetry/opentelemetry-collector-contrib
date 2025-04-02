@@ -26,7 +26,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
 	"go.opentelemetry.io/collector/extension"
@@ -2204,12 +2204,12 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		batcherCfg := exporterbatcher.NewDefaultConfig() //nolint:staticcheck
+		batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     batcherCfg,
-			enabledSet: true,
+			BatcherConfig: batcherCfg,
+			enabledSet:    true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
 		cfg.Retry.Enabled = false

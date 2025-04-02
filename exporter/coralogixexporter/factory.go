@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -35,7 +34,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherConfig := exporterbatcher.NewDefaultConfig() //nolint:staticcheck
+	batcherConfig := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 	batcherConfig.Enabled = false
 
 	return &Config{
