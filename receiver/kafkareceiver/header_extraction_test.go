@@ -32,7 +32,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,
@@ -157,7 +157,7 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,

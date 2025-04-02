@@ -36,9 +36,9 @@ import (
 )
 
 func TestNewTracesReceiver_encoding_err(t *testing.T) {
-	c := createDefaultConfig().(*Config)
-	c.Encoding = "foo"
-	r, err := newTracesReceiver(*c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	cfg := createDefaultConfig()
+	cfg.Traces.Encoding = "foo"
+	r, err := newTracesReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
@@ -48,7 +48,7 @@ func TestNewTracesReceiver_encoding_err(t *testing.T) {
 
 func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(metadata.Type),
@@ -88,7 +88,7 @@ func TestTracesReceiver_error(t *testing.T) {
 
 	expectedErr := errors.New("handler error")
 	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -112,7 +112,7 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -155,7 +155,7 @@ func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -199,7 +199,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -285,7 +285,7 @@ func TestTracesConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			backOff := backoff.NewExponentialBackOff()
 			backOff.RandomizationFactor = 0
 			c := tracesConsumerGroupHandler{
-				unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+				unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, "otlp_proto"),
 				logger:           zap.NewNop(),
 				ready:            make(chan bool),
 				nextConsumer:     consumertest.NewErr(tt.err),
@@ -331,9 +331,12 @@ func TestTracesReceiver_encoding_extension(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
+	cfg := createDefaultConfig()
+	cfg.Traces.Encoding = "traces_encoding"
+
 	expectedErr := errors.New("handler error")
 	c := kafkaTracesConsumer{
-		config:           Config{Encoding: "traces_encoding"},
+		config:           cfg,
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -349,9 +352,9 @@ func TestTracesReceiver_encoding_extension(t *testing.T) {
 }
 
 func TestNewMetricsReceiver_encoding_err(t *testing.T) {
-	c := Config{
-		Encoding: "foo",
-	}
+	c := createDefaultConfig()
+	c.Metrics.Encoding = "foo"
+
 	r, err := newMetricsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -387,7 +390,7 @@ func TestMetricsReceiver_error(t *testing.T) {
 
 	expectedErr := errors.New("handler error")
 	c := kafkaMetricsConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -411,7 +414,7 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -454,7 +457,7 @@ func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -497,7 +500,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -583,7 +586,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			backOff := backoff.NewExponentialBackOff()
 			backOff.RandomizationFactor = 0
 			c := metricsConsumerGroupHandler{
-				unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+				unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, "otlp_proto"),
 				logger:           zap.NewNop(),
 				ready:            make(chan bool),
 				nextConsumer:     consumertest.NewErr(tt.err),
@@ -628,9 +631,12 @@ func TestMetricsReceiver_encoding_extension(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
+	cfg := createDefaultConfig()
+	cfg.Metrics.Encoding = "metrics_encoding"
+
 	expectedErr := errors.New("handler error")
 	c := kafkaMetricsConsumer{
-		config:           Config{Encoding: "metrics_encoding"},
+		config:           cfg,
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -646,10 +652,10 @@ func TestMetricsReceiver_encoding_extension(t *testing.T) {
 }
 
 func TestNewLogsReceiver_encoding_err(t *testing.T) {
-	c := Config{
-		Encoding: "foo",
-	}
-	r, err := newLogsReceiver(c, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
+	cfg := createDefaultConfig()
+	cfg.Logs.Encoding = "foo"
+
+	r, err := newLogsReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
 	err = r.Start(context.Background(), componenttest.NewNopHost())
@@ -659,7 +665,7 @@ func TestNewLogsReceiver_encoding_err(t *testing.T) {
 
 func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
-		config:           *createDefaultConfig().(*Config),
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(metadata.Type),
@@ -703,7 +709,7 @@ func TestLogsReceiver_error(t *testing.T) {
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		config:           *createDefaultConfig().(*Config),
+		config:           createDefaultConfig(),
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 
@@ -723,7 +729,7 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -766,7 +772,7 @@ func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -809,7 +815,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewTelemetrySettings())
 	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
-		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, "otlp_proto"),
 		logger:           zap.NewNop(),
 		ready:            make(chan bool),
 		nextConsumer:     consumertest.NewNop(),
@@ -897,7 +903,7 @@ func TestLogsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 			backOff := backoff.NewExponentialBackOff()
 			backOff.RandomizationFactor = 0
 			c := logsConsumerGroupHandler{
-				unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, defaultEncoding),
+				unmarshaler:      newPdataLogsUnmarshaler(&plog.ProtoUnmarshaler{}, "otlp_proto"),
 				logger:           zap.NewNop(),
 				ready:            make(chan bool),
 				nextConsumer:     consumertest.NewErr(tt.err),
@@ -1047,9 +1053,9 @@ func TestGetLogsUnmarshaler_encoding_text(t *testing.T) {
 }
 
 func TestCreateLogs_encoding_text_error(t *testing.T) {
-	cfg := Config{
-		Encoding: "text_uft-8",
-	}
+	cfg := createDefaultConfig()
+	cfg.Logs.Encoding = "text_uft-8"
+
 	r, err := newLogsReceiver(cfg, receivertest.NewNopSettings(metadata.Type), consumertest.NewNop())
 	require.NoError(t, err)
 	require.NotNil(t, r)
@@ -1064,9 +1070,12 @@ func TestLogsReceiver_encoding_extension(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
 
+	cfg := createDefaultConfig()
+	cfg.Logs.Encoding = "logs_encoding"
+
 	expectedErr := errors.New("handler error")
 	c := kafkaLogsConsumer{
-		config:           Config{Encoding: "logs_encoding"},
+		config:           cfg,
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
