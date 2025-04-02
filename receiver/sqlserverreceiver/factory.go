@@ -88,8 +88,7 @@ func setupLogQueries(cfg *Config) []string {
 	}
 
 	if cfg.TopQueryCollection.Enabled {
-		q := getSQLServerQueryTextAndPlanQuery()
-		queries = append(queries, q)
+		queries = append(queries, getSQLServerQueryTextAndPlanQuery())
 	}
 
 	return queries
@@ -160,8 +159,6 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		return nil
 	}
 
-	queryTextAndPlanQuery := getSQLServerQueryTextAndPlanQuery()
-
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
 	dbProviderFunc := func() (*sql.DB, error) {
@@ -174,7 +171,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 
 		cache := newCache(1)
 
-		if query == queryTextAndPlanQuery {
+		if query == getSQLServerQueryTextAndPlanQuery() {
 			// we have 8 metrics in this query and multiple 2 to allow to cache more queries.
 			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
 		}

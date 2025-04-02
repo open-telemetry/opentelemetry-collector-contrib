@@ -517,7 +517,12 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		totalWorkerTime = "total_worker_time"
 	)
 
-	rows, err := s.client.QueryRows(ctx, sql.Named("lookbackTime", -s.config.LookbackTime), sql.Named("topNValue", s.config.TopQueryCount), sql.Named("instanceName", s.config.InstanceName))
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("lookbackTime", -s.config.LookbackTime),
+		sql.Named("topNValue", s.config.TopQueryCount),
+		sql.Named("instanceName", s.config.InstanceName),
+	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
@@ -896,7 +901,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitType = "wait_type"
 	const writes = "writes"
 
-	rows, err := s.client.QueryRows(ctx, sql.Named("top", s.config.TopQueryCount))
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("top", s.config.TopQueryCount),
+	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
