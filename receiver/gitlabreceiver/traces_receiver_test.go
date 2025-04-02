@@ -5,10 +5,12 @@ package gitlabreceiver
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -21,16 +23,137 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
-func TestHealthCheck(t *testing.T) {
+const (
+	validPipelineWebhookEvent                    = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"},"builds":[{"id":1,"stage":"build","name":"build-job","status":"success","created_at":"2022-01-01 12:00:00 UTC","started_at":"2022-01-01 12:01:00 UTC","finished_at":"2022-01-01 12:10:00 UTC"},{"id":2,"stage":"test","name":"test-job","status":"success","created_at":"2022-01-01 12:11:00 UTC","started_at":"2022-01-01 12:12:00 UTC","finished_at":"2022-01-01 12:20:00 UTC"}],"commit":{"title":"Test commit"}}`
+	validPipelineWebhookEventWithoutJobs         = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`
+	invalidPipelineWebhookEventMissingFinishedAt = `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`
+)
+
+// helper function to create a gitlabTracesReceiver
+func setupGitlabTracesReceiver(t *testing.T) *gitlabTracesReceiver {
 	defaultConfig := createDefaultConfig().(*Config)
 	defaultConfig.WebHook.Endpoint = "localhost:0"
 	consumer := consumertest.NewNop()
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
-	r := receiver
+	// Log some diagnostics about our test data to help with debugging
+	if t != nil && testing.Verbose() {
+		// Parse validPipelineWebhookEvent to validate its structure
+		var pipelineEvent gitlab.PipelineEvent
+		err = json.Unmarshal([]byte(validPipelineWebhookEvent), &pipelineEvent)
+		if err == nil {
+			// Count unique stages
+			stageMap := make(map[string]bool)
+			for _, build := range pipelineEvent.Builds {
+				stageMap[build.Stage] = true
+			}
+			t.Logf("Pipeline event has %d unique stages and %d jobs", len(stageMap), len(pipelineEvent.Builds))
+		}
+	}
+
+	return receiver
+}
+
+func TestHandleWebhook(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.Endpoint = "localhost:0"
+
+	tests := []struct {
+		name         string
+		method       string
+		headers      map[string]string
+		body         string
+		expectedCode int
+		spanCount    int
+	}{
+		{
+			name:   "empty_body",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         "",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:   "invalid_json",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         "{invalid-json",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:   "unexpected_event_type",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Issue Hook",
+			},
+			body:         "{}",
+			expectedCode: http.StatusBadRequest,
+		},
+		{
+			name:   "incomplete_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"running"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "successful_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         validPipelineWebhookEvent,
+			expectedCode: http.StatusOK,
+			spanCount:    1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			cfg := createDefaultConfig().(*Config)
+			logger := zap.NewNop()
+
+			mockObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
+				ReceiverID:             component.NewID(metadata.Type),
+				ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
+			})
+			require.NoError(t, err)
+
+			receiver := &gitlabTracesReceiver{
+				cfg:           cfg,
+				logger:        logger,
+				obsrecv:       mockObsrecv,
+				traceConsumer: new(consumertest.TracesSink),
+				gitlabClient:  &gitlab.Client{},
+			}
+
+			req := httptest.NewRequest(tt.method, "http://localhost/webhook", strings.NewReader(tt.body))
+			for k, v := range tt.headers {
+				req.Header.Set(k, v)
+			}
+
+			w := httptest.NewRecorder()
+			receiver.handleWebhook(w, req)
+
+			resp := w.Result()
+			require.Equal(t, tt.expectedCode, resp.StatusCode)
+		})
+	}
+}
+
+func TestHealthCheck(t *testing.T) {
+	r := setupGitlabTracesReceiver(t)
+
 	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()), "failed to start receiver")
 	defer func() {
 		require.NoError(t, r.Shutdown(context.Background()), "failed to shutdown revceiver")
@@ -45,12 +168,13 @@ func TestHealthCheck(t *testing.T) {
 
 func TestValidateReq(t *testing.T) {
 	tests := []struct {
-		name          string
-		method        string
-		headers       map[string]string
-		secret        string
-		expectedEvent gitlab.EventType
-		wantErr       string
+		name            string
+		method          string
+		headers         map[string]string
+		secret          string
+		requiredHeaders map[string]configopaque.String
+		expectedEvent   gitlab.EventType
+		wantErr         string
 	}{
 		{
 			name:    "invalid_method",
@@ -64,7 +188,7 @@ func TestValidateReq(t *testing.T) {
 				defaultGitlabTokenHeader: "secret123",
 			},
 			secret:  "secret123",
-			wantErr: "missing X-Gitlab-Event header",
+			wantErr: "missing header: X-Gitlab-Event",
 		},
 		{
 			name:   "invalid_secret",
@@ -74,7 +198,7 @@ func TestValidateReq(t *testing.T) {
 				defaultGitlabEventHeader: "Pipeline Hook",
 			},
 			secret:  "secret123",
-			wantErr: "invalid X-Gitlab-Token header",
+			wantErr: "invalid header: X-Gitlab-Token",
 		},
 		{
 			name:   "valid_request",
@@ -95,12 +219,50 @@ func TestValidateReq(t *testing.T) {
 			secret:        "",
 			expectedEvent: "Pipeline Hook",
 		},
+		{
+			name:   "valid_request_with_required_headers",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+				"Custom-Header":          "custom-value",
+			},
+			requiredHeaders: map[string]configopaque.String{
+				"Custom-Header": "custom-value",
+			},
+			expectedEvent: "Pipeline Hook",
+		},
+		{
+			name:   "invalid_request_missing_required_header",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			requiredHeaders: map[string]configopaque.String{
+				"Custom-Header": "custom-value",
+			},
+			wantErr: "invalid header: Custom-Header",
+		},
+		{
+			name:   "invalid_request_wrong_required_header_value",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+				"Custom-Header":          "wrong-value",
+			},
+			requiredHeaders: map[string]configopaque.String{
+				"Custom-Header": "custom-value",
+			},
+			wantErr: "invalid header: Custom-Header",
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.WebHook.Secret = tt.secret
+			if tt.requiredHeaders != nil {
+				cfg.WebHook.RequiredHeaders = tt.requiredHeaders
+			}
 
 			receiver := &gitlabTracesReceiver{
 				cfg: cfg,
@@ -124,6 +286,8 @@ func TestValidateReq(t *testing.T) {
 }
 
 func TestFailBadReq(t *testing.T) {
+	receiver := setupGitlabTracesReceiver(t)
+
 	tests := []struct {
 		name           string
 		err            error
@@ -150,22 +314,6 @@ func TestFailBadReq(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			cfg := createDefaultConfig().(*Config)
-			logger := zap.NewNop()
-
-			mockObsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{
-				ReceiverID:             component.NewID(metadata.Type),
-				Transport:              "http",
-				ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type),
-			})
-			require.NoError(t, err)
-
-			receiver := &gitlabTracesReceiver{
-				cfg:     cfg,
-				logger:  logger,
-				obsrecv: mockObsrecv,
-			}
-
 			w := httptest.NewRecorder()
 			ctx := context.Background()
 			receiver.failBadReq(ctx, w, tt.expectedCode, tt.err, tt.spanCount)

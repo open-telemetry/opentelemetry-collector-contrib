@@ -28,6 +28,8 @@ var (
 	errGitlabClient      = errors.New("failed to create gitlab client")
 	errUnexpectedEvent   = errors.New("unexpected event type")
 	errInvalidHTTPMethod = errors.New("invalid HTTP method")
+	errInvalidHeader     = errors.New("invalid header")
+	errMissingHeader     = errors.New("missing header")
 )
 
 const healthyResponse = `{"text": "GitLab receiver webhook is healthy"}`
@@ -208,19 +210,19 @@ func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType,
 	if gtr.cfg.WebHook.Secret != "" {
 		secret := r.Header.Get(defaultGitlabTokenHeader)
 		if secret != gtr.cfg.WebHook.Secret {
-			return "", fmt.Errorf("invalid %s header", defaultGitlabTokenHeader)
+			return "", fmt.Errorf("%w: %s", errInvalidHeader, defaultGitlabTokenHeader)
 		}
 	}
 
 	for key, value := range gtr.cfg.WebHook.RequiredHeaders {
 		if r.Header.Get(key) != string(value) {
-			return "", fmt.Errorf("invalid %s header", key)
+			return "", fmt.Errorf("%w: %s", errInvalidHeader, key)
 		}
 	}
 
 	eventType := gitlab.WebhookEventType(r)
 	if eventType == "" {
-		return "", fmt.Errorf("missing %s header", defaultGitlabEventHeader)
+		return "", fmt.Errorf("%w: %s", errMissingHeader, defaultGitlabEventHeader)
 	}
 	return eventType, nil
 }

@@ -126,16 +126,26 @@ func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, 
 	return nil
 }
 
-// newTraceID creates a deterministic Trace ID based on the provided inputs of
-// pipelineID. `t` is appended to the end of the input to
-// differentiate between a deterministic traceID and the parentSpanID.
+// newTraceID creates a deterministic Trace ID based on the provided pipelineID and pipeline finishedAt time.
+// It's not possible to create the traceID during a pipeline execution. Details can be found here: todo
 func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
+	// Validate the finishedAt timestamp first
+	if finishedAt == "" {
+		return pcommon.TraceID{}, errors.New("finishedAt timestamp is empty")
+	}
+
+	// Try to parse the timestamp to validate it
+	_, err := parseGitlabTime(finishedAt)
+	if err != nil {
+		return pcommon.TraceID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+	}
+
 	input := fmt.Sprintf("%dt%s", pipelineID, finishedAt)
 	hash := sha256.Sum256([]byte(input))
 	idHex := hex.EncodeToString(hash[:])
 
 	var id pcommon.TraceID
-	_, err := hex.Decode(id[:], []byte(idHex[:32]))
+	_, err = hex.Decode(id[:], []byte(idHex[:32]))
 	if err != nil {
 		return pcommon.TraceID{}, err
 	}
@@ -143,10 +153,20 @@ func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
 	return id, nil
 }
 
-// newPipelineSpanID creates a deterministic Parent Span ID based on the provided
-// pipelineID. `s` is appended to the end of the input to
-// differentiate between a deterministic traceID and the parentSpanID.
+// newPipelineSpanID creates a deterministic Parent Span ID based on the provided pipelineID and pipeline finishedAt time.
+// It's not possible to create the pipelineSpanID during a pipeline execution. Details can be found here: todo
 func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error) {
+	// Validate the finishedAt timestamp first
+	if finishedAt == "" {
+		return pcommon.SpanID{}, errors.New("finishedAt timestamp is empty")
+	}
+
+	// Try to parse the timestamp to validate it
+	_, err := parseGitlabTime(finishedAt)
+	if err != nil {
+		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+	}
+
 	spanID, err := newSpanId(fmt.Sprintf("%d%s", pipelineID, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
@@ -155,8 +175,24 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 	return spanID, nil
 }
 
-// creates a deterministic Stage Span ID based on the provided pipelineID and stageName
+// newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and pipeline finishedAt time.
+// It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: todo
 func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommon.SpanID, error) {
+	// Validate the finishedAt timestamp first
+	if finishedAt == "" {
+		return pcommon.SpanID{}, errors.New("finishedAt timestamp is empty")
+	}
+
+	if stageName == "" {
+		return pcommon.SpanID{}, errors.New("stageName is empty")
+	}
+
+	// Try to parse the timestamp to validate it
+	_, err := parseGitlabTime(finishedAt)
+	if err != nil {
+		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+	}
+
 	spanID, err := newSpanId(fmt.Sprintf("%d%s%s", pipelineID, stageName, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
@@ -165,7 +201,7 @@ func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommo
 	return spanID, nil
 }
 
-// creates a deterministic Job Span ID based on the provided jobID
+// newJobSpanID creates a deterministic Job Span ID based on the unique jobID
 func newJobSpanID(jobID int) (pcommon.SpanID, error) {
 	spanID, err := newSpanId(strconv.Itoa(jobID))
 	if err != nil {
@@ -175,7 +211,7 @@ func newJobSpanID(jobID int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
-// helper function to create a deterministic Span ID based on the provided input
+// newSpanId is a helper function to create a Span ID
 func newSpanId(input string) (pcommon.SpanID, error) {
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
@@ -271,27 +307,26 @@ func setSpanTimeStamps(span ptrace.Span, startTime string, endTime string) error
 	return nil
 }
 
+// parseGitlabTime parses the time string from the gitlab event, it differs between the test pipeline event and the actual webhook event,
+// because the test pipeline event has a different time format than the actual webhook event.
+// Test pipeline event time format: 2025-04-01T18:31:49.624Z
+// Actual webhook event time format: 2025-04-01 18:31:49 UTC
 func parseGitlabTime(t string) (time.Time, error) {
 	if t == "" || t == "null" {
 		return time.Time{}, errors.New("time is empty")
 	}
 
-	//For some reason the gitlab test pipeline event has a different time format which we need to support to test (and eventually reenable webhooks) therefoe we are continuing on error to handle the webhook test and the actual webhook
+	// Time format of actual webhook events
 	pt, err := time.Parse(gitlabEventTimeFormat, t)
 	if err == nil {
 		return pt, nil
 	}
 
+	// Time format of test webhook events
 	pt, err = time.Parse(time.RFC3339, t) //Time format of test pipeline events
 	if err == nil {
 		return pt, nil
 	}
 
-	// pt, err = time.Parse(gitlabEventTimeFormat, t)
-	// if err != nil {
-	// 	return 0, fmt.Errorf("failed to parse time: %w", err)
-	// }
-
-	//This return reflects the error case, not the expected case like usually
 	return time.Time{}, err
 }
