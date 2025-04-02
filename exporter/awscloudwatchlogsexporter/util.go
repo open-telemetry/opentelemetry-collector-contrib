@@ -25,9 +25,9 @@ var patternKeyToAttributeMap = map[string]string{
 	"FaasVersion":          "faas.version",
 }
 
-func isPatternValid(s string) bool {
+func isPatternValid(s string) (bool, string) {
 	if !strings.Contains(s, "{") && !strings.Contains(s, "}") {
-		return true
+		return true, ""
 	}
 
 	re := regexp.MustCompile(`\{([^{}]*)\}`)
@@ -37,11 +37,11 @@ func isPatternValid(s string) bool {
 		if len(match) > 1 {
 			key := match[1]
 			if _, exists := patternKeyToAttributeMap[key]; !exists {
-				return false
+				return false, key
 			}
 		}
 	}
-	return true
+	return true, ""
 }
 
 func replacePatterns(s string, attrMap map[string]string, logger *zap.Logger) (string, bool) {
