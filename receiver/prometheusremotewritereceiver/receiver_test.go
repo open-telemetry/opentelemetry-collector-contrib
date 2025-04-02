@@ -164,7 +164,6 @@ func TestHandlerPRWSnappyDecompression(t *testing.T) {
 	prwReceiver.handlePRW(w, req)
 	resp := w.Result()
 	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
-
 	assert.Len(t, mockConsumer.metrics, 1, "expected 1 metric")
 }
 
@@ -466,7 +465,6 @@ func TestTranslateV2(t *testing.T) {
 
 type nonMutatingConsumer struct{}
 
-// Capabilities returns the base consumer capabilities.
 func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
 	return consumer.Capabilities{MutatesData: false}
 }
