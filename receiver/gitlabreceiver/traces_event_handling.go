@@ -127,7 +127,7 @@ func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, 
 }
 
 // newTraceID creates a deterministic Trace ID based on the provided pipelineID and pipeline finishedAt time.
-// It's not possible to create the traceID during a pipeline execution. Details can be found here: todo
+// It's not possible to create the traceID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
 	// Validate the finishedAt timestamp first
 	if finishedAt == "" {
@@ -154,7 +154,7 @@ func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
 }
 
 // newPipelineSpanID creates a deterministic Parent Span ID based on the provided pipelineID and pipeline finishedAt time.
-// It's not possible to create the pipelineSpanID during a pipeline execution. Details can be found here: todo
+// It's not possible to create the pipelineSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error) {
 	// Validate the finishedAt timestamp first
 	if finishedAt == "" {
@@ -176,7 +176,7 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 }
 
 // newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and pipeline finishedAt time.
-// It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: todo
+// It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommon.SpanID, error) {
 	// Validate the finishedAt timestamp first
 	if finishedAt == "" {
