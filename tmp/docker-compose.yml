@@ -1,0 +1,58 @@
+version: "3.8"
+services:
+  sqlserver:
+    profiles: 
+      - sqlserver
+    image: mcr.microsoft.com/mssql/server:latest
+    platform: linux/amd64
+    container_name: sqlserver
+    hostname: sqlserver
+    ports:
+      - 1433:1433
+    env_file:
+      - sqlserver.env
+
+  postgres:
+    profiles:
+      - postgres
+    container_name: postgres_container
+    image: postgres
+    ports:
+      - "5432:5432"
+    # used for query profiling, deactivate for enhanced performance
+    command: postgres -c shared_preload_libraries=pg_stat_statements -c pg_stat_statements.track=all -c max_connections=200
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: thepassword
+
+  otel-collector:
+    container_name: otel
+    image: otelcontribcol
+    restart: always
+    command: ["--config=/etc/otel.yml"]
+    volumes:
+      - ./otel.yml:/etc/otel.yml
+  #   ports:
+  #     - 9091:9091
+  #   depends_on:
+  #     - sqlserver
+
+
+  elasticsearch:
+    image: elasticsearch:8.16.6
+    container_name: es
+    environment:
+      - xpack.security.authc.anonymous.roles=superuser
+      - xpack.security.enabled=false
+      - discovery.type=single-node
+      - ES_JAVA_OPTS=-Xms512m -Xmx512m
+    ports:
+      - "9200:9200"
+
+  kibana:
+    image: kibana:8.16.6
+    container_name: kibana
+    environment:
+      - ELASTICSEARCH_HOSTS=http://es:9200
+    ports:
+      - "5601:5601"
