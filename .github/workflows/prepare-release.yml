@@ -6,12 +6,12 @@ on:
     # the minor version number and set the patch number to 0.
     inputs:
       candidate-beta:
-        type: choice
         required: true
-        description: Select what kind of version bump this should be
-        options:
-          - minor
-          - patch
+        description: Release candidate version (beta, like 0.70.0)
+
+      current-beta:
+        required: true
+        description: Current version (beta, like 0.69.1)
 jobs:
   # Releasing opentelemetry-collector-contrib
   prepare-release:
@@ -19,48 +19,20 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: 0
           repository: "open-telemetry/opentelemetry-collector"
           path: opentelemetry-collector
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: 0
           path: opentelemetry-collector-contrib
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
           go-version: "1.23.7"
           cache: false
-
-      - name: Get Previous tag
-        id: previous-version
-        uses: WyriHaximus/github-action-get-previous-tag@04e8485ecb6487243907e330d522ff60f02283ce # v1.4.0
-        with:
-          prefix: v
-          workingDirectory: opentelemetry-collector-contrib
-
-      - name: Get next minor version
-        id: semvers
-        uses: WyriHaximus/github-action-next-semvers@18aa9ed4152808ab99b88d71f5481e41f8d89930 # v1.2.1
-        with:
-          version: ${{ steps.previous-version.outputs.tag }}
-
-      - name: Select next version
-        id: next-version
-        run: |
-          if [[ '${{ inputs.candidate-beta }}' == 'minor' ]]; then
-            echo "next-version=${{ steps.semvers.outputs.minor }}" >> $GITHUB_OUTPUT
-          elif [[ '${{ inputs.candidate-beta }}' == 'patch' ]]; then
-            echo "next-version=${{ steps.semvers.outputs.patch }}" >> $GITHUB_OUTPUT
-          else
-            echo "Error: unsupported semver type"
-            exit 1
-          fi
-
       - name: Prepare release for contrib
         working-directory: opentelemetry-collector-contrib
         env:
           GITHUB_TOKEN: ${{ secrets.OPENTELEMETRYBOT_GITHUB_TOKEN }}
           REPO: open-telemetry/opentelemetry-collector-contrib
-          CANDIDATE_BETA: ${{ steps.next-version.outputs.next-version }}
-          CURRENT_BETA: ${{ steps.previous-version.outputs.tag }}
+          CANDIDATE_BETA: ${{ inputs.candidate-beta }}
+          CURRENT_BETA: ${{ inputs.current-beta }}
         run: ./.github/workflows/scripts/release-prepare-release.sh
