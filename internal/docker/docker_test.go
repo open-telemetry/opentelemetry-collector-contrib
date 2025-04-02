@@ -111,8 +111,8 @@ func TestFetchingTimeouts(t *testing.T) {
 	statsJSON, err := cli.FetchContainerStatsAsJSON(
 		context.Background(),
 		Container{
-			ContainerJSON: &dtypes.ContainerJSON{
-				ContainerJSONBase: &dtypes.ContainerJSONBase{
+			ContainerJSON: &ctypes.ContainerJSON{
+				ContainerJSONBase: &ctypes.ContainerJSONBase{
 					ID: "notARealContainerId",
 				},
 			},
