@@ -46,7 +46,7 @@ const (
 	faroBrowserOS             = "browser_os"
 	faroBrowserMobile         = "browser_mobile"
 	faroBrowserLanguage       = "browser_language"
-	faroBrowserUserAgent      = "user_agent"
+	faroBrowserUserAgent      = "browser_userAgent"
 	faroBrowserViewportHeight = "browser_viewportHeight"
 	faroBrowserViewportWidth  = "browser_viewportWidth"
 	faroBrowserBrands         = "browser_brands"
@@ -665,6 +665,7 @@ func extractActionFromKeyVal(kv map[string]string) faroTypes.Action {
 	}
 	return action
 }
+
 func extractEventFromKeyVal(kv map[string]string) (faroTypes.Event, error) {
 	var event faroTypes.Event
 	if domain, ok := kv[faroEventDomain]; ok {
