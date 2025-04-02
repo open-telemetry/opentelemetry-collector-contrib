@@ -333,7 +333,7 @@ func TestObjMetadata(t *testing.T) {
 					Metadata: map[string]string{
 						"container.status":             "running",
 						"container.creation_timestamp": "0001-01-01T01:01:01Z",
-						"container.image":              "container-image-name",
+						"container.image.name":         "container-image-name",
 						"container.name":               "container-name",
 						"k8s.pod.name":                 "test-pod-0",
 						"k8s.pod.uid":                  "test-pod-0-uid",

@@ -25,8 +25,7 @@ const (
 	containerKeyStatusReason   = "container.status.reason"
 	containerCreationTimestamp = "container.creation_timestamp"
 	containerName              = "container.name"
-	containerID                = "container.uid"
-	containerImage             = "container.image"
+	containerImage             = "container.image.name"
 
 	// Values for container metadata
 	containerStatusRunning    = "running"
