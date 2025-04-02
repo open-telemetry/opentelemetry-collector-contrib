@@ -346,6 +346,8 @@ go.opentelemetry.io/collector/extension/extensionauth v1.29.0 h1:KUtQFVcs1dbX+Ob
 go.opentelemetry.io/collector/extension/extensionauth v1.29.0/go.mod h1:VZGnKEwLI/UpuH32ZaXOs274fsmNec+0bVvkcOK8b98=
 go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.123.0 h1:IJVZcipgx0i7tjmkayzfefDwXE8kcO0Kue70BEBCDsQ=
 go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest v0.123.0/go.mod h1:0kFCaBl1oHaB2EZR+xcy7ZWa+bL5Df0GTe4yfw+3Qtk=
+go.opentelemetry.io/collector/extension/extensiontest v0.123.0 h1:QankUyQPcmx0UIBGWJX8ObpdESHULhCo0JDhXtagb0s=
+go.opentelemetry.io/collector/extension/extensiontest v0.123.0/go.mod h1:JSnbeMyH55jFQqT77wZh04Xx8EnwcIY39A+MqnwDawk=
 go.opentelemetry.io/collector/featuregate v1.29.0 h1:DTDeaokT53AA+SiYBH8GC893cmppThU65b3XyFfLPWw=
 go.opentelemetry.io/collector/featuregate v1.29.0/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.opentelemetry.io/collector/filter v0.123.0 h1:6wrQfLifF3X1hRlGd/MfFLop8rVAIcEAmZmYIhEsuRw=
@@ -692,8 +694,8 @@ sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3 h1:/Rv+M11QRah1itp8VhT6HoVx1
 sigs.k8s.io/json v0.0.0-20241010143419-9aa6b5e7a4b3/go.mod h1:18nIHnGi6636UCz6m8i4DhaJ65T6EruyzmoQqI2BVDo=
 sigs.k8s.io/structured-merge-diff/v4 v4.0.2/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
 sigs.k8s.io/structured-merge-diff/v4 v4.1.0/go.mod h1:bJZC9H9iH24zzfZ/41RGcq60oK1F7G282QMXDPYydCw=
-sigs.k8s.io/structured-merge-diff/v4 v4.4.2 h1:MdmvkGuXi/8io6ixD5wud3vOLwc1rj0aNqRlpuvjmwA=
-sigs.k8s.io/structured-merge-diff/v4 v4.4.2/go.mod h1:N8f93tFZh9U6vpxwRArLiikrE5/2tiu1w1AGfACIGE4=
+sigs.k8s.io/structured-merge-diff/v4 v4.4.3 h1:sCP7Vv3xx/CWIuTPVN38lUPx0uw0lcLfzaiDa8Ja01A=
+sigs.k8s.io/structured-merge-diff/v4 v4.4.3/go.mod h1:N8f93tFZh9U6vpxwRArLiikrE5/2tiu1w1AGfACIGE4=
 sigs.k8s.io/yaml v1.2.0/go.mod h1:yfXDCHCao9+ENCvLSE62v9VSji2MKu5jeNfTrofGhJc=
 sigs.k8s.io/yaml v1.4.0 h1:Mk1wCc2gy/F0THH0TAp1QYyJNzRm2KCLy3o5ASXVI5E=
 sigs.k8s.io/yaml v1.4.0/go.mod h1:Ejl7/uTz7PSA4eKMyQCUTnhZYNmLIl+5c2lQPGR2BPY=
