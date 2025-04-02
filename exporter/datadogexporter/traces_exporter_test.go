@@ -370,7 +370,6 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 		},
 		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: datadogconfig.HostnameSourceFirstResource, //nolint:staticcheck
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
@@ -386,7 +385,7 @@ func testPushTraceData(t *testing.T, enableReceiveResourceSpansV2 bool) {
 	assert.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestPushTraceDataNewEnvConvention(t *testing.T) {

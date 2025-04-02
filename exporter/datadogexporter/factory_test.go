@@ -308,7 +308,6 @@ func TestOnlyMetadata(t *testing.T) {
 
 		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: datadogconfig.HostnameSourceFirstResource, //nolint:staticcheck
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
@@ -342,7 +341,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestStopExporters(t *testing.T) {
