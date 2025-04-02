@@ -274,6 +274,10 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
 
+	if c.HostMetadata.HostnameSource == HostnameSourceFirstResource {
+		c.warnings = append(c.warnings, errors.New("first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead"))
+	}
+
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 
 	// If an endpoint is not explicitly set, override it based on the site.
