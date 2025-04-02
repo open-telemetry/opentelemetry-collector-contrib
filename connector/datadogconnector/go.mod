@@ -43,7 +43,7 @@ require (
 
 require (
 	cloud.google.com/go/compute/metadata v0.6.0 // indirect
-	github.com/DataDog/agent-payload/v5 v5.0.145 // indirect
+	github.com/DataDog/agent-payload/v5 v5.0.146 // indirect
 	github.com/DataDog/datadog-agent/comp/core/config v0.64.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/builder v0.64.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/flare/types v0.64.1 // indirect
@@ -350,7 +350,7 @@ require (
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250303144028-a0af3efb3deb // indirect
-	google.golang.org/grpc v1.71.0 // indirect
+	google.golang.org/grpc v1.71.1 // indirect
 	gopkg.in/evanphx/json-patch.v4 v4.12.0 // indirect
 	gopkg.in/inf.v0 v0.9.1 // indirect
 	gopkg.in/ini.v1 v1.67.0 // indirect
