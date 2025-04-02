@@ -17,7 +17,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.uber.org/zap"
 )
@@ -93,7 +92,7 @@ type Config struct {
 // This is a slightly modified version of exporterbatcher.Config,
 // to enable tri-state Enabled: unset, false, true.
 type BatcherConfig struct {
-	exporterbatcher.Config `mapstructure:",squash"`
+	exporterhelper.BatcherConfig `mapstructure:",squash"`
 
 	// enabledSet tracks whether Enabled has been specified.
 	// If enabledSet is false, the exporter will perform its
