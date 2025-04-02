@@ -97,7 +97,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.123.0
 	go.opentelemetry.io/collector/component/componenttest v0.123.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.123.0
-	golang.org/x/net v0.37.0
+	golang.org/x/net v0.38.0
 	gopkg.in/yaml.v2 v2.4.0
 )
 
