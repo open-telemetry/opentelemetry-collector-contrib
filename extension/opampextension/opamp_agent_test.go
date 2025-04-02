@@ -71,6 +71,8 @@ func TestCreateAgentDescription(t *testing.T) {
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
 	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
+	extraResourceAttrKey := "hello"
+	extraResourceAttrValue := "world"
 
 	testCases := []struct {
 		name string
@@ -140,6 +142,26 @@ func TestCreateAgentDescription(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Set IncludeResourceAttributes",
+			cfg: func(c *Config) {
+				c.AgentDescription.IncludeResourceAttributes = true
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
+					stringKeyValue(semconv.AttributeServiceName, serviceName),
+					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
+					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSDescription, description),
+					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -151,6 +173,7 @@ func TestCreateAgentDescription(t *testing.T) {
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
+			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
 
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)
