@@ -68,6 +68,33 @@ to grant the user you are using `pg_monitor`. Take the example from `testdata/in
 GRANT pg_monitor TO otelu;
 ```
 
+The following options are available:
+- `enabled`: (optional, default=false) whether this collection is enabled.
+- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
+against `pg_stat_activity`.
+
+### Top Query Collection
+We provide functionality to collect the most executed queries from postgresql. It will get data from `pg_stat_statements` and report incremental value of `total_exec_time`, `total_plan_time`, `calls`, `rows`, `shared_blks_dirtied`, `shared_blks_hit`, `shared_blks_read`, `shared_blks_written`, `temp_blks_read`, `temp_blks_written`. To enable it, you will need the following configuration
+```
+...
+  top_query_collection:
+    enabled: true
+...
+```
+
+By default, top query collection is disabled, also note, to use it, you will need 
+to create the extension to every database. Take the example from `testdata/integration/02-create-extension.sh`
+
+```sql
+CREATE EXTENSION IF NOT EXISTS pg_stat_statements;
+```
+
+The following options are available:
+- `enabled`: (optional, default=false) whether this collection is enabled.
+- `max_rows_per_query`: (optional, default=1000) The max number of rows would return from the query 
+against `pg_stat_statements`.
+- `top_n_query`: (optional, default=1000) The maximum number of active queries to report (to the next consumer) in a single run.
+
 ### Example Configuration
 
 ```yaml
@@ -88,6 +115,9 @@ receivers:
       key_file: /home/otel/mypostgreskey.key
     query_sample_collection:
       enabled: false 
+    top_query_collection:
+      enabled: true
+      top_n_query: 1234
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml). TLS config is documented further under the [opentelemetry collector's configtls package](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md).
