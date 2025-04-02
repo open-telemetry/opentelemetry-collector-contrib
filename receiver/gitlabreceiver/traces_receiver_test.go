@@ -88,12 +88,66 @@ func TestHandleWebhook(t *testing.T) {
 			expectedCode: http.StatusBadRequest,
 		},
 		{
-			name:   "incomplete_pipeline",
+			name:   "pipeline_without_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
 				defaultGitlabEventHeader: "Pipeline Hook",
 			},
-			body:         `{"object_attributes":{"id":1,"status":"running"}}`,
+			body:         `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "running_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"running","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "pending_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"pending","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "created_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"created","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "waiting_for_resource_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"waiting_for_resource","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "preparing_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"preparing","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
+			expectedCode: http.StatusNoContent,
+		},
+		{
+			name:   "scheduled_pipeline_with_finishedat",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"scheduled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
 		},
 		{
@@ -105,6 +159,45 @@ func TestHandleWebhook(t *testing.T) {
 			body:         validPipelineWebhookEvent,
 			expectedCode: http.StatusOK,
 			spanCount:    1,
+		},
+		{
+			name:   "failed_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"failed","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			expectedCode: http.StatusOK,
+			spanCount:    1,
+		},
+		{
+			name:   "canceled_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"canceled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			expectedCode: http.StatusOK,
+			spanCount:    1,
+		},
+		{
+			name:   "skipped_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"skipped","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			expectedCode: http.StatusOK,
+			spanCount:    1,
+		},
+		{
+			name:   "unknown_status_pipeline",
+			method: http.MethodPost,
+			headers: map[string]string{
+				defaultGitlabEventHeader: "Pipeline Hook",
+			},
+			body:         `{"object_attributes":{"id":1,"status":"unknown_status","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
+			expectedCode: http.StatusNoContent,
 		},
 	}
 

@@ -177,8 +177,27 @@ func (gtr *gitlabTracesReceiver) handleWebhook(w http.ResponseWriter, r *http.Re
 		return
 	}
 
+	// Check if the finishedAt timestamp is present, which is required for traceID generation
 	if e.ObjectAttributes.FinishedAt == "" {
-		gtr.logger.Debug("pipeline not complete, skipping...", zap.String("status", e.ObjectAttributes.Status))
+		gtr.logger.Debug("pipeline missing finishedAt timestamp, skipping...",
+			zap.String("status", e.ObjectAttributes.Status))
+		w.WriteHeader(http.StatusNoContent)
+		return
+	}
+
+	// Process the pipeline based on its status
+	switch e.ObjectAttributes.Status {
+	case "running", "pending", "created", "waiting_for_resource", "preparing", "scheduled":
+		gtr.logger.Debug("pipeline not complete, skipping...",
+			zap.String("status", e.ObjectAttributes.Status))
+		w.WriteHeader(http.StatusNoContent)
+		return
+	case "success", "failed", "canceled", "skipped":
+		// above statuses are indicators of a completed pipeline, so we process them
+		break
+	default:
+		gtr.logger.Warn("unknown pipeline status, skipping...",
+			zap.String("status", e.ObjectAttributes.Status))
 		w.WriteHeader(http.StatusNoContent)
 		return
 	}
