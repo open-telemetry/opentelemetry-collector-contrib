@@ -83,6 +83,7 @@ func logToKeyVal(l faroTypes.Log) *keyVal {
 	keyValAdd(kv, "level", string(l.LogLevel))
 	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), "context_")
 	mergeKeyVal(kv, traceToKeyVal(l.Trace))
+	mergeKeyValWithPrefix(kv, actionToKeyVal(l.Action), "action_")
 	return kv
 }
 
@@ -96,6 +97,7 @@ func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
 	keyValAdd(kv, "stacktrace", exceptionToString(e))
 	mergeKeyVal(kv, traceToKeyVal(e.Trace))
 	mergeKeyValWithPrefix(kv, keyValFromMap(e.Context), "context_")
+	mergeKeyValWithPrefix(kv, actionToKeyVal(e.Action), "action_")
 	return kv
 }
 
@@ -144,7 +146,7 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 	}
 
 	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), "value_")
-
+	mergeKeyValWithPrefix(kv, actionToKeyVal(m.Action), "action_")
 	return kv
 }
 
@@ -158,7 +160,19 @@ func eventToKeyVal(e faroTypes.Event) *keyVal {
 	if e.Attributes != nil {
 		mergeKeyValWithPrefix(kv, keyValFromMap(e.Attributes), "event_data_")
 	}
+	mergeKeyValWithPrefix(kv, actionToKeyVal(e.Action), "action_")
 	mergeKeyVal(kv, traceToKeyVal(e.Trace))
+	return kv
+}
+
+func actionToKeyVal(a faroTypes.Action) *keyVal {
+	kv := newKeyVal()
+	if a == (faroTypes.Action{}) {
+		return kv
+	}
+	keyValAdd(kv, "id", a.ID)
+	keyValAdd(kv, "name", a.Name)
+	keyValAdd(kv, "parent_id", a.ParentID)
 	return kv
 }
 
