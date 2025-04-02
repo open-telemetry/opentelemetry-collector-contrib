@@ -15,7 +15,6 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver/internal/metadata"
@@ -81,24 +80,19 @@ func setupQueries(cfg *Config) []string {
 	return queries
 }
 
-func setupLogQueries(cfg *Config) ([]string, []error) {
+func setupLogQueries(cfg *Config) []string {
 	var queries []string
-	var errs []error
 
 	if cfg.QuerySample.Enabled {
-		queries = append(queries, getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery))
+		queries = append(queries, getSQLServerQuerySamplesQuery())
 	}
 
 	if cfg.TopQueryCollection.Enabled {
-		q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-		if err != nil {
-			errs = append(errs, err)
-		} else {
-			queries = append(queries, q)
-		}
+		q := getSQLServerQueryTextAndPlanQuery()
+		queries = append(queries, q)
 	}
 
-	return queries, errs
+	return queries
 }
 
 func directDBConnectionEnabled(config *Config) bool {
@@ -159,22 +153,14 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 		return nil
 	}
 
-	queries, errs := setupLogQueries(cfg)
-	if len(errs) > 0 {
-		params.Logger.Error("Failed to template queries in SQLServer receiver: Configuration might not be correct.", zap.Error(errors.Join(errs...)))
-		return nil
-	}
+	queries := setupLogQueries(cfg)
 
 	if len(queries) == 0 {
 		params.Logger.Info("No direct connection will be made to the SQL Server: No logs are enabled requiring it.")
 		return nil
 	}
 
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-	if err != nil {
-		params.Logger.Error("Failed to template needed queries in SQLServer receiver: Configuration might not be correct.", zap.Error(err))
-		return nil
-	}
+	queryTextAndPlanQuery := getSQLServerQueryTextAndPlanQuery()
 
 	// TODO: Test if this needs to be re-defined for each scraper
 	// This should be tested when there is more than one query being made.
@@ -193,7 +179,7 @@ func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlSer
 			cache = newCache(int(cfg.MaxQuerySampleCount * 8 * 2))
 		}
 
-		if query == getSQLServerQuerySamplesQuery(cfg.MaxRowsPerQuery) {
+		if query == getSQLServerQuerySamplesQuery() {
 			cache = newCache(1)
 		}
 
