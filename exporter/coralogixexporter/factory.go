@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -35,7 +34,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherConfig := exporterbatcher.NewDefaultConfig()
+	batcherConfig := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 	batcherConfig.Enabled = false
 
 	return &Config{
@@ -88,7 +87,7 @@ func createTraceExporter(ctx context.Context, set exporter.Settings, config comp
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -113,7 +112,7 @@ func createMetricsExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -138,7 +137,7 @@ func createLogsExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
@@ -163,6 +162,6 @@ func createProfilesExporter(
 		exporterhelper.WithQueue(oCfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(oCfg.BatcherConfig), //nolint:staticcheck
 	)
 }

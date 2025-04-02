@@ -368,13 +368,13 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 846)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 845)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
 
 	scraper.client = mockClient{
@@ -453,6 +453,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	tests := map[string]struct {
 		expectedFile string
 		mockClient   func(instance, sql string) sqlquery.DbClient
+		errors       bool
 	}{
 		"valid data": {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
@@ -463,6 +464,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 					maxRowsPerQuery: 100,
 				}
 			},
+			errors: false,
 		},
 		"invalid data": {
 			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
@@ -475,6 +477,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 					},
 				}
 			},
+			errors: true,
 		},
 	}
 
@@ -500,7 +503,11 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
 
 			actualLogs, err := scraper.ScrapeLogs(context.Background())
-			assert.NoError(t, err)
+			if tc.errors {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)

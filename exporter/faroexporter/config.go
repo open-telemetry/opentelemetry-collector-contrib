@@ -17,8 +17,8 @@ import (
 // Config defines configuration settings for the Faro exporter.
 type Config struct {
 	confighttp.ClientConfig `mapstructure:",squash"`
-	QueueConfig             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-	RetryConfig             configretry.BackOffConfig  `mapstructure:"retry_on_failure"`
+	QueueConfig             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	RetryConfig             configretry.BackOffConfig       `mapstructure:"retry_on_failure"`
 }
 
 var (
