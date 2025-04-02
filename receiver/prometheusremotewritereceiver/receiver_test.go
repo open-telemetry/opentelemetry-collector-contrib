@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"sync"
 	"testing"
 	"time"
 
@@ -18,6 +19,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -123,6 +125,47 @@ func TestHandlePRWContentTypeNegotiation(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestHandlerPRWSnappyDecompression(t *testing.T) {
+	prwReceiver := setupMetricsReceiver(t)
+	mockConsumer := new(MockConsumer)
+	prwReceiver.nextConsumer = mockConsumer
+	w := httptest.NewRecorder()
+
+	body := writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_metric1", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"d", "e", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	buf := proto.NewBuffer(nil)
+	err := buf.Marshal(&body)
+	assert.NoError(t, err)
+
+	var compressedBody []byte
+	compressedBody = snappy.Encode(compressedBody, buf.Bytes())
+
+	req := httptest.NewRequest(http.MethodPost, "/api/v1/write", bytes.NewBuffer(compressedBody))
+	req.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	req.Header.Set("Content-Encoding", "snappy")
+
+	prwReceiver.handlePRW(w, req)
+	resp := w.Result()
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+
+	assert.Len(t, mockConsumer.metrics, 1, "expected 1 metric")
 }
 
 func TestTranslateV2(t *testing.T) {
@@ -419,4 +462,26 @@ func TestTranslateV2(t *testing.T) {
 			assert.Equal(t, tc.expectedStats, stats)
 		})
 	}
+}
+
+type nonMutatingConsumer struct{}
+
+// Capabilities returns the base consumer capabilities.
+func (bc nonMutatingConsumer) Capabilities() consumer.Capabilities {
+	return consumer.Capabilities{MutatesData: false}
+}
+
+type MockConsumer struct {
+	nonMutatingConsumer
+	mu         sync.Mutex
+	metrics    []pmetric.Metrics
+	dataPoints int
+}
+
+func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	m.metrics = append(m.metrics, md)
+	m.dataPoints += md.DataPointCount()
+	return nil
 }
