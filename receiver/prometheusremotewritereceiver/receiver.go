@@ -21,7 +21,6 @@ import (
 	promremote "github.com/prometheus/prometheus/storage/remote"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
-	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -96,8 +95,7 @@ func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host compon
 	mux.HandleFunc("/api/v1/write", prw.handlePRW)
 	var err error
 
-	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux,
-		confighttp.WithDecoder("snappy", func(body io.ReadCloser) (io.ReadCloser, error) { return body, nil }))
+	prw.server, err = prw.config.ToServer(ctx, host, prw.settings.TelemetrySettings, mux)
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
