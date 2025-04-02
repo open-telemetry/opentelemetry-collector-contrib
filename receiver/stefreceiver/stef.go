@@ -36,24 +36,21 @@ type stefReceiver struct {
 }
 
 // Start runs the STEF gRPC receiver.
-func (r *stefReceiver) Start(_ context.Context, host component.Host) error {
+func (r *stefReceiver) Start(ctx context.Context, host component.Host) error {
 	var err error
-	if r.serverGRPC, err = r.cfg.ServerConfig.ToServer(
-		context.Background(), host, r.settings.TelemetrySettings,
-	); err != nil {
+	if r.serverGRPC, err = r.cfg.ServerConfig.ToServer(ctx, host, r.settings.TelemetrySettings); err != nil {
 		return err
 	}
-
-	r.serverGRPC = grpc.NewServer()
 
 	r.settings.Logger.Info("Starting GRPC server", zap.String("endpoint", r.cfg.ServerConfig.NetAddr.Endpoint))
-	var gln net.Listener
-	if gln, err = r.cfg.ServerConfig.NetAddr.Listen(context.Background()); err != nil {
-		return err
-	}
 
 	schema, err := oteltef.MetricsWireSchema()
 	if err != nil {
+		return err
+	}
+
+	var gln net.Listener
+	if gln, err = r.cfg.ServerConfig.NetAddr.Listen(context.Background()); err != nil {
 		return err
 	}
 
