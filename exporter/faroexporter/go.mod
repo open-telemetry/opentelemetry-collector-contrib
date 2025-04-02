@@ -107,3 +107,11 @@ require (
 )
 
 replace go.opentelemetry.io/collector/extension/auth v0.121.1-0.20250317165851-432d92d8b366 => go.opentelemetry.io/collector/extension/extensionauth v1.29.0
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../pkg/pdatatest
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro => ../../pkg/translator/faro
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../pkg/pdatautil
