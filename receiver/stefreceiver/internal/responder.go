@@ -96,6 +96,7 @@ func (r *Responder) Stop() {
 func (r *Responder) Run() {
 	// Time interval to wait before sending an ack.
 	t := time.NewTicker(r.ackInterval)
+	defer t.Stop()
 
 	lastAckedID := &atomic.Uint64{}
 
