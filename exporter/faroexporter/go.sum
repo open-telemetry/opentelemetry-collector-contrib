@@ -73,14 +73,6 @@ github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9G
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
 github.com/oapi-codegen/runtime v1.1.1 h1:EXLHh0DXIJnWhdRPN2w4MXAzFyE4CskzhNLUmtpMYro=
 github.com/oapi-codegen/runtime v1.1.1/go.mod h1:SK9X900oXmPWilYR5/WKPzt3Kqxn/uS/+lbpREv+eCg=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0 h1:bt/LdA/x3Nem2rm7xqw1S2aMwpx76+y0M4ITBxgMlvs=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0/go.mod h1:EAzpBsYIXoXQbyVTkvfOksaiq+jctnoxnPevB+/xsqw=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0 h1:zISmQ6FC0ZySjbNA48KvHLrHWYaSv7vXBNqAxdqA5cE=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0/go.mod h1:yv3tSTQdVXHvNT+OZ95Drnwb5ntWdlhTthKAi/sB5QY=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.123.0 h1:dFNC9MEqpyVfnfu29Yxw69+Na1OkEXg/NaW9mo/fbP4=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.123.0/go.mod h1:hXC2pbybf1KcGnXB5RvHhR++/QMgS1HP0iFf/DSXBFg=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.123.0 h1:JZ7h7HnAJmqvayN7sNS/VxeVudME7GJQtqKUIIF4qt8=
-github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.123.0/go.mod h1:FIDLhTvzRiZA+riQe8tljLf/0ATQ9/5Z72A/juTrHlo=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
 github.com/pierrec/lz4/v4 v4.1.22/go.mod h1:gZWDp/Ze/IJXGXf23ltt2EXimqmTUXEy0GFuRQyBid4=
 github.com/pmezard/go-difflib v1.0.0 h1:4DBwDE0NGyQoBHbLQYPwSUPoCMWR5BEzIk/f1lZbAQM=
