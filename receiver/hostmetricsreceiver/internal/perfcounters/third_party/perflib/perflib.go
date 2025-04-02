@@ -1,4 +1,4 @@
-package perflib
+package perflib // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters/third_party/perflib"
 
 /*
 Go bindings for the HKEY_PERFORMANCE_DATA perflib / Performance Counters interface.

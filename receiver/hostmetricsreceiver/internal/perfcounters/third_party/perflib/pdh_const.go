@@ -2,7 +2,7 @@
 // https://github.com/prometheus-community/windows_exporter/tree/4c7df1ccaf65df8662a2d67a7eff93019c94d98c/internal/pdh
 // Required for perflib functionality.
 
-package perflib
+package perflib // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters/third_party/perflib"
 
 // Based on https://github.com/leoluk/perflib_exporter/blob/master/collector/mapper.go
 //
