@@ -46,6 +46,9 @@ Top-Query collection specific options (only useful when top-query collection are
 - `enabled`: (optional, default = `false`): Enable collection of top queries.
   - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
+Query sample collection related options (only useful when query sample is enabled)
+- `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
 ```yaml
@@ -92,6 +95,9 @@ Top query collection enabled:
           lookback_time: 60
           max_query_sample_count: 1000
           top_query_count: 200
+        query_sample_collection:
+          enabled: true
+          max_rows_per_query: 1450
           
 ```
 ## Metrics

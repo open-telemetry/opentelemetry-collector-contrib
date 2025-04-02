@@ -53,10 +53,11 @@ func TestLoadConfig(t *testing.T) {
 					Timeout: 500 * time.Millisecond,
 					Headers: map[string]configopaque.String{"User-Agent": "OpenTelemetry -> Sematext"},
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 3,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
