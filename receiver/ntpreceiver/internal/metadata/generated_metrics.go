@@ -12,6 +12,20 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	NtpOffset: metricInfo{
+		Name: "ntp.offset",
+	},
+}
+
+type metricsInfo struct {
+	NtpOffset metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricNtpOffset struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
