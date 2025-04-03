@@ -284,12 +284,12 @@ func renderInsertTracesSQL(cfg *Config) string {
 }
 
 func renderCreateTracesTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Timestamp)")
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Timestamp)")
 	return fmt.Sprintf(createTracesTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
 func renderCreateTraceIDTsTableSQL(cfg *Config) string {
-	ttlExpr := generateTTLExpr(cfg.TTL, "toDate(Start)")
+	ttlExpr := generateTTLExpr(cfg.TTL, "toDateTime(Start)")
 	return fmt.Sprintf(createTraceIDTsTableSQL, cfg.TracesTableName, cfg.clusterString(), cfg.tableEngineString(), ttlExpr)
 }
 
