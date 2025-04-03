@@ -20,7 +20,7 @@ func TestReplacePatternValidTaskId(t *testing.T) {
 		"aws.ecs.task.id":      "test-task-id",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "test-task-id", s)
 	assert.True(t, success)
