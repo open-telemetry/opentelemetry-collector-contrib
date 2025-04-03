@@ -56,6 +56,120 @@ var MapAttributeStatusCode = map[string]AttributeStatusCode{
 	"other": AttributeStatusCodeOther,
 }
 
+var MetricsInfo = metricsInfo{
+	HaproxyBytesInput: metricInfo{
+		Name: "haproxy.bytes.input",
+	},
+	HaproxyBytesOutput: metricInfo{
+		Name: "haproxy.bytes.output",
+	},
+	HaproxyClientsCanceled: metricInfo{
+		Name: "haproxy.clients.canceled",
+	},
+	HaproxyCompressionBypass: metricInfo{
+		Name: "haproxy.compression.bypass",
+	},
+	HaproxyCompressionCount: metricInfo{
+		Name: "haproxy.compression.count",
+	},
+	HaproxyCompressionInput: metricInfo{
+		Name: "haproxy.compression.input",
+	},
+	HaproxyCompressionOutput: metricInfo{
+		Name: "haproxy.compression.output",
+	},
+	HaproxyConnectionsErrors: metricInfo{
+		Name: "haproxy.connections.errors",
+	},
+	HaproxyConnectionsRate: metricInfo{
+		Name: "haproxy.connections.rate",
+	},
+	HaproxyConnectionsRetries: metricInfo{
+		Name: "haproxy.connections.retries",
+	},
+	HaproxyConnectionsTotal: metricInfo{
+		Name: "haproxy.connections.total",
+	},
+	HaproxyDowntime: metricInfo{
+		Name: "haproxy.downtime",
+	},
+	HaproxyFailedChecks: metricInfo{
+		Name: "haproxy.failed_checks",
+	},
+	HaproxyRequestsDenied: metricInfo{
+		Name: "haproxy.requests.denied",
+	},
+	HaproxyRequestsErrors: metricInfo{
+		Name: "haproxy.requests.errors",
+	},
+	HaproxyRequestsQueued: metricInfo{
+		Name: "haproxy.requests.queued",
+	},
+	HaproxyRequestsRate: metricInfo{
+		Name: "haproxy.requests.rate",
+	},
+	HaproxyRequestsRedispatched: metricInfo{
+		Name: "haproxy.requests.redispatched",
+	},
+	HaproxyRequestsTotal: metricInfo{
+		Name: "haproxy.requests.total",
+	},
+	HaproxyResponsesDenied: metricInfo{
+		Name: "haproxy.responses.denied",
+	},
+	HaproxyResponsesErrors: metricInfo{
+		Name: "haproxy.responses.errors",
+	},
+	HaproxyServerSelectedTotal: metricInfo{
+		Name: "haproxy.server_selected.total",
+	},
+	HaproxySessionsAverage: metricInfo{
+		Name: "haproxy.sessions.average",
+	},
+	HaproxySessionsCount: metricInfo{
+		Name: "haproxy.sessions.count",
+	},
+	HaproxySessionsRate: metricInfo{
+		Name: "haproxy.sessions.rate",
+	},
+	HaproxySessionsTotal: metricInfo{
+		Name: "haproxy.sessions.total",
+	},
+}
+
+type metricsInfo struct {
+	HaproxyBytesInput           metricInfo
+	HaproxyBytesOutput          metricInfo
+	HaproxyClientsCanceled      metricInfo
+	HaproxyCompressionBypass    metricInfo
+	HaproxyCompressionCount     metricInfo
+	HaproxyCompressionInput     metricInfo
+	HaproxyCompressionOutput    metricInfo
+	HaproxyConnectionsErrors    metricInfo
+	HaproxyConnectionsRate      metricInfo
+	HaproxyConnectionsRetries   metricInfo
+	HaproxyConnectionsTotal     metricInfo
+	HaproxyDowntime             metricInfo
+	HaproxyFailedChecks         metricInfo
+	HaproxyRequestsDenied       metricInfo
+	HaproxyRequestsErrors       metricInfo
+	HaproxyRequestsQueued       metricInfo
+	HaproxyRequestsRate         metricInfo
+	HaproxyRequestsRedispatched metricInfo
+	HaproxyRequestsTotal        metricInfo
+	HaproxyResponsesDenied      metricInfo
+	HaproxyResponsesErrors      metricInfo
+	HaproxyServerSelectedTotal  metricInfo
+	HaproxySessionsAverage      metricInfo
+	HaproxySessionsCount        metricInfo
+	HaproxySessionsRate         metricInfo
+	HaproxySessionsTotal        metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricHaproxyBytesInput struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
