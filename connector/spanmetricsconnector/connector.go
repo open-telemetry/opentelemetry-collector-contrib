@@ -407,8 +407,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if endTime > startTime {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
-
-				callsDimensions := append(p.dimensions, p.callsDimensions...)
+				callsDimensions := p.dimensions
+				callsDimensions = append(callsDimensions, p.callsDimensions...)
 				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
@@ -426,7 +426,8 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate duration metrics
 				if !p.config.Histogram.Disable {
-					durationDimensions := append(p.dimensions, p.durationDimensions...)
+					durationDimensions := p.dimensions
+					durationDimensions = append(p.dimensions, p.durationDimensions...)
 					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
 					durationAttributes, ok := p.metricKeyToDimensions.Get(durationKey)
 					if !ok {
