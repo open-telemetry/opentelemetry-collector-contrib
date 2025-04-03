@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 
@@ -185,8 +186,9 @@ func TestSerializeLog(t *testing.T) {
 			logs.MarkReadOnly()
 
 			var buf bytes.Buffer
-			ser := New()
-			err := ser.SerializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
+			ser, err := New()
+			require.NoError(t, err)
+			err = ser.SerializeLog(resourceLogs.Resource(), "", scopeLogs.Scope(), "", record, elasticsearch.Index{}, &buf)
 			if (err != nil) != tt.wantErr {
 				t.Errorf("Log() error = %v, wantErr %v", err, tt.wantErr)
 			}
