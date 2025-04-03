@@ -24,7 +24,7 @@ const (
 	containerKeyStatus         = "container.status"
 	containerKeyStatusReason   = "container.status.reason"
 	containerCreationTimestamp = "container.creation_timestamp"
-	containerName              = "container.name"
+	containerName              = "k8s.container.name"
 	containerImage             = "container.image.name"
 
 	// Values for container metadata
