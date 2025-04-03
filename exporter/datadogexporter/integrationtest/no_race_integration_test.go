@@ -8,7 +8,9 @@ package integrationtest // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -65,7 +67,9 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	server := testutil.DatadogServerMock(seriesRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)

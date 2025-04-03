@@ -12,6 +12,28 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+var MetricsInfo = metricsInfo{
+	SystemCPULoadAverage15m: metricInfo{
+		Name: "system.cpu.load_average.15m",
+	},
+	SystemCPULoadAverage1m: metricInfo{
+		Name: "system.cpu.load_average.1m",
+	},
+	SystemCPULoadAverage5m: metricInfo{
+		Name: "system.cpu.load_average.5m",
+	},
+}
+
+type metricsInfo struct {
+	SystemCPULoadAverage15m metricInfo
+	SystemCPULoadAverage1m  metricInfo
+	SystemCPULoadAverage5m  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemCPULoadAverage15m struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

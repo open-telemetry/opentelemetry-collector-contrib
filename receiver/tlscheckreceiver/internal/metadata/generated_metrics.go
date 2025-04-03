@@ -12,6 +12,20 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	TlscheckTimeLeft: metricInfo{
+		Name: "tlscheck.time_left",
+	},
+}
+
+type metricsInfo struct {
+	TlscheckTimeLeft metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricTlscheckTimeLeft struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

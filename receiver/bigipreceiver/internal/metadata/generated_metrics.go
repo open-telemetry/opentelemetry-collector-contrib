@@ -120,6 +120,124 @@ var MapAttributeEnabledStatus = map[string]AttributeEnabledStatus{
 	"enabled":  AttributeEnabledStatusEnabled,
 }
 
+var MetricsInfo = metricsInfo{
+	BigipNodeAvailability: metricInfo{
+		Name: "bigip.node.availability",
+	},
+	BigipNodeConnectionCount: metricInfo{
+		Name: "bigip.node.connection.count",
+	},
+	BigipNodeDataTransmitted: metricInfo{
+		Name: "bigip.node.data.transmitted",
+	},
+	BigipNodeEnabled: metricInfo{
+		Name: "bigip.node.enabled",
+	},
+	BigipNodePacketCount: metricInfo{
+		Name: "bigip.node.packet.count",
+	},
+	BigipNodeRequestCount: metricInfo{
+		Name: "bigip.node.request.count",
+	},
+	BigipNodeSessionCount: metricInfo{
+		Name: "bigip.node.session.count",
+	},
+	BigipPoolAvailability: metricInfo{
+		Name: "bigip.pool.availability",
+	},
+	BigipPoolConnectionCount: metricInfo{
+		Name: "bigip.pool.connection.count",
+	},
+	BigipPoolDataTransmitted: metricInfo{
+		Name: "bigip.pool.data.transmitted",
+	},
+	BigipPoolEnabled: metricInfo{
+		Name: "bigip.pool.enabled",
+	},
+	BigipPoolMemberCount: metricInfo{
+		Name: "bigip.pool.member.count",
+	},
+	BigipPoolPacketCount: metricInfo{
+		Name: "bigip.pool.packet.count",
+	},
+	BigipPoolRequestCount: metricInfo{
+		Name: "bigip.pool.request.count",
+	},
+	BigipPoolMemberAvailability: metricInfo{
+		Name: "bigip.pool_member.availability",
+	},
+	BigipPoolMemberConnectionCount: metricInfo{
+		Name: "bigip.pool_member.connection.count",
+	},
+	BigipPoolMemberDataTransmitted: metricInfo{
+		Name: "bigip.pool_member.data.transmitted",
+	},
+	BigipPoolMemberEnabled: metricInfo{
+		Name: "bigip.pool_member.enabled",
+	},
+	BigipPoolMemberPacketCount: metricInfo{
+		Name: "bigip.pool_member.packet.count",
+	},
+	BigipPoolMemberRequestCount: metricInfo{
+		Name: "bigip.pool_member.request.count",
+	},
+	BigipPoolMemberSessionCount: metricInfo{
+		Name: "bigip.pool_member.session.count",
+	},
+	BigipVirtualServerAvailability: metricInfo{
+		Name: "bigip.virtual_server.availability",
+	},
+	BigipVirtualServerConnectionCount: metricInfo{
+		Name: "bigip.virtual_server.connection.count",
+	},
+	BigipVirtualServerDataTransmitted: metricInfo{
+		Name: "bigip.virtual_server.data.transmitted",
+	},
+	BigipVirtualServerEnabled: metricInfo{
+		Name: "bigip.virtual_server.enabled",
+	},
+	BigipVirtualServerPacketCount: metricInfo{
+		Name: "bigip.virtual_server.packet.count",
+	},
+	BigipVirtualServerRequestCount: metricInfo{
+		Name: "bigip.virtual_server.request.count",
+	},
+}
+
+type metricsInfo struct {
+	BigipNodeAvailability             metricInfo
+	BigipNodeConnectionCount          metricInfo
+	BigipNodeDataTransmitted          metricInfo
+	BigipNodeEnabled                  metricInfo
+	BigipNodePacketCount              metricInfo
+	BigipNodeRequestCount             metricInfo
+	BigipNodeSessionCount             metricInfo
+	BigipPoolAvailability             metricInfo
+	BigipPoolConnectionCount          metricInfo
+	BigipPoolDataTransmitted          metricInfo
+	BigipPoolEnabled                  metricInfo
+	BigipPoolMemberCount              metricInfo
+	BigipPoolPacketCount              metricInfo
+	BigipPoolRequestCount             metricInfo
+	BigipPoolMemberAvailability       metricInfo
+	BigipPoolMemberConnectionCount    metricInfo
+	BigipPoolMemberDataTransmitted    metricInfo
+	BigipPoolMemberEnabled            metricInfo
+	BigipPoolMemberPacketCount        metricInfo
+	BigipPoolMemberRequestCount       metricInfo
+	BigipPoolMemberSessionCount       metricInfo
+	BigipVirtualServerAvailability    metricInfo
+	BigipVirtualServerConnectionCount metricInfo
+	BigipVirtualServerDataTransmitted metricInfo
+	BigipVirtualServerEnabled         metricInfo
+	BigipVirtualServerPacketCount     metricInfo
+	BigipVirtualServerRequestCount    metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricBigipNodeAvailability struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

@@ -120,6 +120,44 @@ var MapAttributePacketType = map[string]AttributePacketType{
 	"success": AttributePacketTypeSuccess,
 }
 
+var MetricsInfo = metricsInfo{
+	NsxtNodeCPUUtilization: metricInfo{
+		Name: "nsxt.node.cpu.utilization",
+	},
+	NsxtNodeFilesystemUsage: metricInfo{
+		Name: "nsxt.node.filesystem.usage",
+	},
+	NsxtNodeFilesystemUtilization: metricInfo{
+		Name: "nsxt.node.filesystem.utilization",
+	},
+	NsxtNodeMemoryCacheUsage: metricInfo{
+		Name: "nsxt.node.memory.cache.usage",
+	},
+	NsxtNodeMemoryUsage: metricInfo{
+		Name: "nsxt.node.memory.usage",
+	},
+	NsxtNodeNetworkIo: metricInfo{
+		Name: "nsxt.node.network.io",
+	},
+	NsxtNodeNetworkPacketCount: metricInfo{
+		Name: "nsxt.node.network.packet.count",
+	},
+}
+
+type metricsInfo struct {
+	NsxtNodeCPUUtilization        metricInfo
+	NsxtNodeFilesystemUsage       metricInfo
+	NsxtNodeFilesystemUtilization metricInfo
+	NsxtNodeMemoryCacheUsage      metricInfo
+	NsxtNodeMemoryUsage           metricInfo
+	NsxtNodeNetworkIo             metricInfo
+	NsxtNodeNetworkPacketCount    metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricNsxtNodeCPUUtilization struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

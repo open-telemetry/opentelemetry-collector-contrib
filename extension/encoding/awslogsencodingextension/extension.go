@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
+	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -28,6 +29,19 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
 			format:      formatCloudWatchLogsSubscriptionFilter,
+		}, nil
+	case formatVPCFlowLog:
+		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
+			cfg.VPCFlowLogConfig.FileFormat,
+			settings.BuildInfo,
+			settings.Logger,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create encoding extension for %q format: %w", formatVPCFlowLog, err)
+		}
+		return &encodingExtension{
+			unmarshaler: unmarshaler,
+			format:      formatVPCFlowLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,

@@ -134,7 +134,7 @@ const (
 	// hostname-like attributes, it will fallback to 'config_or_system' behavior (see below).
 	//
 	// Do not use this hostname source if receiving data from multiple hosts.
-	HostnameSourceFirstResource HostnameSource = datadogconfig.HostnameSourceFirstResource
+	HostnameSourceFirstResource HostnameSource = datadogconfig.HostnameSourceFirstResource //nolint:staticcheck
 
 	// Deprecated: [v0.110.0] Use `datadogconfig.HostnameSource` instead.
 	// HostnameSourceConfigOrSystem picks the host metadata hostname from the 'hostname' setting,

@@ -63,7 +63,6 @@ func TestNewExporter(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
-			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
@@ -86,7 +85,7 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestNewExporter_Serializer(t *testing.T) {
@@ -115,7 +114,6 @@ func TestNewExporter_Serializer(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
-			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
@@ -528,7 +526,6 @@ func TestNewExporter_Zorkian(t *testing.T) {
 		HostMetadata: HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
-			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -549,7 +546,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {

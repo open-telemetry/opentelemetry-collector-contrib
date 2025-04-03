@@ -12,6 +12,156 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	SnowflakeBillingCloudServiceTotal: metricInfo{
+		Name: "snowflake.billing.cloud_service.total",
+	},
+	SnowflakeBillingTotalCreditTotal: metricInfo{
+		Name: "snowflake.billing.total_credit.total",
+	},
+	SnowflakeBillingVirtualWarehouseTotal: metricInfo{
+		Name: "snowflake.billing.virtual_warehouse.total",
+	},
+	SnowflakeBillingWarehouseCloudServiceTotal: metricInfo{
+		Name: "snowflake.billing.warehouse.cloud_service.total",
+	},
+	SnowflakeBillingWarehouseTotalCreditTotal: metricInfo{
+		Name: "snowflake.billing.warehouse.total_credit.total",
+	},
+	SnowflakeBillingWarehouseVirtualWarehouseTotal: metricInfo{
+		Name: "snowflake.billing.warehouse.virtual_warehouse.total",
+	},
+	SnowflakeDatabaseBytesScannedAvg: metricInfo{
+		Name: "snowflake.database.bytes_scanned.avg",
+	},
+	SnowflakeDatabaseQueryCount: metricInfo{
+		Name: "snowflake.database.query.count",
+	},
+	SnowflakeLoginsTotal: metricInfo{
+		Name: "snowflake.logins.total",
+	},
+	SnowflakePipeCreditsUsedTotal: metricInfo{
+		Name: "snowflake.pipe.credits_used.total",
+	},
+	SnowflakeQueryBlocked: metricInfo{
+		Name: "snowflake.query.blocked",
+	},
+	SnowflakeQueryBytesDeletedAvg: metricInfo{
+		Name: "snowflake.query.bytes_deleted.avg",
+	},
+	SnowflakeQueryBytesSpilledLocalAvg: metricInfo{
+		Name: "snowflake.query.bytes_spilled.local.avg",
+	},
+	SnowflakeQueryBytesSpilledRemoteAvg: metricInfo{
+		Name: "snowflake.query.bytes_spilled.remote.avg",
+	},
+	SnowflakeQueryBytesWrittenAvg: metricInfo{
+		Name: "snowflake.query.bytes_written.avg",
+	},
+	SnowflakeQueryCompilationTimeAvg: metricInfo{
+		Name: "snowflake.query.compilation_time.avg",
+	},
+	SnowflakeQueryDataScannedCacheAvg: metricInfo{
+		Name: "snowflake.query.data_scanned_cache.avg",
+	},
+	SnowflakeQueryExecuted: metricInfo{
+		Name: "snowflake.query.executed",
+	},
+	SnowflakeQueryExecutionTimeAvg: metricInfo{
+		Name: "snowflake.query.execution_time.avg",
+	},
+	SnowflakeQueryPartitionsScannedAvg: metricInfo{
+		Name: "snowflake.query.partitions_scanned.avg",
+	},
+	SnowflakeQueryQueuedOverload: metricInfo{
+		Name: "snowflake.query.queued_overload",
+	},
+	SnowflakeQueryQueuedProvision: metricInfo{
+		Name: "snowflake.query.queued_provision",
+	},
+	SnowflakeQueuedOverloadTimeAvg: metricInfo{
+		Name: "snowflake.queued_overload_time.avg",
+	},
+	SnowflakeQueuedProvisioningTimeAvg: metricInfo{
+		Name: "snowflake.queued_provisioning_time.avg",
+	},
+	SnowflakeQueuedRepairTimeAvg: metricInfo{
+		Name: "snowflake.queued_repair_time.avg",
+	},
+	SnowflakeRowsDeletedAvg: metricInfo{
+		Name: "snowflake.rows_deleted.avg",
+	},
+	SnowflakeRowsInsertedAvg: metricInfo{
+		Name: "snowflake.rows_inserted.avg",
+	},
+	SnowflakeRowsProducedAvg: metricInfo{
+		Name: "snowflake.rows_produced.avg",
+	},
+	SnowflakeRowsUnloadedAvg: metricInfo{
+		Name: "snowflake.rows_unloaded.avg",
+	},
+	SnowflakeRowsUpdatedAvg: metricInfo{
+		Name: "snowflake.rows_updated.avg",
+	},
+	SnowflakeSessionIDCount: metricInfo{
+		Name: "snowflake.session_id.count",
+	},
+	SnowflakeStorageFailsafeBytesTotal: metricInfo{
+		Name: "snowflake.storage.failsafe_bytes.total",
+	},
+	SnowflakeStorageStageBytesTotal: metricInfo{
+		Name: "snowflake.storage.stage_bytes.total",
+	},
+	SnowflakeStorageStorageBytesTotal: metricInfo{
+		Name: "snowflake.storage.storage_bytes.total",
+	},
+	SnowflakeTotalElapsedTimeAvg: metricInfo{
+		Name: "snowflake.total_elapsed_time.avg",
+	},
+}
+
+type metricsInfo struct {
+	SnowflakeBillingCloudServiceTotal              metricInfo
+	SnowflakeBillingTotalCreditTotal               metricInfo
+	SnowflakeBillingVirtualWarehouseTotal          metricInfo
+	SnowflakeBillingWarehouseCloudServiceTotal     metricInfo
+	SnowflakeBillingWarehouseTotalCreditTotal      metricInfo
+	SnowflakeBillingWarehouseVirtualWarehouseTotal metricInfo
+	SnowflakeDatabaseBytesScannedAvg               metricInfo
+	SnowflakeDatabaseQueryCount                    metricInfo
+	SnowflakeLoginsTotal                           metricInfo
+	SnowflakePipeCreditsUsedTotal                  metricInfo
+	SnowflakeQueryBlocked                          metricInfo
+	SnowflakeQueryBytesDeletedAvg                  metricInfo
+	SnowflakeQueryBytesSpilledLocalAvg             metricInfo
+	SnowflakeQueryBytesSpilledRemoteAvg            metricInfo
+	SnowflakeQueryBytesWrittenAvg                  metricInfo
+	SnowflakeQueryCompilationTimeAvg               metricInfo
+	SnowflakeQueryDataScannedCacheAvg              metricInfo
+	SnowflakeQueryExecuted                         metricInfo
+	SnowflakeQueryExecutionTimeAvg                 metricInfo
+	SnowflakeQueryPartitionsScannedAvg             metricInfo
+	SnowflakeQueryQueuedOverload                   metricInfo
+	SnowflakeQueryQueuedProvision                  metricInfo
+	SnowflakeQueuedOverloadTimeAvg                 metricInfo
+	SnowflakeQueuedProvisioningTimeAvg             metricInfo
+	SnowflakeQueuedRepairTimeAvg                   metricInfo
+	SnowflakeRowsDeletedAvg                        metricInfo
+	SnowflakeRowsInsertedAvg                       metricInfo
+	SnowflakeRowsProducedAvg                       metricInfo
+	SnowflakeRowsUnloadedAvg                       metricInfo
+	SnowflakeRowsUpdatedAvg                        metricInfo
+	SnowflakeSessionIDCount                        metricInfo
+	SnowflakeStorageFailsafeBytesTotal             metricInfo
+	SnowflakeStorageStageBytesTotal                metricInfo
+	SnowflakeStorageStorageBytesTotal              metricInfo
+	SnowflakeTotalElapsedTimeAvg                   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSnowflakeBillingCloudServiceTotal struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

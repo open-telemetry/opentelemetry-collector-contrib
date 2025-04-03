@@ -250,6 +250,204 @@ var MapAttributeType = map[string]AttributeType{
 	"miss": AttributeTypeMiss,
 }
 
+var MetricsInfo = metricsInfo{
+	MongodbActiveReads: metricInfo{
+		Name: "mongodb.active.reads",
+	},
+	MongodbActiveWrites: metricInfo{
+		Name: "mongodb.active.writes",
+	},
+	MongodbCacheOperations: metricInfo{
+		Name: "mongodb.cache.operations",
+	},
+	MongodbCollectionCount: metricInfo{
+		Name: "mongodb.collection.count",
+	},
+	MongodbCommandsRate: metricInfo{
+		Name: "mongodb.commands.rate",
+	},
+	MongodbConnectionCount: metricInfo{
+		Name: "mongodb.connection.count",
+	},
+	MongodbCursorCount: metricInfo{
+		Name: "mongodb.cursor.count",
+	},
+	MongodbCursorTimeoutCount: metricInfo{
+		Name: "mongodb.cursor.timeout.count",
+	},
+	MongodbDataSize: metricInfo{
+		Name: "mongodb.data.size",
+	},
+	MongodbDatabaseCount: metricInfo{
+		Name: "mongodb.database.count",
+	},
+	MongodbDeletesRate: metricInfo{
+		Name: "mongodb.deletes.rate",
+	},
+	MongodbDocumentOperationCount: metricInfo{
+		Name: "mongodb.document.operation.count",
+	},
+	MongodbExtentCount: metricInfo{
+		Name: "mongodb.extent.count",
+	},
+	MongodbFlushesRate: metricInfo{
+		Name: "mongodb.flushes.rate",
+	},
+	MongodbGetmoresRate: metricInfo{
+		Name: "mongodb.getmores.rate",
+	},
+	MongodbGlobalLockTime: metricInfo{
+		Name: "mongodb.global_lock.time",
+	},
+	MongodbHealth: metricInfo{
+		Name: "mongodb.health",
+	},
+	MongodbIndexAccessCount: metricInfo{
+		Name: "mongodb.index.access.count",
+	},
+	MongodbIndexCount: metricInfo{
+		Name: "mongodb.index.count",
+	},
+	MongodbIndexSize: metricInfo{
+		Name: "mongodb.index.size",
+	},
+	MongodbInsertsRate: metricInfo{
+		Name: "mongodb.inserts.rate",
+	},
+	MongodbLockAcquireCount: metricInfo{
+		Name: "mongodb.lock.acquire.count",
+	},
+	MongodbLockAcquireTime: metricInfo{
+		Name: "mongodb.lock.acquire.time",
+	},
+	MongodbLockAcquireWaitCount: metricInfo{
+		Name: "mongodb.lock.acquire.wait_count",
+	},
+	MongodbLockDeadlockCount: metricInfo{
+		Name: "mongodb.lock.deadlock.count",
+	},
+	MongodbMemoryUsage: metricInfo{
+		Name: "mongodb.memory.usage",
+	},
+	MongodbNetworkIoReceive: metricInfo{
+		Name: "mongodb.network.io.receive",
+	},
+	MongodbNetworkIoTransmit: metricInfo{
+		Name: "mongodb.network.io.transmit",
+	},
+	MongodbNetworkRequestCount: metricInfo{
+		Name: "mongodb.network.request.count",
+	},
+	MongodbObjectCount: metricInfo{
+		Name: "mongodb.object.count",
+	},
+	MongodbOperationCount: metricInfo{
+		Name: "mongodb.operation.count",
+	},
+	MongodbOperationLatencyTime: metricInfo{
+		Name: "mongodb.operation.latency.time",
+	},
+	MongodbOperationReplCount: metricInfo{
+		Name: "mongodb.operation.repl.count",
+	},
+	MongodbOperationTime: metricInfo{
+		Name: "mongodb.operation.time",
+	},
+	MongodbPageFaults: metricInfo{
+		Name: "mongodb.page_faults",
+	},
+	MongodbQueriesRate: metricInfo{
+		Name: "mongodb.queries.rate",
+	},
+	MongodbReplCommandsPerSec: metricInfo{
+		Name: "mongodb.repl_commands_per_sec",
+	},
+	MongodbReplDeletesPerSec: metricInfo{
+		Name: "mongodb.repl_deletes_per_sec",
+	},
+	MongodbReplGetmoresPerSec: metricInfo{
+		Name: "mongodb.repl_getmores_per_sec",
+	},
+	MongodbReplInsertsPerSec: metricInfo{
+		Name: "mongodb.repl_inserts_per_sec",
+	},
+	MongodbReplQueriesPerSec: metricInfo{
+		Name: "mongodb.repl_queries_per_sec",
+	},
+	MongodbReplUpdatesPerSec: metricInfo{
+		Name: "mongodb.repl_updates_per_sec",
+	},
+	MongodbSessionCount: metricInfo{
+		Name: "mongodb.session.count",
+	},
+	MongodbStorageSize: metricInfo{
+		Name: "mongodb.storage.size",
+	},
+	MongodbUpdatesRate: metricInfo{
+		Name: "mongodb.updates.rate",
+	},
+	MongodbUptime: metricInfo{
+		Name: "mongodb.uptime",
+	},
+	MongodbWtcacheBytesRead: metricInfo{
+		Name: "mongodb.wtcache.bytes.read",
+	},
+}
+
+type metricsInfo struct {
+	MongodbActiveReads            metricInfo
+	MongodbActiveWrites           metricInfo
+	MongodbCacheOperations        metricInfo
+	MongodbCollectionCount        metricInfo
+	MongodbCommandsRate           metricInfo
+	MongodbConnectionCount        metricInfo
+	MongodbCursorCount            metricInfo
+	MongodbCursorTimeoutCount     metricInfo
+	MongodbDataSize               metricInfo
+	MongodbDatabaseCount          metricInfo
+	MongodbDeletesRate            metricInfo
+	MongodbDocumentOperationCount metricInfo
+	MongodbExtentCount            metricInfo
+	MongodbFlushesRate            metricInfo
+	MongodbGetmoresRate           metricInfo
+	MongodbGlobalLockTime         metricInfo
+	MongodbHealth                 metricInfo
+	MongodbIndexAccessCount       metricInfo
+	MongodbIndexCount             metricInfo
+	MongodbIndexSize              metricInfo
+	MongodbInsertsRate            metricInfo
+	MongodbLockAcquireCount       metricInfo
+	MongodbLockAcquireTime        metricInfo
+	MongodbLockAcquireWaitCount   metricInfo
+	MongodbLockDeadlockCount      metricInfo
+	MongodbMemoryUsage            metricInfo
+	MongodbNetworkIoReceive       metricInfo
+	MongodbNetworkIoTransmit      metricInfo
+	MongodbNetworkRequestCount    metricInfo
+	MongodbObjectCount            metricInfo
+	MongodbOperationCount         metricInfo
+	MongodbOperationLatencyTime   metricInfo
+	MongodbOperationReplCount     metricInfo
+	MongodbOperationTime          metricInfo
+	MongodbPageFaults             metricInfo
+	MongodbQueriesRate            metricInfo
+	MongodbReplCommandsPerSec     metricInfo
+	MongodbReplDeletesPerSec      metricInfo
+	MongodbReplGetmoresPerSec     metricInfo
+	MongodbReplInsertsPerSec      metricInfo
+	MongodbReplQueriesPerSec      metricInfo
+	MongodbReplUpdatesPerSec      metricInfo
+	MongodbSessionCount           metricInfo
+	MongodbStorageSize            metricInfo
+	MongodbUpdatesRate            metricInfo
+	MongodbUptime                 metricInfo
+	MongodbWtcacheBytesRead       metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricMongodbActiveReads struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

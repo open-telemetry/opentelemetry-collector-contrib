@@ -32,7 +32,7 @@ type Config struct {
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	MappingsSettings          `mapstructure:"mapping"`
-	QueueConfig               exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueConfig               exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// The Observability indices would follow the recommended for immutable data stream ingestion pattern using
 	// the data_stream concepts. See https://opensearch.org/docs/latest/dashboards/im-dashboards/datastream/

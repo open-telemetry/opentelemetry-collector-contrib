@@ -45,6 +45,32 @@ var MapAttributeState = map[string]AttributeState{
 	"waiting": AttributeStateWaiting,
 }
 
+var MetricsInfo = metricsInfo{
+	NginxConnectionsAccepted: metricInfo{
+		Name: "nginx.connections_accepted",
+	},
+	NginxConnectionsCurrent: metricInfo{
+		Name: "nginx.connections_current",
+	},
+	NginxConnectionsHandled: metricInfo{
+		Name: "nginx.connections_handled",
+	},
+	NginxRequests: metricInfo{
+		Name: "nginx.requests",
+	},
+}
+
+type metricsInfo struct {
+	NginxConnectionsAccepted metricInfo
+	NginxConnectionsCurrent  metricInfo
+	NginxConnectionsHandled  metricInfo
+	NginxRequests            metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricNginxConnectionsAccepted struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

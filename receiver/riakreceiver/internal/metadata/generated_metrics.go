@@ -68,6 +68,40 @@ var MapAttributeRequest = map[string]AttributeRequest{
 	"get": AttributeRequestGet,
 }
 
+var MetricsInfo = metricsInfo{
+	RiakMemoryLimit: metricInfo{
+		Name: "riak.memory.limit",
+	},
+	RiakNodeOperationCount: metricInfo{
+		Name: "riak.node.operation.count",
+	},
+	RiakNodeOperationTimeMean: metricInfo{
+		Name: "riak.node.operation.time.mean",
+	},
+	RiakNodeReadRepairCount: metricInfo{
+		Name: "riak.node.read_repair.count",
+	},
+	RiakVnodeIndexOperationCount: metricInfo{
+		Name: "riak.vnode.index.operation.count",
+	},
+	RiakVnodeOperationCount: metricInfo{
+		Name: "riak.vnode.operation.count",
+	},
+}
+
+type metricsInfo struct {
+	RiakMemoryLimit              metricInfo
+	RiakNodeOperationCount       metricInfo
+	RiakNodeOperationTimeMean    metricInfo
+	RiakNodeReadRepairCount      metricInfo
+	RiakVnodeIndexOperationCount metricInfo
+	RiakVnodeOperationCount      metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricRiakMemoryLimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

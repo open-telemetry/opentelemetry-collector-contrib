@@ -28,10 +28,11 @@ func TestCreateDefaultConfig(t *testing.T) {
 		Port:     514,
 		Network:  "tcp",
 		Protocol: "rfc5424",
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:      false,
 			NumConsumers: 10,
 			QueueSize:    1000,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		},
 		BackOffConfig: configretry.BackOffConfig{
 			Enabled:             true,

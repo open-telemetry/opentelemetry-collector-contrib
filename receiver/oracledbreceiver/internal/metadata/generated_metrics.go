@@ -14,6 +14,144 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	OracledbConsistentGets: metricInfo{
+		Name: "oracledb.consistent_gets",
+	},
+	OracledbCPUTime: metricInfo{
+		Name: "oracledb.cpu_time",
+	},
+	OracledbDbBlockGets: metricInfo{
+		Name: "oracledb.db_block_gets",
+	},
+	OracledbDmlLocksLimit: metricInfo{
+		Name: "oracledb.dml_locks.limit",
+	},
+	OracledbDmlLocksUsage: metricInfo{
+		Name: "oracledb.dml_locks.usage",
+	},
+	OracledbEnqueueDeadlocks: metricInfo{
+		Name: "oracledb.enqueue_deadlocks",
+	},
+	OracledbEnqueueLocksLimit: metricInfo{
+		Name: "oracledb.enqueue_locks.limit",
+	},
+	OracledbEnqueueLocksUsage: metricInfo{
+		Name: "oracledb.enqueue_locks.usage",
+	},
+	OracledbEnqueueResourcesLimit: metricInfo{
+		Name: "oracledb.enqueue_resources.limit",
+	},
+	OracledbEnqueueResourcesUsage: metricInfo{
+		Name: "oracledb.enqueue_resources.usage",
+	},
+	OracledbExchangeDeadlocks: metricInfo{
+		Name: "oracledb.exchange_deadlocks",
+	},
+	OracledbExecutions: metricInfo{
+		Name: "oracledb.executions",
+	},
+	OracledbHardParses: metricInfo{
+		Name: "oracledb.hard_parses",
+	},
+	OracledbLogicalReads: metricInfo{
+		Name: "oracledb.logical_reads",
+	},
+	OracledbParseCalls: metricInfo{
+		Name: "oracledb.parse_calls",
+	},
+	OracledbPgaMemory: metricInfo{
+		Name: "oracledb.pga_memory",
+	},
+	OracledbPhysicalReadIoRequests: metricInfo{
+		Name: "oracledb.physical_read_io_requests",
+	},
+	OracledbPhysicalReads: metricInfo{
+		Name: "oracledb.physical_reads",
+	},
+	OracledbPhysicalReadsDirect: metricInfo{
+		Name: "oracledb.physical_reads_direct",
+	},
+	OracledbPhysicalWriteIoRequests: metricInfo{
+		Name: "oracledb.physical_write_io_requests",
+	},
+	OracledbPhysicalWrites: metricInfo{
+		Name: "oracledb.physical_writes",
+	},
+	OracledbPhysicalWritesDirect: metricInfo{
+		Name: "oracledb.physical_writes_direct",
+	},
+	OracledbProcessesLimit: metricInfo{
+		Name: "oracledb.processes.limit",
+	},
+	OracledbProcessesUsage: metricInfo{
+		Name: "oracledb.processes.usage",
+	},
+	OracledbSessionsLimit: metricInfo{
+		Name: "oracledb.sessions.limit",
+	},
+	OracledbSessionsUsage: metricInfo{
+		Name: "oracledb.sessions.usage",
+	},
+	OracledbTablespaceSizeLimit: metricInfo{
+		Name: "oracledb.tablespace_size.limit",
+	},
+	OracledbTablespaceSizeUsage: metricInfo{
+		Name: "oracledb.tablespace_size.usage",
+	},
+	OracledbTransactionsLimit: metricInfo{
+		Name: "oracledb.transactions.limit",
+	},
+	OracledbTransactionsUsage: metricInfo{
+		Name: "oracledb.transactions.usage",
+	},
+	OracledbUserCommits: metricInfo{
+		Name: "oracledb.user_commits",
+	},
+	OracledbUserRollbacks: metricInfo{
+		Name: "oracledb.user_rollbacks",
+	},
+}
+
+type metricsInfo struct {
+	OracledbConsistentGets          metricInfo
+	OracledbCPUTime                 metricInfo
+	OracledbDbBlockGets             metricInfo
+	OracledbDmlLocksLimit           metricInfo
+	OracledbDmlLocksUsage           metricInfo
+	OracledbEnqueueDeadlocks        metricInfo
+	OracledbEnqueueLocksLimit       metricInfo
+	OracledbEnqueueLocksUsage       metricInfo
+	OracledbEnqueueResourcesLimit   metricInfo
+	OracledbEnqueueResourcesUsage   metricInfo
+	OracledbExchangeDeadlocks       metricInfo
+	OracledbExecutions              metricInfo
+	OracledbHardParses              metricInfo
+	OracledbLogicalReads            metricInfo
+	OracledbParseCalls              metricInfo
+	OracledbPgaMemory               metricInfo
+	OracledbPhysicalReadIoRequests  metricInfo
+	OracledbPhysicalReads           metricInfo
+	OracledbPhysicalReadsDirect     metricInfo
+	OracledbPhysicalWriteIoRequests metricInfo
+	OracledbPhysicalWrites          metricInfo
+	OracledbPhysicalWritesDirect    metricInfo
+	OracledbProcessesLimit          metricInfo
+	OracledbProcessesUsage          metricInfo
+	OracledbSessionsLimit           metricInfo
+	OracledbSessionsUsage           metricInfo
+	OracledbTablespaceSizeLimit     metricInfo
+	OracledbTablespaceSizeUsage     metricInfo
+	OracledbTransactionsLimit       metricInfo
+	OracledbTransactionsUsage       metricInfo
+	OracledbUserCommits             metricInfo
+	OracledbUserRollbacks           metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricOracledbConsistentGets struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

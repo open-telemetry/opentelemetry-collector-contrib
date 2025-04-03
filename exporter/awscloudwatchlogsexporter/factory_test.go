@@ -17,10 +17,11 @@ func TestDefaultConfig_exporterSettings(t *testing.T) {
 	want := &Config{
 		BackOffConfig:      configretry.NewDefaultBackOffConfig(),
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:      true,
 			NumConsumers: 1,
 			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+			Sizer:        exporterhelper.RequestSizerTypeRequests,
 		},
 	}
 	assert.Equal(t, want, createDefaultConfig())
