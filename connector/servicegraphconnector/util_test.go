@@ -4,9 +4,10 @@
 package servicegraphconnector
 
 import (
+	"testing"
+
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"testing"
 )
 
 func TestGetFirstMatchingValue(t *testing.T) {
