@@ -482,6 +482,7 @@ jobs:
       fail-fast: false
       matrix:
         os:
+          - aix
           - darwin
           - linux
           - windows
@@ -490,25 +491,49 @@ jobs:
           - amd64
           - arm
           - arm64
+          - ppc64
           - ppc64le
           - s390x
         include:
+          - os: aix
+            arch: ppc64
           - os: linux
             arch: arm
             arm: 7
         exclude:
+          # AIX is only supported on ppc64
+          - os: aix
+            arch: 386
+          - os: aix
+            arch: amd64
+          - os: aix
+            arch: arm
+          - os: aix
+            arch: arm64
+          - os: aix
+            arch: ppc64le
+          - os: aix
+            arch: s390x
+          # Go 1.15 dropped support for 32-bit binaries
+          # on macOS: https://go.dev/doc/go1.15
           - os: darwin
             arch: 386
           - os: darwin
             arch: arm
           - os: darwin
+            arch: ppc64
+          - os: darwin
             arch: ppc64le
           - os: darwin
             arch: s390x
+          - os: linux
+            arch: ppc64
           - os: windows
             arch: arm
           - os: windows
             arch: arm64
+          - os: windows
+            arch: ppc64
           - os: windows
             arch: ppc64le
           - os: windows
