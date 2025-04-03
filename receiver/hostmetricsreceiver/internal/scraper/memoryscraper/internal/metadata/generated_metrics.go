@@ -58,6 +58,40 @@ var MapAttributeState = map[string]AttributeState{
 	"used":               AttributeStateUsed,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemLinuxMemoryAvailable: metricInfo{
+		Name: "system.linux.memory.available",
+	},
+	SystemLinuxMemoryDirty: metricInfo{
+		Name: "system.linux.memory.dirty",
+	},
+	SystemMemoryLimit: metricInfo{
+		Name: "system.memory.limit",
+	},
+	SystemMemoryPageSize: metricInfo{
+		Name: "system.memory.page_size",
+	},
+	SystemMemoryUsage: metricInfo{
+		Name: "system.memory.usage",
+	},
+	SystemMemoryUtilization: metricInfo{
+		Name: "system.memory.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemLinuxMemoryAvailable metricInfo
+	SystemLinuxMemoryDirty     metricInfo
+	SystemMemoryLimit          metricInfo
+	SystemMemoryPageSize       metricInfo
+	SystemMemoryUsage          metricInfo
+	SystemMemoryUtilization    metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemLinuxMemoryAvailable struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
