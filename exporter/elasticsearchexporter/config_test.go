@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -57,10 +56,11 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -119,10 +119,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
@@ -133,10 +133,11 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
@@ -195,10 +196,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
@@ -209,10 +210,11 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsDynamicIndex: DynamicIndexSetting{
@@ -271,10 +273,10 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					Config: exporterbatcher.Config{
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 						FlushTimeout: 30 * time.Second,
-						SizeConfig: exporterbatcher.SizeConfig{
-							Sizer:   exporterbatcher.SizerTypeItems,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
@@ -334,18 +336,6 @@ func TestConfig(t *testing.T) {
 			}),
 		},
 		{
-			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size_items"),
-			configFile: "config.yaml",
-			expected: withDefaultConfig(func(cfg *Config) {
-				cfg.Endpoint = "https://elastic.example.com:9200"
-
-				cfg.Batcher.MinSize = 100
-				cfg.Batcher.MaxSize = 200
-				cfg.Batcher.MinSizeItems = &cfg.Batcher.MinSize //nolint:staticcheck
-				cfg.Batcher.MaxSizeItems = &cfg.Batcher.MaxSize //nolint:staticcheck
-			}),
-		},
-		{
 			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size"),
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
@@ -353,14 +343,6 @@ func TestConfig(t *testing.T) {
 
 				cfg.Batcher.MinSize = 100
 				cfg.Batcher.MaxSize = 200
-
-				// TODO uncomment setting min/max_size_items in config.yaml
-				// and uncomment the below, when the fix to ignore those fields
-				// is brought into contrib.
-				// minSizeItems := 300
-				// maxSizeItems := 400
-				// cfg.Batcher.MinSizeItems = &minSizeItems
-				// cfg.Batcher.MaxSizeItems = &maxSizeItems
 			}),
 		},
 	}

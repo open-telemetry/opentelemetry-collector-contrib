@@ -168,8 +168,8 @@ type Config struct {
 	LogsSettings              `mapstructure:"logs"`
 	ServerHostSettings        `mapstructure:"server_host"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:"timeout"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:"timeout"`
 }
 
 func (c *Config) Unmarshal(conf *confmap.Conf) error {

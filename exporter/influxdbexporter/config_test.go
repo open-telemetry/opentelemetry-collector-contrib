@@ -44,10 +44,11 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "override-config"),
 			expected: &Config{
 				ClientConfig: clientConfig,
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 3,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,

@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"os"
 	"sync"
+	"testing"
 	"time"
 
 	"github.com/shirou/gopsutil/v4/process"
@@ -26,6 +27,7 @@ type inProcessCollector struct {
 	stopped    bool
 	configFile string
 	wg         sync.WaitGroup
+	t          *testing.T
 }
 
 // NewInProcessCollector creates a new inProcessCollector using the supplied component factories.
@@ -35,18 +37,19 @@ func NewInProcessCollector(factories otelcol.Factories) OtelcolRunner {
 	}
 }
 
-func (ipp *inProcessCollector) PrepareConfig(configStr string) (configCleanup func(), err error) {
+func (ipp *inProcessCollector) PrepareConfig(t *testing.T, configStr string) (configCleanup func(), err error) {
 	configCleanup = func() {
 		// NoOp
 	}
 	ipp.configStr = configStr
+	ipp.t = t
 	return configCleanup, err
 }
 
 func (ipp *inProcessCollector) Start(_ StartParams) error {
 	var err error
 
-	confFile, err := os.CreateTemp(os.TempDir(), "conf-")
+	confFile, err := os.CreateTemp(ipp.t.TempDir(), "conf-")
 	if err != nil {
 		return err
 	}
