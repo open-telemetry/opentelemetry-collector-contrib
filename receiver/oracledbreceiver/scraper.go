@@ -6,9 +6,13 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
 	"time"
+
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -43,6 +47,34 @@ const (
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	samplesQuery = `SELECT /* collector-query */
+    					S.MACHINE, S.USERNAME, S.SCHEMANAME, S.SQL_ID, S.SQL_CHILD_NUMBER, S.SID, S.SERIAL#, Q.SQL_FULLTEXT, S.OSUSER, S.PROCESS, S.PORT, S.PROGRAM,
+						S.MODULE, S.STATUS, S.STATE, Q.PLAN_HASH_VALUE, ROUND((SYSDATE - SQL_EXEC_START) * 86400) AS DURATION_SEC,
+						CASE WHEN S.TIME_REMAINING_MICRO IS NOT NULL THEN
+							S.WAIT_CLASS
+						END AS WAIT_CLASS,
+						
+						CASE WHEN S.TIME_REMAINING_MICRO IS NOT NULL THEN
+							S.EVENT
+						END AS EVENT,
+							
+						CASE WHEN S.PLSQL_ENTRY_OBJECT_ID IS NOT NULL THEN
+							CASE WHEN P.PROCEDURE_NAME IS NULL THEN
+								P.OWNER || '.' || P.OBJECT_NAME
+								ELSE
+								P.OWNER || '.' || P.OBJECT_NAME || '.' || P.PROCEDURE_NAME
+							END
+						END AS OBJECT_NAME,
+							
+						P.OBJECT_TYPE
+						FROM V$SESSION S
+						LEFT JOIN DBA_PROCEDURES P ON S.PLSQL_ENTRY_OBJECT_ID = P.OBJECT_ID
+						AND S.PLSQL_ENTRY_SUBPROGRAM_ID = P.SUBPROGRAM_ID
+						LEFT JOIN V$SQL Q
+						ON S.SQL_ID = Q.SQL_ID
+						WHERE S.SQL_ID IS NOT NULL
+						AND S.STATUS = 'ACTIVE';
+`
 )
 
 type dbProviderFunc func() (*sql.DB, error)
@@ -54,6 +86,7 @@ type oracleScraper struct {
 	tablespaceUsageClient      dbClient
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
+	samplesQueryClient         dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	mb                         *metadata.MetricsBuilder
@@ -77,6 +110,20 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		instanceName:         instanceName,
 	}
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
+}
+
+func newLogsScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig,
+	logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraper.Logs, error) {
+	s := &oracleScraper{
+		mb:                   metricsBuilder,
+		metricsBuilderConfig: metricsBuilderConfig,
+		scrapeCfg:            scrapeCfg,
+		logger:               logger,
+		dbProviderFunc:       providerFunc,
+		clientProviderFunc:   clientProviderFunc,
+		instanceName:         instanceName,
+	}
+	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
 func (s *oracleScraper) start(context.Context, component.Host) error {
@@ -330,6 +377,79 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
 	return out, nil
+}
+
+func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	const dbPrefix = "oracledb."
+	const queryPrefix = "query."
+	const duration = "duration_sec"
+	const event = "event"
+	const hostName = "machine"
+	const module = "module"
+	const osUser = "osuser"
+	const objectName = "object_name"
+	const objectType = "object_type"
+	const process = "process"
+	const port = "port"
+	const program = "program"
+	const planHashValue = "plan_hash_value"
+	const sessionID = "schemaname"
+	const sqlID = "sql_id"
+	const schemaName = "schemaname"
+	const sqlChildNumber = "sql_child_number"
+	const sid = "sid"
+	const serialNumber = "serial"
+	const status = "status"
+	const state = "state"
+	const sqlText = "sql_fulltext"
+	const username = "username"
+	const waitclass = "wait_class"
+
+	var scrapeErrors []error
+
+	rows, err := s.samplesQueryClient.metricRows(ctx)
+	if err != nil {
+		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
+	}
+
+	logs := plog.NewLogs()
+
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName(metadata.ScopeName)
+	scopedLog.Scope().SetVersion("v0.0.1")
+	for _, row := range rows {
+		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
+
+		record := scopedLog.LogRecords().AppendEmpty()
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		// reporting human-readable query  hash plan
+		record.Attributes().PutStr(dbPrefix+planHashValue, queryPlanHashVal)
+
+		s.logger.Debug(fmt.Sprintf("PlanHash: %v, DataRow: %v", queryPlanHashVal, row))
+
+		record.Attributes().PutStr(dbPrefix+hostName, row[hostName])
+		record.Attributes().PutStr(dbPrefix+username, row[username])
+		record.Attributes().PutStr(dbPrefix+schemaName, row[schemaName])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+program, row[program])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+module, row[module])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+status, row[status])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+state, row[state])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+waitclass, row[waitclass])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+event, row[event])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+objectName, row[objectName])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+objectType, row[objectType])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+sqlText, row[sqlText])
+		record.Attributes().PutStr(dbPrefix+queryPrefix+osUser, row[osUser])
+		i, err := strconv.ParseInt(row[duration], 10, 64)
+		if err != nil {
+			panic(err)
+		}
+		record.Attributes().PutInt(dbPrefix+duration, i)
+
+	}
+	return logs, errors.Join(scrapeErrors...)
 }
 
 func (s *oracleScraper) shutdown(_ context.Context) error {

@@ -44,6 +44,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbPhysicalReads:         MetricConfig{Enabled: true},
 					OracledbProcessesLimit:        MetricConfig{Enabled: true},
 					OracledbProcessesUsage:        MetricConfig{Enabled: true},
+					OracledbQueryChildNumber:      MetricConfig{Enabled: true},
+					OracledbQueryDuration:         MetricConfig{Enabled: true},
+					OracledbQueryID:               MetricConfig{Enabled: true},
+					OracledbQueryPlanHash:         MetricConfig{Enabled: true},
+					OracledbQueryPort:             MetricConfig{Enabled: true},
+					OracledbQueryProcess:          MetricConfig{Enabled: true},
+					OracledbQuerySerialNumber:     MetricConfig{Enabled: true},
+					OracledbQuerySid:              MetricConfig{Enabled: true},
 					OracledbSessionsLimit:         MetricConfig{Enabled: true},
 					OracledbSessionsUsage:         MetricConfig{Enabled: true},
 					OracledbTablespaceSizeLimit:   MetricConfig{Enabled: true},
@@ -54,7 +62,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:         MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+					DbQueryText:             ResourceAttributeConfig{Enabled: true},
+					OracledbInstanceName:    ResourceAttributeConfig{Enabled: true},
+					OracledbQueryEvent:      ResourceAttributeConfig{Enabled: true},
+					OracledbQueryModule:     ResourceAttributeConfig{Enabled: true},
+					OracledbQueryObjectName: ResourceAttributeConfig{Enabled: true},
+					OracledbQueryObjectType: ResourceAttributeConfig{Enabled: true},
+					OracledbQueryOsuser:     ResourceAttributeConfig{Enabled: true},
+					OracledbQueryProgram:    ResourceAttributeConfig{Enabled: true},
+					OracledbQueryState:      ResourceAttributeConfig{Enabled: true},
+					OracledbQueryStatus:     ResourceAttributeConfig{Enabled: true},
+					OracledbQueryWaitClass:  ResourceAttributeConfig{Enabled: true},
+					OracledbSchemaname:      ResourceAttributeConfig{Enabled: true},
+					OracledbUsername:        ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -81,6 +101,14 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbPhysicalReads:         MetricConfig{Enabled: false},
 					OracledbProcessesLimit:        MetricConfig{Enabled: false},
 					OracledbProcessesUsage:        MetricConfig{Enabled: false},
+					OracledbQueryChildNumber:      MetricConfig{Enabled: false},
+					OracledbQueryDuration:         MetricConfig{Enabled: false},
+					OracledbQueryID:               MetricConfig{Enabled: false},
+					OracledbQueryPlanHash:         MetricConfig{Enabled: false},
+					OracledbQueryPort:             MetricConfig{Enabled: false},
+					OracledbQueryProcess:          MetricConfig{Enabled: false},
+					OracledbQuerySerialNumber:     MetricConfig{Enabled: false},
+					OracledbQuerySid:              MetricConfig{Enabled: false},
 					OracledbSessionsLimit:         MetricConfig{Enabled: false},
 					OracledbSessionsUsage:         MetricConfig{Enabled: false},
 					OracledbTablespaceSizeLimit:   MetricConfig{Enabled: false},
@@ -91,7 +119,19 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					OracledbUserRollbacks:         MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+					DbQueryText:             ResourceAttributeConfig{Enabled: false},
+					OracledbInstanceName:    ResourceAttributeConfig{Enabled: false},
+					OracledbQueryEvent:      ResourceAttributeConfig{Enabled: false},
+					OracledbQueryModule:     ResourceAttributeConfig{Enabled: false},
+					OracledbQueryObjectName: ResourceAttributeConfig{Enabled: false},
+					OracledbQueryObjectType: ResourceAttributeConfig{Enabled: false},
+					OracledbQueryOsuser:     ResourceAttributeConfig{Enabled: false},
+					OracledbQueryProgram:    ResourceAttributeConfig{Enabled: false},
+					OracledbQueryState:      ResourceAttributeConfig{Enabled: false},
+					OracledbQueryStatus:     ResourceAttributeConfig{Enabled: false},
+					OracledbQueryWaitClass:  ResourceAttributeConfig{Enabled: false},
+					OracledbSchemaname:      ResourceAttributeConfig{Enabled: false},
+					OracledbUsername:        ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -99,8 +139,9 @@ func TestMetricsBuilderConfig(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadMetricsBuilderConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(MetricConfig{}, ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
@@ -127,21 +168,46 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				OracledbInstanceName: ResourceAttributeConfig{Enabled: true},
+				DbQueryText:             ResourceAttributeConfig{Enabled: true},
+				OracledbInstanceName:    ResourceAttributeConfig{Enabled: true},
+				OracledbQueryEvent:      ResourceAttributeConfig{Enabled: true},
+				OracledbQueryModule:     ResourceAttributeConfig{Enabled: true},
+				OracledbQueryObjectName: ResourceAttributeConfig{Enabled: true},
+				OracledbQueryObjectType: ResourceAttributeConfig{Enabled: true},
+				OracledbQueryOsuser:     ResourceAttributeConfig{Enabled: true},
+				OracledbQueryProgram:    ResourceAttributeConfig{Enabled: true},
+				OracledbQueryState:      ResourceAttributeConfig{Enabled: true},
+				OracledbQueryStatus:     ResourceAttributeConfig{Enabled: true},
+				OracledbQueryWaitClass:  ResourceAttributeConfig{Enabled: true},
+				OracledbSchemaname:      ResourceAttributeConfig{Enabled: true},
+				OracledbUsername:        ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				OracledbInstanceName: ResourceAttributeConfig{Enabled: false},
+				DbQueryText:             ResourceAttributeConfig{Enabled: false},
+				OracledbInstanceName:    ResourceAttributeConfig{Enabled: false},
+				OracledbQueryEvent:      ResourceAttributeConfig{Enabled: false},
+				OracledbQueryModule:     ResourceAttributeConfig{Enabled: false},
+				OracledbQueryObjectName: ResourceAttributeConfig{Enabled: false},
+				OracledbQueryObjectType: ResourceAttributeConfig{Enabled: false},
+				OracledbQueryOsuser:     ResourceAttributeConfig{Enabled: false},
+				OracledbQueryProgram:    ResourceAttributeConfig{Enabled: false},
+				OracledbQueryState:      ResourceAttributeConfig{Enabled: false},
+				OracledbQueryStatus:     ResourceAttributeConfig{Enabled: false},
+				OracledbQueryWaitClass:  ResourceAttributeConfig{Enabled: false},
+				OracledbSchemaname:      ResourceAttributeConfig{Enabled: false},
+				OracledbUsername:        ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt.name)
-			diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{}))
-			require.Emptyf(t, diff, "Config mismatch (-expected +actual):\n%s", diff)
+			if diff := cmp.Diff(tt.want, cfg, cmpopts.IgnoreUnexported(ResourceAttributeConfig{})); diff != "" {
+				t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
+			}
 		})
 	}
 }
