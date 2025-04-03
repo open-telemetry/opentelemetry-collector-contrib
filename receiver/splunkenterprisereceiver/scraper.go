@@ -1643,7 +1643,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Times
 }
 
 // Scrape dispatch artifacts
-func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	// if NONE of the metrics set in this scrape are set we return early
 	if !(s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled ||
 		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled ||
