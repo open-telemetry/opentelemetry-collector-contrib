@@ -212,6 +212,196 @@ var MapAttributeTempdbState = map[string]AttributeTempdbState{
 	"used": AttributeTempdbStateUsed,
 }
 
+var MetricsInfo = metricsInfo{
+	SqlserverBatchRequestRate: metricInfo{
+		Name: "sqlserver.batch.request.rate",
+	},
+	SqlserverBatchSQLCompilationRate: metricInfo{
+		Name: "sqlserver.batch.sql_compilation.rate",
+	},
+	SqlserverBatchSQLRecompilationRate: metricInfo{
+		Name: "sqlserver.batch.sql_recompilation.rate",
+	},
+	SqlserverDatabaseBackupOrRestoreRate: metricInfo{
+		Name: "sqlserver.database.backup_or_restore.rate",
+	},
+	SqlserverDatabaseCount: metricInfo{
+		Name: "sqlserver.database.count",
+	},
+	SqlserverDatabaseExecutionErrors: metricInfo{
+		Name: "sqlserver.database.execution.errors",
+	},
+	SqlserverDatabaseFullScanRate: metricInfo{
+		Name: "sqlserver.database.full_scan.rate",
+	},
+	SqlserverDatabaseIo: metricInfo{
+		Name: "sqlserver.database.io",
+	},
+	SqlserverDatabaseLatency: metricInfo{
+		Name: "sqlserver.database.latency",
+	},
+	SqlserverDatabaseOperations: metricInfo{
+		Name: "sqlserver.database.operations",
+	},
+	SqlserverDatabaseTempdbSpace: metricInfo{
+		Name: "sqlserver.database.tempdb.space",
+	},
+	SqlserverDatabaseTempdbVersionStoreSize: metricInfo{
+		Name: "sqlserver.database.tempdb.version_store.size",
+	},
+	SqlserverDeadlockRate: metricInfo{
+		Name: "sqlserver.deadlock.rate",
+	},
+	SqlserverIndexSearchRate: metricInfo{
+		Name: "sqlserver.index.search.rate",
+	},
+	SqlserverLockTimeoutRate: metricInfo{
+		Name: "sqlserver.lock.timeout.rate",
+	},
+	SqlserverLockWaitRate: metricInfo{
+		Name: "sqlserver.lock.wait.rate",
+	},
+	SqlserverLockWaitTimeAvg: metricInfo{
+		Name: "sqlserver.lock.wait_time.avg",
+	},
+	SqlserverLoginRate: metricInfo{
+		Name: "sqlserver.login.rate",
+	},
+	SqlserverLogoutRate: metricInfo{
+		Name: "sqlserver.logout.rate",
+	},
+	SqlserverMemoryGrantsPendingCount: metricInfo{
+		Name: "sqlserver.memory.grants.pending.count",
+	},
+	SqlserverMemoryUsage: metricInfo{
+		Name: "sqlserver.memory.usage",
+	},
+	SqlserverPageBufferCacheFreeListStallsRate: metricInfo{
+		Name: "sqlserver.page.buffer_cache.free_list.stalls.rate",
+	},
+	SqlserverPageBufferCacheHitRatio: metricInfo{
+		Name: "sqlserver.page.buffer_cache.hit_ratio",
+	},
+	SqlserverPageCheckpointFlushRate: metricInfo{
+		Name: "sqlserver.page.checkpoint.flush.rate",
+	},
+	SqlserverPageLazyWriteRate: metricInfo{
+		Name: "sqlserver.page.lazy_write.rate",
+	},
+	SqlserverPageLifeExpectancy: metricInfo{
+		Name: "sqlserver.page.life_expectancy",
+	},
+	SqlserverPageLookupRate: metricInfo{
+		Name: "sqlserver.page.lookup.rate",
+	},
+	SqlserverPageOperationRate: metricInfo{
+		Name: "sqlserver.page.operation.rate",
+	},
+	SqlserverPageSplitRate: metricInfo{
+		Name: "sqlserver.page.split.rate",
+	},
+	SqlserverProcessesBlocked: metricInfo{
+		Name: "sqlserver.processes.blocked",
+	},
+	SqlserverReplicaDataRate: metricInfo{
+		Name: "sqlserver.replica.data.rate",
+	},
+	SqlserverResourcePoolDiskThrottledReadRate: metricInfo{
+		Name: "sqlserver.resource_pool.disk.throttled.read.rate",
+	},
+	SqlserverResourcePoolDiskThrottledWriteRate: metricInfo{
+		Name: "sqlserver.resource_pool.disk.throttled.write.rate",
+	},
+	SqlserverTableCount: metricInfo{
+		Name: "sqlserver.table.count",
+	},
+	SqlserverTransactionDelay: metricInfo{
+		Name: "sqlserver.transaction.delay",
+	},
+	SqlserverTransactionMirrorWriteRate: metricInfo{
+		Name: "sqlserver.transaction.mirror_write.rate",
+	},
+	SqlserverTransactionRate: metricInfo{
+		Name: "sqlserver.transaction.rate",
+	},
+	SqlserverTransactionWriteRate: metricInfo{
+		Name: "sqlserver.transaction.write.rate",
+	},
+	SqlserverTransactionLogFlushDataRate: metricInfo{
+		Name: "sqlserver.transaction_log.flush.data.rate",
+	},
+	SqlserverTransactionLogFlushRate: metricInfo{
+		Name: "sqlserver.transaction_log.flush.rate",
+	},
+	SqlserverTransactionLogFlushWaitRate: metricInfo{
+		Name: "sqlserver.transaction_log.flush.wait.rate",
+	},
+	SqlserverTransactionLogGrowthCount: metricInfo{
+		Name: "sqlserver.transaction_log.growth.count",
+	},
+	SqlserverTransactionLogShrinkCount: metricInfo{
+		Name: "sqlserver.transaction_log.shrink.count",
+	},
+	SqlserverTransactionLogUsage: metricInfo{
+		Name: "sqlserver.transaction_log.usage",
+	},
+	SqlserverUserConnectionCount: metricInfo{
+		Name: "sqlserver.user.connection.count",
+	},
+}
+
+type metricsInfo struct {
+	SqlserverBatchRequestRate                   metricInfo
+	SqlserverBatchSQLCompilationRate            metricInfo
+	SqlserverBatchSQLRecompilationRate          metricInfo
+	SqlserverDatabaseBackupOrRestoreRate        metricInfo
+	SqlserverDatabaseCount                      metricInfo
+	SqlserverDatabaseExecutionErrors            metricInfo
+	SqlserverDatabaseFullScanRate               metricInfo
+	SqlserverDatabaseIo                         metricInfo
+	SqlserverDatabaseLatency                    metricInfo
+	SqlserverDatabaseOperations                 metricInfo
+	SqlserverDatabaseTempdbSpace                metricInfo
+	SqlserverDatabaseTempdbVersionStoreSize     metricInfo
+	SqlserverDeadlockRate                       metricInfo
+	SqlserverIndexSearchRate                    metricInfo
+	SqlserverLockTimeoutRate                    metricInfo
+	SqlserverLockWaitRate                       metricInfo
+	SqlserverLockWaitTimeAvg                    metricInfo
+	SqlserverLoginRate                          metricInfo
+	SqlserverLogoutRate                         metricInfo
+	SqlserverMemoryGrantsPendingCount           metricInfo
+	SqlserverMemoryUsage                        metricInfo
+	SqlserverPageBufferCacheFreeListStallsRate  metricInfo
+	SqlserverPageBufferCacheHitRatio            metricInfo
+	SqlserverPageCheckpointFlushRate            metricInfo
+	SqlserverPageLazyWriteRate                  metricInfo
+	SqlserverPageLifeExpectancy                 metricInfo
+	SqlserverPageLookupRate                     metricInfo
+	SqlserverPageOperationRate                  metricInfo
+	SqlserverPageSplitRate                      metricInfo
+	SqlserverProcessesBlocked                   metricInfo
+	SqlserverReplicaDataRate                    metricInfo
+	SqlserverResourcePoolDiskThrottledReadRate  metricInfo
+	SqlserverResourcePoolDiskThrottledWriteRate metricInfo
+	SqlserverTableCount                         metricInfo
+	SqlserverTransactionDelay                   metricInfo
+	SqlserverTransactionMirrorWriteRate         metricInfo
+	SqlserverTransactionRate                    metricInfo
+	SqlserverTransactionWriteRate               metricInfo
+	SqlserverTransactionLogFlushDataRate        metricInfo
+	SqlserverTransactionLogFlushRate            metricInfo
+	SqlserverTransactionLogFlushWaitRate        metricInfo
+	SqlserverTransactionLogGrowthCount          metricInfo
+	SqlserverTransactionLogShrinkCount          metricInfo
+	SqlserverTransactionLogUsage                metricInfo
+	SqlserverUserConnectionCount                metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSqlserverBatchRequestRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
