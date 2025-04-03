@@ -44,7 +44,9 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, attributes []KeyVal
 	} else if ev.Source.Host != "" {
 		eventHost = ev.Source.Host
 	}
-	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, eventHost)
+	if eventHost != "" {
+		resourceAttrs.PutStr(semconv.AttributeK8SNodeName, eventHost)
+	}
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -53,6 +55,12 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, attributes []KeyVal
 	resourceAttrs.PutStr("k8s.object.fieldpath", ev.InvolvedObject.FieldPath)
 	resourceAttrs.PutStr("k8s.object.api_version", ev.InvolvedObject.APIVersion)
 	resourceAttrs.PutStr("k8s.object.resource_version", ev.InvolvedObject.ResourceVersion)
+
+	//adding resource name and k8s.pod.name/ k8s.node.name/ k8s.daemonset.name etc accrording to kind
+	object_key := "k8s." + strings.ToLower(ev.InvolvedObject.Kind) + ".name"
+	object_value := ev.InvolvedObject.Name
+	resourceAttrs.PutStr(object_key, object_value)
+	resourceAttrs.PutStr("resourceName", object_value)
 
 	resourceAttrs.PutStr("type", "event") // This should come from config. To be enhanced.
 
