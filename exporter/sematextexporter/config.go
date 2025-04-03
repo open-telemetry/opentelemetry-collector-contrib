@@ -53,7 +53,7 @@ type LogsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the logs.
 	AppToken string `mapstructure:"app_token"`
 	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
-	LogsEndpoint string `mapstructure:"logs_endpoint"`
+	LogsEndpoint string `mapstructure:"-"`
 }
 
 // Validate checks for invalid or missing entries in the configuration.
