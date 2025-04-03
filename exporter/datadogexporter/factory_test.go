@@ -178,16 +178,11 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	assert.NoError(t, featuregateErr)
 }
 
-func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
 	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
-
-	if !isMetricExportV2Enabled() {
-		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
-	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)

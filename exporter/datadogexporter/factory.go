@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -322,6 +323,20 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	case isMetricExportSerializerEnabled():
+		errchan := make(chan error)
+		apiClient := clientutil.CreateAPIClient(
+			set.BuildInfo,
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
+		if cfg.API.FailOnInvalidKey {
+			err = <-errchan
+			if err != nil {
+				cancel()  // first cancel context
+				wg.Wait() // then wait for shutdown
+				return nil, err
+			}
+		}
 		// Start the hostmetadata pusher once.
 		// It sends the hostmetadata for the host where the collector is running.
 		if cfg.HostMetadata.Enabled {
