@@ -15,6 +15,7 @@ import (
 	"k8s.io/client-go/dynamic"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"go.uber.org/zap"
 )
 
 type mode string
@@ -33,6 +34,14 @@ var modeMap = map[mode]bool{
 	WatchMode: true,
 }
 
+type ErrorMode string
+
+const (
+	PropagateError ErrorMode = "propagate"
+	IgnoreError    ErrorMode = "ignore"
+	SilentError    ErrorMode = "silent"
+)
+
 type K8sObjectsConfig struct {
 	Name             string               `mapstructure:"name"`
 	Group            string               `mapstructure:"group"`
@@ -50,7 +59,9 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects []*K8sObjectsConfig `mapstructure:"objects"`
+	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode ErrorMode           `mapstructure:"error_mode"`
+	logger    *zap.Logger
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
@@ -58,18 +69,51 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	zapCfg := zap.NewProductionConfig()
+	logger, err := zapCfg.Build()
+	if err != nil {
+		return fmt.Errorf("failed to create logger: %w", err)
+	}
+	c.logger = logger
+
+	if c.ErrorMode == "" {
+		c.ErrorMode = PropagateError
+	}
+
+	switch c.ErrorMode {
+	case PropagateError, IgnoreError, SilentError:
+	default:
+		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
+	}
+
 	validObjects, err := c.getValidObjects()
 	if err != nil {
-		return err
+		if c.ErrorMode == PropagateError {
+			return err
+		}
+		if c.ErrorMode == IgnoreError {
+			c.logger.Warn("Error getting valid objects", zap.Error(err))
+		}
 	}
+
+	var validConfigs []*K8sObjectsConfig
+
 	for _, object := range c.Objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			availableResource := make([]string, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
+			if c.ErrorMode == PropagateError {
+				return fmt.Errorf("resource not found: %s", object.Name)
 			}
-			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
+			if c.ErrorMode == IgnoreError {
+				availableResource := make([]string, 0, len(validObjects))
+				for k := range validObjects {
+					availableResource = append(availableResource, k)
+				}
+				c.logger.Warn("Resource not found",
+					zap.String("resource", object.Name),
+					zap.Strings("available_resources", availableResource))
+			}
+			continue
 		}
 
 		gvr := gvrs[0]
@@ -95,7 +139,21 @@ func (c *Config) Validate() error {
 		}
 
 		object.gvr = gvr
+		validConfigs = append(validConfigs, object)
 	}
+
+	c.Objects = validConfigs
+
+	if len(validConfigs) == 0 {
+		msg := "no valid Kubernetes objects found to watch"
+		if c.ErrorMode == PropagateError {
+			return errors.New(msg)
+		}
+		if c.ErrorMode == IgnoreError {
+			c.logger.Warn(msg)
+		}
+	}
+
 	return nil
 }
 

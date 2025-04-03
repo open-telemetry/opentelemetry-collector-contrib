@@ -161,6 +161,13 @@ func TestLoadConfig(t *testing.T) {
 			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
 			assert.Equal(t, tt.expected.Objects, cfg.Objects)
+
+			err = cfg.Validate()
+			if tt.expected == nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
