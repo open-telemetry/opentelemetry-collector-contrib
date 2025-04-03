@@ -747,21 +747,18 @@ func TestWithExcludes(t *testing.T) {
 	}
 }
 
-func Test_withAutomaticRules(t *testing.T) {
+func TestOtelAnnotations(t *testing.T) {
 	tests := []struct {
 		name            string
-		rules           kube.AutomaticRules
+		enabled         bool
 		wantAnnotations []kube.FieldExtractionRule
 	}{
 		{
-			name:  "no automatic rules",
-			rules: kube.AutomaticRules{},
+			name: "no automatic rules",
 		},
 		{
-			name: "default automatic rules",
-			rules: kube.AutomaticRules{
-				Enabled: true,
-			},
+			name:    "default automatic rules",
+			enabled: true,
 			wantAnnotations: []kube.FieldExtractionRule{
 				{
 					Name:                 "$1",
@@ -771,26 +768,11 @@ func Test_withAutomaticRules(t *testing.T) {
 				},
 			},
 		},
-		{
-			name: "custom automatic rules",
-			rules: kube.AutomaticRules{
-				Enabled:            true,
-				AnnotationPrefixes: []string{"custom.prefix/"},
-			},
-			wantAnnotations: []kube.FieldExtractionRule{
-				{
-					Name:                 "$1",
-					KeyRegex:             regexp.MustCompile(`^custom\.prefix/(.+)$`),
-					HasKeyRegexReference: true,
-					From:                 kube.MetadataFromPod,
-				},
-			},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			p := kubernetesprocessor{}
-			rules := withAutomaticRules(tt.rules)
+			rules := withOtelAnnotations(tt.enabled)
 			err := rules(&p)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.wantAnnotations, p.rules.Annotations)
