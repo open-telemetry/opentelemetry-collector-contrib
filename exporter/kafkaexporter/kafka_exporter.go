@@ -318,14 +318,13 @@ func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader
 	info := client.FromContext(ctx)
 	headers := make([]sarama.RecordHeader, 0, len(keys))
 	for _, key := range keys {
-		v := info.Metadata.Get(key)
-		if len(v) != 1 {
-			continue
+		valueSlice := info.Metadata.Get(key)
+		for _, v := range valueSlice {
+			headers = append(headers, sarama.RecordHeader{
+				Key:   []byte(key),
+				Value: []byte(v),
+			})
 		}
-		headers = append(headers, sarama.RecordHeader{
-			Key:   []byte(key),
-			Value: []byte(v[0]),
-		})
 	}
 	return headers
 }

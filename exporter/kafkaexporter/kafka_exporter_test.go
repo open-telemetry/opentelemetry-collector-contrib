@@ -156,14 +156,15 @@ func TestTracesPusher_ctx(t *testing.T) {
 		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
 			assert.Equal(t, []sarama.RecordHeader{
 				{Key: []byte("x-tenant-id"), Value: []byte("my_tenant_id")},
-				{Key: []byte("x-request-id"), Value: []byte("123456789")},
+				{Key: []byte("x-request-ids"), Value: []byte("123456789")},
+				{Key: []byte("x-request-ids"), Value: []byte("123141")},
 			}, pm.Headers)
 			return nil
 		})
 
 		p := kafkaTracesProducer{
 			cfg: Config{
-				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-ids"},
 			},
 			producer:  producer,
 			marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
@@ -174,7 +175,7 @@ func TestTracesPusher_ctx(t *testing.T) {
 		ctx := client.NewContext(context.Background(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"x-tenant-id":    {"my_tenant_id"},
-				"x-request-id":   {"123456789"},
+				"x-request-ids":  {"123456789", "123141"},
 				"discarded-meta": {"my-meta"}, // This will be ignored.
 			}),
 		})
@@ -270,14 +271,15 @@ func TestMetricsDataPusher_ctx(t *testing.T) {
 		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
 			assert.Equal(t, []sarama.RecordHeader{
 				{Key: []byte("x-tenant-id"), Value: []byte("anoter_tenant_id")},
-				{Key: []byte("x-request-id"), Value: []byte("987654321")},
+				{Key: []byte("x-request-ids"), Value: []byte("987654321")},
+				{Key: []byte("x-request-ids"), Value: []byte("012")},
 			}, pm.Headers)
 			return nil
 		})
 
 		p := kafkaMetricsProducer{
 			cfg: Config{
-				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-ids"},
 			},
 			producer:  producer,
 			marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
@@ -288,7 +290,7 @@ func TestMetricsDataPusher_ctx(t *testing.T) {
 		ctx := client.NewContext(context.Background(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"x-tenant-id":    {"anoter_tenant_id"},
-				"x-request-id":   {"987654321"},
+				"x-request-ids":  {"987654321", "012"},
 				"discarded-meta": {"my-meta"}, // This will be ignored.
 			}),
 		})
@@ -384,14 +386,15 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
 			assert.Equal(t, []sarama.RecordHeader{
 				{Key: []byte("x-tenant-id"), Value: []byte("yet_another_tenant_id")},
-				{Key: []byte("x-request-id"), Value: []byte("01234")},
+				{Key: []byte("x-request-ids"), Value: []byte("01234")},
+				{Key: []byte("x-request-ids"), Value: []byte("9761")},
 			}, pm.Headers)
 			return nil
 		})
 
 		p := kafkaLogsProducer{
 			cfg: Config{
-				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-ids"},
 			},
 			producer:  producer,
 			marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
@@ -402,7 +405,7 @@ func TestLogsDataPusher_ctx(t *testing.T) {
 		ctx := client.NewContext(context.Background(), client.Info{
 			Metadata: client.NewMetadata(map[string][]string{
 				"x-tenant-id":    {"yet_another_tenant_id"},
-				"x-request-id":   {"01234"},
+				"x-request-ids":  {"01234", "9761"},
 				"discarded-meta": {"my-meta"}, // This will be ignored.
 			}),
 		})
