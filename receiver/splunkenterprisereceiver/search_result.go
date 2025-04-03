@@ -26,6 +26,7 @@ var apiDict = map[string]string{
 	`SplunkKVStoreStatus`:       `/services/kvstore/status?output_mode=json`,
 	`SplunkDispatchArtifacts`:   `/services/server/status/dispatch-artifacts?output_mode=json&count=-1`,
 	`SplunkHealth`:              `/services/server/health/splunkd/details?output_mode=json`,
+	`SplunkInfo`:                `/services/server/info?output_mode=json`,
 }
 
 type searchResponse struct {
