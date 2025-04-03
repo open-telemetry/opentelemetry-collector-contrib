@@ -412,6 +412,300 @@ var MapAttributeVsanThroughputDirection = map[string]AttributeVsanThroughputDire
 	"write": AttributeVsanThroughputDirectionWrite,
 }
 
+var MetricsInfo = metricsInfo{
+	VcenterClusterCPUEffective: metricInfo{
+		Name: "vcenter.cluster.cpu.effective",
+	},
+	VcenterClusterCPULimit: metricInfo{
+		Name: "vcenter.cluster.cpu.limit",
+	},
+	VcenterClusterHostCount: metricInfo{
+		Name: "vcenter.cluster.host.count",
+	},
+	VcenterClusterMemoryEffective: metricInfo{
+		Name: "vcenter.cluster.memory.effective",
+	},
+	VcenterClusterMemoryLimit: metricInfo{
+		Name: "vcenter.cluster.memory.limit",
+	},
+	VcenterClusterVMCount: metricInfo{
+		Name: "vcenter.cluster.vm.count",
+	},
+	VcenterClusterVMTemplateCount: metricInfo{
+		Name: "vcenter.cluster.vm_template.count",
+	},
+	VcenterClusterVsanCongestions: metricInfo{
+		Name: "vcenter.cluster.vsan.congestions",
+	},
+	VcenterClusterVsanLatencyAvg: metricInfo{
+		Name: "vcenter.cluster.vsan.latency.avg",
+	},
+	VcenterClusterVsanOperations: metricInfo{
+		Name: "vcenter.cluster.vsan.operations",
+	},
+	VcenterClusterVsanThroughput: metricInfo{
+		Name: "vcenter.cluster.vsan.throughput",
+	},
+	VcenterDatacenterClusterCount: metricInfo{
+		Name: "vcenter.datacenter.cluster.count",
+	},
+	VcenterDatacenterCPULimit: metricInfo{
+		Name: "vcenter.datacenter.cpu.limit",
+	},
+	VcenterDatacenterDatastoreCount: metricInfo{
+		Name: "vcenter.datacenter.datastore.count",
+	},
+	VcenterDatacenterDiskSpace: metricInfo{
+		Name: "vcenter.datacenter.disk.space",
+	},
+	VcenterDatacenterHostCount: metricInfo{
+		Name: "vcenter.datacenter.host.count",
+	},
+	VcenterDatacenterMemoryLimit: metricInfo{
+		Name: "vcenter.datacenter.memory.limit",
+	},
+	VcenterDatacenterVMCount: metricInfo{
+		Name: "vcenter.datacenter.vm.count",
+	},
+	VcenterDatastoreDiskUsage: metricInfo{
+		Name: "vcenter.datastore.disk.usage",
+	},
+	VcenterDatastoreDiskUtilization: metricInfo{
+		Name: "vcenter.datastore.disk.utilization",
+	},
+	VcenterHostCPUCapacity: metricInfo{
+		Name: "vcenter.host.cpu.capacity",
+	},
+	VcenterHostCPUReserved: metricInfo{
+		Name: "vcenter.host.cpu.reserved",
+	},
+	VcenterHostCPUUsage: metricInfo{
+		Name: "vcenter.host.cpu.usage",
+	},
+	VcenterHostCPUUtilization: metricInfo{
+		Name: "vcenter.host.cpu.utilization",
+	},
+	VcenterHostDiskLatencyAvg: metricInfo{
+		Name: "vcenter.host.disk.latency.avg",
+	},
+	VcenterHostDiskLatencyMax: metricInfo{
+		Name: "vcenter.host.disk.latency.max",
+	},
+	VcenterHostDiskThroughput: metricInfo{
+		Name: "vcenter.host.disk.throughput",
+	},
+	VcenterHostMemoryCapacity: metricInfo{
+		Name: "vcenter.host.memory.capacity",
+	},
+	VcenterHostMemoryUsage: metricInfo{
+		Name: "vcenter.host.memory.usage",
+	},
+	VcenterHostMemoryUtilization: metricInfo{
+		Name: "vcenter.host.memory.utilization",
+	},
+	VcenterHostNetworkPacketDropRate: metricInfo{
+		Name: "vcenter.host.network.packet.drop.rate",
+	},
+	VcenterHostNetworkPacketErrorRate: metricInfo{
+		Name: "vcenter.host.network.packet.error.rate",
+	},
+	VcenterHostNetworkPacketRate: metricInfo{
+		Name: "vcenter.host.network.packet.rate",
+	},
+	VcenterHostNetworkThroughput: metricInfo{
+		Name: "vcenter.host.network.throughput",
+	},
+	VcenterHostNetworkUsage: metricInfo{
+		Name: "vcenter.host.network.usage",
+	},
+	VcenterHostVsanCacheHitRate: metricInfo{
+		Name: "vcenter.host.vsan.cache.hit_rate",
+	},
+	VcenterHostVsanCongestions: metricInfo{
+		Name: "vcenter.host.vsan.congestions",
+	},
+	VcenterHostVsanLatencyAvg: metricInfo{
+		Name: "vcenter.host.vsan.latency.avg",
+	},
+	VcenterHostVsanOperations: metricInfo{
+		Name: "vcenter.host.vsan.operations",
+	},
+	VcenterHostVsanThroughput: metricInfo{
+		Name: "vcenter.host.vsan.throughput",
+	},
+	VcenterResourcePoolCPUShares: metricInfo{
+		Name: "vcenter.resource_pool.cpu.shares",
+	},
+	VcenterResourcePoolCPUUsage: metricInfo{
+		Name: "vcenter.resource_pool.cpu.usage",
+	},
+	VcenterResourcePoolMemoryBallooned: metricInfo{
+		Name: "vcenter.resource_pool.memory.ballooned",
+	},
+	VcenterResourcePoolMemoryGranted: metricInfo{
+		Name: "vcenter.resource_pool.memory.granted",
+	},
+	VcenterResourcePoolMemoryShares: metricInfo{
+		Name: "vcenter.resource_pool.memory.shares",
+	},
+	VcenterResourcePoolMemorySwapped: metricInfo{
+		Name: "vcenter.resource_pool.memory.swapped",
+	},
+	VcenterResourcePoolMemoryUsage: metricInfo{
+		Name: "vcenter.resource_pool.memory.usage",
+	},
+	VcenterVMCPUReadiness: metricInfo{
+		Name: "vcenter.vm.cpu.readiness",
+	},
+	VcenterVMCPUTime: metricInfo{
+		Name: "vcenter.vm.cpu.time",
+	},
+	VcenterVMCPUUsage: metricInfo{
+		Name: "vcenter.vm.cpu.usage",
+	},
+	VcenterVMCPUUtilization: metricInfo{
+		Name: "vcenter.vm.cpu.utilization",
+	},
+	VcenterVMDiskLatencyAvg: metricInfo{
+		Name: "vcenter.vm.disk.latency.avg",
+	},
+	VcenterVMDiskLatencyMax: metricInfo{
+		Name: "vcenter.vm.disk.latency.max",
+	},
+	VcenterVMDiskThroughput: metricInfo{
+		Name: "vcenter.vm.disk.throughput",
+	},
+	VcenterVMDiskUsage: metricInfo{
+		Name: "vcenter.vm.disk.usage",
+	},
+	VcenterVMDiskUtilization: metricInfo{
+		Name: "vcenter.vm.disk.utilization",
+	},
+	VcenterVMMemoryBallooned: metricInfo{
+		Name: "vcenter.vm.memory.ballooned",
+	},
+	VcenterVMMemoryGranted: metricInfo{
+		Name: "vcenter.vm.memory.granted",
+	},
+	VcenterVMMemorySwapped: metricInfo{
+		Name: "vcenter.vm.memory.swapped",
+	},
+	VcenterVMMemorySwappedSsd: metricInfo{
+		Name: "vcenter.vm.memory.swapped_ssd",
+	},
+	VcenterVMMemoryUsage: metricInfo{
+		Name: "vcenter.vm.memory.usage",
+	},
+	VcenterVMMemoryUtilization: metricInfo{
+		Name: "vcenter.vm.memory.utilization",
+	},
+	VcenterVMNetworkBroadcastPacketRate: metricInfo{
+		Name: "vcenter.vm.network.broadcast.packet.rate",
+	},
+	VcenterVMNetworkMulticastPacketRate: metricInfo{
+		Name: "vcenter.vm.network.multicast.packet.rate",
+	},
+	VcenterVMNetworkPacketDropRate: metricInfo{
+		Name: "vcenter.vm.network.packet.drop.rate",
+	},
+	VcenterVMNetworkPacketRate: metricInfo{
+		Name: "vcenter.vm.network.packet.rate",
+	},
+	VcenterVMNetworkThroughput: metricInfo{
+		Name: "vcenter.vm.network.throughput",
+	},
+	VcenterVMNetworkUsage: metricInfo{
+		Name: "vcenter.vm.network.usage",
+	},
+	VcenterVMVsanLatencyAvg: metricInfo{
+		Name: "vcenter.vm.vsan.latency.avg",
+	},
+	VcenterVMVsanOperations: metricInfo{
+		Name: "vcenter.vm.vsan.operations",
+	},
+	VcenterVMVsanThroughput: metricInfo{
+		Name: "vcenter.vm.vsan.throughput",
+	},
+}
+
+type metricsInfo struct {
+	VcenterClusterCPUEffective          metricInfo
+	VcenterClusterCPULimit              metricInfo
+	VcenterClusterHostCount             metricInfo
+	VcenterClusterMemoryEffective       metricInfo
+	VcenterClusterMemoryLimit           metricInfo
+	VcenterClusterVMCount               metricInfo
+	VcenterClusterVMTemplateCount       metricInfo
+	VcenterClusterVsanCongestions       metricInfo
+	VcenterClusterVsanLatencyAvg        metricInfo
+	VcenterClusterVsanOperations        metricInfo
+	VcenterClusterVsanThroughput        metricInfo
+	VcenterDatacenterClusterCount       metricInfo
+	VcenterDatacenterCPULimit           metricInfo
+	VcenterDatacenterDatastoreCount     metricInfo
+	VcenterDatacenterDiskSpace          metricInfo
+	VcenterDatacenterHostCount          metricInfo
+	VcenterDatacenterMemoryLimit        metricInfo
+	VcenterDatacenterVMCount            metricInfo
+	VcenterDatastoreDiskUsage           metricInfo
+	VcenterDatastoreDiskUtilization     metricInfo
+	VcenterHostCPUCapacity              metricInfo
+	VcenterHostCPUReserved              metricInfo
+	VcenterHostCPUUsage                 metricInfo
+	VcenterHostCPUUtilization           metricInfo
+	VcenterHostDiskLatencyAvg           metricInfo
+	VcenterHostDiskLatencyMax           metricInfo
+	VcenterHostDiskThroughput           metricInfo
+	VcenterHostMemoryCapacity           metricInfo
+	VcenterHostMemoryUsage              metricInfo
+	VcenterHostMemoryUtilization        metricInfo
+	VcenterHostNetworkPacketDropRate    metricInfo
+	VcenterHostNetworkPacketErrorRate   metricInfo
+	VcenterHostNetworkPacketRate        metricInfo
+	VcenterHostNetworkThroughput        metricInfo
+	VcenterHostNetworkUsage             metricInfo
+	VcenterHostVsanCacheHitRate         metricInfo
+	VcenterHostVsanCongestions          metricInfo
+	VcenterHostVsanLatencyAvg           metricInfo
+	VcenterHostVsanOperations           metricInfo
+	VcenterHostVsanThroughput           metricInfo
+	VcenterResourcePoolCPUShares        metricInfo
+	VcenterResourcePoolCPUUsage         metricInfo
+	VcenterResourcePoolMemoryBallooned  metricInfo
+	VcenterResourcePoolMemoryGranted    metricInfo
+	VcenterResourcePoolMemoryShares     metricInfo
+	VcenterResourcePoolMemorySwapped    metricInfo
+	VcenterResourcePoolMemoryUsage      metricInfo
+	VcenterVMCPUReadiness               metricInfo
+	VcenterVMCPUTime                    metricInfo
+	VcenterVMCPUUsage                   metricInfo
+	VcenterVMCPUUtilization             metricInfo
+	VcenterVMDiskLatencyAvg             metricInfo
+	VcenterVMDiskLatencyMax             metricInfo
+	VcenterVMDiskThroughput             metricInfo
+	VcenterVMDiskUsage                  metricInfo
+	VcenterVMDiskUtilization            metricInfo
+	VcenterVMMemoryBallooned            metricInfo
+	VcenterVMMemoryGranted              metricInfo
+	VcenterVMMemorySwapped              metricInfo
+	VcenterVMMemorySwappedSsd           metricInfo
+	VcenterVMMemoryUsage                metricInfo
+	VcenterVMMemoryUtilization          metricInfo
+	VcenterVMNetworkBroadcastPacketRate metricInfo
+	VcenterVMNetworkMulticastPacketRate metricInfo
+	VcenterVMNetworkPacketDropRate      metricInfo
+	VcenterVMNetworkPacketRate          metricInfo
+	VcenterVMNetworkThroughput          metricInfo
+	VcenterVMNetworkUsage               metricInfo
+	VcenterVMVsanLatencyAvg             metricInfo
+	VcenterVMVsanOperations             metricInfo
+	VcenterVMVsanThroughput             metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricVcenterClusterCPUEffective struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
