@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -46,6 +47,9 @@ func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td ptrace.Traces
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
+	messagesWithHeaders(messages,
+		metadataToHeaders(ctx, e.cfg.IncludeMetadataKeys),
+	)
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		var prodErr sarama.ProducerErrors
@@ -104,6 +108,9 @@ func (e *kafkaMetricsProducer) metricsDataPusher(ctx context.Context, md pmetric
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
+	messagesWithHeaders(messages,
+		metadataToHeaders(ctx, e.cfg.IncludeMetadataKeys),
+	)
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		var prodErr sarama.ProducerErrors
@@ -162,6 +169,9 @@ func (e *kafkaLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) er
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
+	messagesWithHeaders(messages,
+		metadataToHeaders(ctx, e.cfg.IncludeMetadataKeys),
+	)
 	err = e.producer.SendMessages(messages)
 	if err != nil {
 		var prodErr sarama.ProducerErrors
@@ -286,4 +296,36 @@ func encodingToComponentID(encoding string) (*component.ID, error) {
 	}
 	id := component.NewID(componentType)
 	return &id, nil
+}
+
+func messagesWithHeaders(msg []*sarama.ProducerMessage, h []sarama.RecordHeader) {
+	if len(h) == 0 || len(msg) == 0 {
+		return
+	}
+	for i := range msg {
+		if len(msg[i].Headers) == 0 {
+			msg[i].Headers = h
+			continue
+		}
+		msg[i].Headers = append(msg[i].Headers, h...)
+	}
+}
+
+func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader {
+	if len(keys) == 0 {
+		return nil
+	}
+	info := client.FromContext(ctx)
+	headers := make([]sarama.RecordHeader, 0, len(keys))
+	for _, key := range keys {
+		v := info.Metadata.Get(key)
+		if len(v) != 1 {
+			continue
+		}
+		headers = append(headers, sarama.RecordHeader{
+			Key:   []byte(key),
+			Value: []byte(v[0]),
+		})
+	}
+	return headers
 }

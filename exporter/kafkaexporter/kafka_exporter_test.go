@@ -12,6 +12,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -134,19 +135,52 @@ func TestTracesPusher_attr(t *testing.T) {
 }
 
 func TestTracesPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaTracesProducer{
-		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
+		p := kafkaTracesProducer{
+			producer:  producer,
+			marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
+		require.NoError(t, err)
 	})
-	err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
-	require.NoError(t, err)
+	t.Run("WithMetadata", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("my_tenant_id")},
+				{Key: []byte("x-request-id"), Value: []byte("123456789")},
+			}, pm.Headers)
+			return nil
+		})
+
+		p := kafkaTracesProducer{
+			cfg: Config{
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+			},
+			producer:  producer,
+			marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-id":   {"123456789"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := p.tracesPusher(ctx, testdata.GenerateTraces(10))
+		require.NoError(t, err)
+	})
 }
 
 func TestTracesPusher_err(t *testing.T) {
@@ -215,19 +249,52 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 }
 
 func TestMetricsDataPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaMetricsProducer{
-		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
+		p := kafkaMetricsProducer{
+			producer:  producer,
+			marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
+		require.NoError(t, err)
 	})
-	err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
-	require.NoError(t, err)
+	t.Run("WithMetadata", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("anoter_tenant_id")},
+				{Key: []byte("x-request-id"), Value: []byte("987654321")},
+			}, pm.Headers)
+			return nil
+		})
+
+		p := kafkaMetricsProducer{
+			cfg: Config{
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+			},
+			producer:  producer,
+			marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"anoter_tenant_id"},
+				"x-request-id":   {"987654321"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := p.metricsDataPusher(ctx, testdata.GenerateMetrics(5))
+		require.NoError(t, err)
+	})
 }
 
 func TestMetricsDataPusher_err(t *testing.T) {
@@ -296,19 +363,52 @@ func TestLogsDataPusher_attr(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaLogsProducer{
-		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
+		p := kafkaLogsProducer{
+			producer:  producer,
+			marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
+		require.NoError(t, err)
 	})
-	err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
-	require.NoError(t, err)
+	t.Run("WithMetadata", func(t *testing.T) {
+		c := sarama.NewConfig()
+		producer := mocks.NewSyncProducer(t, c)
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("yet_another_tenant_id")},
+				{Key: []byte("x-request-id"), Value: []byte("01234")},
+			}, pm.Headers)
+			return nil
+		})
+
+		p := kafkaLogsProducer{
+			cfg: Config{
+				IncludeMetadataKeys: []string{"x-tenant-id", "x-request-id"},
+			},
+			producer:  producer,
+			marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
+		}
+		t.Cleanup(func() {
+			require.NoError(t, p.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"yet_another_tenant_id"},
+				"x-request-id":   {"01234"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := p.logsDataPusher(ctx, testdata.GenerateLogs(15))
+		require.NoError(t, err)
+	})
 }
 
 func TestLogsDataPusher_err(t *testing.T) {
