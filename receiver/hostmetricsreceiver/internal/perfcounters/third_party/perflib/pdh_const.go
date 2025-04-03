@@ -1,3 +1,5 @@
+//go:build windows
+
 // Constants copied from:
 // https://github.com/prometheus-community/windows_exporter/tree/4c7df1ccaf65df8662a2d67a7eff93019c94d98c/internal/pdh
 // Required for perflib functionality.
