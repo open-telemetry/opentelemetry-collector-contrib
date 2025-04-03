@@ -70,9 +70,11 @@ func (cfg *Config) Validate() error {
 
 	if strings.ToLower(cfg.Region) == euRegion {
 		cfg.MetricsEndpoint = euMetricsEndpoint
+		cfg.LogsEndpoint = euLogsEndpoint
 	}
 	if strings.ToLower(cfg.Region) == usRegion {
 		cfg.MetricsEndpoint = usMetricsEndpoint
+		cfg.LogsEndpoint = usLogsEndpoint
 	}
 
 	return nil

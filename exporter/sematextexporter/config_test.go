@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/cenkalti/backoff/v4"
+	"github.com/influxdata/influxdb-observability/common"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -62,7 +63,7 @@ func TestLoadConfig(t *testing.T) {
 				MetricsConfig: MetricsConfig{
 					MetricsEndpoint: usMetricsEndpoint,
 					AppToken:        metricsAppToken,
-					MetricsSchema:   "telegraf-prometheus-v2",
+					MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 					PayloadMaxLines: 72,
 					PayloadMaxBytes: 27,
 				},

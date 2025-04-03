@@ -56,7 +56,6 @@ func createDefaultConfig() component.Config {
 		},
 		LogsConfig: LogsConfig{
 			LogsEndpoint: usLogsEndpoint,
-			AppToken:     logsAppToken,
 		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		Region:        usRegion,
