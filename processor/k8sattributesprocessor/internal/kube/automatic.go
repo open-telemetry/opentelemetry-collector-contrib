@@ -12,7 +12,9 @@ type AutomaticRules struct {
 	AnnotationPrefixes []string `mapstructure:"annotation_prefixes"`
 }
 
-const DefaultAnnotationPrefix = "resource.opentelemetry.io/"
+const (
+	DefaultAnnotationPrefix = "resource.opentelemetry.io/"
+)
 
 func AutomaticAnnotationRule(prefix string) FieldExtractionRule {
 	return FieldExtractionRule{

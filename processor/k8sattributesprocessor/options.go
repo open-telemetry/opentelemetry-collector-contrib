@@ -198,17 +198,10 @@ func withExtractMetadata(fields ...string) option {
 	}
 }
 
-func withAutomaticRules(rules kube.AutomaticRules) option {
+func withOtelAnnotations(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
-		if rules.Enabled {
-			p.rules.AutomaticRules = rules
-			prefixes := rules.AnnotationPrefixes
-			if len(prefixes) == 0 {
-				prefixes = []string{kube.DefaultAnnotationPrefix}
-			}
-			for _, prefix := range prefixes {
-				p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(prefix))
-			}
+		if enabled {
+			p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(kube.DefaultAnnotationPrefix))
 		}
 		return nil
 	}
