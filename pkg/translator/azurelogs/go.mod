@@ -3,7 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/
 go 1.23.0
 
 require (
+	github.com/goccy/go-json v0.10.5
 	github.com/json-iterator/go v1.1.12
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0
 	github.com/relvacode/iso8601 v1.6.0
 	github.com/stretchr/testify v1.10.0
