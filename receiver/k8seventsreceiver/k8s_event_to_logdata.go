@@ -89,7 +89,10 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, attributes []KeyVal
 	attrs.PutStr("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
 	attrs.PutStr("k8s.event.name", ev.ObjectMeta.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.ObjectMeta.UID))
-	attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
+
+	if ev.InvolvedObject.Namespace != "" {
+		attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
+	}
 	attrs.PutStr("level", ev.Type)
 
 	// "Count" field of k8s event will be '0' in case it is

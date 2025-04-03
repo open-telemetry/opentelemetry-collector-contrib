@@ -7,6 +7,11 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -17,13 +22,6 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.8.0"
 	"go.uber.org/zap"
 	"strconv"
-	"strings"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
 
 const (
@@ -268,7 +266,7 @@ func (kp *kubernetesprocessor) addOpsrampEventResourceAttributes(ctx context.Con
 
 // processResource adds Pod metadata tags to resource based on pod association configuration
 func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, resource pcommon.Resource) {
-	var found bool
+
 	var resourceUuid string
 
 	for _, addon := range kp.addons {
@@ -284,11 +282,9 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	}
 	var resourceType string
 
-	if _, found = resource.Attributes().Get("k8s.pod.uid"); found {
+	if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
 		if resourceUuid = kp.GetResourceUuidUsingPodMoid(ctx, resource); resourceUuid == "" {
-			if podname, found := resource.Attributes().Get("k8s.pod.name"); found {
-				kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
-			}
+			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("podname", podname.Str()))
 		}
 		resourceType = "pod"
 	} else if nodename, found := resource.Attributes().Get("k8s.node.name"); found {
@@ -301,11 +297,6 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("deployment", dpname.Str()))
 		}
 		resourceType = "deployment"
-	} else if dsname, found := resource.Attributes().Get("k8s.daemonset.name"); found {
-		if resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dsname, "daemonset"); resourceUuid == "" {
-			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("daemonset", dsname.Str()))
-		}
-		resourceType = "daemonset"
 	} else if rsname, found := resource.Attributes().Get("k8s.replicaset.name"); found {
 		if resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, rsname, "replicaset"); resourceUuid == "" {
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("replicaset", rsname.Str()))
@@ -316,6 +307,11 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("statefulset", ssname.Str()))
 		}
 		resourceType = "statefulset"
+	} else if dsname, found := resource.Attributes().Get("k8s.daemonset.name"); found {
+		if resourceUuid = kp.GetResourceUuidUsingWorkloadMoid(ctx, resource, dsname, "daemonset"); resourceUuid == "" {
+			kp.logger.Debug("opsramp resourceuuid not found in redis", zap.Any("daemonset", dsname.Str()))
+		}
+		resourceType = "daemonset" /// namespace event hanbdling
 	} else {
 		if resourceUuid = kp.redisConfig.ClusterUid; resourceUuid == "" {
 			kp.logger.Debug("opsramp resourceuuid not found", zap.Any("clustername", kp.redisConfig.ClusterName))
@@ -331,11 +327,10 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 	}
 
 	if resourceUuid != "" {
-		if val, found := resource.Attributes().Get("type"); found && val.Str() == "event" {
-			resource.Attributes().PutStr("resourceUUID", resourceUuid)
-			if kind, found := resource.Attributes().Get("k8s.object.kind"); found && resourceType == strings.ToLower(kind.Str()) {
-				object_key := "k8s." + strings.ToLower(kind.Str()) + ".resourceUUID"
-				resource.Attributes().PutStr(object_key, resourceUuid)
+		if val, found := resource.Attributes().Get("type"); found {
+			if val.Str() == "event" || val.Str() == "log" {
+				resource.Attributes().PutStr("resourceUUID", resourceUuid)
+				resource.Attributes().PutStr("k8s."+resourceType+".resourceUUID", resourceUuid)
 			}
 		} else {
 			resource.Attributes().PutStr("uuid", resourceUuid)
