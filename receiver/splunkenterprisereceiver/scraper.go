@@ -1759,7 +1759,7 @@ func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, i
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkHealth.Enabled {
 		return
 	}
-	i := info[typeSh].Entries[0].Content
+	i := info[typeCm].Entries[0].Content
 
 	ept := apiDict[`SplunkHealth`]
 	var ha healthArtifacts
@@ -1808,7 +1808,12 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 // somewhat unique scrape function for gathering the info attribute
 func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs chan error) map[any]Info {
 	// there could be an endpoint configured for each type (never more than 3)
-	info := make(map[any]Info)
+
+	info := make(infoDict)
+	nullInfo := Info{Host: "", Entries: make([]InfoEntry, 1)}
+	info[typeCm] = nullInfo
+	info[typeSh] = nullInfo
+	info[typeIdx] = nullInfo
 
 	for cliType := range s.splunkClient.clients {
 		var i Info
@@ -1818,27 +1823,28 @@ func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs 
 		req, err := s.splunkClient.createAPIRequest(cliType, ept)
 		if err != nil {
 			errs <- err
-			return nil
+			return info
 		}
 
 		res, err := s.splunkClient.makeRequest(req)
 		if err != nil {
 			errs <- err
-			return nil
+			return info
 		}
 		defer res.Body.Close()
 
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			errs <- err
-			return nil
+			return info
 		}
 
 		err = json.Unmarshal(body, &i)
 		if err != nil {
 			errs <- err
-			return nil
+			return info
 		}
+
 		info[cliType] = i
 	}
 
