@@ -14,7 +14,8 @@ get_label() {
   MATCHING_LABELS=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $2}' .github/component_labels.txt)
 
   if [ -z "${MATCHING_LABELS}" ]; then
-    echo "Should never get here: No matching labels found for component: $COMPONENT"
+    echo ""
+    return
   fi
 
   LABEL_NAME=""

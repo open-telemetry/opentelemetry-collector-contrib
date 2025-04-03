@@ -34,6 +34,7 @@ if [[ -n "${TITLE_COMPONENT}" && ! ("${TITLE_COMPONENT}" =~ " ") ]]; then
     PING_LINES+="- ${TITLE_COMPONENT}: ${CODEOWNERS}\n"
     PINGED_COMPONENTS["${TITLE_COMPONENT}"]=1
     LABEL_NAME=$(COMPONENT="${TITLE_COMPONENT}" "${CUR_DIRECTORY}/get-label-from-component.sh" || true)
+
     if (( "${#LABEL_NAME}" <= 50 )); then
       LABELS+="${LABEL_NAME}"
     else
