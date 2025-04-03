@@ -238,6 +238,152 @@ var MapAttributeWalOperationLag = map[string]AttributeWalOperationLag{
 	"write":  AttributeWalOperationLagWrite,
 }
 
+var MetricsInfo = metricsInfo{
+	PostgresqlBackends: metricInfo{
+		Name: "postgresql.backends",
+	},
+	PostgresqlBgwriterBuffersAllocated: metricInfo{
+		Name: "postgresql.bgwriter.buffers.allocated",
+	},
+	PostgresqlBgwriterBuffersWrites: metricInfo{
+		Name: "postgresql.bgwriter.buffers.writes",
+	},
+	PostgresqlBgwriterCheckpointCount: metricInfo{
+		Name: "postgresql.bgwriter.checkpoint.count",
+	},
+	PostgresqlBgwriterDuration: metricInfo{
+		Name: "postgresql.bgwriter.duration",
+	},
+	PostgresqlBgwriterMaxwritten: metricInfo{
+		Name: "postgresql.bgwriter.maxwritten",
+	},
+	PostgresqlBlksHit: metricInfo{
+		Name: "postgresql.blks_hit",
+	},
+	PostgresqlBlksRead: metricInfo{
+		Name: "postgresql.blks_read",
+	},
+	PostgresqlBlocksRead: metricInfo{
+		Name: "postgresql.blocks_read",
+	},
+	PostgresqlCommits: metricInfo{
+		Name: "postgresql.commits",
+	},
+	PostgresqlConnectionMax: metricInfo{
+		Name: "postgresql.connection.max",
+	},
+	PostgresqlDatabaseCount: metricInfo{
+		Name: "postgresql.database.count",
+	},
+	PostgresqlDatabaseLocks: metricInfo{
+		Name: "postgresql.database.locks",
+	},
+	PostgresqlDbSize: metricInfo{
+		Name: "postgresql.db_size",
+	},
+	PostgresqlDeadlocks: metricInfo{
+		Name: "postgresql.deadlocks",
+	},
+	PostgresqlIndexScans: metricInfo{
+		Name: "postgresql.index.scans",
+	},
+	PostgresqlIndexSize: metricInfo{
+		Name: "postgresql.index.size",
+	},
+	PostgresqlOperations: metricInfo{
+		Name: "postgresql.operations",
+	},
+	PostgresqlReplicationDataDelay: metricInfo{
+		Name: "postgresql.replication.data_delay",
+	},
+	PostgresqlRollbacks: metricInfo{
+		Name: "postgresql.rollbacks",
+	},
+	PostgresqlRows: metricInfo{
+		Name: "postgresql.rows",
+	},
+	PostgresqlSequentialScans: metricInfo{
+		Name: "postgresql.sequential_scans",
+	},
+	PostgresqlTableCount: metricInfo{
+		Name: "postgresql.table.count",
+	},
+	PostgresqlTableSize: metricInfo{
+		Name: "postgresql.table.size",
+	},
+	PostgresqlTableVacuumCount: metricInfo{
+		Name: "postgresql.table.vacuum.count",
+	},
+	PostgresqlTempFiles: metricInfo{
+		Name: "postgresql.temp_files",
+	},
+	PostgresqlTupDeleted: metricInfo{
+		Name: "postgresql.tup_deleted",
+	},
+	PostgresqlTupFetched: metricInfo{
+		Name: "postgresql.tup_fetched",
+	},
+	PostgresqlTupInserted: metricInfo{
+		Name: "postgresql.tup_inserted",
+	},
+	PostgresqlTupReturned: metricInfo{
+		Name: "postgresql.tup_returned",
+	},
+	PostgresqlTupUpdated: metricInfo{
+		Name: "postgresql.tup_updated",
+	},
+	PostgresqlWalAge: metricInfo{
+		Name: "postgresql.wal.age",
+	},
+	PostgresqlWalDelay: metricInfo{
+		Name: "postgresql.wal.delay",
+	},
+	PostgresqlWalLag: metricInfo{
+		Name: "postgresql.wal.lag",
+	},
+}
+
+type metricsInfo struct {
+	PostgresqlBackends                 metricInfo
+	PostgresqlBgwriterBuffersAllocated metricInfo
+	PostgresqlBgwriterBuffersWrites    metricInfo
+	PostgresqlBgwriterCheckpointCount  metricInfo
+	PostgresqlBgwriterDuration         metricInfo
+	PostgresqlBgwriterMaxwritten       metricInfo
+	PostgresqlBlksHit                  metricInfo
+	PostgresqlBlksRead                 metricInfo
+	PostgresqlBlocksRead               metricInfo
+	PostgresqlCommits                  metricInfo
+	PostgresqlConnectionMax            metricInfo
+	PostgresqlDatabaseCount            metricInfo
+	PostgresqlDatabaseLocks            metricInfo
+	PostgresqlDbSize                   metricInfo
+	PostgresqlDeadlocks                metricInfo
+	PostgresqlIndexScans               metricInfo
+	PostgresqlIndexSize                metricInfo
+	PostgresqlOperations               metricInfo
+	PostgresqlReplicationDataDelay     metricInfo
+	PostgresqlRollbacks                metricInfo
+	PostgresqlRows                     metricInfo
+	PostgresqlSequentialScans          metricInfo
+	PostgresqlTableCount               metricInfo
+	PostgresqlTableSize                metricInfo
+	PostgresqlTableVacuumCount         metricInfo
+	PostgresqlTempFiles                metricInfo
+	PostgresqlTupDeleted               metricInfo
+	PostgresqlTupFetched               metricInfo
+	PostgresqlTupInserted              metricInfo
+	PostgresqlTupReturned              metricInfo
+	PostgresqlTupUpdated               metricInfo
+	PostgresqlWalAge                   metricInfo
+	PostgresqlWalDelay                 metricInfo
+	PostgresqlWalLag                   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricPostgresqlBackends struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
