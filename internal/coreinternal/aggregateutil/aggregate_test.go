@@ -365,7 +365,9 @@ func Test_GroupDataPoints(t *testing.T) {
 				d := s.DataPoints().AppendEmpty()
 				d.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
 				d.Attributes().PutStr("attr1", "val1")
-				d.SetCount(1)
+				d.SetCount(8)
+				d.SetZeroCount(2)
+				d.Positive().BucketCounts().Append(0, 1, 2, 3)
 				return m
 			},
 			want: AggGroups{
@@ -483,8 +485,10 @@ func Test_MergeDataPoints(t *testing.T) {
 				s := m.SetEmptyExponentialHistogram()
 				d := s.DataPoints().AppendEmpty()
 				d.Attributes().PutStr("attr1", "val1")
-				d.SetCount(3)
+				d.SetCount(12)
 				d.SetSum(0)
+				d.SetZeroCount(3)
+				d.Positive().BucketCounts().Append(0, 2, 4, 3)
 				return m
 			},
 			in: func() pmetric.Metric {
@@ -547,18 +551,29 @@ func testDataExpHistogram() pmetric.ExponentialHistogramDataPointSlice {
 	data := pmetric.NewExponentialHistogramDataPointSlice()
 	d := data.AppendEmpty()
 	d.Attributes().PutStr("attr1", "val1")
-	d.SetCount(2)
+	d.SetCount(4)
+	d.SetZeroCount(1)
+	d.Positive().BucketCounts().Append(0, 1, 2)
 	return data
 }
 
 func testDataExpHistogramDouble() pmetric.ExponentialHistogramDataPointSlice {
 	dataWant := pmetric.NewExponentialHistogramDataPointSlice()
+
 	dWant := dataWant.AppendEmpty()
 	dWant.Attributes().PutStr("attr1", "val1")
-	dWant.SetCount(2)
+	dWant.SetCount(4)
+	dWant.SetZeroCount(1)
+	dWant.Positive().BucketCounts().Append(0, 1, 2)
+
 	dWant2 := dataWant.AppendEmpty()
 	dWant2.SetTimestamp(pcommon.NewTimestampFromTime(time.Time{}))
 	dWant2.Attributes().PutStr("attr1", "val1")
-	dWant2.SetCount(1)
+	dWant2.SetCount(8)
+	dWant2.SetZeroCount(2)
+	// Use a larger number of buckets than above to check that we expand the
+	// destination array as needed while merging.
+	dWant2.Positive().BucketCounts().Append(0, 1, 2, 3)
+
 	return dataWant
 }
