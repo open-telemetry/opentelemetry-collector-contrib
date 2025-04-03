@@ -114,6 +114,8 @@ func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger)
 	mdata[containerName] = cs.Name
 	mdata[constants.K8sKeyPodName] = pod.Name
 	mdata[constants.K8sKeyPodUID] = string(pod.UID)
+	mdata[constants.K8sKeyNamespaceName] = pod.Namespace
+	mdata[constants.K8sKeyNodeName] = pod.Spec.NodeName
 
 	if cs.State.Running != nil {
 		mdata[containerKeyStatus] = containerStatusRunning

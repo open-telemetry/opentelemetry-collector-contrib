@@ -338,6 +338,8 @@ func TestObjMetadata(t *testing.T) {
 						"k8s.container.name":           "container-name",
 						"k8s.pod.name":                 "test-pod-0",
 						"k8s.pod.uid":                  "test-pod-0-uid",
+						"k8s.namespace.name":           "test-namespace",
+						"k8s.node.name":                "test-node",
 					},
 				},
 			},

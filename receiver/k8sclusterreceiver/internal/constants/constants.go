@@ -22,6 +22,7 @@ const (
 	K8sKeyClusterResourceQuotaName  = "openshift.clusterquota.name"
 	K8sKeyNamespaceName             = "k8s.namespace.name"
 	K8sKeyPodName                   = "k8s.pod.name"
+	K8sKeyNodeName                  = "k8s.node.name"
 
 	// Kubernetes resource kinds
 	K8sKindCronJob               = "CronJob"

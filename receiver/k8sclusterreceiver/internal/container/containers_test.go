@@ -25,6 +25,9 @@ func TestGetMetadata(t *testing.T) {
 			Namespace: "test-namespace",
 			UID:       types.UID("test-pod-uid"),
 		},
+		Spec: corev1.PodSpec{
+			NodeName: "test-node",
+		},
 	}
 
 	tests := []struct {
@@ -40,6 +43,8 @@ func TestGetMetadata(t *testing.T) {
 		containerImageTag  string
 		podName            string
 		podUID             string
+		nodeName           string
+		namespaceName      string
 	}{
 		{
 			name: "Running container",
@@ -57,6 +62,8 @@ func TestGetMetadata(t *testing.T) {
 			containerImageTag:  "v1.0",
 			podName:            pod.Name,
 			podUID:             string(pod.UID),
+			namespaceName:      "test-namespace",
+			nodeName:           "test-node",
 		},
 		{
 			name: "Terminated container",
@@ -79,6 +86,8 @@ func TestGetMetadata(t *testing.T) {
 			containerImageTag:  "v1.1",
 			podName:            pod.Name,
 			podUID:             string(pod.UID),
+			namespaceName:      "test-namespace",
+			nodeName:           "test-node",
 		},
 		{
 			name: "Waiting container",
@@ -96,6 +105,8 @@ func TestGetMetadata(t *testing.T) {
 			containerImageTag:  "latest",
 			podName:            pod.Name,
 			podUID:             string(pod.UID),
+			namespaceName:      "test-namespace",
+			nodeName:           "test-node",
 		},
 	}
 	logger := zap.NewNop()
@@ -123,6 +134,8 @@ func TestGetMetadata(t *testing.T) {
 			assert.Equal(t, tt.containerImageTag, md.Metadata[containerImageTag])
 			assert.Equal(t, tt.podName, md.Metadata[constants.K8sKeyPodName])
 			assert.Equal(t, tt.podUID, md.Metadata[constants.K8sKeyPodUID])
+			assert.Equal(t, tt.namespaceName, md.Metadata[constants.K8sKeyNamespaceName])
+			assert.Equal(t, tt.nodeName, md.Metadata[constants.K8sKeyNodeName])
 		})
 	}
 }
