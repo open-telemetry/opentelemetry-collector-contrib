@@ -97,6 +97,12 @@ func (v *vpcFlowLogUnmarshaler) UnmarshalLogs(content []byte) (plog.Logs, error)
 	}
 }
 
+// resourceKey stores the account id and region
+// of the flow logs. All log lines inside the
+// same S3 file come from the same account and
+// region.
+//
+// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-s3-path.html.
 type resourceKey struct {
 	accountID string
 	region    string
@@ -111,10 +117,11 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 		fields = strings.Split(firstLine, " ")
 	}
 
-	scopeLogsByResource := map[resourceKey]plog.ScopeLogs{}
+	logs, resourceLogs, scopeLogs := v.createLogs()
+	key := &resourceKey{}
 	for scanner.Scan() {
 		line := scanner.Text()
-		if err := v.addToLogs(scopeLogsByResource, fields, line); err != nil {
+		if err := v.addToLogs(key, scopeLogs, fields, line); err != nil {
 			return plog.Logs{}, err
 		}
 	}
@@ -123,27 +130,43 @@ func (v *vpcFlowLogUnmarshaler) unmarshalPlainTextLogs(reader io.Reader) (plog.L
 		return plog.Logs{}, fmt.Errorf("error reading log line: %w", err)
 	}
 
-	return v.createLogs(scopeLogsByResource), nil
+	v.setResourceAttributes(key, resourceLogs)
+	return logs, nil
 }
 
-// createLogs based on the scopeLogsByResource map
-func (v *vpcFlowLogUnmarshaler) createLogs(scopeLogsByResource map[resourceKey]plog.ScopeLogs) plog.Logs {
+// createLogs with the expected fields for the scope logs
+func (v *vpcFlowLogUnmarshaler) createLogs() (plog.Logs, plog.ResourceLogs, plog.ScopeLogs) {
 	logs := plog.NewLogs()
+	resourceLogs := logs.ResourceLogs().AppendEmpty()
+	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(metadata.ScopeName)
+	scopeLogs.Scope().SetVersion(v.buildInfo.Version)
+	return logs, resourceLogs, scopeLogs
+}
 
-	for key, scopeLogs := range scopeLogsByResource {
-		rl := logs.ResourceLogs().AppendEmpty()
-		attr := rl.Resource().Attributes()
-		attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
-		if key.accountID != "" {
-			attr.PutStr(conventions.AttributeCloudAccountID, key.accountID)
-		}
-		if key.region != "" {
-			attr.PutStr(conventions.AttributeCloudRegion, key.region)
-		}
-		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
+// setResourceAttributes based on the resourceKey
+func (v *vpcFlowLogUnmarshaler) setResourceAttributes(key *resourceKey, logs plog.ResourceLogs) {
+	attr := logs.Resource().Attributes()
+	attr.PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAWS)
+	if key.accountID != "" {
+		attr.PutStr(conventions.AttributeCloudAccountID, key.accountID)
 	}
+	if key.region != "" {
+		attr.PutStr(conventions.AttributeCloudRegion, key.region)
+	}
+}
 
-	return logs
+// address stores the four fields related to the address
+// of a VPC flow log: srcaddr, pkt-srcaddr, dstaddr, and
+// pkt-dstaddr. We save these fields in a struct, so we
+// can use the right naming conventions in the end.
+//
+// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
+type address struct {
+	source         string
+	pktSource      string
+	destination    string
+	pktDestination string
 }
 
 // addToLogs parses the log line and creates
@@ -151,42 +174,20 @@ func (v *vpcFlowLogUnmarshaler) createLogs(scopeLogsByResource map[resourceKey]p
 // to the scope logs of the resource identified
 // by the resourceKey created from the values.
 func (v *vpcFlowLogUnmarshaler) addToLogs(
-	scopeLogsByResource map[resourceKey]plog.ScopeLogs,
+	key *resourceKey,
+	scopeLogs plog.ScopeLogs,
 	fields []string,
 	logLine string,
 ) error {
-	// first line includes the fields
-	// TODO Replace with an iterator starting from go 1.24:
-	// https://pkg.go.dev/strings#FieldsSeq
-	nFields := len(fields)
-	nValues := strings.Count(logLine, " ") + 1
-	if nFields != nValues {
-		return fmt.Errorf("expect %d fields per log line, got log line with %d fields", nFields, nValues)
-	}
-
-	// create new key for resource and new
-	// log record to add to the scope of logs
-	// of the resource
-	key := &resourceKey{}
 	record := plog.NewLogRecord()
 
-	// There are 4 fields for the addresses: srcaddr, pkt-srcaddr,
-	// dstaddr, pkt-dstaddr. We will save these fields in a
-	// map, so we can use the right conventions in the end.
-	//
-	// See https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat.
-	ips := make(map[string]string, 4)
-
-	start := 0
+	addr := &address{}
 	for _, field := range fields {
-		var value string
-		end := strings.Index(logLine[start:], " ")
-		if end == -1 {
-			value = logLine[start:]
-		} else {
-			value = logLine[start : start+end]
-			start += end + 1 // skip the space
+		if logLine == "" {
+			return errors.New("log line has less fields than the ones expected")
 		}
+		var value string
+		value, logLine, _ = strings.Cut(logLine, " ")
 
 		if value == "-" {
 			// If a field is not applicable or could not be computed for a
@@ -201,7 +202,7 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 			continue
 		}
 
-		found, err := handleField(field, value, record, ips, key)
+		found, err := handleField(field, value, record, addr, key)
 		if err != nil {
 			return err
 		}
@@ -213,70 +214,51 @@ func (v *vpcFlowLogUnmarshaler) addToLogs(
 		}
 	}
 
-	// get the address fields
-	addresses := v.handleAddresses(ips)
-	for field, value := range addresses {
-		record.Attributes().PutStr(field, value)
+	if logLine != "" {
+		return errors.New("log line has more fields than the ones expected")
 	}
 
-	scopeLogs := v.getScopeLogs(*key, scopeLogsByResource)
+	// add the address fields with the correct conventions
+	// to the log record
+	v.handleAddresses(addr, record)
 	rScope := scopeLogs.LogRecords().AppendEmpty()
 	record.MoveTo(rScope)
 
 	return nil
 }
 
-// handleAddresses creates a new map where the original field
-// names will be the known conventions for the fields
-func (v *vpcFlowLogUnmarshaler) handleAddresses(addresses map[string]string) map[string]string {
-	// max is 3 fields, see example in
+// handleAddresses creates adds the addresses to the log record
+func (v *vpcFlowLogUnmarshaler) handleAddresses(addr *address, record plog.LogRecord) {
+	localAddrSet := false
+	// see example in
 	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
-	recordAttr := make(map[string]string, 3)
-	srcaddr, foundSrc := addresses["srcaddr"]
-	pktSrcaddr, foundSrcPkt := addresses["pkt-srcaddr"]
-	if !foundSrcPkt && foundSrc {
+	if addr.pktSource == "" && addr.source != "" {
 		// there is no middle layer, assume "srcaddr" field
 		// corresponds to the original source address.
-		recordAttr[conventions.AttributeSourceAddress] = srcaddr
-	} else if foundSrcPkt && foundSrc {
-		recordAttr[conventions.AttributeSourceAddress] = pktSrcaddr
-		if srcaddr != pktSrcaddr {
+		record.Attributes().PutStr(conventions.AttributeSourceAddress, addr.source)
+	} else if addr.pktSource != "" && addr.source != "" {
+		record.Attributes().PutStr(conventions.AttributeSourceAddress, addr.pktSource)
+		if addr.pktSource != addr.source {
 			// srcaddr is the middle layer
-			recordAttr[conventions.AttributeNetworkPeerAddress] = srcaddr
+			record.Attributes().PutStr(conventions.AttributeNetworkLocalAddress, addr.source)
+			localAddrSet = true
 		}
 	}
 
-	dstaddr, foundDst := addresses["dstaddr"]
-	pktDstaddr, foundDstPkt := addresses["pkt-dstaddr"]
-	if !foundDstPkt && foundDst {
+	if addr.pktDestination == "" && addr.destination != "" {
 		// there is no middle layer, assume "dstaddr" field
 		// corresponds to the original destination address.
-		recordAttr[conventions.AttributeDestinationAddress] = dstaddr
-	} else if foundDstPkt && foundDst {
-		recordAttr[conventions.AttributeDestinationAddress] = pktDstaddr
-		if pktDstaddr != dstaddr {
-			if _, found := recordAttr[conventions.AttributeNetworkPeerAddress]; found {
+		record.Attributes().PutStr(conventions.AttributeDestinationAddress, addr.destination)
+	} else if addr.pktDestination != "" && addr.destination != "" {
+		record.Attributes().PutStr(conventions.AttributeDestinationAddress, addr.pktDestination)
+		if addr.pktDestination != addr.destination {
+			if localAddrSet {
 				v.logger.Warn("unexpected: srcaddr, dstaddr, pkt-srcaddr and pkt-dstaddr are all different")
 			}
 			// dstaddr is the middle layer
-			recordAttr[conventions.AttributeNetworkPeerAddress] = dstaddr
+			record.Attributes().PutStr(conventions.AttributeNetworkLocalAddress, addr.destination)
 		}
 	}
-
-	return recordAttr
-}
-
-// getScopeLogs for the given key. If it does not exist yet,
-// create new scope logs, and add the key to the logs map.
-func (v *vpcFlowLogUnmarshaler) getScopeLogs(key resourceKey, logs map[resourceKey]plog.ScopeLogs) plog.ScopeLogs {
-	scopeLogs, ok := logs[key]
-	if !ok {
-		scopeLogs = plog.NewScopeLogs()
-		scopeLogs.Scope().SetName(metadata.ScopeName)
-		scopeLogs.Scope().SetVersion(v.buildInfo.Version)
-		logs[key] = scopeLogs
-	}
-	return scopeLogs
 }
 
 // handleField analyzes the given field and it either
@@ -287,7 +269,7 @@ func handleField(
 	field string,
 	value string,
 	record plog.LogRecord,
-	ips map[string]string,
+	addr *address,
 	key *resourceKey,
 ) (bool, error) {
 	// convert string to number
@@ -312,9 +294,19 @@ func handleField(
 
 	switch field {
 	// TODO Add support for ECS fields
-	case "srcaddr", "pkt-srcaddr", "dstaddr", "pkt-dstaddr":
+	case "srcaddr":
 		// handled later
-		ips[field] = value
+		addr.source = value
+	case "pkt-srcaddr":
+		// handled later
+		addr.pktSource = value
+	case "dstaddr":
+		// handled later
+		addr.destination = value
+	case "pkt-dstaddr":
+		// handled later
+		addr.pktDestination = value
+
 	case "account-id":
 		key.accountID = value
 	case "vpc-id":
