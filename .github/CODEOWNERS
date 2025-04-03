@@ -74,7 +74,7 @@ exporter/otelarrowexporter/                                      @open-telemetry
 exporter/prometheusexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens
 exporter/prometheusremotewriteexporter/                          @open-telemetry/collector-contrib-approvers @Aneurysm9 @rapphil @dashpole @ArthurSens
 exporter/pulsarexporter/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
-exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
+exporter/rabbitmqexporter/                                       @open-telemetry/collector-contrib-approvers @atoulme
 exporter/sapmexporter/                                           @open-telemetry/collector-contrib-approvers @dmitryax @atoulme
 exporter/sematextexporter/                                       @open-telemetry/collector-contrib-approvers @AkhigbeEromo
 exporter/sentryexporter/                                         @open-telemetry/collector-contrib-approvers @AbhiPrasad
@@ -146,7 +146,7 @@ internal/kubelet/                                                @open-telemetry
 internal/metadataproviders/                                      @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 internal/otelarrow/                                              @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 internal/pdatautil/                                              @open-telemetry/collector-contrib-approvers @djaglowski
-internal/rabbitmq/                                               @open-telemetry/collector-contrib-approvers @swar8080 @atoulme
+internal/rabbitmq/                                               @open-telemetry/collector-contrib-approvers @atoulme
 internal/sharedcomponent/                                        @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 internal/splunk/                                                 @open-telemetry/collector-contrib-approvers @dmitryax
 internal/sqlquery/                                               @open-telemetry/collector-contrib-approvers @crobert-1 @dmitryax
