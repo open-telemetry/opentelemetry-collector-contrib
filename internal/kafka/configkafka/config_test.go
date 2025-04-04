@@ -29,13 +29,18 @@ func TestClientConfig(t *testing.T) {
 				ResolveCanonicalBootstrapServersOnly: true,
 				ClientID:                             "vip",
 				ProtocolVersion:                      "1.2.3",
+				TLS: &configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile:   "ca.pem",
+						CertFile: "cert.pem",
+						KeyFile:  "key.pem",
+					},
+				},
 				Authentication: AuthenticationConfig{
-					TLS: &configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
-						},
+					SASL: &SASLConfig{
+						Mechanism: "PLAIN",
+						Username:  "abc",
+						Password:  "def",
 					},
 				},
 				Metadata: MetadataConfig{
@@ -64,6 +69,30 @@ func TestClientConfig(t *testing.T) {
 					Mechanism: "PLAIN",
 					Username:  "abc",
 					Password:  "def",
+					Version:   1,
+				}
+				return cfg
+			}(),
+		},
+		"legacy_auth_tls": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.TLS = &configtls.ClientConfig{
+					Config: configtls.Config{
+						CAFile:   "ca.pem",
+						CertFile: "cert.pem",
+						KeyFile:  "key.pem",
+					},
+				}
+				return cfg
+			}(),
+		},
+		"legacy_auth_plain_text": {
+			expected: func() ClientConfig {
+				cfg := NewDefaultClientConfig()
+				cfg.Authentication.PlainText = &PlainTextConfig{
+					Username: "abc",
+					Password: "def",
 				}
 				return cfg
 			}(),

@@ -61,7 +61,12 @@ func TestLoadConfig(t *testing.T) {
 					config.Brokers = []string{"coffee:123", "foobar:456"}
 					config.Metadata.Retry.Max = 10
 					config.Metadata.Retry.Backoff = 5 * time.Second
-					config.Authentication.TLS = &configtls.ClientConfig{
+					config.Authentication.SASL = &configkafka.SASLConfig{
+						Mechanism: "PLAIN",
+						Username:  "user",
+						Password:  "password",
+					}
+					config.TLS = &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
