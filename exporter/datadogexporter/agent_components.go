@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/http/httpproxy"
 
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func newLogComponent(set component.TelemetrySettings) corelog.Component {
@@ -25,7 +26,7 @@ func newLogComponent(set component.TelemetrySettings) corelog.Component {
 	return zlog
 }
 
-func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig.Component {
+func newConfigComponent(set component.TelemetrySettings, cfg *datadogconfig.Config) coreconfig.Component {
 	pkgconfig := viperconfig.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
 
 	// Set the API Key

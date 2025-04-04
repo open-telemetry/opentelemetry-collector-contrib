@@ -320,10 +320,9 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
 	attrs := make([]string, 0, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		attrs = append(attrs, k+"*"+v.AsString())
-		return true
-	})
+	}
 	sort.Strings(attrs)
 	b.WriteString("*" + strings.Join(attrs, "*"))
 	if job, ok := extractJob(resourceAttrs); ok {

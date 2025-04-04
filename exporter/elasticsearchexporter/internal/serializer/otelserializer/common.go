@@ -57,18 +57,17 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 
 	_ = v.OnKey("attributes")
 	_ = v.OnObjectStart(-1, structform.AnyType)
-	attributes.Range(func(k string, val pcommon.Value) bool {
+	for k, val := range attributes.All() {
 		switch k {
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace, elasticsearch.MappingHintsAttrKey, elasticsearch.DocumentIDAttributeName, elasticsearch.DocumentPipelineAttributeName, elasticsearch.IndexAttributeName:
-			return true
+			continue
 		}
 		if isGeoAttribute(k, val) {
-			return true
+			continue
 		}
 		_ = v.OnKey(k)
 		serializer.WriteValue(v, val, stringifyMapValues)
-		return true
-	})
+	}
 	writeGeolocationAttributes(v, attributes)
 	_ = v.OnObjectFinished()
 }
@@ -108,28 +107,23 @@ func writeGeolocationAttributes(v *json.Visitor, attributes pcommon.Map) {
 		g.latSet = true
 		prefixToGeo[prefix] = g
 	}
-	attributes.Range(func(key string, val pcommon.Value) bool {
+	for key, val := range attributes.All() {
 		if val.Type() != pcommon.ValueTypeDouble {
-			return true
+			continue
 		}
 
 		if key == lonKey {
 			setLon("", val.Double())
-			return true
 		} else if key == latKey {
 			setLat("", val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+lonKey); found {
 			prefix := namespace + "."
 			setLon(prefix, val.Double())
-			return true
 		} else if namespace, found := strings.CutSuffix(key, "."+latKey); found {
 			prefix := namespace + "."
 			setLat(prefix, val.Double())
-			return true
 		}
-		return true
-	})
+	}
 
 	for prefix, geo := range prefixToGeo {
 		if geo.lonSet && geo.latSet {

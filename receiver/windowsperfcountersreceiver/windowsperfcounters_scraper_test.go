@@ -16,7 +16,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -554,14 +553,13 @@ func TestScrape(t *testing.T) {
 							expectedAttributeLen++
 						}
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
-						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
-								return true
+								continue
 							}
 							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
-							return true
-						})
+						}
 					}
 					curMetricsNum++
 				}

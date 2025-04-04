@@ -60,6 +60,44 @@ var MapAttributeProtocol = map[string]AttributeProtocol{
 	"tcp": AttributeProtocolTcp,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemNetworkConnections: metricInfo{
+		Name: "system.network.connections",
+	},
+	SystemNetworkConntrackCount: metricInfo{
+		Name: "system.network.conntrack.count",
+	},
+	SystemNetworkConntrackMax: metricInfo{
+		Name: "system.network.conntrack.max",
+	},
+	SystemNetworkDropped: metricInfo{
+		Name: "system.network.dropped",
+	},
+	SystemNetworkErrors: metricInfo{
+		Name: "system.network.errors",
+	},
+	SystemNetworkIo: metricInfo{
+		Name: "system.network.io",
+	},
+	SystemNetworkPackets: metricInfo{
+		Name: "system.network.packets",
+	},
+}
+
+type metricsInfo struct {
+	SystemNetworkConnections    metricInfo
+	SystemNetworkConntrackCount metricInfo
+	SystemNetworkConntrackMax   metricInfo
+	SystemNetworkDropped        metricInfo
+	SystemNetworkErrors         metricInfo
+	SystemNetworkIo             metricInfo
+	SystemNetworkPackets        metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemNetworkConnections struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

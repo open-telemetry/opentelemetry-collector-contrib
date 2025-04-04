@@ -109,6 +109,8 @@ The exact mapping can be found in [trace_to_envelope.go](trace_to_envelope.go).
 
 All attributes are also mapped to custom properties if they are booleans or strings and to custom measurements if they are ints or doubles.
 
+All links are mapped to property `_MS.links` with JSON array string.
+
 #### Span Events
 
 Span events are optionally saved to the Application Insights `traces` table.

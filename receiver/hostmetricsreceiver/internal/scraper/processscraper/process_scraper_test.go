@@ -470,11 +470,6 @@ func (p *processHandleMock) TimesWithContext(ctx context.Context) (*cpu.TimesSta
 	return args.Get(0).(*cpu.TimesStat), args.Error(1)
 }
 
-func (p *processHandleMock) PercentWithContext(ctx context.Context, d time.Duration) (float64, error) {
-	args := p.MethodCalled("PercentWithContext", ctx, d)
-	return args.Get(0).(float64), args.Error(1)
-}
-
 func (p *processHandleMock) MemoryInfoWithContext(ctx context.Context) (*process.MemoryInfoStat, error) {
 	args := p.MethodCalled("MemoryInfoWithContext", ctx)
 	return args.Get(0).(*process.MemoryInfoStat), args.Error(1)
@@ -500,11 +495,6 @@ func (p *processHandleMock) CreateTimeWithContext(ctx context.Context) (int64, e
 	return args.Get(0).(int64), args.Error(1)
 }
 
-func (p *processHandleMock) ParentWithContext(ctx context.Context) (*process.Process, error) {
-	args := p.MethodCalled("ParentWithContext", ctx)
-	return args.Get(0).(*process.Process), args.Error(1)
-}
-
 func (p *processHandleMock) PpidWithContext(ctx context.Context) (int32, error) {
 	args := p.MethodCalled("PpidWithContext", ctx)
 	return args.Get(0).(int32), args.Error(1)
@@ -523,6 +513,11 @@ func (p *processHandleMock) NumCtxSwitchesWithContext(ctx context.Context) (*pro
 func (p *processHandleMock) NumFDsWithContext(ctx context.Context) (int32, error) {
 	args := p.MethodCalled("NumFDsWithContext", ctx)
 	return args.Get(0).(int32), args.Error(1)
+}
+
+func (p *processHandleMock) GetProcessHandleCountWithContext(ctx context.Context) (int64, error) {
+	args := p.MethodCalled("GetProcessHandleCountWithContext", ctx)
+	return args.Get(0).(int64), args.Error(1)
 }
 
 func (p *processHandleMock) RlimitUsageWithContext(ctx context.Context, b bool) ([]process.RlimitStat, error) {
@@ -545,9 +540,6 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "TimesWithContext", mock.Anything) {
 		handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, nil)
-	}
-	if !handleMock.IsMethodCallable(t, "PercentWithContext", mock.Anything, mock.Anything) {
-		handleMock.On("PercentWithContext", mock.Anything, mock.Anything).Return(float64(0), nil)
 	}
 	if !handleMock.IsMethodCallable(t, "MemoryInfoWithContext", mock.Anything) {
 		handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, nil)
@@ -572,6 +564,9 @@ func initDefaultsHandleMock(t mock.TestingT, handleMock *processHandleMock) {
 	}
 	if !handleMock.IsMethodCallable(t, "NumFDsWithContext", mock.Anything) {
 		handleMock.On("NumFDsWithContext", mock.Anything).Return(int32(0), nil)
+	}
+	if !handleMock.IsMethodCallable(t, "GetProcessHandleCountWithContext", mock.Anything) {
+		handleMock.On("GetProcessHandleCountWithContext", mock.Anything).Return(int64(0), nil)
 	}
 	if !handleMock.IsMethodCallable(t, "RlimitUsageWithContext", mock.Anything, mock.Anything) {
 		handleMock.On("RlimitUsageWithContext", mock.Anything, mock.Anything).Return([]process.RlimitStat{}, nil)
@@ -725,6 +720,10 @@ func enableOptionalMetrics(ms *metadata.MetricsConfig) {
 	ms.ProcessOpenFileDescriptors.Enabled = true
 	ms.ProcessSignalsPending.Enabled = true
 	ms.ProcessUptime.Enabled = true
+	if runtime.GOOS == "windows" {
+		// Only Windows can produce this metric, do not fake it for other OSes.
+		ms.ProcessHandles.Enabled = true
+	}
 }
 
 func TestScrapeMetrics_ProcessErrors(t *testing.T) {
@@ -748,6 +747,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 		numThreadsError     error
 		numCtxSwitchesError error
 		numFDsError         error
+		handleCountError    error
 		rlimitError         error
 		expectedError       string
 	}
@@ -848,6 +848,12 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			expectedError: `error reading open file descriptor count for process "test" (pid 1): err10`,
 		},
 		{
+			name:             "Handle Count Error",
+			osFilter:         []string{"darwin", "linux"},
+			handleCountError: errors.New("err-handle-count"),
+			expectedError:    `error reading handle count for process "test" (pid 1): err-handle-count`,
+		},
+		{
 			name:          "Signals Pending Error",
 			osFilter:      []string{"darwin"},
 			rlimitError:   errors.New("err-rlimit"),
@@ -867,6 +873,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			numThreadsError:     errors.New("err8"),
 			numCtxSwitchesError: errors.New("err9"),
 			numFDsError:         errors.New("err10"),
+			handleCountError:    handleCountErrorIfSupportedOnPlatform(),
 			rlimitError:         errors.New("err-rlimit"),
 			expectedError: `error reading command for process "test" (pid 1): err2; ` +
 				`error reading username for process "test" (pid 1): err3; ` +
@@ -879,6 +886,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				`error reading thread info for process "test" (pid 1): err8; ` +
 				`error reading context switch counts for process "test" (pid 1): err9; ` +
 				`error reading open file descriptor count for process "test" (pid 1): err10; ` +
+				handleCountErrorMessageIfSupportedOnPlatform() +
 				`error reading pending signals for process "test" (pid 1): err-rlimit; ` +
 				`error calculating uptime for process "test" (pid 1): err4`,
 		},
@@ -928,7 +936,6 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("CmdlineWithContext", mock.Anything).Return("cmdline", test.cmdlineError)
 			handleMock.On("CmdlineSliceWithContext", mock.Anything).Return([]string{"cmdline"}, test.cmdlineError)
 			handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, test.timesError)
-			handleMock.On("PercentWithContext", mock.Anything).Return(float64(0), nil)
 			handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, test.memoryInfoError)
 			handleMock.On("MemoryPercentWithContext", mock.Anything).Return(float32(0), test.memoryPercentError)
 			handleMock.On("IOCountersWithContext", mock.Anything).Return(&process.IOCountersStat{}, test.ioCountersError)
@@ -938,6 +945,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			handleMock.On("PageFaultsWithContext", mock.Anything).Return(&process.PageFaultsStat{}, test.pageFaultsError)
 			handleMock.On("NumCtxSwitchesWithContext", mock.Anything).Return(&process.NumCtxSwitchesStat{}, test.numCtxSwitchesError)
 			handleMock.On("NumFDsWithContext", mock.Anything).Return(int32(0), test.numFDsError)
+			handleMock.On("GetProcessHandleCountWithContext", mock.Anything).Return(int64(0), test.handleCountError)
 			handleMock.On("RlimitUsageWithContext", mock.Anything, mock.Anything).Return([]process.RlimitStat{
 				{
 					Resource: process.RLIMIT_SIGPENDING,
@@ -957,7 +965,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 				executableError = test.cmdlineError
 			}
 
-			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError, test.cgroupError, test.createTimeError)
+			expectedResourceMetricsLen, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.cgroupError, test.createTimeError)
 			assert.Equal(t, expectedResourceMetricsLen, md.ResourceMetrics().Len())
 			assert.Equal(t, expectedMetricsLen, md.MetricCount())
 
@@ -965,7 +973,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 			isPartial := scrapererror.IsPartialScrapeError(err)
 			assert.True(t, isPartial)
 			if isPartial {
-				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.rlimitError, test.cgroupError, test.createTimeError)
+				expectedFailures := getExpectedScrapeFailures(test.nameError, executableError, test.timesError, test.memoryInfoError, test.memoryPercentError, test.ioCountersError, test.pageFaultsError, test.numThreadsError, test.numCtxSwitchesError, test.numFDsError, test.handleCountError, test.rlimitError, test.cgroupError, test.createTimeError)
 				var scraperErr scrapererror.PartialScrapeError
 				require.ErrorAs(t, err, &scraperErr)
 				assert.Equal(t, expectedFailures, scraperErr.Failed)
@@ -974,7 +982,7 @@ func TestScrapeMetrics_ProcessErrors(t *testing.T) {
 	}
 }
 
-func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError, cgroupError, uptimeError error) (int, int) {
+func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError error) (int, int) {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 0, 0
 	}
@@ -1002,6 +1010,9 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	if pageFaultsError == nil && runtime.GOOS != "darwin" {
 		expectedLen += pagingMetricsLen
 	}
+	if handleCountError == nil {
+		expectedLen += handleCountMetricsLen
+	}
 	if rlimitError == nil && runtime.GOOS != "darwin" {
 		expectedLen += signalMetricsLen
 	}
@@ -1024,7 +1035,7 @@ func getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError
 	return 1, expectedLen
 }
 
-func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, rlimitError error, cgroupError, uptimeError error) int {
+func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError error, handleCountError, rlimitError, cgroupError, uptimeError error) int {
 	if runtime.GOOS == "windows" && exeError != nil {
 		return 2
 	}
@@ -1035,7 +1046,7 @@ func getExpectedScrapeFailures(nameError, exeError, timeError, memError, memPerc
 	if nameError != nil || exeError != nil {
 		return 1
 	}
-	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, rlimitError, cgroupError, uptimeError)
+	_, expectedMetricsLen := getExpectedLengthOfReturnedMetrics(nameError, exeError, timeError, memError, memPercentError, diskError, pageFaultsError, threadError, contextSwitchError, fileDescriptorError, handleCountError, rlimitError, cgroupError, uptimeError)
 
 	// excluding unsupported metrics from darwin 'metricsLen'
 	if runtime.GOOS == "darwin" {
@@ -1238,7 +1249,6 @@ func newErroringHandleMock() *processHandleMock {
 	handleMock.On("CmdlineWithContext", mock.Anything).Return("cmdline", nil)
 	handleMock.On("CmdlineSliceWithContext", mock.Anything).Return([]string{"cmdline"}, nil)
 	handleMock.On("TimesWithContext", mock.Anything).Return(&cpu.TimesStat{}, &ProcessReadError{})
-	handleMock.On("PercentWithContext", mock.Anything).Return(float64(0), nil)
 	handleMock.On("MemoryInfoWithContext", mock.Anything).Return(&process.MemoryInfoStat{}, &ProcessReadError{})
 	handleMock.On("IOCountersWithContext", mock.Anything).Return(&process.IOCountersStat{}, &ProcessReadError{})
 	handleMock.On("NumThreadsWithContext", mock.Anything).Return(int32(0), &ProcessReadError{})
@@ -1363,4 +1373,20 @@ func TestScrapeMetrics_CpuUtilizationWhenCpuTimesIsDisabled(t *testing.T) {
 			}
 		})
 	}
+}
+
+func handleCountErrorIfSupportedOnPlatform() error {
+	if handleCountMetricsLen > 0 {
+		return errors.New("error-handle-count")
+	}
+
+	return nil
+}
+
+func handleCountErrorMessageIfSupportedOnPlatform() string {
+	if handleCountErr := handleCountErrorIfSupportedOnPlatform(); handleCountErr != nil {
+		return fmt.Errorf("error reading handle count for process \"test\" (pid 1): %w; ", handleCountErr).Error()
+	}
+
+	return ""
 }

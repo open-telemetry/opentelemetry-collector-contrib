@@ -59,11 +59,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount := 0
 			allMetricsCount := 0
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkAggregationQueueRatioDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkBucketsSearchableStatusDataPoint(ts, 1, "splunk.host-val", "splunk.indexer.searchable-val")
 
@@ -88,49 +86,40 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts, 1, "splunk.index.name-val")
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkHealthDataPoint(ts, 1, "splunk.feature-val", "splunk.feature.health-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexerAvgRateDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexerCPUTimeDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexerQueueRatioDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexerRawWriteTimeDataPoint(ts, 1, "splunk.host-val")
 
 			allMetricsCount++
 			mb.RecordSplunkIndexerThroughputDataPoint(ts, 1, "splunk.indexer.status-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgSizeDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexesAvgUsageDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexesBucketCountDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexesMedianDataAgeDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIndexesSizeDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkIoAvgIopsDataPoint(ts, 1, "splunk.host-val")
 
@@ -143,27 +132,21 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkKvstoreStatusDataPoint(ts, 1, "splunk.kvstore.storage.engine-val", "splunk.kvstore.external-val", "splunk.kvstore.status.value-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkLicenseIndexUsageDataPoint(ts, 1, "splunk.index.name-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkParseQueueRatioDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkPipelineSetCountDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkSchedulerAvgRunTimeDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 1, "splunk.host-val")
 
@@ -197,7 +180,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordSplunkServerSearchartifactsScheduledDataPoint(ts, 1, "splunk.host-val")
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordSplunkTypingQueueRatioDataPoint(ts, 1, "splunk.host-val")
 

@@ -13,6 +13,8 @@ import (
 type HostnameSource string
 
 const (
+	// Deprecated: [v0.124.0] opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead
+	//
 	// HostnameSourceFirstResource picks the host metadata hostname from the resource
 	// attributes on the first OTLP payload that gets to the exporter. If it is lacking any
 	// hostname-like attributes, it will fallback to 'config_or_system' behavior (see below).

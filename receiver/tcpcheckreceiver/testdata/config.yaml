@@ -1,16 +1,11 @@
 receivers:
   tcpcheck:
-    endpoint: localhost:80
-    collection_interval: 60s
-exporters:
-  # NOTE: Prior to v0.86.0 use `logging` instead of `debug`.
-  debug:
-    verbosity: detailed
-service:
-  pipelines:
-    traces:
-      receivers: [tcpcheck]
-      exporters: [debug]
-  telemetry:
-    logs:
-      level: debug
+    collection_interval: 1m
+    initial_delay: 1s
+    targets:
+      - endpoint: "google.com:443"
+        dialer:
+          timeout: 3s
+      - endpoint: "localhost:8080"
+        dialer:
+          timeout: 5s

@@ -106,8 +106,7 @@ func addAttributesToExponentialHistogramDataPoints(ps pmetric.ExponentialHistogr
 
 func joinAttributeMaps(from, to pcommon.Map) {
 	to.EnsureCapacity(from.Len() + to.Len())
-	from.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range from.All() {
 		v.CopyTo(to.PutEmpty(k))
-		return true
-	})
+	}
 }

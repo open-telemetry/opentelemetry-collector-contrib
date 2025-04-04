@@ -27,7 +27,6 @@ type topicScraper struct {
 	clusterAdmin sarama.ClusterAdmin
 	settings     receiver.Settings
 	topicFilter  *regexp.Regexp
-	saramaConfig *sarama.Config
 	config       Config
 	mb           *metadata.MetricsBuilder
 }
@@ -52,7 +51,7 @@ func (s *topicScraper) start(_ context.Context, _ component.Host) error {
 
 func (s *topicScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in topics scraper: %w", err)
 		}
@@ -123,7 +122,7 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 		return
 	}
 	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		admin, err := newClusterAdmin(s.client)
 		if err != nil {
 			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return
@@ -169,16 +168,15 @@ func (s *topicScraper) scrapeTopicConfigs(now pcommon.Timestamp, errors scrapere
 	}
 }
 
-func createTopicsScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config, settings receiver.Settings) (scraper.Metrics, error) {
+func createTopicsScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
 	topicFilter, err := regexp.Compile(cfg.TopicMatch)
 	if err != nil {
 		return nil, fmt.Errorf("failed to compile topic filter: %w", err)
 	}
 	s := topicScraper{
-		settings:     settings,
-		topicFilter:  topicFilter,
-		saramaConfig: saramaConfig,
-		config:       cfg,
+		settings:    settings,
+		topicFilter: topicFilter,
+		config:      cfg,
 	}
 	return scraper.NewMetrics(
 		s.scrape,

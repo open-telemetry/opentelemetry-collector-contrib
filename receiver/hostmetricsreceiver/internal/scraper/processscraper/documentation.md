@@ -112,7 +112,7 @@ Number of disk operations performed by the process.
 
 ### process.handles
 
-Number of handles held by the process.
+Number of open handles held by the process.
 
 This metric is only available on Windows.
 
@@ -132,7 +132,7 @@ Percentage of total physical memory that is used by the process.
 
 Number of file descriptors in use by the process.
 
-This metric is only available on Linux.
+On Windows this metric captures the number of open handles currently held by the process. If you want to capture this data on Windows use the `process.handles` metric instead to avoid any confusion.
 
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |

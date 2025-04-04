@@ -25,7 +25,6 @@ type brokerScraper struct {
 	client       sarama.Client
 	settings     receiver.Settings
 	config       Config
-	saramaConfig *sarama.Config
 	clusterAdmin sarama.ClusterAdmin
 	mb           *metadata.MetricsBuilder
 }
@@ -50,7 +49,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	scrapeErrors := scrapererror.ScrapeErrors{}
 
 	if s.client == nil {
-		client, err := newSaramaClient(s.config.Brokers, s.saramaConfig)
+		client, err := newSaramaClient(context.Background(), s.config.ClientConfig)
 		if err != nil {
 			return pmetric.Metrics{}, fmt.Errorf("failed to create client in brokers scraper: %w", err)
 		}
@@ -68,7 +67,7 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	}
 
 	if s.clusterAdmin == nil {
-		admin, err := newClusterAdmin(s.config.Brokers, s.saramaConfig)
+		admin, err := newClusterAdmin(s.client)
 		if err != nil {
 			s.settings.Logger.Error("Error creating kafka client with admin privileges", zap.Error(err))
 			return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
@@ -102,13 +101,10 @@ func (s *brokerScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), scrapeErrors.Combine()
 }
 
-func createBrokerScraper(_ context.Context, cfg Config, saramaConfig *sarama.Config,
-	settings receiver.Settings,
-) (scraper.Metrics, error) {
+func createBrokerScraper(_ context.Context, cfg Config, settings receiver.Settings) (scraper.Metrics, error) {
 	s := brokerScraper{
-		settings:     settings,
-		config:       cfg,
-		saramaConfig: saramaConfig,
+		settings: settings,
+		config:   cfg,
 	}
 	return scraper.NewMetrics(
 		s.scrape,

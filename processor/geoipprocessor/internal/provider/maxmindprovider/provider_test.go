@@ -32,6 +32,9 @@ func TestInvalidNewProvider(t *testing.T) {
 
 // TestProviderLocation asserts that the MaxMind provider adds the geo location data given an IP.
 func TestProviderLocation(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38961")
+	}
 	tmpDBfiles := testdata.GenerateLocalDB(t, "./testdata")
 	defer os.RemoveAll(tmpDBfiles)
 

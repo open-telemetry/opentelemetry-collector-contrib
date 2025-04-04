@@ -32,6 +32,7 @@ func NewFactory() receiver.Factory {
 		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
 }
 
+// createDefaultConfig creates the default configuration for the receiver
 func createDefaultConfig() component.Config {
 	cfg := scraperhelper.NewDefaultControllerConfig()
 	cfg.CollectionInterval = defaultCollectionInterval

@@ -1,0 +1,40 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: new.resource.name
+          value:
+            stringValue: "test-cluster"
+    schemaUrl: http://opentelemetry.io/schemas/1.9.0
+    scopeMetrics:
+      - schemaUrl: http://opentelemetry.io/schemas/1.9.0
+      - scope: {}
+        schemaUrl: http://opentelemetry.io/schemas/1.9.0
+        metrics:
+          - sum:
+              dataPoints:
+                - attributes:
+                    - key: new.attr.name
+                      value:
+                        stringValue: "test-cluster"
+            name: "new.sum.metric"
+          - gauge:
+              dataPoints:
+                - attributes:
+                    - key: new.attr.name
+                      value:
+                        stringValue: "test-cluster"
+            name: "new.gauge.metric"
+          - histogram:
+              dataPoints:
+                - attributes:
+                    - key: new.attr.name
+                      value:
+                        stringValue: "test-cluster"
+            name: "new.histogram.metric"
+          - summary:
+              dataPoints:
+                - attributes:
+                    - key: new.attr.name
+                      value:
+                        stringValue: "test-cluster"
+            name: "new.summary.metric"

@@ -128,13 +128,12 @@ func (tsm *timeseriesMap) get(metric pmetric.Metric, kv pcommon.Map) (*timeserie
 // Create a unique string signature for attributes values sorted by attribute keys.
 func getAttributesSignature(m pcommon.Map) [16]byte {
 	clearedMap := pcommon.NewMap()
-	m.Range(func(k string, attrValue pcommon.Value) bool {
+	for k, attrValue := range m.All() {
 		value := attrValue.Str()
 		if value != "" {
 			clearedMap.PutStr(k, value)
 		}
-		return true
-	})
+	}
 	return pdatautil.MapHash(clearedMap)
 }
 

@@ -31,48 +31,52 @@ type worker struct {
 	index                  int                          // worker index
 }
 
+// We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
+// From metrics.proto:
+// The number of elements in bucket_counts array must be by one greater than
+// the number of elements in explicit_bounds array.
 var histogramBucketSamples = []struct {
 	bucketCounts []uint64
 	sum          int64
 }{
 	{
-		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0, 0},
 		3940,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0, 0},
 		4455,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0, 0},
 		5337,
 	},
 	{
-		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0, 0},
 		4477,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0, 0},
 		4670,
 	},
 	{
-		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0, 0},
 		5670,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0, 0},
 		5091,
 	},
 	{
-		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0},
 		3420,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0, 0},
 		5917,
 	},
 	{
-		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0},
 		3988,
 	},
 }
@@ -117,9 +121,13 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				},
 			})
 		case MetricTypeHistogram:
+			var totalCount uint64
 			iteration := uint64(i) % 10
 			sum := histogramBucketSamples[iteration].sum
 			bucketCounts := histogramBucketSamples[iteration].bucketCounts
+			for _, count := range bucketCounts {
+				totalCount += count
+			}
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Histogram[int64]{
@@ -130,7 +138,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 							Time:       time.Now(),
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
-							Count:      iteration,
+							Count:      totalCount,
 							Sum:        sum,
 							// Bounds from https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk.md#explicit-bucket-histogram-aggregation
 							Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},

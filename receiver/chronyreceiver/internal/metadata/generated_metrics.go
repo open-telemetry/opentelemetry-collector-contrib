@@ -45,6 +45,44 @@ var MapAttributeLeapStatus = map[string]AttributeLeapStatus{
 	"unsynchronised": AttributeLeapStatusUnsynchronised,
 }
 
+var MetricsInfo = metricsInfo{
+	NtpFrequencyOffset: metricInfo{
+		Name: "ntp.frequency.offset",
+	},
+	NtpSkew: metricInfo{
+		Name: "ntp.skew",
+	},
+	NtpStratum: metricInfo{
+		Name: "ntp.stratum",
+	},
+	NtpTimeCorrection: metricInfo{
+		Name: "ntp.time.correction",
+	},
+	NtpTimeLastOffset: metricInfo{
+		Name: "ntp.time.last_offset",
+	},
+	NtpTimeRmsOffset: metricInfo{
+		Name: "ntp.time.rms_offset",
+	},
+	NtpTimeRootDelay: metricInfo{
+		Name: "ntp.time.root_delay",
+	},
+}
+
+type metricsInfo struct {
+	NtpFrequencyOffset metricInfo
+	NtpSkew            metricInfo
+	NtpStratum         metricInfo
+	NtpTimeCorrection  metricInfo
+	NtpTimeLastOffset  metricInfo
+	NtpTimeRmsOffset   metricInfo
+	NtpTimeRootDelay   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricNtpFrequencyOffset struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

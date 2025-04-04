@@ -67,12 +67,12 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for tlscheck resource attributes.
 type ResourceAttributesConfig struct {
-	TlscheckEndpoint ResourceAttributeConfig `mapstructure:"tlscheck.endpoint"`
+	TlscheckTarget ResourceAttributeConfig `mapstructure:"tlscheck.target"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
-		TlscheckEndpoint: ResourceAttributeConfig{
+		TlscheckTarget: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

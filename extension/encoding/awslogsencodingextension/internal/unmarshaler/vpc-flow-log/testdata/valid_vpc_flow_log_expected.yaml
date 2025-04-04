@@ -1,0 +1,30 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "12345678910"
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: aws.vpc.flow.log.version
+                value:
+                  intValue: "2"
+              - key: aws.eni.id
+                value:
+                  stringValue: eni-0eb1e4178af74336c
+              - key: aws.vpc.flow.start
+                value:
+                  intValue: "1742570089"
+              - key: aws.vpc.flow.status
+                value:
+                  stringValue: NODATA
+            body: {}
+            spanId: ""
+            timeUnixNano: "1742570142000000000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

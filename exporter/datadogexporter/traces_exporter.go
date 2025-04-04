@@ -33,6 +33,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
@@ -44,7 +45,7 @@ var traceCustomHTTPFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 type traceExporter struct {
 	params           exporter.Settings
-	cfg              *Config
+	cfg              *datadogconfig.Config
 	ctx              context.Context          // ctx triggers shutdown upon cancellation
 	client           *zorkian.Client          // client sends running metrics to backend & performs API validation
 	metricsAPI       *datadogV2.MetricsApi    // client sends running metrics to backend
@@ -60,7 +61,7 @@ type traceExporter struct {
 func newTracesExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg *Config,
+	cfg *datadogconfig.Config,
 	onceMetadata *sync.Once,
 	sourceProvider source.Provider,
 	agent *agent.Agent,
@@ -199,7 +200,7 @@ func (exp *traceExporter) exportUsageMetrics(ctx context.Context, hosts map[stri
 	}
 }
 
-func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, metricsClient statsd.ClientInterface, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, metricsClient statsd.ClientInterface, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	acfg, err := newTraceAgentConfig(ctx, params, cfg, sourceProvider, attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -207,7 +208,7 @@ func newTraceAgent(ctx context.Context, params exporter.Settings, cfg *Config, s
 	return agent.NewAgent(ctx, acfg, telemetry.NewNoopCollector(), metricsClient, gzip.NewComponent()), nil
 }
 
-func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*traceconfig.AgentConfig, error) {
+func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*traceconfig.AgentConfig, error) {
 	acfg := traceconfig.New()
 	src, err := sourceProvider.Source(ctx)
 	if err != nil {

@@ -6,11 +6,11 @@ package kafkametricsreceiver
 import (
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
@@ -28,24 +28,19 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
+	expectedClientConfig := configkafka.NewDefaultClientConfig()
+	expectedClientConfig.Brokers = []string{"10.10.10.10:9092"}
+	expectedClientConfig.Metadata.Full = false
+	expectedClientConfig.Metadata.RefreshInterval = time.Nanosecond // set by refresh_frequency
+
 	assert.Equal(t, &Config{
 		ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
-		ClusterAlias:     "kafka-test",
-		Brokers:          []string{"10.10.10.10:9092"},
-		ProtocolVersion:  "2.0.0",
-		TopicMatch:       "test_\\w+",
-		GroupMatch:       "test_\\w+",
-		Authentication: configkafka.AuthenticationConfig{
-			TLS: &configtls.ClientConfig{
-				Config: configtls.Config{
-					CAFile:   "ca.pem",
-					CertFile: "cert.pem",
-					KeyFile:  "key.pem",
-				},
-			},
-		},
-		RefreshFrequency:     1,
-		ClientID:             defaultClientID,
+		ClientConfig:     expectedClientConfig,
+
+		ClusterAlias:         "kafka-test",
+		TopicMatch:           "test_\\w+",
+		GroupMatch:           "test_\\w+",
+		RefreshFrequency:     time.Nanosecond,
 		Scrapers:             []string{"brokers", "topics", "consumers"},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}, cfg)

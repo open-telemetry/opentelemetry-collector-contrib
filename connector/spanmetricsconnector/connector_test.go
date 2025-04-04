@@ -285,7 +285,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 		notInSpanAttrName0:     pcommon.NewValueStr("defaultNotInSpanAttrVal"),
 		regionResourceAttrName: pcommon.NewValueStr(sampleRegion),
 	}
-	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range dp.Attributes().All() {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
@@ -301,8 +301,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
-		return true
-	})
+	}
 	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/name/kind should be a unique metric.
@@ -1874,4 +1873,111 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 func (c alwaysIncreasingClock) Now() time.Time {
 	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
+}
+
+func TestBuildAttributes_InstrumentationScope(t *testing.T) {
+	tests := []struct {
+		name                 string
+		instrumentationScope pcommon.InstrumentationScope
+		config               Config
+		want                 map[string]string
+	}{
+		{
+			name: "with instrumentation scope name and version",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "express",
+				instrumentationScopeVersionKey: "1.0.0",
+			},
+		},
+		{
+			name: "with instrumentation scope but not included",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+		{
+			name: "without instrumentation scope but version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+
+		{
+			name: "with instrumentation scope and instrumentation scope name but no version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:              "test_service",
+				spanNameKey:                 "test_span",
+				spanKindKey:                 "SPAN_KIND_INTERNAL",
+				statusCodeKey:               "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey: "express",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create connector
+			p := &connectorImp{
+				config: tt.config,
+			}
+
+			// Create basic span
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			// Build attributes
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+
+			// Verify results
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.Str())
+			}
+		})
+	}
 }

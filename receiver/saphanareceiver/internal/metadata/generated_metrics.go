@@ -526,6 +526,196 @@ var MapAttributeVolumeOperationType = map[string]AttributeVolumeOperationType{
 	"write": AttributeVolumeOperationTypeWrite,
 }
 
+var MetricsInfo = metricsInfo{
+	SaphanaAlertCount: metricInfo{
+		Name: "saphana.alert.count",
+	},
+	SaphanaBackupLatest: metricInfo{
+		Name: "saphana.backup.latest",
+	},
+	SaphanaColumnMemoryUsed: metricInfo{
+		Name: "saphana.column.memory.used",
+	},
+	SaphanaComponentMemoryUsed: metricInfo{
+		Name: "saphana.component.memory.used",
+	},
+	SaphanaConnectionCount: metricInfo{
+		Name: "saphana.connection.count",
+	},
+	SaphanaCPUUsed: metricInfo{
+		Name: "saphana.cpu.used",
+	},
+	SaphanaDiskSizeCurrent: metricInfo{
+		Name: "saphana.disk.size.current",
+	},
+	SaphanaHostMemoryCurrent: metricInfo{
+		Name: "saphana.host.memory.current",
+	},
+	SaphanaHostSwapCurrent: metricInfo{
+		Name: "saphana.host.swap.current",
+	},
+	SaphanaInstanceCodeSize: metricInfo{
+		Name: "saphana.instance.code_size",
+	},
+	SaphanaInstanceMemoryCurrent: metricInfo{
+		Name: "saphana.instance.memory.current",
+	},
+	SaphanaInstanceMemorySharedAllocated: metricInfo{
+		Name: "saphana.instance.memory.shared.allocated",
+	},
+	SaphanaInstanceMemoryUsedPeak: metricInfo{
+		Name: "saphana.instance.memory.used.peak",
+	},
+	SaphanaLicenseExpirationTime: metricInfo{
+		Name: "saphana.license.expiration.time",
+	},
+	SaphanaLicenseLimit: metricInfo{
+		Name: "saphana.license.limit",
+	},
+	SaphanaLicensePeak: metricInfo{
+		Name: "saphana.license.peak",
+	},
+	SaphanaNetworkRequestAverageTime: metricInfo{
+		Name: "saphana.network.request.average_time",
+	},
+	SaphanaNetworkRequestCount: metricInfo{
+		Name: "saphana.network.request.count",
+	},
+	SaphanaNetworkRequestFinishedCount: metricInfo{
+		Name: "saphana.network.request.finished.count",
+	},
+	SaphanaReplicationAverageTime: metricInfo{
+		Name: "saphana.replication.average_time",
+	},
+	SaphanaReplicationBacklogSize: metricInfo{
+		Name: "saphana.replication.backlog.size",
+	},
+	SaphanaReplicationBacklogTime: metricInfo{
+		Name: "saphana.replication.backlog.time",
+	},
+	SaphanaRowStoreMemoryUsed: metricInfo{
+		Name: "saphana.row_store.memory.used",
+	},
+	SaphanaSchemaMemoryUsedCurrent: metricInfo{
+		Name: "saphana.schema.memory.used.current",
+	},
+	SaphanaSchemaMemoryUsedMax: metricInfo{
+		Name: "saphana.schema.memory.used.max",
+	},
+	SaphanaSchemaOperationCount: metricInfo{
+		Name: "saphana.schema.operation.count",
+	},
+	SaphanaSchemaRecordCompressedCount: metricInfo{
+		Name: "saphana.schema.record.compressed.count",
+	},
+	SaphanaSchemaRecordCount: metricInfo{
+		Name: "saphana.schema.record.count",
+	},
+	SaphanaServiceCodeSize: metricInfo{
+		Name: "saphana.service.code_size",
+	},
+	SaphanaServiceCount: metricInfo{
+		Name: "saphana.service.count",
+	},
+	SaphanaServiceMemoryCompactorsAllocated: metricInfo{
+		Name: "saphana.service.memory.compactors.allocated",
+	},
+	SaphanaServiceMemoryCompactorsFreeable: metricInfo{
+		Name: "saphana.service.memory.compactors.freeable",
+	},
+	SaphanaServiceMemoryEffectiveLimit: metricInfo{
+		Name: "saphana.service.memory.effective_limit",
+	},
+	SaphanaServiceMemoryHeapCurrent: metricInfo{
+		Name: "saphana.service.memory.heap.current",
+	},
+	SaphanaServiceMemoryLimit: metricInfo{
+		Name: "saphana.service.memory.limit",
+	},
+	SaphanaServiceMemorySharedCurrent: metricInfo{
+		Name: "saphana.service.memory.shared.current",
+	},
+	SaphanaServiceMemoryUsed: metricInfo{
+		Name: "saphana.service.memory.used",
+	},
+	SaphanaServiceStackSize: metricInfo{
+		Name: "saphana.service.stack_size",
+	},
+	SaphanaServiceThreadCount: metricInfo{
+		Name: "saphana.service.thread.count",
+	},
+	SaphanaTransactionBlocked: metricInfo{
+		Name: "saphana.transaction.blocked",
+	},
+	SaphanaTransactionCount: metricInfo{
+		Name: "saphana.transaction.count",
+	},
+	SaphanaUptime: metricInfo{
+		Name: "saphana.uptime",
+	},
+	SaphanaVolumeOperationCount: metricInfo{
+		Name: "saphana.volume.operation.count",
+	},
+	SaphanaVolumeOperationSize: metricInfo{
+		Name: "saphana.volume.operation.size",
+	},
+	SaphanaVolumeOperationTime: metricInfo{
+		Name: "saphana.volume.operation.time",
+	},
+}
+
+type metricsInfo struct {
+	SaphanaAlertCount                       metricInfo
+	SaphanaBackupLatest                     metricInfo
+	SaphanaColumnMemoryUsed                 metricInfo
+	SaphanaComponentMemoryUsed              metricInfo
+	SaphanaConnectionCount                  metricInfo
+	SaphanaCPUUsed                          metricInfo
+	SaphanaDiskSizeCurrent                  metricInfo
+	SaphanaHostMemoryCurrent                metricInfo
+	SaphanaHostSwapCurrent                  metricInfo
+	SaphanaInstanceCodeSize                 metricInfo
+	SaphanaInstanceMemoryCurrent            metricInfo
+	SaphanaInstanceMemorySharedAllocated    metricInfo
+	SaphanaInstanceMemoryUsedPeak           metricInfo
+	SaphanaLicenseExpirationTime            metricInfo
+	SaphanaLicenseLimit                     metricInfo
+	SaphanaLicensePeak                      metricInfo
+	SaphanaNetworkRequestAverageTime        metricInfo
+	SaphanaNetworkRequestCount              metricInfo
+	SaphanaNetworkRequestFinishedCount      metricInfo
+	SaphanaReplicationAverageTime           metricInfo
+	SaphanaReplicationBacklogSize           metricInfo
+	SaphanaReplicationBacklogTime           metricInfo
+	SaphanaRowStoreMemoryUsed               metricInfo
+	SaphanaSchemaMemoryUsedCurrent          metricInfo
+	SaphanaSchemaMemoryUsedMax              metricInfo
+	SaphanaSchemaOperationCount             metricInfo
+	SaphanaSchemaRecordCompressedCount      metricInfo
+	SaphanaSchemaRecordCount                metricInfo
+	SaphanaServiceCodeSize                  metricInfo
+	SaphanaServiceCount                     metricInfo
+	SaphanaServiceMemoryCompactorsAllocated metricInfo
+	SaphanaServiceMemoryCompactorsFreeable  metricInfo
+	SaphanaServiceMemoryEffectiveLimit      metricInfo
+	SaphanaServiceMemoryHeapCurrent         metricInfo
+	SaphanaServiceMemoryLimit               metricInfo
+	SaphanaServiceMemorySharedCurrent       metricInfo
+	SaphanaServiceMemoryUsed                metricInfo
+	SaphanaServiceStackSize                 metricInfo
+	SaphanaServiceThreadCount               metricInfo
+	SaphanaTransactionBlocked               metricInfo
+	SaphanaTransactionCount                 metricInfo
+	SaphanaUptime                           metricInfo
+	SaphanaVolumeOperationCount             metricInfo
+	SaphanaVolumeOperationSize              metricInfo
+	SaphanaVolumeOperationTime              metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSaphanaAlertCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
