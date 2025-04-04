@@ -51,7 +51,7 @@ var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
