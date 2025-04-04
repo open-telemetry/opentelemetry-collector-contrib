@@ -69,12 +69,14 @@ exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
 extension/awsproxy extension/awsproxy
+extension/azureauthextension extension/azureauth
 extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
 extension/encoding extension/encoding
 extension/encoding/avrologencodingextension extension/encoding/avrologencoding
 extension/encoding/awscloudwatchmetricstreamsencodingextension extension/encoding/awscloudwatchmetricstreams
+extension/encoding/awslogsencodingextension extension/encoding/awslogsencoding
 extension/encoding/googlecloudlogentryencodingextension extension/encoding/googlecloudlogentryencoding
 extension/encoding/jaegerencodingextension extension/encoding/jaegerencoding
 extension/encoding/jsonlogencodingextension extension/encoding/jsonlogencoding
@@ -109,6 +111,7 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
+extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -146,6 +149,7 @@ pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
+pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
 pkg/translator/opencensus pkg/translator/opencensus
@@ -282,6 +286,7 @@ receiver/sqlqueryreceiver receiver/sqlquery
 receiver/sqlserverreceiver receiver/sqlserver
 receiver/sshcheckreceiver receiver/sshcheck
 receiver/statsdreceiver receiver/statsd
+receiver/stefreceiver receiver/stef
 receiver/syslogreceiver receiver/syslog
 receiver/systemdreceiver receiver/systemd
 receiver/tcpcheckreceiver receiver/tcpcheck

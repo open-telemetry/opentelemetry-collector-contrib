@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -49,19 +50,17 @@ func TestTopicShutdown_closed(t *testing.T) {
 }
 
 func TestTopicScraper_createsScraper(t *testing.T) {
-	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	ms, err := createTopicsScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, ms)
 }
 
 func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("no scraper here")
 	}
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	ms, err := createTopicsScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	_, err = ms.ScrapeMetrics(context.Background())
@@ -69,11 +68,10 @@ func TestTopicScraper_ScrapeHandlesError(t *testing.T) {
 }
 
 func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("no scraper here")
 	}
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	ms, err := createTopicsScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	err = ms.Shutdown(context.Background())
@@ -82,8 +80,7 @@ func TestTopicScraper_ShutdownHandlesNilClient(t *testing.T) {
 
 func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	sc := sarama.NewConfig()
-	ms, err := createTopicsScraper(context.Background(), Config{}, sc, receivertest.NewNopSettings(metadata.Type))
+	ms, err := createTopicsScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NotNil(t, ms)
 	assert.NoError(t, err)
 	err = ms.Start(context.Background(), nil)
@@ -92,10 +89,9 @@ func TestTopicScraper_startScraperCreatesClient(t *testing.T) {
 
 func TestTopicScraper_createScraperHandles_invalid_topicMatch(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
-	sc := sarama.NewConfig()
 	ms, err := createTopicsScraper(context.Background(), Config{
 		TopicMatch: "[",
-	}, sc, receivertest.NewNopSettings(metadata.Type))
+	}, receivertest.NewNopSettings(metadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, ms)
 }
