@@ -112,7 +112,7 @@ extension/jaegerremotesampling/                                  @open-telemetry
 extension/k8sleaderelector/                                      @open-telemetry/collector-contrib-approvers @dmitryax @rakesh-garimella
 extension/oauth2clientauthextension/                             @open-telemetry/collector-contrib-approvers @pavankrish123 @jpkrohling
 extension/observer/                                              @open-telemetry/collector-contrib-approvers @dmitryax
-extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @cemdk @jriguera
+extension/observer/cfgardenobserver/                             @open-telemetry/collector-contrib-approvers @crobert-1 @jriguera
 extension/observer/dockerobserver/                               @open-telemetry/collector-contrib-approvers @MovieStoreGuy
 extension/observer/ecsobserver/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 extension/observer/hostobserver/                                 @open-telemetry/collector-contrib-approvers @MovieStoreGuy
@@ -307,7 +307,7 @@ receiver/sshcheckreceiver/                                       @open-telemetry
 receiver/statsdreceiver/                                         @open-telemetry/collector-contrib-approvers @jmacd @dmitryax
 receiver/stefreceiver/                                           @open-telemetry/collector-contrib-approvers @tigrannajaryan @MovieStoreGuy @dmitryax @atoulme @pjanotti @crobert-1
 receiver/syslogreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski @andrzej-stencel
-receiver/systemdreceiver/                                        @open-telemetry/collector-contrib-approvers @Hemansh31 @atoulme
+receiver/systemdreceiver/                                        @open-telemetry/collector-contrib-approvers @atoulme
 receiver/tcpcheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt @chengchuanpeng @yanfeng1992
 receiver/tcplogreceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski
 receiver/tlscheckreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme @michael-burt

@@ -1,9 +1,7 @@
 abhishek-at-cloudwerx
-cemdk
 driverpt
 dsimil
 heitorganzeli
-Hemansh31
 KiranmayiB
 swar8080
 zpzhuSplunk
