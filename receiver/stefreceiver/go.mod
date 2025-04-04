@@ -9,7 +9,7 @@ require (
 	github.com/splunk/stef/go/pdata v0.0.5-0.20250328192643-20ae67012e0c
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.29.1-0.20250402200755-cb5c3f4fb9dc
-	go.opentelemetry.io/collector/component/componentstatus v0.123.0
+	go.opentelemetry.io/collector/component/componentstatus v0.123.1-0.20250402200755-cb5c3f4fb9dc
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250402200755-cb5c3f4fb9dc
 	go.opentelemetry.io/collector/config/configgrpc v0.123.1-0.20250402200755-cb5c3f4fb9dc
 	go.opentelemetry.io/collector/config/confignet v1.29.1-0.20250402200755-cb5c3f4fb9dc

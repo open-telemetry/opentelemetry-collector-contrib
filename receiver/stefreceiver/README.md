@@ -16,8 +16,9 @@ The STEF receiver runs a gRPC server accepting data using the Sequential Tabular
 ## Configuration
 
 - `endpoint` (default = localhost:4320 for grpc protocol):
-  host:port to which the receiver is going to receive data. The valid syntax is
-  described at https://github.com/grpc/grpc/blob/master/doc/naming.md.
+  host:port on which the receiver is going to receive data. Refer to
+  [naming documentation](https://github.com/grpc/grpc/blob/master/doc/naming.md)
+  for valid syntax.
 - `ack_interval` (default: 10ms). The periodical interval of time when sending acknowledgements back to the client.
 
 Example:
