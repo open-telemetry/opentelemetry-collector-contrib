@@ -327,6 +327,11 @@ func (t *fileTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metada
 	nextIndex := t.archiveIndex
 	matchedMetadata := make([]*reader.Metadata, len(fps))
 
+	if !t.archiveEnabled() {
+		// we make an early exit if archiving is disabled. This would create new readers from scratch
+		// we return an array of "nil"s to make things easier while creating readers
+		return matchedMetadata
+	}
 	// continue executing the loop until either all records are matched or all archive sets have been processed.
 	for i := 0; i < t.pollsToArchive; i++ {
 		// Update the mostRecentIndex
@@ -420,7 +425,10 @@ func (t *noStateTracker) EndPoll() {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata { return nil }
+func (t *noStateTracker) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
+	// we return an array of "nil"s to make things easier while creating readers
+	return make([]*reader.Metadata, len(fps))
+}
 
 func encodeIndex(val int) []byte {
 	var buf bytes.Buffer
