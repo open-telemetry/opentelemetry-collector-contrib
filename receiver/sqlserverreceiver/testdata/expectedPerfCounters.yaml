@@ -15,7 +15,7 @@ resourceMetrics:
           - description: The number of unrestricted full table or index scans.
             gauge:
               dataPoints:
-                - asInt: 14458
+                - asDouble: 18256656
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.full_scan.rate

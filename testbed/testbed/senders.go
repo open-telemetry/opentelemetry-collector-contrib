@@ -82,15 +82,15 @@ type otlpHTTPDataSender struct {
 }
 
 func (ods *otlpHTTPDataSender) fillConfig(cfg *otlphttpexporter.Config) *otlphttpexporter.Config {
-	cfg.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
+	cfg.ClientConfig.Endpoint = fmt.Sprintf("http://%s", ods.GetEndpoint())
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
-	cfg.Compression = ods.compression
+	cfg.ClientConfig.Compression = ods.compression
 	return cfg
 }
 
@@ -214,12 +214,12 @@ type otlpDataSender struct {
 }
 
 func (ods *otlpDataSender) fillConfig(cfg *otlpexporter.Config) *otlpexporter.Config {
-	cfg.Endpoint = ods.GetEndpoint().String()
+	cfg.ClientConfig.Endpoint = ods.GetEndpoint().String()
 	// Disable retries, we should push data and if error just log it.
 	cfg.RetryConfig.Enabled = false
 	// Disable sending queue, we should push data from the caller goroutine.
 	cfg.QueueConfig.Enabled = false
-	cfg.TLSSetting = configtls.ClientConfig{
+	cfg.ClientConfig.TLSSetting = configtls.ClientConfig{
 		Insecure: true,
 	}
 	return cfg
