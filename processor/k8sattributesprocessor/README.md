@@ -271,10 +271,12 @@ k8sattributes/2:
       - k8s.node.name
       - k8s.pod.start_time
     labels:
-     # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
-     - tag_name: app.label.component
-       key: app.kubernetes.io/component
-       from: pod
+      # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
+      - tag_name: app.label.component
+        key: app.kubernetes.io/component
+        from: pod
+    # Apply the operator rules - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
+    otel_annotations: true # default is false - use true to enable
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
