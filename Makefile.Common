@@ -134,7 +134,7 @@ endif
 runbuilttest: $(GOTESTSUM)
 ifneq (,$(wildcard ./builtunitetest.test))
 	$(GOTESTSUM) --raw-command -- $(GOCMD) tool test2json -p "./..." -t ./builtunitetest.test -test.v -test.failfast -test.timeout $(GOTEST_TIMEOUT)
-endif
+endif	
 
 .PHONY: mod-integration-test
 mod-integration-test: $(GOTESTSUM)
