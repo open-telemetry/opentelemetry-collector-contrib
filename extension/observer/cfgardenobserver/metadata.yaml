@@ -6,7 +6,7 @@ status:
   stability:
     development: [extension]
   codeowners:
-    active: [crobert-1, cemdk, m1rp, jriguera]
+    active: [crobert-1, cemdk, jriguera]
 
 # We don't want to make actual connections to CloudFoundry api in our tests
 tests:
