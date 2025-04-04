@@ -1630,6 +1630,18 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 
 // Scrape dispatch artifacts
 func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	// if NONE of the metrics set in this scrape are set we return early
+	if !(s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled ||
+		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled) {
+		return
+	}
+
 	if !s.splunkClient.isConfigured(typeSh) {
 		return
 	}
