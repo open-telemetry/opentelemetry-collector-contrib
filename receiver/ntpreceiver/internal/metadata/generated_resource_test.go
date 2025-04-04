@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("ntp.host")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "ntp.host-val", val.Str())
+				assert.Equal(t, "ntp.host-val", val.Str())
 			}
 		})
 	}

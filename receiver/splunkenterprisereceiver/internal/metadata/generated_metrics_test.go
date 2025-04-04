@@ -219,7 +219,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.buckets.searchable.status":
 					assert.False(t, validatedMetrics["splunk.buckets.searchable.status"], "Found a duplicate in the metrics slice: splunk.buckets.searchable.status")
 					validatedMetrics["splunk.buckets.searchable.status"] = true
@@ -234,10 +234,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.indexer.searchable")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.indexer.searchable-val", attrVal.Str())
+					assert.Equal(t, "splunk.indexer.searchable-val", attrVal.Str())
 				case "splunk.data.indexes.extended.bucket.count":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.count")
 					validatedMetrics["splunk.data.indexes.extended.bucket.count"] = true
@@ -252,7 +252,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.data.indexes.extended.bucket.event.count":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.event.count")
 					validatedMetrics["splunk.data.indexes.extended.bucket.event.count"] = true
@@ -267,10 +267,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
 				case "splunk.data.indexes.extended.bucket.hot.count":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.hot.count")
 					validatedMetrics["splunk.data.indexes.extended.bucket.hot.count"] = true
@@ -285,10 +285,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
 				case "splunk.data.indexes.extended.bucket.warm.count":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.bucket.warm.count")
 					validatedMetrics["splunk.data.indexes.extended.bucket.warm.count"] = true
@@ -303,10 +303,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.bucket.dir")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.bucket.dir-val", attrVal.Str())
+					assert.Equal(t, "splunk.bucket.dir-val", attrVal.Str())
 				case "splunk.data.indexes.extended.event.count":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.event.count"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.event.count")
 					validatedMetrics["splunk.data.indexes.extended.event.count"] = true
@@ -321,7 +321,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.data.indexes.extended.raw.size":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.raw.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.raw.size")
 					validatedMetrics["splunk.data.indexes.extended.raw.size"] = true
@@ -336,7 +336,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.data.indexes.extended.total.size":
 					assert.False(t, validatedMetrics["splunk.data.indexes.extended.total.size"], "Found a duplicate in the metrics slice: splunk.data.indexes.extended.total.size")
 					validatedMetrics["splunk.data.indexes.extended.total.size"] = true
@@ -351,7 +351,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.health":
 					assert.False(t, validatedMetrics["splunk.health"], "Found a duplicate in the metrics slice: splunk.health")
 					validatedMetrics["splunk.health"] = true
@@ -366,10 +366,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.feature")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.feature-val", attrVal.Str())
+					assert.Equal(t, "splunk.feature-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.feature.health")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.feature.health-val", attrVal.Str())
+					assert.Equal(t, "splunk.feature.health-val", attrVal.Str())
 				case "splunk.indexer.avg.rate":
 					assert.False(t, validatedMetrics["splunk.indexer.avg.rate"], "Found a duplicate in the metrics slice: splunk.indexer.avg.rate")
 					validatedMetrics["splunk.indexer.avg.rate"] = true
@@ -384,7 +384,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.indexer.cpu.time":
 					assert.False(t, validatedMetrics["splunk.indexer.cpu.time"], "Found a duplicate in the metrics slice: splunk.indexer.cpu.time")
 					validatedMetrics["splunk.indexer.cpu.time"] = true
@@ -399,7 +399,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.indexer.queue.ratio":
 					assert.False(t, validatedMetrics["splunk.indexer.queue.ratio"], "Found a duplicate in the metrics slice: splunk.indexer.queue.ratio")
 					validatedMetrics["splunk.indexer.queue.ratio"] = true
@@ -414,7 +414,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.indexer.raw.write.time":
 					assert.False(t, validatedMetrics["splunk.indexer.raw.write.time"], "Found a duplicate in the metrics slice: splunk.indexer.raw.write.time")
 					validatedMetrics["splunk.indexer.raw.write.time"] = true
@@ -429,7 +429,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.indexer.throughput":
 					assert.False(t, validatedMetrics["splunk.indexer.throughput"], "Found a duplicate in the metrics slice: splunk.indexer.throughput")
 					validatedMetrics["splunk.indexer.throughput"] = true
@@ -444,7 +444,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.indexer.status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.indexer.status-val", attrVal.Str())
+					assert.Equal(t, "splunk.indexer.status-val", attrVal.Str())
 				case "splunk.indexes.avg.size":
 					assert.False(t, validatedMetrics["splunk.indexes.avg.size"], "Found a duplicate in the metrics slice: splunk.indexes.avg.size")
 					validatedMetrics["splunk.indexes.avg.size"] = true
@@ -459,7 +459,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.indexes.avg.usage":
 					assert.False(t, validatedMetrics["splunk.indexes.avg.usage"], "Found a duplicate in the metrics slice: splunk.indexes.avg.usage")
 					validatedMetrics["splunk.indexes.avg.usage"] = true
@@ -474,7 +474,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.indexes.bucket.count":
 					assert.False(t, validatedMetrics["splunk.indexes.bucket.count"], "Found a duplicate in the metrics slice: splunk.indexes.bucket.count")
 					validatedMetrics["splunk.indexes.bucket.count"] = true
@@ -489,7 +489,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.indexes.median.data.age":
 					assert.False(t, validatedMetrics["splunk.indexes.median.data.age"], "Found a duplicate in the metrics slice: splunk.indexes.median.data.age")
 					validatedMetrics["splunk.indexes.median.data.age"] = true
@@ -504,7 +504,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.indexes.size":
 					assert.False(t, validatedMetrics["splunk.indexes.size"], "Found a duplicate in the metrics slice: splunk.indexes.size")
 					validatedMetrics["splunk.indexes.size"] = true
@@ -519,7 +519,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.io.avg.iops":
 					assert.False(t, validatedMetrics["splunk.io.avg.iops"], "Found a duplicate in the metrics slice: splunk.io.avg.iops")
 					validatedMetrics["splunk.io.avg.iops"] = true
@@ -534,7 +534,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.kvstore.backup.status":
 					assert.False(t, validatedMetrics["splunk.kvstore.backup.status"], "Found a duplicate in the metrics slice: splunk.kvstore.backup.status")
 					validatedMetrics["splunk.kvstore.backup.status"] = true
@@ -549,7 +549,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
+					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.kvstore.replication.status":
 					assert.False(t, validatedMetrics["splunk.kvstore.replication.status"], "Found a duplicate in the metrics slice: splunk.kvstore.replication.status")
 					validatedMetrics["splunk.kvstore.replication.status"] = true
@@ -564,7 +564,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
+					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.kvstore.status":
 					assert.False(t, validatedMetrics["splunk.kvstore.status"], "Found a duplicate in the metrics slice: splunk.kvstore.status")
 					validatedMetrics["splunk.kvstore.status"] = true
@@ -579,13 +579,13 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.kvstore.storage.engine")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
+					assert.Equal(t, "splunk.kvstore.storage.engine-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.kvstore.external")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.external-val", attrVal.Str())
+					assert.Equal(t, "splunk.kvstore.external-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.kvstore.status.value")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.kvstore.status.value-val", attrVal.Str())
+					assert.Equal(t, "splunk.kvstore.status.value-val", attrVal.Str())
 				case "splunk.license.index.usage":
 					assert.False(t, validatedMetrics["splunk.license.index.usage"], "Found a duplicate in the metrics slice: splunk.license.index.usage")
 					validatedMetrics["splunk.license.index.usage"] = true
@@ -600,7 +600,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.index.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.index.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.index.name-val", attrVal.Str())
 				case "splunk.parse.queue.ratio":
 					assert.False(t, validatedMetrics["splunk.parse.queue.ratio"], "Found a duplicate in the metrics slice: splunk.parse.queue.ratio")
 					validatedMetrics["splunk.parse.queue.ratio"] = true
@@ -615,7 +615,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.pipeline.set.count":
 					assert.False(t, validatedMetrics["splunk.pipeline.set.count"], "Found a duplicate in the metrics slice: splunk.pipeline.set.count")
 					validatedMetrics["splunk.pipeline.set.count"] = true
@@ -630,7 +630,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.scheduler.avg.execution.latency":
 					assert.False(t, validatedMetrics["splunk.scheduler.avg.execution.latency"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.execution.latency")
 					validatedMetrics["splunk.scheduler.avg.execution.latency"] = true
@@ -645,7 +645,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.scheduler.avg.run.time":
 					assert.False(t, validatedMetrics["splunk.scheduler.avg.run.time"], "Found a duplicate in the metrics slice: splunk.scheduler.avg.run.time")
 					validatedMetrics["splunk.scheduler.avg.run.time"] = true
@@ -660,7 +660,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.scheduler.completion.ratio":
 					assert.False(t, validatedMetrics["splunk.scheduler.completion.ratio"], "Found a duplicate in the metrics slice: splunk.scheduler.completion.ratio")
 					validatedMetrics["splunk.scheduler.completion.ratio"] = true
@@ -675,7 +675,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.introspection.queues.current":
 					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
 					validatedMetrics["splunk.server.introspection.queues.current"] = true
@@ -690,7 +690,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
 				case "splunk.server.introspection.queues.current.bytes":
 					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current.bytes"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current.bytes")
 					validatedMetrics["splunk.server.introspection.queues.current.bytes"] = true
@@ -705,7 +705,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.queue.name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.queue.name-val", attrVal.Str())
+					assert.Equal(t, "splunk.queue.name-val", attrVal.Str())
 				case "splunk.server.searchartifacts.adhoc":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.adhoc"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.adhoc")
 					validatedMetrics["splunk.server.searchartifacts.adhoc"] = true
@@ -720,7 +720,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.completed":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.completed"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.completed")
 					validatedMetrics["splunk.server.searchartifacts.completed"] = true
@@ -735,7 +735,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.incomplete":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.incomplete"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.incomplete")
 					validatedMetrics["splunk.server.searchartifacts.incomplete"] = true
@@ -750,7 +750,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.invalid":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.invalid"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.invalid")
 					validatedMetrics["splunk.server.searchartifacts.invalid"] = true
@@ -765,7 +765,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.job.cache.count":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.count"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.count")
 					validatedMetrics["splunk.server.searchartifacts.job.cache.count"] = true
@@ -780,7 +780,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.job.cache.size":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.job.cache.size"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.job.cache.size")
 					validatedMetrics["splunk.server.searchartifacts.job.cache.size"] = true
@@ -795,10 +795,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("splunk.searchartifacts.cache.type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.searchartifacts.cache.type-val", attrVal.Str())
+					assert.Equal(t, "splunk.searchartifacts.cache.type-val", attrVal.Str())
 				case "splunk.server.searchartifacts.savedsearches":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.savedsearches"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.savedsearches")
 					validatedMetrics["splunk.server.searchartifacts.savedsearches"] = true
@@ -813,7 +813,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.server.searchartifacts.scheduled":
 					assert.False(t, validatedMetrics["splunk.server.searchartifacts.scheduled"], "Found a duplicate in the metrics slice: splunk.server.searchartifacts.scheduled")
 					validatedMetrics["splunk.server.searchartifacts.scheduled"] = true
@@ -828,7 +828,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				case "splunk.typing.queue.ratio":
 					assert.False(t, validatedMetrics["splunk.typing.queue.ratio"], "Found a duplicate in the metrics slice: splunk.typing.queue.ratio")
 					validatedMetrics["splunk.typing.queue.ratio"] = true
@@ -843,7 +843,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("splunk.host")
 					assert.True(t, ok)
-					assert.EqualValues(t, "splunk.host-val", attrVal.Str())
+					assert.Equal(t, "splunk.host-val", attrVal.Str())
 				}
 			}
 		})

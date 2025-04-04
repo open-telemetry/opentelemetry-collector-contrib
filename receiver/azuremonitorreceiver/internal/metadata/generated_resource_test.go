@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("azuremonitor.subscription_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "azuremonitor.subscription_id-val", val.Str())
+				assert.Equal(t, "azuremonitor.subscription_id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("azuremonitor.tenant_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "azuremonitor.tenant_id-val", val.Str())
+				assert.Equal(t, "azuremonitor.tenant_id-val", val.Str())
 			}
 		})
 	}
