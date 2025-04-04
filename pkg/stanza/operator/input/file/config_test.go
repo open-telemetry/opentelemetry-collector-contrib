@@ -5,11 +5,13 @@ package file
 
 import (
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
@@ -315,7 +317,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.SplitConfig.LineStartPattern = "Start"
+					cfg.SplitConfig.LineStartPattern = regexp.MustCompile("Start")
 					return cfg
 				}(),
 			},
@@ -324,7 +326,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.SplitConfig.LineStartPattern = "%"
+					cfg.SplitConfig.LineStartPattern = regexp.MustCompile("%")
 					return cfg
 				}(),
 			},
@@ -333,7 +335,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.SplitConfig.LineEndPattern = "Start"
+					cfg.SplitConfig.LineEndPattern = regexp.MustCompile("Start")
 					return cfg
 				}(),
 			},
@@ -342,7 +344,7 @@ func TestUnmarshal(t *testing.T) {
 				ExpectErr: false,
 				Expect: func() *Config {
 					cfg := NewConfig()
-					cfg.SplitConfig.LineEndPattern = "%"
+					cfg.SplitConfig.LineEndPattern = regexp.MustCompile("%")
 					return cfg
 				}(),
 			},
@@ -422,6 +424,58 @@ func TestUnmarshal(t *testing.T) {
 	}.Run(t)
 }
 
+func TestValidateError(t *testing.T) {
+	t.Parallel()
+	basicConfig := func() *Config {
+		cfg := NewConfigWithID("testfile")
+		cfg.OutputIDs = []string{"fake"}
+		cfg.Include = []string{"/var/log/testpath.*"}
+		cfg.Exclude = []string{"/var/log/testpath.ex*"}
+		cfg.PollInterval = 10 * time.Millisecond
+		return cfg
+	}
+
+	cases := []struct {
+		name             string
+		modifyBaseConfig func(*Config)
+	}{
+		{
+			name: "BadIncludeGlob",
+			modifyBaseConfig: func(cfg *Config) {
+				cfg.Include = []string{"["}
+			},
+		},
+		{
+			name: "BadExcludeGlob",
+			modifyBaseConfig: func(cfg *Config) {
+				cfg.Include = []string{"["}
+			},
+		},
+		{
+			name: "LineStartAndEndPatterns",
+			modifyBaseConfig: func(cfg *Config) {
+				cfg.SplitConfig.LineEndPattern = regexp.MustCompile("Exists")
+				cfg.SplitConfig.LineStartPattern = regexp.MustCompile("Exists")
+			},
+		},
+		{
+			name: "InvalidEncoding",
+			modifyBaseConfig: func(cfg *Config) {
+				cfg.Encoding = "UTF-3233"
+			},
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+			cfg := basicConfig()
+			tc.modifyBaseConfig(cfg)
+			require.Error(t, xconfmap.Validate(cfg))
+		})
+	}
+}
+
 func TestBuild(t *testing.T) {
 	t.Parallel()
 	fakeOutput := testutil.NewMockOperator("fake")
@@ -450,34 +504,9 @@ func TestBuild(t *testing.T) {
 			},
 		},
 		{
-			"BadIncludeGlob",
-			func(cfg *Config) {
-				cfg.Include = []string{"["}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"BadExcludeGlob",
-			func(cfg *Config) {
-				cfg.Include = []string{"["}
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"MultilineConfiguredStartAndEndPatterns",
-			func(cfg *Config) {
-				cfg.SplitConfig.LineEndPattern = "Exists"
-				cfg.SplitConfig.LineStartPattern = "Exists"
-			},
-			require.Error,
-			nil,
-		},
-		{
 			"MultilineConfiguredStartPattern",
 			func(cfg *Config) {
-				cfg.SplitConfig.LineStartPattern = "START.*"
+				cfg.SplitConfig.LineStartPattern = regexp.MustCompile("START.*")
 			},
 			require.NoError,
 			func(_ *testing.T, _ *Input) {},
@@ -485,7 +514,7 @@ func TestBuild(t *testing.T) {
 		{
 			"MultilineConfiguredEndPattern",
 			func(cfg *Config) {
-				cfg.SplitConfig.LineEndPattern = "END.*"
+				cfg.SplitConfig.LineEndPattern = regexp.MustCompile("END.*")
 			},
 			require.NoError,
 			func(_ *testing.T, _ *Input) {},
@@ -499,35 +528,10 @@ func TestBuild(t *testing.T) {
 			nil,
 		},
 		{
-			"LineStartAndEnd",
-			func(cfg *Config) {
-				cfg.SplitConfig.LineStartPattern = ".*"
-				cfg.SplitConfig.LineEndPattern = ".*"
-			},
-			require.Error,
-			nil,
-		},
-		{
 			"NoLineStartOrEnd",
 			func(_ *Config) {},
 			require.NoError,
 			func(_ *testing.T, _ *Input) {},
-		},
-		{
-			"InvalidLineStartRegex",
-			func(cfg *Config) {
-				cfg.SplitConfig.LineStartPattern = "("
-			},
-			require.Error,
-			nil,
-		},
-		{
-			"InvalidLineEndRegex",
-			func(cfg *Config) {
-				cfg.SplitConfig.LineEndPattern = "("
-			},
-			require.Error,
-			nil,
 		},
 	}
 

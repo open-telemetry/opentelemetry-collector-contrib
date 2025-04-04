@@ -6,52 +6,70 @@ package split // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bufio"
 	"bytes"
-	"fmt"
+	"errors"
 	"regexp"
 
+	"go.opentelemetry.io/collector/confmap"
 	"golang.org/x/text/encoding"
 )
 
 // Config is the configuration for a split func
 type Config struct {
-	LineStartPattern string `mapstructure:"line_start_pattern"`
-	LineEndPattern   string `mapstructure:"line_end_pattern"`
-	OmitPattern      bool   `mapstructure:"omit_pattern"`
+	LineStartPattern *regexp.Regexp `mapstructure:"line_start_pattern"`
+	LineEndPattern   *regexp.Regexp `mapstructure:"line_end_pattern"`
+	OmitPattern      bool           `mapstructure:"omit_pattern"`
 }
 
 // Func will return a bufio.SplitFunc based on the config
-func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
+func (c *Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
 	if enc == encoding.Nop {
-		if c.LineEndPattern != "" {
-			return nil, fmt.Errorf("line_end_pattern should not be set when using nop encoding")
+		if c.LineEndPattern != nil {
+			return nil, errors.New("`line_end_pattern` should not be set when using nop encoding")
 		}
-		if c.LineStartPattern != "" {
-			return nil, fmt.Errorf("line_start_pattern should not be set when using nop encoding")
+		if c.LineStartPattern != nil {
+			return nil, errors.New("`line_start_pattern` should not be set when using nop encoding")
 		}
 		return NoSplitFunc(maxLogSize), nil
 	}
 
-	if c.LineEndPattern == "" && c.LineStartPattern == "" {
-		return NewlineSplitFunc(enc, flushAtEOF)
-	}
-
-	if c.LineEndPattern != "" && c.LineStartPattern == "" {
-		re, err := regexp.Compile("(?m)" + c.LineEndPattern)
-		if err != nil {
-			return nil, fmt.Errorf("compile line end regex: %w", err)
-		}
+	if c.LineEndPattern != nil {
+		re := regexp.MustCompile("(?m)" + c.LineEndPattern.String())
 		return LineEndSplitFunc(re, c.OmitPattern, flushAtEOF), nil
 	}
 
-	if c.LineEndPattern == "" && c.LineStartPattern != "" {
-		re, err := regexp.Compile("(?m)" + c.LineStartPattern)
-		if err != nil {
-			return nil, fmt.Errorf("compile line start regex: %w", err)
-		}
+	if c.LineStartPattern != nil {
+		re := regexp.MustCompile("(?m)" + c.LineStartPattern.String())
 		return LineStartSplitFunc(re, c.OmitPattern, flushAtEOF), nil
 	}
 
-	return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
+	return NewlineSplitFunc(enc, flushAtEOF)
+}
+
+func (c *Config) Unmarshal(conf *confmap.Conf) error {
+	if err := conf.Unmarshal(c); err != nil {
+		return err
+	}
+
+	// Ignore empty string because that was the old behavior since `line_start_pattern` config was a string.
+	lsp := conf.Get("line_start_pattern")
+	if lsp != nil && lsp.(string) == "" {
+		c.LineStartPattern = nil
+	}
+
+	// Ignore empty string because that was the old behavior since `line_end_pattern` config was a string.
+	lep := conf.Get("line_end_pattern")
+	if lep != nil && lep.(string) == "" {
+		c.LineEndPattern = nil
+	}
+
+	return nil
+}
+
+func (c *Config) Validate() error {
+	if c.LineEndPattern != nil && c.LineStartPattern != nil {
+		return errors.New("only one of `line_start_pattern` or `line_end_pattern` can be set")
+	}
+	return nil
 }
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into

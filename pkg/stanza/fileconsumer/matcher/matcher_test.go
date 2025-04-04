@@ -6,6 +6,7 @@ package matcher
 import (
 	"os"
 	"path/filepath"
+	"regexp"
 	"testing"
 	"time"
 
@@ -22,189 +23,56 @@ func TestNew(t *testing.T) {
 		enableMtimeFeatureGate bool
 	}{
 		{
-			name: "IncludeEmpty",
-			criteria: Criteria{
-				Include: []string{},
-			},
-			expectedErr: "'include' must be specified",
-		},
-		{
 			name: "IncludeSingle",
 			criteria: Criteria{
-				Include: []string{"*.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+				},
 			},
 		},
 		{
 			name: "IncludeMultiple",
 			criteria: Criteria{
-				Include: []string{"*.log", "*.txt"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log", "*.txt"},
+				},
 			},
-		},
-		{
-			name: "IncludeInvalidGlob",
-			criteria: Criteria{
-				Include: []string{"*.log", "[a-z"},
-			},
-			expectedErr: "include: parse glob: syntax error in pattern",
 		},
 		{
 			name: "ExcludeSingle",
 			criteria: Criteria{
-				Include: []string{"*.log"},
-				Exclude: []string{"a.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+					Exclude: []string{"a.log"},
+				},
 			},
 		},
 		{
 			name: "ExcludeMultiple",
 			criteria: Criteria{
-				Include: []string{"*.log"},
-				Exclude: []string{"a.log", "b.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+					Exclude: []string{"a.log", "b.log"},
+				},
 			},
-		},
-		{
-			name: "ExcludeInvalidGlob",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				Exclude: []string{"*.log", "[a-z"},
-			},
-			expectedErr: "exclude: parse glob: syntax error in pattern",
 		},
 		{
 			name: "GroupBy",
 			criteria: Criteria{
-				Include: []string{"*.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+				},
 				OrderingCriteria: OrderingCriteria{
-					GroupBy: "[a-z]",
+					GroupBy: regexp.MustCompile("[a-z]"),
 				},
 			},
-		},
-		{
-			name: "RegexEmpty",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: "",
-					SortBy: []Sort{
-						{
-							SortType: "numeric",
-							RegexKey: "key",
-						},
-					},
-				},
-			},
-			expectedErr: "'regex' must be specified when 'sort_by' is specified",
-		},
-		{
-			name: "RegexInvalid",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: "[a-z",
-					SortBy: []Sort{
-						{
-							SortType: "numeric",
-							RegexKey: "key",
-						},
-					},
-				},
-			},
-			expectedErr: "compile regex: error parsing regexp: missing closing ]: `[a-z`",
-		},
-		{
-			name: "TopN is negative",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: "[a-z]",
-					TopN:  -1,
-					SortBy: []Sort{
-						{
-							SortType: "numeric",
-							RegexKey: "key",
-						},
-					},
-				},
-			},
-			expectedErr: "'top_n' must be a positive integer",
-		},
-		{
-			name: "GroupBy error",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					GroupBy: "[a-z",
-				},
-			},
-			expectedErr: "compile group_by regex: error parsing regexp: missing closing ]: `[a-z`",
-		},
-		{
-			name: "SortTypeEmpty",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: `(?P<num>\d{2}).*log`,
-					SortBy: []Sort{
-						{
-							SortType: "",
-						},
-					},
-				},
-			},
-			expectedErr: "'sort_type' must be specified",
-		},
-		{
-			name: "SortNumericInvalid",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: `(?P<num>\d{2}).*log`,
-					SortBy: []Sort{
-						{
-							SortType: "numeric",
-							RegexKey: "",
-						},
-					},
-				},
-			},
-			expectedErr: "numeric sort: regex key must be specified",
-		},
-		{
-			name: "SortAlphabeticalInvalid",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: `(?P<num>[a-z]+).*log`,
-					SortBy: []Sort{
-						{
-							SortType: "alphabetical",
-							RegexKey: "",
-						},
-					},
-				},
-			},
-			expectedErr: "alphabetical sort: regex key must be specified",
-		},
-		{
-			name: "SortTimestampInvalid",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					Regex: `(?P<num>\d{2}).*log`,
-					SortBy: []Sort{
-						{
-							SortType: "timestamp",
-							RegexKey: "",
-							Layout:   "%Y%m%d%H",
-						},
-					},
-				},
-			},
-			expectedErr: "timestamp sort: regex key must be specified",
 		},
 		{
 			name: "SortByMtime",
 			criteria: Criteria{
-				Include: []string{"*.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+				},
 				OrderingCriteria: OrderingCriteria{
 					SortBy: []Sort{
 						{
@@ -216,23 +84,11 @@ func TestNew(t *testing.T) {
 			enableMtimeFeatureGate: true,
 		},
 		{
-			name: "SortByMtimeGateDisabled",
-			criteria: Criteria{
-				Include: []string{"*.log"},
-				OrderingCriteria: OrderingCriteria{
-					SortBy: []Sort{
-						{
-							SortType: "mtime",
-						},
-					},
-				},
-			},
-			expectedErr: `the "filelog.mtimeSortType" feature gate must be enabled to use "mtime" sort type`,
-		},
-		{
 			name: "ExcludeOlderThan",
 			criteria: Criteria{
-				Include:          []string{"*.log"},
+				FinderConfig: FinderConfig{
+					Include: []string{"*.log"},
+				},
 				ExcludeOlderThan: 24 * time.Hour,
 			},
 		},
@@ -291,11 +147,11 @@ func TestMatcher(t *testing.T) {
 			files:   []string{"4567.log"},
 			include: []string{"*.log"},
 			filterCriteria: OrderingCriteria{
-				Regex: `(?P<value>\d{4}).*log`, // input will match this
+				Regex: regexp.MustCompile(`(?P<value>\d{4}).*log`), // input will match this
 				SortBy: []Sort{
 					{
 						SortType: sortTypeNumeric,
-						RegexKey: "wrong", // but will have this regex key
+						RegexKey: "wrong",
 					},
 				},
 			},
@@ -314,7 +170,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -333,7 +189,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`),
 				TopN:  3,
 				SortBy: []Sort{
 					{
@@ -353,7 +209,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`),
 				TopN:  2,
 				SortBy: []Sort{
 					{
@@ -373,7 +229,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d{4}\d{2}\d{2}\d{2}).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeTimestamp,
@@ -392,7 +248,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d+).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -410,7 +266,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				TopN:  6,
-				Regex: `err\.[a-z]\.(?P<value>\d+).*log`,
+				Regex: regexp.MustCompile(`err\.[a-z]\.(?P<value>\d+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -428,8 +284,8 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				TopN:    6,
-				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
-				Regex:   `err\.[a-z]\.(?P<value>\d+).*log`,
+				GroupBy: regexp.MustCompile(`err\.(?P<value>[a-z]+).[0-9]*.*log`),
+				Regex:   regexp.MustCompile(`err\.[a-z]\.(?P<value>\d+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -447,7 +303,7 @@ func TestMatcher(t *testing.T) {
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
 				TopN:    6,
-				GroupBy: `err\.(?P<value>[a-z]+).[0-9]*.*log`,
+				GroupBy: regexp.MustCompile(`err\.(?P<value>[a-z]+).[0-9]*.*log`),
 			},
 			expected: []string{"err.a.123456786.log", "err.a.123456787.log", "err.a.123456788.log", "err.a.123456789.log", "err.b.123456788.log", "err.b.123456789.log"},
 		},
@@ -457,7 +313,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>\d+).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>\d+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -474,7 +330,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>[a-zA-Z]+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -491,7 +347,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>[a-zA-Z]+).*log`),
 				TopN:  2,
 				SortBy: []Sort{
 					{
@@ -509,7 +365,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<value>[a-zA-Z]+).*log`,
+				Regex: regexp.MustCompile(`err\.(?P<value>[a-zA-Z]+).*log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -535,7 +391,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				TopN:  4,
 				SortBy: []Sort{
 					{
@@ -574,7 +430,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -612,7 +468,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeAlphabetical,
@@ -650,7 +506,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -688,7 +544,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -726,7 +582,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -764,7 +620,7 @@ func TestMatcher(t *testing.T) {
 			include: []string{"err.*.log"},
 			exclude: []string{},
 			filterCriteria: OrderingCriteria{
-				Regex: `err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`,
+				Regex: regexp.MustCompile(`err\.(?P<alpha>[a-zA-Z])\.(?P<number>\d+)\.(?P<time>\d{10})\.log`),
 				SortBy: []Sort{
 					{
 						SortType:  sortTypeNumeric,
@@ -841,8 +697,10 @@ func TestMatcher(t *testing.T) {
 				require.NoError(t, file.Close())
 			}
 			matcher, err := New(Criteria{
-				Include:          tc.include,
-				Exclude:          tc.exclude,
+				FinderConfig: FinderConfig{
+					Include: tc.include,
+					Exclude: tc.exclude,
+				},
 				OrderingCriteria: tc.filterCriteria,
 			})
 			require.NoError(t, err)

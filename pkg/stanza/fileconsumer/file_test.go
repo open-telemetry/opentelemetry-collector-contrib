@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"runtime"
 	"strconv"
 	"sync"
@@ -590,7 +591,7 @@ func TestMultiFileSort(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
-		Regex: `.*(?P<value>\d)`,
+		Regex: regexp.MustCompile(`.*(?P<value>\d)`),
 		SortBy: []matcher.Sort{
 			{
 				SortType: "numeric",
@@ -623,11 +624,11 @@ func TestMultiFileSortTimestamp(t *testing.T) {
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
 	cfg.OrderingCriteria = matcher.OrderingCriteria{
-		Regex: `.(?P<value>\d{10})\.log`,
+		Regex: regexp.MustCompile(`.(?P<value>\d{10})\.log`),
 		SortBy: []matcher.Sort{
 			{
 				SortType: "timestamp",
-				RegexKey: `value`,
+				RegexKey: "value",
 				Layout:   "%Y%m%d%H",
 			},
 		},

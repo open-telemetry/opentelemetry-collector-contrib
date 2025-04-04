@@ -7,19 +7,11 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
-	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
-)
-
-const (
-	sortTypeNumeric      = "numeric"
-	sortTypeTimestamp    = "timestamp"
-	sortTypeAlphabetical = "alphabetical"
-	sortTypeMtime        = "mtime"
 )
 
 const (
@@ -33,45 +25,7 @@ var mtimeSortTypeFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27812"),
 )
 
-type Criteria struct {
-	Include []string `mapstructure:"include,omitempty"`
-	Exclude []string `mapstructure:"exclude,omitempty"`
-
-	// ExcludeOlderThan allows excluding files whose modification time is older
-	// than the specified age.
-	ExcludeOlderThan time.Duration    `mapstructure:"exclude_older_than"`
-	OrderingCriteria OrderingCriteria `mapstructure:"ordering_criteria,omitempty"`
-}
-
-type OrderingCriteria struct {
-	Regex   string `mapstructure:"regex,omitempty"`
-	TopN    int    `mapstructure:"top_n,omitempty"`
-	SortBy  []Sort `mapstructure:"sort_by,omitempty"`
-	GroupBy string `mapstructure:"group_by,omitempty"`
-}
-
-type Sort struct {
-	SortType  string `mapstructure:"sort_type,omitempty"`
-	RegexKey  string `mapstructure:"regex_key,omitempty"`
-	Ascending bool   `mapstructure:"ascending,omitempty"`
-
-	// Timestamp only
-	Layout   string `mapstructure:"layout,omitempty"`
-	Location string `mapstructure:"location,omitempty"`
-}
-
 func New(c Criteria) (*Matcher, error) {
-	if len(c.Include) == 0 {
-		return nil, fmt.Errorf("'include' must be specified")
-	}
-
-	if err := finder.Validate(c.Include); err != nil {
-		return nil, fmt.Errorf("include: %w", err)
-	}
-	if err := finder.Validate(c.Exclude); err != nil {
-		return nil, fmt.Errorf("exclude: %w", err)
-	}
-
 	m := &Matcher{
 		include: c.Include,
 		exclude: c.Exclude,
@@ -81,20 +35,13 @@ func New(c Criteria) (*Matcher, error) {
 		m.filterOpts = append(m.filterOpts, filter.ExcludeOlderThan(c.ExcludeOlderThan))
 	}
 
-	if c.OrderingCriteria.GroupBy != "" {
-		r, err := regexp.Compile(c.OrderingCriteria.GroupBy)
-		if err != nil {
-			return nil, fmt.Errorf("compile group_by regex: %w", err)
-		}
-		m.groupBy = r
+	// Ignore empty string because that was the old behavior since `group_by` config was a string.
+	if c.OrderingCriteria.GroupBy != nil && len(c.OrderingCriteria.GroupBy.String()) == 0 {
+		m.groupBy = c.OrderingCriteria.GroupBy
 	}
 
 	if len(c.OrderingCriteria.SortBy) == 0 {
 		return m, nil
-	}
-
-	if c.OrderingCriteria.TopN < 0 {
-		return nil, fmt.Errorf("'top_n' must be a positive integer")
 	}
 
 	if c.OrderingCriteria.TopN == 0 {
@@ -102,33 +49,15 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
-		if c.OrderingCriteria.Regex == "" {
-			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
-		}
-
-		var err error
-		regex, err := regexp.Compile(c.OrderingCriteria.Regex)
-		if err != nil {
-			return nil, fmt.Errorf("compile regex: %w", err)
-		}
-
-		m.regex = regex
+		m.regex = c.OrderingCriteria.Regex
 	}
 
 	for _, sc := range c.OrderingCriteria.SortBy {
 		switch sc.SortType {
 		case sortTypeNumeric:
-			f, err := filter.SortNumeric(sc.RegexKey, sc.Ascending)
-			if err != nil {
-				return nil, fmt.Errorf("numeric sort: %w", err)
-			}
-			m.filterOpts = append(m.filterOpts, f)
+			m.filterOpts = append(m.filterOpts, filter.SortNumeric(sc.RegexKey, sc.Ascending))
 		case sortTypeAlphabetical:
-			f, err := filter.SortAlphabetical(sc.RegexKey, sc.Ascending)
-			if err != nil {
-				return nil, fmt.Errorf("alphabetical sort: %w", err)
-			}
-			m.filterOpts = append(m.filterOpts, f)
+			m.filterOpts = append(m.filterOpts, filter.SortAlphabetical(sc.RegexKey, sc.Ascending))
 		case sortTypeTimestamp:
 			f, err := filter.SortTemporal(sc.RegexKey, sc.Ascending, sc.Layout, sc.Location)
 			if err != nil {
@@ -136,12 +65,7 @@ func New(c Criteria) (*Matcher, error) {
 			}
 			m.filterOpts = append(m.filterOpts, f)
 		case sortTypeMtime:
-			if !mtimeSortTypeFeatureGate.IsEnabled() {
-				return nil, fmt.Errorf("the %q feature gate must be enabled to use %q sort type", mtimeSortTypeFeatureGate.ID(), sortTypeMtime)
-			}
 			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
-		default:
-			return nil, fmt.Errorf("'sort_type' must be specified")
 		}
 	}
 
@@ -171,16 +95,15 @@ type Matcher struct {
 
 // MatchFiles gets a list of paths given an array of glob patterns to include and exclude
 func (m Matcher) MatchFiles() ([]string, error) {
-	var errs error
 	files, err := finder.FindFiles(m.include, m.exclude)
 	if err != nil {
-		errs = errors.Join(errs, err)
+		return nil, fmt.Errorf("failed to find files: %w", err)
 	}
 	if len(files) == 0 {
-		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
+		return nil, errors.New("no files match the configured criteria")
 	}
 	if len(m.filterOpts) == 0 {
-		return files, errs
+		return files, nil
 	}
 
 	groups := make(map[string][]string)
@@ -200,10 +123,10 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	for _, groupedFiles := range groups {
 		groupResult, err := filter.Filter(groupedFiles, m.regex, m.filterOpts...)
 		if len(groupResult) == 0 {
-			return groupResult, errors.Join(err, errs)
+			return groupResult, err
 		}
 		result = append(result, groupResult...)
 	}
 
-	return result, errs
+	return result, nil
 }
