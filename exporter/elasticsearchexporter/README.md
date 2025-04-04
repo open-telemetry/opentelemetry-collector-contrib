@@ -90,7 +90,7 @@ The Elasticsearch exporter supports the common [`sending_queue` settings][export
 > [!WARNING]
 > The `batcher` config is experimental and may change without notice.
 
-The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go).
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/tree/v0.123.0/exporter/exporterbatcher/config.go).
 
 - `batcher`:
   - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
@@ -189,8 +189,10 @@ The mapping mode can also be controlled via the client metadata key `X-Elastic-M
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
-processors or exporter configurations will maintain client
-metadata.
+processors or exporter configurations will maintain client metadata.
+
+Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
 
 See below for a description of each mapping mode.
 
