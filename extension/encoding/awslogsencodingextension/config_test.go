@@ -4,6 +4,7 @@
 package awslogsencodingextension
 
 import (
+	"fmt"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -30,13 +31,41 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:          component.NewIDWithName(metadata.Type, ""),
-			expectedErr: `format unspecified, expected one of ["cloudwatch_logs_subscription_filter"]`,
+			expectedErr: fmt.Sprintf("format unspecified, expected one of %q", supportedLogFormats),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "cloudwatch_logs_subscription_filter"),
 			expected: &Config{
 				Format: formatCloudWatchLogsSubscriptionFilter,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					fileFormatPlainText,
+				},
 			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "text_vpc_flow_log"),
+			expected: &Config{
+				Format: formatVPCFlowLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					fileFormatPlainText,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "parquet_vpc_flow_log"),
+			expected: &Config{
+				Format: formatVPCFlowLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					fileFormatParquet,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "invalid_vpc_flow_log"),
+			expectedErr: fmt.Sprintf(
+				`unsupported file format "invalid" for VPC flow log, expected one of %q`,
+				supportedVPCFlowLogFileFormat,
+			),
 		},
 	}
 
