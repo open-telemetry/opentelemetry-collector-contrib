@@ -45,7 +45,7 @@ for ISSUE in ${ISSUES}; do
     LABELS=$(gh issue view "${ISSUE}" --json labels --jq '.labels.[].name')
 
     for LABEL in ${LABELS}; do
-        COMPONENT="${LABEL}"
+        COMPONENT=$(awk -v path="${LABEL}" '$1 == path || $2 == path {print $1}' .github/component_labels.txt)
         OWNERS=$(COMPONENT=${LABEL} bash "${CUR_DIRECTORY}/get-codeowners.sh")
 
         if [[ -z "${OWNERS}" ]]; then
