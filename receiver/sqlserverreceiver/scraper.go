@@ -504,19 +504,23 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
 	// Constants are the column names of the database status
-	const dbPrefix = "sqlserver."
-	const totalElapsedTime = "total_elapsed_time"
-	const rowsReturned = "total_rows"
-	const totalWorkerTime = "total_worker_time"
-	const queryHash = "query_hash"
-	const queryPlanHash = "query_plan_hash"
-	const logicalReads = "total_logical_reads"
-	const logicalWrites = "total_logical_writes"
-	const physicalReads = "total_physical_reads"
-	const executionCount = "execution_count"
-	const totalGrant = "total_grant_kb"
-	const queryText = "query_text"
-	const queryPlan = "query_plan"
+	const (
+		dbPrefix       = "sqlserver."
+		executionCount = "execution_count"
+		logicalReads   = "total_logical_reads"
+		logicalWrites  = "total_logical_writes"
+		physicalReads  = "total_physical_reads"
+		queryHash      = "query_hash"
+		queryPlan      = "query_plan"
+		queryPlanHash  = "query_plan_hash"
+		queryText      = "query_text"
+		rowsReturned   = "total_rows"
+		// the time returned from mssql is in microsecond
+		totalElapsedTime = "total_elapsed_time"
+		totalGrant       = "total_grant_kb"
+		// the time returned from mssql is in microsecond
+		totalWorkerTime = "total_worker_time"
+	)
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
@@ -526,31 +530,31 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	}
 	var errs []error
 
-	totalElapsedTimeDiffs := make([]int64, len(rows))
+	totalElapsedTimeDiffsMicrosecond := make([]int64, len(rows))
 
 	for i, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		elapsedTime, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
+		elapsedTimeMicrosecond, err := strconv.ParseInt(row[totalElapsedTime], 10, 64)
 		if err != nil {
 			s.logger.Info(fmt.Sprintf("sqlServerScraperHelper failed getting rows: %s", err))
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
 			// caching the total elapsed time (in millisecond) and compare in the next scrape.
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTime/1000); cached && diff > 0 {
-				totalElapsedTimeDiffs[i] = diff
+			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
+				totalElapsedTimeDiffsMicrosecond[i] = diff
 			}
 		}
 	}
 
 	// sort the rows based on the totalElapsedTimeDiffs in descending order,
 	// only report first T(T=topQueryCount) rows.
-	rows = sortRows(rows, totalElapsedTimeDiffs, topQueryCount)
+	rows = sortRows(rows, totalElapsedTimeDiffsMicrosecond, topQueryCount)
 
 	// sort the totalElapsedTimeDiffs in descending order as well
-	sort.Slice(totalElapsedTimeDiffs, func(i, j int) bool { return totalElapsedTimeDiffs[i] > totalElapsedTimeDiffs[j] })
+	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
 
 	logs := plog.NewLogs()
 	resourceLog := logs.ResourceLogs().AppendEmpty()
@@ -562,7 +566,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
-		if totalElapsedTimeDiffs[i] == 0 {
+		if totalElapsedTimeDiffsMicrosecond[i] == 0 {
 			break
 		}
 
@@ -573,110 +577,143 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(timestamp)
 		record.SetEventName("top query")
-		record.Attributes().PutStr("db.system.name", "microsoft.sql_server")
 
-		record.Attributes().PutStr(computerNameKey, row[computerNameKey])
-		record.Attributes().PutStr(instanceNameKey, row[instanceNameKey])
-		record.Attributes().PutStr(serverAddressKey, s.config.Server)
-		record.Attributes().PutInt(serverPortKey, int64(s.config.Port))
+		attributes := []internalAttribute{
+			{
+				key:            computerNameKey,
+				columnName:     computerNameKey,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:        "db.query.text",
+				columnName: queryText,
+				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
+					return obfuscateSQL(row[columnName])
+				},
+				valueSetter: setString,
+			},
+			{
+				key:            dbPrefix + executionCount,
+				columnName:     executionCount,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + logicalReads,
+				columnName:     logicalReads,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + logicalWrites,
+				columnName:     logicalWrites,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + physicalReads,
+				columnName:     physicalReads,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + queryHash,
+				valueRetriever: defaultValueRetriever(queryHashVal),
+				valueSetter:    setString,
+			},
+			{
+				key:        dbPrefix + queryPlan,
+				columnName: queryPlan,
+				valueRetriever: func(row sqlquery.StringMap, columnName string) (any, error) {
+					return obfuscateXMLPlan(row[columnName])
+				},
+				valueSetter: setString,
+			},
+			{
+				key:            dbPrefix + queryPlanHash,
+				valueRetriever: defaultValueRetriever(queryPlanHashVal),
+				valueSetter:    setString,
+			},
+			{
+				key:            dbPrefix + rowsReturned,
+				columnName:     rowsReturned,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            dbPrefix + totalElapsedTime,
+				valueRetriever: defaultValueRetriever(float64(totalElapsedTimeDiffsMicrosecond[i]) / 1_000_000),
+				valueSetter:    setDouble,
+			},
+			{
+				key:            dbPrefix + totalGrant,
+				columnName:     totalGrant,
+				valueRetriever: retrieveInt,
+				valueSetter:    setInt,
+			},
+			{
+				key:            "db.system.name",
+				valueRetriever: defaultValueRetriever("microsoft.sql_server"),
+				valueSetter:    setString,
+			},
+			{
+				key:            instanceNameKey,
+				columnName:     instanceNameKey,
+				valueRetriever: vanillaRetriever,
+				valueSetter:    setString,
+			},
+			{
+				key:            serverAddressKey,
+				valueRetriever: defaultValueRetriever(s.config.Server),
+				valueSetter:    setString,
+			},
+			{
+				key:            serverPortKey,
+				valueRetriever: defaultValueRetriever((int64(s.config.Port))),
+				valueSetter:    setInt,
+			},
+		}
 
-		record.Attributes().PutStr(dbPrefix+queryHash, queryHashVal)
-		record.Attributes().PutStr(dbPrefix+queryPlanHash, queryPlanHashVal)
+		updatedOnly := map[string]bool{
+			rowsReturned:   true,
+			logicalReads:   true,
+			logicalWrites:  true,
+			physicalReads:  true,
+			executionCount: true,
+			totalGrant:     true,
+		}
 
 		s.logger.Debug(fmt.Sprintf("QueryHash: %v, PlanHash: %v, DataRow: %v", queryHashVal, queryPlanHashVal, row))
 
-		record.Attributes().PutDouble(dbPrefix+totalElapsedTime, float64(totalElapsedTimeDiffs[i])/1000)
-
-		// handling `total_rows`
-		rowsReturnVal, err := strconv.ParseInt(row[rowsReturned], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, rowsReturned, rowsReturnVal); cached {
-			record.Attributes().PutInt(dbPrefix+rowsReturned, diff)
-		}
-
-		// handling `total_logical_reads`
-		logicalReadsVal, err := strconv.ParseInt(row[logicalReads], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalReads, logicalReadsVal); cached {
-			record.Attributes().PutInt(dbPrefix+logicalReads, diff)
-		}
-
-		// handling `total_logical_writes`
-		logicalWritesVal, err := strconv.ParseInt(row[logicalWrites], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, logicalWrites, logicalWritesVal); cached {
-			record.Attributes().PutInt(dbPrefix+logicalWrites, diff)
-		}
-
-		// handling `physical_reads`
-		physicalReadsVal, err := strconv.ParseInt(row[physicalReads], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, physicalReads, physicalReadsVal); cached {
-			record.Attributes().PutInt(dbPrefix+physicalReads, diff)
-		}
-
-		// handling `execution_count`
-		totalExecutionCount, err := strconv.ParseInt(row[executionCount], 10, 64)
+		// handle `total_worker_time`, storing seconds
+		// it is a little bit tricky to put this to the array based workflow,
+		// as the value need to be divided -> type assertion -> check cache.
+		// hence handle it separately.
+		workerTimeMicrosecond, err := strconv.ParseInt(row[totalWorkerTime], 10, 64)
 		if err != nil {
 			err = fmt.Errorf("row %d: %w", i, err)
 			errs = append(errs, err)
 		} else {
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, executionCount, totalExecutionCount); cached {
-				record.Attributes().PutInt(dbPrefix+executionCount, diff)
+			if cached, diffMicrosecond := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTimeMicrosecond); cached {
+				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diffMicrosecond)/1_000_000)
 			}
 		}
 
-		// handle `total_worker_time`, storing milliseconds
-		workerTime, err := strconv.ParseInt(row[totalWorkerTime], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		} else {
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalWorkerTime, workerTime/1000); cached {
-				record.Attributes().PutDouble(dbPrefix+totalWorkerTime, float64(diff)/1000)
+		for _, attr := range attributes {
+			value, err := attr.valueRetriever(row, attr.columnName)
+			if err != nil {
+				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
+				errs = append(errs, err)
+			}
+			if _, ok := updatedOnly[attr.columnName]; ok {
+				if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, attr.columnName, value.(int64)); cached {
+					attr.valueSetter(record.Attributes(), attr.key, diff)
+				}
+			} else {
+				attr.valueSetter(record.Attributes(), attr.key, value)
 			}
 		}
-
-		// handle `total_grant_kb`
-		memoryGranted, err := strconv.ParseInt(row[totalGrant], 10, 64)
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		} else {
-			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalGrant, memoryGranted); cached {
-				record.Attributes().PutInt(dbPrefix+totalGrant, diff)
-			}
-		}
-
-		// handling `query_text`
-		obfuscatedSQL, err := obfuscateSQL(row[queryText])
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		// Follow the semantic conventions for DB
-		// https://github.com/open-telemetry/semantic-conventions/blob/main/docs/attributes-registry/db.md
-		record.Attributes().PutStr("db.query.text", obfuscatedSQL)
-
-		// handling `query_plan`
-		obfuscatedQueryPlan, err := obfuscateXMLPlan(row[queryPlan])
-		if err != nil {
-			err = fmt.Errorf("row %d: %w", i, err)
-			errs = append(errs, err)
-		}
-		record.Attributes().PutStr(dbPrefix+queryPlan, obfuscatedQueryPlan)
 	}
 
 	return logs, errors.Join(errs...)
@@ -835,13 +872,13 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const clientPort = "client_port"
 	const command = "command"
 	const contextInfo = "context_info"
-	const cpuTime = "cpu_time"
+	const cpuTimeMillisecond = "cpu_time"
 	const dbName = "db_name"
 	const dbPrefix = "sqlserver."
 	const deadlockPriority = "deadlock_priority"
-	const estimatedCompletionTime = "estimated_completion_time"
+	const estimatedCompletionTimeMillisecond = "estimated_completion_time"
 	const hostName = "host_name"
-	const lockTimeout = "lock_timeout"
+	const lockTimeoutMillisecond = "lock_timeout"
 	const logicalReads = "logical_reads"
 	const openTransactionCount = "open_transaction_count"
 	const percentComplete = "percent_complete"
@@ -854,12 +891,12 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const sessionID = "session_id"
 	const sessionStatus = "session_status"
 	const statementText = "statement_text"
-	const totalElapsedTime = "total_elapsed_time"
+	const totalElapsedTimeMillisecond = "total_elapsed_time"
 	const transactionID = "transaction_id"
 	const transactionIsolationLevel = "transaction_isolation_level"
 	const username = "username"
 	const waitResource = "wait_resource"
-	const waitTime = "wait_time"
+	const waitTimeMillisecond = "wait_time"
 	const waitType = "wait_type"
 	const writes = "writes"
 
@@ -888,6 +925,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record := scopedLog.LogRecords().AppendEmpty()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
+		// Attributes sorted alphabetically by key
 		attributes := []internalAttribute{
 			{
 				key:            "client.port",
@@ -945,8 +983,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:        dbPrefix + cpuTime,
-				columnName: cpuTime,
+				key:        dbPrefix + cpuTimeMillisecond,
+				columnName: cpuTimeMillisecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
@@ -959,18 +997,20 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setInt,
 			},
 			{
-				key:        dbPrefix + estimatedCompletionTime,
-				columnName: estimatedCompletionTime,
+				key:        dbPrefix + estimatedCompletionTimeMillisecond,
+				columnName: estimatedCompletionTimeMillisecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
 				valueSetter: setDouble,
 			},
 			{
-				key:            dbPrefix + lockTimeout,
-				columnName:     lockTimeout,
-				valueRetriever: retrieveInt,
-				valueSetter:    setInt,
+				key:        dbPrefix + lockTimeoutMillisecond,
+				columnName: lockTimeoutMillisecond,
+				valueRetriever: retrieveIntAndConvert(func(i int64) any {
+					return float64(i) / 1000.0
+				}),
+				valueSetter: setDouble,
 			},
 			{
 				key:            dbPrefix + logicalReads,
@@ -1037,8 +1077,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:        dbPrefix + totalElapsedTime,
-				columnName: totalElapsedTime,
+				key:        dbPrefix + totalElapsedTimeMillisecond,
+				columnName: totalElapsedTimeMillisecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
@@ -1069,8 +1109,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setString,
 			},
 			{
-				key:        dbPrefix + waitTime,
-				columnName: waitTime,
+				key:        dbPrefix + waitTimeMillisecond,
+				columnName: waitTimeMillisecond,
 				valueRetriever: retrieveIntAndConvert(func(i int64) any {
 					return float64(i) / 1000.0
 				}),
@@ -1093,7 +1133,8 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		for _, attr := range attributes {
 			value, err := attr.valueRetriever(row, attr.columnName)
 			if err != nil {
-				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[clientPort], err))
+				errs = append(errs, err)
+				s.logger.Error(fmt.Sprintf("sqlServerScraperHelper failed parsing %s. original value: %s, err: %s", attr.columnName, row[attr.columnName], err))
 			}
 			attr.valueSetter(record.Attributes(), attr.key, value)
 		}

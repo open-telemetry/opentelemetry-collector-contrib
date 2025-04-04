@@ -62,6 +62,36 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":      AttributeStateWait,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemCPUFrequency: metricInfo{
+		Name: "system.cpu.frequency",
+	},
+	SystemCPULogicalCount: metricInfo{
+		Name: "system.cpu.logical.count",
+	},
+	SystemCPUPhysicalCount: metricInfo{
+		Name: "system.cpu.physical.count",
+	},
+	SystemCPUTime: metricInfo{
+		Name: "system.cpu.time",
+	},
+	SystemCPUUtilization: metricInfo{
+		Name: "system.cpu.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemCPUFrequency     metricInfo
+	SystemCPULogicalCount  metricInfo
+	SystemCPUPhysicalCount metricInfo
+	SystemCPUTime          metricInfo
+	SystemCPUUtilization   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemCPUFrequency struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

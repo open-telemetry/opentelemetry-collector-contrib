@@ -36,7 +36,7 @@ func NewFactory() exporter.Factory {
 func createDefaultConfig() component.Config {
 	otlpFactory := otlpexporter.NewFactory()
 	otlpDefaultCfg := otlpFactory.CreateDefaultConfig().(*otlpexporter.Config)
-	otlpDefaultCfg.Endpoint = "placeholder:4317"
+	otlpDefaultCfg.ClientConfig.Endpoint = "placeholder:4317"
 
 	return &Config{
 		// By default we disable resilience options on loadbalancing exporter level
@@ -49,7 +49,7 @@ func createDefaultConfig() component.Config {
 
 func buildExporterConfig(cfg *Config, endpoint string) otlpexporter.Config {
 	oCfg := cfg.Protocol.OTLP
-	oCfg.Endpoint = endpoint
+	oCfg.ClientConfig.Endpoint = endpoint
 
 	return oCfg
 }
