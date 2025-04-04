@@ -12,6 +12,7 @@ import (
 	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
@@ -52,9 +53,13 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 			content:              getLogFromFileInPlainText(t, dir, "valid_vpc_flow_log.log"),
 			logsExpectedFilename: "valid_vpc_flow_log_expected.yaml",
 		},
-		"invalid_vpc_flow_log": {
-			content:     getLogFromFileInPlainText(t, dir, "invalid_vpc_flow_log.log"),
-			expectedErr: "expect 14 fields per log line, got log line with 13 fields",
+		"vpc_flow_log_with_more_fields_than_allowed": {
+			content:     getLogFromFileInPlainText(t, dir, "vpc_flow_log_too_few_fields.log"),
+			expectedErr: "log line has less fields than the ones expected",
+		},
+		"vpc_flow_log_with_less_fields_than_required": {
+			content:     getLogFromFileInPlainText(t, dir, "vpc_flow_log_too_many_fields.log"),
+			expectedErr: "log line has more fields than the ones expected",
 		},
 		"invalid_gzip_record": {
 			content:     []byte("invalid"),
@@ -86,16 +91,16 @@ func TestUnmarshalLogs_PlainText(t *testing.T) {
 func TestHandleAddresses(t *testing.T) {
 	t.Parallel()
 
-	// We will test the addresses using the examples at
+	// We will test the address using the examples at
 	// https://docs.aws.amazon.com/vpc/latest/userguide/flow-logs-records-examples.html#flow-log-example-nat
 	tests := map[string]struct {
-		original map[string]string
+		original address
 		expected map[string]string
 	}{
 		"no_pkt": {
-			original: map[string]string{
-				"srcaddr": "10.40.1.175",
-				"dstaddr": "10.40.2.236",
+			original: address{
+				source:      "10.40.1.175",
+				destination: "10.40.2.236",
 			},
 			expected: map[string]string{
 				conventions.AttributeSourceAddress:      "10.40.1.175",
@@ -103,11 +108,11 @@ func TestHandleAddresses(t *testing.T) {
 			},
 		},
 		"pkt_same_as_src-dst": {
-			original: map[string]string{
-				"srcaddr":     "10.40.1.175",
-				"dstaddr":     "10.40.2.236",
-				"pkt-srcaddr": "10.40.1.175",
-				"pkt-dstaddr": "10.40.2.236",
+			original: address{
+				source:         "10.40.1.175",
+				destination:    "10.40.2.236",
+				pktSource:      "10.40.1.175",
+				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
 				conventions.AttributeSourceAddress:      "10.40.1.175",
@@ -115,29 +120,29 @@ func TestHandleAddresses(t *testing.T) {
 			},
 		},
 		"different_source": {
-			original: map[string]string{
-				"srcaddr":     "10.40.1.175",
-				"dstaddr":     "10.40.2.236",
-				"pkt-srcaddr": "10.20.33.164",
-				"pkt-dstaddr": "10.40.2.236",
+			original: address{
+				source:         "10.40.1.175",
+				destination:    "10.40.2.236",
+				pktSource:      "10.20.33.164",
+				pktDestination: "10.40.2.236",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:      "10.20.33.164",
-				conventions.AttributeDestinationAddress: "10.40.2.236",
-				conventions.AttributeNetworkPeerAddress: "10.40.1.175",
+				conventions.AttributeSourceAddress:       "10.20.33.164",
+				conventions.AttributeDestinationAddress:  "10.40.2.236",
+				conventions.AttributeNetworkLocalAddress: "10.40.1.175",
 			},
 		},
 		"different_destination": {
-			original: map[string]string{
-				"srcaddr":     "10.40.2.236",
-				"dstaddr":     "10.40.2.31",
-				"pkt-srcaddr": "10.40.2.236",
-				"pkt-dstaddr": "10.20.33.164",
+			original: address{
+				source:         "10.40.2.236",
+				destination:    "10.40.2.31",
+				pktSource:      "10.40.2.236",
+				pktDestination: "10.20.33.164",
 			},
 			expected: map[string]string{
-				conventions.AttributeSourceAddress:      "10.40.2.236",
-				conventions.AttributeDestinationAddress: "10.20.33.164",
-				conventions.AttributeNetworkPeerAddress: "10.40.2.31",
+				conventions.AttributeSourceAddress:       "10.40.2.236",
+				conventions.AttributeDestinationAddress:  "10.20.33.164",
+				conventions.AttributeNetworkLocalAddress: "10.40.2.31",
 			},
 		},
 	}
@@ -145,8 +150,13 @@ func TestHandleAddresses(t *testing.T) {
 	v := &vpcFlowLogUnmarshaler{logger: zap.NewNop()}
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			result := v.handleAddresses(test.original)
-			require.Equal(t, test.expected, result)
+			record := plog.NewLogRecord()
+			v.handleAddresses(&test.original, record)
+			for attr, value := range test.expected {
+				addr, found := record.Attributes().Get(attr)
+				require.True(t, found)
+				require.Equal(t, value, addr.Str())
+			}
 		})
 	}
 }

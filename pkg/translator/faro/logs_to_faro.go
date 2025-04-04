@@ -46,7 +46,7 @@ const (
 	faroBrowserOS             = "browser_os"
 	faroBrowserMobile         = "browser_mobile"
 	faroBrowserLanguage       = "browser_language"
-	faroBrowserUserAgent      = "user_agent"
+	faroBrowserUserAgent      = "browser_userAgent"
 	faroBrowserViewportHeight = "browser_viewportHeight"
 	faroBrowserViewportWidth  = "browser_viewportWidth"
 	faroBrowserBrands         = "browser_brands"
@@ -101,6 +101,10 @@ const (
 
 	faroMeasurementType        = "type"
 	faroMeasurementValuePrefix = "value_"
+
+	faroActionID       = "action_id"
+	faroActionName     = "action_name"
+	faroActionParentID = "action_parent_id"
 )
 
 var stacktraceRegexp *regexp.Regexp
@@ -622,6 +626,7 @@ func extractLogFromKeyVal(kv map[string]string) (faroTypes.Log, error) {
 	}
 	trace := extractTraceFromKeyVal(kv)
 	log.Trace = trace
+	log.Action = extractActionFromKeyVal(kv)
 	return log, nil
 }
 
@@ -647,6 +652,20 @@ func extractTraceFromKeyVal(kv map[string]string) faroTypes.TraceContext {
 	return trace
 }
 
+func extractActionFromKeyVal(kv map[string]string) faroTypes.Action {
+	var action faroTypes.Action
+	if name, ok := kv[faroActionName]; ok {
+		action.Name = name
+	}
+	if parentID, ok := kv[faroActionParentID]; ok {
+		action.ParentID = parentID
+	}
+	if id, ok := kv[faroActionID]; ok {
+		action.ID = id
+	}
+	return action
+}
+
 func extractEventFromKeyVal(kv map[string]string) (faroTypes.Event, error) {
 	var event faroTypes.Event
 	if domain, ok := kv[faroEventDomain]; ok {
@@ -663,6 +682,7 @@ func extractEventFromKeyVal(kv map[string]string) (faroTypes.Event, error) {
 	trace := extractTraceFromKeyVal(kv)
 	event.Trace = trace
 	event.Attributes = extractAttributesWithPrefixFromKeyVal(faroEventDataPrefix, kv)
+	event.Action = extractActionFromKeyVal(kv)
 	return event, nil
 }
 
@@ -690,6 +710,7 @@ func extractExceptionFromKeyVal(kv map[string]string) (faroTypes.Exception, erro
 	exception.Timestamp = timestamp
 	trace := extractTraceFromKeyVal(kv)
 	exception.Trace = trace
+	exception.Action = extractActionFromKeyVal(kv)
 	return exception, nil
 }
 
@@ -787,6 +808,7 @@ func extractMeasurementFromKeyVal(kv map[string]string) (faroTypes.Measurement, 
 		return measurement, err
 	}
 	measurement.Values = measurementValues
+	measurement.Action = extractActionFromKeyVal(kv)
 	return measurement, nil
 }
 

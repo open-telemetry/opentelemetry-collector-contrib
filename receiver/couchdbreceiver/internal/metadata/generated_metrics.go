@@ -110,6 +110,48 @@ var MapAttributeView = map[string]AttributeView{
 	"view_reads":           AttributeViewViewReads,
 }
 
+var MetricsInfo = metricsInfo{
+	CouchdbAverageRequestTime: metricInfo{
+		Name: "couchdb.average_request_time",
+	},
+	CouchdbDatabaseOpen: metricInfo{
+		Name: "couchdb.database.open",
+	},
+	CouchdbDatabaseOperations: metricInfo{
+		Name: "couchdb.database.operations",
+	},
+	CouchdbFileDescriptorOpen: metricInfo{
+		Name: "couchdb.file_descriptor.open",
+	},
+	CouchdbHttpdBulkRequests: metricInfo{
+		Name: "couchdb.httpd.bulk_requests",
+	},
+	CouchdbHttpdRequests: metricInfo{
+		Name: "couchdb.httpd.requests",
+	},
+	CouchdbHttpdResponses: metricInfo{
+		Name: "couchdb.httpd.responses",
+	},
+	CouchdbHttpdViews: metricInfo{
+		Name: "couchdb.httpd.views",
+	},
+}
+
+type metricsInfo struct {
+	CouchdbAverageRequestTime metricInfo
+	CouchdbDatabaseOpen       metricInfo
+	CouchdbDatabaseOperations metricInfo
+	CouchdbFileDescriptorOpen metricInfo
+	CouchdbHttpdBulkRequests  metricInfo
+	CouchdbHttpdRequests      metricInfo
+	CouchdbHttpdResponses     metricInfo
+	CouchdbHttpdViews         metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricCouchdbAverageRequestTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
