@@ -88,6 +88,8 @@ type Config struct {
 	Events EventsConfig `mapstructure:"events"`
 
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
+
+	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
 }
 
 type HistogramConfig struct {

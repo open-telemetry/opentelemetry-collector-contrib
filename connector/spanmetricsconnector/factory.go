@@ -46,12 +46,13 @@ func NewFactory() connector.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
-		AggregationTemporality:   "AGGREGATION_TEMPORALITY_CUMULATIVE",
-		DimensionsCacheSize:      defaultDimensionsCacheSize,
-		ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
-		MetricsFlushInterval:     60 * time.Second,
-		Histogram:                HistogramConfig{Disable: false, Unit: defaultUnit},
-		Namespace:                DefaultNamespace,
+		AggregationTemporality:      "AGGREGATION_TEMPORALITY_CUMULATIVE",
+		DimensionsCacheSize:         defaultDimensionsCacheSize,
+		ResourceMetricsCacheSize:    defaultResourceMetricsCacheSize,
+		MetricsFlushInterval:        60 * time.Second,
+		Histogram:                   HistogramConfig{Disable: false, Unit: defaultUnit},
+		Namespace:                   DefaultNamespace,
+		AggregationCardinalityLimit: 0,
 	}
 }
 

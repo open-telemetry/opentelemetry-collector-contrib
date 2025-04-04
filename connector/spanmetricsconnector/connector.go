@@ -44,7 +44,65 @@ const (
 	metricNameEvents   = "events"
 
 	defaultUnit = metrics.Milliseconds
+
+	// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
+	overflowKey = "otel.metric.overflow"
 )
+
+type cardinalityTracker struct {
+	limit          int
+	seenDimensions map[string]map[metrics.Key]struct{} // metricName -> key
+}
+
+func newCardinalityTracker(limit int) *cardinalityTracker {
+	return &cardinalityTracker{
+		limit:          limit,
+		seenDimensions: make(map[string]map[metrics.Key]struct{}),
+	}
+}
+
+func (ct *cardinalityTracker) shouldUseOverflow(metricName string, span ptrace.Span, dimensions []utilattri.Dimension, excludedDimensions []string) bool {
+	if ct.limit <= 0 {
+		return false
+	}
+
+	if _, exists := ct.seenDimensions[metricName]; !exists {
+		ct.seenDimensions[metricName] = make(map[metrics.Key]struct{})
+	}
+
+	keyBuf := bytes.NewBuffer(make([]byte, 0, 1024))
+
+	for _, d := range dimensions {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes()); ok {
+			concatDimensionValue(keyBuf, v.AsString(), true)
+		}
+	}
+
+	if !contains(excludedDimensions, spanNameKey) {
+		concatDimensionValue(keyBuf, span.Name(), true)
+	}
+	if !contains(excludedDimensions, spanKindKey) {
+		concatDimensionValue(keyBuf, traceutil.SpanKindStr(span.Kind()), true)
+	}
+	if !contains(excludedDimensions, statusCodeKey) {
+		concatDimensionValue(keyBuf, traceutil.StatusCodeStr(span.Status().Code()), true)
+	}
+
+	key := metrics.Key(keyBuf.String())
+
+	// Check if we've seen this key before
+	if _, exists := ct.seenDimensions[metricName][key]; !exists {
+		// If we're under the limit, track the new key
+		if len(ct.seenDimensions[metricName]) < ct.limit {
+			ct.seenDimensions[metricName][key] = struct{}{}
+			return false
+		}
+		// Over limit, use overflow
+		return true
+	}
+	// We've seen this key before, don't use overflow
+	return false
+}
 
 type connectorImp struct {
 	lock   sync.Mutex
@@ -91,6 +149,8 @@ type resourceMetrics struct {
 	startTimestamp pcommon.Timestamp
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
+
+	cardinalityTracker *cardinalityTracker
 }
 
 func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
@@ -401,11 +461,29 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 
-				attributes, ok := p.metricKeyToDimensions.Get(key)
-				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
-					p.metricKeyToDimensions.Add(key, attributes)
+				var attributes pcommon.Map
+
+				if rm.cardinalityTracker.shouldUseOverflow(metricNameCalls, span, p.dimensions, p.config.ExcludeDimensions) {
+					attributes = pcommon.NewMap()
+					attributes.PutBool(overflowKey, true)
+					if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+						attributes.PutStr(serviceNameKey, serviceName)
+					}
+					addResourceAttributes(&attributes, p.dimensions, span, resourceAttr)
+				} else {
+					attributes, ok = p.metricKeyToDimensions.Get(key)
+					if !ok {
+						attributes = p.buildAttributes(
+							serviceName,
+							span,
+							resourceAttr,
+							p.dimensions,
+							ils.Scope(),
+						)
+						p.metricKeyToDimensions.Add(key, attributes)
+					}
 				}
+
 				if !p.config.Histogram.Disable {
 					// aggregate histogram metrics
 					h := histograms.GetOrCreate(key, attributes)
@@ -427,16 +505,28 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						eDimensions = append(eDimensions, p.eDimensions...)
 
 						rscAndEventAttrs := pcommon.NewMap()
+
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
 						resourceAttr.CopyTo(rscAndEventAttrs)
 						event.Attributes().CopyTo(rscAndEventAttrs)
 
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
-						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
-						if !ok {
-							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
-							p.metricKeyToDimensions.Add(eKey, eAttributes)
+
+						var eAttributes pcommon.Map
+						if rm.cardinalityTracker.shouldUseOverflow(metricNameEvents, span, eDimensions, p.config.ExcludeDimensions) {
+							eAttributes.PutBool(overflowKey, true)
+							if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+								eAttributes.PutStr(serviceNameKey, serviceName)
+							}
+							addResourceAttributes(&eAttributes, p.dimensions, span, rscAndEventAttrs)
+						} else {
+							eAttributes, ok = p.metricKeyToDimensions.Get(eKey)
+							if !ok {
+								eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
+								p.metricKeyToDimensions.Add(eKey, eAttributes)
+							}
 						}
+
 						e := events.GetOrCreate(eKey, eAttributes)
 						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
@@ -480,11 +570,12 @@ func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimesta
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms:     initHistogramMetrics(p.config),
-			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			attributes:     attr,
-			startTimestamp: startTimestamp,
+			histograms:         initHistogramMetrics(p.config),
+			sums:               metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:             metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			attributes:         attr,
+			startTimestamp:     startTimestamp,
+			cardinalityTracker: newCardinalityTracker(p.config.AggregationCardinalityLimit),
 		}
 		p.resourceMetrics.Add(key, v)
 	}
@@ -507,7 +598,13 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension, instrumentationScope pcommon.InstrumentationScope) pcommon.Map {
+func (p *connectorImp) buildAttributes(
+	serviceName string,
+	span ptrace.Span,
+	resourceAttrs pcommon.Map,
+	dimensions []utilattri.Dimension,
+	instrumentationScope pcommon.InstrumentationScope,
+) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -523,12 +620,6 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
 
-	for _, d := range dimensions {
-		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
-			v.CopyTo(attr.PutEmpty(d.Name))
-		}
-	}
-
 	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
 		attr.PutStr(instrumentationScopeNameKey, instrumentationScope.Name())
 		if instrumentationScope.Version() != "" {
@@ -536,7 +627,17 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 		}
 	}
 
+	addResourceAttributes(&attr, dimensions, span, resourceAttrs)
+
 	return attr
+}
+
+func addResourceAttributes(attrs *pcommon.Map, dimensions []utilattri.Dimension, span ptrace.Span, resourceAttrs pcommon.Map) {
+	for _, d := range dimensions {
+		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
+			v.CopyTo(attrs.PutEmpty(d.Name))
+		}
+	}
 }
 
 func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
@@ -553,6 +654,7 @@ func concatDimensionValue(dest *bytes.Buffer, value string, prefixSep bool) {
 // The metric key is a simple concatenation of dimension values, delimited by a null character.
 func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
 	p.keyBuf.Reset()
+
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
 		concatDimensionValue(p.keyBuf, serviceName, false)
 	}
