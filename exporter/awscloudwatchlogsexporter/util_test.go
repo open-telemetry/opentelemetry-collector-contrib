@@ -35,7 +35,7 @@ func TestReplacePatternValidServiceName(t *testing.T) {
 		"service.name": "some-test-service",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "some-test-service", s)
 	assert.True(t, success)
@@ -51,7 +51,7 @@ func TestReplacePatternValidClusterName(t *testing.T) {
 		"aws.ecs.task.id":      "test-task-id",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/ecs/containerinsights/test-cluster-name/performance", s)
 	assert.True(t, success)
@@ -66,7 +66,7 @@ func TestReplacePatternMissingAttribute(t *testing.T) {
 		"aws.ecs.task.id": "test-task-id",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/ecs/containerinsights/undefined/performance", s)
 	assert.False(t, success)
@@ -82,7 +82,7 @@ func TestReplacePatternValidPodName(t *testing.T) {
 		"PodName":              "test-pod-001",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/eks/containerinsights/test-pod-001/performance", s)
 	assert.True(t, success)
@@ -98,7 +98,7 @@ func TestReplacePatternValidPod(t *testing.T) {
 		"PodName":              "test-pod-001",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/eks/containerinsights/test-pod-001/performance", s)
 	assert.True(t, success)
@@ -113,7 +113,7 @@ func TestReplacePatternMissingPodName(t *testing.T) {
 		"aws.eks.cluster.name": "test-cluster-name",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/eks/containerinsights/undefined/performance", s)
 	assert.False(t, success)
@@ -128,7 +128,7 @@ func TestReplacePatternAttrPlaceholderClusterName(t *testing.T) {
 		"ClusterName": "test-cluster-name",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/ecs/containerinsights/test-cluster-name/performance", s)
 	assert.True(t, success)
@@ -143,7 +143,7 @@ func TestReplacePatternWrongKey(t *testing.T) {
 		"ClusterName": "test-task-id",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/ecs/containerinsights/{WrongKey}/performance", s)
 	assert.True(t, success)
@@ -158,7 +158,7 @@ func TestReplacePatternNilAttrValue(t *testing.T) {
 		"ClusterName": "",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "/aws/ecs/containerinsights/undefined/performance", s)
 	assert.False(t, success)
@@ -174,7 +174,7 @@ func TestReplacePatternValidTaskDefinitionFamily(t *testing.T) {
 		"aws.ecs.task.family":  "test-task-definition-family",
 	}
 
-	s, success := replacePatterns(input, anyMaptoStringMap(attrMap), logger)
+	s, success := replacePatterns(input, anyMapToStringMap(attrMap), logger)
 
 	assert.Equal(t, "test-task-definition-family", s)
 	assert.True(t, success)
