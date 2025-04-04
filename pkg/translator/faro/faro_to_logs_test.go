@@ -49,6 +49,12 @@ func TestTranslateToLogs(t *testing.T) {
 			expectedLogsFile: filepath.Join("testdata", "browser-brand-string-payload", "plogs.yaml"),
 			wantErr:          assert.NoError,
 		},
+		{
+			name:             "Payload with actions",
+			faroPayload:      PayloadFromFile(t, "actions-payload/payload.json"),
+			expectedLogsFile: filepath.Join("testdata", "actions-payload", "plogs.yaml"),
+			wantErr:          assert.NoError,
+		},
 	}
 
 	for _, tt := range testcases {
