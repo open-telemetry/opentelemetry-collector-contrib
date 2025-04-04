@@ -138,6 +138,36 @@ func Test_NewPRWExporter(t *testing.T) {
 	}
 }
 
+func Test_NewPRWExporter_ClientConfig(t *testing.T) {
+	prwClientConfig := confighttp.NewDefaultClientConfig()
+	prwClientConfig.Endpoint = "overridden.endpoint:8080"
+	cfg := &Config{
+		TimeoutSettings: exporterhelper.TimeoutConfig{},
+		BackOffConfig:   configretry.BackOffConfig{},
+		Namespace:       "",
+		ExternalLabels:  map[string]string{},
+		ClientConfig:    confighttp.NewDefaultClientConfig(),
+		PRWClient:       &prwClientConfig,
+		TargetInfo: &TargetInfo{
+			Enabled: true,
+		},
+		CreatedMetric: &CreatedMetric{
+			Enabled: false,
+		},
+	}
+	buildInfo := component.BuildInfo{
+		Description: "OpenTelemetry Collector",
+		Version:     "1.0",
+	}
+	set := exportertest.NewNopSettings()
+	set.BuildInfo = buildInfo
+
+	prwe, err := newPRWExporter(cfg, set)
+	assert.NoError(t, err)
+
+	assert.Equal(t, "overridden.endpoint:8080", prwe.endpointURL.String())
+}
+
 // Test_Start checks if the client is properly created as expected.
 func Test_Start(t *testing.T) {
 	cfg := &Config{
