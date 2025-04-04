@@ -4,5 +4,4 @@ dsimil
 heitorganzeli
 KiranmayiB
 swar8080
-zpzhuSplunk
 h0cheung
