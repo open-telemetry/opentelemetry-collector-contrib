@@ -11,12 +11,11 @@ import (
 // newMetadataConfigfromConfig creates a new metadata pusher config from the main
 func newMetadataConfigfromConfig(cfg *datadogconfig.Config) hostmetadata.PusherConfig {
 	return hostmetadata.PusherConfig{
-		ConfigHostname:  cfg.Hostname,
-		ConfigTags:      cfg.HostMetadata.Tags,
-		MetricsEndpoint: cfg.Metrics.Endpoint,
-		APIKey:          string(cfg.API.Key),
-		//nolint:staticcheck
-		UseResourceMetadata: cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource,
+		ConfigHostname:      cfg.Hostname,
+		ConfigTags:          cfg.HostMetadata.Tags,
+		MetricsEndpoint:     cfg.Metrics.Endpoint,
+		APIKey:              string(cfg.API.Key),
+		UseResourceMetadata: cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource, //nolint:staticcheck
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,
