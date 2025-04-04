@@ -2,3 +2,18 @@ awslogs_encoding:
 
 awslogs_encoding/cloudwatch_logs_subscription_filter:
   format: cloudwatch_logs_subscription_filter
+
+awslogs_encoding/text_vpc_flow_log:
+  format: vpc_flow_log
+  vpc_flow_log:
+    file_format: plain-text
+
+awslogs_encoding/parquet_vpc_flow_log:
+  format: vpc_flow_log
+  vpc_flow_log:
+    file_format: parquet
+
+awslogs_encoding/invalid_vpc_flow_log:
+  format: vpc_flow_log
+  vpc_flow_log:
+    file_format: invalid
