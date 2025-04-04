@@ -38,6 +38,336 @@ var MapAttributeMessageState = map[string]AttributeMessageState{
 	"unacknowledged": AttributeMessageStateUnacknowledged,
 }
 
+var MetricsInfo = metricsInfo{
+	RabbitmqConsumerCount: metricInfo{
+		Name: "rabbitmq.consumer.count",
+	},
+	RabbitmqMessageAcknowledged: metricInfo{
+		Name: "rabbitmq.message.acknowledged",
+	},
+	RabbitmqMessageCurrent: metricInfo{
+		Name: "rabbitmq.message.current",
+	},
+	RabbitmqMessageDelivered: metricInfo{
+		Name: "rabbitmq.message.delivered",
+	},
+	RabbitmqMessageDropped: metricInfo{
+		Name: "rabbitmq.message.dropped",
+	},
+	RabbitmqMessagePublished: metricInfo{
+		Name: "rabbitmq.message.published",
+	},
+	RabbitmqNodeChannelClosed: metricInfo{
+		Name: "rabbitmq.node.channel_closed",
+	},
+	RabbitmqNodeChannelClosedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.channel_closed_details.rate",
+	},
+	RabbitmqNodeChannelCreated: metricInfo{
+		Name: "rabbitmq.node.channel_created",
+	},
+	RabbitmqNodeChannelCreatedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.channel_created_details.rate",
+	},
+	RabbitmqNodeConnectionClosed: metricInfo{
+		Name: "rabbitmq.node.connection_closed",
+	},
+	RabbitmqNodeConnectionClosedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.connection_closed_details.rate",
+	},
+	RabbitmqNodeConnectionCreated: metricInfo{
+		Name: "rabbitmq.node.connection_created",
+	},
+	RabbitmqNodeConnectionCreatedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.connection_created_details.rate",
+	},
+	RabbitmqNodeContextSwitches: metricInfo{
+		Name: "rabbitmq.node.context_switches",
+	},
+	RabbitmqNodeContextSwitchesDetailsRate: metricInfo{
+		Name: "rabbitmq.node.context_switches_details.rate",
+	},
+	RabbitmqNodeDiskFree: metricInfo{
+		Name: "rabbitmq.node.disk_free",
+	},
+	RabbitmqNodeDiskFreeAlarm: metricInfo{
+		Name: "rabbitmq.node.disk_free_alarm",
+	},
+	RabbitmqNodeDiskFreeDetailsRate: metricInfo{
+		Name: "rabbitmq.node.disk_free_details.rate",
+	},
+	RabbitmqNodeDiskFreeLimit: metricInfo{
+		Name: "rabbitmq.node.disk_free_limit",
+	},
+	RabbitmqNodeFdTotal: metricInfo{
+		Name: "rabbitmq.node.fd_total",
+	},
+	RabbitmqNodeFdUsed: metricInfo{
+		Name: "rabbitmq.node.fd_used",
+	},
+	RabbitmqNodeFdUsedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.fd_used_details.rate",
+	},
+	RabbitmqNodeGcBytesReclaimed: metricInfo{
+		Name: "rabbitmq.node.gc_bytes_reclaimed",
+	},
+	RabbitmqNodeGcBytesReclaimedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.gc_bytes_reclaimed_details.rate",
+	},
+	RabbitmqNodeGcNum: metricInfo{
+		Name: "rabbitmq.node.gc_num",
+	},
+	RabbitmqNodeGcNumDetailsRate: metricInfo{
+		Name: "rabbitmq.node.gc_num_details.rate",
+	},
+	RabbitmqNodeIoReadAvgTime: metricInfo{
+		Name: "rabbitmq.node.io_read_avg_time",
+	},
+	RabbitmqNodeIoReadAvgTimeDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_read_avg_time_details.rate",
+	},
+	RabbitmqNodeIoReadBytes: metricInfo{
+		Name: "rabbitmq.node.io_read_bytes",
+	},
+	RabbitmqNodeIoReadBytesDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_read_bytes_details.rate",
+	},
+	RabbitmqNodeIoReadCount: metricInfo{
+		Name: "rabbitmq.node.io_read_count",
+	},
+	RabbitmqNodeIoReadCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_read_count_details.rate",
+	},
+	RabbitmqNodeIoReopenCount: metricInfo{
+		Name: "rabbitmq.node.io_reopen_count",
+	},
+	RabbitmqNodeIoReopenCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_reopen_count_details.rate",
+	},
+	RabbitmqNodeIoSeekAvgTime: metricInfo{
+		Name: "rabbitmq.node.io_seek_avg_time",
+	},
+	RabbitmqNodeIoSeekAvgTimeDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_seek_avg_time_details.rate",
+	},
+	RabbitmqNodeIoSeekCount: metricInfo{
+		Name: "rabbitmq.node.io_seek_count",
+	},
+	RabbitmqNodeIoSeekCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_seek_count_details.rate",
+	},
+	RabbitmqNodeIoSyncAvgTime: metricInfo{
+		Name: "rabbitmq.node.io_sync_avg_time",
+	},
+	RabbitmqNodeIoSyncAvgTimeDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_sync_avg_time_details.rate",
+	},
+	RabbitmqNodeIoSyncCount: metricInfo{
+		Name: "rabbitmq.node.io_sync_count",
+	},
+	RabbitmqNodeIoSyncCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_sync_count_details.rate",
+	},
+	RabbitmqNodeIoWriteAvgTime: metricInfo{
+		Name: "rabbitmq.node.io_write_avg_time",
+	},
+	RabbitmqNodeIoWriteAvgTimeDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_write_avg_time_details.rate",
+	},
+	RabbitmqNodeIoWriteBytes: metricInfo{
+		Name: "rabbitmq.node.io_write_bytes",
+	},
+	RabbitmqNodeIoWriteBytesDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_write_bytes_details.rate",
+	},
+	RabbitmqNodeIoWriteCount: metricInfo{
+		Name: "rabbitmq.node.io_write_count",
+	},
+	RabbitmqNodeIoWriteCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.io_write_count_details.rate",
+	},
+	RabbitmqNodeMemAlarm: metricInfo{
+		Name: "rabbitmq.node.mem_alarm",
+	},
+	RabbitmqNodeMemLimit: metricInfo{
+		Name: "rabbitmq.node.mem_limit",
+	},
+	RabbitmqNodeMemUsed: metricInfo{
+		Name: "rabbitmq.node.mem_used",
+	},
+	RabbitmqNodeMemUsedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.mem_used_details.rate",
+	},
+	RabbitmqNodeMnesiaDiskTxCount: metricInfo{
+		Name: "rabbitmq.node.mnesia_disk_tx_count",
+	},
+	RabbitmqNodeMnesiaDiskTxCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.mnesia_disk_tx_count_details.rate",
+	},
+	RabbitmqNodeMnesiaRAMTxCount: metricInfo{
+		Name: "rabbitmq.node.mnesia_ram_tx_count",
+	},
+	RabbitmqNodeMnesiaRAMTxCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.mnesia_ram_tx_count_details.rate",
+	},
+	RabbitmqNodeMsgStoreReadCount: metricInfo{
+		Name: "rabbitmq.node.msg_store_read_count",
+	},
+	RabbitmqNodeMsgStoreReadCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.msg_store_read_count_details.rate",
+	},
+	RabbitmqNodeMsgStoreWriteCount: metricInfo{
+		Name: "rabbitmq.node.msg_store_write_count",
+	},
+	RabbitmqNodeMsgStoreWriteCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.msg_store_write_count_details.rate",
+	},
+	RabbitmqNodeProcTotal: metricInfo{
+		Name: "rabbitmq.node.proc_total",
+	},
+	RabbitmqNodeProcUsed: metricInfo{
+		Name: "rabbitmq.node.proc_used",
+	},
+	RabbitmqNodeProcUsedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.proc_used_details.rate",
+	},
+	RabbitmqNodeProcessors: metricInfo{
+		Name: "rabbitmq.node.processors",
+	},
+	RabbitmqNodeQueueCreated: metricInfo{
+		Name: "rabbitmq.node.queue_created",
+	},
+	RabbitmqNodeQueueCreatedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.queue_created_details.rate",
+	},
+	RabbitmqNodeQueueDeclared: metricInfo{
+		Name: "rabbitmq.node.queue_declared",
+	},
+	RabbitmqNodeQueueDeclaredDetailsRate: metricInfo{
+		Name: "rabbitmq.node.queue_declared_details.rate",
+	},
+	RabbitmqNodeQueueDeleted: metricInfo{
+		Name: "rabbitmq.node.queue_deleted",
+	},
+	RabbitmqNodeQueueDeletedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.queue_deleted_details.rate",
+	},
+	RabbitmqNodeQueueIndexReadCount: metricInfo{
+		Name: "rabbitmq.node.queue_index_read_count",
+	},
+	RabbitmqNodeQueueIndexReadCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.queue_index_read_count_details.rate",
+	},
+	RabbitmqNodeQueueIndexWriteCount: metricInfo{
+		Name: "rabbitmq.node.queue_index_write_count",
+	},
+	RabbitmqNodeQueueIndexWriteCountDetailsRate: metricInfo{
+		Name: "rabbitmq.node.queue_index_write_count_details.rate",
+	},
+	RabbitmqNodeRunQueue: metricInfo{
+		Name: "rabbitmq.node.run_queue",
+	},
+	RabbitmqNodeSocketsTotal: metricInfo{
+		Name: "rabbitmq.node.sockets_total",
+	},
+	RabbitmqNodeSocketsUsed: metricInfo{
+		Name: "rabbitmq.node.sockets_used",
+	},
+	RabbitmqNodeSocketsUsedDetailsRate: metricInfo{
+		Name: "rabbitmq.node.sockets_used_details.rate",
+	},
+	RabbitmqNodeUptime: metricInfo{
+		Name: "rabbitmq.node.uptime",
+	},
+}
+
+type metricsInfo struct {
+	RabbitmqConsumerCount                       metricInfo
+	RabbitmqMessageAcknowledged                 metricInfo
+	RabbitmqMessageCurrent                      metricInfo
+	RabbitmqMessageDelivered                    metricInfo
+	RabbitmqMessageDropped                      metricInfo
+	RabbitmqMessagePublished                    metricInfo
+	RabbitmqNodeChannelClosed                   metricInfo
+	RabbitmqNodeChannelClosedDetailsRate        metricInfo
+	RabbitmqNodeChannelCreated                  metricInfo
+	RabbitmqNodeChannelCreatedDetailsRate       metricInfo
+	RabbitmqNodeConnectionClosed                metricInfo
+	RabbitmqNodeConnectionClosedDetailsRate     metricInfo
+	RabbitmqNodeConnectionCreated               metricInfo
+	RabbitmqNodeConnectionCreatedDetailsRate    metricInfo
+	RabbitmqNodeContextSwitches                 metricInfo
+	RabbitmqNodeContextSwitchesDetailsRate      metricInfo
+	RabbitmqNodeDiskFree                        metricInfo
+	RabbitmqNodeDiskFreeAlarm                   metricInfo
+	RabbitmqNodeDiskFreeDetailsRate             metricInfo
+	RabbitmqNodeDiskFreeLimit                   metricInfo
+	RabbitmqNodeFdTotal                         metricInfo
+	RabbitmqNodeFdUsed                          metricInfo
+	RabbitmqNodeFdUsedDetailsRate               metricInfo
+	RabbitmqNodeGcBytesReclaimed                metricInfo
+	RabbitmqNodeGcBytesReclaimedDetailsRate     metricInfo
+	RabbitmqNodeGcNum                           metricInfo
+	RabbitmqNodeGcNumDetailsRate                metricInfo
+	RabbitmqNodeIoReadAvgTime                   metricInfo
+	RabbitmqNodeIoReadAvgTimeDetailsRate        metricInfo
+	RabbitmqNodeIoReadBytes                     metricInfo
+	RabbitmqNodeIoReadBytesDetailsRate          metricInfo
+	RabbitmqNodeIoReadCount                     metricInfo
+	RabbitmqNodeIoReadCountDetailsRate          metricInfo
+	RabbitmqNodeIoReopenCount                   metricInfo
+	RabbitmqNodeIoReopenCountDetailsRate        metricInfo
+	RabbitmqNodeIoSeekAvgTime                   metricInfo
+	RabbitmqNodeIoSeekAvgTimeDetailsRate        metricInfo
+	RabbitmqNodeIoSeekCount                     metricInfo
+	RabbitmqNodeIoSeekCountDetailsRate          metricInfo
+	RabbitmqNodeIoSyncAvgTime                   metricInfo
+	RabbitmqNodeIoSyncAvgTimeDetailsRate        metricInfo
+	RabbitmqNodeIoSyncCount                     metricInfo
+	RabbitmqNodeIoSyncCountDetailsRate          metricInfo
+	RabbitmqNodeIoWriteAvgTime                  metricInfo
+	RabbitmqNodeIoWriteAvgTimeDetailsRate       metricInfo
+	RabbitmqNodeIoWriteBytes                    metricInfo
+	RabbitmqNodeIoWriteBytesDetailsRate         metricInfo
+	RabbitmqNodeIoWriteCount                    metricInfo
+	RabbitmqNodeIoWriteCountDetailsRate         metricInfo
+	RabbitmqNodeMemAlarm                        metricInfo
+	RabbitmqNodeMemLimit                        metricInfo
+	RabbitmqNodeMemUsed                         metricInfo
+	RabbitmqNodeMemUsedDetailsRate              metricInfo
+	RabbitmqNodeMnesiaDiskTxCount               metricInfo
+	RabbitmqNodeMnesiaDiskTxCountDetailsRate    metricInfo
+	RabbitmqNodeMnesiaRAMTxCount                metricInfo
+	RabbitmqNodeMnesiaRAMTxCountDetailsRate     metricInfo
+	RabbitmqNodeMsgStoreReadCount               metricInfo
+	RabbitmqNodeMsgStoreReadCountDetailsRate    metricInfo
+	RabbitmqNodeMsgStoreWriteCount              metricInfo
+	RabbitmqNodeMsgStoreWriteCountDetailsRate   metricInfo
+	RabbitmqNodeProcTotal                       metricInfo
+	RabbitmqNodeProcUsed                        metricInfo
+	RabbitmqNodeProcUsedDetailsRate             metricInfo
+	RabbitmqNodeProcessors                      metricInfo
+	RabbitmqNodeQueueCreated                    metricInfo
+	RabbitmqNodeQueueCreatedDetailsRate         metricInfo
+	RabbitmqNodeQueueDeclared                   metricInfo
+	RabbitmqNodeQueueDeclaredDetailsRate        metricInfo
+	RabbitmqNodeQueueDeleted                    metricInfo
+	RabbitmqNodeQueueDeletedDetailsRate         metricInfo
+	RabbitmqNodeQueueIndexReadCount             metricInfo
+	RabbitmqNodeQueueIndexReadCountDetailsRate  metricInfo
+	RabbitmqNodeQueueIndexWriteCount            metricInfo
+	RabbitmqNodeQueueIndexWriteCountDetailsRate metricInfo
+	RabbitmqNodeRunQueue                        metricInfo
+	RabbitmqNodeSocketsTotal                    metricInfo
+	RabbitmqNodeSocketsUsed                     metricInfo
+	RabbitmqNodeSocketsUsedDetailsRate          metricInfo
+	RabbitmqNodeUptime                          metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricRabbitmqConsumerCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

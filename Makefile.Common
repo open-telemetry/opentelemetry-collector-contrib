@@ -204,7 +204,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run --path-prefix $(shell basename "$(CURDIR)")
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

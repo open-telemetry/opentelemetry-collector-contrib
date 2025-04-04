@@ -159,6 +159,96 @@ func roundDataPointSliceValues(dataPoints pmetric.NumberDataPointSlice, precisio
 	}
 }
 
+// IgnoreExemplars is a CompareMetricsOption that clears exemplar fields on all data points.
+func IgnoreExemplars() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplars(expected)
+		maskExemplars(actual)
+	})
+}
+
+func maskExemplars(metrics pmetric.Metrics) {
+	emptyExemplar := pmetric.NewExemplar()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						for f := 0; f < datapoints.At(k).Exemplars().Len(); f++ {
+							emptyExemplar.CopyTo(datapoints.At(k).Exemplars().At(f))
+						}
+					}
+				}
+			}
+		}
+	}
+}
+
+// IgnoreExemplarSlice is a CompareMetricsOption that clears exemplars slice on all data points.
+func IgnoreExemplarSlice() CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		maskExemplarSlice(expected)
+		maskExemplarSlice(actual)
+	})
+}
+
+func maskExemplarSlice(metrics pmetric.Metrics) {
+	emptyExemplarSlice := pmetric.NewExemplarSlice()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						emptyExemplarSlice.CopyTo(datapoints.At(k).Exemplars())
+					}
+				}
+			}
+		}
+	}
+}
+
 // IgnoreTimestamp is a CompareMetricsOption that clears Timestamp fields on all the data points.
 func IgnoreTimestamp() CompareMetricsOption {
 	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
@@ -568,6 +658,59 @@ func changeMetricsResourceAttributeValue(metrics pmetric.Metrics, attributeName 
 	rms := metrics.ResourceMetrics()
 	for i := 0; i < rms.Len(); i++ {
 		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+}
+
+// ChangeDatapointAttributeValue changes the metric datapoint value with the specified key
+func ChangeDatapointAttributeValue(attributeName string, changeFn func(string) string) CompareMetricsOption {
+	return compareMetricsOptionFunc(func(expected, actual pmetric.Metrics) {
+		changeMetricsDatapointAttributeValue(expected, attributeName, changeFn)
+		changeMetricsDatapointAttributeValue(actual, attributeName, changeFn)
+	})
+}
+
+func changeMetricsDatapointAttributeValue(metrics pmetric.Metrics, attributeName string, changeFn func(string) string) {
+	rms := metrics.ResourceMetrics()
+	for i := 0; i < rms.Len(); i++ {
+		internal.ChangeResourceAttributeValue(rms.At(i).Resource(), attributeName, changeFn)
+	}
+
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		for j := 0; j < metrics.ResourceMetrics().At(i).ScopeMetrics().Len(); j++ {
+			for g := 0; g < metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().Len(); g++ {
+				m := metrics.ResourceMetrics().At(i).ScopeMetrics().At(j).Metrics().At(g)
+				switch m.Type() {
+				case pmetric.MetricTypeGauge:
+					datapoints := m.Gauge().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeSum:
+					datapoints := m.Sum().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeHistogram:
+					datapoints := m.Histogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				case pmetric.MetricTypeExponentialHistogram:
+					datapoints := m.ExponentialHistogram().DataPoints()
+					for k := 0; k < datapoints.Len(); k++ {
+						if v, ok := datapoints.At(k).Attributes().Get(attributeName); ok {
+							datapoints.At(k).Attributes().PutStr(attributeName, changeFn(v.Str()))
+						}
+					}
+				}
+			}
+		}
 	}
 }
 

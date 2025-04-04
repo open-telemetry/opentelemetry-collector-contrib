@@ -66,7 +66,7 @@ func TranslateToLogs(ctx context.Context, payload faroTypes.Payload) (plog.Logs,
 		return logs, nil
 	}
 
-	meta := MetaToKeyVal(payload.Meta)
+	meta := metaToKeyVal(payload.Meta)
 	rls := logs.ResourceLogs().AppendEmpty()
 	rls.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), payload.Meta.App.Name)
 	rls.Resource().Attributes().PutStr(string(semconv.ServiceVersionKey), payload.Meta.App.Version)

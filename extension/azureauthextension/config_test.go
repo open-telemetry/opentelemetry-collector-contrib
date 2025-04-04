@@ -30,19 +30,17 @@ func TestLoadConfig(t *testing.T) {
 	}{
 		{
 			id:          component.NewIDWithName(metadata.Type, ""),
-			expectedErr: errEmptyAuthentication.Error() + "\n" + errEmptyScope.Error(),
+			expectedErr: errEmptyAuthentication.Error(),
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "use_default"),
 			expected: &Config{
 				UseDefault: true,
-				Scope:      "test",
 			},
 		},
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_secret"),
 			expected: &Config{
-				Scope: "test",
 				ServicePrincipal: &ServicePrincipal{
 					TenantID:     "test",
 					ClientID:     "test",
@@ -53,13 +51,16 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_service_principal_certificate"),
 			expected: &Config{
-				Scope: "test",
 				ServicePrincipal: &ServicePrincipal{
 					TenantID:              "test",
 					ClientID:              "test",
 					ClientCertificatePath: "test",
 				},
 			},
+		},
+		{
+			id:          component.NewIDWithName(metadata.Type, "service_principal_mutually_exclusive"),
+			expectedErr: fmt.Sprintf("%s: %s", "service_principal", errMutuallyExclusiveAuth.Error()),
 		},
 		{
 			id:          component.NewIDWithName(metadata.Type, "service_principal_empty_client_id"),
@@ -76,7 +77,6 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "valid_workload_identity"),
 			expected: &Config{
-				Scope: "test",
 				Workload: &WorkloadIdentity{
 					TenantID:           "test",
 					ClientID:           "test",

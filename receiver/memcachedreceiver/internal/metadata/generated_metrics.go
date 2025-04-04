@@ -153,6 +153,60 @@ var MapAttributeType = map[string]AttributeType{
 	"miss": AttributeTypeMiss,
 }
 
+var MetricsInfo = metricsInfo{
+	MemcachedBytes: metricInfo{
+		Name: "memcached.bytes",
+	},
+	MemcachedCommands: metricInfo{
+		Name: "memcached.commands",
+	},
+	MemcachedConnectionsCurrent: metricInfo{
+		Name: "memcached.connections.current",
+	},
+	MemcachedConnectionsTotal: metricInfo{
+		Name: "memcached.connections.total",
+	},
+	MemcachedCPUUsage: metricInfo{
+		Name: "memcached.cpu.usage",
+	},
+	MemcachedCurrentItems: metricInfo{
+		Name: "memcached.current_items",
+	},
+	MemcachedEvictions: metricInfo{
+		Name: "memcached.evictions",
+	},
+	MemcachedNetwork: metricInfo{
+		Name: "memcached.network",
+	},
+	MemcachedOperationHitRatio: metricInfo{
+		Name: "memcached.operation_hit_ratio",
+	},
+	MemcachedOperations: metricInfo{
+		Name: "memcached.operations",
+	},
+	MemcachedThreads: metricInfo{
+		Name: "memcached.threads",
+	},
+}
+
+type metricsInfo struct {
+	MemcachedBytes              metricInfo
+	MemcachedCommands           metricInfo
+	MemcachedConnectionsCurrent metricInfo
+	MemcachedConnectionsTotal   metricInfo
+	MemcachedCPUUsage           metricInfo
+	MemcachedCurrentItems       metricInfo
+	MemcachedEvictions          metricInfo
+	MemcachedNetwork            metricInfo
+	MemcachedOperationHitRatio  metricInfo
+	MemcachedOperations         metricInfo
+	MemcachedThreads            metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricMemcachedBytes struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

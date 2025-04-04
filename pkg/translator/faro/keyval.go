@@ -77,25 +77,27 @@ func keyValToInterfaceSlice(kv *keyVal) []any {
 // logToKeyVal represents a Log object as keyVal
 func logToKeyVal(l faroTypes.Log) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "timestamp", l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	keyValAdd(kv, "kind", string(faroTypes.KindLog))
-	keyValAdd(kv, "message", l.Message)
-	keyValAdd(kv, "level", string(l.LogLevel))
-	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), "context_")
+	keyValAdd(kv, faroTimestamp, l.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, faroKind, string(faroTypes.KindLog))
+	keyValAdd(kv, faroLogMessage, l.Message)
+	keyValAdd(kv, faroLogLevel, string(l.LogLevel))
+	mergeKeyValWithPrefix(kv, keyValFromMap(l.Context), faroContextPrefix)
 	mergeKeyVal(kv, traceToKeyVal(l.Trace))
+	mergeKeyVal(kv, actionToKeyVal(l.Action))
 	return kv
 }
 
 // exceptionToKeyVal represents an Exception object as keyVal
 func exceptionToKeyVal(e faroTypes.Exception) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	keyValAdd(kv, "kind", string(faroTypes.KindException))
-	keyValAdd(kv, "type", e.Type)
-	keyValAdd(kv, "value", e.Value)
-	keyValAdd(kv, "stacktrace", exceptionToString(e))
+	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, faroKind, string(faroTypes.KindException))
+	keyValAdd(kv, faroExceptionType, e.Type)
+	keyValAdd(kv, faroExceptionValue, e.Value)
+	keyValAdd(kv, faroExceptionStacktrace, exceptionToString(e))
 	mergeKeyVal(kv, traceToKeyVal(e.Trace))
-	mergeKeyValWithPrefix(kv, keyValFromMap(e.Context), "context_")
+	mergeKeyValWithPrefix(kv, keyValFromMap(e.Context), faroContextPrefix)
+	mergeKeyVal(kv, actionToKeyVal(e.Action))
 	return kv
 }
 
@@ -128,10 +130,10 @@ func frameToString(frame faroTypes.Frame) string {
 func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 	kv := newKeyVal()
 
-	keyValAdd(kv, "timestamp", m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	keyValAdd(kv, "kind", string(faroTypes.KindMeasurement))
-	keyValAdd(kv, "type", m.Type)
-	mergeKeyValWithPrefix(kv, keyValFromMap(m.Context), "context_")
+	keyValAdd(kv, faroTimestamp, m.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, faroKind, string(faroTypes.KindMeasurement))
+	keyValAdd(kv, faroMeasurementType, m.Type)
+	mergeKeyValWithPrefix(kv, keyValFromMap(m.Context), faroContextPrefix)
 
 	for _, k := range slices.Sorted(maps.Keys(m.Values)) {
 		keyValAdd(kv, k, fmt.Sprintf("%f", m.Values[k]))
@@ -143,45 +145,55 @@ func measurementToKeyVal(m faroTypes.Measurement) *keyVal {
 		values[key] = value
 	}
 
-	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), "value_")
-
+	mergeKeyValWithPrefix(kv, keyValFromFloatMap(values), faroMeasurementValuePrefix)
+	mergeKeyVal(kv, actionToKeyVal(m.Action))
 	return kv
 }
 
 // eventToKeyVal produces key -> value representation of Event metadata
 func eventToKeyVal(e faroTypes.Event) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "timestamp", e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
-	keyValAdd(kv, "kind", string(faroTypes.KindEvent))
-	keyValAdd(kv, "event_name", e.Name)
-	keyValAdd(kv, "event_domain", e.Domain)
+	keyValAdd(kv, faroTimestamp, e.Timestamp.Format(string(faroTypes.TimeFormatRFC3339Milli)))
+	keyValAdd(kv, faroKind, string(faroTypes.KindEvent))
+	keyValAdd(kv, faroEventName, e.Name)
+	keyValAdd(kv, faroEventDomain, e.Domain)
 	if e.Attributes != nil {
-		mergeKeyValWithPrefix(kv, keyValFromMap(e.Attributes), "event_data_")
+		mergeKeyValWithPrefix(kv, keyValFromMap(e.Attributes), faroEventDataPrefix)
 	}
+	mergeKeyVal(kv, actionToKeyVal(e.Action))
 	mergeKeyVal(kv, traceToKeyVal(e.Trace))
 	return kv
 }
 
-// MetaToKeyVal produces key->value representation of the metadata
-func MetaToKeyVal(m faroTypes.Meta) *keyVal {
+// actionToKeyVal produces key->value representation of the Action metadata
+func actionToKeyVal(a faroTypes.Action) *keyVal {
 	kv := newKeyVal()
-	mergeKeyValWithPrefix(kv, sdkToKeyVal(m.SDK), "sdk_")
-	mergeKeyValWithPrefix(kv, appToKeyVal(m.App), "app_")
-	mergeKeyValWithPrefix(kv, userToKeyVal(m.User), "user_")
-	mergeKeyValWithPrefix(kv, sessionToKeyVal(m.Session), "session_")
-	mergeKeyValWithPrefix(kv, pageToKeyVal(m.Page), "page_")
-	mergeKeyValWithPrefix(kv, browserToKeyVal(m.Browser), "browser_")
-	mergeKeyValWithPrefix(kv, k6ToKeyVal(m.K6), "k6_")
-	mergeKeyValWithPrefix(kv, viewToKeyVal(m.View), "view_")
-	mergeKeyValWithPrefix(kv, geoToKeyVal(m.Geo), "geo_")
+	keyValAdd(kv, faroActionID, a.ID)
+	keyValAdd(kv, faroActionName, a.Name)
+	keyValAdd(kv, faroActionParentID, a.ParentID)
+	return kv
+}
+
+// metaToKeyVal produces key->value representation of the metadata
+func metaToKeyVal(m faroTypes.Meta) *keyVal {
+	kv := newKeyVal()
+	mergeKeyVal(kv, sdkToKeyVal(m.SDK))
+	mergeKeyVal(kv, appToKeyVal(m.App))
+	mergeKeyVal(kv, userToKeyVal(m.User))
+	mergeKeyVal(kv, sessionToKeyVal(m.Session))
+	mergeKeyVal(kv, pageToKeyVal(m.Page))
+	mergeKeyVal(kv, browserToKeyVal(m.Browser))
+	mergeKeyVal(kv, k6ToKeyVal(m.K6))
+	mergeKeyVal(kv, viewToKeyVal(m.View))
+	mergeKeyVal(kv, geoToKeyVal(m.Geo))
 	return kv
 }
 
 // sdkToKeyVal produces key->value representation of Sdk metadata
 func sdkToKeyVal(sdk faroTypes.SDK) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "name", sdk.Name)
-	keyValAdd(kv, "version", sdk.Version)
+	keyValAdd(kv, faroSDKName, sdk.Name)
+	keyValAdd(kv, faroSDKVersion, sdk.Version)
 
 	if len(sdk.Integrations) > 0 {
 		integrations := make([]string, len(sdk.Integrations))
@@ -190,7 +202,7 @@ func sdkToKeyVal(sdk faroTypes.SDK) *keyVal {
 			integrations[i] = sdkIntegrationToString(integration)
 		}
 
-		keyValAdd(kv, "integrations", strings.Join(integrations, ","))
+		keyValAdd(kv, faroSDKIntegrations, strings.Join(integrations, ","))
 	}
 
 	return kv
@@ -204,38 +216,38 @@ func sdkIntegrationToString(i faroTypes.SDKIntegration) string {
 // appToKeyVal produces key-> value representation of App metadata
 func appToKeyVal(a faroTypes.App) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "name", a.Name)
-	keyValAdd(kv, "namespace", a.Namespace)
-	keyValAdd(kv, "release", a.Release)
-	keyValAdd(kv, "version", a.Version)
-	keyValAdd(kv, "environment", a.Environment)
+	keyValAdd(kv, faroAppName, a.Name)
+	keyValAdd(kv, faroAppNamespace, a.Namespace)
+	keyValAdd(kv, faroAppRelease, a.Release)
+	keyValAdd(kv, faroAppVersion, a.Version)
+	keyValAdd(kv, faroAppEnvironment, a.Environment)
 	return kv
 }
 
 // userToKeyVal produces a key->value representation User metadata
 func userToKeyVal(u faroTypes.User) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "email", u.Email)
-	keyValAdd(kv, "id", u.ID)
-	keyValAdd(kv, "username", u.Username)
-	mergeKeyValWithPrefix(kv, keyValFromMap(u.Attributes), "attr_")
+	keyValAdd(kv, faroUserEmail, u.Email)
+	keyValAdd(kv, faroUserID, u.ID)
+	keyValAdd(kv, faroUsername, u.Username)
+	mergeKeyValWithPrefix(kv, keyValFromMap(u.Attributes), faroUserAttrPrefix)
 	return kv
 }
 
 // sessionToKeyVal produces key->value representation of the Session metadata
 func sessionToKeyVal(s faroTypes.Session) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "id", s.ID)
-	mergeKeyValWithPrefix(kv, keyValFromMap(s.Attributes), "attr_")
+	keyValAdd(kv, faroSessionID, s.ID)
+	mergeKeyValWithPrefix(kv, keyValFromMap(s.Attributes), faroSessionAttrPrefix)
 	return kv
 }
 
 // pageToKeyVal produces key->val representation of Page metadata
 func pageToKeyVal(p faroTypes.Page) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "id", p.ID)
-	keyValAdd(kv, "url", p.URL)
-	mergeKeyValWithPrefix(kv, keyValFromMap(p.Attributes), "attr_")
+	keyValAdd(kv, faroPageID, p.ID)
+	keyValAdd(kv, faroPageURL, p.URL)
+	mergeKeyValWithPrefix(kv, keyValFromMap(p.Attributes), faroPageAttrPrefix)
 
 	return kv
 }
@@ -243,34 +255,28 @@ func pageToKeyVal(p faroTypes.Page) *keyVal {
 // browserToKeyVal produces key->value representation of the Browser metadata
 func browserToKeyVal(b faroTypes.Browser) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "name", b.Name)
-	keyValAdd(kv, "version", b.Version)
-	keyValAdd(kv, "os", b.OS)
-	keyValAdd(kv, "mobile", fmt.Sprintf("%v", b.Mobile))
-	keyValAdd(kv, "userAgent", b.UserAgent)
-	keyValAdd(kv, "language", b.Language)
-	keyValAdd(kv, "viewportWidth", b.ViewportWidth)
-	keyValAdd(kv, "viewportHeight", b.ViewportHeight)
+	keyValAdd(kv, faroBrowserName, b.Name)
+	keyValAdd(kv, faroBrowserVersion, b.Version)
+	keyValAdd(kv, faroBrowserOS, b.OS)
+	keyValAdd(kv, faroBrowserMobile, fmt.Sprintf("%v", b.Mobile))
+	keyValAdd(kv, faroBrowserUserAgent, b.UserAgent)
+	keyValAdd(kv, faroBrowserLanguage, b.Language)
+	keyValAdd(kv, faroBrowserViewportWidth, b.ViewportWidth)
+	keyValAdd(kv, faroBrowserViewportHeight, b.ViewportHeight)
 
 	if brandsArray, err := b.Brands.AsBrandsArray(); err == nil {
 		for i, brand := range brandsArray {
-			mergeKeyValWithPrefix(kv, brandToKeyVal(brand), fmt.Sprintf("brand_%d_", i))
+			keyValAdd(kv, fmt.Sprintf("%s%d_%s", faroBrowserBrandPrefix, i, faroBrand), brand.Brand)
+			keyValAdd(kv, fmt.Sprintf("%s%d_%s", faroBrowserBrandPrefix, i, faroBrandVersion), brand.Version)
 		}
 		return kv
 	}
 
 	if brandsString, err := b.Brands.AsBrandsString(); err == nil {
-		keyValAdd(kv, "brands", brandsString)
+		keyValAdd(kv, faroBrowserBrands, brandsString)
 		return kv
 	}
 
-	return kv
-}
-
-func brandToKeyVal(b faroTypes.Brand) *keyVal {
-	kv := newKeyVal()
-	keyValAdd(kv, "brand", b.Brand)
-	keyValAdd(kv, "version", b.Version)
 	return kv
 }
 
@@ -278,7 +284,7 @@ func brandToKeyVal(b faroTypes.Brand) *keyVal {
 func k6ToKeyVal(k faroTypes.K6) *keyVal {
 	kv := newKeyVal()
 	if k.IsK6Browser {
-		keyValAdd(kv, "isK6Browser", strconv.FormatBool(k.IsK6Browser))
+		keyValAdd(kv, faroIsK6Browser, strconv.FormatBool(k.IsK6Browser))
 	}
 	return kv
 }
@@ -286,26 +292,26 @@ func k6ToKeyVal(k faroTypes.K6) *keyVal {
 // viewToKeyVal produces a key->value representation View metadata
 func viewToKeyVal(v faroTypes.View) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "name", v.Name)
+	keyValAdd(kv, faroViewName, v.Name)
 	return kv
 }
 
 // geoToKeyVal produces a key->value representation Geo metadata
 func geoToKeyVal(g faroTypes.Geo) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "continent_iso", g.ContinentISOCode)
-	keyValAdd(kv, "country_iso", g.CountryISOCode)
-	keyValAdd(kv, "subdivision_iso", g.SubdivisionISO)
-	keyValAdd(kv, "city", g.City)
-	keyValAdd(kv, "asn_org", g.ASNOrg)
-	keyValAdd(kv, "asn_id", g.ASNID)
+	keyValAdd(kv, faroGeoContinentIso, g.ContinentISOCode)
+	keyValAdd(kv, faroGeoCountryIso, g.CountryISOCode)
+	keyValAdd(kv, faroGeoSubdivisionIso, g.SubdivisionISO)
+	keyValAdd(kv, faroGeoCity, g.City)
+	keyValAdd(kv, faroGeoASNOrg, g.ASNOrg)
+	keyValAdd(kv, faroGeoASNID, g.ASNID)
 	return kv
 }
 
 // traceToKeyVal produces a key->value representation of the trace context object
 func traceToKeyVal(tc faroTypes.TraceContext) *keyVal {
 	kv := newKeyVal()
-	keyValAdd(kv, "traceID", tc.TraceID)
-	keyValAdd(kv, "spanID", tc.SpanID)
+	keyValAdd(kv, faroTraceID, tc.TraceID)
+	keyValAdd(kv, faroSpanID, tc.SpanID)
 	return kv
 }

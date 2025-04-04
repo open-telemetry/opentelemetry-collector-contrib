@@ -9,9 +9,6 @@
         "timestamp": "2023-11-16T10:00:55.995Z"
       }
     ],
-    "logs": [],
-    "exceptions": [],
-    "measurements": [],
     "meta": {
       "sdk": {
         "name": "grafana-frontend-agent",

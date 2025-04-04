@@ -84,7 +84,7 @@ resourceLogs:
                   intValue: 0
               - key: sqlserver.lock_timeout
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.deadlock_priority
                 value:
                   intValue: 0

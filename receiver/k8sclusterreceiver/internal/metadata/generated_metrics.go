@@ -13,6 +13,192 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.18.0"
 )
 
+var MetricsInfo = metricsInfo{
+	K8sContainerCPULimit: metricInfo{
+		Name: "k8s.container.cpu_limit",
+	},
+	K8sContainerCPURequest: metricInfo{
+		Name: "k8s.container.cpu_request",
+	},
+	K8sContainerEphemeralstorageLimit: metricInfo{
+		Name: "k8s.container.ephemeralstorage_limit",
+	},
+	K8sContainerEphemeralstorageRequest: metricInfo{
+		Name: "k8s.container.ephemeralstorage_request",
+	},
+	K8sContainerMemoryLimit: metricInfo{
+		Name: "k8s.container.memory_limit",
+	},
+	K8sContainerMemoryRequest: metricInfo{
+		Name: "k8s.container.memory_request",
+	},
+	K8sContainerReady: metricInfo{
+		Name: "k8s.container.ready",
+	},
+	K8sContainerRestarts: metricInfo{
+		Name: "k8s.container.restarts",
+	},
+	K8sContainerStorageLimit: metricInfo{
+		Name: "k8s.container.storage_limit",
+	},
+	K8sContainerStorageRequest: metricInfo{
+		Name: "k8s.container.storage_request",
+	},
+	K8sCronjobActiveJobs: metricInfo{
+		Name: "k8s.cronjob.active_jobs",
+	},
+	K8sDaemonsetCurrentScheduledNodes: metricInfo{
+		Name: "k8s.daemonset.current_scheduled_nodes",
+	},
+	K8sDaemonsetDesiredScheduledNodes: metricInfo{
+		Name: "k8s.daemonset.desired_scheduled_nodes",
+	},
+	K8sDaemonsetMisscheduledNodes: metricInfo{
+		Name: "k8s.daemonset.misscheduled_nodes",
+	},
+	K8sDaemonsetReadyNodes: metricInfo{
+		Name: "k8s.daemonset.ready_nodes",
+	},
+	K8sDeploymentAvailable: metricInfo{
+		Name: "k8s.deployment.available",
+	},
+	K8sDeploymentDesired: metricInfo{
+		Name: "k8s.deployment.desired",
+	},
+	K8sHpaCurrentReplicas: metricInfo{
+		Name: "k8s.hpa.current_replicas",
+	},
+	K8sHpaDesiredReplicas: metricInfo{
+		Name: "k8s.hpa.desired_replicas",
+	},
+	K8sHpaMaxReplicas: metricInfo{
+		Name: "k8s.hpa.max_replicas",
+	},
+	K8sHpaMinReplicas: metricInfo{
+		Name: "k8s.hpa.min_replicas",
+	},
+	K8sJobActivePods: metricInfo{
+		Name: "k8s.job.active_pods",
+	},
+	K8sJobDesiredSuccessfulPods: metricInfo{
+		Name: "k8s.job.desired_successful_pods",
+	},
+	K8sJobFailedPods: metricInfo{
+		Name: "k8s.job.failed_pods",
+	},
+	K8sJobMaxParallelPods: metricInfo{
+		Name: "k8s.job.max_parallel_pods",
+	},
+	K8sJobSuccessfulPods: metricInfo{
+		Name: "k8s.job.successful_pods",
+	},
+	K8sNamespacePhase: metricInfo{
+		Name: "k8s.namespace.phase",
+	},
+	K8sNodeCondition: metricInfo{
+		Name: "k8s.node.condition",
+	},
+	K8sPodPhase: metricInfo{
+		Name: "k8s.pod.phase",
+	},
+	K8sPodStatusReason: metricInfo{
+		Name: "k8s.pod.status_reason",
+	},
+	K8sReplicasetAvailable: metricInfo{
+		Name: "k8s.replicaset.available",
+	},
+	K8sReplicasetDesired: metricInfo{
+		Name: "k8s.replicaset.desired",
+	},
+	K8sReplicationControllerAvailable: metricInfo{
+		Name: "k8s.replication_controller.available",
+	},
+	K8sReplicationControllerDesired: metricInfo{
+		Name: "k8s.replication_controller.desired",
+	},
+	K8sResourceQuotaHardLimit: metricInfo{
+		Name: "k8s.resource_quota.hard_limit",
+	},
+	K8sResourceQuotaUsed: metricInfo{
+		Name: "k8s.resource_quota.used",
+	},
+	K8sStatefulsetCurrentPods: metricInfo{
+		Name: "k8s.statefulset.current_pods",
+	},
+	K8sStatefulsetDesiredPods: metricInfo{
+		Name: "k8s.statefulset.desired_pods",
+	},
+	K8sStatefulsetReadyPods: metricInfo{
+		Name: "k8s.statefulset.ready_pods",
+	},
+	K8sStatefulsetUpdatedPods: metricInfo{
+		Name: "k8s.statefulset.updated_pods",
+	},
+	OpenshiftAppliedclusterquotaLimit: metricInfo{
+		Name: "openshift.appliedclusterquota.limit",
+	},
+	OpenshiftAppliedclusterquotaUsed: metricInfo{
+		Name: "openshift.appliedclusterquota.used",
+	},
+	OpenshiftClusterquotaLimit: metricInfo{
+		Name: "openshift.clusterquota.limit",
+	},
+	OpenshiftClusterquotaUsed: metricInfo{
+		Name: "openshift.clusterquota.used",
+	},
+}
+
+type metricsInfo struct {
+	K8sContainerCPULimit                metricInfo
+	K8sContainerCPURequest              metricInfo
+	K8sContainerEphemeralstorageLimit   metricInfo
+	K8sContainerEphemeralstorageRequest metricInfo
+	K8sContainerMemoryLimit             metricInfo
+	K8sContainerMemoryRequest           metricInfo
+	K8sContainerReady                   metricInfo
+	K8sContainerRestarts                metricInfo
+	K8sContainerStorageLimit            metricInfo
+	K8sContainerStorageRequest          metricInfo
+	K8sCronjobActiveJobs                metricInfo
+	K8sDaemonsetCurrentScheduledNodes   metricInfo
+	K8sDaemonsetDesiredScheduledNodes   metricInfo
+	K8sDaemonsetMisscheduledNodes       metricInfo
+	K8sDaemonsetReadyNodes              metricInfo
+	K8sDeploymentAvailable              metricInfo
+	K8sDeploymentDesired                metricInfo
+	K8sHpaCurrentReplicas               metricInfo
+	K8sHpaDesiredReplicas               metricInfo
+	K8sHpaMaxReplicas                   metricInfo
+	K8sHpaMinReplicas                   metricInfo
+	K8sJobActivePods                    metricInfo
+	K8sJobDesiredSuccessfulPods         metricInfo
+	K8sJobFailedPods                    metricInfo
+	K8sJobMaxParallelPods               metricInfo
+	K8sJobSuccessfulPods                metricInfo
+	K8sNamespacePhase                   metricInfo
+	K8sNodeCondition                    metricInfo
+	K8sPodPhase                         metricInfo
+	K8sPodStatusReason                  metricInfo
+	K8sReplicasetAvailable              metricInfo
+	K8sReplicasetDesired                metricInfo
+	K8sReplicationControllerAvailable   metricInfo
+	K8sReplicationControllerDesired     metricInfo
+	K8sResourceQuotaHardLimit           metricInfo
+	K8sResourceQuotaUsed                metricInfo
+	K8sStatefulsetCurrentPods           metricInfo
+	K8sStatefulsetDesiredPods           metricInfo
+	K8sStatefulsetReadyPods             metricInfo
+	K8sStatefulsetUpdatedPods           metricInfo
+	OpenshiftAppliedclusterquotaLimit   metricInfo
+	OpenshiftAppliedclusterquotaUsed    metricInfo
+	OpenshiftClusterquotaLimit          metricInfo
+	OpenshiftClusterquotaUsed           metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricK8sContainerCPULimit struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

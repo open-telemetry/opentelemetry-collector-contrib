@@ -11,6 +11,180 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	SplunkAggregationQueueRatio: metricInfo{
+		Name: "splunk.aggregation.queue.ratio",
+	},
+	SplunkBucketsSearchableStatus: metricInfo{
+		Name: "splunk.buckets.searchable.status",
+	},
+	SplunkDataIndexesExtendedBucketCount: metricInfo{
+		Name: "splunk.data.indexes.extended.bucket.count",
+	},
+	SplunkDataIndexesExtendedBucketEventCount: metricInfo{
+		Name: "splunk.data.indexes.extended.bucket.event.count",
+	},
+	SplunkDataIndexesExtendedBucketHotCount: metricInfo{
+		Name: "splunk.data.indexes.extended.bucket.hot.count",
+	},
+	SplunkDataIndexesExtendedBucketWarmCount: metricInfo{
+		Name: "splunk.data.indexes.extended.bucket.warm.count",
+	},
+	SplunkDataIndexesExtendedEventCount: metricInfo{
+		Name: "splunk.data.indexes.extended.event.count",
+	},
+	SplunkDataIndexesExtendedRawSize: metricInfo{
+		Name: "splunk.data.indexes.extended.raw.size",
+	},
+	SplunkDataIndexesExtendedTotalSize: metricInfo{
+		Name: "splunk.data.indexes.extended.total.size",
+	},
+	SplunkHealth: metricInfo{
+		Name: "splunk.health",
+	},
+	SplunkIndexerAvgRate: metricInfo{
+		Name: "splunk.indexer.avg.rate",
+	},
+	SplunkIndexerCPUTime: metricInfo{
+		Name: "splunk.indexer.cpu.time",
+	},
+	SplunkIndexerQueueRatio: metricInfo{
+		Name: "splunk.indexer.queue.ratio",
+	},
+	SplunkIndexerRawWriteTime: metricInfo{
+		Name: "splunk.indexer.raw.write.time",
+	},
+	SplunkIndexerThroughput: metricInfo{
+		Name: "splunk.indexer.throughput",
+	},
+	SplunkIndexesAvgSize: metricInfo{
+		Name: "splunk.indexes.avg.size",
+	},
+	SplunkIndexesAvgUsage: metricInfo{
+		Name: "splunk.indexes.avg.usage",
+	},
+	SplunkIndexesBucketCount: metricInfo{
+		Name: "splunk.indexes.bucket.count",
+	},
+	SplunkIndexesMedianDataAge: metricInfo{
+		Name: "splunk.indexes.median.data.age",
+	},
+	SplunkIndexesSize: metricInfo{
+		Name: "splunk.indexes.size",
+	},
+	SplunkIoAvgIops: metricInfo{
+		Name: "splunk.io.avg.iops",
+	},
+	SplunkKvstoreBackupStatus: metricInfo{
+		Name: "splunk.kvstore.backup.status",
+	},
+	SplunkKvstoreReplicationStatus: metricInfo{
+		Name: "splunk.kvstore.replication.status",
+	},
+	SplunkKvstoreStatus: metricInfo{
+		Name: "splunk.kvstore.status",
+	},
+	SplunkLicenseIndexUsage: metricInfo{
+		Name: "splunk.license.index.usage",
+	},
+	SplunkParseQueueRatio: metricInfo{
+		Name: "splunk.parse.queue.ratio",
+	},
+	SplunkPipelineSetCount: metricInfo{
+		Name: "splunk.pipeline.set.count",
+	},
+	SplunkSchedulerAvgExecutionLatency: metricInfo{
+		Name: "splunk.scheduler.avg.execution.latency",
+	},
+	SplunkSchedulerAvgRunTime: metricInfo{
+		Name: "splunk.scheduler.avg.run.time",
+	},
+	SplunkSchedulerCompletionRatio: metricInfo{
+		Name: "splunk.scheduler.completion.ratio",
+	},
+	SplunkServerIntrospectionQueuesCurrent: metricInfo{
+		Name: "splunk.server.introspection.queues.current",
+	},
+	SplunkServerIntrospectionQueuesCurrentBytes: metricInfo{
+		Name: "splunk.server.introspection.queues.current.bytes",
+	},
+	SplunkServerSearchartifactsAdhoc: metricInfo{
+		Name: "splunk.server.searchartifacts.adhoc",
+	},
+	SplunkServerSearchartifactsCompleted: metricInfo{
+		Name: "splunk.server.searchartifacts.completed",
+	},
+	SplunkServerSearchartifactsIncomplete: metricInfo{
+		Name: "splunk.server.searchartifacts.incomplete",
+	},
+	SplunkServerSearchartifactsInvalid: metricInfo{
+		Name: "splunk.server.searchartifacts.invalid",
+	},
+	SplunkServerSearchartifactsJobCacheCount: metricInfo{
+		Name: "splunk.server.searchartifacts.job.cache.count",
+	},
+	SplunkServerSearchartifactsJobCacheSize: metricInfo{
+		Name: "splunk.server.searchartifacts.job.cache.size",
+	},
+	SplunkServerSearchartifactsSavedsearches: metricInfo{
+		Name: "splunk.server.searchartifacts.savedsearches",
+	},
+	SplunkServerSearchartifactsScheduled: metricInfo{
+		Name: "splunk.server.searchartifacts.scheduled",
+	},
+	SplunkTypingQueueRatio: metricInfo{
+		Name: "splunk.typing.queue.ratio",
+	},
+}
+
+type metricsInfo struct {
+	SplunkAggregationQueueRatio                 metricInfo
+	SplunkBucketsSearchableStatus               metricInfo
+	SplunkDataIndexesExtendedBucketCount        metricInfo
+	SplunkDataIndexesExtendedBucketEventCount   metricInfo
+	SplunkDataIndexesExtendedBucketHotCount     metricInfo
+	SplunkDataIndexesExtendedBucketWarmCount    metricInfo
+	SplunkDataIndexesExtendedEventCount         metricInfo
+	SplunkDataIndexesExtendedRawSize            metricInfo
+	SplunkDataIndexesExtendedTotalSize          metricInfo
+	SplunkHealth                                metricInfo
+	SplunkIndexerAvgRate                        metricInfo
+	SplunkIndexerCPUTime                        metricInfo
+	SplunkIndexerQueueRatio                     metricInfo
+	SplunkIndexerRawWriteTime                   metricInfo
+	SplunkIndexerThroughput                     metricInfo
+	SplunkIndexesAvgSize                        metricInfo
+	SplunkIndexesAvgUsage                       metricInfo
+	SplunkIndexesBucketCount                    metricInfo
+	SplunkIndexesMedianDataAge                  metricInfo
+	SplunkIndexesSize                           metricInfo
+	SplunkIoAvgIops                             metricInfo
+	SplunkKvstoreBackupStatus                   metricInfo
+	SplunkKvstoreReplicationStatus              metricInfo
+	SplunkKvstoreStatus                         metricInfo
+	SplunkLicenseIndexUsage                     metricInfo
+	SplunkParseQueueRatio                       metricInfo
+	SplunkPipelineSetCount                      metricInfo
+	SplunkSchedulerAvgExecutionLatency          metricInfo
+	SplunkSchedulerAvgRunTime                   metricInfo
+	SplunkSchedulerCompletionRatio              metricInfo
+	SplunkServerIntrospectionQueuesCurrent      metricInfo
+	SplunkServerIntrospectionQueuesCurrentBytes metricInfo
+	SplunkServerSearchartifactsAdhoc            metricInfo
+	SplunkServerSearchartifactsCompleted        metricInfo
+	SplunkServerSearchartifactsIncomplete       metricInfo
+	SplunkServerSearchartifactsInvalid          metricInfo
+	SplunkServerSearchartifactsJobCacheCount    metricInfo
+	SplunkServerSearchartifactsJobCacheSize     metricInfo
+	SplunkServerSearchartifactsSavedsearches    metricInfo
+	SplunkServerSearchartifactsScheduled        metricInfo
+	SplunkTypingQueueRatio                      metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSplunkAggregationQueueRatio struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

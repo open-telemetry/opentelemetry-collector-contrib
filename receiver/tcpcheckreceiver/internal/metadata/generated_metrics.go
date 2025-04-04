@@ -11,6 +11,28 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	TcpcheckDuration: metricInfo{
+		Name: "tcpcheck.duration",
+	},
+	TcpcheckError: metricInfo{
+		Name: "tcpcheck.error",
+	},
+	TcpcheckStatus: metricInfo{
+		Name: "tcpcheck.status",
+	},
+}
+
+type metricsInfo struct {
+	TcpcheckDuration metricInfo
+	TcpcheckError    metricInfo
+	TcpcheckStatus   metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricTcpcheckDuration struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

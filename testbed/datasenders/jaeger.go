@@ -74,8 +74,8 @@ func (je *jaegerGRPCDataSender) ProtocolName() string {
 
 // Config defines configuration for Jaeger gRPC exporter.
 type jaegerConfig struct {
-	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
+	TimeoutSettings           exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	configgrpc.ClientConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.

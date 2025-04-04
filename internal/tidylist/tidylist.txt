@@ -108,6 +108,7 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+pkg/translator/faro
 exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
@@ -201,7 +202,6 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
-pkg/translator/faro
 pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor

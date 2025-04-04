@@ -3,7 +3,7 @@
 
 module-sets:
   contrib-base:
-    version: v0.122.0
+    version: v0.123.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi

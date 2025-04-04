@@ -12,7 +12,8 @@
   ],
   "extends": [
     "config:recommended",
-    "customManagers:githubActionsVersions"
+    "customManagers:githubActionsVersions",
+    "helpers:pinGitHubActionDigests"
   ],
   "ignorePaths": [
     "**/receiver/apachesparkreceiver/testdata/integration/Dockerfile.apache-spark",

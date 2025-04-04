@@ -104,6 +104,132 @@ var MapAttributeRecord = map[string]AttributeRecord{
 	"dropped": AttributeRecordDropped,
 }
 
+var MetricsInfo = metricsInfo{
+	FlinkJobCheckpointCount: metricInfo{
+		Name: "flink.job.checkpoint.count",
+	},
+	FlinkJobCheckpointInProgress: metricInfo{
+		Name: "flink.job.checkpoint.in_progress",
+	},
+	FlinkJobLastCheckpointSize: metricInfo{
+		Name: "flink.job.last_checkpoint.size",
+	},
+	FlinkJobLastCheckpointTime: metricInfo{
+		Name: "flink.job.last_checkpoint.time",
+	},
+	FlinkJobRestartCount: metricInfo{
+		Name: "flink.job.restart.count",
+	},
+	FlinkJvmClassLoaderClassesLoaded: metricInfo{
+		Name: "flink.jvm.class_loader.classes_loaded",
+	},
+	FlinkJvmCPULoad: metricInfo{
+		Name: "flink.jvm.cpu.load",
+	},
+	FlinkJvmCPUTime: metricInfo{
+		Name: "flink.jvm.cpu.time",
+	},
+	FlinkJvmGcCollectionsCount: metricInfo{
+		Name: "flink.jvm.gc.collections.count",
+	},
+	FlinkJvmGcCollectionsTime: metricInfo{
+		Name: "flink.jvm.gc.collections.time",
+	},
+	FlinkJvmMemoryDirectTotalCapacity: metricInfo{
+		Name: "flink.jvm.memory.direct.total_capacity",
+	},
+	FlinkJvmMemoryDirectUsed: metricInfo{
+		Name: "flink.jvm.memory.direct.used",
+	},
+	FlinkJvmMemoryHeapCommitted: metricInfo{
+		Name: "flink.jvm.memory.heap.committed",
+	},
+	FlinkJvmMemoryHeapMax: metricInfo{
+		Name: "flink.jvm.memory.heap.max",
+	},
+	FlinkJvmMemoryHeapUsed: metricInfo{
+		Name: "flink.jvm.memory.heap.used",
+	},
+	FlinkJvmMemoryMappedTotalCapacity: metricInfo{
+		Name: "flink.jvm.memory.mapped.total_capacity",
+	},
+	FlinkJvmMemoryMappedUsed: metricInfo{
+		Name: "flink.jvm.memory.mapped.used",
+	},
+	FlinkJvmMemoryMetaspaceCommitted: metricInfo{
+		Name: "flink.jvm.memory.metaspace.committed",
+	},
+	FlinkJvmMemoryMetaspaceMax: metricInfo{
+		Name: "flink.jvm.memory.metaspace.max",
+	},
+	FlinkJvmMemoryMetaspaceUsed: metricInfo{
+		Name: "flink.jvm.memory.metaspace.used",
+	},
+	FlinkJvmMemoryNonheapCommitted: metricInfo{
+		Name: "flink.jvm.memory.nonheap.committed",
+	},
+	FlinkJvmMemoryNonheapMax: metricInfo{
+		Name: "flink.jvm.memory.nonheap.max",
+	},
+	FlinkJvmMemoryNonheapUsed: metricInfo{
+		Name: "flink.jvm.memory.nonheap.used",
+	},
+	FlinkJvmThreadsCount: metricInfo{
+		Name: "flink.jvm.threads.count",
+	},
+	FlinkMemoryManagedTotal: metricInfo{
+		Name: "flink.memory.managed.total",
+	},
+	FlinkMemoryManagedUsed: metricInfo{
+		Name: "flink.memory.managed.used",
+	},
+	FlinkOperatorRecordCount: metricInfo{
+		Name: "flink.operator.record.count",
+	},
+	FlinkOperatorWatermarkOutput: metricInfo{
+		Name: "flink.operator.watermark.output",
+	},
+	FlinkTaskRecordCount: metricInfo{
+		Name: "flink.task.record.count",
+	},
+}
+
+type metricsInfo struct {
+	FlinkJobCheckpointCount           metricInfo
+	FlinkJobCheckpointInProgress      metricInfo
+	FlinkJobLastCheckpointSize        metricInfo
+	FlinkJobLastCheckpointTime        metricInfo
+	FlinkJobRestartCount              metricInfo
+	FlinkJvmClassLoaderClassesLoaded  metricInfo
+	FlinkJvmCPULoad                   metricInfo
+	FlinkJvmCPUTime                   metricInfo
+	FlinkJvmGcCollectionsCount        metricInfo
+	FlinkJvmGcCollectionsTime         metricInfo
+	FlinkJvmMemoryDirectTotalCapacity metricInfo
+	FlinkJvmMemoryDirectUsed          metricInfo
+	FlinkJvmMemoryHeapCommitted       metricInfo
+	FlinkJvmMemoryHeapMax             metricInfo
+	FlinkJvmMemoryHeapUsed            metricInfo
+	FlinkJvmMemoryMappedTotalCapacity metricInfo
+	FlinkJvmMemoryMappedUsed          metricInfo
+	FlinkJvmMemoryMetaspaceCommitted  metricInfo
+	FlinkJvmMemoryMetaspaceMax        metricInfo
+	FlinkJvmMemoryMetaspaceUsed       metricInfo
+	FlinkJvmMemoryNonheapCommitted    metricInfo
+	FlinkJvmMemoryNonheapMax          metricInfo
+	FlinkJvmMemoryNonheapUsed         metricInfo
+	FlinkJvmThreadsCount              metricInfo
+	FlinkMemoryManagedTotal           metricInfo
+	FlinkMemoryManagedUsed            metricInfo
+	FlinkOperatorRecordCount          metricInfo
+	FlinkOperatorWatermarkOutput      metricInfo
+	FlinkTaskRecordCount              metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricFlinkJobCheckpointCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

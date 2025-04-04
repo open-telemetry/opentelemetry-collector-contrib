@@ -7,6 +7,138 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.123.0
+
+### 🛑 Breaking changes 🛑
+
+- `elasticsearchexporter`: Remove deprecated fields [min|max]_size_items from batch config (#38836)
+- `receiver/azuremonitorreceiver`: multi subscriptions support and automatic discovery (#36612)
+- `kafkaexporter`: change default client_id to "otel-collector" (#38411)
+  The exporter now uses the "configkafka" package which consolidates
+  common configuration structures and default values. As a result of
+  this change, we update the default client_id value to "otel-collector".
+  
+- `kafkametricsreceiver`: change default client_id to "otel-collector", deprecate "refresh_frequency" (#38411)
+  The receiver now uses the "configkafka" package which consolidates
+  common configuration structures and default values. As a result of
+  this change, we update the default client_id value to "otel-collector",
+  and deprecate "refresh_frequency" in favour of "metadata.refresh_interval".
+  
+- `prometheusremotewriteexporter`: Remove `export_created_metric` config option (#35003)
+- `k8sattributesprocessor`: Remove stable feature gate `k8sattr.rfc3339` (#38810)
+- `tlscheckreceiver`: Add file-based TLS certificate checks (#38906)
+
+### 🚩 Deprecations 🚩
+
+- `kafkaexporter`: Deprecate `auth.plain_text` configuration. Use `auth.sasl` with mechanism set to PLAIN instead. (#38883)
+- `kafkametricsreceiver`: Deprecate `auth.plain_text` configuration. Use `auth.sasl` with mechanism set to PLAIN instead. (#38883)
+- `kafkareceiver`: Deprecate `auth.plain_text` configuration. Use `auth.sasl` with mechanism set to PLAIN instead. (#38883)
+- `kafkatopicsobserverextension`: Deprecate `auth.plain_text` configuration. Use `auth.sasl` with mechanism set to PLAIN instead. (#38883)
+
+### 🚀 New components 🚀
+
+- `awslogsencodingextension`: Add AWS Logs Encoding Extension to support decoding logs produced by AWS services (#38627)
+- `stefreceiver`: Add structure of new receiver (#38979)
+- `k8slogreceiver`: Add the skeleton for the new k8slogreceiver in development. (#23339)
+- `azureauthextension`: Add new authenticator extension for Azure. (#38908)
+- `tpmextension`: Add scaffolding for Trusted Platform Module extension. (#38682)
+
+### 💡 Enhancements 💡
+
+- `spanmetricsconnector`: Add instrumentation scope to span metrics connector. (#23662)
+  This change adds the instrumentation scope to the span metrics connector, which allows users to specify the instrumentation scope for the connector.
+  Now, the connector has a new configuration option:
+    - `include_instrumentation_scope`: A list of instrumentation scope names to include from the traces.
+  
+  The instrumentation scope name is the name of the instrumentation library that collected the span.
+  
+- `azuremonitorexporter`: support span links for traces for azure monitor exporter (#35855)
+- `splunkhecreceiver`: Splunk HEC timestamp accepts nanoseconds, microseconds, milliseconds, and seconds epoch. (#36571)
+- `farotranslator`: Add Faro translator package (#19180, #35319)
+- `lokiexporter`: Add lokiexporter component to the contrib distribution (#38993)
+- `oracledbreceiver`: Add support for additional read/write metrics (#37814)
+  The following metrics are now available, all disabled by default:
+  'physical reads direct', 'physical writes', 'physical writes direct',
+  'physical read io requests' and 'physical write io requests' metrics'
+  
+- `tlscheckreceiver`: add `tlscheck.x509.san` attribute (#38872)
+  Subject Alternative Name records are stored as an array on the metric.
+  
+- `prometheusremotewriteexporter`: Adds logic to convert from the internal OTEL Metrics unit format to Prometheus unit format and emit unit as part of Prometheus metadata. (#29452)
+- `awslogsencodingextension`: Add support for cloudwatch logs coming from subscription filters. (#38820)
+- `awscloudwatchencodingextension`: Increase component stability to Alpha (#37870)
+- `awss3exporter`: Implement timeout for S3 exporter (#36264)
+- `azureauthextension`: Implement extensionauth.Server and azcore.TokenCredential. (#39012)
+- `bearertokenauthextension`: Allow the header name to be customized in the bearerauthtoken extension (#38793)
+- `schemaprocessor`: Add functionality to transform metrics for the schema processor.
+ (#38628)
+  Adds functionality to transform metrics using the target schema version.
+  
+- `elasticsearchexporter`: Enable native frame symbolization for Universal Profiling via the symbolization queue indices. (#38577)
+- `hostmetricsreceiver`: Reduced the cost of retrieving number of threads and parent process ID on Windows. Disable the featuregate `hostmetrics.process.onWindowsUseNewGetProcesses` to fallback to the previous implementation.
+ (#32947, #38589)
+- `prometheusremotewritereciever`: Add help ref attribute to metric (#37277)
+- `hostmetricsreceiver`: Reduced the CPU cost of collecting the `process.handles` metric on Windows. (#38886)
+  Instead of using WMI to retrieve the number of opened handles by each process
+  the scraper now uses the GetProcessHandleCount Win32 API which results in
+  reduced CPU usage when the metric `process.handles` is enabled.
+  
+- `pkg/ottl`: Enhance the Decode OTTL function to support all flavors of Base64 (#38854)
+- `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics: `rabbitmq.node.disk_free`, `rabbitmq.node.disk_free_limit`, `rabbitmq.node.disk_free_alarm`, `rabbitmq.node.disk_free_details.rate`, `rabbitmq.node.mem_used`, `rabbitmq.node.mem_limit`, `rabbitmq.node.mem_alarm`, `rabbitmq.node.mem_used_details.rate`, `rabbitmq.node.fd_used`, `rabbitmq.node.fd_total`, `rabbitmq.node.fd_used_details.rate`, `rabbitmq.node.sockets_used`, `rabbitmq.node.sockets_total`, `rabbitmq.node.sockets_used_details.rate`, `rabbitmq.node.proc_used`, `rabbitmq.node.proc_total`, `rabbitmq.node.proc_used_details.rate`. These provide additional observability into the state and resource usage of RabbitMQ nodes. (#38976)
+- `rabbitmqreceiver`: Enhance the RabbitMQ receiver to collect and report additional node-level metrics across multiple categories. These include metrics related to memory, file descriptors, sockets, processes, disk, uptime, scheduling, garbage collection (GC), I/O, message store, connections, clustering, configuration, application info, and context switches. This significantly improves visibility into the performance, state, and resource usage of RabbitMQ nodes. (#38997)
+- `resourcedetection`: Adding the os.version resource attribute to system resourcedetection processor (#38087)
+- `prometheusremotewritereciever`: Separate timeseries with the same labels are now translated into the same OTLP metric. (#37791)
+  timeseries that belongs to the same metric should be added to the same datapoints slice.
+- `prometheusremotewritereceiver`: Use Created Timestamps to populate Datapoint's StartTimeUnixNano (#37277)
+- `workflow`: Remove path parts from component label suffixes (#38527)
+- `sqlserverreceiver`: support sqlserverreceiver to record every executing query (#36462)
+  We introduced Query Sample collection in this PR. The scraper will record all the currently 
+  executing queries once (in most case) and report related metrics. With this, user will be 
+  able to see what queries got executed and can combine with the Top Query to get more insights 
+  on troubleshooting and fine tuning.
+  
+- `sqlserverreceiver`: Support query-level log collection (#36462)
+  Added top query (most CPU time consumed) collection. The query will gather the queries took most of the time during the last
+  query interval and report related metrics. The number of queries can be configured. This will enable user to have better
+  understanding on what is going on with the database. This enhancement empowers users to not only monitor but also actively 
+  manage and optimize their MSSQL database performance based on real usage patterns.
+  
+- `opampsupervisor`: Allow controlling Collectors that don't include the nopreceiver and nopexporer (#38809)
+  This requires Collectors built with Collector API v0.122.0+. The nopreceiver
+  and nopexporter will continue to be supported for a few releases, after which
+  only v0.122.0+ will be supported.
+  
+- `opampsupervisor`: Report the reception of an unexpected UID during bootstrapping (#29864)
+
+### 🧰 Bug fixes 🧰
+
+- `metricstarttimeprocessor`: Add reset detection for histograms (#38582)
+- `prometheusremotewriteexporter`: Disallow users from setting compression type other than snappy (#37232)
+  This change ensures that only the snappy compression type can be set, as required by the Prometheus Remote Write protocol. 
+  
+- `awsecscontainermetrics`: Ensure that the storage.read_bytes and storage.write_bytes metrics include i/o counts from all devices (#38301)
+- `receiver/sqlserver`: the current metric scraper would report error when parsing value, the value was parsed as int but actually it should be a float (#38823)
+- `redisstorageextension`: fix missing redis prefix in Batch method (#38877)
+- `receiver/sqlserver`: Ensure all enabled metrics are emitted (#38839)
+- `kafkareceiver`: make calls to error backoff thread-safe and add logging (#38941)
+- `awsfirehosereceiver`: Fixes unmarshal error when request is larger than the buffer limit of bufio.Scanner (#38736)
+- `axw:prometheusremotewritereceiver-fix-tests`: wait for listening port to be closed before shutting down receiver (#38705)
+- `receiver/sqlserver`: Remove warning that `server.address` and `server.port` resource attributes will be enabled (#38831)
+  There is no intention of enabling these resource attributes by default,
+  this change is to simply remove the warning.
+  The `server.address` and `server.port` resource attributes were, and still are,
+  disabled by default.
+  
+- `awscloudwatchmetricstreamsencodingextension`: Return errors when extracting the metrics from the record instead of logging them. (#38596)
+- `tcpcheckreceiver`: Fixed typo in "Metric configuration". (#38889)
+- `pkg/stanza`: Add retries when calls to retrieve Windows event via `EvtNext` fail with error RPC_S_INVALID_BOUND (1734). (#38149)
+  Whenever large events were read in by the Windows event log receiver, via the stanza input operator,
+  the collector would fail with error RPC_S_INVALID_BOUND (1734). Now the operator tries to workaround
+  this issue by reducing the number of events read on each attempt.
+  
+
+<!-- previous-version -->
+
 ## v0.122.0
 
 ### 🛑 Breaking changes 🛑

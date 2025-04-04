@@ -538,6 +538,384 @@ var MapAttributeThreadState = map[string]AttributeThreadState{
 	"idle":   AttributeThreadStateIdle,
 }
 
+var MetricsInfo = metricsInfo{
+	ElasticsearchBreakerMemoryEstimated: metricInfo{
+		Name: "elasticsearch.breaker.memory.estimated",
+	},
+	ElasticsearchBreakerMemoryLimit: metricInfo{
+		Name: "elasticsearch.breaker.memory.limit",
+	},
+	ElasticsearchBreakerTripped: metricInfo{
+		Name: "elasticsearch.breaker.tripped",
+	},
+	ElasticsearchClusterDataNodes: metricInfo{
+		Name: "elasticsearch.cluster.data_nodes",
+	},
+	ElasticsearchClusterHealth: metricInfo{
+		Name: "elasticsearch.cluster.health",
+	},
+	ElasticsearchClusterInFlightFetch: metricInfo{
+		Name: "elasticsearch.cluster.in_flight_fetch",
+	},
+	ElasticsearchClusterIndicesCacheEvictions: metricInfo{
+		Name: "elasticsearch.cluster.indices.cache.evictions",
+	},
+	ElasticsearchClusterNodes: metricInfo{
+		Name: "elasticsearch.cluster.nodes",
+	},
+	ElasticsearchClusterPendingTasks: metricInfo{
+		Name: "elasticsearch.cluster.pending_tasks",
+	},
+	ElasticsearchClusterPublishedStatesDifferences: metricInfo{
+		Name: "elasticsearch.cluster.published_states.differences",
+	},
+	ElasticsearchClusterPublishedStatesFull: metricInfo{
+		Name: "elasticsearch.cluster.published_states.full",
+	},
+	ElasticsearchClusterShards: metricInfo{
+		Name: "elasticsearch.cluster.shards",
+	},
+	ElasticsearchClusterStateQueue: metricInfo{
+		Name: "elasticsearch.cluster.state_queue",
+	},
+	ElasticsearchClusterStateUpdateCount: metricInfo{
+		Name: "elasticsearch.cluster.state_update.count",
+	},
+	ElasticsearchClusterStateUpdateTime: metricInfo{
+		Name: "elasticsearch.cluster.state_update.time",
+	},
+	ElasticsearchIndexCacheEvictions: metricInfo{
+		Name: "elasticsearch.index.cache.evictions",
+	},
+	ElasticsearchIndexCacheMemoryUsage: metricInfo{
+		Name: "elasticsearch.index.cache.memory.usage",
+	},
+	ElasticsearchIndexCacheSize: metricInfo{
+		Name: "elasticsearch.index.cache.size",
+	},
+	ElasticsearchIndexDocuments: metricInfo{
+		Name: "elasticsearch.index.documents",
+	},
+	ElasticsearchIndexOperationsCompleted: metricInfo{
+		Name: "elasticsearch.index.operations.completed",
+	},
+	ElasticsearchIndexOperationsMergeCurrent: metricInfo{
+		Name: "elasticsearch.index.operations.merge.current",
+	},
+	ElasticsearchIndexOperationsMergeDocsCount: metricInfo{
+		Name: "elasticsearch.index.operations.merge.docs_count",
+	},
+	ElasticsearchIndexOperationsMergeSize: metricInfo{
+		Name: "elasticsearch.index.operations.merge.size",
+	},
+	ElasticsearchIndexOperationsTime: metricInfo{
+		Name: "elasticsearch.index.operations.time",
+	},
+	ElasticsearchIndexSegmentsCount: metricInfo{
+		Name: "elasticsearch.index.segments.count",
+	},
+	ElasticsearchIndexSegmentsMemory: metricInfo{
+		Name: "elasticsearch.index.segments.memory",
+	},
+	ElasticsearchIndexSegmentsSize: metricInfo{
+		Name: "elasticsearch.index.segments.size",
+	},
+	ElasticsearchIndexShardsSize: metricInfo{
+		Name: "elasticsearch.index.shards.size",
+	},
+	ElasticsearchIndexTranslogOperations: metricInfo{
+		Name: "elasticsearch.index.translog.operations",
+	},
+	ElasticsearchIndexTranslogSize: metricInfo{
+		Name: "elasticsearch.index.translog.size",
+	},
+	ElasticsearchIndexingPressureMemoryLimit: metricInfo{
+		Name: "elasticsearch.indexing_pressure.memory.limit",
+	},
+	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections: metricInfo{
+		Name: "elasticsearch.indexing_pressure.memory.total.primary_rejections",
+	},
+	ElasticsearchIndexingPressureMemoryTotalReplicaRejections: metricInfo{
+		Name: "elasticsearch.indexing_pressure.memory.total.replica_rejections",
+	},
+	ElasticsearchMemoryIndexingPressure: metricInfo{
+		Name: "elasticsearch.memory.indexing_pressure",
+	},
+	ElasticsearchNodeCacheCount: metricInfo{
+		Name: "elasticsearch.node.cache.count",
+	},
+	ElasticsearchNodeCacheEvictions: metricInfo{
+		Name: "elasticsearch.node.cache.evictions",
+	},
+	ElasticsearchNodeCacheMemoryUsage: metricInfo{
+		Name: "elasticsearch.node.cache.memory.usage",
+	},
+	ElasticsearchNodeCacheSize: metricInfo{
+		Name: "elasticsearch.node.cache.size",
+	},
+	ElasticsearchNodeClusterConnections: metricInfo{
+		Name: "elasticsearch.node.cluster.connections",
+	},
+	ElasticsearchNodeClusterIo: metricInfo{
+		Name: "elasticsearch.node.cluster.io",
+	},
+	ElasticsearchNodeDiskIoRead: metricInfo{
+		Name: "elasticsearch.node.disk.io.read",
+	},
+	ElasticsearchNodeDiskIoWrite: metricInfo{
+		Name: "elasticsearch.node.disk.io.write",
+	},
+	ElasticsearchNodeDocuments: metricInfo{
+		Name: "elasticsearch.node.documents",
+	},
+	ElasticsearchNodeFsDiskAvailable: metricInfo{
+		Name: "elasticsearch.node.fs.disk.available",
+	},
+	ElasticsearchNodeFsDiskFree: metricInfo{
+		Name: "elasticsearch.node.fs.disk.free",
+	},
+	ElasticsearchNodeFsDiskTotal: metricInfo{
+		Name: "elasticsearch.node.fs.disk.total",
+	},
+	ElasticsearchNodeHTTPConnections: metricInfo{
+		Name: "elasticsearch.node.http.connections",
+	},
+	ElasticsearchNodeIngestDocuments: metricInfo{
+		Name: "elasticsearch.node.ingest.documents",
+	},
+	ElasticsearchNodeIngestDocumentsCurrent: metricInfo{
+		Name: "elasticsearch.node.ingest.documents.current",
+	},
+	ElasticsearchNodeIngestOperationsFailed: metricInfo{
+		Name: "elasticsearch.node.ingest.operations.failed",
+	},
+	ElasticsearchNodeOpenFiles: metricInfo{
+		Name: "elasticsearch.node.open_files",
+	},
+	ElasticsearchNodeOperationsCompleted: metricInfo{
+		Name: "elasticsearch.node.operations.completed",
+	},
+	ElasticsearchNodeOperationsCurrent: metricInfo{
+		Name: "elasticsearch.node.operations.current",
+	},
+	ElasticsearchNodeOperationsGetCompleted: metricInfo{
+		Name: "elasticsearch.node.operations.get.completed",
+	},
+	ElasticsearchNodeOperationsGetTime: metricInfo{
+		Name: "elasticsearch.node.operations.get.time",
+	},
+	ElasticsearchNodeOperationsTime: metricInfo{
+		Name: "elasticsearch.node.operations.time",
+	},
+	ElasticsearchNodePipelineIngestDocumentsCurrent: metricInfo{
+		Name: "elasticsearch.node.pipeline.ingest.documents.current",
+	},
+	ElasticsearchNodePipelineIngestDocumentsPreprocessed: metricInfo{
+		Name: "elasticsearch.node.pipeline.ingest.documents.preprocessed",
+	},
+	ElasticsearchNodePipelineIngestOperationsFailed: metricInfo{
+		Name: "elasticsearch.node.pipeline.ingest.operations.failed",
+	},
+	ElasticsearchNodeScriptCacheEvictions: metricInfo{
+		Name: "elasticsearch.node.script.cache_evictions",
+	},
+	ElasticsearchNodeScriptCompilationLimitTriggered: metricInfo{
+		Name: "elasticsearch.node.script.compilation_limit_triggered",
+	},
+	ElasticsearchNodeScriptCompilations: metricInfo{
+		Name: "elasticsearch.node.script.compilations",
+	},
+	ElasticsearchNodeSegmentsMemory: metricInfo{
+		Name: "elasticsearch.node.segments.memory",
+	},
+	ElasticsearchNodeShardsDataSetSize: metricInfo{
+		Name: "elasticsearch.node.shards.data_set.size",
+	},
+	ElasticsearchNodeShardsReservedSize: metricInfo{
+		Name: "elasticsearch.node.shards.reserved.size",
+	},
+	ElasticsearchNodeShardsSize: metricInfo{
+		Name: "elasticsearch.node.shards.size",
+	},
+	ElasticsearchNodeThreadPoolTasksFinished: metricInfo{
+		Name: "elasticsearch.node.thread_pool.tasks.finished",
+	},
+	ElasticsearchNodeThreadPoolTasksQueued: metricInfo{
+		Name: "elasticsearch.node.thread_pool.tasks.queued",
+	},
+	ElasticsearchNodeThreadPoolThreads: metricInfo{
+		Name: "elasticsearch.node.thread_pool.threads",
+	},
+	ElasticsearchNodeTranslogOperations: metricInfo{
+		Name: "elasticsearch.node.translog.operations",
+	},
+	ElasticsearchNodeTranslogSize: metricInfo{
+		Name: "elasticsearch.node.translog.size",
+	},
+	ElasticsearchNodeTranslogUncommittedSize: metricInfo{
+		Name: "elasticsearch.node.translog.uncommitted.size",
+	},
+	ElasticsearchOsCPULoadAvg15m: metricInfo{
+		Name: "elasticsearch.os.cpu.load_avg.15m",
+	},
+	ElasticsearchOsCPULoadAvg1m: metricInfo{
+		Name: "elasticsearch.os.cpu.load_avg.1m",
+	},
+	ElasticsearchOsCPULoadAvg5m: metricInfo{
+		Name: "elasticsearch.os.cpu.load_avg.5m",
+	},
+	ElasticsearchOsCPUUsage: metricInfo{
+		Name: "elasticsearch.os.cpu.usage",
+	},
+	ElasticsearchOsMemory: metricInfo{
+		Name: "elasticsearch.os.memory",
+	},
+	ElasticsearchProcessCPUTime: metricInfo{
+		Name: "elasticsearch.process.cpu.time",
+	},
+	ElasticsearchProcessCPUUsage: metricInfo{
+		Name: "elasticsearch.process.cpu.usage",
+	},
+	ElasticsearchProcessMemoryVirtual: metricInfo{
+		Name: "elasticsearch.process.memory.virtual",
+	},
+	JvmClassesLoaded: metricInfo{
+		Name: "jvm.classes.loaded",
+	},
+	JvmGcCollectionsCount: metricInfo{
+		Name: "jvm.gc.collections.count",
+	},
+	JvmGcCollectionsElapsed: metricInfo{
+		Name: "jvm.gc.collections.elapsed",
+	},
+	JvmMemoryHeapCommitted: metricInfo{
+		Name: "jvm.memory.heap.committed",
+	},
+	JvmMemoryHeapMax: metricInfo{
+		Name: "jvm.memory.heap.max",
+	},
+	JvmMemoryHeapUsed: metricInfo{
+		Name: "jvm.memory.heap.used",
+	},
+	JvmMemoryHeapUtilization: metricInfo{
+		Name: "jvm.memory.heap.utilization",
+	},
+	JvmMemoryNonheapCommitted: metricInfo{
+		Name: "jvm.memory.nonheap.committed",
+	},
+	JvmMemoryNonheapUsed: metricInfo{
+		Name: "jvm.memory.nonheap.used",
+	},
+	JvmMemoryPoolMax: metricInfo{
+		Name: "jvm.memory.pool.max",
+	},
+	JvmMemoryPoolUsed: metricInfo{
+		Name: "jvm.memory.pool.used",
+	},
+	JvmThreadsCount: metricInfo{
+		Name: "jvm.threads.count",
+	},
+}
+
+type metricsInfo struct {
+	ElasticsearchBreakerMemoryEstimated                       metricInfo
+	ElasticsearchBreakerMemoryLimit                           metricInfo
+	ElasticsearchBreakerTripped                               metricInfo
+	ElasticsearchClusterDataNodes                             metricInfo
+	ElasticsearchClusterHealth                                metricInfo
+	ElasticsearchClusterInFlightFetch                         metricInfo
+	ElasticsearchClusterIndicesCacheEvictions                 metricInfo
+	ElasticsearchClusterNodes                                 metricInfo
+	ElasticsearchClusterPendingTasks                          metricInfo
+	ElasticsearchClusterPublishedStatesDifferences            metricInfo
+	ElasticsearchClusterPublishedStatesFull                   metricInfo
+	ElasticsearchClusterShards                                metricInfo
+	ElasticsearchClusterStateQueue                            metricInfo
+	ElasticsearchClusterStateUpdateCount                      metricInfo
+	ElasticsearchClusterStateUpdateTime                       metricInfo
+	ElasticsearchIndexCacheEvictions                          metricInfo
+	ElasticsearchIndexCacheMemoryUsage                        metricInfo
+	ElasticsearchIndexCacheSize                               metricInfo
+	ElasticsearchIndexDocuments                               metricInfo
+	ElasticsearchIndexOperationsCompleted                     metricInfo
+	ElasticsearchIndexOperationsMergeCurrent                  metricInfo
+	ElasticsearchIndexOperationsMergeDocsCount                metricInfo
+	ElasticsearchIndexOperationsMergeSize                     metricInfo
+	ElasticsearchIndexOperationsTime                          metricInfo
+	ElasticsearchIndexSegmentsCount                           metricInfo
+	ElasticsearchIndexSegmentsMemory                          metricInfo
+	ElasticsearchIndexSegmentsSize                            metricInfo
+	ElasticsearchIndexShardsSize                              metricInfo
+	ElasticsearchIndexTranslogOperations                      metricInfo
+	ElasticsearchIndexTranslogSize                            metricInfo
+	ElasticsearchIndexingPressureMemoryLimit                  metricInfo
+	ElasticsearchIndexingPressureMemoryTotalPrimaryRejections metricInfo
+	ElasticsearchIndexingPressureMemoryTotalReplicaRejections metricInfo
+	ElasticsearchMemoryIndexingPressure                       metricInfo
+	ElasticsearchNodeCacheCount                               metricInfo
+	ElasticsearchNodeCacheEvictions                           metricInfo
+	ElasticsearchNodeCacheMemoryUsage                         metricInfo
+	ElasticsearchNodeCacheSize                                metricInfo
+	ElasticsearchNodeClusterConnections                       metricInfo
+	ElasticsearchNodeClusterIo                                metricInfo
+	ElasticsearchNodeDiskIoRead                               metricInfo
+	ElasticsearchNodeDiskIoWrite                              metricInfo
+	ElasticsearchNodeDocuments                                metricInfo
+	ElasticsearchNodeFsDiskAvailable                          metricInfo
+	ElasticsearchNodeFsDiskFree                               metricInfo
+	ElasticsearchNodeFsDiskTotal                              metricInfo
+	ElasticsearchNodeHTTPConnections                          metricInfo
+	ElasticsearchNodeIngestDocuments                          metricInfo
+	ElasticsearchNodeIngestDocumentsCurrent                   metricInfo
+	ElasticsearchNodeIngestOperationsFailed                   metricInfo
+	ElasticsearchNodeOpenFiles                                metricInfo
+	ElasticsearchNodeOperationsCompleted                      metricInfo
+	ElasticsearchNodeOperationsCurrent                        metricInfo
+	ElasticsearchNodeOperationsGetCompleted                   metricInfo
+	ElasticsearchNodeOperationsGetTime                        metricInfo
+	ElasticsearchNodeOperationsTime                           metricInfo
+	ElasticsearchNodePipelineIngestDocumentsCurrent           metricInfo
+	ElasticsearchNodePipelineIngestDocumentsPreprocessed      metricInfo
+	ElasticsearchNodePipelineIngestOperationsFailed           metricInfo
+	ElasticsearchNodeScriptCacheEvictions                     metricInfo
+	ElasticsearchNodeScriptCompilationLimitTriggered          metricInfo
+	ElasticsearchNodeScriptCompilations                       metricInfo
+	ElasticsearchNodeSegmentsMemory                           metricInfo
+	ElasticsearchNodeShardsDataSetSize                        metricInfo
+	ElasticsearchNodeShardsReservedSize                       metricInfo
+	ElasticsearchNodeShardsSize                               metricInfo
+	ElasticsearchNodeThreadPoolTasksFinished                  metricInfo
+	ElasticsearchNodeThreadPoolTasksQueued                    metricInfo
+	ElasticsearchNodeThreadPoolThreads                        metricInfo
+	ElasticsearchNodeTranslogOperations                       metricInfo
+	ElasticsearchNodeTranslogSize                             metricInfo
+	ElasticsearchNodeTranslogUncommittedSize                  metricInfo
+	ElasticsearchOsCPULoadAvg15m                              metricInfo
+	ElasticsearchOsCPULoadAvg1m                               metricInfo
+	ElasticsearchOsCPULoadAvg5m                               metricInfo
+	ElasticsearchOsCPUUsage                                   metricInfo
+	ElasticsearchOsMemory                                     metricInfo
+	ElasticsearchProcessCPUTime                               metricInfo
+	ElasticsearchProcessCPUUsage                              metricInfo
+	ElasticsearchProcessMemoryVirtual                         metricInfo
+	JvmClassesLoaded                                          metricInfo
+	JvmGcCollectionsCount                                     metricInfo
+	JvmGcCollectionsElapsed                                   metricInfo
+	JvmMemoryHeapCommitted                                    metricInfo
+	JvmMemoryHeapMax                                          metricInfo
+	JvmMemoryHeapUsed                                         metricInfo
+	JvmMemoryHeapUtilization                                  metricInfo
+	JvmMemoryNonheapCommitted                                 metricInfo
+	JvmMemoryNonheapUsed                                      metricInfo
+	JvmMemoryPoolMax                                          metricInfo
+	JvmMemoryPoolUsed                                         metricInfo
+	JvmThreadsCount                                           metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricElasticsearchBreakerMemoryEstimated struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
