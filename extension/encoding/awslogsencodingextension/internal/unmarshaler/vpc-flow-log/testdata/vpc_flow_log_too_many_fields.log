@@ -1,0 +1,2 @@
+version account-id interface-id srcaddr dstaddr srcport dstport protocol packets bytes start end action log-status
+2 12345678910 eni-0eb1e4178af74336c - - - - - - - 1742570089 1742570142 - NODATA one-too-many
