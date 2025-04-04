@@ -42,6 +42,7 @@ func createDefaultConfig() component.Config {
 		CMEndpoint:           httpCfg,
 		ControllerConfig:     scfg,
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		VersionInfo:          false,
 	}
 }
 

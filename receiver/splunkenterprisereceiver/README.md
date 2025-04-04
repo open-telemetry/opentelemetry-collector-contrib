@@ -34,6 +34,7 @@ The following settings are optional:
 
 * `collection_interval` (default: 10m): The time between scrape attempts.
 * `timeout` (default: 60s): The time the scrape function will wait for a response before returning empty.
+* `build_version_info` (default: false): Elect to run an additional scrape which will retrieve build and version info for the configured endpoints and attach this as attributes to the selected metrics. A value of false will report an empty string as the attribute value but will speed up the receiver slightly.
 
 Example:
 

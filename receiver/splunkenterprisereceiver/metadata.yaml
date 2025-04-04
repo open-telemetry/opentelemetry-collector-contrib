@@ -12,6 +12,12 @@ attributes:
   splunk.host:
     description: The name of the splunk host
     type: string 
+  splunk.splunkd.build:
+    description: The build number for this Splunk instance version
+    type: string
+  splunk.splunkd.version:
+    description: The splunkd version number
+    type: string
   splunk.index.name:
     description: The name of the index reporting a specific KPI
     type: string
@@ -53,133 +59,134 @@ metrics:
     unit: By
     gauge:
       value_type: int 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.scheduler.avg.execution.latency:
     enabled: false
     description: Gauge tracking the average execution latency of scheduled searches
     unit: '{ms}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.scheduler.completion.ratio:
     enabled: false
     description: Gauge tracking the ratio of completed to skipped scheduled searches
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexer.avg.rate:
     enabled: false
     description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
     unit: KBy
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.pipeline.set.count:
     enabled: false
     description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
     unit: KBy
     gauge:
       value_type: int 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.parse.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.aggregation.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]  
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]  
   splunk.typing.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]  
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]  
   splunk.indexer.queue.ratio:
     enabled: false
     description: Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.scheduler.avg.run.time:
     enabled: false
     description: Gauge tracking the average runtime of scheduled searches
     unit: '{ms}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexer.raw.write.time:
     enabled: false
     description: Gauge tracking the number of raw write seconds per instance
     unit: '{s}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexer.cpu.time:
     enabled: false
     description: Gauge tracking the number of indexing process cpu seconds per instance
     unit: '{s}'
     gauge:
       value_type: double 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.io.avg.iops:
     enabled: false
     description: Gauge tracking the average IOPs used per instance
     unit: '{iops}'
     gauge:
       value_type: int 
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.buckets.searchable.status:
     enabled: false
     description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
     unit: '{count}'
     gauge:
       value_type: int 
-    attributes: [splunk.host, splunk.indexer.searchable]
+    attributes: [splunk.host, splunk.indexer.searchable, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexes.bucket.count:
     enabled: false
     description: Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.
     unit: '{count}'
     gauge:
       value_type: int 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexes.size:
     enabled: false
     description: Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.
     unit: Gb
     gauge:
       value_type: double 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexes.avg.size:
     enabled: false
     description: Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.
     unit: Gb
     gauge:
       value_type: double 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexes.avg.usage:
     enabled: false
     description: Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.indexes.median.data.age:
     enabled: false
     description: Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.
     unit: '{days}'
     gauge:
       value_type: int 
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
+    
   # 'services/server/introspection/indexer'
   splunk.indexer.throughput:
     enabled: false
@@ -188,7 +195,7 @@ metrics:
     gauge:
       value_type: double
     # attribute `status` can be one of the following `normal`, `throttled`, `stopped`
-    attributes: [splunk.indexer.status]
+    attributes: [splunk.indexer.status, splunk.splunkd.build, splunk.splunkd.version]
   # 'services/data/indexes-extended'
   splunk.data.indexes.extended.total.size:
     enabled: false
@@ -196,28 +203,28 @@ metrics:
     unit: By
     gauge:
       value_type: int
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.data.indexes.extended.event.count:
     enabled: false
     description: Count of events for index, excluding frozen events. Approximately equal to the event_count sum of all buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: '{events}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.data.indexes.extended.bucket.count:
     enabled: false
     description: Count of buckets per index
     unit: '{buckets}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.data.indexes.extended.raw.size:
     enabled: false
     description: Size in bytes on disk of the <bucket>/rawdata/ directories of all buckets in this index, excluding frozen *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By
     gauge:
       value_type: int
-    attributes: [splunk.index.name]
+    attributes: [splunk.index.name, splunk.splunkd.build, splunk.splunkd.version]
   ## Broken down `bucket_dirs`
   splunk.data.indexes.extended.bucket.event.count:
     enabled: false
@@ -225,21 +232,21 @@ metrics:
     unit: '{events}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name, splunk.bucket.dir]
+    attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]
   splunk.data.indexes.extended.bucket.hot.count:
     enabled: false
     description: (If size > 0) Number of hot buckets. *Note:** Must be pointed at specific indexer `endpoint`.
     unit: '{buckets}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name, splunk.bucket.dir]
+    attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]
   splunk.data.indexes.extended.bucket.warm.count:
     enabled: false
     description: (If size > 0) Number of warm buckets. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: '{buckets}'
     gauge:
       value_type: int
-    attributes: [splunk.index.name, splunk.bucket.dir]
+    attributes: [splunk.index.name, splunk.bucket.dir, splunk.splunkd.build, splunk.splunkd.version]
   #'services/server/introspection/queues'
   splunk.server.introspection.queues.current:
     enabled: false
@@ -247,14 +254,14 @@ metrics:
     unit: '{queues}'
     gauge:
       value_type: int
-    attributes: [splunk.queue.name]
+    attributes: [splunk.queue.name, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.introspection.queues.current.bytes:
     enabled: false
     description: Gauge tracking current bytes waiting in queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
     unit: By
     gauge:
       value_type: int
-    attributes: [splunk.queue.name] 
+    attributes: [splunk.queue.name, splunk.splunkd.build, splunk.splunkd.version] 
 #'services/kvstore/status'
   splunk.kvstore.status:
     enabled: false
@@ -262,21 +269,21 @@ metrics:
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value]
+    attributes: [splunk.kvstore.storage.engine, splunk.kvstore.external, splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
   splunk.kvstore.replication.status:
     enabled: false
     description: Replication status of the KV store.
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value]
+    attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version]
   splunk.kvstore.backup.status:
     enabled: false
     description: Backup and restore status of the KV store.
     unit: '{status}'
     gauge:
       value_type: int
-    attributes: [splunk.kvstore.status.value] 
+    attributes: [splunk.kvstore.status.value, splunk.splunkd.build, splunk.splunkd.version] 
   #'services/server/status/dispatch-artifacts'
   splunk.server.searchartifacts.adhoc:
     enabled: false
@@ -286,7 +293,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.scheduled:
     enabled: false
     description: Gauge tracking number of scheduled search artifacts currently on disk. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -295,7 +302,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.completed:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that belong to finished searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -304,7 +311,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.incomplete:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that belong to unfinished/running searches. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -313,7 +320,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.invalid:
     enabled: false
     description: Gauge tracking number of artifacts currently on disk that are not in a valid state, such as missing info.csv file, etc. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -322,7 +329,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.savedsearches:
     enabled: false
     description: Gauge tracking, for the `splunk.server.searchartifacts.scheduled` number of scheduled search artifacts, how many different saved-searches they belong to. Note:* Must be pointed at specific Search Head endpoint and gathers metrics from only that Search Head. Available in builds 9.1.2312.207+ and 9.3.x+.
@@ -331,7 +338,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.job.cache.size:
     enabled: false
     description: Gauge tracking, in megabytes, memory used to cache job status and job info of all search artifacts, available in builds 9.1.2312.207+ and 9.3.x+.
@@ -340,7 +347,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host, splunk.searchartifacts.cache.type]
+    attributes: [splunk.host, splunk.searchartifacts.cache.type, splunk.splunkd.build, splunk.splunkd.version]
   splunk.server.searchartifacts.job.cache.count:
     enabled: false
     description: Gauge tracking number search artifacts metadata stored in memory, available in builds 9.1.2312.207+ and 9.3.x+.
@@ -349,7 +356,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
       value_type: int
-    attributes: [splunk.host]
+    attributes: [splunk.host, splunk.splunkd.build, splunk.splunkd.version]
   #`services/server/health/splunkd/details`
   splunk.health:
     enabled: true
@@ -357,7 +364,7 @@ metrics:
     unit: "{status}"
     gauge:
       value_type: int
-    attributes: [splunk.feature, splunk.feature.health]
+    attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
 
 tests:
   config:
