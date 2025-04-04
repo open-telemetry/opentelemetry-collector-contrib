@@ -31,11 +31,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 type metricsExporter struct {
 	params           exporter.Settings
-	cfg              *Config
+	cfg              *datadogconfig.Config
 	agntConfig       *config.AgentConfig
 	ctx              context.Context
 	client           *zorkian.Client
@@ -56,7 +57,7 @@ type metricsExporter struct {
 func newMetricsExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg *Config,
+	cfg *datadogconfig.Config,
 	agntConfig *config.AgentConfig,
 	onceMetadata *sync.Once,
 	attrsTranslator *attributes.Translator,
