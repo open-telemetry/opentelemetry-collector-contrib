@@ -253,6 +253,7 @@ func TestAzureScraperScrape(t *testing.T) {
 				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
+				nil,
 			)
 
 			s := &azureScraper{
@@ -482,6 +483,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			resourceMockData,
 			metricsDefinitionMockData,
 			metricsMockData,
+			nil,
 		)
 
 		settings := receivertest.NewNopSettings(metadata.Type)
@@ -544,6 +546,7 @@ func getNominalTestScraper() *azureScraper {
 		getResourcesMockData(false),
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
+		nil,
 	)
 
 	settings := receivertest.NewNopSettings(metadata.Type)
@@ -585,6 +588,7 @@ func TestAzureScraperGetResources(t *testing.T) {
 		},
 		getMetricsDefinitionsMockData(),
 		getMetricsValuesMockData(),
+		nil,
 	)
 	s.getResources(context.Background(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
