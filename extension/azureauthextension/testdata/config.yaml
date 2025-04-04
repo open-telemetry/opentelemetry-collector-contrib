@@ -2,24 +2,20 @@ azureauth:
 
 azureauth/use_default:
   use_default: true
-  scope: test
 
 azureauth/valid_service_principal_secret:
-  scope: test
   service_principal:
     client_id: test
     client_secret: test
     tenant_id: test
 
 azureauth/valid_service_principal_certificate:
-  scope: test
   service_principal:
     client_id: test
     client_certificate_path: test
     tenant_id: test
 
 azureauth/service_principal_mutually_exclusive:
-  scope: test
   service_principal:
     client_id: test
     client_certificate_path: test
@@ -27,44 +23,37 @@ azureauth/service_principal_mutually_exclusive:
     client_secret: test
 
 azureauth/service_principal_empty_client_id:
-  scope: test
   service_principal:
     client_secret: test
     tenant_id: test
 
 azureauth/service_principal_empty_tenant_id:
-  scope: test
   service_principal:
     client_id: test
     client_secret: test
 
 azureauth/service_principal_empty_client_credential:
-  scope: test
   service_principal:
     client_id: test
     tenant_id: test
 
 azureauth/valid_workload_identity:
-  scope: test
   workload_identity:
     client_id: test
     federated_token_file: test
     tenant_id: test
 
 azureauth/workload_identity_empty_client_id:
-  scope: test
   workload_identity:
     federated_token_file: test
     tenant_id: test
 
 azureauth/workload_identity_empty_tenant_id:
-  scope: test
   workload_identity:
     client_id: test
     federated_token_file: test
 
 azureauth/workload_identity_empty_federated_token_file:
-  scope: test
   workload_identity:
     client_id: test
     tenant_id: test

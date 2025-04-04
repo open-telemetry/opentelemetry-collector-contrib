@@ -6,4 +6,5 @@ status:
     alpha: [provider]
   distributions: [contrib]
   codeowners:
-    active: [driverpt, atoulme]
+    active: [atoulme]
+    emeritus: [driverpt]
