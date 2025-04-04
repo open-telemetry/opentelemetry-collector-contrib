@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkareceiver
+package unmarshaler
 
 import (
 	"bytes"
@@ -34,41 +34,36 @@ func TestUnmarshalJaeger(t *testing.T) {
 	require.NoError(t, jsonMarshaler.Marshal(jsonBytes, batches[0].Spans[0]))
 
 	tests := []struct {
-		unmarshaler TracesUnmarshaler
+		unmarshaler ptrace.Unmarshaler
 		encoding    string
 		bytes       []byte
 	}{
 		{
-			unmarshaler: jaegerProtoSpanUnmarshaler{},
-			encoding:    "jaeger_proto",
+			unmarshaler: JaegerProtoSpanUnmarshaler{},
 			bytes:       protoBytes,
 		},
 		{
-			unmarshaler: jaegerJSONSpanUnmarshaler{},
-			encoding:    "jaeger_json",
+			unmarshaler: JaegerJSONSpanUnmarshaler{},
 			bytes:       jsonBytes.Bytes(),
 		},
 	}
 	for _, test := range tests {
 		t.Run(test.encoding, func(t *testing.T) {
-			got, err := test.unmarshaler.Unmarshal(test.bytes)
+			got, err := test.unmarshaler.UnmarshalTraces(test.bytes)
 			require.NoError(t, err)
 			assert.Equal(t, td, got)
-			assert.Equal(t, test.encoding, test.unmarshaler.Encoding())
 		})
 	}
 }
 
 func TestUnmarshalJaegerProto_error(t *testing.T) {
-	p := jaegerProtoSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, ptrace.NewTraces(), got)
+	p := JaegerProtoSpanUnmarshaler{}
+	_, err := p.UnmarshalTraces([]byte("+$%"))
 	assert.Error(t, err)
 }
 
 func TestUnmarshalJaegerJSON_error(t *testing.T) {
-	p := jaegerJSONSpanUnmarshaler{}
-	got, err := p.Unmarshal([]byte("+$%"))
-	assert.Equal(t, ptrace.NewTraces(), got)
+	p := JaegerJSONSpanUnmarshaler{}
+	_, err := p.UnmarshalTraces([]byte("+$%"))
 	assert.Error(t, err)
 }
