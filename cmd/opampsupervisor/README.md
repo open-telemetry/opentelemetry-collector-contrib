@@ -4,11 +4,38 @@ This is an implementation of an OpAMP Supervisor that runs a Collector instance 
 is following a design specified [here](./specification/README.md).
 The design is still undergoing changes, and as such this implementation may change as well.
 
-## Experimenting with the supervisor
+Binary and container images for the Supervisor are available under tags starting with `cmd/opampsupervisor` [here](https://github.com/open-telemetry/opentelemetry-collector-releases/tags).
 
-The supervisor is currently undergoing heavy development and is not ready for any serious use. However, if you would like to test it, you can follow the steps below:
+## More information.
 
-1. Download the [opamp-go](https://github.com/open-telemetry/opamp-go) repository, and run the OpAMP example server in the `internal/examples/server` directory.
+If you'd like to learn more about OpAMP, see the
+[OpAMP specification](https://github.com/open-telemetry/opamp-spec/blob/main/specification.md#open-agent-management-protocol).
+For production-ready client and server implementations in Go, see the
+[OpAMP Go repository](https://github.com/open-telemetry/opamp-go).
+
+If you have questions or would like to participate, we'd love to hear from you.
+There is a regular SIG meeting, see the
+[meeting notes](https://docs.google.com/document/d/19WA5-ex8rNFIBIyVb5VqMXfWNmUQwppGhN8zBeNG0f4)
+for more information. You can also get in touch with us in the
+[#otel-opamp](https://cloud-native.slack.com/archives/C02J58HR58R) channel on
+the CNCF Slack workspace.
+
+## Using the Supervisor
+
+See tags starting with `cmd/opampsupervisor` for binary and container image
+builds of the Supervisor
+[here](https://github.com/open-telemetry/opentelemetry-collector-releases/tags).
+
+To use the Supervisor, you will need four things:
+
+1. A Supervisor binary, which can be obtained through the link above.
+2. A Collector binary that you would like to control through the Supervisor.
+3. A Supervisor config file. See examples [here](./examples/).
+4. A running OpAMP server.
+
+To test the Supervisor with an example server, download the
+[opamp-go](https://github.com/open-telemetry/opamp-go) repository, and run the
+OpAMP example server in the `internal/examples/server` directory.
 
    ```shell
    git clone git@github.com:open-telemetry/opamp-go.git
@@ -18,22 +45,9 @@ The supervisor is currently undergoing heavy development and is not ready for an
 
    Visit [localhost:4321](http://localhost:4321) to verify that the server is running.
 
-2. From the Collector contrib repository root, build the Collector:
-
-   ```shell
-   make otelcontribcol
-   ```
-
-3. Run the supervisor in the `cmd/opampsupervisor` directory of Collector contrib repository, substituting `<OS>` for your operating system (`darwin` for MacOS, `linux` or `windows`):
-
-   ```shell
-   cd cmd/opampsupervisor
-   go run . --config examples/supervisor_<OS>.yaml
-   ```
-
-4. The supervisor should connect to the OpAMP server and start a Collector instance.
 
 ## Persistent data storage
+
 The supervisor persists some data to disk in order to mantain state between restarts. The directory where this data is stored may be specified via the supervisor configuration:
 ```yaml
 storage:
@@ -59,14 +73,12 @@ For a list of open issues related to the Supervisor, see [these issues](https://
 
 ⚠️: Implemented with caveats
 
-📅: Planned, but no issue to track implementation
-
 ### OpAMP capabilities
 
 | OpAMP capability               | Status                                                                           |
 |--------------------------------|----------------------------------------------------------------------------------|
 | AcceptsRemoteConfig            | ✅                                                                               |
-| ReportsEffectiveConfig         | ⚠️                                                                               |
+| ReportsEffectiveConfig         | ✅                                                                               |
 | AcceptsPackages                | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/34734> |
 | ReportsPackageStatuses         | <https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38727> |
 | ReportsOwnTraces               | ✅                                                                               |
