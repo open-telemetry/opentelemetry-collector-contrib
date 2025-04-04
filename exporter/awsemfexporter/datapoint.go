@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"math"
 	"strconv"
-	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -19,8 +18,6 @@ import (
 )
 
 const (
-	AWSEntityPrefix = "com.amazonaws.cloudwatch.entity.internal."
-
 	summaryCountSuffix = "_count"
 	summarySumSuffix   = "_sum"
 )
@@ -533,11 +530,6 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 func createLabels(attributes pcommon.Map) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
 	attributes.Range(func(k string, v pcommon.Value) bool {
-		// we don't want to export entity related attributes as dimensions, so we skip these
-		if strings.HasPrefix(k, AWSEntityPrefix) {
-			return true
-		}
-
 		labels[k] = v.AsString()
 		return true
 	})

@@ -16,6 +16,7 @@ import (
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/entity"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 	aws "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/metrics"
 )
@@ -184,7 +185,7 @@ func (mt metricTranslator) translateOTelToGroupedMetric(rm pmetric.ResourceMetri
 
 // translateGroupedMetricToCWMetric converts Grouped Metric format to CloudWatch Metric format.
 func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Config) *cWMetrics {
-	labels := filterAWSEMFAttributes(groupedMetric.labels)
+	labels := filterAWSEMFAttributes(groupedMetric.labels, false)
 	fieldsLength := len(labels) + len(groupedMetric.metrics)
 
 	isPrometheusMetric := groupedMetric.metadata.receiver == prometheusReceiver
@@ -195,7 +196,24 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 
 	// Add labels to fields
 	for k, v := range labels {
-		fields[k] = v
+		if !strings.HasPrefix(k, entity.AWSEntityPrefix) {
+			fields[k] = v
+			continue
+		}
+
+		if config.AddEntity {
+			// This check is needed to determine whether to use EKS.Cluster or K8s.Cluster
+			if k == entity.AttributeEntityK8sClusterName {
+				if entityField := entity.GetEntityField(k, labels[entity.AttributeEntityPlatformType]); entityField != "" {
+					fields[entityField] = v
+				}
+				continue
+			}
+
+			if entityField := entity.GetEntityField(k, ""); entityField != "" {
+				fields[entityField] = v
+			}
+		}
 	}
 	// Add metrics to fields
 	for metricName, metricInfo := range groupedMetric.metrics {
@@ -228,7 +246,8 @@ func translateGroupedMetricToCWMetric(groupedMetric *groupedMetric, config *Conf
 
 // groupedMetricToCWMeasurement creates a single CW Measurement from a grouped metric.
 func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) cWMeasurement {
-	labels := filterAWSEMFAttributes(groupedMetric.labels)
+	labels := filterAWSEMFAttributes(groupedMetric.labels, true)
+
 	dimensionRollupOption := config.DimensionRollupOption
 
 	// Create a dimension set containing list of label names
@@ -287,7 +306,7 @@ func groupedMetricToCWMeasurement(groupedMetric *groupedMetric, config *Config) 
 // groupedMetricToCWMeasurementsWithFilters filters the grouped metric using the given list of metric
 // declarations and returns the corresponding list of CW Measurements.
 func groupedMetricToCWMeasurementsWithFilters(groupedMetric *groupedMetric, config *Config) (cWMeasurements []cWMeasurement) {
-	labels := filterAWSEMFAttributes(groupedMetric.labels)
+	labels := filterAWSEMFAttributes(groupedMetric.labels, true)
 
 	// Filter metric declarations by labels
 	metricDeclarations := make([]*MetricDeclaration, 0, len(config.MetricDeclarations))
@@ -539,11 +558,12 @@ func translateGroupedMetricToEmf(groupedMetric *groupedMetric, config *Config, d
 	return event, nil
 }
 
-func filterAWSEMFAttributes(labels map[string]string) map[string]string {
+func filterAWSEMFAttributes(labels map[string]string, removeEntity bool) map[string]string {
 	// remove any labels that are attributes specific to AWS EMF Exporter
 	filteredLabels := make(map[string]string)
 	for labelName := range labels {
-		if labelName != emfStorageResolutionAttribute {
+		if labelName != emfStorageResolutionAttribute &&
+			(!removeEntity || !strings.HasPrefix(labelName, entity.AWSEntityPrefix)) {
 			filteredLabels[labelName] = labels[labelName]
 		}
 	}
