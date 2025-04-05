@@ -471,7 +471,7 @@ func TestRecombineProcess(t *testing.T) {
 
 			select {
 			case e := <-fake.Received:
-				require.FailNow(t, "Received unexpected entry: ", e)
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
 			default:
 			}
 		})
@@ -534,7 +534,7 @@ func TestProcessWithDockerTime(t *testing.T) {
 
 			select {
 			case e := <-fake.Received:
-				require.FailNow(t, "Received unexpected entry: ", e)
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
 			default:
 			}
 		})
@@ -695,7 +695,7 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 
 			select {
 			case e := <-fake.Received:
-				require.FailNow(t, "Received unexpected entry: ", e)
+				require.FailNow(t, "Received unexpected entry: ", "%+v", e)
 			default:
 			}
 		})

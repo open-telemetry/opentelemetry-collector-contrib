@@ -436,7 +436,7 @@ func Test_Append(t *testing.T) {
 
 			expectedSlice := pcommon.NewSlice()
 			tc.Want(expectedSlice)
-			assert.EqualValues(t, expectedSlice, res)
+			assert.Equal(t, expectedSlice, res)
 		})
 	}
 }
@@ -647,7 +647,7 @@ func TestTargetType(t *testing.T) {
 
 				expectedSlice := pcommon.NewSlice()
 				tc.Want(expectedSlice)
-				assert.EqualValues(t, expectedSlice, res)
+				assert.Equal(t, expectedSlice, res)
 			}
 		})
 	}

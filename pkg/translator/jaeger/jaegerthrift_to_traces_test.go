@@ -61,7 +61,7 @@ func TestJThriftTagsToInternalAttributes(t *testing.T) {
 	got := pcommon.NewMap()
 	jThriftTagsToInternalAttributes(tags, got)
 
-	require.EqualValues(t, expected, got)
+	require.Equal(t, expected, got)
 }
 
 func TestThriftBatchToInternalTraces(t *testing.T) {
@@ -131,7 +131,7 @@ func TestThriftBatchToInternalTraces(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			td, err := ThriftToTraces(test.jb)
 			assert.NoError(t, err)
-			assert.EqualValues(t, test.td, td)
+			assert.Equal(t, test.td, td)
 		})
 	}
 }

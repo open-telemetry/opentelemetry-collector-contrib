@@ -1394,7 +1394,7 @@ func Test_parse(t *testing.T) {
 		t.Run(tt.statement, func(t *testing.T) {
 			parsed, err := parseStatement(tt.statement)
 			assert.NoError(t, err)
-			assert.EqualValues(t, tt.expected, parsed)
+			assert.Equal(t, tt.expected, parsed)
 		})
 	}
 }
@@ -1555,7 +1555,7 @@ func Test_parseCondition_full(t *testing.T) {
 		t.Run(tt.condition, func(t *testing.T) {
 			parsed, err := parseCondition(tt.condition)
 			assert.NoError(t, err)
-			assert.EqualValues(t, tt.expected, parsed)
+			assert.Equal(t, tt.expected, parsed)
 		})
 	}
 }
