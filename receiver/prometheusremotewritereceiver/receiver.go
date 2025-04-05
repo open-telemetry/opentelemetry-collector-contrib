@@ -37,6 +37,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
+		interRequestCache: make(map[uint64]pmetric.ResourceMetrics),
 	}, nil
 }
 
@@ -44,9 +45,10 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	config *Config
-	server *http.Server
-	wg     sync.WaitGroup
+	config            *Config
+	server            *http.Server
+	wg                sync.WaitGroup
+	interRequestCache map[uint64]pmetric.ResourceMetrics
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -163,7 +165,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	_, stats, err := prw.translateV2(req.Context(), &prw2Req)
+	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
 	stats.SetHeaders(w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
@@ -171,6 +173,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	_ = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
@@ -217,14 +220,13 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
-		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
 
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-		if !ls.Has(labels.MetricName) {
+		if !ls.Has(labels.MetricName) && ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_INFO {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
@@ -232,16 +234,42 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
+		// If it is a metric of type INFO, we use its labels as attributes of the resource
+		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
+		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_INFO {
+			var rm pmetric.ResourceMetrics
+			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
+
+			if existingRM, ok := prw.interRequestCache[hashedLabels]; ok {
+				rm = existingRM
+			} else {
+				rm = otelMetrics.ResourceMetrics().AppendEmpty()
+			}
+
+			attrs := rm.Resource().Attributes()
+			parseJobAndInstance(attrs, ls.Get("job"), ls.Get("instance"))
+
+			// Add the remaining labels as resource attributes
+			for _, l := range ls {
+				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
+					attrKey := strings.ReplaceAll(l.Name, "_", ".")
+					attrs.PutStr(attrKey, l.Value)
+				}
+			}
+			prw.interRequestCache[hashedLabels] = rm
+			continue
+		}
+
+		// For the rest of the metrics, continue with the normal processing
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		intraCacheEntry, ok := intraRequestCache[hashedLabels]
+		existingRM, ok := prw.interRequestCache[hashedLabels]
 		if ok {
-			// We found the same time series in the same request, so we should append to the same OTLP metric.
-			rm = intraCacheEntry
+			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			intraRequestCache[hashedLabels] = rm
+			prw.interRequestCache[hashedLabels] = rm
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
