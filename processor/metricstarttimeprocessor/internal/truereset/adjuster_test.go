@@ -775,7 +775,7 @@ func runScript(t *testing.T, ma *Adjuster, tests []*metricsAdjusterTest, additio
 					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
 				}
 			}
-			assert.EqualValues(t, test.adjusted, adjusted)
+			assert.Equal(t, test.adjusted, adjusted)
 		})
 	}
 }

@@ -464,7 +464,7 @@ func TestLogsSamplingState(t *testing.T) {
 
 			if len(tt.log) == 0 {
 				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
-				require.Equal(t, "", tt.log)
+				require.Empty(t, tt.log)
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")
