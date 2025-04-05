@@ -48,13 +48,7 @@ func (e *kafkaTracesProducer) tracesPusher(ctx context.Context, td ptrace.Traces
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-			}
-		}
-		return err
+		return wrapKafkaProducerError(err)
 	}
 	return nil
 }
@@ -106,13 +100,7 @@ func (e *kafkaMetricsProducer) metricsDataPusher(ctx context.Context, md pmetric
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-			}
-		}
-		return err
+		return wrapKafkaProducerError(err)
 	}
 	return nil
 }
@@ -164,13 +152,7 @@ func (e *kafkaLogsProducer) logsDataPusher(ctx context.Context, ld plog.Logs) er
 	}
 	err = e.producer.SendMessages(messages)
 	if err != nil {
-		var prodErr sarama.ProducerErrors
-		if errors.As(err, &prodErr) {
-			if len(prodErr) > 0 {
-				return kafkaErrors{len(prodErr), prodErr[0].Err.Error()}
-			}
-		}
-		return err
+		return wrapKafkaProducerError(err)
 	}
 	return nil
 }
@@ -286,4 +268,25 @@ func encodingToComponentID(encoding string) (*component.ID, error) {
 	}
 	id := component.NewID(componentType)
 	return &id, nil
+}
+
+func wrapKafkaProducerError(err error) error {
+	var producerErrs sarama.ProducerErrors
+	if !errors.As(err, &producerErrs) || len(producerErrs) == 0 {
+		return err
+	}
+
+	areConfigErrs := false
+	var confErr sarama.ConfigurationError
+	for _, producerErr := range producerErrs {
+		if areConfigErrs = errors.As(producerErr.Err, &confErr); !areConfigErrs {
+			break
+		}
+	}
+
+	if areConfigErrs {
+		return consumererror.NewPermanent(confErr)
+	}
+
+	return kafkaErrors{len(producerErrs), producerErrs[0].Err.Error()}
 }
