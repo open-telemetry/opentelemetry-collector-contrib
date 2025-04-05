@@ -173,7 +173,7 @@ func TestCustomCapability_SendMessage(t *testing.T) {
 
 		channel, err := sender.SendMessage(messageType, messageBytes)
 		require.NoError(t, err)
-		require.Nil(t, channel, nil)
+		require.Nil(t, channel)
 	})
 }
 
