@@ -142,7 +142,7 @@ The following settings can be optionally configured:
   - Default: `60s`
 - `database_name_attribute`(DEPRECATED): the attribute name used to identify the database name from span attributes.
   - Default: `db.name`
-- `database_name_attributes`: the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
+- `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
   - Default: `[db.name]`
 
 ## Example configurations
