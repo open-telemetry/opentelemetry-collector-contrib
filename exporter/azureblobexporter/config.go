@@ -34,6 +34,11 @@ type BlobNameFormat struct {
 	Params         map[string]string `mapstructure:"params"`
 }
 
+type AppendBlob struct {
+	Enabled   bool   `mapstructure:"enabled"`
+	Separator string `mapstructure:"separator"`
+}
+
 type Authentication struct {
 	// Type is the authentication type. supported values are connection_string, service_principal, system_managed_identity and user_managed_identity
 	Type AuthType `mapstructure:"type"`
@@ -74,6 +79,9 @@ type Config struct {
 
 	// FormatType is the format of encoded telemetry data. Supported values are json and proto.
 	FormatType string `mapstructure:"format"`
+
+	// AppendBlob configures append blob behavior
+	AppendBlob *AppendBlob `mapstructure:"append_blob"`
 
 	// Encoding extension to apply for logs/metrics/traces. If present, overrides the marshaler configuration option and format.
 	Encodings *Encodings `mapstructure:"encodings"`

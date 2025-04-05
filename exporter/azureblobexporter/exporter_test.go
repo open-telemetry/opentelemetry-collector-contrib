@@ -5,6 +5,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
+	"fmt"
 	"io"
 	"path/filepath"
 	"strings"
@@ -12,6 +13,7 @@ import (
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/appendblob"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"github.com/tj/assert"
@@ -182,4 +184,100 @@ func (_m *mockAzBlobClient) URL() string {
 func (_m *mockAzBlobClient) UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
 	args := _m.Called(ctx, containerName, blobName, body, o)
 	return args.Get(0).(azblob.UploadStreamResponse), args.Error(1)
+}
+
+func (_m *mockAzBlobClient) AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
+	args := _m.Called(ctx, containerName, blobName, data, o)
+	return args.Error(0)
+}
+
+func TestExporterAppendBlob(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	c := &Config{
+		Auth: &Authentication{
+			Type:             ConnectionString,
+			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
+		},
+		Container: &Container{
+			Metrics: "metrics",
+			Logs:    "logs",
+			Traces:  "traces",
+		},
+		BlobNameFormat: &BlobNameFormat{
+			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:     "2006/01/02/logs_15_04_05.json",
+			TracesFormat:   "2006/01/02/traces_15_04_05.json",
+			SerialNumRange: 10000,
+		},
+		FormatType: formatTypeJSON,
+		AppendBlob: &AppendBlob{
+			Enabled:   true,
+			Separator: "\n",
+		},
+		Encodings: &Encodings{},
+	}
+
+	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(nil)
+	ae.client = mockClient
+
+	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
+	err := ae.ConsumeLogs(context.Background(), logs)
+	assert.NoError(t, err)
+	mockClient.AssertExpectations(t)
+
+	// Test append blob disabled
+	c.AppendBlob.Enabled = false
+	ae = newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+	mockClient = &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("UploadStream", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(azblob.UploadStreamResponse{}, nil)
+	ae.client = mockClient
+
+	err = ae.ConsumeLogs(context.Background(), logs)
+	assert.NoError(t, err)
+	mockClient.AssertExpectations(t)
+}
+
+func TestExporterAppendBlobError(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+	c := &Config{
+		Auth: &Authentication{
+			Type:             ConnectionString,
+			ConnectionString: "DefaultEndpointsProtocol=https;AccountName=fakeaccount;AccountKey=ZmFrZWtleQ==;EndpointSuffix=core.windows.net",
+		},
+		Container: &Container{
+			Metrics: "metrics",
+			Logs:    "logs",
+			Traces:  "traces",
+		},
+		BlobNameFormat: &BlobNameFormat{
+			MetricsFormat:  "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:     "2006/01/02/logs_15_04_05.json",
+			TracesFormat:   "2006/01/02/traces_15_04_05.json",
+			SerialNumRange: 10000,
+		},
+		FormatType: formatTypeJSON,
+		AppendBlob: &AppendBlob{
+			Enabled:   true,
+			Separator: "\n",
+		},
+		Encodings: &Encodings{},
+	}
+
+	ae := newAzureBlobExporter(c, logger, pipeline.SignalLogs)
+	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
+
+	mockClient := &mockAzBlobClient{url: "http://mock"}
+	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("append error"))
+	ae.client = mockClient
+
+	logs := testdata.GenerateLogsTwoLogRecordsSameResource()
+	err := ae.ConsumeLogs(context.Background(), logs)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "failed to upload data: append error")
+	mockClient.AssertExpectations(t)
 }

@@ -6,13 +6,16 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"math/rand/v2"
 	"time"
 
+	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob"
+	"github.com/Azure/azure-sdk-for-go/sdk/storage/azblob/appendblob"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -33,6 +36,45 @@ type azureBlobExporter struct {
 type azblobClient interface {
 	UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error)
 	URL() string
+	AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error
+}
+
+type azblobClientImpl struct {
+	client *azblob.Client
+}
+
+func (c *azblobClientImpl) UploadStream(ctx context.Context, containerName string, blobName string, body io.Reader, o *azblob.UploadStreamOptions) (azblob.UploadStreamResponse, error) {
+	return c.client.UploadStream(ctx, containerName, blobName, body, o)
+}
+
+func (c *azblobClientImpl) URL() string {
+	return c.client.URL()
+}
+
+func (c *azblobClientImpl) AppendBlock(ctx context.Context, containerName string, blobName string, data []byte, o *appendblob.AppendBlockOptions) error {
+	containerClient := c.client.ServiceClient().NewContainerClient(containerName)
+	appendBlobClient := containerClient.NewAppendBlobClient(blobName)
+
+	_, err := appendBlobClient.AppendBlock(ctx, newReadSeekCloserWrapper(data), o)
+	if err == nil {
+		return nil
+	}
+
+	// Handle BlobNotFound error by creating the blob and retrying
+	var cerr *azcore.ResponseError
+	if errors.As(err, &cerr) && cerr.ErrorCode == "BlobNotFound" {
+		if _, err = appendBlobClient.Create(ctx, nil); err != nil {
+			return fmt.Errorf("failed to create append blob: %w", err)
+		}
+
+		_, err = appendBlobClient.AppendBlock(ctx, newReadSeekCloserWrapper(data), o)
+		if err != nil {
+			return fmt.Errorf("failed to append block after creation: %w", err)
+		}
+		return nil
+	}
+
+	return fmt.Errorf("failed to append block: %w", err)
 }
 
 func newAzureBlobExporter(config *Config, logger *zap.Logger, signal pipeline.Signal) *azureBlobExporter {
@@ -58,9 +100,11 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 
 	// create client based on auth type
 	authType := e.config.Auth.Type
+	azblobClient := &azblobClientImpl{}
+	e.client = azblobClient
 	switch authType {
 	case ConnectionString:
-		e.client, err = azblob.NewClientFromConnectionString(e.config.Auth.ConnectionString, nil)
+		azblobClient.client, err = azblob.NewClientFromConnectionString(e.config.Auth.ConnectionString, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create client from connection string: %w", err)
 		}
@@ -73,7 +117,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to create service principal credential: %w", err)
 		}
-		e.client, err = azblob.NewClient(e.config.URL, cred, nil)
+		azblobClient.client, err = azblob.NewClient(e.config.URL, cred, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create client with service principal: %w", err)
 		}
@@ -82,7 +126,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to create system managed identity credential: %w", err)
 		}
-		e.client, err = azblob.NewClient(e.config.URL, cred, nil)
+		azblobClient.client, err = azblob.NewClient(e.config.URL, cred, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create client with system managed identity: %w", err)
 		}
@@ -93,7 +137,7 @@ func (e *azureBlobExporter) start(_ context.Context, host component.Host) error 
 		if err != nil {
 			return fmt.Errorf("failed to create user managed identity credential: %w", err)
 		}
-		e.client, err = azblob.NewClient(e.config.URL, cred, nil)
+		azblobClient.client, err = azblob.NewClient(e.config.URL, cred, nil)
 		if err != nil {
 			return fmt.Errorf("failed to create client with user managed identity: %w", err)
 		}
@@ -118,7 +162,7 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, er
 	default:
 		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
-	return fmt.Sprintf("%s_%d", now.Format(format), randomInRange(1, int(e.config.BlobNameFormat.SerialNumRange))), nil
+	return fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange))), nil
 }
 
 func (e *azureBlobExporter) Capabilities() consumer.Capabilities {
@@ -162,17 +206,51 @@ func (e *azureBlobExporter) consumeData(ctx context.Context, data []byte, signal
 		return fmt.Errorf("failed to generate blobname: %w", err)
 	}
 
-	blobContentReader := bytes.NewReader(data)
-	_, err = e.client.UploadStream(ctx, e.config.Container.Traces, blobName, blobContentReader, nil)
+	var containerName string
+	switch signal {
+	case pipeline.SignalMetrics:
+		containerName = e.config.Container.Metrics
+	case pipeline.SignalLogs:
+		containerName = e.config.Container.Logs
+	case pipeline.SignalTraces:
+		containerName = e.config.Container.Traces
+	default:
+		return fmt.Errorf("unsupported signal type: %v", signal)
+	}
+
+	if e.config.AppendBlob != nil && e.config.AppendBlob.Enabled {
+		// Add separator if configured
+		if e.config.AppendBlob.Separator != "" {
+			data = append(data, []byte(e.config.AppendBlob.Separator)...)
+		}
+		err = e.client.AppendBlock(ctx, containerName, blobName, data, nil)
+	} else {
+		blobContentReader := bytes.NewReader(data)
+		_, err = e.client.UploadStream(ctx, containerName, blobName, blobContentReader, nil)
+	}
+
 	if err != nil {
-		return fmt.Errorf("failed to upload traces data: %w", err)
+		return fmt.Errorf("failed to upload data: %w", err)
 	}
 
 	e.logger.Debug("Successfully exported data to Azure Blob Storage",
 		zap.String("account", e.client.URL()),
-		zap.String("container", e.config.Container.Traces),
+		zap.String("container", containerName),
 		zap.String("blob", blobName),
 		zap.Int("size", len(data)))
 
+	return nil
+}
+
+func newReadSeekCloserWrapper(data []byte) *readSeekCloserWrapper {
+	return &readSeekCloserWrapper{bytes.NewReader(data)}
+}
+
+// readSeekCloserWrapper wraps a bytes.Reader to implement io.ReadSeekCloser
+type readSeekCloserWrapper struct {
+	*bytes.Reader
+}
+
+func (r readSeekCloserWrapper) Close() error {
 	return nil
 }
