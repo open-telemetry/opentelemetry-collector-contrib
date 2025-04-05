@@ -166,7 +166,7 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
 	}
 
-	spanID, err := newSpanId(fmt.Sprintf("%d%s", pipelineID, finishedAt))
+	spanID, err := newSpanID(fmt.Sprintf("%d%s", pipelineID, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -190,7 +190,7 @@ func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommo
 		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
 	}
 
-	spanID, err := newSpanId(fmt.Sprintf("%d%s%s", pipelineID, stageName, finishedAt))
+	spanID, err := newSpanID(fmt.Sprintf("%d%s%s", pipelineID, stageName, finishedAt))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -200,7 +200,7 @@ func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommo
 
 // newJobSpanID creates a deterministic Job Span ID based on the unique jobID
 func newJobSpanID(jobID int) (pcommon.SpanID, error) {
-	spanID, err := newSpanId(strconv.Itoa(jobID))
+	spanID, err := newSpanID(strconv.Itoa(jobID))
 	if err != nil {
 		return pcommon.SpanID{}, err
 	}
@@ -208,8 +208,8 @@ func newJobSpanID(jobID int) (pcommon.SpanID, error) {
 	return spanID, nil
 }
 
-// newSpanId is a helper function to create a Span ID
-func newSpanId(input string) (pcommon.SpanID, error) {
+// newSpanID is a helper function to create a Span ID
+func newSpanID(input string) (pcommon.SpanID, error) {
 	hash := sha256.Sum256([]byte(input))
 	spanIDHex := hex.EncodeToString(hash[:])
 

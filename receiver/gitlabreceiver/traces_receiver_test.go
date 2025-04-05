@@ -15,14 +15,13 @@ import (
 
 	"github.com/stretchr/testify/require"
 	gitlab "gitlab.com/gitlab-org/api/client-go"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
-
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configopaque"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/gitlabreceiver/internal/metadata"
 )
@@ -268,7 +267,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "missing_event_header",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabTokenHeader: "secret123",
+				defaultGitlabSecretTokenHeader: "secret123",
 			},
 			secret:  "secret123",
 			wantErr: "missing header: X-Gitlab-Event",
@@ -277,8 +276,8 @@ func TestValidateReq(t *testing.T) {
 			name:   "invalid_secret",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabTokenHeader: "wrongsecret",
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitlabSecretTokenHeader: "wrongsecret",
+				defaultGitlabEventHeader:       "Pipeline Hook",
 			},
 			secret:  "secret123",
 			wantErr: "invalid header: X-Gitlab-Token",
@@ -287,8 +286,8 @@ func TestValidateReq(t *testing.T) {
 			name:   "valid_request",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabTokenHeader: "secret123",
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitlabSecretTokenHeader: "secret123",
+				defaultGitlabEventHeader:       "Pipeline Hook",
 			},
 			secret:        "secret123",
 			expectedEvent: "Pipeline Hook",
