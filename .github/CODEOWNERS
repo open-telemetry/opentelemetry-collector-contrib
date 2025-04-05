@@ -45,7 +45,7 @@ exporter/awsemfexporter/                                         @open-telemetry
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
 exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
 exporter/awsxrayexporter/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
-exporter/azureblobexporter/                                      @open-telemetry/collector-contrib-approvers @hgaol
+exporter/azureblobexporter/                                      @open-telemetry/collector-contrib-approvers @hgaol @MovieStoreGuy
 exporter/azuredataexplorerexporter/                              @open-telemetry/collector-contrib-approvers @ag-ramachandran
 exporter/azuremonitorexporter/                                   @open-telemetry/collector-contrib-approvers @pcwiese @hgaol
 exporter/bmchelixexporter/                                       @open-telemetry/collector-contrib-approvers @bertysentry @NassimBtk @MovieStoreGuy
