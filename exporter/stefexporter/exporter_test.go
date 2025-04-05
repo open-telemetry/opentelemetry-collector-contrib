@@ -294,7 +294,7 @@ func TestAckTimeout(t *testing.T) {
 
 			mockSrv.logger.Debug("Second set of data received after reconnection. Should be acknowledged.")
 			// Verify that acks were sent.
-			assert.EqualValues(t, pointCount, mockSrv.acksSent.Load())
+			assert.Equal(t, pointCount, mockSrv.acksSent.Load())
 		},
 	)
 }
@@ -349,7 +349,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	)
 
 	// Ensure data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }
 
 func TestCancelBlockedExport(t *testing.T) {
@@ -405,7 +405,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		require.Error(t, err)
 		stat, ok := status.FromError(err)
 		assert.True(t, ok)
-		assert.EqualValues(t, codes.Canceled, stat.Code())
+		assert.Equal(t, codes.Canceled, stat.Code())
 	}
 }
 
@@ -461,5 +461,5 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	// Ensure all data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }

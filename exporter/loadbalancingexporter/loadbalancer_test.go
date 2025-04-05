@@ -152,7 +152,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	_, e, _ := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
 
 	// verify
-	assert.Equal(t, "", e)
+	assert.Empty(t, e)
 }
 
 func TestMultipleResolvers(t *testing.T) {

@@ -229,7 +229,7 @@ func Test_newPlaceholder(t *testing.T) {
 
 func Test_GetServiceName(t *testing.T) {
 	t.Run("should return empty string on unset service.name", func(t *testing.T) {
-		require.Equal(t, "", GetServiceName(pcommon.NewMap()))
+		require.Empty(t, GetServiceName(pcommon.NewMap()))
 	})
 	t.Run("should return correct string from service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()
@@ -239,7 +239,7 @@ func Test_GetServiceName(t *testing.T) {
 	t.Run("should return empty string on empty service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()
 		resAttr.PutEmpty(conventions.AttributeServiceName)
-		require.Equal(t, "", GetServiceName(resAttr))
+		require.Empty(t, GetServiceName(resAttr))
 	})
 	t.Run("should return string from non-string service.name", func(t *testing.T) {
 		resAttr := pcommon.NewMap()

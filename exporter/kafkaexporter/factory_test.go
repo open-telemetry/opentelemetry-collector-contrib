@@ -31,7 +31,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
-	assert.Equal(t, "", cfg.Topic)
+	assert.Empty(t, cfg.Topic)
 }
 
 func TestCreateMetricExporter(t *testing.T) {

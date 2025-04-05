@@ -256,7 +256,7 @@ func TestSyncMetadata(t *testing.T) {
 
 			if tt.wantMetadataUpdate != nil {
 				require.Len(t, dimClient.getMetadataUpdates(), 1)
-				require.EqualValues(t, tt.wantMetadataUpdate, dimClient.getMetadataUpdates()[0])
+				require.Equal(t, tt.wantMetadataUpdate, dimClient.getMetadataUpdates()[0])
 			} else {
 				require.Empty(t, dimClient.getMetadataUpdates())
 			}

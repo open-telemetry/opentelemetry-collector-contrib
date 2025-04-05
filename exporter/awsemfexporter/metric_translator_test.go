@@ -170,7 +170,7 @@ func hashMetricSlice(metricSlice []cWMetricInfo) []string {
 // assertDimsEqual asserts whether dimension sets are equal
 // (i.e. has same sets of dimensions), regardless of order.
 func assertDimsEqual(t *testing.T, expected, actual [][]string) {
-	assert.Equal(t, len(expected), len(actual))
+	assert.Len(t, actual, len(expected))
 	expectedDimensions := normalizeDimensionality(expected)
 	actualDimensions := normalizeDimensionality(actual)
 	assert.Equal(t, expectedDimensions, actualDimensions)
@@ -208,7 +208,7 @@ func assertCWMeasurementEqual(t *testing.T, expected, actual cWMeasurement) {
 	assert.Equal(t, expected.Namespace, actual.Namespace)
 
 	// Check metrics
-	assert.Equal(t, len(expected.Metrics), len(actual.Metrics))
+	assert.Len(t, actual.Metrics, len(expected.Metrics))
 	expectedHashSlice := hashMetricSlice(expected.Metrics)
 	actualHashSlice := hashMetricSlice(actual.Metrics)
 	assert.Equal(t, expectedHashSlice, actualHashSlice)
@@ -219,7 +219,7 @@ func assertCWMeasurementEqual(t *testing.T, expected, actual cWMeasurement) {
 
 // assertCWMeasurementSliceEqual asserts whether CW Measurements are equal, regardless of order.
 func assertCWMeasurementSliceEqual(t *testing.T, expected, actual []cWMeasurement) {
-	assert.Equal(t, len(expected), len(actual))
+	assert.Len(t, actual, len(expected))
 	seen := make([]bool, len(expected))
 	for _, actualMeasurement := range actual {
 		hasMatch := false
@@ -239,7 +239,7 @@ func assertCWMeasurementSliceEqual(t *testing.T, expected, actual []cWMeasuremen
 func assertCWMetricsEqual(t *testing.T, expected, actual *cWMetrics) {
 	assert.Equal(t, expected.timestampMs, actual.timestampMs)
 	assert.Equal(t, expected.fields, actual.fields)
-	assert.Equal(t, len(expected.measurements), len(actual.measurements))
+	assert.Len(t, actual.measurements, len(expected.measurements))
 	assertCWMeasurementSliceEqual(t, expected.measurements, actual.measurements)
 }
 
@@ -1452,7 +1452,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 
 			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 			assert.NotNil(t, cWMeasurements)
-			assert.Equal(t, len(tc.expectedMeasurements), len(cWMeasurements))
+			assert.Len(t, cWMeasurements, len(tc.expectedMeasurements))
 			assertCWMeasurementSliceEqual(t, tc.expectedMeasurements, cWMeasurements)
 		})
 	}

@@ -877,7 +877,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.Equal(t, tt.expectedLabels, newLabels)
 			assert.NoError(t, err)
 		})
 	}
@@ -892,7 +892,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.Equal(t, tt.expectedLabels, newLabels)
 			assert.NoError(t, err)
 		})
 	}

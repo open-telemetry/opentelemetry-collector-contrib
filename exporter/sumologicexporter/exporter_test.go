@@ -100,7 +100,7 @@ func TestAllSuccess(t *testing.T) {
 		func(_ http.ResponseWriter, req *http.Request) {
 			body := extractBody(t, req)
 			assert.Equal(t, `Example log`, body)
-			assert.Equal(t, "", req.Header.Get("X-Sumo-Fields"))
+			assert.Empty(t, req.Header.Get("X-Sumo-Fields"))
 		},
 	})
 

@@ -76,7 +76,7 @@ func TestSendTraces(t *testing.T) {
 	}, 10*time.Second, 5*time.Millisecond)
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
-	assert.EqualValues(t, newData, traces[0])
+	assert.Equal(t, newData, traces[0])
 }
 
 func TestSendTraces_NoBackend(t *testing.T) {

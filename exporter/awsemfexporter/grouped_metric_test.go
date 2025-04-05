@@ -118,7 +118,7 @@ func TestAddToGroupedMetric(t *testing.T) {
 
 			assert.Len(t, groupedMetrics, 1)
 			for _, v := range groupedMetrics {
-				assert.Equal(t, len(tc.expectedMetricInfo), len(v.metrics))
+				assert.Len(t, v.metrics, len(tc.expectedMetricInfo))
 				assert.Equal(t, tc.expectedMetricInfo, v.metrics)
 				assert.Len(t, v.labels, 2)
 				assert.Equal(t, generateTestMetricMetadata(namespace, timestamp, logGroup, logStreamName, instrumentationLibName, tc.expectedMetricType, 0), v.metadata)

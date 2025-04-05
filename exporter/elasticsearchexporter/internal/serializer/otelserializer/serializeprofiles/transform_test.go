@@ -703,7 +703,7 @@ func TestStackTrace(t *testing.T) {
 			stacktrace := stackTrace("", frames, frameTypes)
 			assert.Equal(t, tt.wantTrace, stacktrace)
 
-			assert.Equal(t, len(frames), len(frameTypes))
+			assert.Len(t, frameTypes, len(frames))
 		})
 	}
 }
