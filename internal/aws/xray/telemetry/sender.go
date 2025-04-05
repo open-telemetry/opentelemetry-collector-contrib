@@ -4,13 +4,15 @@
 package telemetry // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 
 import (
+	"context"
+	"io"
 	"os"
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -58,7 +60,7 @@ type telemetrySender struct {
 
 	// queue is used to keep records that failed to send for retry during
 	// the next period.
-	queue []*xray.TelemetryRecord
+	queue []types.TelemetryRecord
 
 	startOnce sync.Once
 	stopWait  sync.WaitGroup
@@ -150,34 +152,39 @@ func (p envMetadataProvider) get() string {
 }
 
 type ec2MetadataProvider struct {
-	client      *ec2metadata.EC2Metadata
+	client     *imds.Client
 	metadataKey string
 }
 
 func (p ec2MetadataProvider) get() string {
+	ctx := context.Background()
 	var metadata string
-	if result, err := p.client.GetMetadata(p.metadataKey); err == nil {
-		metadata = result
+	if result, err := p.client.GetMetadata(ctx, &imds.GetMetadataInput{Path: p.metadataKey}); err == nil {
+		// io.ReadCloser를 문자열로 변환
+		if content, err := io.ReadAll(result.Content); err == nil {
+			metadata = string(content)
+		}
+		result.Content.Close()
 	}
 	return metadata
 }
 
 // ToOptions returns the metadata options if enabled by the config.
-func ToOptions(cfg Config, sess *session.Session, settings *awsutil.AWSSessionSettings) []Option {
+func ToOptions(cfg Config, client *imds.Client, settings *awsutil.AWSSessionSettings) []Option {
 	if !cfg.IncludeMetadata {
 		return nil
 	}
-	metadataClient := ec2metadata.New(sess)
+	
 	return []Option{
 		WithHostname(getMetadata(
 			simpleMetadataProvider{metadata: cfg.Hostname},
 			envMetadataProvider{envKey: envAWSHostname},
-			ec2MetadataProvider{client: metadataClient, metadataKey: metadataHostname},
+			ec2MetadataProvider{client: client, metadataKey: metadataHostname},
 		)),
 		WithInstanceID(getMetadata(
 			simpleMetadataProvider{metadata: cfg.InstanceID},
 			envMetadataProvider{envKey: envAWSInstanceID},
-			ec2MetadataProvider{client: metadataClient, metadataKey: metadataInstanceID},
+			ec2MetadataProvider{client: client, metadataKey: metadataInstanceID},
 		)),
 		WithResourceARN(getMetadata(
 			simpleMetadataProvider{metadata: cfg.ResourceARN},
@@ -235,7 +242,12 @@ func (ts *telemetrySender) run() {
 			return
 		case <-ticker.C:
 			if ts.HasRecording() {
-				ts.enqueue(ts.Rotate())
+				// xray.TelemetryRecord를 types.TelemetryRecord로 변환하여 enqueue
+				v1Record := ts.Rotate()
+				if v1Record != nil {
+					v2Record := convertV1RecordToV2(v1Record)
+					ts.enqueue(v2Record)
+				}
 				ts.send()
 			}
 		}
@@ -243,31 +255,64 @@ func (ts *telemetrySender) run() {
 }
 
 // enqueue the record. If queue is full, drop the head of the queue and add.
-func (ts *telemetrySender) enqueue(record *xray.TelemetryRecord) {
+func (ts *telemetrySender) enqueue(record types.TelemetryRecord) {
 	for len(ts.queue) >= ts.queueSize {
-		var dropped *xray.TelemetryRecord
+		var dropped types.TelemetryRecord
 		dropped, ts.queue = ts.queue[0], ts.queue[1:]
 		if ts.logger != nil {
-			ts.logger.Debug("queue full, dropping telemetry record", zap.Time("dropped_timestamp", *dropped.Timestamp))
+			ts.logger.Debug("queue full, dropping telemetry record", 
+				zap.Time("dropped_timestamp", *dropped.Timestamp))
 		}
 	}
 	ts.queue = append(ts.queue, record)
 }
 
+// v1 TelemetryRecord를 v2 types.TelemetryRecord로 변환하는 함수
+func convertV1RecordToV2(record *types.TelemetryRecord) types.TelemetryRecord {
+	v2Record := types.TelemetryRecord{
+		SegmentsReceivedCount:  record.SegmentsReceivedCount,
+		SegmentsRejectedCount:  record.SegmentsRejectedCount,
+		SegmentsSentCount:      record.SegmentsSentCount,
+		SegmentsSpilloverCount: record.SegmentsSpilloverCount,
+		Timestamp:              record.Timestamp,
+	}
+
+	if record.BackendConnectionErrors != nil {
+		v2Record.BackendConnectionErrors = &types.BackendConnectionErrors{
+			HTTPCode4XXCount:       record.BackendConnectionErrors.HTTPCode4XXCount,
+			HTTPCode5XXCount:       record.BackendConnectionErrors.HTTPCode5XXCount,
+			ConnectionRefusedCount: record.BackendConnectionErrors.ConnectionRefusedCount,
+			OtherCount:             record.BackendConnectionErrors.OtherCount,
+			TimeoutCount:           record.BackendConnectionErrors.TimeoutCount,
+			UnknownHostCount:       record.BackendConnectionErrors.UnknownHostCount,
+		}
+	}
+
+	return v2Record
+}
+
 // send the records in the queue in batches. Updates the queue.
 func (ts *telemetrySender) send() {
+	ctx := context.Background()
+	
 	for i := len(ts.queue); i >= 0; i -= ts.batchSize {
 		startIndex := i - ts.batchSize
 		if startIndex < 0 {
 			startIndex = 0
 		}
+		
+		if startIndex >= i {
+			continue
+		}
+
 		input := &xray.PutTelemetryRecordsInput{
 			EC2InstanceId:    &ts.instanceID,
 			Hostname:         &ts.hostname,
 			ResourceARN:      &ts.resourceARN,
 			TelemetryRecords: ts.queue[startIndex:i],
 		}
-		if _, err := ts.client.PutTelemetryRecords(input); err != nil {
+		
+		if _, err := ts.client.PutTelemetryRecords(ctx, input); err != nil {
 			ts.RecordConnectionError(err)
 			ts.queue = ts.queue[:i]
 			return
