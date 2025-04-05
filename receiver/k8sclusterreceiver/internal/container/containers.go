@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	metadataPkg "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/utils"
@@ -23,6 +24,9 @@ const (
 	containerKeyStatus         = "container.status"
 	containerKeyStatusReason   = "container.status.reason"
 	containerCreationTimestamp = "container.creation_timestamp"
+	containerName              = "k8s.container.name"
+	containerImageName         = "container.image.name"
+	containerImageTag          = "container.image.tag"
 
 	// Values for container metadata
 	containerStatusRunning    = "running"
@@ -96,8 +100,22 @@ func RecordSpecMetrics(logger *zap.Logger, mb *imetadata.MetricsBuilder, c corev
 	mb.EmitForResource(imetadata.WithResource(rb.Emit()))
 }
 
-func GetMetadata(cs corev1.ContainerStatus) *metadata.KubernetesMetadata {
+func GetMetadata(pod *corev1.Pod, cs corev1.ContainerStatus, logger *zap.Logger) *metadata.KubernetesMetadata {
 	mdata := map[string]string{}
+
+	imageStr := cs.Image
+	image, err := docker.ParseImageName(cs.Image)
+	if err != nil {
+		docker.LogParseError(err, imageStr, logger)
+	} else {
+		mdata[containerImageName] = image.Repository
+		mdata[containerImageTag] = image.Tag
+	}
+	mdata[containerName] = cs.Name
+	mdata[constants.K8sKeyPodName] = pod.Name
+	mdata[constants.K8sKeyPodUID] = string(pod.UID)
+	mdata[constants.K8sKeyNamespaceName] = pod.Namespace
+	mdata[constants.K8sKeyNodeName] = pod.Spec.NodeName
 
 	if cs.State.Running != nil {
 		mdata[containerKeyStatus] = containerStatusRunning
