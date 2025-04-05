@@ -41,7 +41,7 @@ func TestWithFilterNode(t *testing.T) {
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, "", p.filters.Node)
+	assert.Empty(t, p.filters.Node)
 
 	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}

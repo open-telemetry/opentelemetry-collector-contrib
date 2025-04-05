@@ -16,7 +16,7 @@ import (
 func Test_LogFunctions(t *testing.T) {
 	expected := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
 	actual := LogFunctions()
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}
