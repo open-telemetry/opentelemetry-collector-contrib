@@ -14,6 +14,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
 
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/proxy"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsxrayreceiver/internal/metadata"
@@ -27,6 +29,17 @@ const (
 	maxPollerCount = 2
 )
 
+func newXRayClient(ctx context.Context, cfg *Config) (*xray.Client, error) {
+	// AWS 설정 로딩
+	awsCfg, err := cfg.LoadAWSConfig(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("failed to load AWS config: %w", err)
+	}
+	
+	// X-Ray 클라이언트 생성
+	return xray.NewFromConfig(awsCfg), nil
+}
+
 // xrayReceiver implements the receiver.Traces interface for converting
 // AWS X-Ray segment document into the OT internal trace format.
 type xrayReceiver struct {
@@ -36,11 +49,14 @@ type xrayReceiver struct {
 	consumer consumer.Traces
 	obsrecv  *receiverhelper.ObsReport
 	registry telemetry.Registry
+	xrayClient *xray.Client 
+	region     string   	
 }
 
 func newReceiver(config *Config,
 	consumer consumer.Traces,
 	set receiver.Settings,
+	client *xray.Client,
 ) (receiver.Traces, error) {
 	set.Logger.Info("Going to listen on endpoint for X-Ray segments",
 		zap.String(udppoller.Transport, config.Endpoint))
@@ -71,12 +87,14 @@ func newReceiver(config *Config,
 	}
 
 	return &xrayReceiver{
-		poller:   poller,
-		server:   srv,
-		settings: set,
-		consumer: consumer,
-		obsrecv:  obsrecv,
-		registry: telemetry.GlobalRegistry(),
+		poller:     poller,
+		server:     srv,
+		settings:   set,
+		consumer:   consumer,
+		obsrecv:    obsrecv,
+		registry:   telemetry.GlobalRegistry(),
+		xrayClient: client,
+		region:     config.Region,
 	}, nil
 }
 
