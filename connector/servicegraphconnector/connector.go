@@ -614,11 +614,13 @@ func (p *serviceGraphConnector) buildMetricKey(clientName, serverName, connectio
 	metricKey.WriteString(clientName + metricKeySeparator + serverName + metricKeySeparator + connectionType + metricKeySeparator + failed)
 
 	for _, dimName := range p.config.Dimensions {
-		dim, ok := edgeDimensions[dimName]
-		if !ok {
-			continue
+		for _, kind := range []string{clientKind, serverKind} {
+			dim, ok := edgeDimensions[kind+"_"+dimName]
+			if !ok {
+				continue
+			}
+			metricKey.WriteString(metricKeySeparator + kind + "_" + dimName + "_" + dim)
 		}
-		metricKey.WriteString(metricKeySeparator + dim)
 	}
 
 	return metricKey.String()
