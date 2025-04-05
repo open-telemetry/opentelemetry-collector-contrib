@@ -27,6 +27,7 @@ type Input struct {
 	buffer              *Buffer
 	channel             string
 	maxReads            int
+	currentMaxReads     int
 	startAt             string
 	raw                 bool
 	excludeProviders    map[string]struct{}
@@ -197,7 +198,14 @@ func (i *Input) readOnInterval(ctx context.Context) {
 
 // read will read events from the subscription.
 func (i *Input) read(ctx context.Context) {
-	events, err := i.subscription.Read(i.maxReads)
+	events, actualMaxReads, err := i.subscription.Read(i.currentMaxReads)
+
+	// Update the current max reads if it changed
+	if err == nil && actualMaxReads < i.currentMaxReads {
+		i.currentMaxReads = actualMaxReads
+		i.Logger().Debug("Encountered RPC_S_INVALID_BOUND, reduced batch size", zap.Int("current_batch_size", i.currentMaxReads), zap.Int("original_batch_size", i.maxReads))
+	}
+
 	if err != nil {
 		i.Logger().Error("Failed to read events from subscription", zap.Error(err))
 		if i.isRemote() && (errors.Is(err, windows.ERROR_INVALID_HANDLE) || errors.Is(err, errSubscriptionHandleNotOpen)) {
@@ -230,6 +238,9 @@ func (i *Input) read(ctx context.Context) {
 		}
 		if len(events) == n+1 {
 			i.updateBookmarkOffset(ctx, event)
+			if err := i.subscription.bookmark.Update(event); err != nil {
+				i.Logger().Error("Failed to update bookmark from event", zap.Error(err))
+			}
 		}
 		event.Close()
 	}

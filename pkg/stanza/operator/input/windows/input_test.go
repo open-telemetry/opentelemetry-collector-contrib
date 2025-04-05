@@ -6,13 +6,16 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
+	"context"
 	"errors"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zaptest/observer"
 	"golang.org/x/sys/windows"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
@@ -127,4 +130,84 @@ func TestInputStart_BadChannelName(t *testing.T) {
 	err := input.Start(persister)
 	assert.ErrorContains(t, err, "failed to open subscription for remote server")
 	assert.ErrorContains(t, err, "The specified channel could not be found")
+}
+
+// TestInputRead_RPCInvalidBound tests that the Input handles RPC_S_INVALID_BOUND errors properly
+func TestInputRead_RPCInvalidBound(t *testing.T) {
+	// Save original procs and restore after test
+	originalNextProc := nextProc
+	originalCloseProc := closeProc
+	originalSubscribeProc := subscribeProc
+
+	// Track calls to our mocked functions
+	var nextCalls, closeCalls, subscribeCalls int
+
+	// Mock the procs
+	closeProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			closeCalls++
+			return 1, 0, nil
+		},
+	}
+
+	subscribeProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			subscribeCalls++
+			return 42, 0, nil
+		},
+	}
+
+	nextProc = MockProc{
+		call: func(_ ...uintptr) (uintptr, uintptr, error) {
+			nextCalls++
+			if nextCalls == 1 {
+				return 0, 0, windows.RPC_S_INVALID_BOUND
+			}
+
+			return 1, 0, nil
+		},
+	}
+
+	defer func() {
+		nextProc = originalNextProc
+		closeProc = originalCloseProc
+		subscribeProc = originalSubscribeProc
+	}()
+
+	// Create a logger with an observer for testing log output
+	core, logs := observer.New(zap.DebugLevel)
+	logger := zap.New(core)
+
+	// Create input instance with mocked dependencies
+	input := newInput(component.TelemetrySettings{
+		Logger: logger,
+	})
+
+	// Set up test values
+	input.maxReads = 100
+	input.currentMaxReads = 100
+
+	// Set up subscription with valid handle and enough info to reopen
+	input.subscription = Subscription{
+		handle:        42, // Dummy handle
+		startAt:       "beginning",
+		sessionHandle: 0,
+		channel:       "test-channel",
+	}
+
+	// Call the method under test
+	ctx := context.Background()
+	input.read(ctx)
+
+	// Verify the correct number of calls to each mock
+	assert.Equal(t, 2, nextCalls, "nextProc should be called twice (initial failure and retry)")
+	assert.Equal(t, 1, closeCalls, "closeProc should be called once to close subscription")
+	assert.Equal(t, 1, subscribeCalls, "subscribeProc should be called once to reopen subscription")
+
+	// Verify that batch size was reduced
+	assert.Equal(t, 50, input.currentMaxReads)
+
+	// Verify that a warning log was generated
+	require.Equal(t, 1, logs.Len())
+	assert.Contains(t, logs.All()[0].Message, "Encountered RPC_S_INVALID_BOUND")
 }

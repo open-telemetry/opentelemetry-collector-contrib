@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -288,11 +287,7 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
-	}
+	var err error
 
 	switch mc.SQL {
 	case getSQLServerDatabaseIOQuery(mc.instanceName):
@@ -301,9 +296,9 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
-	case queryTextAndPlanQuery:
+	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
-	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
+	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -317,16 +312,12 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 
 func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
-	}
+	var err error
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
+	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
-	case queryTextAndPlanQuery:
+	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -368,13 +359,13 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	queryHash := hex.EncodeToString([]byte("0x37849E874171E3F3"))
 	queryPlanHash := hex.EncodeToString([]byte("0xD3112909429A1B50"))
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalElapsedTime, 846)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, rowsReturned, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, logicalWrites, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, physicalReads, 1)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, executionCount, 1)
-	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 1)
+	scraper.cacheAndDiff(queryHash, queryPlanHash, totalWorkerTime, 845)
 	scraper.cacheAndDiff(queryHash, queryPlanHash, totalGrant, 1)
 
 	scraper.client = mockClient{
@@ -394,6 +385,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.Equal(t, "top query", actualLogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).EventName())
 	assert.NoError(t, errs)
 }
 
@@ -452,6 +444,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 	tests := map[string]struct {
 		expectedFile string
 		mockClient   func(instance, sql string) sqlquery.DbClient
+		errors       bool
 	}{
 		"valid data": {
 			expectedFile: "expectedRecordDatabaseSampleQuery.yaml",
@@ -462,6 +455,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 					maxRowsPerQuery: 100,
 				}
 			},
+			errors: false,
 		},
 		"invalid data": {
 			expectedFile: "expectedRecordDatabaseSampleQueryWithInvalidData.yaml",
@@ -474,6 +468,7 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 					},
 				}
 			},
+			errors: true,
 		},
 	}
 
@@ -499,7 +494,11 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 			scraper.client = tc.mockClient(scraper.instanceName, scraper.sqlQuery)
 
 			actualLogs, err := scraper.ScrapeLogs(context.Background())
-			assert.NoError(t, err)
+			if tc.errors {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)

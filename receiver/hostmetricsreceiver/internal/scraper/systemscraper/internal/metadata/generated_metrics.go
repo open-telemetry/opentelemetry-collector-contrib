@@ -12,6 +12,20 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+var MetricsInfo = metricsInfo{
+	SystemUptime: metricInfo{
+		Name: "system.uptime",
+	},
+}
+
+type metricsInfo struct {
+	SystemUptime metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
