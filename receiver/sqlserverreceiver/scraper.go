@@ -113,15 +113,10 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(s.config.InstanceName, s.config.MaxQuerySampleCount, s.config.LookbackTime)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to template needed queries: %w", err)
-	}
-
 	switch s.sqlQuery {
-	case queryTextAndPlanQuery:
+	case getSQLServerQueryTextAndPlanQuery():
 		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
-	case getSQLServerQuerySamplesQuery(s.config.MaxRowsPerQuery):
+	case getSQLServerQuerySamplesQuery():
 		return s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
@@ -521,7 +516,13 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// the time returned from mssql is in microsecond
 		totalWorkerTime = "total_worker_time"
 	)
-	rows, err := s.client.QueryRows(ctx)
+
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("lookbackTime", -s.config.LookbackTime),
+		sql.Named("topNValue", s.config.TopQueryCount),
+		sql.Named("instanceName", s.config.InstanceName),
+	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
@@ -542,7 +543,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
-			// caching the total elapsed time (in millisecond) and compare in the next scrape.
+			// caching the total elapsed time (in microsecond) and compare in the next scrape.
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
 				totalElapsedTimeDiffsMicrosecond[i] = diff
 			}
@@ -900,7 +901,10 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitType = "wait_type"
 	const writes = "writes"
 
-	rows, err := s.client.QueryRows(ctx)
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("top", s.config.TopQueryCount),
+	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
 			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
