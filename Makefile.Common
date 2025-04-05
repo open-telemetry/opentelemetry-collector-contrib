@@ -16,9 +16,11 @@ GO_BUILD_TAGS=""
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
+GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
 GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -141,6 +143,11 @@ mod-integration-test: $(GOTESTSUM)
 	@if [ -e integration-coverage.txt ]; then \
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
+
+.PHONY: mod-integration-sudo-test
+mod-integration-sudo-test: $(GOTESTSUM)
+	@echo "running $(GOCMD) integration sudo (root/privileged) test ./... in `pwd`"
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
 
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
