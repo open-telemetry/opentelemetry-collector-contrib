@@ -30,6 +30,7 @@ The following settings are optional:
 - `generator_url` is the source of the alerts to be used in Alertmanager's payload. The default value is "opentelemetry-collector", and can be set to the URL of the opentelemetry collector.
 - `severity_attribute` is the SpanEvent Attribute name which can be used instead of default severity string in Alert payload
    e.g.: If `severity_attribute` is set to "foo" and the SpanEvent has an attribute called foo, foo's attribute value will be used as the severity value for that particular Alert generated from the SpanEvent.
+- `event_labels` is the list of Event Attributes that will be captured as Labels in the Alert payload if value exists.
 
 
 Example config:
@@ -41,6 +42,7 @@ exporters:
     endpoint: "https://a.new.alertmanager.target:9093"
     severity: "debug"
     severity_attribute: "foo"
+    event_labels: ["foo", "bar"]
     tls:
       cert_file: /var/lib/mycert.pem
       key_file: /var/lib/key.pem
