@@ -733,6 +733,99 @@ func TestVirtualNodeClientLabels(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestExponentialHistogram(t *testing.T) {
+	// Prepare
+	set := componenttest.NewNopTelemetrySettings()
+	set.Logger = zaptest.NewLogger(t)
+
+	cfg := &Config{
+		Dimensions: []string{"some-attribute", "non-existing-attribute"},
+		Store: StoreConfig{
+			MaxItems: 10,
+			TTL:      time.Nanosecond,
+		},
+		ExponentialHistogramMaxSize: 4,
+	}
+	conn, err := newConnector(set, cfg, newMockMetricsExporter())
+	require.NoError(t, err)
+	assert.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+
+	// Send spans to the connector
+	assert.NoError(t, conn.ConsumeTraces(context.Background(), buildSampleTrace(t, "val")))
+
+	// Force collection
+	if runtime.GOOS == "windows" {
+		// On Windows timing doesn't tick forward quickly for the store data to expire, force a wait before expiring.
+		time.Sleep(time.Second)
+	}
+	conn.store.Expire()
+	md, err := conn.buildMetrics()
+	assert.NoError(t, err)
+
+	assert.Equal(t, 3, md.MetricCount())
+
+	rms := md.ResourceMetrics()
+	assert.Equal(t, 1, rms.Len())
+
+	sms := rms.At(0).ScopeMetrics()
+	assert.Equal(t, 1, sms.Len())
+
+	ms := sms.At(0).Metrics()
+	assert.Equal(t, 3, ms.Len())
+
+	mCount := ms.At(0)
+	verifyCount(t, mCount)
+
+	expectAttributes := pcommon.NewMap()
+	expectAttributes.PutStr("client", "some-service")
+	expectAttributes.PutStr("server", "some-service")
+	expectAttributes.PutStr("connection_type", "")
+	expectAttributes.PutBool("failed", false)
+	expectAttributes.PutStr("client_some-attribute", "val")
+
+	mServerDuration := ms.At(1)
+	assert.Equal(t, "traces_service_graph_request_server", mServerDuration.Name())
+	expectServerDp := pmetric.NewExponentialHistogramDataPoint()
+	expectServerDp.SetCount(1)
+	expectServerDp.SetSum(2)
+	expectServerDp.SetMin(2)
+	expectServerDp.SetMax(2)
+	expectServerDp.SetZeroCount(0)
+	expectServerDp.SetScale(20)
+	expectServerDp.Positive().SetOffset(1048575)
+	expectServerDp.Positive().BucketCounts().FromRaw([]uint64{1})
+	expectAttributes.CopyTo(expectServerDp.Attributes())
+	verifyExpDuration(t, mServerDuration, expectServerDp)
+
+	mClientDuration := ms.At(2)
+	assert.Equal(t, "traces_service_graph_request_client", mClientDuration.Name())
+	expectClientDp := pmetric.NewExponentialHistogramDataPoint()
+	expectClientDp.SetCount(1)
+	expectClientDp.SetSum(1)
+	expectClientDp.SetMin(1)
+	expectClientDp.SetMax(1)
+	expectClientDp.SetZeroCount(0)
+	expectClientDp.SetScale(20)
+	expectClientDp.Positive().SetOffset(-1)
+	expectClientDp.Positive().BucketCounts().FromRaw([]uint64{1})
+	expectAttributes.CopyTo(expectClientDp.Attributes())
+	verifyExpDuration(t, mClientDuration, expectClientDp)
+
+	assert.NoError(t, conn.Shutdown(context.Background()))
+}
+
+func verifyExpDuration(t *testing.T, m pmetric.Metric, expectedDp pmetric.ExponentialHistogramDataPoint) {
+	assert.Equal(t, pmetric.MetricTypeExponentialHistogram, m.Type())
+	dps := m.ExponentialHistogram().DataPoints()
+	assert.Equal(t, 1, dps.Len())
+	dp := dps.At(0)
+
+	// ignore time
+	dp.SetTimestamp(pcommon.Timestamp(0))
+	dp.SetStartTimestamp(pcommon.Timestamp(0))
+	assert.Equal(t, expectedDp, dp)
+}
+
 // ptr returns a pointer to the given value.
 func ptr[T any](value T) *T {
 	return &value
