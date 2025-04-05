@@ -377,8 +377,8 @@ func TestSendTraces(t *testing.T) {
 	md := rcv.getMetadata()
 
 	// Expect caller1 and the static header
-	require.EqualValues(t, expectedHeader, md.Get("header"))
-	require.EqualValues(t, []string{caller1}, md.Get("callerid"))
+	require.Equal(t, expectedHeader, md.Get("header"))
+	require.Equal(t, []string{caller1}, md.Get("callerid"))
 
 	// A trace with 2 spans.
 	td = testdata.GenerateTraces(2)
@@ -394,16 +394,16 @@ func TestSendTraces(t *testing.T) {
 	// Verify received span.
 	assert.EqualValues(t, 2, rcv.totalItems.Load())
 	assert.EqualValues(t, 2, rcv.requestCount.Load())
-	assert.EqualValues(t, td, rcv.getLastRequest())
+	assert.Equal(t, td, rcv.getLastRequest())
 
 	// Test the static metadata
 	md = rcv.getMetadata()
-	require.EqualValues(t, expectedHeader, md.Get("header"))
+	require.Equal(t, expectedHeader, md.Get("header"))
 	require.Len(t, md.Get("User-Agent"), 1)
 	require.Contains(t, md.Get("User-Agent")[0], "Collector/1.2.3test")
 
 	// Test the caller's dynamic metadata
-	require.EqualValues(t, []string{caller2}, md.Get("callerid"))
+	require.Equal(t, []string{caller2}, md.Get("callerid"))
 
 	// Return partial success
 	rcv.setExportResponse(func() ptraceotlp.ExportResponse {
@@ -568,10 +568,10 @@ func TestSendMetrics(t *testing.T) {
 	// Verify received metrics.
 	assert.EqualValues(t, uint32(2), rcv.requestCount.Load())
 	assert.EqualValues(t, uint32(4), rcv.totalItems.Load())
-	assert.EqualValues(t, md, rcv.getLastRequest())
+	assert.Equal(t, md, rcv.getLastRequest())
 
 	mdata := rcv.getMetadata()
-	require.EqualValues(t, expectedHeader, mdata.Get("header"))
+	require.Equal(t, expectedHeader, mdata.Get("header"))
 	require.Len(t, mdata.Get("User-Agent"), 1)
 	require.Contains(t, mdata.Get("User-Agent")[0], "Collector/1.2.3test")
 
@@ -638,19 +638,19 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 	td := testdata.GenerateTraces(2)
 	ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
-	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
-	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	startServerAndMakeRequest(t, exp, td, ln)
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
-	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 
 	// First call to startServerAndMakeRequest closed the connection. There is a race condition here that the
@@ -661,7 +661,7 @@ func TestSendTraceDataServerDownAndUp(t *testing.T) {
 
 	ctx, cancel = context.WithTimeout(context.Background(), 1*time.Second)
 	assert.Error(t, exp.ConsumeTraces(ctx, td))
-	assert.EqualValues(t, context.DeadlineExceeded, ctx.Err())
+	assert.Equal(t, context.DeadlineExceeded, ctx.Err())
 	cancel()
 }
 
@@ -793,7 +793,7 @@ func startServerAndMakeRequest(t *testing.T, exp exporter.Traces, td ptrace.Trac
 
 	// Verify received span.
 	assert.EqualValues(t, 2, rcv.totalItems.Load())
-	assert.EqualValues(t, expectedData, rcv.getLastRequest())
+	assert.Equal(t, expectedData, rcv.getLastRequest())
 }
 
 func TestSendLogData(t *testing.T) {
@@ -860,7 +860,7 @@ func TestSendLogData(t *testing.T) {
 	// Verify received logs.
 	assert.EqualValues(t, 2, rcv.requestCount.Load())
 	assert.EqualValues(t, 2, rcv.totalItems.Load())
-	assert.EqualValues(t, ld, rcv.getLastRequest())
+	assert.Equal(t, ld, rcv.getLastRequest())
 
 	md := rcv.getMetadata()
 	require.Len(t, md.Get("User-Agent"), 1)
@@ -989,14 +989,14 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify two items, one request received.
-	assert.EqualValues(t, int32(2), rcv.totalItems.Load())
-	assert.EqualValues(t, int32(1), rcv.requestCount.Load())
-	assert.EqualValues(t, td, rcv.getLastRequest())
+	assert.Equal(t, int32(2), rcv.totalItems.Load())
+	assert.Equal(t, int32(1), rcv.requestCount.Load())
+	assert.Equal(t, td, rcv.getLastRequest())
 
 	// Expect the correct metadata, with or without arrow.
 	md := rcv.getMetadata()
-	require.EqualValues(t, []string{"arrow"}, md.Get("callerid"))
-	require.EqualValues(t, expectedHeader, md.Get("header"))
+	require.Equal(t, []string{"arrow"}, md.Get("callerid"))
+	require.Equal(t, expectedHeader, md.Get("header"))
 }
 
 func okStatusFor(id int64) *arrowpb.BatchStatus {
@@ -1136,9 +1136,9 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	}, 10*time.Second, 5*time.Millisecond)
 
 	// Verify two items, one request received.
-	assert.EqualValues(t, int32(2), rcv.totalItems.Load())
-	assert.EqualValues(t, int32(1), rcv.requestCount.Load())
-	assert.EqualValues(t, td, rcv.getLastRequest())
+	assert.Equal(t, int32(2), rcv.totalItems.Load())
+	assert.Equal(t, int32(1), rcv.requestCount.Load())
+	assert.Equal(t, td, rcv.getLastRequest())
 }
 
 func TestUserDialOptions(t *testing.T) {

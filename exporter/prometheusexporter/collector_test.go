@@ -689,7 +689,7 @@ func TestAccumulateHistograms(t *testing.T) {
 					h := pbMetric.Histogram
 					require.Equal(t, tt.histogramCount, h.GetSampleCount())
 					require.Equal(t, tt.histogramSum, h.GetSampleSum())
-					require.Equal(t, len(tt.histogramPoints), len(h.Bucket))
+					require.Len(t, h.Bucket, len(tt.histogramPoints))
 
 					for _, b := range h.Bucket {
 						require.Equal(t, tt.histogramPoints[(*b).GetUpperBound()], b.GetCumulativeCount())

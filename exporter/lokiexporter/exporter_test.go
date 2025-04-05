@@ -276,7 +276,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
 			// end of the test function
-			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
+			assert.Len(t, tC.expected, len(actualPushRequestPerTenant))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
 				assert.True(t, ok)

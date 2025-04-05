@@ -56,7 +56,7 @@ func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrde
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
 
-	require.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	require.Len(t, actualItems, len(expectedItems), "want %d items, got %d", len(expectedItems), len(actualItems))
 	for i, want := range expectedItems {
 		got := actualItems[i]
 		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)

@@ -140,7 +140,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 
 	assert.Equal(t, "400", data.ResponseCode)
 	assert.False(t, data.Success)
-	assert.Equal(t, "", data.Source)
+	assert.Empty(t, data.Source)
 	assert.Equal(t, "GET /bizzle", data.Name)
 	assert.Equal(t, "https://foo/bar?biz=baz", data.Url)
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
