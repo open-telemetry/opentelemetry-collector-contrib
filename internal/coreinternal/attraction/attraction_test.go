@@ -893,7 +893,7 @@ func TestInvalidConfig(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			ap, err := NewAttrProc(&Settings{Actions: tc.actionLists})
 			assert.Nil(t, ap)
-			assert.EqualValues(t, errors.New(tc.errorString), err)
+			assert.Equal(t, errors.New(tc.errorString), err)
 		})
 	}
 }

@@ -86,6 +86,6 @@ func TestRecordConnectionError(t *testing.T) {
 	for _, testCase := range testCases {
 		recorder.RecordConnectionError(testCase.input)
 		snapshot := recorder.Rotate()
-		assert.EqualValues(t, testCase.want().BackendConnectionErrors, snapshot.BackendConnectionErrors)
+		assert.Equal(t, testCase.want().BackendConnectionErrors, snapshot.BackendConnectionErrors)
 	}
 }
