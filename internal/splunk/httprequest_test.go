@@ -6,6 +6,7 @@ package splunk
 import (
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"testing"
 	"time"
@@ -53,6 +54,9 @@ func TestConsumeMetrics(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			resp := &http.Response{
+				Request: &http.Request{
+					URL: &url.URL{Scheme: "http", Host: "splunk.com", Path: "/endpoint"},
+				},
 				StatusCode: tt.httpResponseCode,
 			}
 			if tt.retryAfter != 0 {
@@ -74,7 +78,7 @@ func TestConsumeMetrics(t *testing.T) {
 			}
 
 			if tt.wantThrottleErr {
-				expected := fmt.Errorf("HTTP %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
+				expected := fmt.Errorf("HTTP \"/endpoint\" %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
 				assert.EqualValues(t, expected, err)
 				return

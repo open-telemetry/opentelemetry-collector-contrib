@@ -104,11 +104,10 @@ telemetry:
 func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor {
 	t.Helper()
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
 
@@ -1513,8 +1512,7 @@ service:
 }
 
 func TestSupervisor_configStrictUnmarshal(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	configuration := `
 server:
@@ -1528,7 +1526,7 @@ capabilities:
 `
 
 	cfgPath := filepath.Join(tmpDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	err := os.WriteFile(cfgPath, []byte(configuration), 0o600)
 	require.NoError(t, err)
 
 	_, err = config.Load(cfgPath)

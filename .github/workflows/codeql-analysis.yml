@@ -6,6 +6,8 @@ on:
     paths-ignore:
       - "**/README.md"
 
+permissions: read-all
+
 jobs:
   CodeQL-Build:
     runs-on: macos-latest
