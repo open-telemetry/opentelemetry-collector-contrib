@@ -38,6 +38,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
@@ -1035,6 +1036,36 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	return cfg.Bytes()
 }
 
+func (s *Supervisor) composeAgentConfigFiles() []byte {
+	conf := confmap.New()
+
+	for _, file := range s.config.Agent.ConfigFiles {
+		cfgBytes, err := os.ReadFile(file)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not read local config file", zap.Error(err))
+			continue
+		}
+
+		cfgMap, err := yaml.Parser().Unmarshal(cfgBytes)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not unmarshal local config file", zap.Error(err))
+			continue
+		}
+		err = conf.Merge(confmap.NewFromStringMap(cfgMap))
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
+			continue
+		}
+	}
+
+	b, err := yaml.Parser().Marshal(conf.ToStringMap())
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
+		return []byte("")
+	}
+	return b
+}
+
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
 	var lastRecvRemoteConfig, lastRecvOwnTelemetryConfig []byte
 	var err error
@@ -1225,6 +1256,10 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 	}
 
 	if err = k.Load(rawbytes.Provider(s.composeOpAMPExtensionConfig()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return false, err
+	}
+
+	if err = k.Load(rawbytes.Provider(s.composeAgentConfigFiles()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
 		return false, err
 	}
 
