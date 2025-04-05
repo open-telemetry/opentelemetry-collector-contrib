@@ -5,8 +5,11 @@ package stefreceiver // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configgrpc"
+	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 
@@ -23,24 +26,28 @@ func NewFactory() receiver.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	return &Config{}
+	grpcCfg := configgrpc.NewDefaultServerConfig()
+	grpcCfg.NetAddr = confignet.NewDefaultAddrConfig()
+	grpcCfg.NetAddr.Endpoint = "localhost:4320"
+	grpcCfg.NetAddr.Transport = confignet.TransportTypeTCP
+	grpcCfg.ReadBufferSize = 512 * 1024
+
+	return &Config{
+		ServerConfig: *grpcCfg,
+		AckInterval:  10 * time.Millisecond,
+	}
 }
 
 func createMetricsReceiver(
 	_ context.Context,
-	_ receiver.Settings,
-	_ component.Config,
-	_ consumer.Metrics,
+	set receiver.Settings,
+	cfg component.Config,
+	nextConsumer consumer.Metrics,
 ) (receiver.Metrics, error) {
-	return &stefReceiver{}, nil
-}
-
-type stefReceiver struct{}
-
-func (s stefReceiver) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (s stefReceiver) Shutdown(_ context.Context) error {
-	return nil
+	oCfg := cfg.(*Config)
+	return &stefReceiver{
+		cfg:                 oCfg,
+		nextMetricsConsumer: nextConsumer,
+		settings:            set,
+	}, nil
 }
