@@ -8,7 +8,6 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"errors"
-	"fmt"
 	"math/rand/v2"
 	"os"
 	"path/filepath"
@@ -288,11 +287,7 @@ func readFile(fname string) ([]sqlquery.StringMap, error) {
 
 func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
-	}
+	var err error
 
 	switch mc.SQL {
 	case getSQLServerDatabaseIOQuery(mc.instanceName):
@@ -301,9 +296,9 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
-	case queryTextAndPlanQuery:
+	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
-	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
+	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordDatabaseSampleQueryData.txt")
 	default:
 		return nil, errors.New("No valid query found")
@@ -317,16 +312,12 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 
 func (mc mockInvalidClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, error) {
 	var queryResults []sqlquery.StringMap
-
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(mc.instanceName, mc.maxQuerySampleCount, mc.lookbackTime)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get query text and plan query: %w", err)
-	}
+	var err error
 
 	switch mc.SQL {
-	case getSQLServerQuerySamplesQuery(mc.maxRowsPerQuery):
+	case getSQLServerQuerySamplesQuery():
 		queryResults, err = readFile("recordInvalidDatabaseSampleQueryData.txt")
-	case queryTextAndPlanQuery:
+	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryInvalidData.txt")
 	default:
 		return nil, errors.New("No valid query found")
