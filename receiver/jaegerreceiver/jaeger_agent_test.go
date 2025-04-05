@@ -143,7 +143,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 
 	gotTraces := sink.AllTraces()
 	require.Len(t, gotTraces, 1)
-	assert.EqualValues(t, td, gotTraces[0])
+	assert.Equal(t, td, gotTraces[0])
 }
 
 func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {

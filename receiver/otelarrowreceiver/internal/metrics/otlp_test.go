@@ -75,7 +75,7 @@ func TestExport_Success(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, metricsSink.AllMetrics(), 1)
-	assert.EqualValues(t, md, metricsSink.AllMetrics()[0])
+	assert.Equal(t, md, metricsSink.AllMetrics()[0])
 
 	// One self-tracing spans is issued.
 	require.NoError(t, selfProv.ForceFlush(context.Background()))

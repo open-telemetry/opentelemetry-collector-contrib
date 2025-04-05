@@ -79,6 +79,6 @@ func TestECSInstanceInfo(t *testing.T) {
 
 	assert.NotNil(t, ecsinstanceinfo)
 
-	assert.Equal(t, "", ecsinstanceinfo.GetClusterName())
-	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
+	assert.Empty(t, ecsinstanceinfo.GetClusterName())
+	assert.Empty(t, ecsinstanceinfo.GetContainerInstanceID())
 }

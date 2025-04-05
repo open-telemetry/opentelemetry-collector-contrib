@@ -21,7 +21,7 @@ func TestDefaultTracesUnMarshaler(t *testing.T) {
 		"zipkin_thrift",
 	}
 	marshalers := defaultTracesUnmarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -36,7 +36,7 @@ func TestDefaultMetricsUnMarshaler(t *testing.T) {
 		"otlp_proto",
 	}
 	marshalers := defaultMetricsUnmarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -51,7 +51,7 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 		"otlp_proto",
 	}
 	marshalers := defaultLogsUnmarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]

@@ -610,7 +610,7 @@ func TestConfigAMQPAuthenticationExternal(t *testing.T) {
 	}()
 	called := false
 	connSASLExternal = func(resp string) amqp.SASLType {
-		assert.Equal(t, "", resp)
+		assert.Empty(t, resp)
 		called = true
 		return nil
 	}

@@ -121,7 +121,7 @@ func TestChronyScraper(t *testing.T) {
 			metrics, err := scraper.scrape(ctx)
 
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
-			assert.EqualValues(t, tc.metrics, metrics, "Must match the expected metrics")
+			assert.Equal(t, tc.metrics, metrics, "Must match the expected metrics")
 			chronym.AssertExpectations(t)
 		})
 	}

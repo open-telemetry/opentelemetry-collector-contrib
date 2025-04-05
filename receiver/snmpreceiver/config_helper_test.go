@@ -277,7 +277,7 @@ func TestGetMetricName(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getMetricName(".2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -403,7 +403,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigValue("a2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -427,7 +427,7 @@ func TestGetAttributeConfigValue(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigValue("a1")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -487,7 +487,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigIndexedValuePrefix("a2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -511,7 +511,7 @@ func TestGetAttributeConfigIndexedValuePrefix(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigIndexedValuePrefix("a1")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -571,7 +571,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigOID("a2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -595,7 +595,7 @@ func TestGetAttributeConfigOID(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getAttributeConfigOID("a1")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -655,7 +655,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeConfigIndexedValuePrefix("ra2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -679,7 +679,7 @@ func TestGetResourceAttributeConfigIndexedValuePrefix(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeConfigIndexedValuePrefix("ra1")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -739,7 +739,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeConfigOID("ra2")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
@@ -763,7 +763,7 @@ func TestGetResourceAttributeConfigOID(t *testing.T) {
 				}
 				helper := newConfigHelper(&cfg)
 				actual := helper.getResourceAttributeConfigOID("ra1")
-				require.Equal(t, "", actual)
+				require.Empty(t, actual)
 			},
 		},
 		{
