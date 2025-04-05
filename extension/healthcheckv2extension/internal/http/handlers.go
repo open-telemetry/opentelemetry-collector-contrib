@@ -6,6 +6,7 @@ package http // import "github.com/open-telemetry/opentelemetry-collector-contri
 import (
 	"net/http"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -18,6 +19,13 @@ func (s *Server) statusHandler() http.Handler {
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
+		}
+
+		for pipeline, pipelineStatus := range s.aggregator.FindNotOk(status.Verbosity(verbose)) {
+			s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields("pipeline", pipeline, pipelineStatus)...)
+			for component, componentSt := range pipelineStatus.ComponentStatusMap {
+				s.telemetry.Logger.Warn("component not ok", common.HealthLogFields("component", component, componentSt)...)
+			}
 		}
 
 		if err := s.responder.respond(st, w); err != nil {

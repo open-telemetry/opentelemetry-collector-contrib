@@ -132,6 +132,19 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 	return st.clone(verbosity), true
 }
 
+func (a *Aggregator) FindNotOk(verbosity Verbosity) map[string]*AggregateStatus {
+	a.mu.RLock()
+	defer a.mu.RUnlock()
+
+	notOk := make(map[string]*AggregateStatus, 0)
+	for component, st := range a.aggregateStatus.ComponentStatusMap {
+		if st.Status() != componentstatus.StatusOK && st.Status() != componentstatus.StatusNone {
+			notOk[component] = st.clone(verbosity)
+		}
+	}
+	return notOk
+}
+
 // RecordStatus stores and aggregates a StatusEvent for the given component instance.
 func (a *Aggregator) RecordStatus(source *componentstatus.InstanceID, event *componentstatus.Event) {
 	allPipelineIDs := source.AllPipelineIDs

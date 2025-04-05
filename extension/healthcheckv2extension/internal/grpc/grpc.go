@@ -12,6 +12,7 @@ import (
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 	grpcstatus "google.golang.org/grpc/status"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
@@ -40,6 +41,13 @@ func (s *Server) Check(
 	st, ok := s.aggregator.AggregateStatus(status.Scope(req.Service), status.Concise)
 	if !ok {
 		return nil, errNotFound
+	}
+
+	for pipeline, pipelineStatus := range s.aggregator.FindNotOk(status.Concise) {
+		s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields("pipeline", pipeline, pipelineStatus)...)
+		for component, componentSt := range pipelineStatus.ComponentStatusMap {
+			s.telemetry.Logger.Warn("component not ok", common.HealthLogFields("component", component, componentSt)...)
+		}
 	}
 
 	return &healthpb.HealthCheckResponse{
