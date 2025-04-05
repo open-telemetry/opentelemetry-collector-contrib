@@ -256,7 +256,7 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 			require.Len(t, records, 1)
 
 			assert.Equal(t, "/_bulk", records[0].ContextMap()["path"])
-			assert.Equal(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[0].ContextMap()["request_body"])
+			assert.JSONEq(t, "{\"create\":{\"_index\":\"foo\"}}\n{\"foo\": \"bar\"}\n", records[0].ContextMap()["request_body"])
 			assert.JSONEq(t, successResp, records[0].ContextMap()["response_body"].(string))
 		})
 	}
