@@ -109,7 +109,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 			} else {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error string")
 			}
-			assert.EqualValues(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
+			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}
 }
@@ -183,7 +183,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 			} else {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error string")
 			}
-			assert.EqualValues(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
+			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}
 }

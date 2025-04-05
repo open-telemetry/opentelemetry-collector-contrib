@@ -96,7 +96,7 @@ func TestMetricProcessor_NilEmptyData(t *testing.T) {
 		tc := metricTestCases[i]
 		t.Run(tc.name, func(t *testing.T) {
 			assert.NoError(t, mp.ConsumeMetrics(context.Background(), tc.input))
-			assert.EqualValues(t, tc.output, tc.input)
+			assert.Equal(t, tc.output, tc.input)
 		})
 	}
 }

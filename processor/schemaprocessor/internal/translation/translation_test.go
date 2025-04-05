@@ -119,7 +119,7 @@ func TestTranslationIteratorExact(t *testing.T) {
 			for rev, more := it(); more; rev, more = it() {
 				iterationVersions = append(iterationVersions, *rev.Version())
 			}
-			assert.EqualValues(t, tc.versions, iterationVersions)
+			assert.Equal(t, tc.versions, iterationVersions)
 		})
 	}
 }
@@ -135,7 +135,7 @@ func TestTranslationIterator(t *testing.T) {
 	for rev, more := it(); more; rev, more = it() {
 		ver = rev.Version()
 	}
-	assert.EqualValues(t, &Version{1, 9, 0}, ver, "Must match the expected version number")
+	assert.Equal(t, &Version{1, 9, 0}, ver, "Must match the expected version number")
 }
 
 func TestTranslationSpanChanges(t *testing.T) {
@@ -208,7 +208,7 @@ func TestTranslationSpanChanges(t *testing.T) {
 			if diff := cmp.Diff(expect, spans, cmp.AllowUnexported(ptrace.Traces{})); diff != "" {
 				t.Errorf("Span mismatch (-want +got):\n%s", diff)
 			}
-			assert.EqualValues(t, expect, spans, "Must match the expected values")
+			assert.Equal(t, expect, spans, "Must match the expected values")
 		})
 	}
 }
@@ -280,7 +280,7 @@ func TestTranslationLogChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleLogs(t, tc.target)
-			assert.EqualValues(t, expect, logs, "Must match the expected values")
+			assert.Equal(t, expect, logs, "Must match the expected values")
 		})
 	}
 }
@@ -352,7 +352,7 @@ func TestTranslationMetricChanges(t *testing.T) {
 				}
 			}
 			expect := NewExampleMetrics(t, tc.target)
-			assert.EqualValues(t, expect, metrics, "Must match the expected values")
+			assert.Equal(t, expect, metrics, "Must match the expected values")
 		})
 	}
 }
@@ -382,8 +382,8 @@ func TestTranslationEquvialance_Logs(t *testing.T) {
 		}
 	}
 	expect := NewExampleLogs(t, Version{1, 4, 0})
-	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
-	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+	assert.Equal(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.Equal(t, expect, b, "Must match the expected value when reverting versions")
 }
 
 func TestTranslationEquvialance_Metrics(t *testing.T) {
@@ -440,8 +440,8 @@ func TestTranslationEquvialance_Traces(t *testing.T) {
 		}
 	}
 	expect := NewExampleSpans(t, Version{1, 4, 0})
-	assert.EqualValues(t, expect, a, "Must match the expected value when upgrading versions")
-	assert.EqualValues(t, expect, b, "Must match the expected value when reverting versions")
+	assert.Equal(t, expect, a, "Must match the expected value when upgrading versions")
+	assert.Equal(t, expect, b, "Must match the expected value when reverting versions")
 }
 
 func BenchmarkCreatingTranslation(b *testing.B) {

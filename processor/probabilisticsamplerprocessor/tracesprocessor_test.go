@@ -890,7 +890,7 @@ func Test_tracesamplerprocessor_TraceState(t *testing.T) {
 				} else {
 					require.Empty(t, sampledData)
 					assert.Equal(t, 0, sink.SpanCount())
-					require.Equal(t, "", expectTS)
+					require.Empty(t, expectTS)
 				}
 
 				if len(tt.log) == 0 {
