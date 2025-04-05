@@ -30,6 +30,8 @@ const (
 	defaultGitlabEventHeader       = "X-Gitlab-Event"
 	defaultGitlabEventUUIDHeader   = "X-Gitlab-Event-UUID"
 	defaultIdempotencyKeyHeader    = "Idempotency-Key"
+	// #nosec G101 - Not an actual secret, just the name of a header: https://docs.gitlab.com/user/project/integrations/webhooks/#create-a-webhook
+	defaultGitlabSecretTokenHeader = "X-Gitlab-Token"
 )
 
 var (
