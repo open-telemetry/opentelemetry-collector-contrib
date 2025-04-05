@@ -5,6 +5,8 @@ package headerssetterextension // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"fmt"
+
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 var (
@@ -19,12 +21,12 @@ type Config struct {
 }
 
 type HeaderConfig struct {
-	Action        ActionValue `mapstructure:"action"`
-	Key           *string     `mapstructure:"key"`
-	Value         *string     `mapstructure:"value"`
-	FromContext   *string     `mapstructure:"from_context"`
-	FromAttribute *string     `mapstructure:"from_attribute"`
-	DefaultValue  *string     `mapstructure:"default_value"`
+	Action        ActionValue          `mapstructure:"action"`
+	Key           *string              `mapstructure:"key"`
+	Value         *string              `mapstructure:"value"`
+	FromContext   *string              `mapstructure:"from_context"`
+	FromAttribute *string              `mapstructure:"from_attribute"`
+	DefaultValue  *configopaque.String `mapstructure:"default_value"`
 }
 
 // ActionValue is the enum to capture the four types of actions to perform on a header

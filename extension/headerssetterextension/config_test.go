@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 						Key:          stringp("X-Scope-OrgID"),
 						Action:       INSERT,
 						FromContext:  stringp("tenant_id"),
-						DefaultValue: stringp("some_id"),
+						DefaultValue: opaquep("some_id"),
 						Value:        nil,
 					},
 					{
@@ -163,7 +163,7 @@ func TestValidateConfig(t *testing.T) {
 					Key:          stringp("name"),
 					Action:       INSERT,
 					FromContext:  stringp("from context"),
-					DefaultValue: stringp("default"),
+					DefaultValue: opaquep("default"),
 				},
 			},
 			nil,
