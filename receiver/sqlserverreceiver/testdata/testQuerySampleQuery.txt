@@ -1,4 +1,4 @@
-SELECT TOP(1000)
+SELECT TOP(@top)
   DB_NAME(r.database_id) AS db_name,
   ISNULL(c.client_net_address, '') as client_address,
   ISNULL(c.client_tcp_port, '') AS client_port,
@@ -34,10 +34,9 @@ SELECT TOP(1000)
   r.lock_timeout,
   r.deadlock_priority,
   r.row_count,
-  r.query_hash,
-  r.query_plan_hash,
+  ISNULL(r.query_hash, CONVERT(VARBINARY, '')) AS query_hash,
+  ISNULL(r.query_plan_hash, CONVERT(VARBINARY, '')) AS query_plan_hash,
   ISNULL(r.context_info, CONVERT(VARBINARY, '')) AS context_info,
-  
   s.login_name AS username
 FROM sys.dm_exec_requests r
 INNER JOIN sys.dm_exec_sessions s ON r.session_id = s.session_id

@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"slices"
 	"time"
 
 	"github.com/prometheus/common/model"
@@ -104,15 +105,28 @@ func createAnnotations(event *alertmanagerEvent) model.LabelSet {
 	return labelMap
 }
 
+func (s *alertmanagerExporter) createLabels(event *alertmanagerEvent) model.LabelSet {
+	labelMap := model.LabelSet{}
+	for key, attr := range event.spanEvent.Attributes().All() {
+		if slices.Contains(s.config.EventLabels, key) {
+			labelMap[model.LabelName(key)] = model.LabelValue(attr.AsString())
+		}
+	}
+	labelMap["severity"] = model.LabelValue(event.severity)
+	labelMap["event_name"] = model.LabelValue(event.spanEvent.Name())
+	return labelMap
+}
+
 func (s *alertmanagerExporter) convertEventsToAlertPayload(events []*alertmanagerEvent) []model.Alert {
 	payload := make([]model.Alert, len(events))
 
 	for i, event := range events {
 		annotations := createAnnotations(event)
+		labels := s.createLabels(event)
 
 		alert := model.Alert{
 			StartsAt:     time.Now(),
-			Labels:       model.LabelSet{"severity": model.LabelValue(event.severity), "event_name": model.LabelValue(event.spanEvent.Name())},
+			Labels:       labels,
 			Annotations:  annotations,
 			GeneratorURL: s.generatorURL,
 		}
