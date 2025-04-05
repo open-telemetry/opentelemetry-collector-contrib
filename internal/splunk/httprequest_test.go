@@ -80,7 +80,7 @@ func TestConsumeMetrics(t *testing.T) {
 			if tt.wantThrottleErr {
 				expected := fmt.Errorf("HTTP \"/endpoint\" %d %q", tt.httpResponseCode, http.StatusText(tt.httpResponseCode))
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
