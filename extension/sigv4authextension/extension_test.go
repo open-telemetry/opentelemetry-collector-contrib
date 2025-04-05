@@ -117,8 +117,8 @@ func TestCloneRequest(t *testing.T) {
 	for _, testcase := range tests {
 		t.Run(testcase.name, func(t *testing.T) {
 			r2 := cloneRequest(testcase.request)
-			assert.EqualValues(t, testcase.request.Header, r2.Header)
-			assert.EqualValues(t, testcase.request.Body, r2.Body)
+			assert.Equal(t, testcase.request.Header, r2.Header)
+			assert.Equal(t, testcase.request.Body, r2.Body)
 		})
 	}
 }
