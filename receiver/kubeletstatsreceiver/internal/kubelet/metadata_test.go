@@ -222,7 +222,7 @@ func TestSetExtraLabels(t *testing.T) {
 			if tt.wantError == "" {
 				require.NoError(t, err)
 				temp := res.Attributes().AsRaw()
-				assert.EqualValues(t, tt.want, temp)
+				assert.Equal(t, tt.want, temp)
 			} else {
 				assert.Equal(t, tt.wantError, err.Error())
 			}

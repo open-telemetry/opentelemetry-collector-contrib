@@ -128,7 +128,7 @@ func TestMetricsMetadata_ToLabelValues_AllPossibleMetadata(t *testing.T) {
 
 	labelValues, _ := metadata.toLabelValues(row)
 
-	assert.Equal(t, len(queryLabelValuesMetadata), len(labelValues))
+	assert.Len(t, labelValues, len(queryLabelValuesMetadata))
 
 	expectedTypes := []LabelValue{
 		stringLabelValue{},
@@ -202,7 +202,7 @@ func TestMetricsMetadata_ToMetricValues_AllPossibleMetadata(t *testing.T) {
 
 	metricValues, _ := metadata.toMetricValues(row)
 
-	assert.Equal(t, len(queryMetricValuesMetadata), len(metricValues))
+	assert.Len(t, metricValues, len(queryMetricValuesMetadata))
 
 	expectedTypes := []MetricValue{int64MetricValue{}, float64MetricValue{}}
 
@@ -292,7 +292,7 @@ func TestMetricsMetadata_ToMetricsDataPoints(t *testing.T) {
 
 	dataPoints := metadata.toMetricsDataPoints(databaseID, timestamp, labelValues, metricValues)
 
-	assert.Equal(t, len(metricValues), len(dataPoints))
+	assert.Len(t, dataPoints, len(metricValues))
 
 	for i, dataPoint := range dataPoints {
 		assert.Equal(t, metadata.MetricNamePrefix+metricValues[i].Metadata().Name(), dataPoint.metricName)

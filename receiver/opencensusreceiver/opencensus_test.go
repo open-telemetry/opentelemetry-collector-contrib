@@ -144,7 +144,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	assert.True(t, proto.Equal(wantResource, gotResource))
 	require.Len(t, wantSpans, 1)
 	require.Len(t, gotSpans, 1)
-	assert.EqualValues(t, wantSpans[0], gotSpans[0])
+	assert.Equal(t, wantSpans[0], gotSpans[0])
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {

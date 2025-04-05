@@ -529,7 +529,7 @@ func TestReceiverLogs(t *testing.T) {
 	ctc.start(ctc.newRealConsumer, defaultBQ())
 	ctc.putBatch(batch, nil)
 
-	assert.EqualValues(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
+	assert.Equal(t, []json.Marshaler{compareJSONLogs{ld}}, []json.Marshaler{compareJSONLogs{(<-ctc.consume).Data.(plog.Logs)}})
 
 	err = ctc.cancelAndWait()
 	requireCanceledStatus(t, err)
@@ -848,7 +848,7 @@ func TestReceiverEOF(t *testing.T) {
 		actualData = append(actualData, (<-ctc.consume).Data.(ptrace.Traces))
 	}
 
-	assert.Equal(t, len(expectData), len(actualData))
+	assert.Len(t, actualData, len(expectData))
 
 	for i := 0; i < len(expectData); i++ {
 		otelAssert.Equiv(stdTesting, []json.Marshaler{
@@ -1031,7 +1031,7 @@ func TestHeaderReceiverAuthServerNoIncludeMetadata(t *testing.T) {
 
 		// Headers are returned for the auth server, though
 		// names have been forced to lower case.
-		require.Equal(t, len(hdrs), len(expectForAuth))
+		require.Len(t, expectForAuth, len(hdrs))
 		for k, v := range expectForAuth {
 			require.Equal(t, hdrs[strings.ToLower(k)], v)
 		}
@@ -1116,7 +1116,7 @@ func TestHeaderReceiverAuthServerIsSetNoIncludeMetadata(t *testing.T) {
 		// case.  It's not safe to check that the map sizes
 		// are equal after calling Get() below, so we assert
 		// same size first.
-		require.Equal(t, len(hdrs), len(expect))
+		require.Len(t, expect, len(hdrs))
 
 		requireContainsAll(t, client.FromContext(cc).Metadata, expect)
 

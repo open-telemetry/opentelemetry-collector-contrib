@@ -356,7 +356,7 @@ func TestReception(t *testing.T) {
 
 			// compare what we got to what we wanted
 			t.Log("Comparing expected data to trace data")
-			assert.EqualValues(t, tt.want, got[0])
+			assert.Equal(t, tt.want, got[0])
 		})
 	}
 }

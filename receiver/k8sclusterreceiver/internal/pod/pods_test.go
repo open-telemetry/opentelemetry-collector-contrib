@@ -186,7 +186,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)
 			t.Run(name, func(t *testing.T) {
 				actual := GetMetadata(testCase.resource, testCase.metadataStore, logger)
-				require.Equal(t, len(testCase.want), len(actual))
+				require.Len(t, actual, len(testCase.want))
 
 				for key, item := range testCase.want {
 					got, exists := actual[key]
