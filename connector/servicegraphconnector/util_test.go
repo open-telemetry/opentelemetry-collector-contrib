@@ -37,7 +37,7 @@ func TestGetFirstMatchingValue(t *testing.T) {
 		{
 			name:      "Not found",
 			keys:      []string{"key3"},
-			want:      "unknown",
+			want:      "",
 			wantFound: false,
 		},
 	}
