@@ -319,8 +319,7 @@ func (f *factory) createMetricsExporter(
 		// Start the hostmetadata pusher once.
 		// It sends the hostmetadata for the host where the collector is running.
 		if cfg.HostMetadata.Enabled {
-			//nolint:staticcheck
-			if cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource {
+			if cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource { //nolint:staticcheck
 				set.Logger.Warn("first_resource has no effect when serializer exporter is used for exporting metrics")
 			}
 			f.onceMetadata.Do(func() {
