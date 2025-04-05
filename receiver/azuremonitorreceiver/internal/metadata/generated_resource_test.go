@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetAzuremonitorSubscription("azuremonitor.subscription-val")
 			rb.SetAzuremonitorSubscriptionID("azuremonitor.subscription_id-val")
 			rb.SetAzuremonitorTenantID("azuremonitor.tenant_id-val")
 
@@ -23,7 +24,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 0, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 2, res.Attributes().Len())
+				assert.Equal(t, 3, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -31,7 +32,12 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("azuremonitor.subscription_id")
+			val, ok := res.Attributes().Get("azuremonitor.subscription")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.EqualValues(t, "azuremonitor.subscription-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("azuremonitor.subscription_id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
 				assert.EqualValues(t, "azuremonitor.subscription_id-val", val.Str())
