@@ -82,7 +82,7 @@ func downloadJMXMetricGathererJAR(t *testing.T, url string) (string, error) {
 
 func (suite *jmxIntegrationSuite) TestJMXReceiverHappyPath() {
 	for version, jar := range suite.VersionToJar {
-		suite.Run(version, integrationTest(version, jar))
+		suite.T().Run(version, integrationTest(version, jar))
 	}
 }
 
