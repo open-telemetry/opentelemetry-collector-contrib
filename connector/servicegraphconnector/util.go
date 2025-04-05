@@ -22,5 +22,5 @@ func getFirstMatchingValue(keys []string, attributes ...pcommon.Map) (string, bo
 			}
 		}
 	}
-	return "unknown", false
+	return "", false
 }
