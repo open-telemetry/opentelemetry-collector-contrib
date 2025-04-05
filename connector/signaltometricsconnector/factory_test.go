@@ -24,7 +24,7 @@ func TestNewFactoryWithLogs(t *testing.T) {
 			name: "factory_type",
 			f: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, metadata.Type, factory.Type())
+				require.Equal(t, metadata.Type, factory.Type())
 			},
 		},
 		{
