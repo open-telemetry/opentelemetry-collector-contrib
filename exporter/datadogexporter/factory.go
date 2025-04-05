@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -50,7 +51,7 @@ var logsAgentExporterFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var metricExportNativeClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportnativeclient",
-	featuregate.StageBeta,
+	featuregate.StageAlpha,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses native Datadog client APIs instead of Zorkian APIs."),
 )
 
@@ -63,7 +64,7 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportserializerclient",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
 
@@ -82,11 +83,17 @@ func isMetricExportSerializerEnabled() bool {
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
 func enableNativeMetricExport() error {
+	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
+		return err
+	}
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), true)
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
 func enableZorkianMetricExport() error {
+	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
+		return err
+	}
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
@@ -316,6 +323,20 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	case isMetricExportSerializerEnabled():
+		errchan := make(chan error)
+		apiClient := clientutil.CreateAPIClient(
+			set.BuildInfo,
+			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.ClientConfig)
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
+		if cfg.API.FailOnInvalidKey {
+			err = <-errchan
+			if err != nil {
+				cancel()  // first cancel context
+				wg.Wait() // then wait for shutdown
+				return nil, err
+			}
+		}
 		// Start the hostmetadata pusher once.
 		// It sends the hostmetadata for the host where the collector is running.
 		if cfg.HostMetadata.Enabled {
