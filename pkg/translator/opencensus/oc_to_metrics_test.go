@@ -139,7 +139,7 @@ func TestOCToMetrics_ResourceInMetric(t *testing.T) {
 	oc.Metrics[1].Resource = oc2.Resource
 	oc.Metrics[1].Resource.Labels["resource-attr"] = "another-value"
 	got := OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
-	assert.EqualValues(t, want, got)
+	assert.Equal(t, want, got)
 }
 
 func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
@@ -152,7 +152,7 @@ func TestOCToMetrics_ResourceInMetricOnly(t *testing.T) {
 	oc.Metrics[0].Resource = oc.Resource
 	oc.Resource = nil
 	got := OCToMetrics(oc.Node, oc.Resource, oc.Metrics)
-	assert.EqualValues(t, want, got)
+	assert.Equal(t, want, got)
 }
 
 func BenchmarkMetricIntOCToMetrics(b *testing.B) {

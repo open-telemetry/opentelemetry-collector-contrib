@@ -236,7 +236,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exp := calcSig(tt.lbs)
 			sig := timeSeriesSignature(tt.lbs)
-			assert.EqualValues(t, exp, sig)
+			assert.Equal(t, exp, sig)
 		})
 	}
 }

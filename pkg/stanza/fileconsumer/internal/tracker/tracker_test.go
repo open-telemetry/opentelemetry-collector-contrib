@@ -32,7 +32,7 @@ func TestFindFilesOrder(t *testing.T) {
 	tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, 100, persister)
 	matchables := tracker.FindFiles(fps)
 
-	require.Equal(t, len(fps), len(matchables), "return slice should be of same length as input slice")
+	require.Len(t, matchables, len(fps), "return slice should be of same length as input slice")
 
 	for i := 0; i < len(matchables); i++ {
 		if fpInStorage[i] {

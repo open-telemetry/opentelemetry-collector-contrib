@@ -85,7 +85,7 @@ func waitForByteMessage(t *testing.T, c chan *entry.Entry, expected []byte) {
 	case e := <-c:
 		require.Equal(t, expected, e.Body.([]byte))
 	case <-time.After(3 * time.Second):
-		require.FailNow(t, "Timed out waiting for message", expected)
+		require.FailNow(t, "Timed out waiting for message", "%+v", expected)
 	}
 }
 

@@ -182,14 +182,14 @@ func TestCopyNil(t *testing.T) {
 	require.Equal(t, now, cp.ObservedTimestamp)
 	require.Equal(t, time.Time{}, cp.Timestamp)
 	require.Equal(t, Severity(0), cp.Severity)
-	require.Equal(t, "", cp.SeverityText)
+	require.Empty(t, cp.SeverityText)
 	require.Equal(t, map[string]any{}, cp.Attributes)
 	require.Equal(t, map[string]any{}, cp.Resource)
 	require.Nil(t, cp.Body)
 	require.Equal(t, []byte{}, cp.TraceID)
 	require.Equal(t, []byte{}, cp.SpanID)
 	require.Equal(t, []byte{}, cp.TraceFlags)
-	require.Equal(t, "", cp.ScopeName)
+	require.Empty(t, cp.ScopeName)
 }
 
 func TestFieldFromString(t *testing.T) {
