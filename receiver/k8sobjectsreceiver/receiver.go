@@ -107,7 +107,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 				}
 			},
 			func() {
-				kr.setting.Logger.Info("Object Receiver stopped as leader lose")
+				kr.setting.Logger.Info("no longer leader, stopping")
 				_ = kr.Shutdown(context.Background())
 			})
 		return nil
