@@ -618,7 +618,7 @@ func TestParseSemconv(t *testing.T) {
 			resMap, err := ParseURI(tc.Original, true)
 			require.NoError(t, err)
 
-			require.Equal(t, len(tc.ExpectedMap), len(resMap))
+			require.Len(t, resMap, len(tc.ExpectedMap))
 			for k, v := range tc.ExpectedMap {
 				actualValue, found := resMap[k]
 				require.True(t, found, "key not found %q", k)
