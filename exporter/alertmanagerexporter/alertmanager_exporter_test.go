@@ -151,6 +151,7 @@ func TestAlertManagerExporterSeverity(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.SeverityAttribute = "foo"
+	cfg.EventLabels = []string{}
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
@@ -199,7 +200,7 @@ func TestAlertManagerExporterNoDefaultSeverity(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	require.NotNil(t, am)
-
+	cfg.EventLabels = []string{}
 	// make traces & a span
 	traces, span := createTracesAndSpan()
 
@@ -228,6 +229,7 @@ func TestAlertManagerExporterAlertPayload(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	cfg.EventLabels = []string{}
 
 	require.NotNil(t, am)
 
@@ -275,6 +277,50 @@ func TestAlertManagerTracesExporterNoErrors(t *testing.T) {
 	fmt.Println(lte)
 	require.NotNil(t, lte)
 	assert.NoError(t, err)
+}
+
+func TestAlertManagerExporterEventLabels(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	set := exportertest.NewNopSettings(metadata.Type)
+	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
+	require.NotNil(t, am)
+
+	// make traces & a span
+	_, span := createTracesAndSpan()
+
+	// add a span event w/ 3 attributes
+	event := span.Events().AppendEmpty()
+	// add event attributes
+	startTime := pcommon.Timestamp(time.Now().UnixNano())
+	event.SetTimestamp(startTime + 3)
+	event.SetName("unittest-event")
+	attrs := event.Attributes()
+	attrs.Clear()
+	attrs.EnsureCapacity(4)
+	attrs.PutStr("attr1", "unittest-baz")
+	attrs.PutInt("attr2", 42)
+	attrs.PutDouble("attr3", 5.14)
+
+	var events []*alertmanagerEvent
+	events = append(events, &alertmanagerEvent{
+		spanEvent: event,
+		severity:  am.defaultSeverity,
+		traceID:   "0000000000000002",
+		spanID:    "00000002",
+	})
+
+	got := am.convertEventsToAlertPayload(events)
+
+	// test - count of attributes
+	expect := model.Alert{
+		Labels:       model.LabelSet{"severity": "info", "event_name": "unittest-event", "attr1": "unittest-baz", "attr2": "42"},
+		Annotations:  model.LabelSet{"SpanID": "00000002", "TraceID": "0000000000000002", "attr1": "unittest-baz", "attr2": "42", "attr3": "5.14"},
+		GeneratorURL: "opentelemetry-collector",
+	}
+	assert.Equal(t, expect.Labels, got[0].Labels)
+	assert.Equal(t, expect.Annotations, got[0].Annotations)
+	assert.Equal(t, expect.GeneratorURL, got[0].GeneratorURL)
 }
 
 type mockServer struct {
