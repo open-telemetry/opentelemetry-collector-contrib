@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -75,55 +76,50 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
 	client, err := kr.config.getDynamicClient()
 	if err != nil {
 		return err
 	}
 	kr.client = client
+	cctx, cancel := context.WithCancel(ctx)
+	kr.cancel = cancel
 
-	// Validate objects against K8s API
-	validObjects, err := kr.config.getValidObjects()
-	if err != nil {
-		return err
-	}
-
-	var validConfigs []*K8sObjectsConfig
-	for _, object := range kr.objects {
-		gvrs, ok := validObjects[object.Name]
-		if !ok {
-			availableResource := make([]string, 0, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
-			}
-			err := fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
-			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
-				return handlerErr
-			}
-			continue
+	if kr.config.K8sLeaderElector != nil {
+		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
+		if k8sLeaderElector == nil {
+			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
 		}
 
-		gvr := gvrs[0]
-		for i := range gvrs {
-			if gvrs[i].Group == object.Group {
-				gvr = gvrs[i]
-				break
-			}
+		validConfigs := Validate()
+		if len(validConfigs) == 0 {
+			err := errors.New("no valid Kubernetes objects found to watch")
+			return err
 		}
 
-		object.gvr = gvr
-		validConfigs = append(validConfigs, object)
+		kr.setting.Logger.Info("Trying to become the leader")
+		elector := k8sLeaderElector.(k8sleaderelector.LeaderElection)
+		elector.SetCallBackFuncs(
+			func(_ context.Context) {
+				kr.setting.Logger.Info("Object Receiver started as leader")
+				for _, object := range validConfigs {
+					kr.start(cctx, object)
+				}
+			},
+			func() {
+				kr.setting.Logger.Info("Object Receiver stopped as leader lose")
+				_ = kr.Shutdown(context.Background())
+			})
+		return nil
 	}
 
+	validConfigs := Validate()
 	if len(validConfigs) == 0 {
 		err := errors.New("no valid Kubernetes objects found to watch")
 		return err
 	}
 
 	kr.setting.Logger.Info("Object Receiver started")
-	cctx, cancel := context.WithCancel(ctx)
-	kr.cancel = cancel
-
 	for _, object := range validConfigs {
 		kr.start(cctx, object)
 	}
@@ -170,6 +166,49 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 		}
 	}
+}
+
+// Validate objects against K8s API
+func (kr *k8sobjectsreceiver) Validate() []*K8sObjectsConfig  {
+	validObjects, err := kr.config.getValidObjects()
+	if err != nil {
+		return err
+	}
+
+	var validConfigs []*K8sObjectsConfig
+	for _, object := range kr.objects {
+		gvrs, ok := validObjects[object.Name]
+		if !ok {
+			availableResource := make([]string, 0, len(validObjects))
+			for k := range validObjects {
+				availableResource = append(availableResource, k)
+			}
+			err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
+			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+				return handlerErr
+			}
+
+			continue
+		}
+
+		gvr := gvrs[0]
+		for i := range gvrs {
+			if gvrs[i].Group == object.Group {
+				gvr = gvrs[i]
+				break
+			}
+		}
+
+		object.gvr = gvr
+		validConfigs = append(validConfigs, object)
+	}
+
+	if len(validConfigs) == 0 {
+		err = errors.New("no valid Kubernetes objects found to watch")
+		return err
+	}
+
+	return validConfigs
 }
 
 func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {
