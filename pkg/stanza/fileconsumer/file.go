@@ -236,6 +236,11 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) processUnmatchedFiles(ctx context.Context, files []*os.File, fingerprints []*fingerprint.Fingerprint) {
+	// processUnmatchedFiles accepts a list of unmatched files and their corresponding fingerprints
+	// and looks for a match in archive.
+	// If a match is found, it will create reader based on known metadata
+	// Else, it will create a new reader from scratch
+
 	metadataFromArchive := m.tracker.FindFiles(fingerprints)
 
 	for i, metadata := range metadataFromArchive {
@@ -248,6 +253,7 @@ func (m *Manager) processUnmatchedFiles(ctx context.Context, files []*os.File, f
 		var err error
 
 		if metadata != nil {
+			// matched metadata is found in archive, create a new reader from this metadata.
 			r, err = m.readerFactory.NewReaderFromMetadata(file, metadata)
 		} else {
 			// If we don't match any previously known files, create a new reader from scratch.
@@ -309,6 +315,8 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		return r, nil
 	}
 
+	// the file is not found in tracker.
+	// we'll create readers for such files after matching against the archive, in processUnmatchedFiles()
 	return nil, nil
 }
 
