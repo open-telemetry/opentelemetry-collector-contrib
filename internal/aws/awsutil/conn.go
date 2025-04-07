@@ -5,6 +5,7 @@
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
+	"context"
 	"crypto/tls"
 	"errors"
 	"net/http"
@@ -12,6 +13,8 @@ import (
 	"os"
 	"time"
 
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/credentials"
@@ -158,6 +161,36 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 		HTTPClient:             http,
 	}
 	return config, s, nil
+}
+
+// GetAWSConfig returns AWS config and session instances.
+func GetAWSConfig(logger *zap.Logger, settings *AWSSessionSettings) (awsv2.Config, error) {
+	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
+	if err != nil {
+		logger.Error("unable to obtain proxy URL", zap.Error(err))
+		return awsv2.Config{}, err
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return awsv2.Config{}, err
+	}
+
+	if settings.Region != "" {
+		cfg.Region = settings.Region
+		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))
+	}
+
+	if cfg.Region == "" {
+		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
+		return awsv2.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
+	}
+
+	cfg.HTTPClient = http
+	cfg.RetryMaxAttempts = settings.MaxRetries
+	cfg.BaseEndpoint = aws.String(settings.Endpoint)
+
+	return cfg, nil
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.
