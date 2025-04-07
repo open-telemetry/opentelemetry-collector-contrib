@@ -132,6 +132,15 @@ func (a *Aggregator) AggregateStatus(scope Scope, verbosity Verbosity) (*Aggrega
 	return st.clone(verbosity), true
 }
 
+// FindNotOk returns a map of [*AggregateStatus] of the Collector's compoments
+// that are "not ok" (any status besides [componentstatus.StatusOK] and
+// [componentstatus.StatusNone]). For a list of all possible statuses, check
+// the [componentstatus] package.
+// The verbosity parameter controls whether it will include only the state of
+// pipelines or include each pipeline's components.
+// The returned map will contain copies of the [AggregateStatus] to prevent
+// data races while accessing the internal representation, which can be
+// asynchronously updated by other go-routines.
 func (a *Aggregator) FindNotOk(verbosity Verbosity) map[string]*AggregateStatus {
 	a.mu.RLock()
 	defer a.mu.RUnlock()
