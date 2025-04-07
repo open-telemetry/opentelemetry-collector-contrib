@@ -457,6 +457,11 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 }
 
 func TestIntegrationLogs(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+	}()
+
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte)}
