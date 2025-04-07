@@ -5,6 +5,7 @@ package kafkaexporter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -15,368 +16,404 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/testdata"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 )
 
-func TestNewExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "foo"}
-	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, texp)
-	err := texp.start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewMetricsExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "bar"}
-	mexp := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, mexp)
-	err := mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewMetricsExporter_err_traces_encoding(t *testing.T) {
-	c := Config{Encoding: "jaeger_proto"}
-	mexp := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, mexp)
-	err := mexp.start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestMetricsExporter_encoding_extension(t *testing.T) {
-	c := Config{
-		Encoding: "metrics_encoding",
-	}
-	texp := newMetricsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, texp)
-	err := texp.start(context.Background(), &testComponentHost{})
-	assert.Error(t, err)
-	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
-}
-
-func TestNewLogsExporter_err_encoding(t *testing.T) {
-	c := Config{Encoding: "bar"}
-	lexp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, lexp)
-	err := lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestNewLogsExporter_err_traces_encoding(t *testing.T) {
-	c := Config{Encoding: "jaeger_proto"}
-	lexp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	assert.NotNil(t, lexp)
-	err := lexp.start(context.Background(), componenttest.NewNopHost())
-	assert.EqualError(t, err, errUnrecognizedEncoding.Error())
-}
-
-func TestLogsExporter_encoding_extension(t *testing.T) {
-	c := Config{
-		Encoding: "logs_encoding",
-	}
-	texp := newLogsExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, texp)
-	err := texp.start(context.Background(), &testComponentHost{})
-	assert.Error(t, err)
-	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
-}
-
-func TestTracesExporter_encoding_extension(t *testing.T) {
-	c := Config{
-		Encoding: "traces_encoding",
-	}
-	texp := newTracesExporter(c, exportertest.NewNopSettings(metadata.Type))
-	require.NotNil(t, texp)
-	err := texp.start(context.Background(), &testComponentHost{})
-	assert.Error(t, err)
-	assert.NotContains(t, err.Error(), errUnrecognizedEncoding.Error())
-}
-
 func TestTracesPusher(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaTracesProducer{
-		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
+	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
 func TestTracesPusher_attr(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	config.TopicFromAttribute = "kafka_topic"
+	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaTracesProducer{
-		cfg: Config{
-			TopicFromAttribute: "kafka_topic",
-		},
-		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.tracesPusher(context.Background(), testdata.GenerateTraces(2))
+	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
 func TestTracesPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaTracesProducer{
-		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.tracesPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
+	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
 	require.NoError(t, err)
 }
 
 func TestTracesPusher_err(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+
 	expErr := fmt.Errorf("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
-	p := kafkaTracesProducer{
-		producer:  producer,
-		marshaler: newPdataTracesMarshaler(&ptrace.ProtoMarshaler{}, defaultEncoding, false),
-		logger:    zap.NewNop(),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	td := testdata.GenerateTraces(2)
-	err := p.tracesPusher(context.Background(), td)
+	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
 	assert.EqualError(t, err, expErr.Error())
 }
 
 func TestTracesPusher_marshal_error(t *testing.T) {
-	expErr := fmt.Errorf("failed to marshal")
-	p := kafkaTracesProducer{
-		marshaler: &tracesErrorMarshaler{err: expErr},
-		logger:    zap.NewNop(),
+	marshalErr := errors.New("failed to marshal")
+	host := extensionsHost{
+		component.MustNewID("trace_encoding"): ptraceMarshalerFuncExtension(func(ptrace.Traces) ([]byte, error) {
+			return nil, marshalErr
+		}),
 	}
-	td := testdata.GenerateTraces(2)
-	err := p.tracesPusher(context.Background(), td)
-	assert.ErrorContains(t, err, expErr.Error())
+	config := createDefaultConfig().(*Config)
+	config.Encoding = "trace_encoding"
+	exp, _ := newMockTracesExporter(t, *config, host)
+
+	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
+	assert.ErrorContains(t, err, marshalErr.Error())
+}
+
+func TestTracesPusher_partitioning(t *testing.T) {
+	input := ptrace.NewTraces()
+	resourceSpans := input.ResourceSpans().AppendEmpty()
+	scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+	traceID1 := pcommon.TraceID{1}
+	traceID2 := pcommon.TraceID{2}
+	span1 := scopeSpans.Spans().AppendEmpty()
+	span1.SetTraceID(traceID1)
+	span2 := scopeSpans.Spans().AppendEmpty()
+	span2.SetTraceID(traceID1)
+	span3 := scopeSpans.Spans().AppendEmpty()
+	span3.SetTraceID(traceID2)
+	span4 := scopeSpans.Spans().AppendEmpty()
+	span4.SetTraceID(traceID2)
+
+	t.Run("default_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
+
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+	})
+	t.Run("jaeger_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.Encoding = "jaeger_json"
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+
+		// Jaeger encodings produce one message per span,
+		// and each one will have the trace ID as the key.
+		var keys [][]byte
+		for i := 0; i < 4; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+		require.Len(t, keys, 4)
+		require.ElementsMatch(t, [][]byte{
+			[]byte(traceID1.String()),
+			[]byte(traceID1.String()),
+			[]byte(traceID2.String()),
+			[]byte(traceID2.String()),
+		}, keys)
+	})
+	t.Run("trace_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionTracesByID = true
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+
+		// We should get one message per ResourceSpans,
+		// even if they have the same service name.
+		var keys [][]byte
+		var traces []ptrace.Traces
+		for i := 0; i < 2; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+
+					output, err := (&ptrace.ProtoUnmarshaler{}).UnmarshalTraces(value)
+					require.NoError(t, err)
+					traces = append(traces, output)
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+
+		expected := ptrace.NewTraces()
+		scopeSpans1 := expected.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		span1.CopyTo(scopeSpans1.Spans().AppendEmpty())
+		span2.CopyTo(scopeSpans1.Spans().AppendEmpty())
+		scopeSpans2 := expected.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty()
+		span3.CopyTo(scopeSpans2.Spans().AppendEmpty())
+		span4.CopyTo(scopeSpans2.Spans().AppendEmpty())
+
+		// Combine trace spans so we can compare ignoring order.
+		require.Len(t, traces, 2)
+		combined := traces[0]
+		for _, rs := range traces[1].ResourceSpans().All() {
+			rs.CopyTo(combined.ResourceSpans().AppendEmpty())
+		}
+		assert.NoError(t, ptracetest.CompareTraces(
+			expected, combined,
+			ptracetest.IgnoreResourceSpansOrder(),
+			ptracetest.IgnoreScopeSpansOrder(),
+			ptracetest.IgnoreSpansOrder(),
+		))
+
+		require.Len(t, keys, 2)
+		require.ElementsMatch(t, [][]byte{
+			[]byte(traceID1.String()),
+			[]byte(traceID2.String()),
+		}, keys)
+	})
 }
 
 func TestMetricsDataPusher(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaMetricsProducer{
-		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
+	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
 func TestMetricsDataPusher_attr(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	config.TopicFromAttribute = "kafka_topic"
+	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaMetricsProducer{
-		cfg: Config{
-			TopicFromAttribute: "kafka_topic",
-		},
-		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.metricsDataPusher(context.Background(), testdata.GenerateMetrics(2))
+	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
 func TestMetricsDataPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaMetricsProducer{
-		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.metricsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
+	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
 }
 
-func TestMetricsDataPusher_err(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+func TestMetricsPusher_err(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+
 	expErr := fmt.Errorf("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
-	p := kafkaMetricsProducer{
-		producer:  producer,
-		marshaler: newPdataMetricsMarshaler(&pmetric.ProtoMarshaler{}, defaultEncoding, false),
-		logger:    zap.NewNop(),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	md := testdata.GenerateMetrics(2)
-	err := p.metricsDataPusher(context.Background(), md)
+	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
 	assert.EqualError(t, err, expErr.Error())
 }
 
-func TestMetricsDataPusher_marshal_error(t *testing.T) {
-	expErr := fmt.Errorf("failed to marshal")
-	p := kafkaMetricsProducer{
-		marshaler: &metricsErrorMarshaler{err: expErr},
-		logger:    zap.NewNop(),
+func TestMetricsPusher_marshal_error(t *testing.T) {
+	marshalErr := errors.New("failed to marshal")
+	host := extensionsHost{
+		component.MustNewID("metric_encoding"): pmetricMarshalerFuncExtension(func(pmetric.Metrics) ([]byte, error) {
+			return nil, marshalErr
+		}),
 	}
-	md := testdata.GenerateMetrics(2)
-	err := p.metricsDataPusher(context.Background(), md)
-	assert.ErrorContains(t, err, expErr.Error())
+	config := createDefaultConfig().(*Config)
+	config.Encoding = "metric_encoding"
+	exp, _ := newMockMetricsExporter(t, *config, host)
+
+	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
+	assert.ErrorContains(t, err, marshalErr.Error())
+}
+
+func TestMetricsPusher_partitioning(t *testing.T) {
+	input := pmetric.NewMetrics()
+	for _, serviceName := range []string{"service1", "service1", "service2"} {
+		resourceMetrics := testdata.GenerateMetrics(1).ResourceMetrics().At(0)
+		resourceMetrics.Resource().Attributes().PutStr("service.name", serviceName)
+		resourceMetrics.CopyTo(input.ResourceMetrics().AppendEmpty())
+	}
+
+	t.Run("default_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
+
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+	})
+	t.Run("resource_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionMetricsByResourceAttributes = true
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+
+		// We should get one message per ResourceMetrics,
+		// even if they have the same service name.
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
+
+					output, err := (&pmetric.ProtoUnmarshaler{}).UnmarshalMetrics(value)
+					require.NoError(t, err)
+
+					require.Equal(t, 1, output.ResourceMetrics().Len())
+					assert.NoError(t, pmetrictest.CompareResourceMetrics(
+						input.ResourceMetrics().At(i),
+						output.ResourceMetrics().At(0),
+					))
+
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
+
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+
+		require.Len(t, keys, 3)
+		assert.NotEmpty(t, keys[0])
+		assert.Equal(t, keys[0], keys[1])
+		assert.NotEqual(t, keys[0], keys[2])
+	})
 }
 
 func TestLogsDataPusher(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaLogsProducer{
-		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
+	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
 	require.NoError(t, err)
 }
 
 func TestLogsDataPusher_attr(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	config.TopicFromAttribute = "kafka_topic"
+	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaLogsProducer{
-		cfg: Config{
-			TopicFromAttribute: "kafka_topic",
-		},
-		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.logsDataPusher(context.Background(), testdata.GenerateLogs(1))
+	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
 	require.NoError(t, err)
 }
 
 func TestLogsDataPusher_ctx(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
 	producer.ExpectSendMessageAndSucceed()
 
-	p := kafkaLogsProducer{
-		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	err := p.logsDataPusher(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(1))
+	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(2))
 	require.NoError(t, err)
 }
 
-func TestLogsDataPusher_err(t *testing.T) {
-	c := sarama.NewConfig()
-	producer := mocks.NewSyncProducer(t, c)
+func TestLogsPusher_err(t *testing.T) {
+	config := createDefaultConfig().(*Config)
+	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+
 	expErr := fmt.Errorf("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
-	p := kafkaLogsProducer{
-		producer:  producer,
-		marshaler: newPdataLogsMarshaler(&plog.ProtoMarshaler{}, defaultEncoding, false),
-		logger:    zap.NewNop(),
-	}
-	t.Cleanup(func() {
-		require.NoError(t, p.Close(context.Background()))
-	})
-	ld := testdata.GenerateLogs(1)
-	err := p.logsDataPusher(context.Background(), ld)
+	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
 	assert.EqualError(t, err, expErr.Error())
 }
 
-func TestLogsDataPusher_marshal_error(t *testing.T) {
-	expErr := fmt.Errorf("failed to marshal")
-	p := kafkaLogsProducer{
-		marshaler: &logsErrorMarshaler{err: expErr},
-		logger:    zap.NewNop(),
+func TestLogsPusher_marshal_error(t *testing.T) {
+	marshalErr := errors.New("failed to marshal")
+	host := extensionsHost{
+		component.MustNewID("log_encoding"): plogMarshalerFuncExtension(func(plog.Logs) ([]byte, error) {
+			return nil, marshalErr
+		}),
 	}
-	ld := testdata.GenerateLogs(1)
-	err := p.logsDataPusher(context.Background(), ld)
-	assert.ErrorContains(t, err, expErr.Error())
+	config := createDefaultConfig().(*Config)
+	config.Encoding = "log_encoding"
+	exp, _ := newMockLogsExporter(t, *config, host)
+
+	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
+	assert.ErrorContains(t, err, marshalErr.Error())
 }
 
-type tracesErrorMarshaler struct {
-	err error
-}
+func TestLogsPusher_partitioning(t *testing.T) {
+	input := plog.NewLogs()
+	for _, serviceName := range []string{"service1", "service1", "service2"} {
+		resourceLogs := testdata.GenerateLogs(1).ResourceLogs().At(0)
+		resourceLogs.Resource().Attributes().PutStr("service.name", serviceName)
+		resourceLogs.CopyTo(input.ResourceLogs().AppendEmpty())
+	}
 
-type metricsErrorMarshaler struct {
-	err error
-}
+	t.Run("default_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
 
-type logsErrorMarshaler struct {
-	err error
-}
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
+	})
+	t.Run("resource_partitioning", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.PartitionLogsByResourceAttributes = true
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
 
-func (e metricsErrorMarshaler) Marshal(_ pmetric.Metrics, _ string) ([]*sarama.ProducerMessage, error) {
-	return nil, e.err
-}
+		// We should get one message per ResourceLogs,
+		// even if they have the same service name.
+		var keys [][]byte
+		for i := 0; i < 3; i++ {
+			producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+				func(msg *sarama.ProducerMessage) error {
+					value, err := msg.Value.Encode()
+					require.NoError(t, err)
 
-func (e metricsErrorMarshaler) Encoding() string {
-	panic("implement me")
-}
+					output, err := (&plog.ProtoUnmarshaler{}).UnmarshalLogs(value)
+					require.NoError(t, err)
 
-var _ TracesMarshaler = (*tracesErrorMarshaler)(nil)
+					require.Equal(t, 1, output.ResourceLogs().Len())
+					assert.NoError(t, plogtest.CompareResourceLogs(
+						input.ResourceLogs().At(i),
+						output.ResourceLogs().At(0),
+					))
 
-func (e tracesErrorMarshaler) Marshal(_ ptrace.Traces, _ string) ([]*sarama.ProducerMessage, error) {
-	return nil, e.err
-}
+					key, err := msg.Key.Encode()
+					require.NoError(t, err)
+					keys = append(keys, key)
+					return nil
+				},
+			)
+		}
 
-func (e tracesErrorMarshaler) Encoding() string {
-	panic("implement me")
-}
+		err := exp.exportData(context.Background(), input)
+		require.NoError(t, err)
 
-func (e logsErrorMarshaler) Marshal(_ plog.Logs, _ string) ([]*sarama.ProducerMessage, error) {
-	return nil, e.err
-}
-
-func (e logsErrorMarshaler) Encoding() string {
-	panic("implement me")
+		require.Len(t, keys, 3)
+		assert.NotEmpty(t, keys[0])
+		assert.Equal(t, keys[0], keys[1])
+		assert.NotEqual(t, keys[0], keys[2])
+	})
 }
 
 func Test_GetTopic(t *testing.T) {
@@ -496,63 +533,104 @@ func Test_GetTopic(t *testing.T) {
 	}
 }
 
-func TestLoadEncodingExtension_logs(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_encoding")
+type extensionsHost map[component.ID]component.Component
+
+func (m extensionsHost) GetExtensions() map[component.ID]component.Component {
+	return m
+}
+
+type ptraceMarshalerFuncExtension func(ptrace.Traces) ([]byte, error)
+
+func (f ptraceMarshalerFuncExtension) MarshalTraces(td ptrace.Traces) ([]byte, error) {
+	return f(td)
+}
+
+func (f ptraceMarshalerFuncExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (f ptraceMarshalerFuncExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+type pmetricMarshalerFuncExtension func(pmetric.Metrics) ([]byte, error)
+
+func (f pmetricMarshalerFuncExtension) MarshalMetrics(td pmetric.Metrics) ([]byte, error) {
+	return f(td)
+}
+
+func (f pmetricMarshalerFuncExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (f pmetricMarshalerFuncExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+type plogMarshalerFuncExtension func(plog.Logs) ([]byte, error)
+
+func (f plogMarshalerFuncExtension) MarshalLogs(td plog.Logs) ([]byte, error) {
+	return f(td)
+}
+
+func (f plogMarshalerFuncExtension) Start(context.Context, component.Host) error {
+	return nil
+}
+
+func (f plogMarshalerFuncExtension) Shutdown(context.Context) error {
+	return nil
+}
+
+func newMockTracesExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[ptrace.Traces], *mocks.SyncProducer) {
+	exp := newTracesExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+
+	// Fake starting the exporter.
+	messager, err := exp.newMessager(host)
 	require.NoError(t, err)
-	require.NotNil(t, extension)
+	exp.messager = messager
+
+	// Create a mock producer.
+	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
+	exp.producer = producer
+
+	t.Cleanup(func() {
+		assert.NoError(t, exp.Close(context.Background()))
+	})
+	return exp, producer
 }
 
-func TestLoadEncodingExtension_notfound_error(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_notfound")
-	require.Error(t, err)
-	require.Nil(t, extension)
+func newMockMetricsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[pmetric.Metrics], *mocks.SyncProducer) {
+	exp := newMetricsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
+
+	// Fake starting the exporter.
+	messager, err := exp.newMessager(host)
+	require.NoError(t, err)
+	exp.messager = messager
+
+	// Create a mock producer.
+	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
+	exp.producer = producer
+
+	t.Cleanup(func() {
+		assert.NoError(t, exp.Close(context.Background()))
+	})
+	return exp, producer
 }
 
-func TestLoadEncodingExtension_nomarshaler_error(t *testing.T) {
-	extension, err := loadEncodingExtension[plog.Marshaler](&testComponentHost{}, "logs_nomarshaler")
-	require.Error(t, err)
-	require.Nil(t, extension)
-}
+func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaExporter[plog.Logs], *mocks.SyncProducer) {
+	exp := newLogsExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 
-type testComponentHost struct{}
+	// Fake starting the exporter.
+	messager, err := exp.newMessager(host)
+	require.NoError(t, err)
+	exp.messager = messager
 
-func (h *testComponentHost) GetExtensions() map[component.ID]component.Component {
-	return map[component.ID]component.Component{
-		component.MustNewID("logs_encoding"):    &nopComponent{},
-		component.MustNewID("logs_nomarshaler"): &nopNoMarshalerComponent{},
-		component.MustNewID("metrics_encoding"): &nopComponent{},
-		component.MustNewID("traces_encoding"):  &nopComponent{},
-	}
-}
+	// Create a mock producer.
+	producer := mocks.NewSyncProducer(t, sarama.NewConfig())
+	exp.producer = producer
 
-type nopComponent struct{}
-
-func (c *nopComponent) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (c *nopComponent) Shutdown(_ context.Context) error {
-	return nil
-}
-
-func (c *nopComponent) MarshalLogs(_ plog.Logs) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (c *nopComponent) MarshalMetrics(_ pmetric.Metrics) ([]byte, error) {
-	return []byte{}, nil
-}
-
-func (c *nopComponent) MarshalTraces(_ ptrace.Traces) ([]byte, error) {
-	return []byte{}, nil
-}
-
-type nopNoMarshalerComponent struct{}
-
-func (c *nopNoMarshalerComponent) Start(_ context.Context, _ component.Host) error {
-	return nil
-}
-
-func (c *nopNoMarshalerComponent) Shutdown(_ context.Context) error {
-	return nil
+	t.Cleanup(func() {
+		assert.NoError(t, exp.Close(context.Background()))
+	})
+	return exp, producer
 }
