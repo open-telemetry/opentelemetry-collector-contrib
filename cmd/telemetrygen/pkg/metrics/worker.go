@@ -84,10 +84,14 @@ var histogramBucketSamples = []struct {
 func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
+	startTime := time.Now()
+
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
-
+		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
+			startTime = time.Now().Add(-1 * time.Second)
+		}
 		switch w.metricType {
 		case MetricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
@@ -111,7 +115,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					Temporality: w.aggregationTemporality.AsTemporality(),
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime:  time.Now().Add(-1 * time.Second),
+							StartTime:  startTime,
 							Time:       time.Now(),
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
@@ -134,7 +138,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					Temporality: w.aggregationTemporality.AsTemporality(),
 					DataPoints: []metricdata.HistogramDataPoint[int64]{
 						{
-							StartTime:  time.Now().Add(-1 * time.Second),
+							StartTime:  startTime,
 							Time:       time.Now(),
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
