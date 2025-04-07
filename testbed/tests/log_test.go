@@ -58,8 +58,10 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name:     "filelog checkpoints",
-			sender:   datasenders.NewFileLogWriter(t),
+			name: "filelog checkpoints",
+			sender: datasenders.NewFileLogWriter(t).WithStorage(`
+    storage: file_storage
+`),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
