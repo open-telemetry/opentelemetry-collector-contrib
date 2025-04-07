@@ -244,7 +244,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 					host, tags = getHostTags(data)
 				}
 				assert.Equal(tt.host, host)
-				assert.EqualValues(tt.tags, tags)
+				assert.Equal(tt.tags, tags)
 			case <-timeout:
 				t.Fatal("timeout")
 			}

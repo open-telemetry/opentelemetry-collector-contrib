@@ -315,7 +315,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				for j := 0; j < rl.ScopeLogs().Len(); j++ {
 					logs := rl.ScopeLogs().At(j).LogRecords()
 					for k := 0; k < logs.Len(); k++ {
-						assert.EqualValues(t, outputRecordAttrs, logs.At(k).Attributes())
+						assert.Equal(t, outputRecordAttrs, logs.At(k).Attributes())
 					}
 				}
 			}
@@ -332,7 +332,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 				for j := 0; j < rs.ScopeSpans().Len(); j++ {
 					spans := rs.ScopeSpans().At(j).Spans()
 					for k := 0; k < spans.Len(); k++ {
-						assert.EqualValues(t, outputRecordAttrs, spans.At(k).Attributes())
+						assert.Equal(t, outputRecordAttrs, spans.At(k).Attributes())
 					}
 				}
 			}
@@ -351,7 +351,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 					for k := 0; k < metrics.Len(); k++ {
 						metric := metrics.At(k)
 						for l := 0; l < metric.Gauge().DataPoints().Len(); l++ {
-							assert.EqualValues(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
+							assert.Equal(t, outputRecordAttrs, metric.Gauge().DataPoints().At(l).Attributes())
 						}
 					}
 				}
@@ -372,7 +372,7 @@ func TestComplexAttributeGrouping(t *testing.T) {
 						metric := metrics.At(k)
 						assert.Equal(t, pmetric.AggregationTemporalityCumulative, metric.Histogram().AggregationTemporality())
 						for l := 0; l < metric.Histogram().DataPoints().Len(); l++ {
-							assert.EqualValues(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
+							assert.Equal(t, outputRecordAttrs, metric.Histogram().DataPoints().At(l).Attributes())
 						}
 					}
 				}

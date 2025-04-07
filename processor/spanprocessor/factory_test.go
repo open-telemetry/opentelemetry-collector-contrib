@@ -78,7 +78,7 @@ func TestFactory_CreateTraces_InvalidConfig(t *testing.T) {
 
 			tp, err := factory.CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 			require.Nil(t, tp)
-			assert.EqualValues(t, err, test.err)
+			assert.Equal(t, err, test.err)
 		})
 	}
 }

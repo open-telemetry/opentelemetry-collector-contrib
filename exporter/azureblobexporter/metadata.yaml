@@ -6,7 +6,7 @@ status:
   stability:
     development: [traces, metrics, logs]
   codeowners:
-    active: [hgaol]
+    active: [hgaol, MovieStoreGuy]
 
 tests:
   config:
