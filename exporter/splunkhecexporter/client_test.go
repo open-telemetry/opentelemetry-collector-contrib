@@ -1269,7 +1269,7 @@ func TestReceiveMetricsWithCompression(t *testing.T) {
 	request, err := runMetricsExport(t, cfg, createMetricsData(1, 100), 2, false)
 	assert.NoError(t, err)
 	assert.Equal(t, "gzip", request[0].headers.Get("Content-Encoding"))
-	assert.NotEqual(t, "", request)
+	assert.NotEmpty(t, request)
 }
 
 func TestErrorReceived(t *testing.T) {
