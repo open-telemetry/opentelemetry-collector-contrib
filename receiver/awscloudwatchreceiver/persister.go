@@ -9,14 +9,12 @@ import (
 	"fmt"
 	"time"
 
-	jsoniter "github.com/json-iterator/go"
+	"github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
 
 const checkpointKeyFormat = "cloudwatch/%s"
-
-var json = jsoniter.ConfigCompatibleWithStandardLibrary
 
 type cloudwatchCheckpointPersister struct {
 	client storage.Client
