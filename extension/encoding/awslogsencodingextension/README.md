@@ -42,7 +42,7 @@ extensions:
 
 #### VPC flow log record fields
 
-VPC flow log record fields are mapped this way in the resulting OpenTelemetry log:
+[VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
 | Flow log field               | Attribute in OpenTelemetry log                                                                        |  Available?  |
 |------------------------------|-------------------------------------------------------------------------------------------------------|:------------:|
