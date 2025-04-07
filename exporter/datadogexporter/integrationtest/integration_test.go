@@ -634,7 +634,7 @@ func TestIntegrationHostMetrics_WithoutRemapping_Serializer(t *testing.T) {
 		"system.cpu.load_average.5m":  {},
 		"system.memory.usage":         {},
 	}
-	testIntegrationHostMetrics(t, expectedMetrics, false)
+	testIntegrationHostMetrics(t, expectedMetrics, true)
 }
 
 func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{}, useSerializer bool) {
