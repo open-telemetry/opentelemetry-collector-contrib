@@ -44,10 +44,7 @@ func (s *Server) Check(
 	}
 
 	for pipeline, pipelineStatus := range s.aggregator.FindNotOk(status.Concise) {
-		s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields("pipeline", pipeline, pipelineStatus)...)
-		for component, componentSt := range pipelineStatus.ComponentStatusMap {
-			s.telemetry.Logger.Warn("component not ok", common.HealthLogFields("component", component, componentSt)...)
-		}
+		s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields(pipeline, pipelineStatus, status.Concise)...)
 	}
 
 	return &healthpb.HealthCheckResponse{

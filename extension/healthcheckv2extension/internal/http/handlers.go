@@ -13,19 +13,17 @@ import (
 func (s *Server) statusHandler() http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		pipeline := r.URL.Query().Get("pipeline")
-		verbose := r.URL.Query().Has("verbose") && r.URL.Query().Get("verbose") != "false"
-		st, ok := s.aggregator.AggregateStatus(status.Scope(pipeline), status.Verbosity(verbose))
+		verboseParam := r.URL.Query().Has("verbose") && r.URL.Query().Get("verbose") != "false"
+		verbose := status.Verbosity(verboseParam)
+		st, ok := s.aggregator.AggregateStatus(status.Scope(pipeline), verbose)
 
 		if !ok {
 			w.WriteHeader(http.StatusNotFound)
 			return
 		}
 
-		for pipeline, pipelineStatus := range s.aggregator.FindNotOk(status.Verbosity(verbose)) {
-			s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields("pipeline", pipeline, pipelineStatus)...)
-			for component, componentSt := range pipelineStatus.ComponentStatusMap {
-				s.telemetry.Logger.Warn("component not ok", common.HealthLogFields("component", component, componentSt)...)
-			}
+		for pipeline, pipelineStatus := range s.aggregator.FindNotOk(verbose) {
+			s.telemetry.Logger.Warn("pipeline not ok", common.HealthLogFields(pipeline, pipelineStatus, verbose)...)
 		}
 
 		if err := s.responder.respond(st, w); err != nil {
