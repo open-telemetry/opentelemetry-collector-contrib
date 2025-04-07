@@ -210,8 +210,7 @@ func TestFactory(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
-				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-				require.NoError(t, err)
+				q := getSQLServerQueryTextAndPlanQuery()
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {
