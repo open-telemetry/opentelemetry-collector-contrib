@@ -1,0 +1,47 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: category
+                    value:
+                      stringValue: FrontdoorWebApplicationFirewallLog
+                  - key: operation.name
+                    value:
+                      stringValue: WAF/FirewallLog
+                  - key: url.full
+                    value:
+                      stringValue: https://test.net/
+                  - key: server.address
+                    value:
+                      stringValue: test.net
+                  - key: az.service_request_id
+                    value:
+                      stringValue: TRACKING_REFERENCE
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: client.port
+                    value:
+                      stringValue: "0"
+                  - key: network.peer.address
+                    value:
+                      stringValue: 23.23.23.23
+            spanId: ""
+            timeUnixNano: "1713960372000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

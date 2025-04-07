@@ -89,11 +89,11 @@ func (c *Config) Validate() error {
 	}
 
 	// check if headers exists
-	if len(c.ClientConfig.Headers) == 0 {
-		c.ClientConfig.Headers = make(map[string]configopaque.String)
+	if len(c.Headers) == 0 {
+		c.Headers = make(map[string]configopaque.String)
 	}
-	c.ClientConfig.Headers["ACCESS_TOKEN"] = c.PrivateKey
-	c.ClientConfig.Headers["appName"] = configopaque.String(c.AppName)
+	c.Headers["ACCESS_TOKEN"] = c.PrivateKey
+	c.Headers["appName"] = configopaque.String(c.AppName)
 	return nil
 }
 
