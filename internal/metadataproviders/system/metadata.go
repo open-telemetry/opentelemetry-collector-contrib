@@ -105,7 +105,7 @@ func (systemMetadataProvider) FQDN() (string, error) {
 }
 
 func (p systemMetadataProvider) Hostname() (string, error) {
-	return p.nameInfoProvider.osHostname()
+	return p.osHostname()
 }
 
 func (p systemMetadataProvider) LookupCNAME() (string, error) {
@@ -113,7 +113,7 @@ func (p systemMetadataProvider) LookupCNAME() (string, error) {
 	if err != nil {
 		return "", fmt.Errorf("LookupCNAME failed to get hostname: %w", err)
 	}
-	cname, err := p.nameInfoProvider.lookupCNAME(hostname)
+	cname, err := p.lookupCNAME(hostname)
 	if err != nil {
 		return "", fmt.Errorf("LookupCNAME failed to get CNAME: %w", err)
 	}
@@ -129,7 +129,7 @@ func (p systemMetadataProvider) ReverseLookupHost() (string, error) {
 }
 
 func (p systemMetadataProvider) hostnameToDomainName(hostname string) (string, error) {
-	ipAddresses, err := p.nameInfoProvider.lookupHost(hostname)
+	ipAddresses, err := p.lookupHost(hostname)
 	if err != nil {
 		return "", fmt.Errorf("hostnameToDomainName failed to convert hostname to IP addresses: %w", err)
 	}
@@ -140,7 +140,7 @@ func (p systemMetadataProvider) reverseLookup(ipAddresses []string) (string, err
 	var err error
 	for _, ip := range ipAddresses {
 		var names []string
-		names, err = p.nameInfoProvider.lookupAddr(ip)
+		names, err = p.lookupAddr(ip)
 		if err != nil {
 			continue
 		}
