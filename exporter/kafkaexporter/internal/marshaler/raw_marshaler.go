@@ -1,27 +1,25 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkaexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
+package marshaler // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 
 import (
 	"encoding/json"
 	"errors"
 
-	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-var errUnsupported = errors.New("unsupported serialization")
+var (
+	errUnsupported               = errors.New("unsupported serialization")
+	_              LogsMarshaler = RawLogsMarshaler{}
+)
 
-type rawMarshaler struct{}
+type RawLogsMarshaler struct{}
 
-func newRawMarshaler() rawMarshaler {
-	return rawMarshaler{}
-}
-
-func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerMessage, error) {
-	var messages []*sarama.ProducerMessage
+func (r RawLogsMarshaler) MarshalLogs(logs plog.Logs) ([]Message, error) {
+	var messages []Message
 	for i := 0; i < logs.ResourceLogs().Len(); i++ {
 		rl := logs.ResourceLogs().At(i)
 		for j := 0; j < rl.ScopeLogs().Len(); j++ {
@@ -35,19 +33,14 @@ func (r rawMarshaler) Marshal(logs plog.Logs, topic string) ([]*sarama.ProducerM
 				if len(b) == 0 {
 					continue
 				}
-
-				messages = append(messages, &sarama.ProducerMessage{
-					Topic: topic,
-					Value: sarama.ByteEncoder(b),
-				})
+				messages = append(messages, Message{Value: b})
 			}
 		}
 	}
-
 	return messages, nil
 }
 
-func (r rawMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
+func (r RawLogsMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
 	switch value.Type() {
 	case pcommon.ValueTypeStr:
 		return r.interfaceAsBytes(value.Str())
@@ -70,14 +63,9 @@ func (r rawMarshaler) logBodyAsBytes(value pcommon.Value) ([]byte, error) {
 	}
 }
 
-func (r rawMarshaler) interfaceAsBytes(value any) ([]byte, error) {
+func (r RawLogsMarshaler) interfaceAsBytes(value any) ([]byte, error) {
 	if value == nil {
 		return []byte{}, nil
 	}
-	res, err := json.Marshal(value)
-	return res, err
-}
-
-func (r rawMarshaler) Encoding() string {
-	return "raw"
+	return json.Marshal(value)
 }
