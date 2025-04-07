@@ -40,6 +40,9 @@ The following settings can be optionally configured and have default values:
   - logs (default `nil`): encoding component id.
   - metrics (default `nil`): encoding component id.
   - traces (default `nil`): encoding component id.
+- append_blob: configures append blob behavior. When enabled, telemetry data is appended to a single blob instead of creating new blobs. This can be useful for aggregating data or reducing the number of blobs created.
+  - enabled (default `false`): determines whether to use append blob mode.
+  - separator (default `\n`): string to insert between appended data blocks.
 - `retry_on_failure`
   - `enabled` (default = true)
   - `initial_interval` (default = 5s): Time to wait after the first failure before retrying; ignored if `enabled` is `false`
@@ -67,7 +70,15 @@ exporter:
     auth:
       type: "connection_string"
       connection_string: "DefaultEndpointsProtocol=https;AccountName=<your-acount>;AccountKey=<account-key>;EndpointSuffix=core.windows.net"
-          traces: "test"
     encodings:
       logs: text_encoding
+    append_blob:
+      enabled: true
+      separator: "\n"
 ```
+
+When `append_blob` is enabled:
+- The exporter will create append blobs instead of block blobs
+- New data will be appended to existing blobs rather than creating new ones
+- The configured separator will be inserted between data blocks
+- If the blob doesn't exist, it will be created automatically
