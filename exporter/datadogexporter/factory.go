@@ -251,7 +251,7 @@ func (f *factory) createMetricsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -404,7 +404,7 @@ func (f *factory) createTracesExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Traces, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 	if noAPMStatsFeatureGate.IsEnabled() {
 		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
@@ -506,7 +506,7 @@ func (f *factory) createLogsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Logs, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 
 	if cfg.Logs.DumpPayloads && isLogsAgentExporterEnabled() {
 		set.Logger.Warn("logs::dump_payloads is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled")

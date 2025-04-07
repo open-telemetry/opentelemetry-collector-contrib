@@ -86,7 +86,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 	switch format {
 	case dockerFormat:
 		p.timeLayout = goTimeLayout
-		err = p.ParserOperator.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
+		err = p.ProcessWithCallback(ctx, entry, p.parseDocker, p.handleTimeAndAttributeMappings)
 		if err != nil {
 			return fmt.Errorf("failed to process the docker log: %w", err)
 		}
@@ -116,14 +116,14 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 
 		if format == containerdFormat {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseContainerd)
+			err = p.ParseWith(ctx, entry, p.parseContainerd)
 			if err != nil {
 				return fmt.Errorf("failed to parse containerd log: %w", err)
 			}
 			p.timeLayout = goTimeLayout
 		} else {
 			// parse the message
-			err = p.ParserOperator.ParseWith(ctx, entry, p.parseCRIO)
+			err = p.ParseWith(ctx, entry, p.parseCRIO)
 			if err != nil {
 				return fmt.Errorf("failed to parse crio log: %w", err)
 			}
