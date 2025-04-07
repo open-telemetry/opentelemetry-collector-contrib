@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/prometheus/client_golang/prometheus"
-	dto "github.com/prometheus/client_model/go"
 	io_prometheus_client "github.com/prometheus/client_model/go"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -99,7 +98,7 @@ func TestConvertMetric(t *testing.T) {
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
-						Type: dto.MetricType_COUNTER.Enum(),
+						Type: io_prometheus_client.MetricType_COUNTER.Enum(),
 					},
 				},
 			},
@@ -113,7 +112,7 @@ func TestConvertMetric(t *testing.T) {
 				"testgauge": {
 					mf: &io_prometheus_client.MetricFamily{
 						Name: proto.String("testgauge"),
-						Type: dto.MetricType_GAUGE.Enum(),
+						Type: io_prometheus_client.MetricType_GAUGE.Enum(),
 						Help: proto.String("test help value"),
 					},
 				},
