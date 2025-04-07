@@ -1474,7 +1474,7 @@ func TestCalculateDeltaDatapoints_ExponentialHistogramDataPointSliceWithSplitDat
 
 			assert.True(t, retained)
 			assert.Equal(t, 1, exponentialHistogramDatapointSlice.Len())
-			assert.Equal(t, len(tc.expectedDatapoints), len(dps))
+			assert.Len(t, dps, len(tc.expectedDatapoints))
 			for i, expectedDP := range tc.expectedDatapoints {
 				assert.Equal(t, expectedDP, dps[i], "datapoint mismatch at index %d", i)
 			}

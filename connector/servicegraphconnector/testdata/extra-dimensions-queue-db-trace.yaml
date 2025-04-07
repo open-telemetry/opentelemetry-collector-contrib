@@ -39,3 +39,43 @@ resourceSpans:
               - key: db.system
                 value:
                   stringValue: postgresql
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: foo-server
+    scopeSpans:
+      - scope:
+          name: foo-server
+        spans:
+          - traceId: a0000000000000000000000000000001
+            spanId: a000000000000000
+            name: server
+            kind: 3
+            startTimeUnixNano: "1800000000000000000"
+            endTimeUnixNano:   "1800000000000001000"
+            parentSpanId: ""
+            attributes:
+              - key: messaging.system
+                value:
+                  stringValue: rabbitmq
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: bar-requester
+    scopeSpans:
+      - scope:
+          name: opentelemetry/instrumentation-net
+        spans:
+          - traceId: a0000000000000000000000000000001
+            spanId: a000000000000001
+            name: "HTTP GET /ready"
+            kind: 2
+            startTimeUnixNano: "1800000000000000000"
+            endTimeUnixNano:   "1800000000000001000"
+            parentSpanId: "a000000000000000"
+            attributes:
+              - key: db.system
+                value:
+                  stringValue: mysql

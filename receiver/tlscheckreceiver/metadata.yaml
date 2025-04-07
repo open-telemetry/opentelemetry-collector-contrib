@@ -16,15 +16,12 @@ resource_attributes:
 
 attributes:
   tlscheck.x509.issuer:
-    enabled: true
     description: The entity that issued the certificate.
     type: string
   tlscheck.x509.cn:
-    enabled: true
     description: The commonName in the subject of the certificate.
     type: string
   tlscheck.x509.san:
-    enabled: false
     description: The Subject Alternative Name of the certificate.
     type: slice
 
