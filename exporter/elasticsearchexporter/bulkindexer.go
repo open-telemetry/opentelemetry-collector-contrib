@@ -407,7 +407,7 @@ func (b *bulkIndexers) start(
 
 	for _, mode := range allowedMappingModes {
 		var bi bulkIndexer
-		bi, err = newBulkIndexer(set.TelemetrySettings.Logger, esClient, cfg, mode == MappingOTel)
+		bi, err = newBulkIndexer(set.Logger, esClient, cfg, mode == MappingOTel)
 		if err != nil {
 			return err
 		}
