@@ -201,15 +201,12 @@ attributes:
   k8s.namespace.name:
     description: The k8s namespace name.
     type: string
-    enabled: true
   resource:
     description: the name of the resource on which the quota is applied
     type: string
-    enabled: true
   condition:
     description: "the name of Kubernetes Node condition. Example: Ready, Memory, PID, DiskPressure"
     type: string
-    enabled: true
 
 metrics:
   k8s.container.cpu_request:

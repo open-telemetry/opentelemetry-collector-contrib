@@ -85,7 +85,8 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.UserId] = userID.Str()
 	}
 
-	if spanKind == ptrace.SpanKindServer || spanKind == ptrace.SpanKindConsumer {
+	switch spanKind {
+	case ptrace.SpanKindServer, ptrace.SpanKindConsumer:
 		requestData := spanToRequestData(span, incomingSpanType)
 		dataProperties = requestData.Properties
 		dataSanitizeFunc = requestData.Sanitize
@@ -93,7 +94,7 @@ func spanToEnvelopes(
 		envelope.Tags[contracts.OperationName] = requestData.Name
 		data.BaseData = requestData
 		data.BaseType = requestData.BaseType()
-	} else if spanKind == ptrace.SpanKindClient || spanKind == ptrace.SpanKindProducer || spanKind == ptrace.SpanKindInternal {
+	case ptrace.SpanKindClient, ptrace.SpanKindProducer, ptrace.SpanKindInternal:
 		remoteDependencyData := spanToRemoteDependencyData(span, incomingSpanType)
 
 		// Regardless of the detected Span type, if the SpanKind is Internal we need to set data.Type to InProc

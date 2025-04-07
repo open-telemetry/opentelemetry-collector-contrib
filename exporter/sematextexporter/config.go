@@ -23,7 +23,7 @@ const (
 type Config struct {
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	// Region specifies the Sematext region the user is operating in
 	// Options:
 	// - EU
@@ -51,8 +51,8 @@ func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion && strings.ToLower(cfg.Region) != "" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
-		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
+	if !isValidUUID(cfg.AppToken) && cfg.AppToken != "" {
+		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.AppToken)
 	}
 
 	if strings.ToLower(cfg.Region) == euRegion {

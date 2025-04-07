@@ -235,7 +235,7 @@ func (c Config) validate() error {
 		}
 	}
 
-	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
 		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
