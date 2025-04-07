@@ -103,7 +103,7 @@ The following settings can be optionally configured:
 The Kafka exporter supports encoding extensions, as well as the following built-in encodings.
 
 Available for all signals:
-  - `otlp_proto`: data is encoded as OTLP Protobuf Protobuf
+  - `otlp_proto`: data is encoded as OTLP Protobuf
   - `otlp_json`: data is encoded as OTLP JSON
 
 Available only for traces:
