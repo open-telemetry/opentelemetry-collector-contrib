@@ -1,12 +1,16 @@
 default:
 all_set:
   resource_attributes:
+    azuremonitor.subscription:
+      enabled: true
     azuremonitor.subscription_id:
       enabled: true
     azuremonitor.tenant_id:
       enabled: true
 none_set:
   resource_attributes:
+    azuremonitor.subscription:
+      enabled: false
     azuremonitor.subscription_id:
       enabled: false
     azuremonitor.tenant_id:
