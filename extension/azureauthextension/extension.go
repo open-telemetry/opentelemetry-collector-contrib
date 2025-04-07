@@ -11,6 +11,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strings"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/policy"
@@ -138,13 +139,98 @@ func (a *authenticator) GetToken(ctx context.Context, options policy.TokenReques
 	return a.credential.GetToken(ctx, options)
 }
 
-func (a *authenticator) Authenticate(ctx context.Context, _ map[string][]string) (context.Context, error) {
-	// TODO
+func getHeaderValue(header string, headers map[string][]string) (string, error) {
+	value, ok := headers[header]
+	if !ok {
+		value, ok = headers[strings.ToLower(header)]
+	}
+	if !ok {
+		return "", fmt.Errorf("missing %q header", header)
+	}
+	if len(value) == 0 {
+		return "", fmt.Errorf("empty %q header", header)
+	}
+	return value[0], nil
+}
+
+// getTokenForHost will request an access token based on a scope
+// computed from the host value. It will return the token value
+// or an error if request failed.
+func (a *authenticator) getTokenForHost(ctx context.Context, host string) (string, error) {
+	token, err := a.credential.GetToken(ctx, policy.TokenRequestOptions{
+		// TODO Cache the tokens
+		Scopes: []string{
+			// Example: if host is "management.azure.com", then the scope to get the
+			// token will be "https://management.azure.com/.default".
+			// See default scope: https://learn.microsoft.com/en-us/entra/identity-platform/scopes-oidc#the-default-scope.
+			fmt.Sprintf("https://%s/.default", host),
+		},
+	})
+	if err != nil {
+		return "", err
+	}
+	return token.Token, nil
+}
+
+func (a *authenticator) Authenticate(ctx context.Context, headers map[string][]string) (context.Context, error) {
+	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
+	auth, err := getHeaderValue("Authorization", headers)
+	if err != nil {
+		return ctx, err
+	}
+	host, err := getHeaderValue("Host", headers)
+	if err != nil {
+		return ctx, err
+	}
+
+	authFormat := strings.Split(auth, " ")
+	if len(authFormat) != 2 {
+		return ctx, errors.New(`authorization header does not follow expected format "Bearer <Token>"`)
+	}
+	if authFormat[0] != "Bearer" {
+		return ctx, fmt.Errorf(`expected "Bearer" as schema, got %q`, authFormat[0])
+	}
+
+	token, err := a.getTokenForHost(ctx, host)
+	if err != nil {
+		return ctx, err
+	}
+	if authFormat[1] != token {
+		return ctx, errors.New("unauthorized: invalid token")
+	}
 	return ctx, nil
 }
 
-func (a *authenticator) RoundTripper(_ http.RoundTripper) (http.RoundTripper, error) {
-	// TODO
-	// See request header: https://learn.microsoft.com/en-us/rest/api/azure/#request-header
-	return nil, nil
+func (a *authenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+	return &roundTripper{
+		base: base,
+		auth: a,
+	}, nil
+}
+
+type roundTripper struct {
+	base http.RoundTripper
+	auth *authenticator
+}
+
+var _ http.RoundTripper = (*roundTripper)(nil)
+
+func (r *roundTripper) RoundTrip(request *http.Request) (*http.Response, error) {
+	req := request.Clone(request.Context())
+	if req.Header == nil {
+		return nil, errors.New(`request headers are empty, expected to find "Host" header`)
+	}
+
+	host := req.Header.Get("Host")
+	if host == "" {
+		return nil, errors.New(`missing "host" header`)
+	}
+
+	token, err := r.auth.getTokenForHost(req.Context(), host)
+	if err != nil {
+		return nil, fmt.Errorf("azureauth: failed to get token: %w", err)
+	}
+	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", token))
+
+	return r.base.RoundTrip(req)
 }
