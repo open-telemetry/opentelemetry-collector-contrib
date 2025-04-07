@@ -1,0 +1,102 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: tls.protocol.version
+                    value:
+                      stringValue: "1.3"
+                  - key: network.protocol.version
+                    value:
+                      stringValue: 1.1.0.0
+                  - key: client.port
+                    value:
+                      stringValue: "0"
+                  - key: tls.protocol.name
+                    value:
+                      stringValue: tls
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: POP
+                            value:
+                              stringValue: LON
+                          - key: isReceivedFromClient
+                            value:
+                              boolValue: false
+                          - key: Result
+                            value:
+                              stringValue: N/A
+                          - key: RulesEngineMatchNames
+                            value:
+                              arrayValue: {}
+                          - key: TimeToFirstByte
+                            value:
+                              stringValue: "0.420"
+                          - key: SNI
+                            value:
+                              stringValue: originshield|parentcache|https|tier2
+                          - key: RoutingRuleName
+                            value:
+                              stringValue: default-route
+                          - key: HttpStatusDetails
+                            value:
+                              stringValue: "200"
+                          - key: TimeTaken
+                            value:
+                              stringValue: "0.230"
+                          - key: BackendHostName
+                            value:
+                              stringValue: backendhost.net
+                  - key: operation.name
+                    value:
+                      stringValue: Microsoft.AzureCdn/Profiles/AccessLog
+                  - key: http.response.size
+                    value:
+                      intValue: "12345"
+                  - key: url.full
+                    value:
+                      stringValue: https://test.net/
+                  - key: error.type
+                    value:
+                      stringValue: NoError
+                  - key: category
+                    value:
+                      stringValue: AzureCdnAccessLog
+                  - key: http.request.size
+                    value:
+                      intValue: "1234"
+                  - key: az.service_request_id
+                    value:
+                      stringValue: TRACKING_REFERENCE
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+            spanId: ""
+            timeUnixNano: "1713960372000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

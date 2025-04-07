@@ -1,0 +1,138 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /RESOURCE_ID
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: operation.name
+                    value:
+                      stringValue: Microsoft.Cdn/Profiles/AccessLog/Write
+                  - key: server.address
+                    value:
+                      stringValue: dummyapp-eebde0bwehfthfbb.z01.azurefd.net
+                  - key: tls.curve
+                    value:
+                      stringValue: secp384r1
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+                  - key: http.server.request.duration
+                    value:
+                      doubleValue: 0.23
+                  - key: client.port
+                    value:
+                      stringValue: "0"
+                  - key: category
+                    value:
+                      stringValue: FrontDoorAccessLog
+                  - key: network.protocol.name
+                    value:
+                      stringValue: https
+                  - key: tls.protocol.name
+                    value:
+                      stringValue: tls
+                  - key: http.response.size
+                    value:
+                      intValue: "12345"
+                  - key: url.full
+                    value:
+                      stringValue: https://test.net/
+                  - key: network.peer.address
+                    value:
+                      stringValue: 23.23.23.23
+                  - key: network.protocol.version
+                    value:
+                      stringValue: 1.1.0.0
+                  - key: http.request.header.referer
+                    value:
+                      stringValue: REFERER
+                  - key: az.service_request_id
+                    value:
+                      stringValue: TRACKING_REFERENCE
+                  - key: tls.protocol.version
+                    value:
+                      stringValue: "1.3"
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: routingRuleName
+                            value:
+                              stringValue: default-route
+                          - key: httpStatusDetails
+                            value:
+                              stringValue: "200"
+                          - key: pop
+                            value:
+                              stringValue: LON
+                          - key: sni
+                            value:
+                              stringValue: originshield|parentcache|https|tier2
+                          - key: originName
+                            value:
+                              stringValue: dummyapp.icysea-e3cd8b77.eastus.azurecontainerapps.io:443
+                          - key: clientCountry
+                            value:
+                              stringValue: United Kingdom
+                          - key: timeToFirstByte
+                            value:
+                              stringValue: "0.420"
+                          - key: rulesEngineMatchNames
+                            value:
+                              arrayValue: {}
+                          - key: originUrl
+                            value:
+                              stringValue: https://dummyapp.icysea-e3cd8b77.eastus.azurecontainerapps.io:443/
+                          - key: ErrorInfo
+                            value:
+                              stringValue: NoError
+                          - key: cacheStatus
+                            value:
+                              stringValue: MISS
+                          - key: originIp
+                            value:
+                              stringValue: 4.156.233.180:443
+                          - key: domain
+                            value:
+                              stringValue: dummyapp-eebde0bwehfthfbb.z01.azurefd.net:443
+                          - key: result
+                            value:
+                              stringValue: N/A
+                          - key: endpoint
+                            value:
+                              stringValue: dummyapp-eebde0bwehfthfbb.z01.azurefd.net
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
+                  - key: http.request.size
+                    value:
+                      intValue: "1234"
+                  - key: error.type
+                    value:
+                      stringValue: NoError
+                  - key: tls.cipher
+                    value:
+                      stringValue: TLS_AES_256_GCM_SHA384
+            spanId: ""
+            timeUnixNano: "1713960372000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

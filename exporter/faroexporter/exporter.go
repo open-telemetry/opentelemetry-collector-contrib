@@ -66,7 +66,7 @@ func newExporter(cfg component.Config, set exporter.Settings) (*faroExporter, er
 }
 
 func (fe *faroExporter) start(ctx context.Context, host component.Host) error {
-	client, err := fe.config.ClientConfig.ToClient(ctx, host, fe.settings)
+	client, err := fe.config.ToClient(ctx, host, fe.settings)
 	if err != nil {
 		return err
 	}
