@@ -145,7 +145,7 @@ func (a *Aggregator) FindNotOk(verbosity Verbosity) map[string]*AggregateStatus 
 	a.mu.RLock()
 	defer a.mu.RUnlock()
 
-	notOk := make(map[string]*AggregateStatus, 0)
+	notOk := make(map[string]*AggregateStatus, len(a.aggregateStatus.ComponentStatusMap))
 	for component, st := range a.aggregateStatus.ComponentStatusMap {
 		if st.Status() != componentstatus.StatusOK && st.Status() != componentstatus.StatusNone {
 			notOk[component] = st.clone(verbosity)
