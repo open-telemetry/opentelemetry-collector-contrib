@@ -427,7 +427,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				// aggregate duration metrics
 				if !p.config.Histogram.Disable {
 					durationDimensions := p.dimensions
-					durationDimensions = append(p.dimensions, p.durationDimensions...)
+					durationDimensions = append(durationDimensions, p.durationDimensions...)
 					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
 					durationAttributes, ok := p.metricKeyToDimensions.Get(durationKey)
 					if !ok {
