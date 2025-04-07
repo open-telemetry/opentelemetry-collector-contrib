@@ -185,8 +185,8 @@ func TestInferServiceAndRegion(t *testing.T) {
 			si := rt.(*signingRoundTripper)
 
 			service, region := si.inferServiceAndRegion(testcase.request)
-			assert.EqualValues(t, testcase.expectedService, service)
-			assert.EqualValues(t, testcase.expectedRegion, region)
+			assert.Equal(t, testcase.expectedService, service)
+			assert.Equal(t, testcase.expectedRegion, region)
 		})
 	}
 }

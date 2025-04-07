@@ -70,8 +70,8 @@ type TagsConfig struct {
 
 // Config defines configuration for the Datadog exporter.
 type Config struct {
-	confighttp.ClientConfig   `mapstructure:",squash"`   // squash ensures fields are correctly decoded in embedded struct.
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	confighttp.ClientConfig   `mapstructure:",squash"`        // squash ensures fields are correctly decoded in embedded struct.
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 
 	TagsConfig `mapstructure:",squash"`
@@ -273,6 +273,10 @@ func (c *Config) Unmarshal(configMap *confmap.Conf) error {
 		return err
 	}
 	c.warnings = append(c.warnings, renamingWarnings...)
+
+	if c.HostMetadata.HostnameSource == HostnameSourceFirstResource {
+		c.warnings = append(c.warnings, errors.New("first_resource is deprecated, opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead"))
+	}
 
 	c.API.Key = configopaque.String(strings.TrimSpace(string(c.API.Key)))
 

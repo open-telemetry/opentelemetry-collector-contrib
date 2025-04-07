@@ -2470,7 +2470,7 @@ func Test_newPath_WithPathContextNames(t *testing.T) {
 			contextParsedAsField := len(tt.pathContextNames) == 0 && tt.pathContext != ""
 			if contextParsedAsField {
 				assert.Equal(t, tt.pathContext, p.Name())
-				assert.Equal(t, "", p.Context())
+				assert.Empty(t, p.Context())
 				assert.Nil(t, p.Keys())
 				p = p.Next()
 			}
