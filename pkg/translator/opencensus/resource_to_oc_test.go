@@ -64,8 +64,8 @@ func TestResourceToOC(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			ocNode, ocResource := internalResourceToOC(test.resource)
-			assert.EqualValues(t, test.ocNode, ocNode)
-			assert.EqualValues(t, test.ocResource, ocResource)
+			assert.Equal(t, test.ocNode, ocNode)
+			assert.Equal(t, test.ocResource, ocResource)
 		})
 	}
 }
@@ -172,7 +172,7 @@ func TestInferResourceType(t *testing.T) {
 				assert.Equal(t, tc.wantResourceType, resourceType)
 			} else {
 				assert.False(t, ok)
-				assert.Equal(t, "", resourceType)
+				assert.Empty(t, resourceType)
 			}
 		})
 	}
