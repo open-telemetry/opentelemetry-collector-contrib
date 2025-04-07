@@ -15,5 +15,5 @@ func Test_UUID(t *testing.T) {
 
 	value, err := exprFunc(nil, nil)
 	assert.NoError(t, err)
-	assert.NotEqual(t, "", value)
+	assert.NotEmpty(t, value)
 }

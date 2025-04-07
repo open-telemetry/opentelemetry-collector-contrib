@@ -186,7 +186,7 @@ func TestMultipleJSONV1BatchesToTraces(t *testing.T) {
 		}
 	}
 
-	assert.EqualValues(t, mapperTraces(t, tracesFromZipkinV1), got)
+	assert.Equal(t, mapperTraces(t, tracesFromZipkinV1), got)
 }
 
 func TestZipkinAnnotationsToSpanStatus(t *testing.T) {
@@ -476,7 +476,7 @@ func TestSpanWithoutTimestampGetsTag(t *testing.T) {
 
 	wantAttributes := pcommon.NewMap()
 	wantAttributes.PutBool(zipkin.StartTimeAbsent, true)
-	assert.EqualValues(t, wantAttributes, gs.Attributes())
+	assert.Equal(t, wantAttributes, gs.Attributes())
 }
 
 func TestSpanWithTimestamp(t *testing.T) {
@@ -521,7 +521,7 @@ func TestJSONHTTPToStatusCode(t *testing.T) {
 		td, err := jsonBatchToTraces(zBytes, false)
 		require.NoError(t, err)
 		gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		require.EqualValues(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
+		require.Equal(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
 	}
 }
 
@@ -648,7 +648,7 @@ func TestSpanKindTranslation(t *testing.T) {
 			// Translate to SpanAndEndpoint and verify that span kind is correctly translated.
 			sae, err := jsonToSpanAndEndpoint(zSpan, false)
 			assert.NoError(t, err)
-			assert.EqualValues(t, test.kind, sae.span.Kind())
+			assert.Equal(t, test.kind, sae.span.Kind())
 			assert.NotNil(t, sae.endpoint)
 		})
 	}

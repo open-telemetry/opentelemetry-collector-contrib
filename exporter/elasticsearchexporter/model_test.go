@@ -145,7 +145,7 @@ func TestEncodeMetric(t *testing.T) {
 			},
 			dataPoints, &errors, elasticsearch.Index{}, &buf,
 		)
-		require.Empty(t, errors, err)
+		require.Empty(t, errors, "%+v", err)
 		require.NoError(t, err)
 		docsBytes = append(docsBytes, buf.Bytes())
 	}
