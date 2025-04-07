@@ -120,6 +120,7 @@ func TestLoadConfig(t *testing.T) {
 					observer.K8sServiceType:   {"k8s.service.key": "k8s.service.value"},
 					observer.K8sIngressType:   {"k8s.ingress.key": "k8s.ingress.value"},
 					observer.K8sNodeType:      {"k8s.node.key": "k8s.node.value"},
+					observer.KafkaTopicType:   {},
 				},
 			},
 		},

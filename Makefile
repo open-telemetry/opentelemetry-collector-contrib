@@ -199,6 +199,10 @@ gorunbuilttest:
 gointegration-test:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-test"
 
+.PHONY: gointegration-sudo-test
+gointegration-sudo-test:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-sudo-test"
+
 .PHONY: gofmt
 gofmt:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="fmt"

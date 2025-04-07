@@ -52,7 +52,7 @@ func TestAttributeSourceSuccessStruct(t *testing.T) {
 	val, err := ts.Get(ctx)
 
 	assert.NoError(t, err)
-	assert.Equal(t, "{\"Foo\":\"bar\"}", val)
+	assert.JSONEq(t, "{\"Foo\":\"bar\"}", val)
 }
 
 func TestAttributeSourceNotFound(t *testing.T) {

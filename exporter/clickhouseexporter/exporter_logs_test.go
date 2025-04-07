@@ -131,7 +131,7 @@ func TestExporter_pushLogsData(t *testing.T) {
 			if strings.HasPrefix(query, "INSERT") {
 				body, _ := values[7].(string)
 				if body == "empty ServiceName" {
-					require.Equal(t, "", values[6])
+					require.Empty(t, values[6])
 				} else {
 					require.Equal(t, "test-service", values[6])
 				}
