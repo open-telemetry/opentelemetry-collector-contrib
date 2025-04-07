@@ -87,12 +87,14 @@ type mockClientOptionsResolver struct {
 // Indeed, the way to mock Azure API is to provide a fake server that will return the expected data.
 // The fake server is built with "fake" package from Azure SDK for Go, and is set in the client options, via the transport.
 // This ctor takes the mock data in that order:
-// - subscriptions
+// - subscriptions get responses stored by ID
+// - subscriptions list response
 // - resources stored by subscription ID
 // - metrics definitions stored by resource URI
 // - metrics values stored by resource URI and metric name
 func newMockClientOptionsResolver(
-	subscriptions []armsubscriptions.ClientListResponse,
+	subscriptionsGetResponsesByID map[string]armsubscriptions.ClientGetResponse,
+	subscriptionsListResponse []armsubscriptions.ClientListResponse,
 	resources map[string][]armresources.ClientListResponse,
 	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
 	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
@@ -112,7 +114,8 @@ func newMockClientOptionsResolver(
 
 	// Init subscriptions client options from subscriptions mock data
 	subscriptionsServer := armsubscriptionsfake.Server{
-		NewListPager: newMockSubscriptionsListPager(subscriptions),
+		NewListPager: newMockSubscriptionsListPager(subscriptionsListResponse),
+		Get:          newMockSubscriptionGet(subscriptionsGetResponsesByID),
 	}
 	armSubscriptionsClientOptions := &arm.ClientOptions{
 		ClientOptions: azcore.ClientOptions{
