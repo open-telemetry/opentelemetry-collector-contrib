@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -477,6 +478,9 @@ func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 }
 
 func TestTemporalityStartTimes(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39219")
+	}
 	tests := []struct {
 		name        string
 		temporality AggregationTemporality
