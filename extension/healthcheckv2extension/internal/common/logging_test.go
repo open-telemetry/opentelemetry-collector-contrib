@@ -6,10 +6,11 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"testing"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
 )
 
 func TestHealthLogFields(t *testing.T) {
