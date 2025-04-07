@@ -127,7 +127,7 @@ func TestExportMarkers(t *testing.T) {
 
 				assert.NoError(t, err)
 
-				assert.Equal(t, len(tt.attributeMap), len(decodedBody))
+				assert.Len(t, decodedBody, len(tt.attributeMap))
 
 				for attr := range tt.attributeMap {
 					assert.Equal(t, tt.attributeMap[attr], decodedBody[attr])

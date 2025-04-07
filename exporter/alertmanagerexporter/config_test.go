@@ -46,6 +46,8 @@ func TestLoadConfig(t *testing.T) {
 				GeneratorURL:      "opentelemetry-collector",
 				DefaultSeverity:   "info",
 				SeverityAttribute: "foo",
+				APIVersion:        "v2",
+				EventLabels:       []string{"attr1", "attr2"},
 				TimeoutSettings: exporterhelper.TimeoutConfig{
 					Timeout: 10 * time.Second,
 				},
@@ -110,7 +112,7 @@ func TestConfig_Validate(t *testing.T) {
 			name: "NoEndpoint",
 			cfg: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.ClientConfig.Endpoint = ""
+				cfg.Endpoint = ""
 				return cfg
 			}(),
 			wantErr: "endpoint must be non-empty",

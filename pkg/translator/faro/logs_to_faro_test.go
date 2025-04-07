@@ -87,6 +87,36 @@ func TestTranslateFromLogs(t *testing.T) {
 			}(),
 			wantErr: assert.NoError,
 		},
+		{
+			name:      "Log record with action",
+			plogsFile: filepath.Join("testdata", "actions-payload", "plogs.yaml"),
+			wantPayloads: func() []faroTypes.Payload {
+				payloads := make([]faroTypes.Payload, 0)
+				payloads = append(payloads, PayloadFromFile(t, "actions-payload/payload.json"))
+				return payloads
+			}(),
+			wantErr: assert.NoError,
+		},
+		{
+			name:      "Log record with browser brands as slice",
+			plogsFile: filepath.Join("testdata", "browser-brand-slice-payload", "plogs.yaml"),
+			wantPayloads: func() []faroTypes.Payload {
+				payloads := make([]faroTypes.Payload, 0)
+				payloads = append(payloads, PayloadFromFile(t, "browser-brand-slice-payload/payload.json"))
+				return payloads
+			}(),
+			wantErr: assert.NoError,
+		},
+		{
+			name:      "Log record with browser brands as string",
+			plogsFile: filepath.Join("testdata", "browser-brand-string-payload", "plogs.yaml"),
+			wantPayloads: func() []faroTypes.Payload {
+				payloads := make([]faroTypes.Payload, 0)
+				payloads = append(payloads, PayloadFromFile(t, "browser-brand-string-payload/payload.json"))
+				return payloads
+			}(),
+			wantErr: assert.NoError,
+		},
 	}
 
 	for _, tt := range testcases {

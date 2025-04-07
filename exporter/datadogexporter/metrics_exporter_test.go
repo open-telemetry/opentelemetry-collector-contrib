@@ -481,7 +481,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				dec := json.NewDecoder(reader)
 				var actual map[string]any
 				assert.NoError(t, dec.Decode(&actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -919,7 +919,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				var actual map[string]any
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)

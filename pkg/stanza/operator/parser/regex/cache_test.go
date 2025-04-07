@@ -81,7 +81,7 @@ func TestMemory(t *testing.T) {
 				require.Equal(t, value, out, "expected value to equal the value that was added to the cache")
 			}
 
-			require.Equal(t, len(tc.expect.cache), len(tc.cache.cache))
+			require.Len(t, tc.cache.cache, len(tc.expect.cache))
 
 			for expectKey, expectItem := range tc.expect.cache {
 				actual := tc.cache.get(expectKey)

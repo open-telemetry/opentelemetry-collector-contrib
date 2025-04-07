@@ -80,7 +80,7 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*datadogconfig.Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -114,7 +114,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*datadogconfig.Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -193,7 +193,7 @@ func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 
 	// Use the mock server for API key validation
 	c := cfg.(*datadogconfig.Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -269,7 +269,7 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*datadogconfig.Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -351,7 +351,7 @@ func TestStopExporters(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	c := cfg.(*datadogconfig.Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
