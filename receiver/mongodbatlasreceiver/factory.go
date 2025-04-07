@@ -112,6 +112,6 @@ func createDefaultConfig() component.Config {
 	}
 	// reset default of 1 minute to be 3 minutes in order to avoid null values for some metrics that do not publish
 	// more frequently
-	c.ControllerConfig.CollectionInterval = 3 * time.Minute
+	c.CollectionInterval = 3 * time.Minute
 	return c
 }
