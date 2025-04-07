@@ -24,11 +24,17 @@ var MetricsInfo = metricsInfo{
 	OracledbDbBlockGets: metricInfo{
 		Name: "oracledb.db_block_gets",
 	},
+	OracledbDdlStatementsParallelized: metricInfo{
+		Name: "oracledb.ddl_statements_parallelized",
+	},
 	OracledbDmlLocksLimit: metricInfo{
 		Name: "oracledb.dml_locks.limit",
 	},
 	OracledbDmlLocksUsage: metricInfo{
 		Name: "oracledb.dml_locks.usage",
+	},
+	OracledbDmlStatementsParallelized: metricInfo{
+		Name: "oracledb.dml_statements_parallelized",
 	},
 	OracledbEnqueueDeadlocks: metricInfo{
 		Name: "oracledb.enqueue_deadlocks",
@@ -56,6 +62,24 @@ var MetricsInfo = metricsInfo{
 	},
 	OracledbLogicalReads: metricInfo{
 		Name: "oracledb.logical_reads",
+	},
+	OracledbParallelOperationsDowngraded1To25Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_1_to_25_pct",
+	},
+	OracledbParallelOperationsDowngraded25To50Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_25_to_50_pct",
+	},
+	OracledbParallelOperationsDowngraded50To75Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_50_to_75_pct",
+	},
+	OracledbParallelOperationsDowngraded75To99Pct: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_75_to_99_pct",
+	},
+	OracledbParallelOperationsDowngradedToSerial: metricInfo{
+		Name: "oracledb.parallel_operations_downgraded_to_serial",
+	},
+	OracledbParallelOperationsNotDowngraded: metricInfo{
+		Name: "oracledb.parallel_operations_not_downgraded",
 	},
 	OracledbParseCalls: metricInfo{
 		Name: "oracledb.parse_calls",
@@ -87,6 +111,9 @@ var MetricsInfo = metricsInfo{
 	OracledbProcessesUsage: metricInfo{
 		Name: "oracledb.processes.usage",
 	},
+	OracledbQueriesParallelized: metricInfo{
+		Name: "oracledb.queries_parallelized",
+	},
 	OracledbSessionsLimit: metricInfo{
 		Name: "oracledb.sessions.limit",
 	},
@@ -114,38 +141,47 @@ var MetricsInfo = metricsInfo{
 }
 
 type metricsInfo struct {
-	OracledbConsistentGets          metricInfo
-	OracledbCPUTime                 metricInfo
-	OracledbDbBlockGets             metricInfo
-	OracledbDmlLocksLimit           metricInfo
-	OracledbDmlLocksUsage           metricInfo
-	OracledbEnqueueDeadlocks        metricInfo
-	OracledbEnqueueLocksLimit       metricInfo
-	OracledbEnqueueLocksUsage       metricInfo
-	OracledbEnqueueResourcesLimit   metricInfo
-	OracledbEnqueueResourcesUsage   metricInfo
-	OracledbExchangeDeadlocks       metricInfo
-	OracledbExecutions              metricInfo
-	OracledbHardParses              metricInfo
-	OracledbLogicalReads            metricInfo
-	OracledbParseCalls              metricInfo
-	OracledbPgaMemory               metricInfo
-	OracledbPhysicalReadIoRequests  metricInfo
-	OracledbPhysicalReads           metricInfo
-	OracledbPhysicalReadsDirect     metricInfo
-	OracledbPhysicalWriteIoRequests metricInfo
-	OracledbPhysicalWrites          metricInfo
-	OracledbPhysicalWritesDirect    metricInfo
-	OracledbProcessesLimit          metricInfo
-	OracledbProcessesUsage          metricInfo
-	OracledbSessionsLimit           metricInfo
-	OracledbSessionsUsage           metricInfo
-	OracledbTablespaceSizeLimit     metricInfo
-	OracledbTablespaceSizeUsage     metricInfo
-	OracledbTransactionsLimit       metricInfo
-	OracledbTransactionsUsage       metricInfo
-	OracledbUserCommits             metricInfo
-	OracledbUserRollbacks           metricInfo
+	OracledbConsistentGets                        metricInfo
+	OracledbCPUTime                               metricInfo
+	OracledbDbBlockGets                           metricInfo
+	OracledbDdlStatementsParallelized             metricInfo
+	OracledbDmlLocksLimit                         metricInfo
+	OracledbDmlLocksUsage                         metricInfo
+	OracledbDmlStatementsParallelized             metricInfo
+	OracledbEnqueueDeadlocks                      metricInfo
+	OracledbEnqueueLocksLimit                     metricInfo
+	OracledbEnqueueLocksUsage                     metricInfo
+	OracledbEnqueueResourcesLimit                 metricInfo
+	OracledbEnqueueResourcesUsage                 metricInfo
+	OracledbExchangeDeadlocks                     metricInfo
+	OracledbExecutions                            metricInfo
+	OracledbHardParses                            metricInfo
+	OracledbLogicalReads                          metricInfo
+	OracledbParallelOperationsDowngraded1To25Pct  metricInfo
+	OracledbParallelOperationsDowngraded25To50Pct metricInfo
+	OracledbParallelOperationsDowngraded50To75Pct metricInfo
+	OracledbParallelOperationsDowngraded75To99Pct metricInfo
+	OracledbParallelOperationsDowngradedToSerial  metricInfo
+	OracledbParallelOperationsNotDowngraded       metricInfo
+	OracledbParseCalls                            metricInfo
+	OracledbPgaMemory                             metricInfo
+	OracledbPhysicalReadIoRequests                metricInfo
+	OracledbPhysicalReads                         metricInfo
+	OracledbPhysicalReadsDirect                   metricInfo
+	OracledbPhysicalWriteIoRequests               metricInfo
+	OracledbPhysicalWrites                        metricInfo
+	OracledbPhysicalWritesDirect                  metricInfo
+	OracledbProcessesLimit                        metricInfo
+	OracledbProcessesUsage                        metricInfo
+	OracledbQueriesParallelized                   metricInfo
+	OracledbSessionsLimit                         metricInfo
+	OracledbSessionsUsage                         metricInfo
+	OracledbTablespaceSizeLimit                   metricInfo
+	OracledbTablespaceSizeUsage                   metricInfo
+	OracledbTransactionsLimit                     metricInfo
+	OracledbTransactionsUsage                     metricInfo
+	OracledbUserCommits                           metricInfo
+	OracledbUserRollbacks                         metricInfo
 }
 
 type metricInfo struct {
