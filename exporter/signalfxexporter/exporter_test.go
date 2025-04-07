@@ -234,7 +234,7 @@ func TestConsumeMetrics(t *testing.T) {
 			if tt.wantThrottleErr {
 				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
@@ -2103,13 +2103,13 @@ func TestConsumeMixedMetrics(t *testing.T) {
 					throttleErr := errors.New(errMsg)
 					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
 					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
-					assert.EqualValues(t, testErr, err)
+					assert.Equal(t, testErr, err)
 					return
 				}
 
 				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
