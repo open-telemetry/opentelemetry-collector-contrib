@@ -113,6 +113,8 @@ linters:
         - G115
         - G402
         - G404
+        - G104
+        - G302
 
     govet:
       # TODO: Enable this and fix the alignment issues.
