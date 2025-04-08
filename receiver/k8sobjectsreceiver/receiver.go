@@ -93,7 +93,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 
 		kr.setting.Logger.Debug("trying to become the leader")
 		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
-		if ok != true {
+		if !ok {
 			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
 		}
 
