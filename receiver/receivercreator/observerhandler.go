@@ -143,6 +143,11 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 }
 
 func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
+	obs.params.Logger.Debug("expanding the following template config",
+		zap.String("name", template.id.String()),
+		zap.String("endpoint", e.Target),
+		zap.String("endpoint_id", string(e.ID)),
+		zap.Any("config", template.config))
 	resolvedConfig, err := expandConfig(template.config, env)
 	if err != nil {
 		obs.params.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
@@ -202,7 +207,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
 		zap.String("endpoint_id", string(e.ID)),
-		zap.Any("config", template.config))
+		zap.Any("config", resolvedConfig))
 
 	var receiver component.Component
 	if receiver, err = obs.runner.start(
