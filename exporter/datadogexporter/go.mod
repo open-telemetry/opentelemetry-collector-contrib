@@ -89,7 +89,7 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.66.0-devel.0.20250407180930-ebfcfa2817ce
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.66.0-devel.0.20250408165132-d86502cae975
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.123.0

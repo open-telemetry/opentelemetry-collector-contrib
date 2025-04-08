@@ -66,6 +66,7 @@ type seriesSlice struct {
 type series struct {
 	Metric string
 	Points []point
+	Tags   []string
 }
 
 // point represents a series metric datapoint
@@ -673,6 +674,17 @@ func testIntegrationHostMetrics(t *testing.T, expectedMetrics map[string]struct{
 			t.Fail()
 		}
 	}
+
+	// 4. verify metrics have the expected tags from otel instrumentation scope
+	for _, metric := range metricMap {
+		assert.Contains(t, metric.Tags, "instrumentation_scope_version:tests")
+		for _, tag := range metric.Tags {
+			if strings.HasPrefix(tag, "instrumentation_scope:") {
+				// instrumentation_scope is a scraper in the host metrics receiver so has the hostmetricsreceiver prefix
+				assert.Contains(t, tag, "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver")
+			}
+		}
+	}
 }
 
 func seriesFromSerializer(metricsBytes []byte, expectedMetrics map[string]struct{}) (map[string]series, error) {
@@ -702,6 +714,7 @@ func seriesFromSerializer(metricsBytes []byte, expectedMetrics map[string]struct
 			metricMap[s.GetMetric()] = series{
 				Metric: s.GetMetric(),
 				Points: points,
+				Tags:   s.GetTags(),
 			}
 		}
 	}
