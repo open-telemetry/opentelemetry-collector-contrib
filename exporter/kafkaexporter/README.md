@@ -40,6 +40,7 @@ The following settings can be optionally configured:
 - `partition_traces_by_id` (default = false): configures the exporter to include the trace ID as the message key in trace messages sent to kafka. *Please note:* this setting does not have any effect on Jaeger encoding exporters since Jaeger exporters include trace ID as the message key by default.
 - `partition_metrics_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in metric messages sent to kafka.
 - `partition_logs_by_resource_attributes` (default = false)  configures the exporter to include the hash of sorted resource attributes as the message partitioning key in log messages sent to kafka.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
@@ -51,17 +52,7 @@ The following settings can be optionally configured:
     - `version` (default = 0): The SASL protocol version to use (0 or 1)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-  - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
-    - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to false.
-    - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `insecure` (default = false): Disable verifying the server's certificate chain and host 
-      name (`InsecureSkipVerify` in the tls config)
-    - `server_name_override`: ServerName indicates the name of the server requested by the client
-      in order to support virtual hosting.
+  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
