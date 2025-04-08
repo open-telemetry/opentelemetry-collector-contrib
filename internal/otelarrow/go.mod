@@ -34,7 +34,6 @@ require (
 	github.com/HdrHistogram/hdrhistogram-go v1.1.2 // indirect
 	github.com/apache/arrow-go/v18 v18.2.0 // indirect
 	github.com/apache/arrow/go/v16 v16.1.0 // indirect
-	github.com/apache/arrow/go/v17 v17.0.0 // indirect
 	github.com/axiomhq/hyperloglog v0.0.0-20230201085229-3ddf4bad03dc // indirect
 	github.com/brianvoe/gofakeit/v6 v6.17.0 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
