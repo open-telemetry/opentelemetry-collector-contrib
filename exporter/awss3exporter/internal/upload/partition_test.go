@@ -171,16 +171,17 @@ func TestPartitionKeyInputsFilename(t *testing.T) {
 }
 
 func TestPartitionKeyInputsUniqueKey(t *testing.T) {
-	t.Parallel()
+    t.Parallel()
 
-	// This test to is to help validate that a unique key
-	// is not repeated
-
-	seen := make(map[string]struct{})
-	for i := 0; i < 500; i++ {
-		uv := (&PartitionKeyBuilder{}).uniqueKey()
-		_, ok := seen[uv]
-		assert.False(t, ok, "Must not have repeated partition key %q", uv)
-		seen[uv] = struct{}{}
-	}
+    // Test to validate that unique keys are not repeated and follow the correct format
+    seen := make(map[string]struct{})
+    for i := 0; i < 500; i++ {
+        uv := (&PartitionKeyBuilder{}).uniqueKey()
+        assert.Equal(t, 12, len(uv), "Unique key length must be 12 characters")
+        assert.Regexp(t, "^[a-zA-Z]", uv, "First character must be a letter")
+        assert.Regexp(t, "^[a-zA-Z][a-zA-Z0-9]{11}$", uv, "Must match alphanumeric pattern")
+        _, ok := seen[uv]
+        assert.False(t, ok, "Must not have repeated partition key %q", uv)
+        seen[uv] = struct{}{}
+    }
 }
