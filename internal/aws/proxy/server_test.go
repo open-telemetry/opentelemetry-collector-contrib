@@ -129,6 +129,7 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	handler := srv.(*http.Server).Handler.ServeHTTP
 	req := httptest.NewRequest(http.MethodPost,
 		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+	req.Header.Set("Content-Length", "0")
 	rec := httptest.NewRecorder()
 	handler(rec, req)
 

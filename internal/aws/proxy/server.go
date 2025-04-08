@@ -93,6 +93,11 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			req.URL.Host = awsURL.Host
 			req.Host = awsURL.Host
 
+			// Sig4 requires Content-Length to empty for empty bodies.
+			if req.Header.Get("Content-Length") == "0" {
+				req.Header.Del("Content-Length")
+			}
+
 			// Consume body and convert to io.ReadSeeker for signer to consume
 			body, err := consume(req.Body)
 			if err != nil {
