@@ -68,6 +68,14 @@ func TestSerializeProfile(t *testing.T) {
 					"ecs.version":            "1.12.0",
 				},
 				{
+					"@timestamp":          "1970-01-01T00:00:00Z",
+					"Stacktrace.count":    json.Number("1"),
+					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
+					"ecs.version":         "1.12.0",
+					"host.id":             "localhost",
+					"process.thread.name": "",
+				},
+				{
 					"script": map[string]any{
 						"params": map[string]any{
 							"buildid":    "YA3K_koRAADyvzjEk_X7kg",
@@ -93,14 +101,6 @@ func TestSerializeProfile(t *testing.T) {
 					"Symbolization.time.next": "",
 					"Time.created":            "",
 					"ecs.version":             serializeprofiles.EcsVersionString,
-				},
-				{
-					"@timestamp":          "1970-01-01T00:00:00Z",
-					"Stacktrace.count":    json.Number("1"),
-					"Stacktrace.id":       "02VzuClbpt_P3xxwox83Ng",
-					"ecs.version":         "1.12.0",
-					"host.id":             "localhost",
-					"process.thread.name": "",
 				},
 			},
 		},
