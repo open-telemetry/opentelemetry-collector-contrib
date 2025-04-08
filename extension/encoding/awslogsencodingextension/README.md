@@ -44,47 +44,47 @@ extensions:
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
-| Flow log field               | Attribute in OpenTelemetry log                                                                        |  Available?  |
-|------------------------------|-------------------------------------------------------------------------------------------------------|:------------:|
-| `version`                    | `aws.vpc.flow.log.version`                                                                            |      🟢      |
-| `account-id`                 | `cloud.account.id`                                                                                    |      🟢      |
-| `interface-id`               | `network.interface.name`                                                                              |      🟢      |
-| `srcaddr`                    | `source.address`: if `pkt-srcaddr` not filled or the same <br> `network.peer.address`: otherwise      |      🟢      |
-| `pkt-srcaddr`                | `source.address` if filled                                                                            |      🟢      |
-| `dstaddr`                    | `destination.address`: if `pkt-dstaddr` not filled or the same <br> `network.peer.address`: otherwise |      🟢      |
-| `pkt-dstaddr`                | `destination.address` if filled                                                                       |      🟢      |
-| `srcport`                    | `source.port`                                                                                         |      🟢      |
-| `dstport`                    | `destination.port`                                                                                    |      🟢      |
-| `protocol`                   | `network.protocol.name`                                                                               |      🟢      |
-| `packets`                    | `aws.vpc.flow.packets`                                                                                |      🟢      |
-| `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |      🟢      |
-| `start`                      | `aws.vpc.flow.start`                                                                                  |      🟢      |
-| `end`                        | Log timestamp                                                                                         |      🟢      |
-| `action`                     | `aws.vpc.flow.action`                                                                                 |      🟢      |
-| `log-status`                 | `aws.vpc.flow.status`                                                                                 |      🟢      |
-| `vpc-id`                     | `aws.vpc.id`                                                                                          |      🟢      |
-| `subnet-id`                  | `aws.vpc.subnet.id`                                                                                   |      🟢      |
-| `instance-id`                | `host.id`                                                                                             |      🟢      |
-| `tcp-flags`                  | `network.tcp.flags`                                                                                   |      🟢      |
-| `type`                       | `network.type`                                                                                        |      🟢      |
-| `region`                     | `cloud.region`                                                                                        |      🟢      |
-| `az-id`                      | `aws.az.id`                                                                                           |      🟢      |
-| `sublocation-type`           | `aws.sublocation.type`                                                                                |      🟢      |
-| `sublocation-id`             | `aws.sublocation.id`                                                                                  |      🟢      |
-| `pkt-src-aws-service`        | `aws.vpc.flow.source.service`                                                                         |      🟢      |
-| `pkt-dst-aws-service`        | `aws.vpc.flow.destination.service`                                                                    |      🟢      |
-| `flow-direction`             | `network.io.direction`                                                                                |      🟢      |
-| `traffic-path`               | `aws.vpc.flow.traffic_path`                                                                           |      🟢      |
-| `ecs-cluster-arn`            | `aws.ecs.cluster.arn`                                                                                 |      🔴      |
-| `ecs-cluster-name`           | `aws.ecs.cluster.name`                                                                                |      🔴      |
-| `ecs-container-instance-arn` | `aws.ecs.container.instance.arn`                                                                      |      🔴      |
-| `ecs-container-instance-id`  | `aws.ecs.container.instance.id`                                                                       |      🔴      |
-| `ecs-container-id`           | `aws.ecs.container.id`                                                                                |      🔴      |
-| `ecs-second-container-id`    | `aws.ecs.second.container.arn`                                                                        |      🔴      |
-| `ecs-service-name`           | `aws.ecs.service.name`                                                                                |      🔴      |
-| `ecs-task-definition-arn`    | `aws.ecs.task.definition.arn`                                                                         |      🔴      |
-| `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |      🔴      |
-| `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |      🔴      |
-| `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |      🟢      |
+| Flow log field               | Attribute in OpenTelemetry log                                                                        | Available? |
+|------------------------------|-------------------------------------------------------------------------------------------------------|:----------:|
+| `version`                    | `aws.vpc.flow.log.version`                                                                            |     🟢     |
+| `account-id`                 | `cloud.account.id`                                                                                    |     🟢     |
+| `interface-id`               | `network.interface.name`                                                                              |     🟢     |
+| `srcaddr`                    | `source.address`: if `pkt-srcaddr` not filled or the same <br> `network.peer.address`: otherwise      |     🟢     |
+| `pkt-srcaddr`                | `source.address` if filled                                                                            |     🟢     |
+| `dstaddr`                    | `destination.address`: if `pkt-dstaddr` not filled or the same <br> `network.peer.address`: otherwise |     🟢     |
+| `pkt-dstaddr`                | `destination.address` if filled                                                                       |     🟢     |
+| `srcport`                    | `source.port`                                                                                         |     🟢     |
+| `dstport`                    | `destination.port`                                                                                    |     🟢     |
+| `protocol`                   | `network.protocol.name`                                                                               |     🟢     |
+| `packets`                    | `aws.vpc.flow.packets`                                                                                |     🟢     |
+| `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |     🟢     |
+| `start`                      | `aws.vpc.flow.start`                                                                                  |     🟢     |
+| `end`                        | Log timestamp                                                                                         |     🟢     |
+| `action`                     | `aws.vpc.flow.action`                                                                                 |     🟢     |
+| `log-status`                 | `aws.vpc.flow.status`                                                                                 |     🟢     |
+| `vpc-id`                     | `aws.vpc.id`                                                                                          |     🟢     |
+| `subnet-id`                  | `aws.vpc.subnet.id`                                                                                   |     🟢     |
+| `instance-id`                | `host.id`                                                                                             |     🟢     |
+| `tcp-flags`                  | `network.tcp.flags`                                                                                   |     🟢     |
+| `type`                       | `network.type`                                                                                        |     🟢     |
+| `region`                     | `cloud.region`                                                                                        |     🟢     |
+| `az-id`                      | `aws.az.id`                                                                                           |     🟢     |
+| `sublocation-type`           | `aws.sublocation.type`                                                                                |     🟢     |
+| `sublocation-id`             | `aws.sublocation.id`                                                                                  |     🟢     |
+| `pkt-src-aws-service`        | `aws.vpc.flow.source.service`                                                                         |     🟢     |
+| `pkt-dst-aws-service`        | `aws.vpc.flow.destination.service`                                                                    |     🟢     |
+| `flow-direction`             | `network.io.direction`                                                                                |     🟢     |
+| `traffic-path`               | `aws.vpc.flow.traffic_path`                                                                           |     🟢     |
+| `ecs-cluster-arn`            | `aws.ecs.cluster.arn`                                                                                 |     🔴     |
+| `ecs-cluster-name`           | `aws.ecs.cluster.name`                                                                                |     🔴     |
+| `ecs-container-instance-arn` | `aws.ecs.container.instance.arn`                                                                      |     🔴     |
+| `ecs-container-instance-id`  | `aws.ecs.container.instance.id`                                                                       |     🔴     |
+| `ecs-container-id`           | `aws.ecs.container.id`                                                                                |     🔴     |
+| `ecs-second-container-id`    | `aws.ecs.second.container.id`                                                                         |     🔴     |
+| `ecs-service-name`           | `aws.ecs.service.name`                                                                                |     🔴     |
+| `ecs-task-definition-arn`    | `aws.ecs.task.definition.arn`                                                                         |     🔴     |
+| `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |     🔴     |
+| `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |     🔴     |
+| `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |     🟢     |
 
 
