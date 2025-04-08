@@ -63,8 +63,8 @@ linters:
     presets:
       - comments
       - common-false-positives
-      - std-error-handling
       - legacy
+      - std-error-handling
 
     # Excluding configuration per-path, per-linter, per-text and per-source
     rules:
