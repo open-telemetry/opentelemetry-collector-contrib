@@ -11,7 +11,7 @@ import (
 )
 
 const (
-	knownExecutablesCacheSize             = 128 * 1024
+	knownExecutablesCacheSize             = 16 * 1024
 	knownFramesCacheSize                  = 128 * 1024
 	knownTracesCacheSize                  = 128 * 1024
 	knownUnsymbolizedFramesCacheSize      = 128 * 1024
