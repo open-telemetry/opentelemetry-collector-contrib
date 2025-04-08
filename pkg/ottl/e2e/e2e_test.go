@@ -1207,11 +1207,11 @@ func Test_e2e_converters(t *testing.T) {
 			},
 		},
 		{
-			statement: `set(attributes["list"], Keys({"foo": "bar", "baz": "foo"}))`,
+			statement: `set(attributes["list"], Sort(Keys({"foo": "bar", "baz": "foo"})))`,
 			want: func(tCtx ottllog.TransformContext) {
 				attributes := tCtx.GetLogRecord().Attributes().PutEmptySlice("list")
-				attributes.AppendEmpty().SetStr("foo")
 				attributes.AppendEmpty().SetStr("baz")
+				attributes.AppendEmpty().SetStr("foo")
 			},
 		},
 	}
