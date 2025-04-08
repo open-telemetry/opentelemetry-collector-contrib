@@ -50,8 +50,16 @@ func Test_expandConfigValue(t *testing.T) {
 		{"expression in middle", args{localhostEnv, "https://`endpoint`:1234"}, "https://localhost:1234", false},
 		{"expression at end", args{localhostEnv, "https://`endpoint`"}, "https://localhost", false},
 		{"extra whitespace should not impact returned type", args{nil, "`       true ==           true`"}, true, false},
-
 		{"nested map value", args{localhostEnv, "`endpoint`:`nested[\"outer\"]['inner'][\"value\"]`"}, "localhost:123", false},
+		{
+			"regexp value",
+			args{
+				localhostEnv,
+				`^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`,
+			},
+			`^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`,
+			false,
+		},
 
 		// Error cases.
 		{"only backticks", args{observer.EndpointEnv{}, "``"}, nil, true},
@@ -92,6 +100,15 @@ func Test_userConfigMap_resolve(t *testing.T) {
 		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
 			"one": map[string]any{
 				"two": "localhost",
+			},
+		}, false},
+		{"map with regural expression", userConfigMap{
+			"one": map[string]any{
+				"regex": `^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`,
+			},
+		}, args{observer.EndpointEnv{"endpoint": "localhost"}}, userConfigMap{
+			"one": map[string]any{
+				"regex": `^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`,
 			},
 		}, false},
 		{
