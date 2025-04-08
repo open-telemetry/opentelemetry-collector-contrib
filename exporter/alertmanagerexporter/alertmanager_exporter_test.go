@@ -365,11 +365,17 @@ func TestAlertManagerPostAlert(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	am := newAlertManagerExporter(cfg, set.TelemetrySettings)
 	err := am.start(context.Background(), componenttest.NewNopHost())
-
 	assert.NoError(t, err)
+	err = am.postAlert(context.Background(), alerts)
+	assert.Contains(t, err.Error(), "failed - \"404 Not Found\"")
 
+	cfg.APIVersion = "v1"
+	am = newAlertManagerExporter(cfg, set.TelemetrySettings)
+	err = am.start(context.Background(), componenttest.NewNopHost())
+	assert.NoError(t, err)
 	err = am.postAlert(context.Background(), alerts)
 	assert.NoError(t, err)
+
 	assert.True(t, mock.fooCalledSuccessfully, "mock server wasn't called")
 }
 

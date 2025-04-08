@@ -29,7 +29,7 @@ func TestSendTraces(t *testing.T) {
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
+	rCfg.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := rFactory.CreateTraces(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
@@ -128,7 +128,7 @@ func TestSendMetrics(t *testing.T) {
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
+	rCfg.NetAddr.Endpoint = endpoint
 	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := rFactory.CreateMetrics(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)

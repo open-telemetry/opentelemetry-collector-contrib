@@ -33,7 +33,7 @@ type Client interface {
 }
 
 func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (ClientProvider, error) {
-	switch cfg.APIConfig.AuthType {
+	switch cfg.AuthType {
 	case k8sconfig.AuthTypeTLS:
 		return &tlsClientProvider{
 			endpoint: endpoint,
@@ -60,7 +60,7 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 			logger:   logger,
 		}, nil
 	default:
-		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.APIConfig.AuthType)
+		return nil, fmt.Errorf("AuthType [%s] not supported", cfg.AuthType)
 	}
 }
 
@@ -81,9 +81,9 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 	}
 	if p.cfg.InsecureSkipVerify {
 		// Override InsecureSkipVerify from kubeconfig
-		authConf.TLSClientConfig.CAFile = ""
-		authConf.TLSClientConfig.CAData = nil
-		authConf.TLSClientConfig.Insecure = true
+		authConf.CAFile = ""
+		authConf.CAData = nil
+		authConf.Insecure = true
 	}
 
 	client, err := rest.HTTPClientFor(authConf)

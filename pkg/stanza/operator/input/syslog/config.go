@@ -63,8 +63,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 	if c.TCP != nil {
 		tcpInputCfg := tcp.NewConfigWithID(inputBase.ID() + "_internal_tcp")
-		tcpInputCfg.InputConfig.AttributerConfig = c.InputConfig.AttributerConfig
-		tcpInputCfg.InputConfig.IdentifierConfig = c.InputConfig.IdentifierConfig
+		tcpInputCfg.AttributerConfig = c.AttributerConfig
+		tcpInputCfg.IdentifierConfig = c.IdentifierConfig
 		tcpInputCfg.BaseConfig = *c.TCP
 		if syslogParserCfg.EnableOctetCounting {
 			tcpInputCfg.SplitFuncBuilder = OctetSplitFuncBuilder
@@ -89,8 +89,8 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 	if c.UDP != nil {
 		udpInputCfg := udp.NewConfigWithID(inputBase.ID() + "_internal_udp")
-		udpInputCfg.InputConfig.AttributerConfig = c.InputConfig.AttributerConfig
-		udpInputCfg.InputConfig.IdentifierConfig = c.InputConfig.IdentifierConfig
+		udpInputCfg.AttributerConfig = c.AttributerConfig
+		udpInputCfg.IdentifierConfig = c.IdentifierConfig
 		udpInputCfg.BaseConfig = *c.UDP
 
 		// Octet counting and Non-Transparent-Framing are invalid for UDP connections

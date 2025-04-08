@@ -372,24 +372,19 @@ func TestLargeFileOnce(t *testing.T) {
 
 func TestMemoryLimiterHit(t *testing.T) {
 	tests := []struct {
-		name     string
-		sender   func() testbed.DataSender
-		receiver func() testbed.DataReceiver
+		name   string
+		sender testbed.DataSender
 	}{
 		{
-			name: "otlp",
-			sender: func() testbed.DataSender {
-				return testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t))
-			},
+			name:   "otlp",
+			sender: testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
 		},
 		{
 			name: "filelog",
-			sender: func() testbed.DataSender {
-				return datasenders.NewFileLogWriter(t).WithRetry(`
+			sender: datasenders.NewFileLogWriter(t).WithRetry(`
     retry_on_failure:
       enabled: true
-`)
-			},
+`),
 		},
 	}
 	for _, test := range tests {
@@ -422,7 +417,7 @@ func TestMemoryLimiterHit(t *testing.T) {
 			}
 			ScenarioMemoryLimiterHit(
 				t,
-				test.sender(),
+				test.sender,
 				otlpreceiver,
 				testbed.LoadOptions{
 					DataItemsPerSecond: 100000,

@@ -64,7 +64,7 @@ func newInfluxHTTPWriter(logger common.Logger, config *Config, telemetrySettings
 }
 
 func composeWriteURL(config *Config) (string, error) {
-	writeURL, err := url.Parse(config.ClientConfig.Endpoint)
+	writeURL, err := url.Parse(config.Endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -90,20 +90,20 @@ func composeWriteURL(config *Config) (string, error) {
 		if config.V1Compatibility.Username != "" && config.V1Compatibility.Password != "" {
 			basicAuth := base64.StdEncoding.EncodeToString(
 				[]byte(config.V1Compatibility.Username + ":" + string(config.V1Compatibility.Password)))
-			if config.ClientConfig.Headers == nil {
-				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			if config.Headers == nil {
+				config.Headers = make(map[string]configopaque.String, 1)
 			}
-			config.ClientConfig.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
+			config.Headers["Authorization"] = configopaque.String("Basic " + basicAuth)
 		}
 	} else {
 		queryValues.Set("org", config.Org)
 		queryValues.Set("bucket", config.Bucket)
 
 		if config.Token != "" {
-			if config.ClientConfig.Headers == nil {
-				config.ClientConfig.Headers = make(map[string]configopaque.String, 1)
+			if config.Headers == nil {
+				config.Headers = make(map[string]configopaque.String, 1)
 			}
-			config.ClientConfig.Headers["Authorization"] = "Token " + config.Token
+			config.Headers["Authorization"] = "Token " + config.Token
 		}
 	}
 

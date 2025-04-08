@@ -198,7 +198,7 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventionsv112.AttributeHTTPTarget]
@@ -246,7 +246,7 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventionsv112.AttributeHTTPTarget]

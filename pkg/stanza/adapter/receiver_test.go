@@ -103,8 +103,8 @@ func TestHandleConsumeRetry(t *testing.T) {
 	factory := NewFactory(TestReceiverType{}, component.StabilityLevelDevelopment)
 
 	cfg := factory.CreateDefaultConfig()
-	cfg.(*TestConfig).BaseConfig.RetryOnFailure.Enabled = true
-	cfg.(*TestConfig).BaseConfig.RetryOnFailure.InitialInterval = 10 * time.Millisecond
+	cfg.(*TestConfig).RetryOnFailure.Enabled = true
+	cfg.(*TestConfig).RetryOnFailure.InitialInterval = 10 * time.Millisecond
 	logsReceiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(factory.Type()), cfg, mockConsumer)
 	require.NoError(t, err, "receiver should successfully build")
 
@@ -388,7 +388,7 @@ func BenchmarkParseAndMap(b *testing.B) {
 	file, err := os.OpenFile(filePath, os.O_RDWR|os.O_CREATE, 0o666)
 	require.NoError(b, err)
 	for i := 0; i < b.N; i++ {
-		_, err := file.WriteString(fmt.Sprintf("10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000))
+		_, err := fmt.Fprintf(file, "10.33.121.119 - - [11/Aug/2020:00:00:00 -0400] \"GET /index.html HTTP/1.1\" 404 %d\n", i%1000)
 		require.NoError(b, err)
 	}
 

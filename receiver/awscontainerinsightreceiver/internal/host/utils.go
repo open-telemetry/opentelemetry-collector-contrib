@@ -28,7 +28,7 @@ func hostJitter(maxDuration time.Duration) time.Duration {
 	return hostSleepJitter
 }
 
-// execute the refresh() function periodically with the given refresh interval
+// RefreshUntil executes the refresh() function periodically with the given refresh interval
 // until shouldRefresh() return false or the context is canceled
 func RefreshUntil(ctx context.Context, refresh func(context.Context), refreshInterval time.Duration,
 	shouldRefresh func() bool, maxJitterTime time.Duration,

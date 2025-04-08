@@ -24,6 +24,9 @@ type Config struct {
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
+	// IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 

@@ -28,38 +28,47 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 
 // MetricsConfig provides config for oracledb metrics.
 type MetricsConfig struct {
-	OracledbConsistentGets          MetricConfig `mapstructure:"oracledb.consistent_gets"`
-	OracledbCPUTime                 MetricConfig `mapstructure:"oracledb.cpu_time"`
-	OracledbDbBlockGets             MetricConfig `mapstructure:"oracledb.db_block_gets"`
-	OracledbDmlLocksLimit           MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
-	OracledbDmlLocksUsage           MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
-	OracledbEnqueueDeadlocks        MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
-	OracledbEnqueueLocksLimit       MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
-	OracledbEnqueueLocksUsage       MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
-	OracledbEnqueueResourcesLimit   MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
-	OracledbEnqueueResourcesUsage   MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
-	OracledbExchangeDeadlocks       MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
-	OracledbExecutions              MetricConfig `mapstructure:"oracledb.executions"`
-	OracledbHardParses              MetricConfig `mapstructure:"oracledb.hard_parses"`
-	OracledbLogicalReads            MetricConfig `mapstructure:"oracledb.logical_reads"`
-	OracledbParseCalls              MetricConfig `mapstructure:"oracledb.parse_calls"`
-	OracledbPgaMemory               MetricConfig `mapstructure:"oracledb.pga_memory"`
-	OracledbPhysicalReadIoRequests  MetricConfig `mapstructure:"oracledb.physical_read_io_requests"`
-	OracledbPhysicalReads           MetricConfig `mapstructure:"oracledb.physical_reads"`
-	OracledbPhysicalReadsDirect     MetricConfig `mapstructure:"oracledb.physical_reads_direct"`
-	OracledbPhysicalWriteIoRequests MetricConfig `mapstructure:"oracledb.physical_write_io_requests"`
-	OracledbPhysicalWrites          MetricConfig `mapstructure:"oracledb.physical_writes"`
-	OracledbPhysicalWritesDirect    MetricConfig `mapstructure:"oracledb.physical_writes_direct"`
-	OracledbProcessesLimit          MetricConfig `mapstructure:"oracledb.processes.limit"`
-	OracledbProcessesUsage          MetricConfig `mapstructure:"oracledb.processes.usage"`
-	OracledbSessionsLimit           MetricConfig `mapstructure:"oracledb.sessions.limit"`
-	OracledbSessionsUsage           MetricConfig `mapstructure:"oracledb.sessions.usage"`
-	OracledbTablespaceSizeLimit     MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
-	OracledbTablespaceSizeUsage     MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
-	OracledbTransactionsLimit       MetricConfig `mapstructure:"oracledb.transactions.limit"`
-	OracledbTransactionsUsage       MetricConfig `mapstructure:"oracledb.transactions.usage"`
-	OracledbUserCommits             MetricConfig `mapstructure:"oracledb.user_commits"`
-	OracledbUserRollbacks           MetricConfig `mapstructure:"oracledb.user_rollbacks"`
+	OracledbConsistentGets                        MetricConfig `mapstructure:"oracledb.consistent_gets"`
+	OracledbCPUTime                               MetricConfig `mapstructure:"oracledb.cpu_time"`
+	OracledbDbBlockGets                           MetricConfig `mapstructure:"oracledb.db_block_gets"`
+	OracledbDdlStatementsParallelized             MetricConfig `mapstructure:"oracledb.ddl_statements_parallelized"`
+	OracledbDmlLocksLimit                         MetricConfig `mapstructure:"oracledb.dml_locks.limit"`
+	OracledbDmlLocksUsage                         MetricConfig `mapstructure:"oracledb.dml_locks.usage"`
+	OracledbDmlStatementsParallelized             MetricConfig `mapstructure:"oracledb.dml_statements_parallelized"`
+	OracledbEnqueueDeadlocks                      MetricConfig `mapstructure:"oracledb.enqueue_deadlocks"`
+	OracledbEnqueueLocksLimit                     MetricConfig `mapstructure:"oracledb.enqueue_locks.limit"`
+	OracledbEnqueueLocksUsage                     MetricConfig `mapstructure:"oracledb.enqueue_locks.usage"`
+	OracledbEnqueueResourcesLimit                 MetricConfig `mapstructure:"oracledb.enqueue_resources.limit"`
+	OracledbEnqueueResourcesUsage                 MetricConfig `mapstructure:"oracledb.enqueue_resources.usage"`
+	OracledbExchangeDeadlocks                     MetricConfig `mapstructure:"oracledb.exchange_deadlocks"`
+	OracledbExecutions                            MetricConfig `mapstructure:"oracledb.executions"`
+	OracledbHardParses                            MetricConfig `mapstructure:"oracledb.hard_parses"`
+	OracledbLogicalReads                          MetricConfig `mapstructure:"oracledb.logical_reads"`
+	OracledbParallelOperationsDowngraded1To25Pct  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_1_to_25_pct"`
+	OracledbParallelOperationsDowngraded25To50Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_25_to_50_pct"`
+	OracledbParallelOperationsDowngraded50To75Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_50_to_75_pct"`
+	OracledbParallelOperationsDowngraded75To99Pct MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_75_to_99_pct"`
+	OracledbParallelOperationsDowngradedToSerial  MetricConfig `mapstructure:"oracledb.parallel_operations_downgraded_to_serial"`
+	OracledbParallelOperationsNotDowngraded       MetricConfig `mapstructure:"oracledb.parallel_operations_not_downgraded"`
+	OracledbParseCalls                            MetricConfig `mapstructure:"oracledb.parse_calls"`
+	OracledbPgaMemory                             MetricConfig `mapstructure:"oracledb.pga_memory"`
+	OracledbPhysicalReadIoRequests                MetricConfig `mapstructure:"oracledb.physical_read_io_requests"`
+	OracledbPhysicalReads                         MetricConfig `mapstructure:"oracledb.physical_reads"`
+	OracledbPhysicalReadsDirect                   MetricConfig `mapstructure:"oracledb.physical_reads_direct"`
+	OracledbPhysicalWriteIoRequests               MetricConfig `mapstructure:"oracledb.physical_write_io_requests"`
+	OracledbPhysicalWrites                        MetricConfig `mapstructure:"oracledb.physical_writes"`
+	OracledbPhysicalWritesDirect                  MetricConfig `mapstructure:"oracledb.physical_writes_direct"`
+	OracledbProcessesLimit                        MetricConfig `mapstructure:"oracledb.processes.limit"`
+	OracledbProcessesUsage                        MetricConfig `mapstructure:"oracledb.processes.usage"`
+	OracledbQueriesParallelized                   MetricConfig `mapstructure:"oracledb.queries_parallelized"`
+	OracledbSessionsLimit                         MetricConfig `mapstructure:"oracledb.sessions.limit"`
+	OracledbSessionsUsage                         MetricConfig `mapstructure:"oracledb.sessions.usage"`
+	OracledbTablespaceSizeLimit                   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
+	OracledbTablespaceSizeUsage                   MetricConfig `mapstructure:"oracledb.tablespace_size.usage"`
+	OracledbTransactionsLimit                     MetricConfig `mapstructure:"oracledb.transactions.limit"`
+	OracledbTransactionsUsage                     MetricConfig `mapstructure:"oracledb.transactions.usage"`
+	OracledbUserCommits                           MetricConfig `mapstructure:"oracledb.user_commits"`
+	OracledbUserRollbacks                         MetricConfig `mapstructure:"oracledb.user_rollbacks"`
 }
 
 func DefaultMetricsConfig() MetricsConfig {
@@ -73,11 +82,17 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbDbBlockGets: MetricConfig{
 			Enabled: false,
 		},
+		OracledbDdlStatementsParallelized: MetricConfig{
+			Enabled: false,
+		},
 		OracledbDmlLocksLimit: MetricConfig{
 			Enabled: true,
 		},
 		OracledbDmlLocksUsage: MetricConfig{
 			Enabled: true,
+		},
+		OracledbDmlStatementsParallelized: MetricConfig{
+			Enabled: false,
 		},
 		OracledbEnqueueDeadlocks: MetricConfig{
 			Enabled: true,
@@ -105,6 +120,24 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbLogicalReads: MetricConfig{
 			Enabled: true,
+		},
+		OracledbParallelOperationsDowngraded1To25Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded25To50Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded50To75Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngraded75To99Pct: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsDowngradedToSerial: MetricConfig{
+			Enabled: false,
+		},
+		OracledbParallelOperationsNotDowngraded: MetricConfig{
+			Enabled: false,
 		},
 		OracledbParseCalls: MetricConfig{
 			Enabled: true,
@@ -135,6 +168,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		OracledbProcessesUsage: MetricConfig{
 			Enabled: true,
+		},
+		OracledbQueriesParallelized: MetricConfig{
+			Enabled: false,
 		},
 		OracledbSessionsLimit: MetricConfig{
 			Enabled: true,

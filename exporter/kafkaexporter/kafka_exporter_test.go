@@ -13,6 +13,7 @@ import (
 	"github.com/IBM/sarama/mocks"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
@@ -49,12 +50,59 @@ func TestTracesPusher_attr(t *testing.T) {
 }
 
 func TestTracesPusher_ctx(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
 
-	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
-	require.NoError(t, err)
+		err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateTraces(2))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadata", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("my_tenant_id")},
+				{Key: []byte("x-request-ids"), Value: []byte("987654321")},
+				{Key: []byte("x-request-ids"), Value: []byte("0187262")},
+			}, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"987654321", "0187262"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateTraces(10))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadataDisabled", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Nil(t, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"123456789", "0187262"},
+				"discarded-meta": {"my-meta"},
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateTraces(5))
+		require.NoError(t, err)
+	})
 }
 
 func TestTracesPusher_err(t *testing.T) {
@@ -214,12 +262,59 @@ func TestMetricsDataPusher_attr(t *testing.T) {
 }
 
 func TestMetricsDataPusher_ctx(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
 
-	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
-	require.NoError(t, err)
+		err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateMetrics(2))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadata", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("my_tenant_id")},
+				{Key: []byte("x-request-ids"), Value: []byte("123456789")},
+				{Key: []byte("x-request-ids"), Value: []byte("123141")},
+			}, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"123456789", "123141"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateMetrics(10))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadataDisabled", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Nil(t, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"123456789", "123141"},
+				"discarded-meta": {"my-meta"},
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateMetrics(5))
+		require.NoError(t, err)
+	})
 }
 
 func TestMetricsPusher_err(t *testing.T) {
@@ -325,12 +420,59 @@ func TestLogsDataPusher_attr(t *testing.T) {
 }
 
 func TestLogsDataPusher_ctx(t *testing.T) {
-	config := createDefaultConfig().(*Config)
-	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	t.Run("WithTopic", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageAndSucceed()
 
-	err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(2))
-	require.NoError(t, err)
+		err := exp.exportData(topic.WithTopic(context.Background(), "my_topic"), testdata.GenerateLogs(2))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadata", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		config.IncludeMetadataKeys = []string{"x-tenant-id", "x-request-ids"}
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Equal(t, []sarama.RecordHeader{
+				{Key: []byte("x-tenant-id"), Value: []byte("my_tenant_id")},
+				{Key: []byte("x-request-ids"), Value: []byte("123456789")},
+				{Key: []byte("x-request-ids"), Value: []byte("123141")},
+			}, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"123456789", "123141"},
+				"discarded-meta": {"my-meta"}, // This will be ignored.
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateLogs(10))
+		require.NoError(t, err)
+	})
+	t.Run("WithMetadataDisabled", func(t *testing.T) {
+		config := createDefaultConfig().(*Config)
+		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(func(pm *sarama.ProducerMessage) error {
+			assert.Nil(t, pm.Headers)
+			return nil
+		})
+		t.Cleanup(func() {
+			require.NoError(t, exp.Close(context.Background()))
+		})
+		ctx := client.NewContext(context.Background(), client.Info{
+			Metadata: client.NewMetadata(map[string][]string{
+				"x-tenant-id":    {"my_tenant_id"},
+				"x-request-ids":  {"123456789", "123141"},
+				"discarded-meta": {"my-meta"},
+			}),
+		})
+		err := exp.exportData(ctx, testdata.GenerateLogs(5))
+		require.NoError(t, err)
+	})
 }
 
 func TestLogsPusher_err(t *testing.T) {

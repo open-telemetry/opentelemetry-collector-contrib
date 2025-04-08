@@ -153,27 +153,27 @@ func parseSeverity(severityText string, severityNumber int32) (string, log.Sever
 	// severity number should match well-known severityText
 	switch severityText {
 	case plog.SeverityNumberTrace.String():
-		if !(severityNumber >= 1 && severityNumber <= 4) {
+		if severityNumber < 1 || severityNumber > 4 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [1,4]", severityText, severityNumber)
 		}
 	case plog.SeverityNumberDebug.String():
-		if !(severityNumber >= 5 && severityNumber <= 8) {
+		if severityNumber < 5 || severityNumber > 8 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [5,8]", severityText, severityNumber)
 		}
 	case plog.SeverityNumberInfo.String():
-		if !(severityNumber >= 9 && severityNumber <= 12) {
+		if severityNumber < 9 || severityNumber > 12 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [9,12]", severityText, severityNumber)
 		}
 	case plog.SeverityNumberWarn.String():
-		if !(severityNumber >= 13 && severityNumber <= 16) {
+		if severityNumber < 13 || severityNumber > 16 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [13,16]", severityText, severityNumber)
 		}
 	case plog.SeverityNumberError.String():
-		if !(severityNumber >= 17 && severityNumber <= 20) {
+		if severityNumber < 17 || severityNumber > 20 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [17,20]", severityText, severityNumber)
 		}
 	case plog.SeverityNumberFatal.String():
-		if !(severityNumber >= 21 && severityNumber <= 24) {
+		if severityNumber < 21 || severityNumber > 24 {
 			return "", 0, fmt.Errorf("severity text %q does not match severity number %d, the valid range is [21,24]", severityText, severityNumber)
 		}
 	}

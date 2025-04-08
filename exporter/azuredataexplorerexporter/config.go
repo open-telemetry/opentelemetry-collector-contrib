@@ -66,7 +66,7 @@ func (adxCfg *Config) Validate() error {
 		return errors.New(`either ["application_id" , "application_key" , "tenant_id"] or ["managed_identity_id"] or ["use_azure_auth"] must be provided for auth`)
 	}
 
-	if !(adxCfg.IngestionType == managedIngestType || adxCfg.IngestionType == queuedIngestTest || isEmpty(adxCfg.IngestionType)) {
+	if adxCfg.IngestionType != managedIngestType && adxCfg.IngestionType != queuedIngestTest && !isEmpty(adxCfg.IngestionType) {
 		return fmt.Errorf("unsupported configuration for ingestion_type. Accepted types [%s, %s] Provided [%s]", managedIngestType, queuedIngestTest, adxCfg.IngestionType)
 	}
 	// Validate managed identity ID. Use system for system assigned managed identity or UserManagedIdentityID (objectID) for user assigned managed identity

@@ -63,7 +63,7 @@ const (
 // and simple subscriptions ids that you can find in config.
 type azureSubscription struct {
 	SubscriptionID   string
-	DisplayName      *string
+	DisplayName      string
 	resourcesUpdated time.Time
 }
 
@@ -142,18 +142,14 @@ func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
 	s.subscriptions = map[string]*azureSubscription{}
 	s.resources = map[string]map[string]*azureResource{}
 
-	// Initialize subscription ids from the config. Will be overridden if discovery is enabled anyway.
-	for _, id := range s.cfg.SubscriptionIDs {
-		s.loadSubscription(id)
-	}
-
 	return
 }
 
-func (s *azureScraper) loadSubscription(id string) {
-	s.resources[id] = make(map[string]*azureResource)
-	s.subscriptions[id] = &azureSubscription{
-		SubscriptionID: id,
+func (s *azureScraper) loadSubscription(sub azureSubscription) {
+	s.resources[sub.SubscriptionID] = make(map[string]*azureResource)
+	s.subscriptions[sub.SubscriptionID] = &azureSubscription{
+		SubscriptionID: sub.SubscriptionID,
+		DisplayName:    sub.DisplayName,
 	}
 }
 
@@ -195,7 +191,7 @@ func (s *azureScraper) loadCredentials() (err error) {
 func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.getSubscriptions(ctx)
 
-	for subscriptionID := range s.subscriptions {
+	for subscriptionID, subscription := range s.subscriptions {
 		s.getResources(ctx, subscriptionID)
 
 		resourcesIDsWithDefinitions := make(chan string)
@@ -224,13 +220,14 @@ func (s *azureScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		rb := s.mb.NewResourceBuilder()
 		rb.SetAzuremonitorTenantID(s.cfg.TenantID)
 		rb.SetAzuremonitorSubscriptionID(subscriptionID)
+		rb.SetAzuremonitorSubscription(subscription.DisplayName)
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))
 	}
 	return s.mb.Emit(), nil
 }
 
 func (s *azureScraper) getSubscriptions(ctx context.Context) {
-	if !s.cfg.DiscoverSubscriptions || !(time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources) {
+	if time.Since(s.subscriptionsUpdated).Seconds() < s.cfg.CacheResources {
 		return
 	}
 
@@ -238,6 +235,34 @@ func (s *azureScraper) getSubscriptions(ctx context.Context) {
 	armSubscriptionClient, clientErr := armsubscriptions.NewClient(s.cred, s.clientOptionsResolver.GetArmSubscriptionsClientOptions())
 	if clientErr != nil {
 		s.settings.Logger.Error("failed to initialize the client to get Azure Subscriptions", zap.Error(clientErr))
+		return
+	}
+
+	// Make a special case for when we only have subscription ids configured (discovery disabled)
+	if !s.cfg.DiscoverSubscriptions {
+		for _, subID := range s.cfg.SubscriptionIDs {
+			// we don't need additional info,
+			// => It simply load the subscription id
+			if !s.cfg.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled {
+				s.loadSubscription(azureSubscription{
+					SubscriptionID: subID,
+				})
+				continue
+			}
+
+			// We need additional info,
+			// => It makes some get requests
+			resp, err := armSubscriptionClient.Get(ctx, subID, &armsubscriptions.ClientGetOptions{})
+			if err != nil {
+				s.settings.Logger.Error("failed to get Azure Subscription", zap.String("subscription_id", subID), zap.Error(err))
+				return
+			}
+			s.loadSubscription(azureSubscription{
+				SubscriptionID: *resp.SubscriptionID,
+				DisplayName:    *resp.DisplayName,
+			})
+		}
+		s.subscriptionsUpdated = time.Now()
 		return
 	}
 
@@ -257,7 +282,10 @@ func (s *azureScraper) getSubscriptions(ctx context.Context) {
 		}
 
 		for _, subscription := range nextResult.Value {
-			s.loadSubscription(*subscription.SubscriptionID)
+			s.loadSubscription(azureSubscription{
+				SubscriptionID: *subscription.SubscriptionID,
+				DisplayName:    *subscription.DisplayName,
+			})
 			delete(existingSubscriptions, *subscription.SubscriptionID)
 		}
 	}

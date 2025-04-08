@@ -30,7 +30,7 @@ func TestLoadConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
-	assert.Equal(t, "https://faro.example.com/collect", cfg.(*Config).ClientConfig.Endpoint)
+	assert.Equal(t, "https://faro.example.com/collect", cfg.(*Config).Endpoint)
 }
 
 func TestValidateConfig(t *testing.T) {

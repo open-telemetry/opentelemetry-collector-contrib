@@ -546,11 +546,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -669,11 +669,11 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms

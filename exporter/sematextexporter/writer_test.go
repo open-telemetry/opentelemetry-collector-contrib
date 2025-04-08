@@ -171,7 +171,7 @@ func TestSematextHTTPWriterBatchMaxPayload(t *testing.T) {
 					token:           "test-token",
 				},
 			}
-			defer batch.sematextHTTPWriter.httpClient.CloseIdleConnections()
+			defer batch.httpClient.CloseIdleConnections()
 
 			err := batch.EnqueuePoint(context.Background(), "m", map[string]string{"k": "v"}, map[string]any{"f": int64(1)}, time.Unix(1, 0), 0)
 			require.NoError(t, err)

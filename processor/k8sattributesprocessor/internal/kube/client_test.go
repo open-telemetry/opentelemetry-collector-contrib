@@ -64,7 +64,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podA", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
@@ -74,7 +74,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podB", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podC"
@@ -105,7 +105,7 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 	assert.Len(t, c.Namespaces, 1)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	assert.Equal(t, "", got.NamespaceUID)
+	assert.Empty(t, got.NamespaceUID)
 
 	namespace = &api_v1.Namespace{}
 	namespace.Name = "namespaceB"
@@ -131,7 +131,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got, ok := c.GetNode("nodeA")
 	assert.True(t, ok)
 	assert.Equal(t, "nodeA", got.Name)
-	assert.Equal(t, "", got.NodeUID)
+	assert.Empty(t, got.NodeUID)
 
 	node = &api_v1.Node{}
 	node.Name = "nodeB"
@@ -319,7 +319,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodAdd(pod)
 	assert.Len(t, c.Pods, 1)
 	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -330,7 +330,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodUpdate(&api_v1.Pod{}, pod)
 	assert.Len(t, c.Pods, 1)
 	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -976,7 +976,7 @@ func TestExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1132,7 +1132,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1228,7 +1228,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			p, ok := c.GetNamespace(namespace.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1324,7 +1324,7 @@ func TestNodeExtractionRules(t *testing.T) {
 			n, ok := c.GetNode(node.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			assert.Len(t, n.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)

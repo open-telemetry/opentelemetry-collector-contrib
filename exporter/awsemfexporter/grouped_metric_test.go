@@ -309,9 +309,10 @@ func TestAddToGroupedMetric(t *testing.T) {
 			}
 			assert.Equal(t, expectedLabels, group.labels)
 
-			if group.metadata.logGroup == "log-group-2" {
+			switch group.metadata.logGroup {
+			case "log-group-2":
 				seenLogGroup2 = true
-			} else if group.metadata.logGroup == "log-group-1" {
+			case "log-group-1":
 				seenLogGroup1 = true
 			}
 		}
@@ -441,10 +442,10 @@ func TestAddToGroupedMetric(t *testing.T) {
 		for _, v := range groupedMetrics {
 			assert.Len(t, v.metrics, 1)
 			assert.Len(t, v.labels, 2)
-			assert.Contains(t, expectedMetadata, v.metadata.groupedMetricMetadata.batchIndex)
-			assert.Equal(t, expectedMetadata[v.metadata.groupedMetricMetadata.batchIndex], v.metadata)
+			assert.Contains(t, expectedMetadata, v.metadata.batchIndex)
+			assert.Equal(t, expectedMetadata[v.metadata.batchIndex], v.metadata)
 			assert.Equal(t, expectedLabels, v.labels)
-			delete(expectedMetadata, v.metadata.groupedMetricMetadata.batchIndex)
+			delete(expectedMetadata, v.metadata.batchIndex)
 		}
 	})
 }

@@ -47,7 +47,7 @@ type exporterTest struct {
 
 func createTestConfig() *Config {
 	config := createDefaultConfig().(*Config)
-	config.ClientConfig.Compression = NoCompression
+	config.Compression = NoCompression
 	config.LogFormat = TextFormat
 	config.MaxRequestBodySize = 20_971_520
 	config.MetricFormat = OTLPMetricFormat
@@ -80,8 +80,8 @@ func prepareExporterTest(t *testing.T, cfg *Config, cb []func(w http.ResponseWri
 		)
 	})
 
-	cfg.ClientConfig.Endpoint = testServer.URL
-	cfg.ClientConfig.Auth = nil
+	cfg.Endpoint = testServer.URL
+	cfg.Auth = nil
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(t, err)
@@ -498,8 +498,8 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 		config := createDefaultConfig().(*Config)
 		config.MetricFormat = PrometheusFormat
 		config.LogFormat = TextFormat
-		config.ClientConfig.Auth = nil
-		config.ClientConfig.Compression = configcompression.TypeGzip
+		config.Auth = nil
+		config.Compression = configcompression.TypeGzip
 		return config
 	}
 
@@ -508,7 +508,7 @@ func Benchmark_ExporterPushLogs(b *testing.B) {
 	b.Cleanup(func() { testServer.Close() })
 
 	cfg := createConfig()
-	cfg.ClientConfig.Endpoint = testServer.URL
+	cfg.Endpoint = testServer.URL
 
 	exp, err := initExporter(cfg, exportertest.NewNopSettings(metadata.Type))
 	require.NoError(b, err)

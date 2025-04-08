@@ -56,6 +56,7 @@ func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*a
 func createDefaultTestConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TenantID = "fake-tenant-id"
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
 }
 
@@ -176,6 +177,13 @@ func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientL
 	}
 }
 
+func newMockSubscriptionGet(subscriptionsByID map[string]armsubscriptions.ClientGetResponse) func(ctx context.Context, subscriptionID string, options *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
+	return func(_ context.Context, subscriptionID string, _ *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
+		resp.SetResponse(http.StatusOK, subscriptionsByID[subscriptionID], nil)
+		return
+	}
+}
+
 func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse) func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
 	return func(_ *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
 		for _, page := range resourcesPages {
@@ -217,6 +225,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	cfgTagsEnabled := createDefaultTestConfig()
 	cfgTagsEnabled.AppendTagsAsAttributes = true
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+	cfgTagsEnabled.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	cfgSubNameAttr := createDefaultTestConfig()
+	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
 
 	tests := []struct {
 		name    string
@@ -242,6 +255,15 @@ func TestAzureScraperScrape(t *testing.T) {
 				ctx: context.Background(),
 			},
 		},
+		{
+			name: "metrics_subname_golden",
+			fields: fields{
+				cfg: cfgSubNameAttr,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -249,6 +271,7 @@ func TestAzureScraperScrape(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			optionsResolver := newMockClientOptionsResolver(
+				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
 				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 				getMetricsDefinitionsMockData(),
@@ -257,20 +280,14 @@ func TestAzureScraperScrape(t *testing.T) {
 
 			s := &azureScraper{
 				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mb:                    metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{
-					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-					"subscriptionId3": {SubscriptionID: "subscriptionId3"},
-				},
-				resources: map[string]map[string]*azureResource{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)
@@ -300,6 +317,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncommingMessages", "TransferedBytes"
 	metricAggregation1, metricAggregation2, metricAggregation3 := "Count", "Maximum", "Minimum"
 	cfgLimitedMertics := createDefaultTestConfig()
+	cfgLimitedMertics.SubscriptionIDs = []string{fakeSubID}
 	cfgLimitedMertics.Metrics = NestedListAlias{
 		metricNamespace1: {
 			metricName1: {metricAggregation1},
@@ -321,6 +339,13 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		valueMaximum := 123.45
 		valueMinimum := 0.1
 
+		subscriptionsByIDMockData := map[string]armsubscriptions.ClientGetResponse{
+			fakeSubID: {
+				Subscription: armsubscriptions.Subscription{
+					SubscriptionID: to.Ptr(fakeSubID), DisplayName: to.Ptr("displayname"),
+				},
+			},
+		}
 		resourceMockData := map[string][]armresources.ClientListResponse{
 			fakeSubID: {
 				{
@@ -478,6 +503,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		}
 
 		optionsResolver := newMockClientOptionsResolver(
+			subscriptionsByIDMockData,
 			getSubscriptionsMockData(),
 			resourceMockData,
 			metricsDefinitionMockData,
@@ -493,12 +519,8 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			clientOptionsResolver: optionsResolver,
 
 			// From there, initialize everything that is normally initialized in start() func
-			subscriptions: map[string]*azureSubscription{
-				fakeSubID: {SubscriptionID: fakeSubID},
-			},
-			resources: map[string]map[string]*azureResource{
-				fakeSubID: {},
-			},
+			subscriptions: map[string]*azureSubscription{},
+			resources:     map[string]map[string]*azureResource{},
 		}
 
 		metrics, err := s.scrape(context.Background())
@@ -518,20 +540,40 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	})
 }
 
+func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {
+	return map[string]armsubscriptions.ClientGetResponse{
+		"subscriptionId1": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId1"), DisplayName: to.Ptr("subscriptionDisplayName1"),
+			},
+		},
+		"subscriptionId2": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId2"), DisplayName: to.Ptr("subscriptionDisplayName2"),
+			},
+		},
+		"subscriptionId3": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId3"), DisplayName: to.Ptr("subscriptionDisplayName3"),
+			},
+		},
+	}
+}
+
 func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
 	return []armsubscriptions.ClientListResponse{
 		{
 			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
 				Value: []*armsubscriptions.Subscription{
-					{ID: to.Ptr("subscriptionId1")},
-					{ID: to.Ptr("subscriptionId2")},
+					{SubscriptionID: to.Ptr("subscriptionId1")},
+					{SubscriptionID: to.Ptr("subscriptionId2")},
 				},
 			},
 		},
 		{
 			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
 				Value: []*armsubscriptions.Subscription{
-					{ID: to.Ptr("subscriptionId3")},
+					{SubscriptionID: to.Ptr("subscriptionId3")},
 				},
 			},
 		},
@@ -540,6 +582,7 @@ func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
 
 func getNominalTestScraper() *azureScraper {
 	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
 		getResourcesMockData(false),
 		getMetricsDefinitionsMockData(),
@@ -557,24 +600,22 @@ func getNominalTestScraper() *azureScraper {
 		clientOptionsResolver: optionsResolver,
 
 		// From there, initialize everything that is normally initialized in start() func
-		subscriptions: map[string]*azureSubscription{
-			"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-		},
-		resources: map[string]map[string]*azureResource{
-			"subscriptionId1": {},
-		},
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
 	}
 }
 
 func TestAzureScraperGetResources(t *testing.T) {
 	s := getNominalTestScraper()
 	s.resources["subscriptionId1"] = map[string]*azureResource{}
+	s.subscriptions["subscriptionId1"] = &azureSubscription{}
 	s.cfg.CacheResources = 0
 	s.getResources(context.Background(), "subscriptionId1")
 	assert.Contains(t, s.resources, "subscriptionId1")
 	assert.Len(t, s.resources["subscriptionId1"], 3)
 
 	s.clientOptionsResolver = newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
 		getSubscriptionsMockData(),
 		map[string][]armresources.ClientListResponse{
 			"subscriptionId1": {{

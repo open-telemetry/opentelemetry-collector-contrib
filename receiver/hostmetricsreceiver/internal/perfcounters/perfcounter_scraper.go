@@ -10,9 +10,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/prometheus-community/windows_exporter/pkg/perflib"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters/third_party/perflib"
 )
 
 const totalInstanceName = "_Total"
@@ -67,7 +66,7 @@ func (p *PerfLibScraper) Initialize(objects ...string) error {
 }
 
 func (p *PerfLibScraper) Scrape() (PerfDataCollection, error) {
-	objects, err := perflib.QueryPerformanceData(p.objectIndices)
+	objects, err := perflib.QueryPerformanceData(p.objectIndices, "")
 	if err != nil {
 		return nil, fmt.Errorf("failed to query performance data: %w", err)
 	}

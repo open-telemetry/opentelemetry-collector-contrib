@@ -15,7 +15,7 @@ func newMetadataConfigfromConfig(cfg *datadogconfig.Config) hostmetadata.PusherC
 		ConfigTags:          cfg.HostMetadata.Tags,
 		MetricsEndpoint:     cfg.Metrics.Endpoint,
 		APIKey:              string(cfg.API.Key),
-		UseResourceMetadata: cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource, //nolint:staticcheck
+		UseResourceMetadata: cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource,
 		InsecureSkipVerify:  cfg.TLSSetting.InsecureSkipVerify,
 		ClientConfig:        cfg.ClientConfig,
 		RetrySettings:       cfg.BackOffConfig,

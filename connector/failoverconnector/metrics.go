@@ -109,6 +109,6 @@ func newMetricsToMetrics(set connector.Settings, cfg component.Config, metrics c
 	return &metricsFailover{
 		config:   config,
 		failover: failover,
-		logger:   set.TelemetrySettings.Logger,
+		logger:   set.Logger,
 	}, nil
 }

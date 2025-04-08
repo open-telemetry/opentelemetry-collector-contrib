@@ -218,7 +218,7 @@ func runMetricsExport(t *testing.T, cfg *Config, metrics pmetric.Metrics, expect
 	}
 
 	factory := NewFactory()
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 	cfg.UseMultiMetricFormat = useMultiMetricsFormat
 
@@ -270,7 +270,7 @@ func runTraceExport(t *testing.T, testConfig *Config, traces ptrace.Traces, expe
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.DisableCompression = testConfig.DisableCompression
 	cfg.MaxContentLengthTraces = testConfig.MaxContentLengthTraces
 	cfg.Token = "1234-1234"
@@ -332,7 +332,7 @@ func runLogExport(t *testing.T, cfg *Config, ld plog.Logs, expectedBatchesNum in
 		panic(err)
 	}
 
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	cfg.Token = "1234-1234"
 
 	rr := make(chan receivedRequest)
@@ -1292,12 +1292,12 @@ func TestErrorReceived(t *testing.T) {
 
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 
@@ -1350,8 +1350,8 @@ func TestInvalidURL(t *testing.T) {
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
-	cfg.ClientConfig.Endpoint = "ftp://example.com:134"
+	cfg.Enabled = false
+	cfg.Endpoint = "ftp://example.com:134"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
@@ -1384,12 +1384,12 @@ func TestHeartbeatStartupFailed(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true
@@ -1425,12 +1425,12 @@ func TestHeartbeatStartupPass_Disabled(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = false
@@ -1460,12 +1460,12 @@ func TestHeartbeatStartupPass(t *testing.T) {
 	}()
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
+	cfg.Endpoint = "http://" + listener.Addr().String() + "/services/collector"
 	// Disable QueueSettings to ensure that we execute the request when calling ConsumeTraces
 	// otherwise we will not see the error.
 	cfg.QueueSettings.Enabled = false
 	// Disable retries to not wait too much time for the return error.
-	cfg.BackOffConfig.Enabled = false
+	cfg.Enabled = false
 	cfg.DisableCompression = true
 	cfg.Token = "1234-1234"
 	cfg.Heartbeat.Startup = true

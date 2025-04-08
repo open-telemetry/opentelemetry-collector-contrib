@@ -140,8 +140,10 @@ The following settings can be optionally configured:
   - Default: `false`
 - `metrics_flush_interval`: the interval at which metrics are flushed to the exporter.
   - Default: `60s`
-- `database_name_attribute`: the attribute name used to identify the database name from span attributes.
+- `database_name_attribute`(DEPRECATED): the attribute name used to identify the database name from span attributes.
   - Default: `db.name`
+- `database_name_attributes`: the list of attribute names used to identify the database name from span attributes. The attributes are tried in order, selecting the first match.
+  - Default: `[db.name]`
 
 ## Example configurations
 

@@ -74,11 +74,11 @@ func getListenerURL(region string) string {
 func generateEndpoint(cfg *Config) (string, error) {
 	defaultURL := fmt.Sprintf("%s/?token=%s", getListenerURL(""), string(cfg.Token))
 	switch {
-	case cfg.ClientConfig.Endpoint != "":
-		return cfg.ClientConfig.Endpoint, nil
+	case cfg.Endpoint != "":
+		return cfg.Endpoint, nil
 	case cfg.Region != "":
 		return fmt.Sprintf("%s/?token=%s", getListenerURL(cfg.Region), string(cfg.Token)), nil
-	case cfg.ClientConfig.Endpoint == "" && cfg.Region == "":
+	case cfg.Endpoint == "" && cfg.Region == "":
 		return defaultURL, errors.New("failed to generate endpoint, Endpoint or Region must be set")
 	default:
 		return defaultURL, nil

@@ -117,20 +117,20 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		dialOpts = append(dialOpts, configgrpc.WithGrpcDialOption(opt))
 	}
 
-	if e.clientConn, err = e.config.ClientConfig.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
+	if e.clientConn, err = e.config.ToClientConn(ctx, host, e.settings.TelemetrySettings, dialOpts...); err != nil {
 		return err
 	}
 	e.traceExporter = ptraceotlp.NewGRPCClient(e.clientConn)
 	e.metricExporter = pmetricotlp.NewGRPCClient(e.clientConn)
 	e.logExporter = plogotlp.NewGRPCClient(e.clientConn)
 	headers := map[string]string{}
-	for k, v := range e.config.ClientConfig.Headers {
+	for k, v := range e.config.Headers {
 		headers[k] = string(v)
 	}
 	headerMetadata := metadata.New(headers)
 	e.metadata = metadata.Join(e.metadata, headerMetadata)
 	e.callOptions = []grpc.CallOption{
-		grpc.WaitForReady(e.config.ClientConfig.WaitForReady),
+		grpc.WaitForReady(e.config.WaitForReady),
 	}
 
 	if !e.config.Arrow.Disabled {
@@ -138,9 +138,9 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 		ctx := e.enhanceContext(context.Background())
 
 		var perRPCCreds credentials.PerRPCCredentials
-		if e.config.ClientConfig.Auth != nil {
+		if e.config.Auth != nil {
 			// Get the auth extension, we'll use it to enrich the request context.
-			authClient, err := e.config.ClientConfig.Auth.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+			authClient, err := e.config.Auth.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
 			if err != nil {
 				return err
 			}
@@ -155,7 +155,7 @@ func (e *baseExporter) start(ctx context.Context, host component.Host) (err erro
 
 		arrowCallOpts := e.callOptions
 
-		if e.config.ClientConfig.Compression == configcompression.TypeZstd {
+		if e.config.Compression == configcompression.TypeZstd {
 			// ignore the error below b/c Validate() was called
 			_ = zstd.SetEncoderConfig(e.config.Arrow.Zstd)
 			// use the configured compressor.
@@ -215,7 +215,7 @@ func (e *baseExporter) pushTraces(ctx context.Context, td ptrace.Traces) error {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
 		// TODO: These should be counted, similar to dropped items.
 		e.settings.Logger.Warn("partial success",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
@@ -237,7 +237,7 @@ func (e *baseExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) erro
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
 		// TODO: These should be counted, similar to dropped items.
 		e.settings.Logger.Warn("partial success",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),
@@ -259,7 +259,7 @@ func (e *baseExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 		return err
 	}
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
 		// TODO: These should be counted, similar to dropped items.
 		e.settings.Logger.Warn("partial success",
 			zap.String("message", resp.PartialSuccess().ErrorMessage()),

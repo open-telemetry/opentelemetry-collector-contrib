@@ -34,7 +34,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
-	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
+	assert.Equal(t, "round_robin", cfg.(*Config).BalancerName)
 	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
 }
 

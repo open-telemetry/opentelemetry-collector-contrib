@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
 	"go.opentelemetry.io/otel/sdk/resource"
 	"google.golang.org/grpc/codes"
-	grpccodes "google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/netstats"
@@ -151,7 +150,7 @@ func TestBoundedQueueLimits(t *testing.T) {
 			timeout:        time.Second,
 			expectErrs: map[string]int{
 				// 20*50=1000 is half of the requests timing out
-				status.Error(grpccodes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
+				status.Error(codes.Canceled, context.DeadlineExceeded.Error()).Error(): 50,
 			},
 		},
 		{

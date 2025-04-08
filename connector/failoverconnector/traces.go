@@ -110,6 +110,6 @@ func newTracesToTraces(set connector.Settings, cfg component.Config, traces cons
 	return &tracesFailover{
 		config:   config,
 		failover: failover,
-		logger:   set.TelemetrySettings.Logger,
+		logger:   set.Logger,
 	}, nil
 }

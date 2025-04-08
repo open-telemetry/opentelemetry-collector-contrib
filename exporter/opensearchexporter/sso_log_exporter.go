@@ -27,10 +27,10 @@ func newLogExporter(cfg *Config, set exporter.Settings) *logExporter {
 	model := &encodeModel{
 		dedup:             cfg.Dedup,
 		dedot:             cfg.Dedot,
-		sso:               cfg.MappingsSettings.Mode == MappingSS4O.String(),
-		flattenAttributes: cfg.MappingsSettings.Mode == MappingFlattenAttributes.String(),
-		timestampField:    cfg.MappingsSettings.TimestampField,
-		unixTime:          cfg.MappingsSettings.UnixTimestamp,
+		sso:               cfg.Mode == MappingSS4O.String(),
+		flattenAttributes: cfg.Mode == MappingFlattenAttributes.String(),
+		timestampField:    cfg.TimestampField,
+		unixTime:          cfg.UnixTimestamp,
 		dataset:           cfg.Dataset,
 		namespace:         cfg.Namespace,
 	}

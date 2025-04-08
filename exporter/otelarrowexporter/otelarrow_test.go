@@ -463,10 +463,10 @@ func TestSendTracesWhenEndpointHasHttpScheme(t *testing.T) {
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.ClientConfig = test.gRPCClientSettings
-			cfg.ClientConfig.Endpoint = test.scheme + ln.Addr().String()
+			cfg.Endpoint = test.scheme + ln.Addr().String()
 			cfg.Arrow.MaxStreamLifetime = 100 * time.Second
 			if test.useTLS {
-				cfg.ClientConfig.TLSSetting.InsecureSkipVerify = true
+				cfg.TLSSetting.InsecureSkipVerify = true
 			}
 			set := exportertest.NewNopSettings(factory.Type())
 			exp, err := factory.CreateTraces(context.Background(), set, cfg)
@@ -934,7 +934,7 @@ func testSendArrowTraces(t *testing.T, clientWaitForReady, streamServiceAvailabl
 	cfg.QueueSettings.Enabled = false
 
 	set := exportertest.NewNopSettings(factory.Type())
-	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
+	set.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -1103,7 +1103,7 @@ func TestSendArrowFailedTraces(t *testing.T) {
 	cfg.QueueSettings.Enabled = false
 
 	set := exportertest.NewNopSettings(factory.Type())
-	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
+	set.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
@@ -1167,7 +1167,7 @@ func TestUserDialOptions(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(factory.Type())
-	set.TelemetrySettings.Logger = zaptest.NewLogger(t)
+	set.Logger = zaptest.NewLogger(t)
 	exp, err := factory.CreateTraces(context.Background(), set, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)

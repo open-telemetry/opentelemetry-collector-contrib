@@ -143,11 +143,7 @@ func BenchmarkFromPdataConverter(b *testing.B) {
 
 				var n int
 			forLoop:
-				for {
-					if n == entryCount {
-						break
-					}
-
+				for n != entryCount {
 					select {
 					case entries, ok := <-ch:
 						if !ok {

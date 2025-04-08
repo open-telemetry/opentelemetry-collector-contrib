@@ -220,7 +220,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.ClientConfig.Timeout < 0 {
+	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 

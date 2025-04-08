@@ -35,7 +35,7 @@ func (p *Parser) ProcessBatch(ctx context.Context, entries []*entry.Entry) error
 func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	// Static parse function
 	if p.parse != nil {
-		return p.ParserOperator.ProcessWith(ctx, e, p.parse)
+		return p.ProcessWith(ctx, e, p.parse)
 	}
 
 	// Dynamically generate the parse function based on a header attribute
@@ -51,7 +51,7 @@ func (p *Parser) Process(ctx context.Context, e *entry.Entry) error {
 	}
 	headers := strings.Split(headerString, string([]rune{p.headerDelimiter}))
 	parse := generateParseFunc(headers, p.fieldDelimiter, p.lazyQuotes, p.ignoreQuotes)
-	return p.ParserOperator.ProcessWith(ctx, e, parse)
+	return p.ProcessWith(ctx, e, parse)
 }
 
 // generateParseFunc returns a parse function for a given header, allowing

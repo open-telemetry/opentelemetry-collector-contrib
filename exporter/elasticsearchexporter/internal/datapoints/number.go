@@ -46,7 +46,7 @@ func (dp Number) Value() (pcommon.Value, error) {
 func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 	switch metric.Type() {
 	case pmetric.MetricTypeSum:
-		switch dp.NumberDataPoint.ValueType() {
+		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
 			if metric.Sum().IsMonotonic() {
 				return "counter_double"
@@ -61,7 +61,7 @@ func (dp Number) DynamicTemplate(metric pmetric.Metric) string {
 			return "" // NumberDataPointValueTypeEmpty should already be discarded in numberToValue
 		}
 	case pmetric.MetricTypeGauge:
-		switch dp.NumberDataPoint.ValueType() {
+		switch dp.ValueType() {
 		case pmetric.NumberDataPointValueTypeDouble:
 			return "gauge_double"
 		case pmetric.NumberDataPointValueTypeInt:

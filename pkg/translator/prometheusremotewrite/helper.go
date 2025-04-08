@@ -181,7 +181,7 @@ func createAttributes(resource pcommon.Resource, attributes pcommon.Map, externa
 		}
 		// internal labels should be maintained
 		name := extras[i]
-		if !(len(name) > 4 && name[:2] == "__" && name[len(name)-2:] == "__") {
+		if len(name) <= 4 || name[:2] != "__" || name[len(name)-2:] != "__" {
 			name = prometheustranslator.NormalizeLabel(name)
 		}
 		l[name] = extras[i+1]

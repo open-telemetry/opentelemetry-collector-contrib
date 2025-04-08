@@ -77,6 +77,6 @@ func ProbabilityToThresholdWithPrecision(fraction float64, precision int) (Thres
 }
 
 // Probability is the sampling ratio in the range [MinSamplingProb, 1].
-func (t Threshold) Probability() float64 {
-	return float64(MaxAdjustedCount-t.unsigned) / float64(MaxAdjustedCount)
+func (th Threshold) Probability() float64 {
+	return float64(MaxAdjustedCount-th.unsigned) / float64(MaxAdjustedCount)
 }

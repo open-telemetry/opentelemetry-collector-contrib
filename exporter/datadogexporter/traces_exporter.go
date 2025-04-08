@@ -86,12 +86,12 @@ func newTracesExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.Metrics.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exp.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 		exp.client = client
 	}
@@ -224,7 +224,7 @@ func newTraceAgentConfig(ctx context.Context, params exporter.Settings, cfg *dat
 	acfg.Ignore["resource"] = cfg.Traces.IgnoreResources
 	acfg.ReceiverEnabled = false // disable HTTP receiver
 	acfg.AgentVersion = fmt.Sprintf("datadogexporter-%s-%s", params.BuildInfo.Command, params.BuildInfo.Version)
-	acfg.SkipSSLValidation = cfg.ClientConfig.TLSSetting.InsecureSkipVerify
+	acfg.SkipSSLValidation = cfg.TLSSetting.InsecureSkipVerify
 	acfg.ComputeStatsBySpanKind = cfg.Traces.ComputeStatsBySpanKind
 	acfg.PeerTagsAggregation = cfg.Traces.PeerTagsAggregation
 	acfg.PeerTags = cfg.Traces.PeerTags

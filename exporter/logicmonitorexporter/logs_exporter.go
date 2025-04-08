@@ -46,7 +46,7 @@ func newLogsExporter(_ context.Context, cfg component.Config, set exporter.Setti
 }
 
 func (e *logExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
+	client, err := e.config.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}

@@ -145,7 +145,7 @@ func (cfg *Config) Validate() error {
 		return errBulkActionInvalid
 	}
 
-	if _, ok := mappingModes[cfg.MappingsSettings.Mode]; !ok {
+	if _, ok := mappingModes[cfg.Mode]; !ok {
 		multiErr = append(multiErr, errMappingModeInvalid)
 	}
 

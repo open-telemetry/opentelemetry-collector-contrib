@@ -74,12 +74,12 @@ func newLogsExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.Metrics.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 	}
 	// validate the apiKey
@@ -93,7 +93,7 @@ func newLogsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
-	s := logs.NewSender(cfg.Logs.TCPAddrConfig.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
+	s := logs.NewSender(cfg.Logs.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 	scrubber := scrub.NewScrubber()
 	return &logsExporter{
 		params:           params,

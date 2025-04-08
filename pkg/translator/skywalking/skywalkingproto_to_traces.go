@@ -133,9 +133,10 @@ func swSpanToSpan(traceID string, segmentID string, span *agentV3.SpanObject, de
 
 	switch {
 	case span.SpanLayer == agentV3.SpanLayer_MQ:
-		if span.SpanType == agentV3.SpanType_Entry {
+		switch span.SpanType {
+		case agentV3.SpanType_Entry:
 			dest.SetKind(ptrace.SpanKindConsumer)
-		} else if span.SpanType == agentV3.SpanType_Exit {
+		case agentV3.SpanType_Exit:
 			dest.SetKind(ptrace.SpanKindProducer)
 		}
 	case span.GetSpanType() == agentV3.SpanType_Exit:

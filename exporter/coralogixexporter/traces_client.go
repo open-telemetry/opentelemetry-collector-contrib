@@ -89,7 +89,7 @@ func (e *tracesExporter) pushTraces(ctx context.Context, td ptrace.Traces) error
 	}
 
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedSpans() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedSpans() != 0 {
 		e.settings.Logger.Error("Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_spans", partialSuccess.RejectedSpans()),

@@ -169,7 +169,7 @@ func MakeDependencySubsegmentForLocalRootDependencySpan(span ptrace.Span, resour
 
 func MakeServiceSegmentForLocalRootDependencySpan(span ptrace.Span, resource pcommon.Resource, indexedAttrs []string, indexAllAttrs bool, logGroupNames []string, skipTimestampValidation bool, serviceSegmentID pcommon.SpanID) (*awsxray.Segment, error) {
 	// We always create a segment for the service
-	var serviceSpan ptrace.Span = ptrace.NewSpan()
+	serviceSpan := ptrace.NewSpan()
 	span.CopyTo(serviceSpan)
 
 	// Set the span id to the one internally generated

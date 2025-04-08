@@ -70,7 +70,7 @@ func newMetricsExporter(
 	options = append(options, otlpmetrics.WithFallbackSourceProvider(sourceProvider))
 	options = append(options, otlpmetrics.WithStatsOut(statsOut))
 	if pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled() {
-		params.TelemetrySettings.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
+		params.Logger.Warn("Metric remapping is disabled in the Datadog exporter. OpenTelemetry metrics must be mapped to Datadog semantics before metrics are exported to Datadog (ex: via a processor).")
 	} else {
 		options = append(options, otlpmetrics.WithRemapping())
 	}
@@ -99,12 +99,12 @@ func newMetricsExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.Metrics.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		exporter.metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		client.ExtraHeader["User-Agent"] = clientutil.UserAgent(params.BuildInfo)
 		client.HttpClient = clientutil.NewHTTPClient(cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
@@ -127,7 +127,7 @@ func (exp *metricsExporter) pushSketches(ctx context.Context, sl sketches.Sketch
 
 	req, err := http.NewRequestWithContext(ctx,
 		http.MethodPost,
-		exp.cfg.Metrics.TCPAddrConfig.Endpoint+sketches.SketchSeriesEndpoint,
+		exp.cfg.Metrics.Endpoint+sketches.SketchSeriesEndpoint,
 		bytes.NewBuffer(payload),
 	)
 	if err != nil {

@@ -102,10 +102,7 @@ func TestContainerTagsNative(t *testing.T) {
 	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 

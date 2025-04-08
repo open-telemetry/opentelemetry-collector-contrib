@@ -60,9 +60,9 @@ type BaseConfig struct {
 
 // Build will build a JSON parser operator.
 func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error) {
-	if c.ParserConfig.TimeParser == nil {
+	if c.TimeParser == nil {
 		parseFromField := entry.NewAttributeField("timestamp")
-		c.ParserConfig.TimeParser = &helper.TimeParser{
+		c.TimeParser = &helper.TimeParser{
 			ParseFrom:  &parseFromField,
 			LayoutType: helper.NativeKey,
 		}

@@ -32,6 +32,7 @@ type alertmanagerExporter struct {
 	generatorURL      string
 	defaultSeverity   string
 	severityAttribute string
+	apiVersion        string
 }
 
 type alertmanagerEvent struct {
@@ -188,7 +189,7 @@ func (s *alertmanagerExporter) pushTraces(ctx context.Context, td ptrace.Traces)
 }
 
 func (s *alertmanagerExporter) start(ctx context.Context, host component.Host) error {
-	client, err := s.config.ClientConfig.ToClient(ctx, host, s.settings)
+	client, err := s.config.ToClient(ctx, host, s.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create HTTP Client: %w", err)
 	}
@@ -208,10 +209,11 @@ func newAlertManagerExporter(cfg *Config, set component.TelemetrySettings) *aler
 		config:            cfg,
 		settings:          set,
 		tracesMarshaler:   &ptrace.JSONMarshaler{},
-		endpoint:          fmt.Sprintf("%s/api/v1/alerts", cfg.ClientConfig.Endpoint),
+		endpoint:          fmt.Sprintf("%s/api/%s/alerts", cfg.Endpoint, cfg.APIVersion),
 		generatorURL:      cfg.GeneratorURL,
 		defaultSeverity:   cfg.DefaultSeverity,
 		severityAttribute: cfg.SeverityAttribute,
+		apiVersion:        cfg.APIVersion,
 	}
 }
 

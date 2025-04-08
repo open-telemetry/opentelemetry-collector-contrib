@@ -106,7 +106,7 @@ func (cfg *Config) Unmarshal(componentParser *confmap.Conf) error {
 
 	for endpointType := range cfg.ResourceAttributes {
 		switch endpointType {
-		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType:
+		case observer.ContainerType, observer.K8sServiceType, observer.K8sIngressType, observer.HostPortType, observer.K8sNodeType, observer.PodType, observer.PortType, observer.PodContainerType, observer.KafkaTopicType:
 		default:
 			return fmt.Errorf("resource attributes for unsupported endpoint type %q", endpointType)
 		}

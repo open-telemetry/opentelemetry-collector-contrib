@@ -7,9 +7,13 @@ all_set:
       enabled: true
     oracledb.db_block_gets:
       enabled: true
+    oracledb.ddl_statements_parallelized:
+      enabled: true
     oracledb.dml_locks.limit:
       enabled: true
     oracledb.dml_locks.usage:
+      enabled: true
+    oracledb.dml_statements_parallelized:
       enabled: true
     oracledb.enqueue_deadlocks:
       enabled: true
@@ -28,6 +32,18 @@ all_set:
     oracledb.hard_parses:
       enabled: true
     oracledb.logical_reads:
+      enabled: true
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: true
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: true
+    oracledb.parallel_operations_not_downgraded:
       enabled: true
     oracledb.parse_calls:
       enabled: true
@@ -48,6 +64,8 @@ all_set:
     oracledb.processes.limit:
       enabled: true
     oracledb.processes.usage:
+      enabled: true
+    oracledb.queries_parallelized:
       enabled: true
     oracledb.sessions.limit:
       enabled: true
@@ -76,9 +94,13 @@ none_set:
       enabled: false
     oracledb.db_block_gets:
       enabled: false
+    oracledb.ddl_statements_parallelized:
+      enabled: false
     oracledb.dml_locks.limit:
       enabled: false
     oracledb.dml_locks.usage:
+      enabled: false
+    oracledb.dml_statements_parallelized:
       enabled: false
     oracledb.enqueue_deadlocks:
       enabled: false
@@ -97,6 +119,18 @@ none_set:
     oracledb.hard_parses:
       enabled: false
     oracledb.logical_reads:
+      enabled: false
+    oracledb.parallel_operations_downgraded_1_to_25_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_25_to_50_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_50_to_75_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_75_to_99_pct:
+      enabled: false
+    oracledb.parallel_operations_downgraded_to_serial:
+      enabled: false
+    oracledb.parallel_operations_not_downgraded:
       enabled: false
     oracledb.parse_calls:
       enabled: false
@@ -117,6 +151,8 @@ none_set:
     oracledb.processes.limit:
       enabled: false
     oracledb.processes.usage:
+      enabled: false
+    oracledb.queries_parallelized:
       enabled: false
     oracledb.sessions.limit:
       enabled: false

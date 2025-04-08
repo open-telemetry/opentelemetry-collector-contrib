@@ -6,5 +6,6 @@
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| azuremonitor.subscription | Azure subscription name | Any Str | false |
 | azuremonitor.subscription_id | Azure subscription ID | Any Str | false |
 | azuremonitor.tenant_id | Azure tenant ID | Any Str | false |

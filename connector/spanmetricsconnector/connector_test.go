@@ -163,9 +163,10 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
 		require.True(tb, ok)
 		serviceName := val.AsString()
-		if serviceName == "service-a" {
+		switch serviceName {
+		case "service-a":
 			numDataPoints = 2
-		} else if serviceName == "service-b" {
+		case "service-b":
 			numDataPoints = 1
 		}
 

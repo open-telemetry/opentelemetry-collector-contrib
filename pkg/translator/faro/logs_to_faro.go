@@ -191,7 +191,7 @@ func mergePayloads(target *faroTypes.Payload, source faroTypes.Payload) {
 				Traces: ptrace.NewTraces(),
 			}
 		}
-		sourceTraces.ResourceSpans().MoveAndAppendTo(target.Traces.Traces.ResourceSpans())
+		sourceTraces.ResourceSpans().MoveAndAppendTo(target.Traces.ResourceSpans())
 	}
 }
 

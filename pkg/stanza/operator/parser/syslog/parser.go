@@ -50,11 +50,11 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) error {
 		}
 
 		if p.shouldSkipPriorityValues(bytes) {
-			return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parse, postprocessWithoutPriHeader)
+			return p.ProcessWithCallback(ctx, entry, p.parse, postprocessWithoutPriHeader)
 		}
 	}
 
-	return p.ParserOperator.ProcessWithCallback(ctx, entry, p.parse, postprocess)
+	return p.ProcessWithCallback(ctx, entry, p.parse, postprocess)
 }
 
 // parse will parse a value as syslog.

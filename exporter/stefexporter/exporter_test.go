@@ -141,7 +141,7 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.ClientConfig.Endpoint = mockSrv.endpoint
+	cfg.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
 	cfg.TLSSetting.Insecure = true
 
@@ -149,7 +149,7 @@ func runTest(
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -212,7 +212,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -261,7 +261,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -316,7 +316,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -372,7 +372,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -426,7 +426,7 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)

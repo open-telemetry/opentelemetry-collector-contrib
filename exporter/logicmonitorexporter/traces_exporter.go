@@ -34,7 +34,7 @@ func newTracesExporter(_ context.Context, cfg component.Config, set exporter.Set
 }
 
 func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
-	client, err := e.config.ClientConfig.ToClient(ctx, host, e.settings)
+	client, err := e.config.ToClient(ctx, host, e.settings)
 	if err != nil {
 		return fmt.Errorf("failed to create http client: %w", err)
 	}

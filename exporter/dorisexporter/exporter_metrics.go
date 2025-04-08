@@ -59,7 +59,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 		}
 
 		for _, ddlTemplate := range ddls {
-			ddl := fmt.Sprintf(ddlTemplate, e.cfg.Table.Metrics, e.cfg.propertiesStr())
+			ddl := fmt.Sprintf(ddlTemplate, e.cfg.Metrics, e.cfg.propertiesStr())
 			_, err = conn.ExecContext(ctx, ddl)
 			if err != nil {
 				return err
@@ -75,7 +75,7 @@ func (e *metricsExporter) start(ctx context.Context, host component.Host) error 
 		}
 
 		for _, model := range models {
-			table := e.cfg.Table.Metrics + model.tableSuffix()
+			table := e.cfg.Metrics + model.tableSuffix()
 			view := fmt.Sprintf(metricsView, table, table)
 			_, err = conn.ExecContext(ctx, view)
 			if err != nil {
@@ -247,7 +247,7 @@ func (e *metricsExporter) pushMetricDataInternal(ctx context.Context, metrics me
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Metrics+metrics.tableSuffix(), marshal, metrics.label())
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Metrics+metrics.tableSuffix(), marshal, metrics.label())
 	if err != nil {
 		return err
 	}
@@ -319,5 +319,5 @@ func (e *metricsExporter) getExemplarValue(ep pmetric.Exemplar) float64 {
 }
 
 func (e *metricsExporter) generateMetricLabel(m metricModel) string {
-	return generateLabel(e.cfg, e.cfg.Table.Metrics+m.tableSuffix())
+	return generateLabel(e.cfg, e.cfg.Metrics+m.tableSuffix())
 }

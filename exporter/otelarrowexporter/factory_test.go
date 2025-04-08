@@ -50,7 +50,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 func TestCreateMetrics(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateMetrics(context.Background(), set, cfg)
@@ -216,7 +216,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 
 	set := exportertest.NewNopSettings(metadata.Type)
 	oexp, err := factory.CreateLogs(context.Background(), set, cfg)
@@ -227,7 +227,7 @@ func TestCreateLogs(t *testing.T) {
 func TestCreateArrowTracesExporter(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 	cfg.Arrow = ArrowConfig{
 		NumStreams: 1,
 	}

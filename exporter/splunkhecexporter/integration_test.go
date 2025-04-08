@@ -364,7 +364,7 @@ func TestSplunkHecExporter(t *testing.T) {
 			// Endpoint and Token do not have a default value so set them directly.
 			config := NewFactory().CreateDefaultConfig().(*Config)
 			config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-			config.ClientConfig.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
+			config.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
 			config.Source = "otel"
 			config.SourceType = "st-otel"
 

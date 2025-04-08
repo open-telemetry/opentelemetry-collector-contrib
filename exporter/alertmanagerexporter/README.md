@@ -24,14 +24,14 @@ The following settings are required:
 
 The following settings are optional:
 
-- `timeout` `sending_queue` and `retry_on_failure` settings as provided by [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
+- `timeout` `sending_queue` and `retry_on_failure` settings as provided by [Exporter Helper](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration).
 - [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - `generator_url` is the source of the alerts to be used in Alertmanager's payload. The default value is "opentelemetry-collector", and can be set to the URL of the opentelemetry collector.
-- `severity_attribute` is the SpanEvent Attribute name which can be used instead of default severity string in Alert payload
+- `severity_attribute` is the SpanEvent Attribute name which can be used instead of default severity string in Alert payload.
    e.g.: If `severity_attribute` is set to "foo" and the SpanEvent has an attribute called foo, foo's attribute value will be used as the severity value for that particular Alert generated from the SpanEvent.
+- `api_version` is the API version of [Alertmanager](https://prometheus.io/docs/alerting/latest/clients/). By default the value is set to "v2" and can be overridden to "v1" if using an older version of Alertmanager.
 - `event_labels` is the list of Event Attributes that will be captured as Labels in the Alert payload if value exists.
-
 
 Example config:
 
@@ -42,6 +42,7 @@ exporters:
     endpoint: "https://a.new.alertmanager.target:9093"
     severity: "debug"
     severity_attribute: "foo"
+    api_version: "v2"
     event_labels: ["foo", "bar"]
     tls:
       cert_file: /var/lib/mycert.pem

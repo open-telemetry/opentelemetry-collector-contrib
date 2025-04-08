@@ -7,6 +7,7 @@ status:
   distributions: [contrib]
   codeowners:
     active: [mx-psi, rogercoll]
+  unsupported_platforms: [darwin, windows]
 
 tests:
   config:

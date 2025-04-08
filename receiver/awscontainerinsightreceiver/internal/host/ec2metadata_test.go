@@ -5,49 +5,66 @@ package host
 
 import (
 	"context"
-	"errors"
 	"testing"
 	"time"
 
-	awsec2metadata "github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/awstesting/mock"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 )
 
-type mockMetadataClient struct {
-	count int
-}
+type mockMetadataClient func(ctx context.Context, params *imds.GetInstanceIdentityDocumentInput, optFns ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error)
 
-func (m *mockMetadataClient) GetInstanceIdentityDocumentWithContext(_ context.Context) (awsec2metadata.EC2InstanceIdentityDocument, error) {
-	m.count++
-	if m.count == 1 {
-		return awsec2metadata.EC2InstanceIdentityDocument{}, errors.New("error")
-	}
-
-	return awsec2metadata.EC2InstanceIdentityDocument{
-		Region:       "us-west-2",
-		InstanceID:   "i-abcd1234",
-		InstanceType: "c4.xlarge",
-		PrivateIP:    "79.168.255.0",
-	}, nil
+func (m mockMetadataClient) GetInstanceIdentityDocument(ctx context.Context, params *imds.GetInstanceIdentityDocumentInput, optFns ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+	return m(ctx, params, optFns...)
 }
 
 func TestEC2Metadata(t *testing.T) {
-	ctx := context.Background()
-	sess := mock.Session
-	instanceIDReadyC := make(chan bool)
-	instanceIPReadyP := make(chan bool)
-	clientOption := func(e *ec2Metadata) {
-		e.client = &mockMetadataClient{}
+	tests := []struct {
+		name                 string
+		client               func(t *testing.T) metadataClient
+		expectedInstanceID   string
+		expectedInstanceType string
+		expectedPrivateIP    string
+		expectedRegion       string
+	}{
+		{
+			name: "Able to retrieve instance metadata",
+			client: func(t *testing.T) metadataClient {
+				return mockMetadataClient(func(_ context.Context, _ *imds.GetInstanceIdentityDocumentInput, _ ...func(*imds.Options)) (*imds.GetInstanceIdentityDocumentOutput, error) {
+					t.Helper()
+					return &imds.GetInstanceIdentityDocumentOutput{
+						InstanceIdentityDocument: imds.InstanceIdentityDocument{
+							Region:       "us-west-2",
+							InstanceID:   "i-abcd1234",
+							InstanceType: "c4.xlarge",
+							PrivateIP:    "79.168.255.0",
+						},
+					}, nil
+				})
+			},
+			expectedInstanceID:   "i-abcd1234",
+			expectedInstanceType: "c4.xlarge",
+			expectedRegion:       "us-west-2",
+			expectedPrivateIP:    "79.168.255.0",
+		},
 	}
-	e := newEC2Metadata(ctx, sess, 3*time.Millisecond, instanceIDReadyC, instanceIPReadyP, zap.NewNop(), clientOption)
-	assert.NotNil(t, e)
 
-	<-instanceIDReadyC
-	<-instanceIPReadyP
-	assert.Equal(t, "i-abcd1234", e.getInstanceID())
-	assert.Equal(t, "c4.xlarge", e.getInstanceType())
-	assert.Equal(t, "us-west-2", e.getRegion())
-	assert.Equal(t, "79.168.255.0", e.getInstanceIP())
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			e := &ec2Metadata{
+				logger:           zap.NewNop(),
+				client:           test.client(t),
+				refreshInterval:  3 * time.Millisecond,
+				instanceIDReadyC: make(chan bool),
+				instanceIPReadyC: make(chan bool),
+			}
+			e.refresh(context.Background())
+
+			assert.Equal(t, test.expectedInstanceID, e.getInstanceID())
+			assert.Equal(t, test.expectedInstanceType, e.getInstanceType())
+			assert.Equal(t, test.expectedRegion, e.getRegion())
+			assert.Equal(t, test.expectedPrivateIP, e.getInstanceIP())
+		})
+	}
 }
