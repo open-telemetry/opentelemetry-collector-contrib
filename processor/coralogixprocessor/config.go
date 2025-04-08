@@ -19,10 +19,10 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.databaseBlueprintsConfig.sampling.enabled && c.databaseBlueprintsConfig.sampling.maxCacheSizeMib <= 0 {
+	if c.sampling.enabled && c.sampling.maxCacheSizeMib <= 0 {
 		return fmt.Errorf("max_cache_size_mib must be a positive integer")
 	}
-	if c.databaseBlueprintsConfig.sampling.enabled && c.databaseBlueprintsConfig.sampling.maxCacheSizeMib != 0 {
+	if c.sampling.enabled && c.sampling.maxCacheSizeMib != 0 {
 		return fmt.Errorf("max_cache_size_mib can only be defined when sampling is enabled")
 	}
 	return nil

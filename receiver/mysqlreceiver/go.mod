@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlr
 go 1.23.0
 
 require (
-	github.com/go-sql-driver/mysql v1.9.1
+	github.com/go-sql-driver/mysql v1.9.2
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0
@@ -109,7 +109,7 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect

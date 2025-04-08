@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30
-	github.com/aws/aws-sdk-go-v2/service/ec2 v1.210.1
+	github.com/aws/aws-sdk-go-v2/service/ec2 v1.211.2
 	github.com/google/cadvisor v0.52.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight v0.123.0
@@ -37,16 +37,16 @@ require (
 	github.com/Azure/go-ansiterm v0.0.0-20230124172434-306776ec8161 // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
-	github.com/aws/aws-sdk-go-v2/config v1.29.11 // indirect
-	github.com/aws/aws-sdk-go-v2/credentials v1.17.64 // indirect
+	github.com/aws/aws-sdk-go-v2/config v1.29.13 // indirect
+	github.com/aws/aws-sdk-go-v2/credentials v1.17.66 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/configsources v1.3.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/endpoints/v2 v2.6.34 // indirect
 	github.com/aws/aws-sdk-go-v2/internal/ini v1.8.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/accept-encoding v1.12.3 // indirect
 	github.com/aws/aws-sdk-go-v2/service/internal/presigned-url v1.12.15 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sso v1.25.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.29.2 // indirect
-	github.com/aws/aws-sdk-go-v2/service/sts v1.33.17 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sso v1.25.3 // indirect
+	github.com/aws/aws-sdk-go-v2/service/ssooidc v1.30.1 // indirect
+	github.com/aws/aws-sdk-go-v2/service/sts v1.33.18 // indirect
 	github.com/aws/smithy-go v1.22.2 // indirect
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/cenkalti/backoff/v4 v4.3.0 // indirect
@@ -150,11 +150,11 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
-	golang.org/x/term v0.30.0 // indirect
-	golang.org/x/text v0.23.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.9.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250106144421-5f5ef82da422 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250224174004-546df14abb99 // indirect

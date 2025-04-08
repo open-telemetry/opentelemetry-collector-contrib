@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	code.cloudfoundry.org/garden v0.0.0-20241023020423-a21e43a17f84
-	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.11
+	github.com/cloudfoundry/go-cfclient/v3 v3.0.0-alpha.12
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer v0.123.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.29.1-0.20250402200755-cb5c3f4fb9dc

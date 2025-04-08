@@ -78,6 +78,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbDbBlockGetsDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbDdlStatementsParallelizedDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbDmlLocksLimitDataPoint(ts, "1")
@@ -85,6 +88,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbDmlLocksUsageDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbDmlStatementsParallelizedDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -122,6 +128,24 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordOracledbLogicalReadsDataPoint(ts, "1")
 
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(ts, "1")
+
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbParseCallsDataPoint(ts, "1")
@@ -156,6 +180,9 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordOracledbProcessesUsageDataPoint(ts, "1")
+
+			allMetricsCount++
+			mb.RecordOracledbQueriesParallelizedDataPoint(ts, "1")
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -255,6 +282,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.ddl_statements_parallelized":
+					assert.False(t, validatedMetrics["oracledb.ddl_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.ddl_statements_parallelized")
+					validatedMetrics["oracledb.ddl_statements_parallelized"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of DDL statements that were executed in parallel", ms.At(i).Description())
+					assert.Equal(t, "{statements}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
 				case "oracledb.dml_locks.limit":
 					assert.False(t, validatedMetrics["oracledb.dml_locks.limit"], "Found a duplicate in the metrics slice: oracledb.dml_locks.limit")
 					validatedMetrics["oracledb.dml_locks.limit"] = true
@@ -275,6 +316,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Current count of active DML (Data Manipulation Language) locks.", ms.At(i).Description())
 					assert.Equal(t, "{locks}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.dml_statements_parallelized":
+					assert.False(t, validatedMetrics["oracledb.dml_statements_parallelized"], "Found a duplicate in the metrics slice: oracledb.dml_statements_parallelized")
+					validatedMetrics["oracledb.dml_statements_parallelized"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of DML statements that were executed in parallel", ms.At(i).Description())
+					assert.Equal(t, "{statements}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
@@ -390,6 +445,90 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
 					assert.Equal(t, "Number of logical reads", ms.At(i).Description())
 					assert.Equal(t, "{reads}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_downgraded_1_to_25_pct":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_1_to_25_pct")
+					validatedMetrics["oracledb.parallel_operations_downgraded_1_to_25_pct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_downgraded_25_to_50_pct":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_25_to_50_pct")
+					validatedMetrics["oracledb.parallel_operations_downgraded_25_to_50_pct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_downgraded_50_to_75_pct":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_50_to_75_pct")
+					validatedMetrics["oracledb.parallel_operations_downgraded_50_to_75_pct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_downgraded_75_to_99_pct":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_75_to_99_pct")
+					validatedMetrics["oracledb.parallel_operations_downgraded_75_to_99_pct"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_downgraded_to_serial":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_downgraded_to_serial")
+					validatedMetrics["oracledb.parallel_operations_downgraded_to_serial"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.parallel_operations_not_downgraded":
+					assert.False(t, validatedMetrics["oracledb.parallel_operations_not_downgraded"], "Found a duplicate in the metrics slice: oracledb.parallel_operations_not_downgraded")
+					validatedMetrics["oracledb.parallel_operations_not_downgraded"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of times parallel execution was executed at the requested degree of parallelism", ms.At(i).Description())
+					assert.Equal(t, "{executions}", ms.At(i).Unit())
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
@@ -529,6 +668,20 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, "Current count of active processes.", ms.At(i).Description())
 					assert.Equal(t, "{processes}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.queries_parallelized":
+					assert.False(t, validatedMetrics["oracledb.queries_parallelized"], "Found a duplicate in the metrics slice: oracledb.queries_parallelized")
+					validatedMetrics["oracledb.queries_parallelized"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Number of SELECT statements executed in parallel", ms.At(i).Description())
+					assert.Equal(t, "{queries}", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
