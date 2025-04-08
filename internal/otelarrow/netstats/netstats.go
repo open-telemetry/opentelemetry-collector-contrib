@@ -127,7 +127,7 @@ func makeRecvMetrics(prefix string, meter metric.Meter, major bool) (recv, recvW
 
 // NewExporterNetworkReporter creates a new NetworkReporter configured for an exporter.
 func NewExporterNetworkReporter(settings exporter.Settings) (*NetworkReporter, error) {
-	meter := settings.TelemetrySettings.MeterProvider.Meter(scopeName)
+	meter := settings.MeterProvider.Meter(scopeName)
 	rep := &NetworkReporter{
 		isExporter:    true,
 		staticAttr:    attribute.String(ExporterKey, settings.ID.String()),

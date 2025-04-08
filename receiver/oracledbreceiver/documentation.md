@@ -257,6 +257,70 @@ Number of times a current block was requested from the buffer cache.
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {gets} | Sum | Int | Cumulative | true |
 
+### oracledb.ddl_statements_parallelized
+
+Number of DDL statements that were executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {statements} | Sum | Int | Cumulative | true |
+
+### oracledb.dml_statements_parallelized
+
+Number of DML statements that were executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {statements} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_1_to_25_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 1-25% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_25_to_50_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 25-50% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_50_to_75_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 50-75% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_75_to_99_pct
+
+Number of times parallel execution was requested and the degree of parallelism was reduced down to 75-99% because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_downgraded_to_serial
+
+Number of times parallel execution was requested but execution was serial because of insufficient parallel execution servers
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
+### oracledb.parallel_operations_not_downgraded
+
+Number of times parallel execution was executed at the requested degree of parallelism
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {executions} | Sum | Int | Cumulative | true |
+
 ### oracledb.physical_read_io_requests
 
 Number of read requests for application activity
@@ -296,6 +360,14 @@ Number of writes directly to disk, bypassing the buffer cache
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {writes} | Sum | Int | Cumulative | true |
+
+### oracledb.queries_parallelized
+
+Number of SELECT statements executed in parallel
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| {queries} | Sum | Int | Cumulative | true |
 
 ## Resource Attributes
 

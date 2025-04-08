@@ -318,7 +318,8 @@ func handleField(
 	case "az-id":
 		record.Attributes().PutStr("aws.az.id", value)
 	case "interface-id":
-		record.Attributes().PutStr("aws.eni.id", value)
+		// TODO Replace with conventions variable once it becomes available
+		record.Attributes().PutStr("network.interface.name", value)
 	case "srcport":
 		if err := addNumber(field, value, conventions.AttributeSourcePort); err != nil {
 			return false, err

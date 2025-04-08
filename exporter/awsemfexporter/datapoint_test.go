@@ -2052,7 +2052,7 @@ func TestGetDataPoints(t *testing.T) {
 				expectedDPS := tc.expectedDatapointSlice.(numberDataPointSlice)
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.NumberDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, 0.1, dp.DoubleValue())
@@ -2062,14 +2062,14 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case histogramDataPointSlice:
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.HistogramDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case exponentialHistogramDataPointSlice:
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.ExponentialHistogramDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, float64(0), dp.Sum())
 				assert.Equal(t, uint64(4), dp.Count())
 				assert.Equal(t, []uint64{1, 0, 1}, dp.Positive().BucketCounts().AsRaw())
@@ -2080,7 +2080,7 @@ func TestGetDataPoints(t *testing.T) {
 				expectedDPS := tc.expectedDatapointSlice.(summaryDataPointSlice)
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.SummaryDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
 				assert.Equal(t, uint64(5), dp.Count())
 				assert.Equal(t, 2, dp.QuantileValues().Len())

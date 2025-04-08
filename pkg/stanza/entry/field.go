@@ -157,7 +157,7 @@ func fromJSONDot(s string) ([]string, error) {
 			tokenStart = i
 			state = InUnbracketedToken
 		case InBracket:
-			if !(c == '\'' || c == '"') {
+			if c != '\'' && c != '"' {
 				return nil, fmt.Errorf("strings in brackets must be surrounded by quotes")
 			}
 			state = InQuote
@@ -184,10 +184,11 @@ func fromJSONDot(s string) ([]string, error) {
 				return nil, fmt.Errorf("bracketed access must be followed by a dot or another bracketed access")
 			}
 		case InUnbracketedToken:
-			if c == '.' {
+			switch c {
+			case '.':
 				fields = append(fields, s[tokenStart:i])
 				tokenStart = i + 1
-			} else if c == '[' {
+			case '[':
 				fields = append(fields, s[tokenStart:i])
 				state = InBracket
 			}
