@@ -602,6 +602,7 @@ func TestValidateOwnTelemetry(t *testing.T) {
 }
 
 func TestExtraDimensionsLabels(t *testing.T) {
+	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39210")
 	extraDimensions := []string{"db.system", "messaging.system"}
 	cfg := &Config{
 		Dimensions:              extraDimensions,

@@ -39,7 +39,7 @@ import (
 func TestNewExporter(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
@@ -90,8 +90,6 @@ func TestNewExporter(t *testing.T) {
 }
 
 func TestNewExporter_Serializer(t *testing.T) {
-	require.NoError(t, enableMetricExportSerializer())
-	defer require.NoError(t, enableNativeMetricExport())
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
@@ -146,7 +144,7 @@ func TestNewExporter_Serializer(t *testing.T) {
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableZorkianMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
@@ -502,7 +500,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 func TestNewExporter_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
@@ -553,7 +551,7 @@ func TestNewExporter_Zorkian(t *testing.T) {
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableNativeMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
