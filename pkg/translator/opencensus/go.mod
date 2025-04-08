@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/census-instrumentation/opencensus-proto v0.4.1

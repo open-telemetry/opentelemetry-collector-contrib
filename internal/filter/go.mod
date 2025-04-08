@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/expr-lang/expr v1.17.2

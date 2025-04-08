@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/lightstep/go-expohisto v1.0.0
