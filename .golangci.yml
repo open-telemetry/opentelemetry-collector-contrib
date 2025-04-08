@@ -2,7 +2,6 @@ formatters:
   enable:
     - gci
     - gofumpt
-    - goimports
 
   exclusions:
     paths:
@@ -16,12 +15,6 @@ formatters:
         - standard
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
-
-    goimports:
-      # put imports beginning with prefix after 3rd-party packages;
-      # it's a comma-separated list of prefixes
-      local-prefixes:
-        - github.com/open-telemetry/opentelemetry-collector-contrib
 
 issues:
   # Maximum issues count per one linter.
