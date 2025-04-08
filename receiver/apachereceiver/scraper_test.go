@@ -79,66 +79,66 @@ func TestParseScoreboard(t *testing.T) {
 		scoreboard := `S_DD_L_GGG_____W__IIII_C________________W__________________________________.........................____WR______W____W________________________C______________________________________W_W____W______________R_________R________C_________WK_W________K_____W__C__________W___R______.............................................................................................................................`
 		results := parseScoreboard(scoreboard)
 
-		require.EqualValues(t, int64(150), results[metadata.AttributeScoreboardStateOpen])
-		require.EqualValues(t, int64(217), results[metadata.AttributeScoreboardStateWaiting])
-		require.EqualValues(t, int64(1), results[metadata.AttributeScoreboardStateStarting])
-		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateReading])
-		require.EqualValues(t, int64(12), results[metadata.AttributeScoreboardStateSending])
-		require.EqualValues(t, int64(2), results[metadata.AttributeScoreboardStateKeepalive])
-		require.EqualValues(t, int64(2), results[metadata.AttributeScoreboardStateDnslookup])
-		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateClosing])
-		require.EqualValues(t, int64(1), results[metadata.AttributeScoreboardStateLogging])
-		require.EqualValues(t, int64(3), results[metadata.AttributeScoreboardStateFinishing])
-		require.EqualValues(t, int64(4), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.Equal(t, int64(150), results[metadata.AttributeScoreboardStateOpen])
+		require.Equal(t, int64(217), results[metadata.AttributeScoreboardStateWaiting])
+		require.Equal(t, int64(1), results[metadata.AttributeScoreboardStateStarting])
+		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateReading])
+		require.Equal(t, int64(12), results[metadata.AttributeScoreboardStateSending])
+		require.Equal(t, int64(2), results[metadata.AttributeScoreboardStateKeepalive])
+		require.Equal(t, int64(2), results[metadata.AttributeScoreboardStateDnslookup])
+		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateClosing])
+		require.Equal(t, int64(1), results[metadata.AttributeScoreboardStateLogging])
+		require.Equal(t, int64(3), results[metadata.AttributeScoreboardStateFinishing])
+		require.Equal(t, int64(4), results[metadata.AttributeScoreboardStateIdleCleanup])
 	})
 
 	t.Run("test unknown", func(t *testing.T) {
 		scoreboard := `qwertyuiopasdfghjklzxcvbnm`
 		results := parseScoreboard(scoreboard)
 
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateReading])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateSending])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
-		require.EqualValues(t, int64(26), results[metadata.AttributeScoreboardStateUnknown])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateReading])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateSending])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.Equal(t, int64(26), results[metadata.AttributeScoreboardStateUnknown])
 	})
 
 	t.Run("test empty defaults", func(t *testing.T) {
 		emptyString := ""
 		results := parseScoreboard(emptyString)
 
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateReading])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateSending])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
-		require.EqualValues(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateOpen])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateWaiting])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateStarting])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateReading])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateSending])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateKeepalive])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateDnslookup])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateClosing])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateLogging])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateFinishing])
+		require.Equal(t, int64(0), results[metadata.AttributeScoreboardStateIdleCleanup])
 	})
 }
 
 func TestParseStats(t *testing.T) {
 	t.Run("with empty value", func(t *testing.T) {
 		emptyString := ""
-		require.EqualValues(t, map[string]string{}, parseStats(emptyString))
+		require.Equal(t, map[string]string{}, parseStats(emptyString))
 	})
 	t.Run("with multi colons", func(t *testing.T) {
 		got := "CurrentTime: Thursday, 17-Jun-2021 14:06:32 UTC"
 		want := map[string]string{
 			"CurrentTime": "Thursday, 17-Jun-2021 14:06:32 UTC",
 		}
-		require.EqualValues(t, want, parseStats(got))
+		require.Equal(t, want, parseStats(got))
 	})
 	t.Run("with header/footer", func(t *testing.T) {
 		got := `localhost
@@ -153,7 +153,7 @@ BytesPerSec: 73.12
 			"ConnsTotal":  "110",
 			"BytesPerSec": "73.12",
 		}
-		require.EqualValues(t, want, parseStats(got))
+		require.Equal(t, want, parseStats(got))
 	})
 }
 
@@ -164,7 +164,7 @@ func TestScraperError(t *testing.T) {
 
 		_, err := sc.scrape(context.Background())
 		require.Error(t, err)
-		require.EqualValues(t, errors.New("failed to connect to Apache HTTPd"), err)
+		require.Equal(t, errors.New("failed to connect to Apache HTTPd"), err)
 	})
 }
 
