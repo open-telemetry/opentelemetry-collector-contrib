@@ -82,6 +82,24 @@ var MapAttributeStatus = map[string]AttributeStatus{
 	"zombies":  AttributeStatusZombies,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemProcessesCount: metricInfo{
+		Name: "system.processes.count",
+	},
+	SystemProcessesCreated: metricInfo{
+		Name: "system.processes.created",
+	},
+}
+
+type metricsInfo struct {
+	SystemProcessesCount   metricInfo
+	SystemProcessesCreated metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemProcessesCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

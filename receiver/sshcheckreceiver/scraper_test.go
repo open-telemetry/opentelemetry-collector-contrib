@@ -176,7 +176,7 @@ func TestScraper(t *testing.T) {
 
 			f := NewFactory()
 			cfg := f.CreateDefaultConfig().(*Config)
-			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+			cfg.CollectionInterval = 100 * time.Millisecond
 			cfg.Username = "otelu"
 			cfg.Password = "otelp"
 			cfg.Endpoint = endpoint
@@ -218,7 +218,7 @@ func TestScraperPropagatesResourceAttributes(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.MetricsBuilderConfig.ResourceAttributes.SSHEndpoint.Enabled = true
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
 	cfg.Endpoint = endpoint
@@ -253,7 +253,7 @@ func TestScraperDoesNotErrForSSHErr(t *testing.T) {
 
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "not-the-user"
 	cfg.Password = "not-the-password"
 	cfg.Endpoint = endpoint
@@ -301,7 +301,7 @@ func TestTimeout(t *testing.T) {
 func TestCancellation(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 
@@ -321,7 +321,7 @@ func TestCancellation(t *testing.T) {
 func TestWithoutStartErrsNotPanics(t *testing.T) {
 	f := NewFactory()
 	cfg := f.CreateDefaultConfig().(*Config)
-	cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+	cfg.CollectionInterval = 100 * time.Millisecond
 	cfg.Username = "otelu"
 	cfg.Password = "otelp"
 	cfg.Endpoint = "localhost:22"

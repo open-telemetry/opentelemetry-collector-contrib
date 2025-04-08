@@ -235,8 +235,10 @@ func testCaseForPodWorkload(to testCaseOptions) testCase {
 
 func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	podUIDLabel := "test-pod-0-uid"
+	podNameLabel := "test-pod-0"
 	kindLower := strings.ToLower(to.kind)
 	kindObjName := fmt.Sprintf("test-%s-0", kindLower)
+	namespaceLabel := "test-namespace"
 	kindObjUID := fmt.Sprintf("test-%s-0-uid", kindLower)
 	kindNameLabel := fmt.Sprintf("k8s.%s.name", kindLower)
 	kindUIDLabel := fmt.Sprintf("k8s.%s.uid", kindLower)
@@ -247,9 +249,11 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel:   kindObjName,
-				kindUIDLabel:    kindObjUID,
-				"k8s.pod.phase": "Unknown", // Default value when phase is not set.
+				kindNameLabel:        kindObjName,
+				kindUIDLabel:         kindObjUID,
+				"k8s.pod.phase":      "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name": namespaceLabel,
+				"k8s.pod.name":       podNameLabel,
 			},
 		},
 	}
@@ -485,6 +489,8 @@ func TestTransform(t *testing.T) {
 func TestPodMetadata(t *testing.T) {
 	tests := []struct {
 		name             string
+		podName          string
+		namespace        string
 		statusPhase      corev1.PodPhase
 		statusReason     string
 		expectedMetadata map[string]string
@@ -494,6 +500,8 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodFailed,
 			statusReason: "Evicted",
 			expectedMetadata: map[string]string{
+				"k8s.pod.name":          "test-pod-0",
+				"k8s.namespace.name":    "test-namespace",
 				"k8s.pod.phase":         "Failed",
 				"k8s.pod.status_reason": "Evicted",
 				"k8s.workload.kind":     "Deployment",
@@ -509,6 +517,8 @@ func TestPodMetadata(t *testing.T) {
 			statusPhase:  corev1.PodRunning,
 			statusReason: "",
 			expectedMetadata: map[string]string{
+				"k8s.pod.name":        "test-pod-0",
+				"k8s.namespace.name":  "test-namespace",
 				"k8s.pod.phase":       "Running",
 				"k8s.workload.kind":   "Deployment",
 				"k8s.workload.name":   "test-deployment-0",

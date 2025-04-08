@@ -53,6 +53,10 @@ func TestLoadConfig(t *testing.T) {
 				FormatType:    "json",
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: &AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
 			},
 		},
 		{
@@ -77,6 +81,10 @@ func TestLoadConfig(t *testing.T) {
 				FormatType:    "proto",
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: &AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
 			},
 		},
 		{
@@ -102,6 +110,10 @@ func TestLoadConfig(t *testing.T) {
 				FormatType:    "json",
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: &AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
 			},
 		},
 		{
@@ -126,6 +138,10 @@ func TestLoadConfig(t *testing.T) {
 				FormatType:    "json",
 				Encodings:     &Encodings{},
 				BackOffConfig: configretry.NewDefaultBackOffConfig(),
+				AppendBlob: &AppendBlob{
+					Enabled:   false,
+					Separator: "\n",
+				},
 			},
 		},
 		{

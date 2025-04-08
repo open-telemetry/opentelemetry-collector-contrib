@@ -72,7 +72,7 @@ func newLogzioTracesExporter(config *Config, set exporter.Settings) (exporter.Tr
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config)
+	exporter.config.Endpoint, err = generateEndpoint(config)
 	if err != nil {
 		return nil, err
 	}
@@ -95,7 +95,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 	if err != nil {
 		return nil, err
 	}
-	exporter.config.ClientConfig.Endpoint, err = generateEndpoint(config)
+	exporter.config.Endpoint, err = generateEndpoint(config)
 	if err != nil {
 		return nil, err
 	}
@@ -114,7 +114,7 @@ func newLogzioLogsExporter(config *Config, set exporter.Settings) (exporter.Logs
 }
 
 func (exporter *logzioExporter) start(ctx context.Context, host component.Host) error {
-	client, err := exporter.config.ClientConfig.ToClient(ctx, host, exporter.settings)
+	client, err := exporter.config.ToClient(ctx, host, exporter.settings)
 	if err != nil {
 		return err
 	}
@@ -146,7 +146,7 @@ func (exporter *logzioExporter) pushLogData(ctx context.Context, ld plog.Logs) e
 			}
 		}
 	}
-	err := exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
+	err := exporter.export(ctx, exporter.config.Endpoint, dataBuffer.Bytes())
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err
@@ -218,7 +218,7 @@ func (exporter *logzioExporter) pushTraceData(ctx context.Context, traces ptrace
 			}
 		}
 	}
-	err := exporter.export(ctx, exporter.config.ClientConfig.Endpoint, dataBuffer.Bytes())
+	err := exporter.export(ctx, exporter.config.Endpoint, dataBuffer.Bytes())
 	// reset the data buffer after each export to prevent duplicated data
 	dataBuffer.Reset()
 	return err

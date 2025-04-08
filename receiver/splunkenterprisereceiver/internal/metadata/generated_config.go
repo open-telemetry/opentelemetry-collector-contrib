@@ -73,10 +73,10 @@ type MetricsConfig struct {
 func DefaultMetricsConfig() MetricsConfig {
 	return MetricsConfig{
 		SplunkAggregationQueueRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkBucketsSearchableStatus: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkDataIndexesExtendedBucketCount: MetricConfig{
 			Enabled: false,
@@ -100,40 +100,40 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkHealth: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		SplunkIndexerAvgRate: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexerCPUTime: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexerQueueRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexerRawWriteTime: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexerThroughput: MetricConfig{
 			Enabled: false,
 		},
 		SplunkIndexesAvgSize: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexesAvgUsage: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexesBucketCount: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexesMedianDataAge: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIndexesSize: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkIoAvgIops: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkKvstoreBackupStatus: MetricConfig{
 			Enabled: false,
@@ -145,22 +145,22 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkLicenseIndexUsage: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkParseQueueRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkPipelineSetCount: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkSchedulerAvgExecutionLatency: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkSchedulerAvgRunTime: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkSchedulerCompletionRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		SplunkServerIntrospectionQueuesCurrent: MetricConfig{
 			Enabled: false,
@@ -193,7 +193,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkTypingQueueRatio: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 	}
 }

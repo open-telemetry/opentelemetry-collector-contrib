@@ -5,6 +5,7 @@ package k8sclient
 
 import (
 	"log"
+	goruntime "runtime"
 	"testing"
 	"time"
 
@@ -410,6 +411,9 @@ func TestTransformFuncEndpoint(t *testing.T) {
 }
 
 func TestNewEndpointClient(t *testing.T) {
+	if goruntime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38903")
+	}
 	setKubeConfigPath(t)
 	setOption := epSyncCheckerOption(&mockReflectorSyncChecker{})
 

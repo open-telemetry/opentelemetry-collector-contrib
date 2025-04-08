@@ -39,6 +39,12 @@ type ClientConfig struct {
 	// Authentication holds Kafka authentication details.
 	Authentication AuthenticationConfig `mapstructure:"auth"`
 
+	// TLS holds TLS-related configuration for connecting to Kafka brokers.
+	//
+	// By default the client will use an insecure connection unless
+	// SASL/AWS_MSK_IAM_OAUTHBEARER auth is configured.
+	TLS *configtls.ClientConfig `mapstructure:"tls"`
+
 	// Metadata holds metadata-related configuration for producers and consumers.
 	Metadata MetadataConfig `mapstructure:"metadata"`
 }
@@ -99,7 +105,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		SessionTimeout:    10 * time.Second,
 		HeartbeatInterval: 3 * time.Second,
 		GroupID:           "otel-collector",
-		InitialOffset:     "latest",
+		InitialOffset:     LatestOffset,
 		AutoCommit: AutoCommitConfig{
 			Enable:   true,
 			Interval: time.Second,
@@ -260,10 +266,22 @@ func NewDefaultMetadataConfig() MetadataConfig {
 
 // AuthenticationConfig defines authentication-related configuration.
 type AuthenticationConfig struct {
-	PlainText *PlainTextConfig        `mapstructure:"plain_text"`
-	SASL      *SASLConfig             `mapstructure:"sasl"`
-	TLS       *configtls.ClientConfig `mapstructure:"tls"`
-	Kerberos  *KerberosConfig         `mapstructure:"kerberos"`
+	// PlainText is an alias for SASL/PLAIN authentication.
+	//
+	// Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.
+	PlainText *PlainTextConfig `mapstructure:"plain_text"`
+
+	// SASL holds SASL authentication configuration.
+	SASL *SASLConfig `mapstructure:"sasl"`
+
+	// Kerberos holds Kerberos authentication configuration.
+	Kerberos *KerberosConfig `mapstructure:"kerberos"`
+
+	// TLS holds TLS configuration for connecting to Kafka brokers.
+	//
+	// Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will
+	// be used only if ClientConfig.TLS is not set.
+	TLS *configtls.ClientConfig `mapstructure:"tls"`
 }
 
 // PlainTextConfig defines plaintext authentication.

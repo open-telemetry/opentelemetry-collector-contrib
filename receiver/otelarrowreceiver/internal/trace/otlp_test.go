@@ -58,7 +58,7 @@ func (ts *testSink) unblock() {
 }
 
 func (ts *testSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	<-ts.Context.Done()
+	<-ts.Done()
 	return ts.TracesSink.ConsumeTraces(ctx, td)
 }
 

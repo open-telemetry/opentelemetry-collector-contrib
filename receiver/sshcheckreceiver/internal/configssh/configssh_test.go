@@ -115,10 +115,10 @@ func TestAllSSHClientSettings(t *testing.T) {
 			}
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, client.ClientConfig.User, test.settings.Username)
+			assert.EqualValues(t, client.User, test.settings.Username)
 
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.Len(t, client.ClientConfig.Auth, 1)
+				assert.Len(t, client.Auth, 1)
 			}
 		})
 	}
@@ -192,7 +192,7 @@ func Test_Client_Dial(t *testing.T) {
 				assert.EqualValues(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
 			}
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
-				assert.Len(t, client.ClientConfig.Auth, 1)
+				assert.Len(t, client.Auth, 1)
 			}
 		})
 	}
