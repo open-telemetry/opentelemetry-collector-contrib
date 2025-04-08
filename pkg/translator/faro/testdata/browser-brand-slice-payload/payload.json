@@ -9,9 +9,6 @@
         "timestamp": "2023-11-16T10:00:55.995Z"
       }
     ],
-    "logs": [],
-    "exceptions": [],
-    "measurements": [],
     "meta": {
       "sdk": {
         "name": "grafana-frontend-agent",
@@ -32,10 +29,7 @@
         "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.12.1 Safari/537.36",
         "mobile": false,
         "language": "en-US",
-        "brands": [{
-          "brand": "brand1",
-          "version": "1.0.0"
-        }],
+        "brands": [{"brand":"brand1","version":"1.0.0"}],
         "viewportWidth": "1920",
         "viewportHeight": "1080"
       }

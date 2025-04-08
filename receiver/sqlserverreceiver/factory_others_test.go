@@ -90,7 +90,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				require.Empty(t, sqlScrapers)
 
 				cfg.InstanceName = "instanceName"
-				cfg.Enabled = true
+				cfg.TopQueryCollection.Enabled = true
 				scrapers, err = setupLogsScrapers(params, cfg)
 				require.NoError(t, err)
 				require.NotEmpty(t, scrapers)
@@ -98,8 +98,7 @@ func TestFactoryOtherOS(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
-				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-				require.NoError(t, err)
+				q := getSQLServerQueryTextAndPlanQuery()
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {

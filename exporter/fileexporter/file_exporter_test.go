@@ -161,7 +161,7 @@ func TestFileTracesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalTraces(buf)
 				assert.NoError(t, err)
-				assert.EqualValues(t, td, got)
+				assert.Equal(t, td, got)
 			}
 		})
 	}
@@ -294,7 +294,7 @@ func TestFileMetricsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalMetrics(buf)
 				assert.NoError(t, err)
-				assert.EqualValues(t, md, got)
+				assert.Equal(t, md, got)
 			}
 		})
 	}
@@ -426,7 +426,7 @@ func TestFileLogsExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalLogs(buf)
 				assert.NoError(t, err)
-				assert.EqualValues(t, ld, got)
+				assert.Equal(t, ld, got)
 			}
 		})
 	}
@@ -558,7 +558,7 @@ func TestFileProfilesExporter(t *testing.T) {
 				assert.NoError(t, err)
 				got, err := tt.args.unmarshaler.UnmarshalProfiles(buf)
 				assert.NoError(t, err)
-				assert.EqualValues(t, pd, got)
+				assert.Equal(t, pd, got)
 			}
 		})
 	}
@@ -716,28 +716,28 @@ func TestConcurrentlyCompress(t *testing.T) {
 	traceUnmarshaler := &ptrace.JSONUnmarshaler{}
 	got, err := traceUnmarshaler.UnmarshalTraces(buf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, td, got)
+	assert.Equal(t, td, got)
 
 	buf, err = decompress(cmd)
 	assert.NoError(t, err)
 	metricsUnmarshaler := &pmetric.JSONUnmarshaler{}
 	gotMd, err := metricsUnmarshaler.UnmarshalMetrics(buf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, md, gotMd)
+	assert.Equal(t, md, gotMd)
 
 	buf, err = decompress(cld)
 	assert.NoError(t, err)
 	logsUnmarshaler := &plog.JSONUnmarshaler{}
 	gotLd, err := logsUnmarshaler.UnmarshalLogs(buf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, ld, gotLd)
+	assert.Equal(t, ld, gotLd)
 
 	buf, err = decompress(cpd)
 	assert.NoError(t, err)
 	profilesUnmarshaler := &pprofile.JSONUnmarshaler{}
 	gotPd, err := profilesUnmarshaler.UnmarshalProfiles(buf)
 	assert.NoError(t, err)
-	assert.EqualValues(t, pd, gotPd)
+	assert.Equal(t, pd, gotPd)
 }
 
 // tsBuffer is a thread safe buffer to prevent race conditions in the CI/CD.
@@ -809,18 +809,18 @@ func TestFlushing(t *testing.T) {
 	b := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	i, err := safeFileExporterWrite(fe, b)
 	assert.NoError(t, err)
-	assert.EqualValues(t, len(b), i, "bytes written")
+	assert.Equal(t, len(b), i, "bytes written")
 
 	// Assert buf contains 0 bytes before flush is called.
-	assert.EqualValues(t, 0, bbuf.Len(), "before flush")
+	assert.Equal(t, 0, bbuf.Len(), "before flush")
 
 	// Wait 1.5 sec
 	time.Sleep(1500 * time.Millisecond)
 
 	// Assert buf contains 10 bytes after flush is called.
-	assert.EqualValues(t, 10, bbuf.Len(), "after flush")
+	assert.Equal(t, 10, bbuf.Len(), "after flush")
 	// Compare the content.
-	assert.EqualValues(t, b, bbuf.Bytes())
+	assert.Equal(t, b, bbuf.Bytes())
 	assert.NoError(t, fe.Shutdown(ctx))
 }
 
@@ -864,18 +864,18 @@ func TestAppend(t *testing.T) {
 	b1 := []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10}
 	i, err := safeFileExporterWrite(fe, b1)
 	assert.NoError(t, err)
-	assert.EqualValues(t, len(b1), i, "bytes written")
+	assert.Equal(t, len(b1), i, "bytes written")
 
 	// Assert buf contains 0 bytes before flush is called.
-	assert.EqualValues(t, 0, bbuf.Len(), "before flush")
+	assert.Equal(t, 0, bbuf.Len(), "before flush")
 
 	// Wait 1.5 sec
 	time.Sleep(1500 * time.Millisecond)
 
 	// Assert buf contains 10 bytes after flush is called.
-	assert.EqualValues(t, 10, bbuf.Len(), "after flush")
+	assert.Equal(t, 10, bbuf.Len(), "after flush")
 	// Compare the content.
-	assert.EqualValues(t, b1, bbuf.Bytes())
+	assert.Equal(t, b1, bbuf.Bytes())
 	assert.NoError(t, fe.Shutdown(ctx))
 
 	// Restart the exporter
@@ -890,19 +890,19 @@ func TestAppend(t *testing.T) {
 	b2 := []byte{11, 12, 13, 14, 15, 16, 17, 18, 19, 20}
 	i, err = safeFileExporterWrite(fe, b2)
 	assert.NoError(t, err)
-	assert.EqualValues(t, len(b2), i, "bytes written")
+	assert.Equal(t, len(b2), i, "bytes written")
 
 	// Assert buf contains 10 bytes before flush is called.
-	assert.EqualValues(t, 10, bbuf.Len(), "after restart - before flush")
+	assert.Equal(t, 10, bbuf.Len(), "after restart - before flush")
 
 	// Wait 1.5 sec
 	time.Sleep(1500 * time.Millisecond)
 
 	// Assert buf contains 20 bytes after flush is called.
-	assert.EqualValues(t, 20, bbuf.Len(), "after restart - after flush")
+	assert.Equal(t, 20, bbuf.Len(), "after restart - after flush")
 	// Compare the content.
 	bComplete := slices.Clone(b1)
 	bComplete = append(bComplete, b2...)
-	assert.EqualValues(t, bComplete, bbuf.Bytes())
+	assert.Equal(t, bComplete, bbuf.Bytes())
 	assert.NoError(t, fe.Shutdown(ctx))
 }

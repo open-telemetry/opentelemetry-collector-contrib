@@ -336,7 +336,7 @@ func TestBasicTranslation(t *testing.T) {
 				require.Equal(t, "specified-error-stack", ddErrorStack.AsString())
 
 				ddHost, _ := rs.Resource().Attributes().Get("datadog.host.name")
-				require.Equal(t, "", ddHost.AsString())
+				require.Empty(t, ddHost.AsString())
 			},
 		},
 	}
