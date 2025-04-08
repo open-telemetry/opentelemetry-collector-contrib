@@ -532,6 +532,7 @@ Available Converters:
 - [UUID](#UUID)
 - [Weekday](#weekday)
 - [Year](#year)
+- [Keys](#keys)
 
 ### Base64Decode (Deprecated)
 
@@ -2450,3 +2451,15 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
+
+
+### Keys
+
+`Keys(target)`
+The `Keys` Converter returns a slice of keys from the given map.
+`target` is a `pcommon.Map`. If `target` is not a `pcommon.Map`, an error will be returned.
+The returned type is `pcommon.Slice`.
+
+Examples:
+- 
+- `Keys(resource.attributes)`
