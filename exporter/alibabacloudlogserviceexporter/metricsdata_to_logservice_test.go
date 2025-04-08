@@ -120,7 +120,7 @@ func TestMetricDataToLogService(t *testing.T) {
 		t.Errorf("Failed load log key value pairs from file, error: %v", err)
 		return
 	}
-	assert.Equal(t, len(wantLogs), len(gotLogs))
+	assert.Len(t, gotLogs, len(wantLogs))
 	for j := 0; j < len(gotLogs); j++ {
 		sort.Sort(logKeyValuePairs(gotLogPairs[j]))
 		sort.Sort(logKeyValuePairs(wantLogs[j]))

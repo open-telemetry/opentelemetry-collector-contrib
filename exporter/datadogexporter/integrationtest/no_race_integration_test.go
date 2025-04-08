@@ -8,17 +8,25 @@ package integrationtest // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 
 	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestIntegrationInternalMetrics(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+	}()
 	expectedMetrics := map[string]struct{}{
 		// Datadog internal metrics on trace and stats writers
 		"datadog.otlp_translator.resources.missing_source": {},
@@ -65,7 +73,9 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	server := testutil.DatadogServerMock(seriesRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)

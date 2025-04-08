@@ -53,7 +53,7 @@ func (exporter *azureMonitorExporter) Shutdown(_ context.Context) (err error) {
 
 func (exporter *azureMonitorExporter) consumeLogs(_ context.Context, logData plog.Logs) error {
 	resourceLogs := logData.ResourceLogs()
-	logPacker := newLogPacker(exporter.logger)
+	logPacker := newLogPacker(exporter.logger, exporter.config)
 
 	for i := 0; i < resourceLogs.Len(); i++ {
 		scopeLogs := resourceLogs.At(i).ScopeLogs()

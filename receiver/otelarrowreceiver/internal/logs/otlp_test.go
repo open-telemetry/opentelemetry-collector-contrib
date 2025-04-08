@@ -58,7 +58,7 @@ func (ts *testSink) unblock() {
 }
 
 func (ts *testSink) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
-	<-ts.Context.Done()
+	<-ts.Done()
 	return ts.LogsSink.ConsumeLogs(ctx, ld)
 }
 

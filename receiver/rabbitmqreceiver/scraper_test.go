@@ -134,30 +134,31 @@ func TestScraperScrape(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			desc: "Successful Node Metrics Collection",
+			desc: "Successful Queue + Node Metrics Collection",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
 
-				// Mock data for nodes
-				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
-				var nodes []*models.Node
-				err := json.Unmarshal(nodeData, &nodes)
-				require.NoError(t, err)
-
-				// Mock data for queues
+				// Fixed: relative path only
 				queueData := loadAPIResponseData(t, queuesAPIResponseFile)
 				var queues []*models.Queue
-				err = json.Unmarshal(queueData, &queues)
+				err := json.Unmarshal(queueData, &queues)
 				require.NoError(t, err)
 
-				// Mock client methods
-				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
+				nodeData := loadAPIResponseData(t, nodesAPIResponseFile)
+
+				var nodes []*models.Node
+				err = json.Unmarshal(nodeData, &nodes)
+				require.NoError(t, err)
+
+				require.NotEmpty(t, nodes, "Mock node list should not be empty")
+
 				mockClient.On("GetQueues", mock.Anything).Return(queues, nil)
+				mockClient.On("GetNodes", mock.Anything).Return(nodes, nil)
 
 				return &mockClient
 			},
 			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
-				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden_queues_nodes.yaml")
 				expectedMetrics, err := golden.ReadMetrics(goldenPath)
 				require.NoError(t, err)
 				return expectedMetrics
@@ -168,7 +169,102 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newScraper(zap.NewNop(), createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
+			cfg := createDefaultConfig().(*Config)
+
+			// Enable all 74 node metrics
+			cfg.Metrics.RabbitmqNodeDiskFree.Enabled = true
+			cfg.Metrics.RabbitmqNodeDiskFreeLimit.Enabled = true
+			cfg.Metrics.RabbitmqNodeDiskFreeAlarm.Enabled = true
+			cfg.Metrics.RabbitmqNodeDiskFreeDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeMemUsed.Enabled = true
+			cfg.Metrics.RabbitmqNodeMemUsedDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeMemLimit.Enabled = true
+			cfg.Metrics.RabbitmqNodeMemAlarm.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeFdUsed.Enabled = true
+			cfg.Metrics.RabbitmqNodeFdTotal.Enabled = true
+			cfg.Metrics.RabbitmqNodeFdUsedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeSocketsUsed.Enabled = true
+			cfg.Metrics.RabbitmqNodeSocketsTotal.Enabled = true
+			cfg.Metrics.RabbitmqNodeSocketsUsedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeProcUsed.Enabled = true
+			cfg.Metrics.RabbitmqNodeProcTotal.Enabled = true
+			cfg.Metrics.RabbitmqNodeProcUsedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeUptime.Enabled = true
+			cfg.Metrics.RabbitmqNodeRunQueue.Enabled = true
+			cfg.Metrics.RabbitmqNodeProcessors.Enabled = true
+			cfg.Metrics.RabbitmqNodeContextSwitches.Enabled = true
+			cfg.Metrics.RabbitmqNodeContextSwitchesDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeGcNum.Enabled = true
+			cfg.Metrics.RabbitmqNodeGcNumDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeGcBytesReclaimed.Enabled = true
+			cfg.Metrics.RabbitmqNodeGcBytesReclaimedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeIoReadCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReadCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReadBytes.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReadBytesDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReadAvgTime.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReadAvgTimeDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeIoWriteCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoWriteCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoWriteBytes.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoWriteBytesDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoWriteAvgTime.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoWriteAvgTimeDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeIoSyncCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSyncCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSyncAvgTime.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSyncAvgTimeDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeIoSeekCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSeekCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSeekAvgTime.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoSeekAvgTimeDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeIoReopenCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeIoReopenCountDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeMnesiaRAMTxCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeMnesiaRAMTxCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeMnesiaDiskTxCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeMnesiaDiskTxCountDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeMsgStoreReadCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeMsgStoreReadCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeMsgStoreWriteCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeMsgStoreWriteCountDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeQueueIndexWriteCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueIndexWriteCountDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueIndexReadCount.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueIndexReadCountDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeConnectionCreated.Enabled = true
+			cfg.Metrics.RabbitmqNodeConnectionCreatedDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeConnectionClosed.Enabled = true
+			cfg.Metrics.RabbitmqNodeConnectionClosedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeChannelCreated.Enabled = true
+			cfg.Metrics.RabbitmqNodeChannelCreatedDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeChannelClosed.Enabled = true
+			cfg.Metrics.RabbitmqNodeChannelClosedDetailsRate.Enabled = true
+
+			cfg.Metrics.RabbitmqNodeQueueDeclared.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueDeclaredDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueCreated.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueCreatedDetailsRate.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueDeleted.Enabled = true
+			cfg.Metrics.RabbitmqNodeQueueDeletedDetailsRate.Enabled = true
+
+			scraper := newScraper(zap.NewNop(), cfg, receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -184,6 +280,7 @@ func TestScraperScrape(t *testing.T) {
 				pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp(),
 				pmetrictest.IgnoreResourceMetricsOrder(),
 				pmetrictest.IgnoreMetricDataPointsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
 			))
 		})
 	}

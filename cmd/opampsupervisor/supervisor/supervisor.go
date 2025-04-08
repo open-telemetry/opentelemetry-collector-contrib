@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -16,6 +17,7 @@ import (
 	"os"
 	"path/filepath"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -41,7 +43,9 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
 	telemetryconfig "go.opentelemetry.io/contrib/otelconf/v0.3.0"
+	"go.opentelemetry.io/otel/codes"
 	"go.opentelemetry.io/otel/log"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -67,11 +71,14 @@ var (
 
 	lastRecvRemoteConfigFile       = "last_recv_remote_config.dat"
 	lastRecvOwnTelemetryConfigFile = "last_recv_own_telemetry_config.dat"
+
+	errNonMatchingInstanceUID = errors.New("received collector instance UID does not match expected UID set by the supervisor")
 )
 
 const (
-	persistentStateFileName = "persistent_state.yaml"
-	agentConfigFileName     = "effective.yaml"
+	persistentStateFileName     = "persistent_state.yaml"
+	agentConfigFileName         = "effective.yaml"
+	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
@@ -179,6 +186,8 @@ type Supervisor struct {
 	opampServerPort int
 
 	telemetrySettings telemetrySettings
+
+	featureGates map[string]struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -193,6 +202,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		doneChan:                     make(chan struct{}),
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
+		featureGates:                 map[string]struct{}{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -242,10 +252,9 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 	// TODO currently we do not have the build info containing the version available to set semconv.AttributeServiceVersion
 
 	var attrs []telemetryconfig.AttributeNameValue
-	pcommonRes.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range pcommonRes.Attributes().All() {
 		attrs = append(attrs, telemetryconfig.AttributeNameValue{Name: k, Value: v.Str()})
-		return true
-	})
+	}
 
 	sch := semconv.SchemaURL
 
@@ -310,6 +319,10 @@ func (s *Supervisor) Start() error {
 		return err
 	}
 
+	if err = s.getFeatureGates(); err != nil {
+		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
+	}
+
 	if err = s.getBootstrapInfo(); err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
@@ -363,6 +376,41 @@ func (s *Supervisor) Start() error {
 	return nil
 }
 
+func (s *Supervisor) getFeatureGates() error {
+	cmd, err := commander.NewCommander(
+		s.telemetrySettings.Logger,
+		s.config.Storage.Directory,
+		s.config.Agent,
+		"featuregate",
+	)
+	if err != nil {
+		return err
+	}
+
+	stdout, _, err := cmd.StartOneShot()
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(bytes.NewBuffer(stdout))
+
+	// First line only contains headers, discard it.
+	_ = scanner.Scan()
+	for scanner.Scan() {
+		line := scanner.Text()
+		i := strings.Index(line, " ")
+		flag := line[0:i]
+
+		if flag == AllowNoPipelinesFeatureGate {
+			s.featureGates[AllowNoPipelinesFeatureGate] = struct{}{}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
+
+	return nil
+}
+
 func (s *Supervisor) createTemplates() error {
 	var err error
 
@@ -388,18 +436,23 @@ func (s *Supervisor) createTemplates() error {
 // shuts down the Collector. This only needs to happen
 // once per Collector binary.
 func (s *Supervisor) getBootstrapInfo() (err error) {
+	_, span := s.getTracer().Start(context.Background(), "GetBootstrapInfo")
+	defer span.End()
 	s.opampServerPort, err = s.getSupervisorOpAMPServerPort()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not get supervisor opamp service port: %v", err))
 		return err
 	}
 
 	bootstrapConfig, err := s.composeNoopConfig()
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not compose noop config config: %v", err))
 		return err
 	}
 
 	err = os.WriteFile(s.agentConfigFilePath(), bootstrapConfig, 0o600)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Failed to write agent config: %v", err))
 		return fmt.Errorf("failed to write agent config: %w", err)
 	}
 
@@ -430,13 +483,13 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 
 				for _, attr := range identAttr {
 					if attr.Key == semconv.AttributeServiceInstanceID {
-						// TODO: Consider whether to attempt restarting the Collector.
-						// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29864
 						if attr.Value.GetStringValue() != s.persistentState.InstanceID.String() {
 							done <- fmt.Errorf(
-								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s)",
+								"the Collector's instance ID (%s) does not match with the instance ID set by the Supervisor (%s): %w",
 								attr.Value.GetStringValue(),
-								s.persistentState.InstanceID.String())
+								s.persistentState.InstanceID.String(),
+								errNonMatchingInstanceUID,
+							)
 							return response
 						}
 						instanceIDSeen = true
@@ -481,6 +534,7 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		},
 	}.toServerSettings())
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start OpAMP server: %v", err))
 		return err
 	}
 
@@ -490,17 +544,26 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		}
 	}()
 
+	flags := []string{
+		"--config", s.agentConfigFilePath(),
+	}
+	featuregateFlag := s.getFeatureGateFlag()
+	if len(featuregateFlag) > 0 {
+		flags = append(flags, featuregateFlag...)
+	}
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", s.agentConfigFilePath(),
+		flags...,
 	)
 	if err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
 	if err = cmd.Start(context.Background()); err != nil {
+		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
 		return err
 	}
 
@@ -513,11 +576,39 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 	select {
 	case <-time.After(s.config.Agent.BootstrapTimeout):
 		if connected.Load() {
-			return errors.New("collector connected but never responded with an AgentDescription message")
+			msg := "collector connected but never responded with an AgentDescription message"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		} else {
-			return errors.New("collector's OpAMP client never connected to the Supervisor")
+			msg := "collector's OpAMP client never connected to the Supervisor"
+			span.SetStatus(codes.Error, msg)
+			return errors.New(msg)
 		}
 	case err = <-done:
+		if errors.Is(err, errNonMatchingInstanceUID) {
+			// try to report the issue to the OpAMP server
+			if startOpAMPErr := s.startOpAMPClient(); startOpAMPErr == nil {
+				defer func(s *Supervisor) {
+					if stopErr := s.stopOpAMPClient(); stopErr != nil {
+						s.telemetrySettings.Logger.Error("Could not stop OpAmp client", zap.Error(stopErr))
+					}
+				}(s)
+				if healthErr := s.opampClient.SetHealth(&protobufs.ComponentHealth{
+					Healthy:   false,
+					LastError: err.Error(),
+				}); healthErr != nil {
+					s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(healthErr))
+				}
+			} else {
+				s.telemetrySettings.Logger.Error("Could not start OpAMP client to report health to server", zap.Error(startOpAMPErr))
+			}
+		}
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not complete bootstrap", zap.Error(err))
+			span.SetStatus(codes.Error, err.Error())
+		} else {
+			span.SetStatus(codes.Ok, "")
+		}
 		return err
 	}
 }
@@ -864,12 +955,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
-	err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": s.opampServerPort,
-	})
-	if err != nil {
-		return nil, err
+
+	if !s.isFeatureGateSupported(AllowNoPipelinesFeatureGate) {
+		err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return cfg.Bytes(), nil
@@ -1660,6 +1751,24 @@ func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 	return s.findRandomPort()
 }
 
+func (s *Supervisor) getFeatureGateFlag() []string {
+	flags := []string{}
+	for k := range s.featureGates {
+		flags = append(flags, k)
+	}
+
+	if len(flags) == 0 {
+		return []string{}
+	}
+
+	return []string{"--feature-gates", strings.Join(flags, ",")}
+}
+
+func (s *Supervisor) isFeatureGateSupported(gate string) bool {
+	_, ok := s.featureGates[gate]
+	return ok
+}
+
 func (s *Supervisor) findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -1674,6 +1783,11 @@ func (s *Supervisor) findRandomPort() (int, error) {
 	}
 
 	return port, nil
+}
+
+func (s *Supervisor) getTracer() trace.Tracer {
+	tracer := s.telemetrySettings.TracerProvider.Tracer("github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor")
+	return tracer
 }
 
 // The default koanf behavior is to override lists in the config.
