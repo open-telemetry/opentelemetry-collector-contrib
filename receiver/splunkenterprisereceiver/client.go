@@ -164,7 +164,7 @@ func (c *splunkEntClient) makeRequest(req *http.Request) (*http.Response, error)
 	case string:
 		endpointType = t
 	default:
-		endpointType = fmt.Sprintf("%v", eptType)
+		endpointType = fmt.Sprintf(eptType)
 	}
 
 	if sc, ok := c.clients[endpointType]; ok {
