@@ -38,69 +38,98 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 	if err != nil {
 		return err
 	}
-	return s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet) error {
-		return s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet) error {
-			return s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet) error {
-				return s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
-					return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
-						for _, payload := range data {
-							event := payload.StackTraceEvent
 
-							if event.StackTraceID != "" {
-								if err = pushDataAsJSON(event, "", AllEventsIndex); err != nil {
-									return err
-								}
-								if err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON); err != nil {
-									return err
-								}
-							}
+	err = s.knownTraces.WithLock(func(tracesSet lru.LockedLRUSet) error {
+		for _, payload := range data {
+			event := payload.StackTraceEvent
 
-							if payload.StackTrace.DocID != "" {
-								if !tracesSet.CheckAndAdd(payload.StackTrace.DocID) {
-									if err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex); err != nil {
-										return err
-									}
-								}
-							}
+			if event.StackTraceID != "" {
+				if err = pushDataAsJSON(event, "", AllEventsIndex); err != nil {
+					return err
+				}
+				if err = serializeprofiles.IndexDownsampledEvent(event, pushDataAsJSON); err != nil {
+					return err
+				}
+			}
 
-							for _, stackFrame := range payload.StackFrames {
-								if !framesSet.CheckAndAdd(stackFrame.DocID) {
-									if err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex); err != nil {
-										return err
-									}
-								}
-							}
+			if payload.StackTrace.DocID != "" {
+				if !tracesSet.CheckAndAdd(payload.StackTrace.DocID) {
+					if err = pushDataAsJSON(payload.StackTrace, payload.StackTrace.DocID, StackTraceIndex); err != nil {
+						return err
+					}
+				}
+			}
+		}
 
-							for _, executable := range payload.Executables {
-								if !executablesSet.CheckAndAdd(executable.DocID) {
-									if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
-										return err
-									}
-								}
-							}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 
-							for _, frame := range payload.UnsymbolizedLeafFrames {
-								if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
-									if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
-										return err
-									}
-								}
-							}
+	err = s.knownFrames.WithLock(func(framesSet lru.LockedLRUSet) error {
+		for _, payload := range data {
+			for _, stackFrame := range payload.StackFrames {
+				if !framesSet.CheckAndAdd(stackFrame.DocID) {
+					if err = pushDataAsJSON(stackFrame, stackFrame.DocID, StackFrameIndex); err != nil {
+						return err
+					}
+				}
+			}
+		}
 
-							for _, executable := range payload.UnsymbolizedExecutables {
-								if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
-									if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
-										return err
-									}
-								}
-							}
-						}
+		return nil
+	})
+	if err != nil {
+		return err
+	}
 
-						return nil
-					})
-				})
-			})
-		})
+	err = s.knownExecutables.WithLock(func(executablesSet lru.LockedLRUSet) error {
+		for _, payload := range data {
+			for _, executable := range payload.Executables {
+				if !executablesSet.CheckAndAdd(executable.DocID) {
+					if err = pushDataAsJSON(executable, executable.DocID, ExecutablesIndex); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	err = s.knownUnsymbolizedFrames.WithLock(func(unsymbolizedFramesSet lru.LockedLRUSet) error {
+		for _, payload := range data {
+			for _, frame := range payload.UnsymbolizedLeafFrames {
+				if !unsymbolizedFramesSet.CheckAndAdd(frame.DocID) {
+					if err = pushDataAsJSON(frame, frame.DocID, LeafFramesSymQueueIndex); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
+	})
+	if err != nil {
+		return err
+	}
+
+	return s.knownUnsymbolizedExecutables.WithLock(func(unsymbolizedExecutablesSet lru.LockedLRUSet) error {
+		for _, payload := range data {
+			for _, executable := range payload.UnsymbolizedExecutables {
+				if !unsymbolizedExecutablesSet.CheckAndAdd(executable.DocID) {
+					if err = pushDataAsJSON(executable, executable.DocID, ExecutablesSymQueueIndex); err != nil {
+						return err
+					}
+				}
+			}
+		}
+
+		return nil
 	})
 }
 
