@@ -349,6 +349,7 @@ func TestScraperScrape(t *testing.T) {
 func TestTopMetricsAggregation(t *testing.T) {
 	mt := drivertest.NewMockDeployment()
 	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
 	opts.Deployment = mt
 	c, err := mongo.Connect(opts)
 	require.NoError(t, err)

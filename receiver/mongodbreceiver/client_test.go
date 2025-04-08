@@ -103,6 +103,7 @@ func TestListDatabaseNames(t *testing.T) {
 		},
 	})
 	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
 	opts.Deployment = mont
 	c, err := mongo.Connect(opts)
 	require.NoError(t, err)
@@ -124,7 +125,6 @@ const (
 )
 
 func TestRunCommands(t *testing.T) {
-
 	loadedDbStats, err := loadDBStats()
 	require.NoError(t, err)
 	loadedServerStatus, err := loadServerStatus()
@@ -172,6 +172,7 @@ func TestRunCommands(t *testing.T) {
 		mont := drivertest.NewMockDeployment()
 		mont.AddResponses(tc.response)
 		opts := options.Client()
+		//nolint:staticcheck // Using deprecated Deployment field for testing purposes
 		opts.Deployment = mont
 		c, err := mongo.Connect(opts)
 		require.NoError(t, err)
@@ -206,6 +207,7 @@ func TestGetVersion(t *testing.T) {
 	mont.AddResponses(buildInfo)
 
 	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
 	opts.Deployment = mont
 	c, err := mongo.Connect(opts)
 	require.NoError(t, err)
@@ -235,11 +237,11 @@ func TestGetVersionFailures(t *testing.T) {
 	}{
 		{
 			desc: "Unable to run buildInfo",
-			responses: []bson.D{bson.D{
-				{"ok", 0},
-				{"code", mongo.CommandError{}.Code},
-				{"errmsg", mongo.CommandError{}.Message},
-				{"codeName", mongo.CommandError{}.Name},
+			responses: []bson.D{{
+				bson.E{Key: "ok", Value: 0},
+				bson.E{Key: "code", Value: mongo.CommandError{}.Code},
+				bson.E{Key: "errmsg", Value: mongo.CommandError{}.Message},
+				bson.E{Key: "codeName", Value: mongo.CommandError{}.Name},
 			}},
 			partialError: "unable to get build info",
 		},
@@ -251,9 +253,9 @@ func TestGetVersionFailures(t *testing.T) {
 	}
 
 	for _, tc := range testCases {
-
 		mt.AddResponses(tc.responses...)
 		opts := options.Client()
+		//nolint:staticcheck // Using deprecated Deployment field for testing purposes
 		opts.Deployment = mt
 		c, err := mongo.Connect(opts)
 		require.NoError(t, err)
@@ -265,7 +267,6 @@ func TestGetVersionFailures(t *testing.T) {
 
 		_, err = client.GetVersion(context.Background())
 		require.ErrorContains(t, err, tc.partialError)
-
 	}
 }
 

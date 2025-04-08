@@ -648,8 +648,7 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 		metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
 		indexAccess, err := dig(doc, []string{"accesses", "ops"})
 		if err != nil {
-			err := errors.New("could not find key for index access metric")
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, errors.New("could not find key for index access metric")))
 			return
 		}
 		indexAccessValue, err := parseInt(indexAccess)
@@ -756,6 +755,7 @@ func dig(document bson.M, path []string) (any, error) {
 	}
 	return nil, fmt.Errorf("expected bson.M, got %T", value)
 }
+
 func digBsonD(value bson.D, remainingPath []string) (any, error) {
 	if len(remainingPath) == 0 {
 		return value, nil
