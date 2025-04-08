@@ -17,6 +17,8 @@ Kafka receiver receives traces, metrics, and logs from Kafka. Message payload en
 
 Note that metrics and logs only support OTLP.
 
+If used in conjunction with the `kafkaexporter` configured with `include_metadata_keys`. The Kafka receiver will also propagate the Kafka headers to the downstream pipeline, giving access to the rest of the pipeline to arbitrary metadata keys and values.
+
 ## Getting Started
 
 There are no required settings.

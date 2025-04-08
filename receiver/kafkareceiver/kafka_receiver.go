@@ -13,6 +13,7 @@ import (
 
 	"github.com/IBM/sarama"
 	"github.com/cenkalti/backoff/v4"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -539,7 +540,10 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				session.MarkMessage(message, "")
 			}
 
-			ctx := c.obsrecv.StartTracesOp(session.Context())
+			// If the Kafka exporter has propagated headers in the message,
+			// create a new context with client.Info in it.
+			ctx := newContextWithHeaders(session.Context(), message.Headers)
+			ctx = c.obsrecv.StartTracesOp(ctx)
 			attrs := attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
@@ -560,7 +564,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 
 			c.headerExtractor.extractHeadersTraces(traces, message)
 			spanCount := traces.SpanCount()
-			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
+			err = c.nextConsumer.ConsumeTraces(ctx, traces)
 			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
@@ -653,7 +657,10 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				session.MarkMessage(message, "")
 			}
 
-			ctx := c.obsrecv.StartMetricsOp(session.Context())
+			// If the Kafka exporter has propagated headers in the message,
+			// create a new context with client.Info in it.
+			ctx := newContextWithHeaders(session.Context(), message.Headers)
+			ctx = c.obsrecv.StartMetricsOp(ctx)
 			attrs := attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
@@ -674,7 +681,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			c.headerExtractor.extractHeadersMetrics(metrics, message)
 
 			dataPointCount := metrics.DataPointCount()
-			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
+			err = c.nextConsumer.ConsumeMetrics(ctx, metrics)
 			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
@@ -767,7 +774,10 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				session.MarkMessage(message, "")
 			}
 
-			ctx := c.obsrecv.StartLogsOp(session.Context())
+			// If the Kafka exporter has propagated headers in the message,
+			// create a new context with client.Info in it.
+			ctx := newContextWithHeaders(session.Context(), message.Headers)
+			ctx = c.obsrecv.StartLogsOp(ctx)
 			attrs := attribute.NewSet(
 				attribute.String(attrInstanceName, c.id.String()),
 				attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
@@ -787,7 +797,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			}
 			c.headerExtractor.extractHeadersLogs(logs, message)
 			logRecordCount := logs.LogRecordCount()
-			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
+			err = c.nextConsumer.ConsumeLogs(ctx, logs)
 			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
@@ -891,4 +901,19 @@ func encodingToComponentID(encoding string) (*component.ID, error) {
 
 func errorRequiresBackoff(err error) bool {
 	return err.Error() == errMemoryLimiterDataRefused.Error()
+}
+
+func newContextWithHeaders(ctx context.Context,
+	headers []*sarama.RecordHeader,
+) context.Context {
+	if len(headers) == 0 {
+		return ctx
+	}
+	m := make(map[string][]string, len(headers))
+	for _, header := range headers {
+		key := string(header.Key)
+		value := string(header.Value)
+		m[key] = append(m[key], value)
+	}
+	return client.NewContext(ctx, client.Info{Metadata: client.NewMetadata(m)})
 }
