@@ -127,23 +127,23 @@ func TestInstrumentationLibraryMatching(t *testing.T) {
 	ill1 := matchingScopeLogs(rl, il1)
 	ils1 := matchingScopeSpans(rs, il1)
 	ilm1 := matchingScopeMetrics(rm, il1)
-	assert.EqualValues(t, il1, ill1.Scope())
-	assert.EqualValues(t, il1, ils1.Scope())
-	assert.EqualValues(t, il1, ilm1.Scope())
+	assert.Equal(t, il1, ill1.Scope())
+	assert.Equal(t, il1, ils1.Scope())
+	assert.Equal(t, il1, ilm1.Scope())
 
 	ill2 := matchingScopeLogs(rl, il2)
 	ils2 := matchingScopeSpans(rs, il2)
 	ilm2 := matchingScopeMetrics(rm, il2)
-	assert.EqualValues(t, il2, ill2.Scope())
-	assert.EqualValues(t, il2, ils2.Scope())
-	assert.EqualValues(t, il2, ilm2.Scope())
+	assert.Equal(t, il2, ill2.Scope())
+	assert.Equal(t, il2, ils2.Scope())
+	assert.Equal(t, il2, ilm2.Scope())
 
 	ill1 = matchingScopeLogs(rl, il1)
 	ils1 = matchingScopeSpans(rs, il1)
 	ilm1 = matchingScopeMetrics(rm, il1)
-	assert.EqualValues(t, il1, ill1.Scope())
-	assert.EqualValues(t, il1, ils1.Scope())
-	assert.EqualValues(t, il1, ilm1.Scope())
+	assert.Equal(t, il1, ill1.Scope())
+	assert.Equal(t, il1, ils1.Scope())
+	assert.Equal(t, il1, ilm1.Scope())
 }
 
 func BenchmarkAttrGrouping(b *testing.B) {

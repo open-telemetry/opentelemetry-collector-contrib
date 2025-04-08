@@ -361,7 +361,7 @@ func TestCompression(t *testing.T) {
 					http.HandlerFunc(
 						func(w http.ResponseWriter, r *http.Request) {
 							compression := r.Header.Get("Content-Encoding")
-							assert.EqualValues(t, compression, tt.receivedCompression)
+							assert.Equal(t, compression, tt.receivedCompression)
 
 							payload, err := decompress(r.Body, compression)
 							assert.NoError(t, err)

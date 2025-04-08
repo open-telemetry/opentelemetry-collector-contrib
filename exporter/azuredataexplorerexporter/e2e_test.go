@@ -104,7 +104,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, spanID, string(spanBytes))
 		}
-		assert.Equal(t, "", recs[i].ParentID)
+		assert.Empty(t, recs[i].ParentID)
 		assert.Equal(t, spanName, recs[i].SpanName)
 		assert.Equal(t, "STATUS_CODE_UNSET", recs[i].SpanStatus)
 		assert.Equal(t, "STATUS_MESSAGE", recs[i].SpanStatusMessage)

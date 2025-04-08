@@ -5,12 +5,12 @@ package subscriptionfilter
 
 import (
 	"bytes"
-	"compress/gzip"
 	"os"
 	"path/filepath"
 	"testing"
 
 	"github.com/aws/aws-lambda-go/events"
+	"github.com/klauspost/compress/gzip"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 
@@ -107,13 +107,13 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 
 	filesDirectory := "testdata"
 	tests := map[string]struct {
-		record                 []byte
-		metricExpectedFilename string
-		expectedErr            string
+		record               []byte
+		logsExpectedFilename string
+		expectedErr          string
 	}{
 		"valid_cloudwatch_log": {
-			record:                 getLogFromFile(t, filesDirectory, "valid_cloudwatch_log.json"),
-			metricExpectedFilename: "valid_cloudwatch_log_expected.yaml",
+			record:               getLogFromFile(t, filesDirectory, "valid_cloudwatch_log.json"),
+			logsExpectedFilename: "valid_cloudwatch_log_expected.yaml",
 		},
 		"invalid_cloudwatch_log": {
 			record:      getLogFromFile(t, filesDirectory, "invalid_cloudwatch_log.json"),
@@ -139,7 +139,7 @@ func TestUnmarshallCloudwatchLog_SubscriptionFilter(t *testing.T) {
 			}
 
 			require.NoError(t, err)
-			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.metricExpectedFilename))
+			expectedLogs, err := golden.ReadLogs(filepath.Join(filesDirectory, test.logsExpectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
 		})

@@ -75,8 +75,8 @@ func TestIncludeMetadata(t *testing.T) {
 	cfg.IncludeMetadata = true
 	opts = ToOptions(cfg, sess, set)
 	sender := newSender(&mockClient{}, opts...)
-	assert.Equal(t, "", sender.hostname)
-	assert.Equal(t, "", sender.instanceID)
+	assert.Empty(t, sender.hostname)
+	assert.Empty(t, sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
@@ -84,7 +84,7 @@ func TestIncludeMetadata(t *testing.T) {
 	sender = newSender(&mockClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
-	assert.Equal(t, "", sender.resourceARN)
+	assert.Empty(t, sender.resourceARN)
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
