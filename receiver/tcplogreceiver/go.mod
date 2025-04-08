@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcplogreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.123.0

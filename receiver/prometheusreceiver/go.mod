@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/go-kit/log v0.2.1
