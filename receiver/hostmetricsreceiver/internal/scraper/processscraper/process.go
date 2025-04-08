@@ -103,7 +103,7 @@ type gopsProcessHandles struct {
 }
 
 func (p *gopsProcessHandles) Pid(index int) int32 {
-	return p.handles[index].Process.Pid
+	return p.handles[index].Pid
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {
@@ -127,7 +127,7 @@ type wrappedProcessHandle struct {
 }
 
 func (p *wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
-	pid := p.Process.Pid
+	pid := p.Pid
 	statPath := getEnvWithContext(ctx, string(common.HostProcEnvKey), "/proc", strconv.Itoa(int(pid)), "cgroup")
 	contents, err := os.ReadFile(statPath)
 	if err != nil {

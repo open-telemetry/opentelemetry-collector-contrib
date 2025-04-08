@@ -216,7 +216,7 @@ func TestSetupInformerForKind(t *testing.T) {
 	rw.setupInformerForKind(schema.GroupVersionKind{Group: "", Version: "v1", Kind: "WrongKind"}, factory)
 
 	assert.Equal(t, 1, logs.Len())
-	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Entry.Message)
+	assert.Equal(t, "Could not setup an informer for provided group version kind", logs.All()[0].Message)
 }
 
 func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
@@ -587,7 +587,7 @@ func TestObjMetadata(t *testing.T) {
 	for _, tt := range tests {
 		observedLogger, _ := observer.New(zapcore.WarnLevel)
 		set := receivertest.NewNopSettings(metadata.Type)
-		set.TelemetrySettings.Logger = zap.New(observedLogger)
+		set.Logger = zap.New(observedLogger)
 		t.Run(tt.name, func(t *testing.T) {
 			dc := &resourceWatcher{metadataStore: tt.metadataStore}
 
