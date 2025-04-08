@@ -138,7 +138,7 @@ require (
 	github.com/Microsoft/go-winio v0.6.2 // indirect
 	github.com/alecthomas/participle/v2 v2.1.4 // indirect
 	github.com/antchfx/xmlquery v1.4.4 // indirect
-	github.com/antchfx/xpath v1.3.3 // indirect
+	github.com/antchfx/xpath v1.3.4 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
 	github.com/aws/aws-sdk-go-v2/config v1.29.13 // indirect
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.66 // indirect
