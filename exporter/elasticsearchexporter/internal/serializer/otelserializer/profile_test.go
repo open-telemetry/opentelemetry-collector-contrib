@@ -162,7 +162,7 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	resource := profiles.ResourceProfiles().AppendEmpty()
 	scope := resource.ScopeProfiles().AppendEmpty()
 	profile := scope.Profiles().AppendEmpty()
-	pushData := func(b *bytes.Buffer, _ string, _ string) error {
+	pushData := func(_ *bytes.Buffer, _ string, _ string) error {
 		return nil
 	}
 
@@ -202,6 +202,6 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	b.ResetTimer()
 
 	for i := 0; i < b.N; i++ {
-		err = ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, pushData)
+		_ = ser.SerializeProfile(resource.Resource(), scope.Scope(), profile, pushData)
 	}
 }
