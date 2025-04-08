@@ -45,11 +45,16 @@ type Config struct {
 	InstanceName string `mapstructure:"instance_name"`
 	ComputerName string `mapstructure:"computer_name"`
 
-	// The following options currently do nothing. Functionality will be added in a future PR.
+	DataSource string `mapstructure:"datasource"`
+
 	Password configopaque.String `mapstructure:"password"`
 	Port     uint                `mapstructure:"port"`
 	Server   string              `mapstructure:"server"`
 	Username string              `mapstructure:"username"`
+
+	// Flag to check if the connection is direct or not. It should only be
+	// used after a successful call to the `Validate` method.
+	isDirectDBConnectionEnabled bool
 }
 
 func (cfg *Config) Validate() error {
@@ -66,12 +71,27 @@ func (cfg *Config) Validate() error {
 		return errors.New("`top_query_count` must be less than or equal to `max_query_sample_count`")
 	}
 
-	if !directDBConnectionEnabled(cfg) {
-		if cfg.Server != "" || cfg.Username != "" || string(cfg.Password) != "" {
-			return errors.New("Found one or more of the following configuration options set: [server, port, username, password]. " +
-				"All of these options must be configured to directly connect to a SQL Server instance.")
-		}
+	cfg.isDirectDBConnectionEnabled, err = directDBConnectionEnabled(cfg)
+
+	return err
+}
+
+func directDBConnectionEnabled(config *Config) (bool, error) {
+	noneOfServerUserPasswordPortSet := config.Server == "" && config.Username == "" && string(config.Password) == "" && config.Port == 0
+	if config.DataSource == "" && noneOfServerUserPasswordPortSet {
+		// If no connection information is provided, we can't connect directly and this is a valid config.
+		return false, nil
 	}
 
-	return nil
+	anyOfServerUserPasswordPortSet := config.Server != "" || config.Username != "" || string(config.Password) != "" || config.Port != 0
+	if config.DataSource != "" && anyOfServerUserPasswordPortSet {
+		return false, errors.New("wrong config: when specifying 'datasource' no other connection parameters ('server', 'username', 'password', or 'port') should be set")
+	}
+
+	if config.DataSource == "" && (config.Server == "" || config.Username == "" || string(config.Password) == "" || config.Port == 0) {
+		return false, errors.New("wrong config: when specifying either 'server', 'username', 'password', or 'port' all of them need to be specified")
+	}
+
+	// It is a valid direct connection configuration
+	return true, nil
 }

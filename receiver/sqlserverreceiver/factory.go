@@ -94,20 +94,17 @@ func setupLogQueries(cfg *Config) []string {
 	return queries
 }
 
-func directDBConnectionEnabled(config *Config) bool {
-	return config.Server != "" &&
-		config.Username != "" &&
-		string(config.Password) != ""
-}
-
 // Assumes config has all information necessary to directly connect to the database
 func getDBConnectionString(config *Config) string {
+	if config.DataSource != "" {
+		return config.DataSource
+	}
 	return fmt.Sprintf("server=%s;user id=%s;password=%s;port=%d", config.Server, config.Username, string(config.Password), config.Port)
 }
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
-	if !directDBConnectionEnabled(cfg) {
+	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
 	}
@@ -147,7 +144,7 @@ func setupSQLServerScrapers(params receiver.Settings, cfg *Config) []*sqlServerS
 
 // SQL Server scraper creation is split out into a separate method for the sake of testing.
 func setupSQLServerLogsScrapers(params receiver.Settings, cfg *Config) []*sqlServerScraperHelper {
-	if !directDBConnectionEnabled(cfg) {
+	if !cfg.isDirectDBConnectionEnabled {
 		params.Logger.Info("No direct connection will be made to the SQL Server: Configuration doesn't include some options.")
 		return nil
 	}

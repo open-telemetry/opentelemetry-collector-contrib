@@ -54,6 +54,24 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "invalid config with datasource and any direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				DataSource:       "a connection string",
+				Username:         "sa",
+				Port:             1433,
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid config only datasource and none direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				DataSource:       "a connection string",
+			},
+			expectedSuccess: true,
+		},
+		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -160,7 +178,7 @@ func TestLoadConfig(t *testing.T) {
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, xconfmap.Validate(cfg))
-		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
 	})
