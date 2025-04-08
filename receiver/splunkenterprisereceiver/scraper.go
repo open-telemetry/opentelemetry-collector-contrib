@@ -133,7 +133,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
+	if !s.conf.Metrics.SplunkLicenseIndexUsage.Enabled || !s.splunkClient.isConfigured(typeCm) {
 		return
 	}
 	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
@@ -180,7 +180,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -207,7 +207,7 @@ func (s *splunkScraper) scrapeLicenseUsageByIndex(ctx context.Context, now pcomm
 func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
+	if !s.conf.Metrics.SplunkSchedulerAvgExecutionLatency.Enabled {
 		return
 	}
 
@@ -258,7 +258,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -285,7 +285,7 @@ func (s *splunkScraper) scrapeAvgExecLatencyByHost(ctx context.Context, now pcom
 func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerAvgRate.Enabled {
+	if !s.conf.Metrics.SplunkIndexerAvgRate.Enabled {
 		return
 	}
 
@@ -340,7 +340,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -366,7 +366,7 @@ func (s *splunkScraper) scrapeIndexerAvgRate(ctx context.Context, now pcommon.Ti
 func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkAggregationQueueRatio.Enabled {
+	if !s.conf.Metrics.SplunkAggregationQueueRatio.Enabled {
 		return
 	}
 
@@ -422,7 +422,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -478,7 +478,7 @@ func (s *splunkScraper) scrapeIndexerPipelineQueues(ctx context.Context, now pco
 func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkBucketsSearchableStatus.Enabled {
+	if !s.conf.Metrics.SplunkBucketsSearchableStatus.Enabled {
 		return
 	}
 
@@ -534,7 +534,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -566,7 +566,7 @@ func (s *splunkScraper) scrapeBucketsSearchableStatus(ctx context.Context, now p
 func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexesSize.Enabled {
+	if !s.conf.Metrics.SplunkIndexesSize.Enabled {
 		return
 	}
 
@@ -622,7 +622,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -679,7 +679,7 @@ func (s *splunkScraper) scrapeIndexesBucketCountAdHoc(ctx context.Context, now p
 func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerCompletionRatio.Enabled {
+	if !s.conf.Metrics.SplunkSchedulerCompletionRatio.Enabled {
 		return
 	}
 
@@ -730,7 +730,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -757,7 +757,7 @@ func (s *splunkScraper) scrapeSchedulerCompletionRatioByHost(ctx context.Context
 func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRawWriteTime.Enabled {
+	if !s.conf.Metrics.SplunkIndexerRawWriteTime.Enabled {
 		return
 	}
 
@@ -808,7 +808,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -835,7 +835,7 @@ func (s *splunkScraper) scrapeIndexerRawWriteSecondsByHost(ctx context.Context, 
 func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerCPUTime.Enabled {
+	if !s.conf.Metrics.SplunkIndexerCPUTime.Enabled {
 		return
 	}
 
@@ -886,7 +886,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -913,7 +913,7 @@ func (s *splunkScraper) scrapeIndexerCPUSecondsByHost(ctx context.Context, now p
 func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIoAvgIops.Enabled {
+	if !s.conf.Metrics.SplunkIoAvgIops.Enabled {
 		return
 	}
 
@@ -964,7 +964,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -991,7 +991,7 @@ func (s *splunkScraper) scrapeAvgIopsByHost(ctx context.Context, now pcommon.Tim
 func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// Because we have to utilize network resources for each KPI we should check that each metrics
 	// is enabled before proceeding
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSchedulerAvgRunTime.Enabled {
+	if !s.conf.Metrics.SplunkSchedulerAvgRunTime.Enabled {
 		return
 	}
 
@@ -1042,7 +1042,7 @@ func (s *splunkScraper) scrapeSchedulerRunTimeByHost(ctx context.Context, now pc
 			break
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			errs <- errMaxSearchWaitTimeExceeded
 			return
 		}
@@ -1089,7 +1089,7 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 
 // Scrape index throughput introspection endpoint
 func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1130,7 +1130,7 @@ func (s *splunkScraper) scrapeIndexThroughput(ctx context.Context, now pcommon.T
 
 // Scrape indexes extended total size
 func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1183,7 +1183,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(ctx context.Context, now pcommon.
 
 // Scrape indexes extended total event count
 func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1230,7 +1230,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(ctx context.Context, now pcommon
 
 // Scrape indexes extended total bucket count
 func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1283,7 +1283,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(ctx context.Context, now pcommo
 
 // Scrape indexes extended raw size
 func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1336,7 +1336,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(ctx context.Context, now pcommon.Ti
 
 // Scrape indexes extended bucket event count
 func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1406,7 +1406,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(ctx context.Context, now p
 
 // Scrape indexes extended bucket hot/warm count
 func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1469,7 +1469,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(ctx context.Context, now
 
 // Scrape introspection queues
 func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1517,7 +1517,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(ctx context.Context, now pcomm
 
 // Scrape introspection queues bytes
 func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 
@@ -1564,9 +1564,9 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(ctx context.Context, now 
 
 // Scrape introspection kv store status
 func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
+	if !s.conf.Metrics.SplunkKvstoreStatus.Enabled ||
+		!s.conf.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
+		!s.conf.Metrics.SplunkKvstoreBackupStatus.Enabled ||
 		!s.splunkClient.isConfigured(typeCm) {
 		return
 	}
@@ -1631,14 +1631,7 @@ func (s *splunkScraper) scrapeKVStoreStatus(ctx context.Context, now pcommon.Tim
 // Scrape dispatch artifacts
 func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.Timestamp, errs chan error) {
 	// if NONE of the metrics set in this scrape are set we return early
-	if !(s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled ||
-		s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled) {
+	if !s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled && !s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
 		return
 	}
 
@@ -1676,7 +1669,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 	}
 
 	for _, f := range da.Entries {
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsAdhoc.Enabled {
 			adhocCount, err := strconv.ParseInt(f.Content.AdhocCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1684,7 +1677,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsAdhocDataPoint(now, adhocCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsScheduled.Enabled {
 			scheduledCount, err := strconv.ParseInt(f.Content.ScheduledCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1692,7 +1685,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsScheduledDataPoint(now, scheduledCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsCompleted.Enabled {
 			completedCount, err := strconv.ParseInt(f.Content.CompletedCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1700,7 +1693,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsCompletedDataPoint(now, completedCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsIncomplete.Enabled {
 			incompleteCount, err := strconv.ParseInt(f.Content.IncompleteCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1708,7 +1701,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsIncompleteDataPoint(now, incompleteCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsInvalid.Enabled {
 			invalidCount, err := strconv.ParseInt(f.Content.InvalidCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1716,7 +1709,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsInvalidDataPoint(now, invalidCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsSavedsearches.Enabled {
 			savedSearchesCount, err := strconv.ParseInt(f.Content.SavedSearchesCount, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1724,7 +1717,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsSavedsearchesDataPoint(now, savedSearchesCount, s.conf.SHEndpoint.Endpoint)
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheSize.Enabled {
 			infoCacheSize, err := strconv.ParseInt(f.Content.InfoCacheSize, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1737,7 +1730,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 			s.mb.RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(now, statusCacheSize, s.conf.SHEndpoint.Endpoint, "status")
 		}
 
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
+		if s.conf.Metrics.SplunkServerSearchartifactsJobCacheCount.Enabled {
 			cacheTotalEntries, err := strconv.ParseInt(f.Content.CacheTotalEntries, 10, 64)
 			if err != nil {
 				errs <- err
@@ -1749,7 +1742,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(ctx context.Context, now pcommon.T
 
 // Scrape Health Introspection Endpoint
 func (s *splunkScraper) scrapeHealth(ctx context.Context, now pcommon.Timestamp, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkHealth.Enabled {
+	if !s.conf.Metrics.SplunkHealth.Enabled {
 		return
 	}
 
