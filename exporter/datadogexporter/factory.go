@@ -326,7 +326,7 @@ func (f *factory) createMetricsExporter(
 		errchan := make(chan error)
 		apiClient := clientutil.CreateAPIClient(
 			set.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.Metrics.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
 		if cfg.API.FailOnInvalidKey {
