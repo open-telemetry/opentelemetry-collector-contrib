@@ -72,21 +72,6 @@ func (pki *PartitionKeyBuilder) fileName() string {
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
-	if pki.UniqueKeyFunc != nil {
-		return pki.UniqueKeyFunc()
-	}
-
-	// This follows the original "uniqueness" algorithm
-	// to avoid collisions on file uploads across different nodes.
-	const (
-		uniqueValues = 999999999
-		minOffset    = 100000000
-	)
-
-	return strconv.Itoa(minOffset + rand.IntN(uniqueValues-minOffset))
-}
-
-func (pki *PartitionKeyBuilder) uniqueKey() string {
     if pki.UniqueKeyFunc != nil {
         return pki.UniqueKeyFunc()
     }

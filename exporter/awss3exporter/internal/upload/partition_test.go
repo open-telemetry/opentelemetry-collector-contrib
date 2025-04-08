@@ -177,7 +177,7 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
     seen := make(map[string]struct{})
     for i := 0; i < 500; i++ {
         uv := (&PartitionKeyBuilder{}).uniqueKey()
-        assert.Equal(t, 12, len(uv), "Unique key length must be 12 characters")
+        assert.Equal(t, 9, len(uv), "Unique key length must be 9 characters")
         assert.Regexp(t, "^[a-zA-Z]", uv, "First character must be a letter")
         assert.Regexp(t, "^[a-zA-Z][a-zA-Z0-9]{11}$", uv, "Must match alphanumeric pattern")
         _, ok := seen[uv]
