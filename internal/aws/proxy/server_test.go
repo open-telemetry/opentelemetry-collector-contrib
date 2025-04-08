@@ -12,12 +12,14 @@ import (
 	"net"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/session"
+	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -137,6 +139,34 @@ func TestHandlerNilBodyIsOk(t *testing.T) {
 	assert.Contains(t, lastEntry.Message,
 		"Received request on X-Ray receiver TCP proxy server",
 		"expected log message")
+}
+
+func TestHandlerContentLength(t *testing.T) {
+	logger, _ := logSetup()
+
+	t.Setenv(regionEnvVarName, regionEnvVar)
+	t.Setenv("AWS_ACCESS_KEY_ID", "fakeAccessKeyID")
+	t.Setenv("AWS_SECRET_ACCESS_KEY", "fakeSecretAccessKey")
+
+	cfg := DefaultConfig()
+	tcpAddr := testutil.GetAvailableLocalAddress(t)
+	cfg.Endpoint = tcpAddr
+	awsCfg, sess, _ := getAWSConfigSession(cfg, logger)
+	signer := &v4.Signer{Credentials: sess.Config.Credentials}
+	awsEndPoint, _ := getServiceEndpoint(awsCfg, cfg.ServiceName)
+	awsURL, _ := url.Parse(awsEndPoint)
+
+	req := httptest.NewRequest(http.MethodPost,
+		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+	req.Header.Set("Content-Length", "0")
+	handlerDirector(req, awsURL, signer, cfg.ServiceName, cfg.Region, logger)
+	assert.Empty(t, req.Header.Get("Content-Length"))
+
+	req = httptest.NewRequest(http.MethodPost,
+		"https://xray.us-west-2.amazonaws.com/GetSamplingRules", nil)
+	req.Header.Set("Content-Length", "1")
+	handlerDirector(req, awsURL, signer, cfg.ServiceName, cfg.Region, logger)
+	assert.Equal(t, "1", req.Header.Get("Content-Length"))
 }
 
 func TestHandlerSignerErrorsOut(t *testing.T) {
