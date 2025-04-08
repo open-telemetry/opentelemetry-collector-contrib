@@ -15,7 +15,7 @@ const (
 	knownFramesCacheSize                  = 128 * 1024
 	knownTracesCacheSize                  = 128 * 1024
 	knownUnsymbolizedFramesCacheSize      = 128 * 1024
-	knownUnsymbolizedExecutablesCacheSize = 128 * 1024
+	knownUnsymbolizedExecutablesCacheSize = 16 * 1024
 
 	minILMRolloverTime = 3 * time.Hour
 )
