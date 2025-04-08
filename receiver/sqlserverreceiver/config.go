@@ -58,11 +58,11 @@ func (cfg *Config) Validate() error {
 		return err
 	}
 
-	if cfg.TopQueryCollection.MaxQuerySampleCount > 10000 {
+	if cfg.MaxQuerySampleCount > 10000 {
 		return errors.New("`max_query_sample_count` must be between 0 and 10000")
 	}
 
-	if cfg.TopQueryCount > cfg.TopQueryCollection.MaxQuerySampleCount {
+	if cfg.TopQueryCount > cfg.MaxQuerySampleCount {
 		return errors.New("`top_query_count` must be less than or equal to `max_query_sample_count`")
 	}
 
