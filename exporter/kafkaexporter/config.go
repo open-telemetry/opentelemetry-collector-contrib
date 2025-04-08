@@ -39,6 +39,9 @@ type Config struct {
 	// Deprecated [v0.124.0]: use logs::topic, metrics::topic, and traces::topic instead.
 	Topic string `mapstructure:"topic"`
 
+	// IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 

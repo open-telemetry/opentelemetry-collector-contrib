@@ -10,6 +10,7 @@ import (
 	"iter"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -112,6 +113,9 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 		saramaMessages := makeSaramaMessages(partitionMessages, e.messager.getTopic(ctx, data))
 		allSaramaMessages = append(allSaramaMessages, saramaMessages...)
 	}
+	messagesWithHeaders(allSaramaMessages, metadataToHeaders(
+		ctx, e.cfg.IncludeMetadataKeys,
+	))
 	if err := e.producer.SendMessages(allSaramaMessages); err != nil {
 		var prodErr sarama.ProducerErrors
 		if errors.As(err, &prodErr) {
@@ -296,4 +300,35 @@ func makeSaramaMessages(messages []marshaler.Message, topic string) []*sarama.Pr
 		}
 	}
 	return saramaMessages
+}
+
+func messagesWithHeaders(msg []*sarama.ProducerMessage, h []sarama.RecordHeader) {
+	if len(h) == 0 || len(msg) == 0 {
+		return
+	}
+	for i := range msg {
+		if len(msg[i].Headers) == 0 {
+			msg[i].Headers = h
+			continue
+		}
+		msg[i].Headers = append(msg[i].Headers, h...)
+	}
+}
+
+func metadataToHeaders(ctx context.Context, keys []string) []sarama.RecordHeader {
+	if len(keys) == 0 {
+		return nil
+	}
+	info := client.FromContext(ctx)
+	headers := make([]sarama.RecordHeader, 0, len(keys))
+	for _, key := range keys {
+		valueSlice := info.Metadata.Get(key)
+		for _, v := range valueSlice {
+			headers = append(headers, sarama.RecordHeader{
+				Key:   []byte(key),
+				Value: []byte(v),
+			})
+		}
+	}
+	return headers
 }
