@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/testbed
 
-go 1.23.7
+go 1.23.8
 
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0

@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuredataexplorerexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/Azure/azure-kusto-go v0.16.1

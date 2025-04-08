@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/alecthomas/participle/v2 v2.1.4
