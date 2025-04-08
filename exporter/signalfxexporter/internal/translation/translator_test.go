@@ -1883,7 +1883,7 @@ func TestTranslateDataPoints(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			mt, err := NewMetricTranslator(tt.trs, 1, make(chan struct{}))
 			require.NoError(t, err)
-			assert.NotEqualValues(t, tt.want, tt.dps)
+			assert.NotEqual(t, tt.want, tt.dps)
 			got := mt.TranslateDataPoints(zap.NewNop(), tt.dps)
 			assertEqualPoints(t, got, tt.want, tt.trs[0].Action)
 		})
@@ -1915,7 +1915,7 @@ func assertEqualPoints(t *testing.T, got []*sfxpb.DataPoint, want []*sfxpb.DataP
 		}
 	}
 
-	assert.EqualValues(t, want, got)
+	assert.Equal(t, want, got)
 }
 
 func TestTestTranslateDimension(t *testing.T) {
@@ -2564,7 +2564,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	deltaPts1, ok := m2["system.cpu.delta"]
 	require.True(t, ok)
-	require.Equal(t, len(origPts), len(deltaPts1))
+	require.Len(t, deltaPts1, len(origPts))
 	counterType := sfxpb.MetricType_GAUGE
 	for _, pt := range deltaPts1 {
 		require.Equal(t, &counterType, pt.MetricType)
@@ -2576,7 +2576,7 @@ func requireDeltaMetricOk(t *testing.T, md1, md2, md3 pmetric.Metrics) (
 
 	deltaPts2, ok := m3["system.cpu.delta"]
 	require.True(t, ok)
-	require.Equal(t, len(origPts), len(deltaPts2))
+	require.Len(t, deltaPts2, len(origPts))
 	for _, pt := range deltaPts2 {
 		require.Equal(t, &counterType, pt.MetricType)
 	}

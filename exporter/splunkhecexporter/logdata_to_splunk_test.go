@@ -513,7 +513,7 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 			for _, want := range tt.wantSplunkEvents {
 				config := tt.configDataFn()
 				got := mapLogRecordToSplunkEvent(tt.logResourceFn(), tt.logRecordFn(), config)
-				assert.EqualValues(t, want, got)
+				assert.Equal(t, want, got)
 			}
 		})
 	}
