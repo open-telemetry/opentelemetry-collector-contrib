@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -97,7 +98,9 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -292,7 +295,9 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -452,7 +457,6 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 }
 
 func TestIntegrationLogs(t *testing.T) {
-	t.Skip("skipping test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39064")
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	seriesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.MetricV2Endpoint, ReqChan: make(chan []byte)}
@@ -476,9 +480,10 @@ func TestIntegrationLogs(t *testing.T) {
 		}
 	})
 	defer server.Close()
-	thing := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", thing)
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)

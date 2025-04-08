@@ -58,7 +58,7 @@ func (ts *testSink) unblock() {
 }
 
 func (ts *testSink) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
-	<-ts.Context.Done()
+	<-ts.Done()
 	return ts.MetricsSink.ConsumeMetrics(ctx, md)
 }
 

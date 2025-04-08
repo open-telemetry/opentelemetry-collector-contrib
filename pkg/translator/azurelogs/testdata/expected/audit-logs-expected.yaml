@@ -1,0 +1,45 @@
+resourceLogs:
+  - resource: {}
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: cloud.resource_id
+                value:
+                  stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
+              - key: cloud.provider
+                value:
+                  stringValue: azure
+              - key: event.name
+                value:
+                  stringValue: az.resource.log
+            body:
+              kvlistValue:
+                values:
+                  - key: operation.name
+                    value:
+                      stringValue: Authorization
+                  - key: enduser.id
+                    value:
+                      stringValue: USER_ID
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: network.protocol.name
+                    value:
+                      stringValue: kudu
+                  - key: properties
+                    value:
+                      kvlistValue:
+                        values:
+                          - key: UserDisplayName
+                            value:
+                              stringValue: $fbehtestapp
+                  - key: category
+                    value:
+                      stringValue: AppServiceAuditLogs
+            spanId: ""
+            timeUnixNano: "1713960080842740000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3

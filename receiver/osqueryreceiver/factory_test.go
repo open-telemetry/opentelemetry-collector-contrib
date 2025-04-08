@@ -18,5 +18,5 @@ func TestFactory(t *testing.T) {
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
 	duration, _ := time.ParseDuration("30s")
-	assert.Equal(t, duration, cfg.(*Config).ControllerConfig.CollectionInterval)
+	assert.Equal(t, duration, cfg.(*Config).CollectionInterval)
 }

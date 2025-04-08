@@ -9,8 +9,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 
@@ -84,8 +83,8 @@ func TestInfo(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return nil, nil, errors.New("error")
+		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, errors.New("error")
 		}
 	}
 	m, err = NewInfo(ci.EKS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
@@ -94,26 +93,26 @@ func TestInfo(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return &aws.Config{}, &session.Session{}, nil
+		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, nil
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger,
 			...ec2MetadataOption,
 		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
+		m.ebsVolumeCreator = func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger,
 			...ebsVolumeOption,
 		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
+		m.ec2TagsCreator = func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger,
 			...ec2TagsOption,
 		) ec2TagsProvider {
 			return &mockEC2Tags{}
@@ -161,8 +160,8 @@ func TestInfoForECS(t *testing.T) {
 		}
 	}
 	awsSessionCreatorOpt := func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return nil, nil, errors.New("error")
+		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, errors.New("error")
 		}
 	}
 	m, err = NewInfo(ci.ECS, time.Minute, zap.NewNop(), nodeCapacityCreatorOpt, awsSessionCreatorOpt)
@@ -171,26 +170,26 @@ func TestInfoForECS(t *testing.T) {
 
 	// test normal case where everything is working
 	awsSessionCreatorOpt = func(m *Info) {
-		m.awsSessionCreator = func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error) {
-			return &aws.Config{}, &session.Session{}, nil
+		m.awsConfigCreator = func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error) {
+			return aws.Config{}, nil
 		}
 	}
 	ec2MetadataCreatorOpt := func(m *Info) {
-		m.ec2MetadataCreator = func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger,
+		m.ec2MetadataCreator = func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger,
 			...ec2MetadataOption,
 		) ec2MetadataProvider {
 			return &mockEC2Metadata{}
 		}
 	}
 	ebsVolumeCreatorOpt := func(m *Info) {
-		m.ebsVolumeCreator = func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger,
+		m.ebsVolumeCreator = func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger,
 			...ebsVolumeOption,
 		) ebsVolumeProvider {
 			return &mockEBSVolume{}
 		}
 	}
 	ec2TagsCreatorOpt := func(m *Info) {
-		m.ec2TagsCreator = func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger,
+		m.ec2TagsCreator = func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger,
 			...ec2TagsOption,
 		) ec2TagsProvider {
 			return &mockEC2Tags{}

@@ -121,6 +121,72 @@ var MapAttributeState = map[string]AttributeState{
 	"wait":   AttributeStateWait,
 }
 
+var MetricsInfo = metricsInfo{
+	ProcessContextSwitches: metricInfo{
+		Name: "process.context_switches",
+	},
+	ProcessCPUTime: metricInfo{
+		Name: "process.cpu.time",
+	},
+	ProcessCPUUtilization: metricInfo{
+		Name: "process.cpu.utilization",
+	},
+	ProcessDiskIo: metricInfo{
+		Name: "process.disk.io",
+	},
+	ProcessDiskOperations: metricInfo{
+		Name: "process.disk.operations",
+	},
+	ProcessHandles: metricInfo{
+		Name: "process.handles",
+	},
+	ProcessMemoryUsage: metricInfo{
+		Name: "process.memory.usage",
+	},
+	ProcessMemoryUtilization: metricInfo{
+		Name: "process.memory.utilization",
+	},
+	ProcessMemoryVirtual: metricInfo{
+		Name: "process.memory.virtual",
+	},
+	ProcessOpenFileDescriptors: metricInfo{
+		Name: "process.open_file_descriptors",
+	},
+	ProcessPagingFaults: metricInfo{
+		Name: "process.paging.faults",
+	},
+	ProcessSignalsPending: metricInfo{
+		Name: "process.signals_pending",
+	},
+	ProcessThreads: metricInfo{
+		Name: "process.threads",
+	},
+	ProcessUptime: metricInfo{
+		Name: "process.uptime",
+	},
+}
+
+type metricsInfo struct {
+	ProcessContextSwitches     metricInfo
+	ProcessCPUTime             metricInfo
+	ProcessCPUUtilization      metricInfo
+	ProcessDiskIo              metricInfo
+	ProcessDiskOperations      metricInfo
+	ProcessHandles             metricInfo
+	ProcessMemoryUsage         metricInfo
+	ProcessMemoryUtilization   metricInfo
+	ProcessMemoryVirtual       metricInfo
+	ProcessOpenFileDescriptors metricInfo
+	ProcessPagingFaults        metricInfo
+	ProcessSignalsPending      metricInfo
+	ProcessThreads             metricInfo
+	ProcessUptime              metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricProcessContextSwitches struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

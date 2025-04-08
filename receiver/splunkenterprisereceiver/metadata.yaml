@@ -48,139 +48,138 @@ attributes:
 
 metrics:
   splunk.license.index.usage:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexed license usage per index
     unit: By
     gauge:
       value_type: int 
     attributes: [splunk.index.name]
   splunk.scheduler.avg.execution.latency:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average execution latency of scheduled searches
     unit: '{ms}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.scheduler.completion.ratio:
-    enabled: true
+    enabled: false
     description: Gauge tracking the ratio of completed to skipped scheduled searches
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.indexer.avg.rate:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average rate of indexed data. **Note:** Search is best run against a Cluster Manager.
     unit: KBy
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.pipeline.set.count:
-    enabled: true
+    enabled: false
     description: Gauge tracking the number of pipeline sets per indexer. **Note:** Search is best run against a Cluster Manager.
     unit: KBy
     gauge:
       value_type: int 
     attributes: [splunk.host]
   splunk.parse.queue.ratio:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average indexer parser queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.aggregation.queue.ratio:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average indexer aggregation queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.host]  
   splunk.typing.queue.ratio:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average indexer typing queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.host]  
   splunk.indexer.queue.ratio:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average indexer index queue ration (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.scheduler.avg.run.time:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average runtime of scheduled searches
     unit: '{ms}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.indexer.raw.write.time:
-    enabled: true
+    enabled: false
     description: Gauge tracking the number of raw write seconds per instance
     unit: '{s}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.indexer.cpu.time:
-    enabled: true
+    enabled: false
     description: Gauge tracking the number of indexing process cpu seconds per instance
     unit: '{s}'
     gauge:
       value_type: double 
     attributes: [splunk.host]
   splunk.io.avg.iops:
-    enabled: true
+    enabled: false
     description: Gauge tracking the average IOPs used per instance
     unit: '{iops}'
     gauge:
       value_type: int 
     attributes: [splunk.host]
   splunk.buckets.searchable.status:
-    enabled: true
+    enabled: false
     description: Gauge tracking the number of buckets and their searchable status. *Note:** Search is best run against a Cluster Manager.
     unit: '{count}'
     gauge:
       value_type: int 
     attributes: [splunk.host, splunk.indexer.searchable]
   splunk.indexes.bucket.count:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexes and their bucket counts. *Note:** Search is best run against a Cluster Manager.
     unit: '{count}'
     gauge:
       value_type: int 
     attributes: [splunk.index.name]
   splunk.indexes.size:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexes and their total size (gb). *Note:** Search is best run against a Cluster Manager.
     unit: Gb
     gauge:
       value_type: double 
     attributes: [splunk.index.name]
   splunk.indexes.avg.size:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexes and their average size (gb). *Note:** Search is best run against a Cluster Manager.
     unit: Gb
     gauge:
       value_type: double 
     attributes: [splunk.index.name]
   splunk.indexes.avg.usage:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexes and their average usage (%). *Note:** Search is best run against a Cluster Manager.
     unit: '{%}'
     gauge:
       value_type: double 
     attributes: [splunk.index.name]
   splunk.indexes.median.data.age:
-    enabled: true
+    enabled: false
     description: Gauge tracking the indexes and their median data age (days). *Note:** Search is best run against a Cluster Manager.
     unit: '{days}'
     gauge:
       value_type: int 
     attributes: [splunk.index.name]
-    
   # 'services/server/introspection/indexer'
   splunk.indexer.throughput:
     enabled: false
@@ -353,7 +352,7 @@ metrics:
     attributes: [splunk.host]
   #`services/server/health/splunkd/details`
   splunk.health:
-    enabled: false
+    enabled: true
     description: The status ('red', 'yellow', or 'green') of the Splunk server. Health of 'red' produces a 0 while all other colors produce a 1.
     unit: "{status}"
     gauge:
