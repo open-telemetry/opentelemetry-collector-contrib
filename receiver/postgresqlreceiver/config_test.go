@@ -140,7 +140,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = confignet.TransportTypeTCP
+		expected.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.ConnectionPool = ConnectionPool{
@@ -158,7 +158,7 @@ func TestLoadConfig(t *testing.T) {
 
 		expected := factory.CreateDefaultConfig().(*Config)
 		expected.Endpoint = "localhost:5432"
-		expected.AddrConfig.Transport = confignet.TransportTypeTCP
+		expected.Transport = confignet.TransportTypeTCP
 		expected.Username = "otel"
 		expected.Password = "${env:POSTGRESQL_PASSWORD}"
 		expected.Databases = []string{"otel"}

@@ -365,7 +365,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
 			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
-			set.TelemetrySettings.Logger = zap.New(core)
+			set.Logger = zap.New(core)
 
 			set.ID = testReceiverID
 			r, err := NewFactory().CreateTraces(

@@ -68,9 +68,9 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 
 	attrs.PutStr("k8s.event.reason", ev.Reason)
 	attrs.PutStr("k8s.event.action", ev.Action)
-	attrs.PutStr("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
-	attrs.PutStr("k8s.event.name", ev.ObjectMeta.Name)
-	attrs.PutStr("k8s.event.uid", string(ev.ObjectMeta.UID))
+	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
+	attrs.PutStr("k8s.event.name", ev.Name)
+	attrs.PutStr("k8s.event.uid", string(ev.UID))
 	attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
