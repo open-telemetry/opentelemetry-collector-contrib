@@ -177,7 +177,7 @@ func TestScale(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 			}
-			assert.EqualValues(t, tt.wantFunc(), target.GetMetric())
+			assert.Equal(t, tt.wantFunc(), target.GetMetric())
 		})
 	}
 }

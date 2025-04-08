@@ -62,23 +62,21 @@ func createTracesExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newTracesExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,
 		set,
 		&oCfg,
-		exp.tracesPusher,
+		exp.exportData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func createMetricsExporter(
@@ -90,23 +88,21 @@ func createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newMetricsExporter(oCfg, set)
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		&oCfg,
-		exp.metricsDataPusher,
+		exp.exportData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }
 
 func createLogsExporter(
@@ -118,21 +114,19 @@ func createLogsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newLogsExporter(oCfg, set)
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		&oCfg,
-		exp.logsDataPusher,
+		exp.exportData,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: false}),
 		// Disable exporterhelper Timeout, because we cannot pass a Context to the Producer,
 		// and will rely on the sarama Producer Timeout logic.
 		exporterhelper.WithTimeout(exporterhelper.TimeoutConfig{Timeout: 0}),
 		exporterhelper.WithRetry(oCfg.BackOffConfig),
 		exporterhelper.WithQueue(oCfg.QueueSettings),
-		exporterhelper.WithStart(exp.start),
-		exporterhelper.WithShutdown(exp.Close))
+		exporterhelper.WithStart(exp.Start),
+		exporterhelper.WithShutdown(exp.Close),
+	)
 }

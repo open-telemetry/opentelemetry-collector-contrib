@@ -296,10 +296,10 @@ func TestScraperScrape(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			scraperCfg := createDefaultConfig().(*Config)
 			// Enable any metrics set to `false` by default
-			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationLatencyTime.Enabled = true
-			scraperCfg.MetricsBuilderConfig.Metrics.MongodbOperationReplCount.Enabled = true
-			scraperCfg.MetricsBuilderConfig.Metrics.MongodbUptime.Enabled = true
-			scraperCfg.MetricsBuilderConfig.Metrics.MongodbHealth.Enabled = true
+			scraperCfg.Metrics.MongodbOperationLatencyTime.Enabled = true
+			scraperCfg.Metrics.MongodbOperationReplCount.Enabled = true
+			scraperCfg.Metrics.MongodbUptime.Enabled = true
+			scraperCfg.Metrics.MongodbHealth.Enabled = true
 
 			scraper := newMongodbScraper(receivertest.NewNopSettings(metadata.Type), scraperCfg)
 

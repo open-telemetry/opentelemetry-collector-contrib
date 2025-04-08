@@ -49,7 +49,7 @@ func newLogsConnector(
 	}
 
 	return &logsConnector{
-		logger: set.TelemetrySettings.Logger,
+		logger: set.Logger,
 		config: cfg,
 		router: r,
 	}, nil

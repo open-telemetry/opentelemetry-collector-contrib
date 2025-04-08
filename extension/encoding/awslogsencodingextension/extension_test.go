@@ -20,6 +20,17 @@ func TestNew_CloudWatchLogsSubscriptionFilter(t *testing.T) {
 	require.ErrorContains(t, err, `failed to unmarshal logs as "cloudwatch_logs_subscription_filter" format`)
 }
 
+func TestNew_VPCFlowLog(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Format = formatVPCFlowLog
+	e, err := newExtension(cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	_, err = e.UnmarshalLogs([]byte("invalid"))
+	require.ErrorContains(t, err, `failed to unmarshal logs as "vpc_flow_log" format`)
+}
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)

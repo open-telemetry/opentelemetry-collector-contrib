@@ -248,6 +248,11 @@ type Sum struct {
 	maxExemplarCount *int
 
 	startTimestamp pcommon.Timestamp
+	// isFirst is used to track if this datapoint is new to the Sum. This
+	// is used to ensure that new Sum metrics being with 0, and then are incremented
+	// to the desired value.  This avoids Prometheus throwing away the first
+	// value in the series, due to the transition from null -> x.
+	isFirst bool
 }
 
 func (s *Sum) Add(value uint64) {
@@ -274,6 +279,7 @@ func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
+			isFirst:          true,
 		}
 		m.metrics[key] = s
 	}
@@ -306,7 +312,12 @@ func (m *SumMetrics) BuildMetrics(
 		startTimeStamp := startTimeStampGenerator(k, s.startTimestamp)
 		dp.SetStartTimestamp(startTimeStamp)
 		dp.SetTimestamp(timestamp)
-		dp.SetIntValue(int64(s.count))
+		if s.isFirst {
+			dp.SetIntValue(0)
+			s.isFirst = false
+		} else {
+			dp.SetIntValue(int64(s.count))
+		}
 		for i := 0; i < s.exemplars.Len(); i++ {
 			s.exemplars.At(i).SetTimestamp(timestamp)
 		}

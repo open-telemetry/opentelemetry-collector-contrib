@@ -41,8 +41,8 @@ func TestFileProfilesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	sink := new(consumertest.ProfilesSink)
 	receiver, err := factory.(xreceiver.Factory).CreateProfiles(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -68,8 +68,8 @@ func TestFileTracesReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	sink := new(consumertest.TracesSink)
 	receiver, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -98,8 +98,8 @@ func TestFileMetricsReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	sink := new(consumertest.MetricsSink)
 	receiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -128,10 +128,10 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	cfg.ReplayFile = true
-	cfg.Config.PollInterval = 5 * time.Second
+	cfg.PollInterval = 5 * time.Second
 	cfg.IncludeFileName = false
 
 	sink := new(consumertest.MetricsSink)
@@ -149,13 +149,13 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	assert.NoError(t, err)
 
 	// Wait for the first poll to complete.
-	time.Sleep(cfg.Config.PollInterval + time.Second)
+	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.EqualValues(t, md, sink.AllMetrics()[0])
 
 	// Reset the sink and assert that the next poll replays all the existing metrics.
 	sink.Reset()
-	time.Sleep(cfg.Config.PollInterval + time.Second)
+	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
 	assert.EqualValues(t, md, sink.AllMetrics()[0])
 
@@ -167,8 +167,8 @@ func TestFileLogsReceiver(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	sink := new(consumertest.LogsSink)
 	receiver, err := factory.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	assert.NoError(t, err)
@@ -235,8 +235,8 @@ func TestFileMixedSignals(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	cfg.IncludeFileName = false
 	cs := receivertest.NewNopSettings(metadata.Type)
 	ms := new(consumertest.MetricsSink)
@@ -309,8 +309,8 @@ func TestEmptyLine(t *testing.T) {
 	tempFolder := t.TempDir()
 	factory := NewFactory()
 	cfg := createDefaultConfig().(*Config)
-	cfg.Config.Include = []string{filepath.Join(tempFolder, "*")}
-	cfg.Config.StartAt = "beginning"
+	cfg.Include = []string{filepath.Join(tempFolder, "*")}
+	cfg.StartAt = "beginning"
 	cs := receivertest.NewNopSettings(metadata.Type)
 	t.Run("metrics receiver", func(t *testing.T) {
 		ms := new(consumertest.MetricsSink)
