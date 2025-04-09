@@ -976,7 +976,7 @@ func TestExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1132,7 +1132,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
