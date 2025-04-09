@@ -240,6 +240,11 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/windowseventlogreceiver v0.123.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.123.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver v0.123.0
+  - gomod: github.com/MaCriMora/opentelemetry-collector-contrib/receiver/dynatracereceiver v0.0.0
+    import: github.com/MaCriMora/opentelemetry-collector-contrib/receiver/dynatracereceiver
+    name: dynatracereceiver
+    path: ./receiver/dynatracereceiver
+
 
 connectors:
   - gomod: go.opentelemetry.io/collector/connector/forwardconnector v0.123.0
