@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	cloud.google.com/go/pubsub v1.49.0

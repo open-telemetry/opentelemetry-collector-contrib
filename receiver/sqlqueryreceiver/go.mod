@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/docker/go-connections v0.5.0

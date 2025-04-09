@@ -54,5 +54,5 @@ func TestServiceStore(t *testing.T) {
 	kubernetesBlob = map[string]any{}
 	ok = s.Decorate(ctx, metric, kubernetesBlob)
 	assert.False(t, ok)
-	assert.Equal(t, "", metric.GetTag(ci.TypeService))
+	assert.Empty(t, metric.GetTag(ci.TypeService))
 }

@@ -59,7 +59,7 @@ func TestFileProfilesReceiver(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, sink.AllProfiles(), 1)
-	assert.EqualValues(t, pd, sink.AllProfiles()[0])
+	assert.Equal(t, pd, sink.AllProfiles()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -89,7 +89,7 @@ func TestFileTracesReceiver(t *testing.T) {
 	td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("log.file.name", "traces.json")
 
 	require.Len(t, sink.AllTraces(), 1)
-	assert.EqualValues(t, td, sink.AllTraces()[0])
+	assert.Equal(t, td, sink.AllTraces()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -119,7 +119,7 @@ func TestFileMetricsReceiver(t *testing.T) {
 	md.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Metadata().PutStr("log.file.name", "metrics.json")
 
 	require.Len(t, sink.AllMetrics(), 1)
-	assert.EqualValues(t, md, sink.AllMetrics()[0])
+	assert.Equal(t, md, sink.AllMetrics()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -151,13 +151,13 @@ func TestFileMetricsReceiverWithReplay(t *testing.T) {
 	// Wait for the first poll to complete.
 	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
-	assert.EqualValues(t, md, sink.AllMetrics()[0])
+	assert.Equal(t, md, sink.AllMetrics()[0])
 
 	// Reset the sink and assert that the next poll replays all the existing metrics.
 	sink.Reset()
 	time.Sleep(cfg.PollInterval + time.Second)
 	require.Len(t, sink.AllMetrics(), 1)
-	assert.EqualValues(t, md, sink.AllMetrics()[0])
+	assert.Equal(t, md, sink.AllMetrics()[0])
 
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
@@ -188,7 +188,7 @@ func TestFileLogsReceiver(t *testing.T) {
 	ld.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("log.file.name", "logs.json")
 
 	require.Len(t, sink.AllLogs(), 1)
-	assert.EqualValues(t, ld, sink.AllLogs()[0])
+	assert.Equal(t, ld, sink.AllLogs()[0])
 	err = receiver.Shutdown(context.Background())
 	assert.NoError(t, err)
 }
@@ -288,13 +288,13 @@ func TestFileMixedSignals(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	require.Len(t, ms.AllMetrics(), 1)
-	assert.EqualValues(t, md, ms.AllMetrics()[0])
+	assert.Equal(t, md, ms.AllMetrics()[0])
 	require.Len(t, ts.AllTraces(), 1)
-	assert.EqualValues(t, td, ts.AllTraces()[0])
+	assert.Equal(t, td, ts.AllTraces()[0])
 	require.Len(t, ls.AllLogs(), 1)
-	assert.EqualValues(t, ld, ls.AllLogs()[0])
+	assert.Equal(t, ld, ls.AllLogs()[0])
 	require.Len(t, ps.AllProfiles(), 1)
-	assert.EqualValues(t, pd, ps.AllProfiles()[0])
+	assert.Equal(t, pd, ps.AllProfiles()[0])
 	err = mr.Shutdown(context.Background())
 	assert.NoError(t, err)
 	err = tr.Shutdown(context.Background())
