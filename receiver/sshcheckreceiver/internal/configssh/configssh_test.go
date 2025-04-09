@@ -115,7 +115,7 @@ func TestAllSSHClientSettings(t *testing.T) {
 			}
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, client.User, test.settings.Username)
+			assert.Equal(t, client.User, test.settings.Username)
 
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
 				assert.Len(t, client.Auth, 1)
@@ -182,14 +182,14 @@ func Test_Client_Dial(t *testing.T) {
 			err = client.Dial("localhost:2222")
 			if test.shouldError {
 				assert.Error(t, err)
-				assert.EqualValues(t, (*ssh.Client)(nil), client.Client)
+				assert.Equal(t, (*ssh.Client)(nil), client.Client)
 			} else {
 				assert.NoError(t, err)
-				assert.EqualValues(t, &ssh.Client{}, client.Client)
+				assert.Equal(t, &ssh.Client{}, client.Client)
 			}
 
 			if test.settings.IgnoreHostKey {
-				assert.EqualValues(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
+				assert.Equal(t, client.HostKeyCallback, ssh.InsecureIgnoreHostKey()) //#nosec G106
 			}
 			if len(test.settings.KeyFile) > 0 || len(test.settings.Password) > 0 {
 				assert.Len(t, client.Auth, 1)
@@ -256,7 +256,7 @@ func Test_Client_ToSFTPClient(t *testing.T) {
 			if test.shouldError {
 				err := client.Dial("localhost:2222")
 				assert.Error(t, err)
-				assert.EqualValues(t, (*ssh.Client)(nil), client.Client)
+				assert.Equal(t, (*ssh.Client)(nil), client.Client)
 			} else {
 				err := client.Dial("localhost:2222")
 				assert.NoError(t, err)

@@ -211,7 +211,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)

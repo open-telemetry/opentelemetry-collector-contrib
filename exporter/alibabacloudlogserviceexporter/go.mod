@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alibabacloudlogserviceexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/aliyun/aliyun-log-go-sdk v0.1.83
