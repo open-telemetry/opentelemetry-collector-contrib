@@ -61,6 +61,14 @@ type MetricsConfig struct {
 	OracledbProcessesLimit                        MetricConfig `mapstructure:"oracledb.processes.limit"`
 	OracledbProcessesUsage                        MetricConfig `mapstructure:"oracledb.processes.usage"`
 	OracledbQueriesParallelized                   MetricConfig `mapstructure:"oracledb.queries_parallelized"`
+	OracledbQueryChildNumber                      MetricConfig `mapstructure:"oracledb.query.child_number"`
+	OracledbQueryDuration                         MetricConfig `mapstructure:"oracledb.query.duration"`
+	OracledbQueryID                               MetricConfig `mapstructure:"oracledb.query.id"`
+	OracledbQueryPlanHash                         MetricConfig `mapstructure:"oracledb.query.plan_hash"`
+	OracledbQueryPort                             MetricConfig `mapstructure:"oracledb.query.port"`
+	OracledbQueryProcess                          MetricConfig `mapstructure:"oracledb.query.process"`
+	OracledbQuerySerialNumber                     MetricConfig `mapstructure:"oracledb.query.serial_number"`
+	OracledbQuerySid                              MetricConfig `mapstructure:"oracledb.query.sid"`
 	OracledbSessionsLimit                         MetricConfig `mapstructure:"oracledb.sessions.limit"`
 	OracledbSessionsUsage                         MetricConfig `mapstructure:"oracledb.sessions.usage"`
 	OracledbTablespaceSizeLimit                   MetricConfig `mapstructure:"oracledb.tablespace_size.limit"`
@@ -172,6 +180,30 @@ func DefaultMetricsConfig() MetricsConfig {
 		OracledbQueriesParallelized: MetricConfig{
 			Enabled: false,
 		},
+		OracledbQueryChildNumber: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQueryDuration: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQueryID: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQueryPlanHash: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQueryPort: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQueryProcess: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQuerySerialNumber: MetricConfig{
+			Enabled: true,
+		},
+		OracledbQuerySid: MetricConfig{
+			Enabled: true,
+		},
 		OracledbSessionsLimit: MetricConfig{
 			Enabled: true,
 		},
@@ -227,12 +259,60 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for oracledb resource attributes.
 type ResourceAttributesConfig struct {
-	OracledbInstanceName ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	DbQueryText             ResourceAttributeConfig `mapstructure:"db.query.text"`
+	OracledbInstanceName    ResourceAttributeConfig `mapstructure:"oracledb.instance.name"`
+	OracledbQueryEvent      ResourceAttributeConfig `mapstructure:"oracledb.query.event"`
+	OracledbQueryModule     ResourceAttributeConfig `mapstructure:"oracledb.query.module"`
+	OracledbQueryObjectName ResourceAttributeConfig `mapstructure:"oracledb.query.object_name"`
+	OracledbQueryObjectType ResourceAttributeConfig `mapstructure:"oracledb.query.object_type"`
+	OracledbQueryOsuser     ResourceAttributeConfig `mapstructure:"oracledb.query.osuser"`
+	OracledbQueryProgram    ResourceAttributeConfig `mapstructure:"oracledb.query.program"`
+	OracledbQueryState      ResourceAttributeConfig `mapstructure:"oracledb.query.state"`
+	OracledbQueryStatus     ResourceAttributeConfig `mapstructure:"oracledb.query.status"`
+	OracledbQueryWaitClass  ResourceAttributeConfig `mapstructure:"oracledb.query.wait_class"`
+	OracledbSchemaname      ResourceAttributeConfig `mapstructure:"oracledb.schemaname"`
+	OracledbUsername        ResourceAttributeConfig `mapstructure:"oracledb.username"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		DbQueryText: ResourceAttributeConfig{
+			Enabled: true,
+		},
 		OracledbInstanceName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryEvent: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryModule: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryObjectName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryObjectType: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryOsuser: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryProgram: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryState: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryStatus: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbQueryWaitClass: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbSchemaname: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		OracledbUsername: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

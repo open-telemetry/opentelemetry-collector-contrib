@@ -13,6 +13,54 @@ resource_attributes:
     description: The name of the instance that data is coming from.
     enabled: true
     type: string
+  oracledb.username:
+    description: Oracle username
+    enabled: true
+    type: string
+  oracledb.schemaname:
+    description: Schema user name
+    enabled: true
+    type: string
+  oracledb.query.program:
+    description: Operating system program name
+    enabled: true
+    type: string
+  oracledb.query.module:
+    description: Name of the currently executing module
+    enabled: true
+    type: string
+  oracledb.query.status:
+    description: Status of the query.
+    enabled: true
+    type: string
+  oracledb.query.state:
+    description: State of the query
+    enabled: true
+    type: string
+  oracledb.query.wait_class:
+    description: Name of the class of the wait event
+    enabled: true
+    type: string
+  oracledb.query.event:
+    description: Resource or event for which the session is waiting
+    enabled: true
+    type: string
+  oracledb.query.object_name:
+    description: PL/SQL object name associated with the query.
+    enabled: true
+    type: string
+  oracledb.query.object_type:
+    description: Type of PL/SQL object associated with the query
+    enabled: true
+    type: string
+  db.query.text:
+    description: The full query text.
+    enabled: true
+    type: string
+  oracledb.query.osuser:
+    description: Operating system client user name
+    enabled: true
+    type: string
 
 attributes:
   session_status:
@@ -387,3 +435,53 @@ metrics:
       value_type: int
       input_type: string
     unit: "{executions}"
+  oracledb.query.id:
+    description: SQL ID.
+    enabled: true
+    gauge:
+      value_type: int 
+    unit: "{id}"
+  oracledb.query.child_number:
+    description: Child number for a given SQL ID.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{id}"
+  oracledb.query.sid:
+    description: Session id in which the query is running.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{id}"
+  oracledb.query.serial_number:
+    description: Serial number of the session id.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{number}"
+  oracledb.query.process:
+    description: Process under which query is executed.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{process}"
+  oracledb.query.port:
+    description: Process number on which query is executed.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{port}"
+  oracledb.query.plan_hash:
+    description: Plan Hash Value of the query.
+    enabled: true
+    gauge:
+      value_type: int
+    unit: "{plan_hash}"
+  oracledb.query.duration:
+    description: Execution duration of the query in seconds
+    enabled: true
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: true
+      value_type: double
+    unit: s

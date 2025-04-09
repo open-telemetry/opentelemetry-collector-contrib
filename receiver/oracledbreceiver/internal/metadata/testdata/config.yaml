@@ -67,6 +67,22 @@ all_set:
       enabled: true
     oracledb.queries_parallelized:
       enabled: true
+    oracledb.query.child_number:
+      enabled: true
+    oracledb.query.duration:
+      enabled: true
+    oracledb.query.id:
+      enabled: true
+    oracledb.query.plan_hash:
+      enabled: true
+    oracledb.query.port:
+      enabled: true
+    oracledb.query.process:
+      enabled: true
+    oracledb.query.serial_number:
+      enabled: true
+    oracledb.query.sid:
+      enabled: true
     oracledb.sessions.limit:
       enabled: true
     oracledb.sessions.usage:
@@ -84,7 +100,31 @@ all_set:
     oracledb.user_rollbacks:
       enabled: true
   resource_attributes:
+    db.query.text:
+      enabled: true
     oracledb.instance.name:
+      enabled: true
+    oracledb.query.event:
+      enabled: true
+    oracledb.query.module:
+      enabled: true
+    oracledb.query.object_name:
+      enabled: true
+    oracledb.query.object_type:
+      enabled: true
+    oracledb.query.osuser:
+      enabled: true
+    oracledb.query.program:
+      enabled: true
+    oracledb.query.state:
+      enabled: true
+    oracledb.query.status:
+      enabled: true
+    oracledb.query.wait_class:
+      enabled: true
+    oracledb.schemaname:
+      enabled: true
+    oracledb.username:
       enabled: true
 none_set:
   metrics:
@@ -154,6 +194,22 @@ none_set:
       enabled: false
     oracledb.queries_parallelized:
       enabled: false
+    oracledb.query.child_number:
+      enabled: false
+    oracledb.query.duration:
+      enabled: false
+    oracledb.query.id:
+      enabled: false
+    oracledb.query.plan_hash:
+      enabled: false
+    oracledb.query.port:
+      enabled: false
+    oracledb.query.process:
+      enabled: false
+    oracledb.query.serial_number:
+      enabled: false
+    oracledb.query.sid:
+      enabled: false
     oracledb.sessions.limit:
       enabled: false
     oracledb.sessions.usage:
@@ -171,17 +227,137 @@ none_set:
     oracledb.user_rollbacks:
       enabled: false
   resource_attributes:
+    db.query.text:
+      enabled: false
     oracledb.instance.name:
+      enabled: false
+    oracledb.query.event:
+      enabled: false
+    oracledb.query.module:
+      enabled: false
+    oracledb.query.object_name:
+      enabled: false
+    oracledb.query.object_type:
+      enabled: false
+    oracledb.query.osuser:
+      enabled: false
+    oracledb.query.program:
+      enabled: false
+    oracledb.query.state:
+      enabled: false
+    oracledb.query.status:
+      enabled: false
+    oracledb.query.wait_class:
+      enabled: false
+    oracledb.schemaname:
+      enabled: false
+    oracledb.username:
       enabled: false
 filter_set_include:
   resource_attributes:
+    db.query.text:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
     oracledb.instance.name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.event:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.module:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.object_name:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.object_type:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.osuser:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.program:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.state:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.status:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.query.wait_class:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.schemaname:
+      enabled: true
+      metrics_include:
+        - regexp: ".*"
+    oracledb.username:
       enabled: true
       metrics_include:
         - regexp: ".*"
 filter_set_exclude:
   resource_attributes:
+    db.query.text:
+      enabled: true
+      metrics_exclude:
+        - strict: "db.query.text-val"
     oracledb.instance.name:
       enabled: true
       metrics_exclude:
         - strict: "oracledb.instance.name-val"
+    oracledb.query.event:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.event-val"
+    oracledb.query.module:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.module-val"
+    oracledb.query.object_name:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.object_name-val"
+    oracledb.query.object_type:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.object_type-val"
+    oracledb.query.osuser:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.osuser-val"
+    oracledb.query.program:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.program-val"
+    oracledb.query.state:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.state-val"
+    oracledb.query.status:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.status-val"
+    oracledb.query.wait_class:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.query.wait_class-val"
+    oracledb.schemaname:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.schemaname-val"
+    oracledb.username:
+      enabled: true
+      metrics_exclude:
+        - strict: "oracledb.username-val"

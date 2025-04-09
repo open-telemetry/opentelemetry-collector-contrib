@@ -15,10 +15,8 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 )
 
-var typ = component.MustNewType("oracledb")
-
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, typ, NewFactory().Type())
+	require.Equal(t, "oracledb", NewFactory().Type().String())
 }
 
 func TestComponentConfigStruct(t *testing.T) {
@@ -29,8 +27,8 @@ func TestComponentLifecycle(t *testing.T) {
 	factory := NewFactory()
 
 	tests := []struct {
-		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 		name     string
+		createFn func(ctx context.Context, set receiver.Settings, cfg component.Config) (component.Component, error)
 	}{
 
 		{
@@ -50,19 +48,19 @@ func TestComponentLifecycle(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name+"-shutdown", func(t *testing.T) {
-			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			c, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			err = c.Shutdown(context.Background())
 			require.NoError(t, err)
 		})
 		t.Run(tt.name+"-lifecycle", func(t *testing.T) {
-			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			firstRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			host := componenttest.NewNopHost()
 			require.NoError(t, err)
 			require.NoError(t, firstRcvr.Start(context.Background(), host))
 			require.NoError(t, firstRcvr.Shutdown(context.Background()))
-			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(typ), cfg)
+			secondRcvr, err := tt.createFn(context.Background(), receivertest.NewNopSettings(), cfg)
 			require.NoError(t, err)
 			require.NoError(t, secondRcvr.Start(context.Background(), host))
 			require.NoError(t, secondRcvr.Shutdown(context.Background()))

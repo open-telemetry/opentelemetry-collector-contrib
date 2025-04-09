@@ -148,6 +148,70 @@ Current count of active processes.
 | ---- | ----------- | ---------- |
 | {processes} | Gauge | Int |
 
+### oracledb.query.child_number
+
+Child number for a given SQL ID.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {id} | Gauge | Int |
+
+### oracledb.query.duration
+
+Execution duration of the query in seconds
+
+| Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
+| ---- | ----------- | ---------- | ----------------------- | --------- |
+| s | Sum | Double | Cumulative | true |
+
+### oracledb.query.id
+
+SQL ID.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {id} | Gauge | Int |
+
+### oracledb.query.plan_hash
+
+Plan Hash Value of the query.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {plan_hash} | Gauge | Int |
+
+### oracledb.query.port
+
+Process number on which query is executed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {port} | Gauge | Int |
+
+### oracledb.query.process
+
+Process under which query is executed.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {process} | Gauge | Int |
+
+### oracledb.query.serial_number
+
+Serial number of the session id.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {number} | Gauge | Int |
+
+### oracledb.query.sid
+
+Session id in which the query is running.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {id} | Gauge | Int |
+
 ### oracledb.sessions.limit
 
 Maximum limit of active sessions, -1 if unlimited.
@@ -373,4 +437,16 @@ Number of SELECT statements executed in parallel
 
 | Name | Description | Values | Enabled |
 | ---- | ----------- | ------ | ------- |
+| db.query.text | The full query text. | Any Str | true |
 | oracledb.instance.name | The name of the instance that data is coming from. | Any Str | true |
+| oracledb.query.event | Resource or event for which the session is waiting | Any Str | true |
+| oracledb.query.module | Name of the currently executing module | Any Str | true |
+| oracledb.query.object_name | PL/SQL object name associated with the query. | Any Str | true |
+| oracledb.query.object_type | Type of PL/SQL object associated with the query | Any Str | true |
+| oracledb.query.osuser | Operating system client user name | Any Str | true |
+| oracledb.query.program | Operating system program name | Any Str | true |
+| oracledb.query.state | State of the query | Any Str | true |
+| oracledb.query.status | Status of the query. | Any Str | true |
+| oracledb.query.wait_class | Name of the class of the wait event | Any Str | true |
+| oracledb.schemaname | Schema user name | Any Str | true |
+| oracledb.username | Oracle username | Any Str | true |

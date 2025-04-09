@@ -21,10 +21,94 @@ func NewResourceBuilder(rac ResourceAttributesConfig) *ResourceBuilder {
 	}
 }
 
+// SetDbQueryText sets provided value as "db.query.text" attribute.
+func (rb *ResourceBuilder) SetDbQueryText(val string) {
+	if rb.config.DbQueryText.Enabled {
+		rb.res.Attributes().PutStr("db.query.text", val)
+	}
+}
+
 // SetOracledbInstanceName sets provided value as "oracledb.instance.name" attribute.
 func (rb *ResourceBuilder) SetOracledbInstanceName(val string) {
 	if rb.config.OracledbInstanceName.Enabled {
 		rb.res.Attributes().PutStr("oracledb.instance.name", val)
+	}
+}
+
+// SetOracledbQueryEvent sets provided value as "oracledb.query.event" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryEvent(val string) {
+	if rb.config.OracledbQueryEvent.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.event", val)
+	}
+}
+
+// SetOracledbQueryModule sets provided value as "oracledb.query.module" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryModule(val string) {
+	if rb.config.OracledbQueryModule.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.module", val)
+	}
+}
+
+// SetOracledbQueryObjectName sets provided value as "oracledb.query.object_name" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryObjectName(val string) {
+	if rb.config.OracledbQueryObjectName.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.object_name", val)
+	}
+}
+
+// SetOracledbQueryObjectType sets provided value as "oracledb.query.object_type" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryObjectType(val string) {
+	if rb.config.OracledbQueryObjectType.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.object_type", val)
+	}
+}
+
+// SetOracledbQueryOsuser sets provided value as "oracledb.query.osuser" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryOsuser(val string) {
+	if rb.config.OracledbQueryOsuser.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.osuser", val)
+	}
+}
+
+// SetOracledbQueryProgram sets provided value as "oracledb.query.program" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryProgram(val string) {
+	if rb.config.OracledbQueryProgram.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.program", val)
+	}
+}
+
+// SetOracledbQueryState sets provided value as "oracledb.query.state" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryState(val string) {
+	if rb.config.OracledbQueryState.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.state", val)
+	}
+}
+
+// SetOracledbQueryStatus sets provided value as "oracledb.query.status" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryStatus(val string) {
+	if rb.config.OracledbQueryStatus.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.status", val)
+	}
+}
+
+// SetOracledbQueryWaitClass sets provided value as "oracledb.query.wait_class" attribute.
+func (rb *ResourceBuilder) SetOracledbQueryWaitClass(val string) {
+	if rb.config.OracledbQueryWaitClass.Enabled {
+		rb.res.Attributes().PutStr("oracledb.query.wait_class", val)
+	}
+}
+
+// SetOracledbSchemaname sets provided value as "oracledb.schemaname" attribute.
+func (rb *ResourceBuilder) SetOracledbSchemaname(val string) {
+	if rb.config.OracledbSchemaname.Enabled {
+		rb.res.Attributes().PutStr("oracledb.schemaname", val)
+	}
+}
+
+// SetOracledbUsername sets provided value as "oracledb.username" attribute.
+func (rb *ResourceBuilder) SetOracledbUsername(val string) {
+	if rb.config.OracledbUsername.Enabled {
+		rb.res.Attributes().PutStr("oracledb.username", val)
 	}
 }
 

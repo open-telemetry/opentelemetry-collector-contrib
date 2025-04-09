@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings(receivertest.NopType)
+			settings := receivertest.NewNopSettings()
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -186,6 +186,38 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordOracledbQueryChildNumberDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQueryDurationDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQueryIDDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQueryPlanHashDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQueryPortDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQueryProcessDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQuerySerialNumberDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordOracledbQuerySidDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordOracledbSessionsLimitDataPoint(ts, "1")
 
 			defaultMetricsCount++
@@ -217,7 +249,19 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordOracledbUserRollbacksDataPoint(ts, "1")
 
 			rb := mb.NewResourceBuilder()
+			rb.SetDbQueryText("db.query.text-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
+			rb.SetOracledbQueryEvent("oracledb.query.event-val")
+			rb.SetOracledbQueryModule("oracledb.query.module-val")
+			rb.SetOracledbQueryObjectName("oracledb.query.object_name-val")
+			rb.SetOracledbQueryObjectType("oracledb.query.object_type-val")
+			rb.SetOracledbQueryOsuser("oracledb.query.osuser-val")
+			rb.SetOracledbQueryProgram("oracledb.query.program-val")
+			rb.SetOracledbQueryState("oracledb.query.state-val")
+			rb.SetOracledbQueryStatus("oracledb.query.status-val")
+			rb.SetOracledbQueryWaitClass("oracledb.query.wait_class-val")
+			rb.SetOracledbSchemaname("oracledb.schemaname-val")
+			rb.SetOracledbUsername("oracledb.username-val")
 			res := rb.Emit()
 			metrics := mb.Emit(WithResource(res))
 
@@ -682,6 +726,104 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.True(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.child_number":
+					assert.False(t, validatedMetrics["oracledb.query.child_number"], "Found a duplicate in the metrics slice: oracledb.query.child_number")
+					validatedMetrics["oracledb.query.child_number"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Child number for a given SQL ID.", ms.At(i).Description())
+					assert.Equal(t, "{id}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.duration":
+					assert.False(t, validatedMetrics["oracledb.query.duration"], "Found a duplicate in the metrics slice: oracledb.query.duration")
+					validatedMetrics["oracledb.query.duration"] = true
+					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
+					assert.Equal(t, "Execution duration of the query in seconds", ms.At(i).Description())
+					assert.Equal(t, "s", ms.At(i).Unit())
+					assert.True(t, ms.At(i).Sum().IsMonotonic())
+					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
+					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+				case "oracledb.query.id":
+					assert.False(t, validatedMetrics["oracledb.query.id"], "Found a duplicate in the metrics slice: oracledb.query.id")
+					validatedMetrics["oracledb.query.id"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "SQL ID.", ms.At(i).Description())
+					assert.Equal(t, "{id}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.plan_hash":
+					assert.False(t, validatedMetrics["oracledb.query.plan_hash"], "Found a duplicate in the metrics slice: oracledb.query.plan_hash")
+					validatedMetrics["oracledb.query.plan_hash"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Plan Hash Value of the query.", ms.At(i).Description())
+					assert.Equal(t, "{plan_hash}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.port":
+					assert.False(t, validatedMetrics["oracledb.query.port"], "Found a duplicate in the metrics slice: oracledb.query.port")
+					validatedMetrics["oracledb.query.port"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Process number on which query is executed.", ms.At(i).Description())
+					assert.Equal(t, "{port}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.process":
+					assert.False(t, validatedMetrics["oracledb.query.process"], "Found a duplicate in the metrics slice: oracledb.query.process")
+					validatedMetrics["oracledb.query.process"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Process under which query is executed.", ms.At(i).Description())
+					assert.Equal(t, "{process}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.serial_number":
+					assert.False(t, validatedMetrics["oracledb.query.serial_number"], "Found a duplicate in the metrics slice: oracledb.query.serial_number")
+					validatedMetrics["oracledb.query.serial_number"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Serial number of the session id.", ms.At(i).Description())
+					assert.Equal(t, "{number}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "oracledb.query.sid":
+					assert.False(t, validatedMetrics["oracledb.query.sid"], "Found a duplicate in the metrics slice: oracledb.query.sid")
+					validatedMetrics["oracledb.query.sid"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Session id in which the query is running.", ms.At(i).Description())
+					assert.Equal(t, "{id}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

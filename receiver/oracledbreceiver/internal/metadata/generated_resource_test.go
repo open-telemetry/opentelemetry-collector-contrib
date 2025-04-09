@@ -13,16 +13,28 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetDbQueryText("db.query.text-val")
 			rb.SetOracledbInstanceName("oracledb.instance.name-val")
+			rb.SetOracledbQueryEvent("oracledb.query.event-val")
+			rb.SetOracledbQueryModule("oracledb.query.module-val")
+			rb.SetOracledbQueryObjectName("oracledb.query.object_name-val")
+			rb.SetOracledbQueryObjectType("oracledb.query.object_type-val")
+			rb.SetOracledbQueryOsuser("oracledb.query.osuser-val")
+			rb.SetOracledbQueryProgram("oracledb.query.program-val")
+			rb.SetOracledbQueryState("oracledb.query.state-val")
+			rb.SetOracledbQueryStatus("oracledb.query.status-val")
+			rb.SetOracledbQueryWaitClass("oracledb.query.wait_class-val")
+			rb.SetOracledbSchemaname("oracledb.schemaname-val")
+			rb.SetOracledbUsername("oracledb.username-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
 
 			switch tt {
 			case "default":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 13, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 1, res.Attributes().Len())
+				assert.Equal(t, 13, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -30,10 +42,70 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("oracledb.instance.name")
+			val, ok := res.Attributes().Get("db.query.text")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "db.query.text-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.instance.name")
 			assert.True(t, ok)
 			if ok {
 				assert.EqualValues(t, "oracledb.instance.name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.event")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.event-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.module")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.module-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.object_name")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.object_name-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.object_type")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.object_type-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.osuser")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.osuser-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.program")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.program-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.state")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.state-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.status")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.status-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.query.wait_class")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.query.wait_class-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.schemaname")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.schemaname-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("oracledb.username")
+			assert.True(t, ok)
+			if ok {
+				assert.EqualValues(t, "oracledb.username-val", val.Str())
 			}
 		})
 	}
