@@ -613,7 +613,7 @@ func TestSpanProcessor_setStatusCode(t *testing.T) {
 
 	assert.NoError(t, tp.ConsumeTraces(context.Background(), td))
 
-	assert.EqualValues(t, generateTraceDataSetStatus(ptrace.StatusCodeError, "Set custom error message", nil), td)
+	assert.Equal(t, generateTraceDataSetStatus(ptrace.StatusCodeError, "Set custom error message", nil), td)
 }
 
 func TestSpanProcessor_setStatusCodeConditionally(t *testing.T) {

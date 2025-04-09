@@ -4,11 +4,9 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"strings"
-	"text/template"
 )
 
 // Direct access to queries is not recommended: The receiver allows filtering based on
@@ -343,25 +341,13 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 //go:embed templates/dbQueryAndTextQuery.tmpl
 var sqlServerQueryTextAndPlanQueryTemplate string
 
-func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount uint, lookbackTime uint) (string, error) {
-	var instanceNameClause string
+func getSQLServerQueryTextAndPlanQuery() string {
+	return sqlServerQueryTextAndPlanQueryTemplate
+}
 
-	if instanceName != "" {
-		instanceNameClause = fmt.Sprintf("AND @@SERVERNAME = '%s'", instanceName)
-	} else {
-		instanceNameClause = ""
-	}
+//go:embed templates/sqlServerQuerySample.tmpl
+var sqlServerQuerySamples string
 
-	tmpl := template.Must(template.New("dbQueryAndTextQuery").Option("missingkey=error").Parse(sqlServerQueryTextAndPlanQueryTemplate))
-	buf := bytes.Buffer{}
-
-	if err := tmpl.Execute(&buf, map[string]any{
-		"topNValue":          maxQuerySampleCount,
-		"lookbackTime":       lookbackTime,
-		"instanceNameClause": instanceNameClause,
-	}); err != nil {
-		return "", fmt.Errorf("failed executing template: %w", err)
-	}
-
-	return buf.String(), nil
+func getSQLServerQuerySamplesQuery() string {
+	return sqlServerQuerySamples
 }

@@ -31,17 +31,16 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, cfg, "failed to create default config")
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	assert.Equal(t, configkafka.NewDefaultClientConfig(), cfg.ClientConfig)
-	assert.Equal(t, "", cfg.Topic)
+	assert.Empty(t, cfg.Topic)
 }
 
 func TestCreateMetricExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []MetricsMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -67,10 +66,9 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 
@@ -102,10 +100,9 @@ func TestCreateLogExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []LogsMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating broker)",
@@ -131,10 +128,9 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 
@@ -166,10 +162,9 @@ func TestCreateTraceExporter(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		name       string
-		conf       *Config
-		marshalers []TracesMarshaler
-		err        *net.DNSError
+		name string
+		conf *Config
+		err  *net.DNSError
 	}{
 		{
 			name: "valid config (no validating brokers)",
@@ -178,8 +173,7 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 		{
 			name: "invalid config (validating brokers)",
@@ -187,18 +181,16 @@ func TestCreateTraceExporter(t *testing.T) {
 				conf.Brokers = []string{"invalid:9092"}
 				conf.ProtocolVersion = "2.0.0"
 			}),
-			marshalers: nil,
-			err:        &net.DNSError{},
+			err: &net.DNSError{},
 		},
 		{
 			name: "default_encoding",
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
-			marshalers: nil,
-			err:        nil,
+			err: nil,
 		},
 	}
 

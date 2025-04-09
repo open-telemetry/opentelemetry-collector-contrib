@@ -6,7 +6,6 @@ package kafkareceiver // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"fmt"
 	"strconv"
 	"sync"
 	"time"
@@ -36,8 +35,6 @@ const (
 	attrPartition    = "partition"
 )
 
-var errInvalidInitialOffset = errors.New("invalid initial offset")
-
 var errMemoryLimiterDataRefused = errors.New("data refused due to high memory usage")
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
@@ -47,7 +44,7 @@ type kafkaTracesConsumer struct {
 	nextConsumer      consumer.Traces
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaler       TracesUnmarshaler
+	unmarshaler       ptrace.Unmarshaler
 	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
@@ -69,7 +66,7 @@ type kafkaMetricsConsumer struct {
 	nextConsumer      consumer.Metrics
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaler       MetricsUnmarshaler
+	unmarshaler       pmetric.Unmarshaler
 	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
@@ -91,7 +88,7 @@ type kafkaLogsConsumer struct {
 	nextConsumer      consumer.Logs
 	topics            []string
 	cancelConsumeLoop context.CancelFunc
-	unmarshaler       LogsUnmarshaler
+	unmarshaler       plog.Unmarshaler
 	consumeLoopWG     *sync.WaitGroup
 
 	settings         receiver.Settings
@@ -136,35 +133,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 }
 
 func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
-	saramaConfig := sarama.NewConfig()
-	saramaConfig.ClientID = config.ClientID
-	saramaConfig.Metadata.Full = config.Metadata.Full
-	saramaConfig.Metadata.Retry.Max = config.Metadata.Retry.Max
-	saramaConfig.Metadata.Retry.Backoff = config.Metadata.Retry.Backoff
-	saramaConfig.Consumer.Offsets.AutoCommit.Enable = config.AutoCommit.Enable
-	saramaConfig.Consumer.Offsets.AutoCommit.Interval = config.AutoCommit.Interval
-	saramaConfig.Consumer.Group.Session.Timeout = config.SessionTimeout
-	saramaConfig.Consumer.Group.Heartbeat.Interval = config.HeartbeatInterval
-	saramaConfig.Consumer.Fetch.Min = config.MinFetchSize
-	saramaConfig.Consumer.Fetch.Default = config.DefaultFetchSize
-	saramaConfig.Consumer.Fetch.Max = config.MaxFetchSize
-
-	var err error
-	if saramaConfig.Consumer.Offsets.Initial, err = toSaramaInitialOffset(config.InitialOffset); err != nil {
-		return nil, err
-	}
-	if config.ResolveCanonicalBootstrapServersOnly {
-		saramaConfig.Net.ResolveCanonicalBootstrapServers = true
-	}
-	if config.ProtocolVersion != "" {
-		if saramaConfig.Version, err = sarama.ParseKafkaVersion(config.ProtocolVersion); err != nil {
-			return nil, err
-		}
-	}
-	if err := kafka.ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
-		return nil, err
-	}
-	return sarama.NewConsumerGroup(config.Brokers, config.GroupID, saramaConfig)
+	return kafka.NewSaramaConsumerGroup(ctx, config.ClientConfig, config.ConsumerConfig)
 }
 
 func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) error {
@@ -178,22 +147,13 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	if err != nil {
 		return err
 	}
-	// extensions take precedence over internal encodings
-	if unmarshaler, errExt := loadEncodingExtension[ptrace.Unmarshaler](
-		host,
-		c.config.Encoding,
-	); errExt == nil {
-		c.unmarshaler = &tracesEncodingUnmarshaler{
-			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
-		}
+
+	unmarshaler, err := newTracesUnmarshaler(c.config.Encoding, c.settings, host)
+	if err != nil {
+		return err
 	}
-	if unmarshaler, ok := defaultTracesUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
-		c.unmarshaler = unmarshaler
-	}
-	if c.unmarshaler == nil {
-		return errUnrecognizedEncoding
-	}
+	c.unmarshaler = unmarshaler
+
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
@@ -202,6 +162,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
 		logger:            c.settings.Logger,
+		encoding:          c.config.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),
@@ -287,22 +248,13 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	if err != nil {
 		return err
 	}
-	// extensions take precedence over internal encodings
-	if unmarshaler, errExt := loadEncodingExtension[pmetric.Unmarshaler](
-		host,
-		c.config.Encoding,
-	); errExt == nil {
-		c.unmarshaler = &metricsEncodingUnmarshaler{
-			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
-		}
+
+	unmarshaler, err := newMetricsUnmarshaler(c.config.Encoding, c.settings, host)
+	if err != nil {
+		return err
 	}
-	if unmarshaler, ok := defaultMetricsUnmarshalers()[c.config.Encoding]; c.unmarshaler == nil && ok {
-		c.unmarshaler = unmarshaler
-	}
-	if c.unmarshaler == nil {
-		return errUnrecognizedEncoding
-	}
+	c.unmarshaler = unmarshaler
+
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
@@ -311,6 +263,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
 		logger:            c.settings.Logger,
+		encoding:          c.config.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),
@@ -396,25 +349,13 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	if err != nil {
 		return err
 	}
-	// extensions take precedence over internal encodings
-	if unmarshaler, errExt := loadEncodingExtension[plog.Unmarshaler](
-		host,
-		c.config.Encoding,
-	); errExt == nil {
-		c.unmarshaler = &logsEncodingUnmarshaler{
-			unmarshaler: *unmarshaler,
-			encoding:    c.config.Encoding,
-		}
+
+	unmarshaler, err := newLogsUnmarshaler(c.config.Encoding, c.settings, host)
+	if err != nil {
+		return err
 	}
-	if unmarshaler, errInt := getLogsUnmarshaler(
-		c.config.Encoding,
-		defaultLogsUnmarshalers(c.settings.BuildInfo.Version, c.settings.Logger),
-	); c.unmarshaler == nil && errInt == nil {
-		c.unmarshaler = unmarshaler
-	}
-	if c.unmarshaler == nil {
-		return errUnrecognizedEncoding
-	}
+	c.unmarshaler = unmarshaler
+
 	// consumerGroup may be set in tests to inject fake implementation.
 	if c.consumerGroup == nil {
 		if c.consumerGroup, err = createKafkaClient(ctx, c.config); err != nil {
@@ -423,6 +364,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
 		logger:            c.settings.Logger,
+		encoding:          c.config.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),
@@ -476,7 +418,8 @@ func (c *kafkaLogsConsumer) Shutdown(context.Context) error {
 
 type tracesConsumerGroupHandler struct {
 	id           component.ID
-	unmarshaler  TracesUnmarshaler
+	encoding     string
+	unmarshaler  ptrace.Unmarshaler
 	nextConsumer consumer.Traces
 	ready        chan bool
 	readyCloser  sync.Once
@@ -490,11 +433,13 @@ type tracesConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 type metricsConsumerGroupHandler struct {
 	id           component.ID
-	unmarshaler  MetricsUnmarshaler
+	encoding     string
+	unmarshaler  pmetric.Unmarshaler
 	nextConsumer consumer.Metrics
 	ready        chan bool
 	readyCloser  sync.Once
@@ -508,11 +453,13 @@ type metricsConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 type logsConsumerGroupHandler struct {
 	id           component.ID
-	unmarshaler  LogsUnmarshaler
+	encoding     string
+	unmarshaler  plog.Unmarshaler
 	nextConsumer consumer.Logs
 	ready        chan bool
 	readyCloser  sync.Once
@@ -526,6 +473,7 @@ type logsConsumerGroupHandler struct {
 	messageMarking    MessageMarking
 	headerExtractor   HeaderExtractor
 	backOff           *backoff.ExponentialBackOff
+	backOffMutex      sync.Mutex
 }
 
 var (
@@ -575,7 +523,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
-			traces, err := c.unmarshaler.Unmarshal(message.Value)
+			traces, err := c.unmarshaler.UnmarshalTraces(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
@@ -588,11 +536,16 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			c.headerExtractor.extractHeadersTraces(traces, message)
 			spanCount := traces.SpanCount()
 			err = c.nextConsumer.ConsumeTraces(session.Context(), traces)
-			c.obsrecv.EndTracesOp(ctx, c.unmarshaler.Encoding(), spanCount, err)
+			c.obsrecv.EndTracesOp(ctx, c.encoding, spanCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					backOffDelay := c.backOff.NextBackOff()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -604,6 +557,8 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -611,7 +566,7 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 				return err
 			}
 			if c.backOff != nil {
-				c.backOff.Reset()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -627,6 +582,18 @@ func (c *tracesConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSe
 			return nil
 		}
 	}
+}
+
+func (c *tracesConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *tracesConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
 }
 
 func (c *metricsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
@@ -670,7 +637,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
-			metrics, err := c.unmarshaler.Unmarshal(message.Value)
+			metrics, err := c.unmarshaler.UnmarshalMetrics(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints.Add(session.Context(), 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
@@ -683,11 +650,16 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 
 			dataPointCount := metrics.DataPointCount()
 			err = c.nextConsumer.ConsumeMetrics(session.Context(), metrics)
-			c.obsrecv.EndMetricsOp(ctx, c.unmarshaler.Encoding(), dataPointCount, err)
+			c.obsrecv.EndMetricsOp(ctx, c.encoding, dataPointCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					backOffDelay := c.backOff.NextBackOff()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -699,6 +671,8 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -706,7 +680,7 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 				return err
 			}
 			if c.backOff != nil {
-				c.backOff.Reset()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -722,6 +696,18 @@ func (c *metricsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupS
 			return nil
 		}
 	}
+}
+
+func (c *metricsConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *metricsConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
 }
 
 func (c *logsConsumerGroupHandler) Setup(session sarama.ConsumerGroupSession) error {
@@ -765,7 +751,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			c.telemetryBuilder.KafkaReceiverCurrentOffset.Record(ctx, message.Offset, metric.WithAttributeSet(attrs))
 			c.telemetryBuilder.KafkaReceiverOffsetLag.Record(ctx, claim.HighWaterMarkOffset()-message.Offset-1, metric.WithAttributeSet(attrs))
 
-			logs, err := c.unmarshaler.Unmarshal(message.Value)
+			logs, err := c.unmarshaler.UnmarshalLogs(message.Value)
 			if err != nil {
 				c.logger.Error("failed to unmarshal message", zap.Error(err))
 				c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords.Add(ctx, 1, metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())))
@@ -777,11 +763,16 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 			c.headerExtractor.extractHeadersLogs(logs, message)
 			logRecordCount := logs.LogRecordCount()
 			err = c.nextConsumer.ConsumeLogs(session.Context(), logs)
-			c.obsrecv.EndLogsOp(ctx, c.unmarshaler.Encoding(), logRecordCount, err)
+			c.obsrecv.EndLogsOp(ctx, c.encoding, logRecordCount, err)
 			if err != nil {
 				if errorRequiresBackoff(err) && c.backOff != nil {
-					backOffDelay := c.backOff.NextBackOff()
+					backOffDelay := c.getNextBackoff()
 					if backOffDelay != backoff.Stop {
+						c.logger.Info("Backing off due to error from the next consumer.",
+							zap.Error(err),
+							zap.Duration("delay", backOffDelay),
+							zap.String("topic", message.Topic),
+							zap.Int32("partition", claim.Partition()))
 						select {
 						case <-session.Context().Done():
 							return nil
@@ -793,6 +784,8 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 							return err
 						}
 					}
+					c.logger.Info("Stop error backoff because the configured max_elapsed_time is reached",
+						zap.Duration("max_elapsed_time", c.backOff.MaxElapsedTime))
 				}
 				if c.messageMarking.After && c.messageMarking.OnError {
 					session.MarkMessage(message, "")
@@ -800,7 +793,7 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 				return err
 			}
 			if c.backOff != nil {
-				c.backOff.Reset()
+				c.resetBackoff()
 			}
 			if c.messageMarking.After {
 				session.MarkMessage(message, "")
@@ -818,6 +811,18 @@ func (c *logsConsumerGroupHandler) ConsumeClaim(session sarama.ConsumerGroupSess
 	}
 }
 
+func (c *logsConsumerGroupHandler) getNextBackoff() time.Duration {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	return c.backOff.NextBackOff()
+}
+
+func (c *logsConsumerGroupHandler) resetBackoff() {
+	c.backOffMutex.Lock()
+	defer c.backOffMutex.Unlock()
+	c.backOff.Reset()
+}
+
 func newExponentialBackOff(config configretry.BackOffConfig) *backoff.ExponentialBackOff {
 	if !config.Enabled {
 		return nil
@@ -830,46 +835,6 @@ func newExponentialBackOff(config configretry.BackOffConfig) *backoff.Exponentia
 	backOff.MaxElapsedTime = config.MaxElapsedTime
 	backOff.Reset()
 	return backOff
-}
-
-func toSaramaInitialOffset(initialOffset string) (int64, error) {
-	switch initialOffset {
-	case offsetEarliest:
-		return sarama.OffsetOldest, nil
-	case offsetLatest:
-		fallthrough
-	case "":
-		return sarama.OffsetNewest, nil
-	default:
-		return 0, errInvalidInitialOffset
-	}
-}
-
-// loadEncodingExtension tries to load an available extension for the given encoding.
-func loadEncodingExtension[T any](host component.Host, encoding string) (*T, error) {
-	extensionID, err := encodingToComponentID(encoding)
-	if err != nil {
-		return nil, err
-	}
-	encodingExtension, ok := host.GetExtensions()[*extensionID]
-	if !ok {
-		return nil, fmt.Errorf("unknown encoding extension %q", encoding)
-	}
-	unmarshaler, ok := encodingExtension.(T)
-	if !ok {
-		return nil, fmt.Errorf("extension %q is not an unmarshaler", encoding)
-	}
-	return &unmarshaler, nil
-}
-
-// encodingToComponentID converts an encoding string to a component ID using the given encoding as type.
-func encodingToComponentID(encoding string) (*component.ID, error) {
-	componentType, err := component.NewType(encoding)
-	if err != nil {
-		return nil, fmt.Errorf("invalid component type: %w", err)
-	}
-	id := component.NewID(componentType)
-	return &id, nil
 }
 
 func errorRequiresBackoff(err error) bool {

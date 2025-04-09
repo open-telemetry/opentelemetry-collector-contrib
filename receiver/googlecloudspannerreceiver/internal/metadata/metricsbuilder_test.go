@@ -162,12 +162,12 @@ func TestMetricsFromDataPointBuilder_GroupAndFilter(t *testing.T) {
 			require.NoError(t, err)
 			require.NotNil(t, groupedDataPoints)
 
-			assert.Equal(t, len(dataForTesting.expectedGroups), len(groupedDataPoints))
+			assert.Len(t, groupedDataPoints, len(dataForTesting.expectedGroups))
 
 			for expectedGroupingKey, expectedGroupPoints := range dataForTesting.expectedGroups {
 				dataPointsByKey := groupedDataPoints[expectedGroupingKey]
 
-				assert.Equal(t, len(expectedGroupPoints), len(dataPointsByKey))
+				assert.Len(t, dataPointsByKey, len(expectedGroupPoints))
 
 				for i, point := range expectedGroupPoints {
 					assert.Equal(t, point, dataPointsByKey[i])

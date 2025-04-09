@@ -181,7 +181,7 @@ func TestSpanKindToShortString(t *testing.T) {
 	assert.Equal(t, "client", spanKindToShortString(ptrace.SpanKindClient))
 	assert.Equal(t, "server", spanKindToShortString(ptrace.SpanKindServer))
 	assert.Equal(t, "internal", spanKindToShortString(ptrace.SpanKindInternal))
-	assert.Equal(t, "", spanKindToShortString(ptrace.SpanKindUnspecified))
+	assert.Empty(t, spanKindToShortString(ptrace.SpanKindUnspecified))
 }
 
 func TestStatusCodeToShortString(t *testing.T) {

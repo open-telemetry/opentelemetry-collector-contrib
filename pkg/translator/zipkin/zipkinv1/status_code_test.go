@@ -298,7 +298,7 @@ func TestStatusCodeMapperCases(t *testing.T) {
 
 			spanStatus := ptrace.NewStatus()
 			sMapper.status(spanStatus)
-			assert.EqualValues(t, test.expected, spanStatus)
+			assert.Equal(t, test.expected, spanStatus)
 		})
 	}
 }

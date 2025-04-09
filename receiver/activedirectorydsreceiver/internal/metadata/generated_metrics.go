@@ -201,6 +201,88 @@ var MapAttributeValueType = map[string]AttributeValueType{
 	"other":               AttributeValueTypeOther,
 }
 
+var MetricsInfo = metricsInfo{
+	ActiveDirectoryDsBindRate: metricInfo{
+		Name: "active_directory.ds.bind.rate",
+	},
+	ActiveDirectoryDsLdapBindLastSuccessfulTime: metricInfo{
+		Name: "active_directory.ds.ldap.bind.last_successful.time",
+	},
+	ActiveDirectoryDsLdapBindRate: metricInfo{
+		Name: "active_directory.ds.ldap.bind.rate",
+	},
+	ActiveDirectoryDsLdapClientSessionCount: metricInfo{
+		Name: "active_directory.ds.ldap.client.session.count",
+	},
+	ActiveDirectoryDsLdapSearchRate: metricInfo{
+		Name: "active_directory.ds.ldap.search.rate",
+	},
+	ActiveDirectoryDsNameCacheHitRate: metricInfo{
+		Name: "active_directory.ds.name_cache.hit_rate",
+	},
+	ActiveDirectoryDsNotificationQueued: metricInfo{
+		Name: "active_directory.ds.notification.queued",
+	},
+	ActiveDirectoryDsOperationRate: metricInfo{
+		Name: "active_directory.ds.operation.rate",
+	},
+	ActiveDirectoryDsReplicationNetworkIo: metricInfo{
+		Name: "active_directory.ds.replication.network.io",
+	},
+	ActiveDirectoryDsReplicationObjectRate: metricInfo{
+		Name: "active_directory.ds.replication.object.rate",
+	},
+	ActiveDirectoryDsReplicationOperationPending: metricInfo{
+		Name: "active_directory.ds.replication.operation.pending",
+	},
+	ActiveDirectoryDsReplicationPropertyRate: metricInfo{
+		Name: "active_directory.ds.replication.property.rate",
+	},
+	ActiveDirectoryDsReplicationSyncObjectPending: metricInfo{
+		Name: "active_directory.ds.replication.sync.object.pending",
+	},
+	ActiveDirectoryDsReplicationSyncRequestCount: metricInfo{
+		Name: "active_directory.ds.replication.sync.request.count",
+	},
+	ActiveDirectoryDsReplicationValueRate: metricInfo{
+		Name: "active_directory.ds.replication.value.rate",
+	},
+	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued: metricInfo{
+		Name: "active_directory.ds.security_descriptor_propagations_event.queued",
+	},
+	ActiveDirectoryDsSuboperationRate: metricInfo{
+		Name: "active_directory.ds.suboperation.rate",
+	},
+	ActiveDirectoryDsThreadCount: metricInfo{
+		Name: "active_directory.ds.thread.count",
+	},
+}
+
+type metricsInfo struct {
+	ActiveDirectoryDsBindRate                                  metricInfo
+	ActiveDirectoryDsLdapBindLastSuccessfulTime                metricInfo
+	ActiveDirectoryDsLdapBindRate                              metricInfo
+	ActiveDirectoryDsLdapClientSessionCount                    metricInfo
+	ActiveDirectoryDsLdapSearchRate                            metricInfo
+	ActiveDirectoryDsNameCacheHitRate                          metricInfo
+	ActiveDirectoryDsNotificationQueued                        metricInfo
+	ActiveDirectoryDsOperationRate                             metricInfo
+	ActiveDirectoryDsReplicationNetworkIo                      metricInfo
+	ActiveDirectoryDsReplicationObjectRate                     metricInfo
+	ActiveDirectoryDsReplicationOperationPending               metricInfo
+	ActiveDirectoryDsReplicationPropertyRate                   metricInfo
+	ActiveDirectoryDsReplicationSyncObjectPending              metricInfo
+	ActiveDirectoryDsReplicationSyncRequestCount               metricInfo
+	ActiveDirectoryDsReplicationValueRate                      metricInfo
+	ActiveDirectoryDsSecurityDescriptorPropagationsEventQueued metricInfo
+	ActiveDirectoryDsSuboperationRate                          metricInfo
+	ActiveDirectoryDsThreadCount                               metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricActiveDirectoryDsBindRate struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
