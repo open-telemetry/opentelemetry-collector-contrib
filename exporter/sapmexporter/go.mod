@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

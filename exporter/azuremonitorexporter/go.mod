@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/microsoft/ApplicationInsights-Go v0.4.4

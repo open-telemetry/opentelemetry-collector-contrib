@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package kafkareceiver
+package unmarshaler
 
 import (
 	"testing"
@@ -10,18 +10,11 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 )
 
-func TestNewJSONUnmarshaler(t *testing.T) {
-	t.Parallel()
-	um := newJSONLogsUnmarshaler()
-	assert.Equal(t, "json", um.Encoding())
-}
-
-func TestPlogReturnType(t *testing.T) {
-	t.Parallel()
-	um := newJSONLogsUnmarshaler()
+func TestJSONLogsUnmarshaler(t *testing.T) {
+	var u plog.Unmarshaler = JSONLogsUnmarshaler{}
 	json := `{"example": "example valid json to test that the unmarshaler is correctly returning a plog value"}`
 
-	unmarshaledJSON, err := um.Unmarshal([]byte(json))
+	unmarshaledJSON, err := u.UnmarshalLogs([]byte(json))
 
 	assert.NoError(t, err)
 	assert.NoError(t, err)
