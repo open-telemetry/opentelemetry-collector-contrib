@@ -694,7 +694,7 @@ func setupTestTelemetry() testTelemetry {
 func (tt *testTelemetry) newSettings() processor.Settings {
 	set := processortest.NewNopSettings(metadata.Type)
 	set.ID = component.NewID(component.MustNewType("tail_sampling"))
-	set.TelemetrySettings.MeterProvider = tt.meterProvider
+	set.MeterProvider = tt.meterProvider
 	return set
 }
 

@@ -4,11 +4,9 @@
 package sqlserverreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver"
 
 import (
-	"bytes"
 	_ "embed"
 	"fmt"
 	"strings"
-	"text/template"
 )
 
 // Direct access to queries is not recommended: The receiver allows filtering based on
@@ -343,47 +341,13 @@ func getSQLServerPropertiesQuery(instanceName string) string {
 //go:embed templates/dbQueryAndTextQuery.tmpl
 var sqlServerQueryTextAndPlanQueryTemplate string
 
-func getSQLServerQueryTextAndPlanQuery(instanceName string, maxQuerySampleCount uint, lookbackTime uint) (string, error) {
-	var instanceNameClause string
-
-	if instanceName != "" {
-		instanceNameClause = fmt.Sprintf("AND @@SERVERNAME = '%s'", instanceName)
-	} else {
-		instanceNameClause = ""
-	}
-
-	tmpl := template.Must(template.New("dbQueryAndTextQuery").Option("missingkey=error").Parse(sqlServerQueryTextAndPlanQueryTemplate))
-	buf := bytes.Buffer{}
-
-	if err := tmpl.Execute(&buf, map[string]any{
-		"topNValue":          maxQuerySampleCount,
-		"lookbackTime":       lookbackTime,
-		"instanceNameClause": instanceNameClause,
-	}); err != nil {
-		return "", fmt.Errorf("failed executing template: %w", err)
-	}
-
-	return buf.String(), nil
+func getSQLServerQueryTextAndPlanQuery() string {
+	return sqlServerQueryTextAndPlanQueryTemplate
 }
 
-//go:embed templates/sqlServerQuerySampleWithTop.tmpl
-var sqlServerQuerySamplesWithTop string
+//go:embed templates/sqlServerQuerySample.tmpl
+var sqlServerQuerySamples string
 
-// This one is used when the template execution fails as a fallback.
-// Even though in theory the template function should never fail, we
-// have it just in case.
-//
-//go:embed templates/sqlServerQuerySampleWithoutTop.tmpl
-var sqlServerQuerySamplesWithoutTop string
-
-func getSQLServerQuerySamplesQuery(maxRowsPerQuery uint64) string {
-	buf := bytes.Buffer{}
-
-	tmpl := template.Must(template.New("sqlServerQuerySample").Option("missingkey=error").Parse(sqlServerQuerySamplesWithTop))
-	if err := tmpl.Execute(&buf, map[string]any{
-		"Limit": maxRowsPerQuery,
-	}); err != nil {
-		return sqlServerQuerySamplesWithoutTop
-	}
-	return buf.String()
+func getSQLServerQuerySamplesQuery() string {
+	return sqlServerQuerySamples
 }

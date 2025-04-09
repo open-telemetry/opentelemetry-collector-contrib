@@ -66,7 +66,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 		case header.FromAttribute != nil:
 			defaultValue := ""
 			if header.DefaultValue != nil {
-				defaultValue = *header.DefaultValue
+				defaultValue = string(*header.DefaultValue)
 			}
 			s = &source.AttributeSource{
 				Key:          *header.FromAttribute,
@@ -75,7 +75,7 @@ func newHeadersSetterExtension(cfg *Config, logger *zap.Logger) (*headerSetterEx
 		case header.FromContext != nil:
 			defaultValue := ""
 			if header.DefaultValue != nil {
-				defaultValue = *header.DefaultValue
+				defaultValue = string(*header.DefaultValue)
 			}
 			s = &source.ContextSource{
 				Key:          *header.FromContext,

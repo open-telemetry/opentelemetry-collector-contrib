@@ -24,6 +24,9 @@ type Config struct {
 	// The name of the kafka topic to export to (default otlp_spans for traces, otlp_metrics for metrics)
 	Topic string `mapstructure:"topic"`
 
+	// IncludeMetadataKeys indicates the receiver's client metadata keys to propagate as Kafka message headers.
+	IncludeMetadataKeys []string `mapstructure:"include_metadata_keys"`
+
 	// TopicFromAttribute is the name of the attribute to use as the topic name.
 	TopicFromAttribute string `mapstructure:"topic_from_attribute"`
 
@@ -31,11 +34,18 @@ type Config struct {
 	Encoding string `mapstructure:"encoding"`
 
 	// PartitionTracesByID sets the message key of outgoing trace messages to the trace ID.
-	// Please note: does not have any effect on Jaeger encoding exporters since Jaeger exporters include
-	// trace ID as the message key by default.
+	//
+	// NOTE: this does not have any effect for Jaeger encodings. Jaeger encodings always use
+	// use the trace ID for the message key.
 	PartitionTracesByID bool `mapstructure:"partition_traces_by_id"`
 
+	// PartitionMetricsByResourceAttributes controls the partitioning of metrics messages by
+	// resource. If this is true, then the message key will be set to a hash of the resource's
+	// identifying attributes.
 	PartitionMetricsByResourceAttributes bool `mapstructure:"partition_metrics_by_resource_attributes"`
 
+	// PartitionLogsByResourceAttributes controls the partitioning of logs messages by resource.
+	// If this is true, then the message key will be set to a hash of the resource's identifying
+	// attributes.
 	PartitionLogsByResourceAttributes bool `mapstructure:"partition_logs_by_resource_attributes"`
 }

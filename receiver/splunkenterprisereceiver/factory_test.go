@@ -20,7 +20,7 @@ import (
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, metadata.Type, factory.Type())
+	require.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
