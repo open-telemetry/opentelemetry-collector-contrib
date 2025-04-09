@@ -22,7 +22,7 @@ import (
 
 var errUnknownEncodingExtension = errors.New("unknown encoding extension")
 
-func getTracesUnmarshaler(encoding string, _ receiver.Settings, host component.Host) (ptrace.Unmarshaler, error) {
+func newTracesUnmarshaler(encoding string, _ receiver.Settings, host component.Host) (ptrace.Unmarshaler, error) {
 	// Extensions take precedence.
 	if unmarshaler, err := loadEncodingExtension[ptrace.Unmarshaler](host, encoding, "traces"); err != nil {
 		if !errors.Is(err, errUnknownEncodingExtension) {
@@ -50,7 +50,7 @@ func getTracesUnmarshaler(encoding string, _ receiver.Settings, host component.H
 	return nil, fmt.Errorf("unrecognized traces encoding %q", encoding)
 }
 
-func getLogsUnmarshaler(encoding string, set receiver.Settings, host component.Host) (plog.Unmarshaler, error) {
+func newLogsUnmarshaler(encoding string, set receiver.Settings, host component.Host) (plog.Unmarshaler, error) {
 	// Extensions take precedence.
 	if unmarshaler, err := loadEncodingExtension[plog.Unmarshaler](host, encoding, "logs"); err != nil {
 		if !errors.Is(err, errUnknownEncodingExtension) {
@@ -86,7 +86,7 @@ func getLogsUnmarshaler(encoding string, set receiver.Settings, host component.H
 	return nil, fmt.Errorf("unrecognized logs encoding %q", encoding)
 }
 
-func getMetricsUnmarshaler(encoding string, _ receiver.Settings, host component.Host) (pmetric.Unmarshaler, error) {
+func newMetricsUnmarshaler(encoding string, _ receiver.Settings, host component.Host) (pmetric.Unmarshaler, error) {
 	// Extensions take precedence.
 	if unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics"); err != nil {
 		if !errors.Is(err, errUnknownEncodingExtension) {

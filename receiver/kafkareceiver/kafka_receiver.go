@@ -148,7 +148,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		return err
 	}
 
-	unmarshaler, err := getTracesUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newTracesUnmarshaler(c.config.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}
@@ -249,7 +249,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		return err
 	}
 
-	unmarshaler, err := getMetricsUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newMetricsUnmarshaler(c.config.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}
@@ -350,7 +350,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		return err
 	}
 
-	unmarshaler, err := getLogsUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newLogsUnmarshaler(c.config.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}

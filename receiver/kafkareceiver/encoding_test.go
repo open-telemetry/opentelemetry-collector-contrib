@@ -38,21 +38,21 @@ func TestGetLogsUnmarshaler(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	// Verify built-in unmarshalers.
-	u := mustGetLogsUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
+	u := mustNewLogsUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
 	assert.Equal(t, &plog.ProtoUnmarshaler{}, u)
-	_ = mustGetLogsUnmarshaler(t, "otlp_json", componenttest.NewNopHost())
-	_ = mustGetLogsUnmarshaler(t, "raw", componenttest.NewNopHost())
-	_ = mustGetLogsUnmarshaler(t, "json", componenttest.NewNopHost())
-	_ = mustGetLogsUnmarshaler(t, "azure_resource_logs", componenttest.NewNopHost())
+	_ = mustNewLogsUnmarshaler(t, "otlp_json", componenttest.NewNopHost())
+	_ = mustNewLogsUnmarshaler(t, "raw", componenttest.NewNopHost())
+	_ = mustNewLogsUnmarshaler(t, "json", componenttest.NewNopHost())
+	_ = mustNewLogsUnmarshaler(t, "azure_resource_logs", componenttest.NewNopHost())
 
 	// Verify extensions take precedence over built-in unmarshalers.
-	u = mustGetLogsUnmarshaler(t, "otlp_proto", extensionsHost{
+	u = mustNewLogsUnmarshaler(t, "otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): &customLogsUnmarshalerExtension,
 	})
 	assert.Equal(t, &customLogsUnmarshalerExtension, u)
 
 	// Specifying an extension for a different type should fail fast.
-	u, err := getLogsUnmarshaler("otlp_proto", settings, extensionsHost{
+	u, err := newLogsUnmarshaler("otlp_proto", settings, extensionsHost{
 		component.MustNewID("otlp_proto"): &customTracesUnmarshalerExtension,
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a logs unmarshaler`)
@@ -65,13 +65,13 @@ func TestGetLogsUnmarshaler(t *testing.T) {
 	utf16Unmarshaler, err := unmarshaler.NewTextLogsUnmarshaler("utf-16")
 	require.NoError(t, err)
 
-	u = mustGetLogsUnmarshaler(t, "text", componenttest.NewNopHost())
+	u = mustNewLogsUnmarshaler(t, "text", componenttest.NewNopHost())
 	assert.Equal(t, utf8Unmarshaler, u)
 
-	u = mustGetLogsUnmarshaler(t, "text_utf16", componenttest.NewNopHost())
+	u = mustNewLogsUnmarshaler(t, "text_utf16", componenttest.NewNopHost())
 	assert.Equal(t, utf16Unmarshaler, u)
 
-	u, err = getLogsUnmarshaler("text_invalid", settings, componenttest.NewNopHost())
+	u, err = newLogsUnmarshaler("text_invalid", settings, componenttest.NewNopHost())
 	require.EqualError(t, err, `invalid text encoding: unsupported encoding 'invalid'`)
 	assert.Nil(t, u)
 }
@@ -80,17 +80,17 @@ func TestGetMetricsUnmarshaler(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	// Verify a built-in unmarshaler.
-	u := mustGetMetricsUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
+	u := mustNewMetricsUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
 	assert.Equal(t, &pmetric.ProtoUnmarshaler{}, u)
 
 	// Verify extensions take precedence over built-in unmarshalers.
-	u = mustGetMetricsUnmarshaler(t, "otlp_proto", extensionsHost{
+	u = mustNewMetricsUnmarshaler(t, "otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): &customMetricsUnmarshalerExtension,
 	})
 	assert.Equal(t, &customMetricsUnmarshalerExtension, u)
 
 	// Specifying an extension for a different type should fail fast.
-	u, err := getMetricsUnmarshaler("otlp_proto", settings, extensionsHost{
+	u, err := newMetricsUnmarshaler("otlp_proto", settings, extensionsHost{
 		component.MustNewID("otlp_proto"): &customLogsUnmarshalerExtension,
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a metrics unmarshaler`)
@@ -101,45 +101,45 @@ func TestGetTracesUnmarshaler(t *testing.T) {
 	settings := receivertest.NewNopSettings(metadata.Type)
 
 	// Verify a built-in unmarshaler.
-	u := mustGetTracesUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
+	u := mustNewTracesUnmarshaler(t, "otlp_proto", componenttest.NewNopHost())
 	assert.Equal(t, &ptrace.ProtoUnmarshaler{}, u)
-	_ = mustGetTracesUnmarshaler(t, "jaeger_proto", componenttest.NewNopHost())
-	_ = mustGetTracesUnmarshaler(t, "jaeger_json", componenttest.NewNopHost())
-	_ = mustGetTracesUnmarshaler(t, "zipkin_proto", componenttest.NewNopHost())
-	_ = mustGetTracesUnmarshaler(t, "zipkin_json", componenttest.NewNopHost())
-	_ = mustGetTracesUnmarshaler(t, "zipkin_thrift", componenttest.NewNopHost())
+	_ = mustNewTracesUnmarshaler(t, "jaeger_proto", componenttest.NewNopHost())
+	_ = mustNewTracesUnmarshaler(t, "jaeger_json", componenttest.NewNopHost())
+	_ = mustNewTracesUnmarshaler(t, "zipkin_proto", componenttest.NewNopHost())
+	_ = mustNewTracesUnmarshaler(t, "zipkin_json", componenttest.NewNopHost())
+	_ = mustNewTracesUnmarshaler(t, "zipkin_thrift", componenttest.NewNopHost())
 
 	// Verify extensions take precedence over built-in unmarshalers.
-	u = mustGetTracesUnmarshaler(t, "otlp_proto", extensionsHost{
+	u = mustNewTracesUnmarshaler(t, "otlp_proto", extensionsHost{
 		component.MustNewID("otlp_proto"): &customTracesUnmarshalerExtension,
 	})
 	assert.Equal(t, &customTracesUnmarshalerExtension, u)
 
 	// Specifying an extension for a different type should fail fast.
-	u, err := getTracesUnmarshaler("otlp_proto", settings, extensionsHost{
+	u, err := newTracesUnmarshaler("otlp_proto", settings, extensionsHost{
 		component.MustNewID("otlp_proto"): &customLogsUnmarshalerExtension,
 	})
 	require.EqualError(t, err, `extension "otlp_proto" is not a traces unmarshaler`)
 	assert.Nil(t, u)
 }
 
-func mustGetLogsUnmarshaler(tb testing.TB, encoding string, host component.Host) plog.Unmarshaler {
+func mustNewLogsUnmarshaler(tb testing.TB, encoding string, host component.Host) plog.Unmarshaler {
 	settings := receivertest.NewNopSettings(metadata.Type)
-	u, err := getLogsUnmarshaler(encoding, settings, host)
+	u, err := newLogsUnmarshaler(encoding, settings, host)
 	require.NoError(tb, err)
 	return u
 }
 
-func mustGetMetricsUnmarshaler(tb testing.TB, encoding string, host component.Host) pmetric.Unmarshaler {
+func mustNewMetricsUnmarshaler(tb testing.TB, encoding string, host component.Host) pmetric.Unmarshaler {
 	settings := receivertest.NewNopSettings(metadata.Type)
-	u, err := getMetricsUnmarshaler(encoding, settings, host)
+	u, err := newMetricsUnmarshaler(encoding, settings, host)
 	require.NoError(tb, err)
 	return u
 }
 
-func mustGetTracesUnmarshaler(tb testing.TB, encoding string, host component.Host) ptrace.Unmarshaler {
+func mustNewTracesUnmarshaler(tb testing.TB, encoding string, host component.Host) ptrace.Unmarshaler {
 	settings := receivertest.NewNopSettings(metadata.Type)
-	u, err := getTracesUnmarshaler(encoding, settings, host)
+	u, err := newTracesUnmarshaler(encoding, settings, host)
 	require.NoError(tb, err)
 	return u
 }
