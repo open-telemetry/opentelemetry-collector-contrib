@@ -67,7 +67,7 @@ func errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrape
 				eOut <- errs
 				return
 			}
-			errs.Add(err)
+			errs.AddPartial(1, err)
 		}
 	}
 }
