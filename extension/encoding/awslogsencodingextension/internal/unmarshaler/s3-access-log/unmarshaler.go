@@ -127,7 +127,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		// Example:
 		// Input: "GET /amzn-s3-demo-bucket1?versioning HTTP/1.1"
 		// Output of splitting this:
-		//	1: "GET
+		//  1: "GET
 		//  2: /amzn-s3-demo-bucket1?versioning
 		//  3: HTTP/1.1"
 		if value, err = removeQuotes(value); err != nil {
