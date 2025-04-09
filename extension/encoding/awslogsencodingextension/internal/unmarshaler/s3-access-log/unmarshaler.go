@@ -97,8 +97,8 @@ func getFullValue(value string, remaining string) (string, string, error) {
 
 	value = value[1:] // remove first quote
 	if len(value) > 0 && value[len(value)-1] == '"' {
-		value = value[:len(value)-1] // remove last quote
-		return value, remaining, nil
+		// remove last quote from the value
+		return value[:len(value)-1], remaining, nil
 	}
 
 	// value ends on next quote, get the rest
