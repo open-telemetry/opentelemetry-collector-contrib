@@ -5,6 +5,7 @@ package sigv4authextension // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"context"
+	"fmt"
 	"net/http"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -84,6 +85,35 @@ func getCredsProviderFromConfig(cfg *Config) (*aws.CredentialsProvider, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	return &awscfg.Credentials, nil
+}
+
+func getCredsProviderFromWebIdentityConfig(cfg *Config) (*aws.CredentialsProvider, error) {
+	tokenRetriever := stscreds.IdentityTokenRetriever(
+		stscreds.IdentityTokenFile(cfg.AssumeRole.WebIdentityTokenFile),
+	)
+	_, err := tokenRetriever.GetIdentityToken()
+	if err != nil {
+		return nil, fmt.Errorf("unable to retrieve token file: %w", err)
+	}
+
+	awscfg, err := awsconfig.LoadDefaultConfig(context.Background(),
+		awsconfig.WithWebIdentityRoleCredentialOptions(
+			func(options *stscreds.WebIdentityRoleOptions) {
+				options.TokenRetriever = tokenRetriever
+				options.RoleARN = cfg.AssumeRole.ARN
+			},
+		),
+		awsconfig.WithRegion(cfg.AssumeRole.STSRegion),
+	)
+	if err != nil {
+		return nil, fmt.Errorf("unable to load AWS configuration: %w", err)
+	}
+	stsSvc := sts.NewFromConfig(awscfg)
+
+	provider := stscreds.NewWebIdentityRoleProvider(stsSvc, cfg.AssumeRole.ARN, tokenRetriever)
+	awscfg.Credentials = aws.NewCredentialsCache(provider)
 
 	return &awscfg.Credentials, nil
 }
