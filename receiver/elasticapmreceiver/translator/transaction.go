@@ -26,7 +26,9 @@ func ConvertTransaction(event *modelpb.APMEvent, dest ptrace.Span) {
 		dest.SetParentSpanID(ConvertSpanId(event.ParentId))
 	}
 	dest.SetName(transaction.Name)
-	dest.SetKind(ConvertSpanKind(transaction.Type))
+
+	dest.SetKind(ConvertSpanKind(event))
+
 	start, end := GetStartAndEndTimestamps(event.Timestamp, event.GetEvent().GetDuration())
 	if start != nil && end != nil {
 		dest.SetStartTimestamp(*start)

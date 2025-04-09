@@ -46,7 +46,6 @@ func createTraces(
 ) (receiver.Traces, error) {
 	cfg := baseCfg.(*Config)
 	r, err := newElasticAPMReceiver(cfg, params)
-
 	if err != nil {
 		return nil, err
 	}

@@ -4,10 +4,11 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/component/componentstatus"
 	"io"
 	"net/http"
 	"sync"
+
+	"go.opentelemetry.io/collector/component/componentstatus"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -48,7 +49,6 @@ func newElasticAPMReceiver(cfg *Config, settings receiver.Settings) (*elasticapm
 		Transport:              "http",
 		ReceiverCreateSettings: settings,
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -84,7 +84,6 @@ func (r *elasticapmReceiver) Start(ctx context.Context, host component.Host) err
 		r.settings.TelemetrySettings,
 		r.httpMux,
 	)
-
 	if err != nil {
 		return err
 	}
@@ -157,7 +156,7 @@ func (r *elasticapmReceiver) handleRUMEvents(w http.ResponseWriter, req *http.Re
 // Process a batch of events, returning the events and any error.
 // The baseEvent is extended by the metadata in the batch and used as the base event for all events in the batch.
 func (r *elasticapmReceiver) processBatch(reader io.Reader, baseEvent *modelpb.APMEvent) ([]*modelpb.APMEvent, error) {
-	var events = []*modelpb.APMEvent{}
+	events := []*modelpb.APMEvent{}
 	processor := elasticapm.NewProcessor(elasticapm.Config{
 		MaxEventSize: r.cfg.MaxEventSize,
 		Semaphore:    semaphore.NewWeighted(1),
@@ -180,7 +179,6 @@ func (r *elasticapmReceiver) processBatch(reader io.Reader, baseEvent *modelpb.A
 		batchProcessor,
 		&result,
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -190,7 +188,6 @@ func (r *elasticapmReceiver) processBatch(reader io.Reader, baseEvent *modelpb.A
 
 func (r *elasticapmReceiver) handleTraces(w http.ResponseWriter, req *http.Request, baseEvent *modelpb.APMEvent, tracesReceiver *receiverhelper.ObsReport) (*ptrace.Traces, error) {
 	events, err := r.processBatch(req.Body, baseEvent)
-
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "Unable to decode events. Do you have valid ndjson?")
 		return nil, err

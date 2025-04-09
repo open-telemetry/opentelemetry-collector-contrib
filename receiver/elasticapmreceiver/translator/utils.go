@@ -114,8 +114,14 @@ func ConvertSpanId(src string) pcommon.SpanID {
 	return dest
 }
 
-func ConvertSpanKind(src string) ptrace.SpanKind {
-	switch src {
+func ConvertSpanKind(event *modelpb.APMEvent) ptrace.SpanKind {
+
+	kind, done := resolveKindOfApmEvent(event)
+	if done {
+		return kind
+	}
+
+	switch event.Transaction.Type {
 	case "client":
 		return ptrace.SpanKindClient
 	case "server":
@@ -129,6 +135,18 @@ func ConvertSpanKind(src string) ptrace.SpanKind {
 	default:
 		return ptrace.SpanKindUnspecified
 	}
+}
+
+func resolveKindOfApmEvent(event *modelpb.APMEvent) (ptrace.SpanKind, bool) {
+	if event.Transaction.Type == "" {
+
+		if event.Span.DestinationService == nil {
+			return ptrace.SpanKindServer, true
+		} else {
+			return ptrace.SpanKindClient, true
+		}
+	}
+	return 0, false
 }
 
 func GetStartAndEndTimestamps(timestamp *timestamppb.Timestamp, duration *durationpb.Duration) (*pcommon.Timestamp, *pcommon.Timestamp) {
