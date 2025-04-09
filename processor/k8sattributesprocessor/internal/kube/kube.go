@@ -241,8 +241,6 @@ type ExtractionRules struct {
 
 	Annotations []FieldExtractionRule
 	Labels      []FieldExtractionRule
-
-	AutomaticRules AutomaticRules
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners

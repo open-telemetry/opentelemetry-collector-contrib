@@ -201,7 +201,12 @@ func withExtractMetadata(fields ...string) option {
 func withOtelAnnotations(enabled bool) option {
 	return func(p *kubernetesprocessor) error {
 		if enabled {
-			p.rules.Annotations = append(p.rules.Annotations, kube.AutomaticAnnotationRule(kube.DefaultAnnotationPrefix))
+			p.rules.Annotations = append(p.rules.Annotations, kube.FieldExtractionRule{
+				Name:                 "$1",
+				KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io(.+)$`),
+				HasKeyRegexReference: true,
+				From:                 kube.MetadataFromPod,
+			})
 		}
 		return nil
 	}
