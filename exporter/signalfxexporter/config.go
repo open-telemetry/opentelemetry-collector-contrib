@@ -59,7 +59,7 @@ var _ confmap.Unmarshaler = (*Config)(nil)
 
 // Config defines configuration for SignalFx exporter.
 type Config struct {
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
 	confighttp.ClientConfig   `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
 
@@ -220,7 +220,7 @@ func (cfg *Config) Validate() error {
 			` "ingest_url" and "api_url" should be explicitly set`)
 	}
 
-	if cfg.ClientConfig.Timeout < 0 {
+	if cfg.Timeout < 0 {
 		return errors.New(`cannot have a negative "timeout"`)
 	}
 

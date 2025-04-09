@@ -451,7 +451,7 @@ func TestReceiverConvertsStringsToTypes(t *testing.T) {
 		"net.peer.port":        int64(9000),
 	}
 
-	assert.EqualValues(t, expected, span.Attributes().AsRaw())
+	assert.Equal(t, expected, span.Attributes().AsRaw())
 }
 
 func TestFromBytesWithNoTimestamp(t *testing.T) {

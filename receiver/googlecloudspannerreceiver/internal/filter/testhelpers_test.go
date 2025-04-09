@@ -43,7 +43,7 @@ func assertGroupedByKey(t *testing.T, items []*Item, groupedItems map[time.Time]
 }
 
 func assertInitialFiltering(t *testing.T, expected []*Item, actual []*Item) {
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for i, expectedItem := range expected {
 		assert.Equal(t, expectedItem.SeriesKey, actual[i].SeriesKey)
 		assert.Equal(t, expectedItem.Timestamp, actual[i].Timestamp)

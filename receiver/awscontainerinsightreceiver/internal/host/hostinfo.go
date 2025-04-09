@@ -8,8 +8,7 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
@@ -19,7 +18,7 @@ import (
 type Info struct {
 	cancel                context.CancelFunc
 	logger                *zap.Logger
-	awsSession            *session.Session
+	awsConfig             aws.Config
 	refreshInterval       time.Duration
 	containerOrchestrator string
 	instanceIDReadyC      chan bool // close of this channel indicates instance ID is ready
@@ -33,11 +32,11 @@ type Info struct {
 	ebsVolume    ebsVolumeProvider
 	ec2Tags      ec2TagsProvider
 
-	awsSessionCreator   func(*zap.Logger, awsutil.ConnAttr, *awsutil.AWSSessionSettings) (*aws.Config, *session.Session, error)
+	awsConfigCreator    func(*zap.Logger, *awsutil.AWSSessionSettings) (aws.Config, error)
 	nodeCapacityCreator func(*zap.Logger, ...nodeCapacityOption) (nodeCapacityProvider, error)
-	ec2MetadataCreator  func(context.Context, *session.Session, time.Duration, chan bool, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
-	ebsVolumeCreator    func(context.Context, *session.Session, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
-	ec2TagsCreator      func(context.Context, *session.Session, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
+	ec2MetadataCreator  func(context.Context, aws.Config, time.Duration, chan bool, chan bool, *zap.Logger, ...ec2MetadataOption) ec2MetadataProvider
+	ebsVolumeCreator    func(context.Context, aws.Config, string, string, time.Duration, *zap.Logger, ...ebsVolumeOption) ebsVolumeProvider
+	ec2TagsCreator      func(context.Context, aws.Config, string, string, string, time.Duration, *zap.Logger, ...ec2TagsOption) ec2TagsProvider
 }
 
 type machineInfoOption func(*Info)
@@ -53,7 +52,7 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 		logger:           logger,
 
 		containerOrchestrator: containerOrchestrator,
-		awsSessionCreator:     awsutil.GetAWSConfigSession,
+		awsConfigCreator:      awsutil.GetAWSConfig,
 		nodeCapacityCreator:   newNodeCapacity,
 		ec2MetadataCreator:    newEC2Metadata,
 		ebsVolumeCreator:      newEBSVolume,
@@ -75,13 +74,12 @@ func NewInfo(containerOrchestrator string, refreshInterval time.Duration, logger
 	mInfo.nodeCapacity = nodeCapacity
 
 	defaultSessionConfig := awsutil.CreateDefaultSessionConfig()
-	_, session, err := mInfo.awsSessionCreator(logger, &awsutil.Conn{}, &defaultSessionConfig)
+	cfg, err := mInfo.awsConfigCreator(logger, &defaultSessionConfig)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create aws session: %w", err)
 	}
-	mInfo.awsSession = session
 
-	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, session, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
+	mInfo.ec2Metadata = mInfo.ec2MetadataCreator(ctx, cfg, refreshInterval, mInfo.instanceIDReadyC, mInfo.instanceIPReadyC, logger)
 
 	go mInfo.lazyInitEBSVolume(ctx)
 	go mInfo.lazyInitEC2Tags(ctx)
@@ -92,7 +90,7 @@ func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 	// wait until the instance id is ready
 	<-m.instanceIDReadyC
 	// Because ebs volumes only change occasionally, we refresh every 5 collection intervals to reduce ec2 api calls
-	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(),
+	m.ebsVolume = m.ebsVolumeCreator(ctx, m.awsConfig, m.GetInstanceID(), m.GetRegion(),
 		5*m.refreshInterval, m.logger)
 	close(m.ebsVolumeReadyC)
 }
@@ -100,7 +98,7 @@ func (m *Info) lazyInitEBSVolume(ctx context.Context) {
 func (m *Info) lazyInitEC2Tags(ctx context.Context) {
 	// wait until the instance id is ready
 	<-m.instanceIDReadyC
-	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsSession, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
+	m.ec2Tags = m.ec2TagsCreator(ctx, m.awsConfig, m.GetInstanceID(), m.GetRegion(), m.containerOrchestrator, m.refreshInterval, m.logger)
 	close(m.ec2TagsReadyC)
 }
 

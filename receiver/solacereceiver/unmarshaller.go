@@ -80,7 +80,7 @@ func (u *solaceTracesUnmarshaller) unmarshal(message *inboundMessage) (ptrace.Tr
 		u.logger.Error("Received message with no topic")
 		return ptrace.Traces{}, errUnknownTopic
 	}
-	var topic string = *message.Properties.To
+	topic := *message.Properties.To
 	// Multiplex the topic string. For now we only have a single type handled
 	if strings.HasPrefix(topic, topicPrefix) {
 		// we are a telemetry string

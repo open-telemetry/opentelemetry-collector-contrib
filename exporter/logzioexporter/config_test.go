@@ -36,7 +36,7 @@ func TestLoadConfig(t *testing.T) {
 		Region: "eu",
 	}
 	expected.BackOffConfig = configretry.NewDefaultBackOffConfig()
-	expected.BackOffConfig.MaxInterval = 5 * time.Second
+	expected.MaxInterval = 5 * time.Second
 	expected.QueueSettings = exporterhelper.NewDefaultQueueConfig()
 	expected.QueueSettings.Enabled = false
 	clientConfig := confighttp.NewDefaultClientConfig()
