@@ -19,3 +19,11 @@ kafka:
     initial_interval: 10s
     max_interval: 60s
     max_elapsed_time: 10m
+kafka/legacy_topic:
+  topic: legacy_topic
+  metrics:
+    topic: metrics_topic
+kafka/legacy_encoding:
+  encoding: legacy_encoding
+  metrics:
+    encoding: metrics_encoding
