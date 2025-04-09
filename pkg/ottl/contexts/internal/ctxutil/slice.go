@@ -24,10 +24,6 @@ var (
 )
 
 func getSliceIndexFromKeys[K any](ctx context.Context, tCtx K, sliceLen int, keys []ottl.Key[K]) (int, error) {
-	if len(keys) == 0 {
-		return 0, fmt.Errorf("cannot get/set slice index without a key")
-	}
-
 	i, err := keys[0].Int(ctx, tCtx)
 	if err != nil {
 		return 0, err
@@ -91,7 +87,8 @@ type CommonTypedSlice[T any] interface {
 func GetCommonTypedSliceValue[K, V any](ctx context.Context, tCtx K, s CommonTypedSlice[V], keys []ottl.Key[K]) (V, error) {
 	if len(keys) == 0 {
 		return *new(V), errMissingGetKey
-	} else if len(keys) > 1 {
+	}
+	if len(keys) > 1 {
 		return *new(V), fmt.Errorf(typeNotIndexableError, s)
 	}
 
