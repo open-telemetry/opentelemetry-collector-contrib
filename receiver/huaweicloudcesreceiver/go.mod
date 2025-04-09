@@ -1,10 +1,10 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/huaweicloudcesreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.142
+	github.com/huaweicloud/huaweicloud-sdk-go-v3 v0.1.143
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0
 	github.com/stretchr/testify v1.10.0

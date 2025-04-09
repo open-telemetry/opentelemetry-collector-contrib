@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/json-iterator/go v1.1.12

@@ -65,15 +65,15 @@ func createDefaultConfig() component.Config {
 func setupQueries(cfg *Config) []string {
 	var queries []string
 
-	if isDatabaseIOQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+	if isDatabaseIOQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerDatabaseIOQuery(cfg.InstanceName))
 	}
 
-	if isPerfCounterQueryEnabled(&cfg.MetricsBuilderConfig.Metrics) {
+	if isPerfCounterQueryEnabled(&cfg.Metrics) {
 		queries = append(queries, getSQLServerPerformanceCounterQuery(cfg.InstanceName))
 	}
 
-	if cfg.MetricsBuilderConfig.Metrics.SqlserverDatabaseCount.Enabled {
+	if cfg.Metrics.SqlserverDatabaseCount.Enabled {
 		queries = append(queries, getSQLServerPropertiesQuery(cfg.InstanceName))
 	}
 

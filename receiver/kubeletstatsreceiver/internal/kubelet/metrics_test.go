@@ -64,7 +64,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 }
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
-	require.NotZero(t, m.Name())
+	require.NotEmpty(t, m.Name())
 	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:

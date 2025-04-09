@@ -62,9 +62,6 @@ func createTracesExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultTracesTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newTracesExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,
@@ -91,9 +88,6 @@ func createMetricsExporter(
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultMetricsTopic
 	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newMetricsExporter(oCfg, set)
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -119,9 +113,6 @@ func createLogsExporter(
 	oCfg := *(cfg.(*Config)) // Clone the config
 	if oCfg.Topic == "" {
 		oCfg.Topic = defaultLogsTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
 	}
 	exp := newLogsExporter(oCfg, set)
 	return exporterhelper.NewLogs(

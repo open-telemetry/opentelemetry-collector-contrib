@@ -17,7 +17,6 @@ import (
 	"google.golang.org/protobuf/proto"
 	common "skywalking.apache.org/repo/goapi/collect/common/v3"
 	agent "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
-	v3 "skywalking.apache.org/repo/goapi/collect/language/agent/v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/skywalking"
 )
@@ -110,7 +109,7 @@ func (r *Receiver) HTTPHandler(rsp http.ResponseWriter, req *http.Request) {
 		ResponseWithJSON(rsp, response, http.StatusBadRequest)
 		return
 	}
-	var data []*v3.SegmentObject
+	var data []*agent.SegmentObject
 	if err = json.Unmarshal(b, &data); err != nil {
 		fmt.Printf("cannot Unmarshal skywalking segment collection, %v", err)
 	}
