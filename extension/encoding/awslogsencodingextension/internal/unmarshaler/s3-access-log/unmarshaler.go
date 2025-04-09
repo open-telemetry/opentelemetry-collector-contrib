@@ -148,6 +148,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			// Zone is always UTC, so it will always be +0000.
 			_, remaining, _ = strings.Cut(remaining, " ")
 		}
+
 		if err = addField(attributeNames[i], value, resourceAttr, record); err != nil {
 			return err
 		}
@@ -171,6 +172,9 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 		resourceAttr.bucketName = value
 	case timestamp:
 		// The format in S3 access logs at this point is as "[DD/MM/YYYY:HH:mm:ss".
+		if value == "" {
+			return errors.New("unexpected: time value is empty")
+		}
 		t, err := time.Parse("02/Jan/2006:15:04:05", value[1:])
 		if err != nil {
 			return fmt.Errorf("failed to get timestamp of log: %w", err)
@@ -224,7 +228,7 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 			return fmt.Errorf("unexpected: request uri %q has no scheme", value)
 		}
 		if remaining != "" {
-			return fmt.Errorf("request uri %q does not have expected format <Method Path Scheme>", value)
+			return fmt.Errorf(`request uri %q does not have expected format "<method> <path> <scheme>"`, value)
 		}
 		record.Attributes().PutStr(semconv.AttributeURLScheme, scheme)
 	default:

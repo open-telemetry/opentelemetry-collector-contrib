@@ -28,6 +28,10 @@ func TestAddField(t *testing.T) {
 		value       string
 		expectedErr string
 	}{
+		"empty_timestamp": {
+			field:       timestamp,
+			expectedErr: "time value is empty",
+		},
 		"invalid_timestamp": {
 			field:       timestamp,
 			value:       "invalid",
@@ -86,7 +90,7 @@ func TestAddField(t *testing.T) {
 		"unexpected_format_request_uri": {
 			field:       requestURI,
 			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/1.1 unexpected",
-			expectedErr: "does not have expected format <Method Path Scheme>",
+			expectedErr: "does not have expected format",
 		},
 		"valid_method_request_uri": {
 			field: requestURI,
