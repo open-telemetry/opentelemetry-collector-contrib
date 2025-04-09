@@ -10,11 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -293,4 +295,63 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	assert.Equal(t, 0, consumer.Count())
 
 	assert.NoError(t, r.Shutdown(ctx))
+}
+
+func TestReceiverWithLeaderElection(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{
+		FakeLeaderElection: fakeLeaderElection,
+	}
+	leaderElectorID := component.MustNewID("k8s_leader_elector")
+
+	mockClient := newMockDynamicClient()
+	rCfg := createDefaultConfig().(*Config)
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: PullMode,
+		},
+	}
+	rCfg.K8sLeaderElector = &leaderElectorID
+
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		consumertest.NewNop(),
+	)
+	require.NoError(t, err)
+	kr := r.(*k8sobjectsreceiver)
+	sink := new(consumertest.LogsSink)
+	kr.consumer = sink
+
+	// Setup k8s resources.
+	numPods := 2
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+		generatePod("pod2", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	err = kr.Start(context.Background(), fakeHost)
+	require.NoError(t, err)
+
+	// elected leader
+	fakeLeaderElection.InvokeOnLeading()
+
+	expectedNumMetrics := numPods
+	var initialLogRecordCount int
+	require.Eventually(t, func() bool {
+		initialLogRecordCount = sink.LogRecordCount()
+		return initialLogRecordCount == expectedNumMetrics
+	}, 20*time.Second, 100*time.Millisecond,
+		"logs not collected")
+
+	// lost election
+	fakeLeaderElection.InvokeOnStopping()
 }

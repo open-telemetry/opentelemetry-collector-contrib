@@ -82,6 +82,45 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return err
 	}
 	kr.client = client
+
+	// Validate objects against K8s API
+	validObjects, err := kr.config.getValidObjects()
+	if err != nil {
+		return err
+	}
+
+	var validConfigs []*K8sObjectsConfig
+	for _, object := range kr.objects {
+		gvrs, ok := validObjects[object.Name]
+		if !ok {
+			availableResource := make([]string, 0, len(validObjects))
+			for k := range validObjects {
+				availableResource = append(availableResource, k)
+			}
+			err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
+			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+				return handlerErr
+			}
+			continue
+		}
+
+		gvr := gvrs[0]
+		for i := range gvrs {
+			if gvrs[i].Group == object.Group {
+				gvr = gvrs[i]
+				break
+			}
+		}
+
+		object.gvr = gvr
+		validConfigs = append(validConfigs, object)
+	}
+
+	if len(validConfigs) == 0 {
+		err = errors.New("no valid Kubernetes objects found to watch")
+		return err
+	}
+
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
 
@@ -95,12 +134,6 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
 		if !ok {
 			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
-		}
-
-		validConfigs := Validate()
-		if len(validConfigs) == 0 {
-			err := errors.New("no valid Kubernetes objects found to watch")
-			return err
 		}
 
 		elector.SetCallBackFuncs(
@@ -117,13 +150,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
 				}
 			})
-		return nil
-	}
 
-	validConfigs := Validate()
-	if len(validConfigs) == 0 {
-		err := errors.New("no valid Kubernetes objects found to watch")
-		return err
+		return nil
 	}
 
 	kr.setting.Logger.Info("Object Receiver started")
@@ -173,49 +201,6 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 			}
 		}
 	}
-}
-
-// Validate objects against K8s API
-func (kr *k8sobjectsreceiver) Validate() []*K8sObjectsConfig  {
-	validObjects, err := kr.config.getValidObjects()
-	if err != nil {
-		return err
-	}
-
-	var validConfigs []*K8sObjectsConfig
-	for _, object := range kr.objects {
-		gvrs, ok := validObjects[object.Name]
-		if !ok {
-			availableResource := make([]string, 0, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
-			}
-			err = fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
-			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
-				return handlerErr
-			}
-
-			continue
-		}
-
-		gvr := gvrs[0]
-		for i := range gvrs {
-			if gvrs[i].Group == object.Group {
-				gvr = gvrs[i]
-				break
-			}
-		}
-
-		object.gvr = gvr
-		validConfigs = append(validConfigs, object)
-	}
-
-	if len(validConfigs) == 0 {
-		err = errors.New("no valid Kubernetes objects found to watch")
-		return err
-	}
-
-	return validConfigs
 }
 
 func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsConfig, resource dynamic.ResourceInterface) {

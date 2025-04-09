@@ -4,6 +4,7 @@ go 1.23.0
 
 require (
 	github.com/google/uuid v1.6.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
