@@ -221,11 +221,8 @@ func (h *samplingProvider) parseStrategiesDeprecated(strategies *strategies) {
 		newStore.defaultStrategy = h.parseServiceStrategies(strategies.DefaultStrategy)
 	}
 
-	merge := true
-	if newStore.defaultStrategy.OperationSampling == nil ||
-		newStore.defaultStrategy.OperationSampling.PerOperationStrategies == nil {
-		merge = false
-	}
+	merge := newStore.defaultStrategy.OperationSampling != nil &&
+		newStore.defaultStrategy.OperationSampling.PerOperationStrategies != nil
 
 	for _, s := range strategies.ServiceStrategies {
 		newStore.serviceStrategies[s.Service] = h.parseServiceStrategies(s)

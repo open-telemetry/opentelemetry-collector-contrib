@@ -188,8 +188,13 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
+			expectIntValue := numCumulativeConsumptions
+			// this calls init value is 0 for the first Consumption.
+			if numCumulativeConsumptions == 1 {
+				expectIntValue = 0
+			}
 			assert.Equal(tb,
-				int64(numCumulativeConsumptions),
+				int64(expectIntValue),
 				dp.IntValue(),
 				"There should only be one metric per Service/name/kind combination",
 			)

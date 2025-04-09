@@ -7,8 +7,6 @@ formatters:
   exclusions:
     paths:
       - third_party
-      - cmd/otelcontribcol
-      - cmd/oteltestbedcol
 
   settings:
     gci:
@@ -64,8 +62,6 @@ linters:
     # from this option's value (see exclude-dirs-use-default).
     paths:
       - third_party
-      - cmd/otelcontribcol
-      - cmd/oteltestbedcol
 
     presets:
       - comments
@@ -212,20 +208,9 @@ linters:
     staticcheck:
       checks:
         - all
-        - -QF1001 # FIXME
-        - -QF1002 # FIXME
-        - -QF1003 # FIXME
-        - -QF1006 # FIXME
-        - -QF1007 # FIXME
-        - -QF1008 # FIXME
-        - -QF1011 # FIXME
-        - -QF1012 # FIXME
-        - -ST1003 # FIXME
-        - -ST1005 # FIXME
-        - -ST1011 # FIXME
-        - -ST1016 # FIXME
-        - -ST1019 # FIXME
-        - -ST1023 # FIXME
+        - -ST1003 # FIXME: Poorly chosen identifier
+        - -ST1005 # FIXME: Incorrectly formatted error string
+        - -ST1011 # FIXME: Poorly chosen name for variable of type time.Duration
 
     testifylint:
       disable:
