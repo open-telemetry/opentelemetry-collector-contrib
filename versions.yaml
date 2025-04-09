@@ -319,6 +319,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
+      - github.com/zgsolucoes/opentelemetry-collector-contrib/receiver/elasticapmreceiver
 
 excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
