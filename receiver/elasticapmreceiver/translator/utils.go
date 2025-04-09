@@ -121,6 +121,8 @@ func ConvertSpanKind(event *modelpb.APMEvent) ptrace.SpanKind {
 		return ptrace.SpanKindClient
 	case "server":
 		return ptrace.SpanKindServer
+	case "request":
+		return ptrace.SpanKindServer
 	case "producer":
 		return ptrace.SpanKindProducer
 	case "consumer":
