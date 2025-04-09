@@ -21,5 +21,5 @@ func newZapSematextLogger(logger *zap.Logger) common.Logger {
 }
 
 func (l zapSematextLogger) Debug(msg string, kv ...any) {
-	l.SugaredLogger.Debugw(msg, kv...)
+	l.Debugw(msg, kv...)
 }

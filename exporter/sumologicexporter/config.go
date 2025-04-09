@@ -77,18 +77,18 @@ func (cfg *Config) Validate() error {
 		return errors.New("support for compress_encoding configuration has been removed, in favor of compression")
 	}
 
-	if cfg.ClientConfig.Timeout < 1 || cfg.ClientConfig.Timeout > maxTimeout {
-		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.ClientConfig.Timeout)
+	if cfg.Timeout < 1 || cfg.Timeout > maxTimeout {
+		return fmt.Errorf("timeout must be between 1 and 55 seconds, got %v", cfg.Timeout)
 	}
 
-	switch cfg.ClientConfig.Compression {
+	switch cfg.Compression {
 	case configcompression.TypeGzip:
 	case configcompression.TypeDeflate:
 	case configcompression.TypeZstd:
 	case NoCompression:
 
 	default:
-		return fmt.Errorf("invalid compression encoding type: %v", cfg.ClientConfig.Compression)
+		return fmt.Errorf("invalid compression encoding type: %v", cfg.Compression)
 	}
 
 	switch cfg.LogFormat {
@@ -110,13 +110,13 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}
 
-	if len(cfg.ClientConfig.Endpoint) == 0 && cfg.ClientConfig.Auth == nil {
+	if len(cfg.Endpoint) == 0 && cfg.Auth == nil {
 		return errors.New("no endpoint and no auth extension specified")
 	}
 
-	if _, err := url.Parse(cfg.ClientConfig.Endpoint); err != nil {
+	if _, err := url.Parse(cfg.Endpoint); err != nil {
 		return fmt.Errorf("failed parsing endpoint URL: %s; err: %w",
-			cfg.ClientConfig.Endpoint, err,
+			cfg.Endpoint, err,
 		)
 	}
 

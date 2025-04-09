@@ -245,8 +245,8 @@ func TestMultiStreamPusher(t *testing.T) {
 	zap := zap.NewNop()
 	pusher := newMultiStreamPusher(manager, *svc, zap)
 	event := NewEvent(time.Now().UnixMilli(), "testing")
-	event.StreamKey.LogGroupName = "foo"
-	event.StreamKey.LogStreamName = "bar"
+	event.LogGroupName = "foo"
+	event.LogStreamName = "bar"
 	event.GeneratedTime = time.Now()
 
 	assert.NoError(t, pusher.AddLogEntry(event))
@@ -263,8 +263,8 @@ func TestMultiStreamPusher(t *testing.T) {
 	assert.Equal(t, "bar", *inputs[0].LogStreamName)
 
 	event2 := NewEvent(time.Now().UnixMilli(), "testing")
-	event2.StreamKey.LogGroupName = "foo"
-	event2.StreamKey.LogStreamName = "bar2"
+	event2.LogGroupName = "foo"
+	event2.LogStreamName = "bar2"
 	event2.GeneratedTime = time.Now()
 
 	assert.NoError(t, pusher.AddLogEntry(event2))

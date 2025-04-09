@@ -77,19 +77,19 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 		var env observer.EndpointEnv
 		var err error
 		if env, err = e.Env(); err != nil {
-			obs.params.TelemetrySettings.Logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
+			obs.params.Logger.Error("unable to convert endpoint to environment map", zap.String("endpoint", string(e.ID)), zap.Error(err))
 			continue
 		}
 
 		if obs.config.Discovery.Enabled {
-			builder := createK8sHintsBuilder(obs.config.Discovery, obs.params.TelemetrySettings.Logger)
+			builder := createK8sHintsBuilder(obs.config.Discovery, obs.params.Logger)
 			subreceiverTemplate, err := builder.createReceiverTemplateFromHints(env)
 			if err != nil {
-				obs.params.TelemetrySettings.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Any("err", err))
+				obs.params.Logger.Error("could not extract configurations from K8s hints' annotations", zap.Any("err", err))
 				break
 			}
 			if subreceiverTemplate != nil {
-				obs.params.TelemetrySettings.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))
+				obs.params.Logger.Debug("adding K8s hinted receiver", zap.Any("subreceiver", subreceiverTemplate))
 				obs.startReceiver(*subreceiverTemplate, env, e)
 				continue
 			}
@@ -97,7 +97,7 @@ func (obs *observerHandler) OnAdd(added []observer.Endpoint) {
 
 		for _, template := range obs.config.receiverTemplates {
 			if matches, err := template.rule.eval(env); err != nil {
-				obs.params.TelemetrySettings.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
+				obs.params.Logger.Error("failed matching rule", zap.String("rule", template.Rule), zap.Error(err))
 				continue
 			} else if !matches {
 				continue
@@ -114,7 +114,7 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 
 	for _, e := range removed {
 		// debug log the endpoint to improve usability
-		if ce := obs.params.TelemetrySettings.Logger.Check(zap.DebugLevel, "handling removed endpoint"); ce != nil {
+		if ce := obs.params.Logger.Check(zap.DebugLevel, "handling removed endpoint"); ce != nil {
 			env, err := e.Env()
 			fields := []zap.Field{zap.String("endpoint_id", string(e.ID))}
 			if err == nil {
@@ -124,10 +124,10 @@ func (obs *observerHandler) OnRemove(removed []observer.Endpoint) {
 		}
 
 		for _, rcvr := range obs.receiversByEndpointID.Get(e.ID) {
-			obs.params.TelemetrySettings.Logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
+			obs.params.Logger.Info("stopping receiver", zap.Reflect("receiver", rcvr), zap.String("endpoint_id", string(e.ID)))
 
 			if err := obs.runner.shutdown(rcvr); err != nil {
-				obs.params.TelemetrySettings.Logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
+				obs.params.Logger.Error("failed to stop receiver", zap.Reflect("receiver", rcvr), zap.Error(err))
 				continue
 			}
 		}
@@ -145,7 +145,7 @@ func (obs *observerHandler) OnChange(changed []observer.Endpoint) {
 func (obs *observerHandler) startReceiver(template receiverTemplate, env observer.EndpointEnv, e observer.Endpoint) {
 	resolvedConfig, err := expandConfig(template.config, env)
 	if err != nil {
-		obs.params.TelemetrySettings.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("unable to resolve template config", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 
@@ -161,7 +161,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	// ones from using expr in their Target values.
 	discoveredConfig, err := expandConfig(discoveredCfg, env)
 	if err != nil {
-		obs.params.TelemetrySettings.Logger.Error("unable to resolve discovered config", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("unable to resolve discovered config", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 
@@ -169,7 +169,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 	for k, v := range template.ResourceAttributes {
 		strVal, ok := v.(string)
 		if !ok {
-			obs.params.TelemetrySettings.Logger.Info(fmt.Sprintf("ignoring unsupported `resource_attributes` %q value %v", k, v))
+			obs.params.Logger.Info(fmt.Sprintf("ignoring unsupported `resource_attributes` %q value %v", k, v))
 			continue
 		}
 		resAttrs[k] = strVal
@@ -187,7 +187,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		obs.nextMetricsConsumer,
 		obs.nextTracesConsumer,
 	); err != nil {
-		obs.params.TelemetrySettings.Logger.Error("failed creating resource enhancer", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("failed creating resource enhancer", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 
@@ -198,7 +198,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		return
 	}
 
-	obs.params.TelemetrySettings.Logger.Info("starting receiver",
+	obs.params.Logger.Info("starting receiver",
 		zap.String("name", template.id.String()),
 		zap.String("endpoint", e.Target),
 		zap.String("endpoint_id", string(e.ID)),
@@ -214,7 +214,7 @@ func (obs *observerHandler) startReceiver(template receiverTemplate, env observe
 		discoveredConfig,
 		consumer,
 	); err != nil {
-		obs.params.TelemetrySettings.Logger.Error("failed to start receiver", zap.String("receiver", template.id.String()), zap.Error(err))
+		obs.params.Logger.Error("failed to start receiver", zap.String("receiver", template.id.String()), zap.Error(err))
 		return
 	}
 	obs.receiversByEndpointID.Put(e.ID, receiver)

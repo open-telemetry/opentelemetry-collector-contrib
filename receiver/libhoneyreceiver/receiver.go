@@ -105,9 +105,9 @@ func (r *libhoneyReceiver) startHTTPServer(ctx context.Context, host component.H
 		return err
 	}
 
-	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.ServerConfig.Endpoint))
+	r.settings.Logger.Info("Starting HTTP server", zap.String("endpoint", r.cfg.HTTP.Endpoint))
 	var hln net.Listener
-	if hln, err = r.cfg.HTTP.ServerConfig.ToListener(ctx); err != nil {
+	if hln, err = r.cfg.HTTP.ToListener(ctx); err != nil {
 		return err
 	}
 
