@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/stretchr/testify v1.10.0

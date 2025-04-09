@@ -50,7 +50,7 @@ func newMetricsConnector(
 	}
 
 	return &metricsConnector{
-		logger: set.TelemetrySettings.Logger,
+		logger: set.Logger,
 		config: cfg,
 		router: r,
 	}, nil

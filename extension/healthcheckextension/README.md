@@ -27,7 +27,7 @@ Health Check extension enables an HTTP url that can be probed to check the
 status of the OpenTelemetry Collector. This extension can be used as a
 liveness and/or readiness probe on Kubernetes.
 
-The following settings are required:
+The following settings are available:
 
 - `endpoint` (default = localhost:13133): Address to publish the health check status. You can review the [full list of `ServerConfig`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.

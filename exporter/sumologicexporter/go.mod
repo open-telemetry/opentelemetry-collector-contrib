@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/klauspost/compress v1.18.0
