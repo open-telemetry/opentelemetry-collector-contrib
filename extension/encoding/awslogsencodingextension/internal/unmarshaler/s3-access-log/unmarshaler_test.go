@@ -4,13 +4,14 @@
 package s3accesslog
 
 import (
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -153,6 +154,7 @@ func TestUnmarshalLogs(t *testing.T) {
 			}
 
 			require.NoError(t, err)
+
 			expected, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expected, logs))

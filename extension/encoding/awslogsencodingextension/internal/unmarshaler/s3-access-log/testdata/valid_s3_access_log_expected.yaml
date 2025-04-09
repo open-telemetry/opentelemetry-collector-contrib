@@ -19,16 +19,16 @@ resourceLogs:
               - key: user.id
                 value:
                   stringValue: 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be
-              - key: aws.s3.request_id
+              - key: aws.request_id
                 value:
                   stringValue: 3E57427F3EXAMPLE
-              - key: event.name
+              - key: rpc.method
                 value:
                   stringValue: REST.GET.VERSIONING
               - key: http.request.method
                 value:
                   stringValue: GET
-              - key: url.original
+              - key: url.path
                 value:
                   stringValue: /amzn-s3-demo-bucket1?versioning
               - key: url.scheme
@@ -40,10 +40,13 @@ resourceLogs:
               - key: http.response.body.size
                 value:
                   intValue: "113"
+              - key: duration
+                value:
+                  intValue: "7"
               - key: user_agent.original
                 value:
                   stringValue: S3Console/0.4
-              - key: host.id
+              - key: aws.extended_request_id
                 value:
                   stringValue: s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234=
               - key: aws.signature.version

@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package s3accesslog
+package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
 	"bufio"
@@ -33,6 +33,12 @@ type s3AccessLogUnmarshaler struct {
 }
 
 var _ plog.Unmarshaler = (*s3AccessLogUnmarshaler)(nil)
+
+func NewS3AccessLogUnmarshaler(buildInfo component.BuildInfo) plog.Unmarshaler {
+	return &s3AccessLogUnmarshaler{
+		buildInfo: buildInfo,
+	}
+}
 
 type resourceAttributes struct {
 	bucketOwner string
@@ -131,17 +137,19 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		if value == unknownField && attributeNames[i] != attributeAWSS3AclRequired {
 			// acl required field can be '-' to indicate that no ACL was required
 			if i == 8 {
-				// the request uri is unknown, so we skip
-				// the next two expected fields: url and scheme
+				// The request uri is unknown, so we skip
+				// the next two expected fields in the attributeNames
+				// map: url path and scheme.
 				i += 2
 			}
 			continue
 		}
 
 		if i == 2 {
-			// this is the timestamp, and timestamp has a space in the date,
-			// with zone being the second part. Since logs are UTC, zone is
-			// always +0000, so we will just ignore it.
+			// This is the timestamp that follows a strict format
+			// "[DD/MM/YYYY:HH:mm:ss zone]". Since zone is after a
+			// space, we cut the string again to remove the zone.
+			// Zone is always UTC, so it will always be +0000.
 			_, remaining, _ = strings.Cut(remaining, " ")
 		}
 
@@ -150,7 +158,6 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		}
 	}
 
-	// one last value left if remaining is now empty
 	if i != len(attributeNames) {
 		return errors.New("values in log line are less than the number of available fields")
 	}
@@ -165,7 +172,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 func parseTime(date string) (time.Time, error) {
 	// This function follows a rigid format as it expects
 	// the date to follow the string format "[DD/MM/YYYY:HH:mm:ss".
-	// This function is 7x times faster than using time.Parse,
+	// This function is up to 4x times faster than using time.Parse,
 	// hence why we use it.
 	if len(date) != 21 {
 		return time.Time{}, errors.New("timestamp field expects format DD/MM/YYYY:HH:mm:ss")
@@ -177,7 +184,7 @@ func parseTime(date string) (time.Time, error) {
 	if day, err = strconv.Atoi(date[1:3]); err != nil {
 		return time.Time{}, fmt.Errorf("failed to get day from timestamp: %w", err)
 	}
-	month, found := strToMonth[date[4:7]]
+	month, found := months[date[4:7]]
 	if !found {
 		return time.Time{}, fmt.Errorf("timestamp contains invalid month %q", date[4:5])
 	}
@@ -204,20 +211,17 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 	case semconv.AttributeAWSS3Bucket:
 		resourceAttr.bucketName = value
 	case timestamp:
-		// The format in S3 access logs at this point is as [DD/MM/YYYY:HH:mm:ss.
+		// The format in S3 access logs at this point is as "[DD/MM/YYYY:HH:mm:ss".
 		t, err := parseTime(value)
 		if err != nil {
 			return fmt.Errorf("failed to get timestamp of log: %w", err)
 		}
 		record.SetTimestamp(pcommon.NewTimestampFromTime(t))
-	case duration:
-		// TODO
-		// not log record attribute
-
 	case semconv.AttributeHTTPResponseStatusCode,
 		semconv.AttributeHTTPResponseBodySize,
 		attributeAWSS3ObjectSize,
-		attributeAWSS3TurnAround:
+		attributeAWSS3TurnAround,
+		duration:
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return fmt.Errorf("value for field %q in log line is not a number", field)
