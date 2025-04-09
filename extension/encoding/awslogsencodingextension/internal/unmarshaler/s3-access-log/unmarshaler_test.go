@@ -11,6 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
@@ -53,6 +54,19 @@ func TestAddField(t *testing.T) {
 		"valid_acl_value": {
 			field: attributeAWSS3AclRequired,
 			value: "Yes",
+		},
+		"missing_tls_version": {
+			field:       semconv.AttributeTLSProtocolVersion,
+			value:       "missing",
+			expectedErr: "missing TLS version",
+		},
+		"valid_tls_version_lowercase": {
+			field: semconv.AttributeTLSProtocolVersion,
+			value: "TLSv1.2",
+		},
+		"valid_tls_version_uppercase": {
+			field: semconv.AttributeTLSProtocolVersion,
+			value: "TLSV1.2",
 		},
 	}
 

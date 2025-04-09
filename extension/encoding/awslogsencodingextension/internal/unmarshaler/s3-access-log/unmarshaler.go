@@ -209,7 +209,7 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 		if remaining == "" {
 			_, remaining, _ = strings.Cut(value, "V")
 			if remaining == "" {
-				return fmt.Errorf("unexpected TLS version: %q", value)
+				return fmt.Errorf("missing TLS version: %q", value)
 			}
 		}
 		record.Attributes().PutStr(field, remaining)
