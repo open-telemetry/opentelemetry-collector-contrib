@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0

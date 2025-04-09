@@ -94,13 +94,13 @@ func (cfg *Config) Validate() (err error) {
 	if !re.MatchString(cfg.Database) {
 		err = errors.Join(err, errors.New("database name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Logs) {
+	if !re.MatchString(cfg.Logs) {
 		err = errors.Join(err, errors.New("logs table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Traces) {
+	if !re.MatchString(cfg.Traces) {
 		err = errors.Join(err, errors.New("traces table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Metrics) {
+	if !re.MatchString(cfg.Metrics) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 

@@ -327,7 +327,7 @@ func TestNewTracesExporter(t *testing.T) {
 
 	cfg := &datadogconfig.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
+	cfg.Metrics.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings(metadata.Type)
 
 	// The client should have been created correctly

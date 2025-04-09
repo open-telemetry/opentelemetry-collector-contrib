@@ -5,17 +5,12 @@ package kafkareceiver
 
 import (
 	"context"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/plog"
-	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
@@ -40,15 +35,11 @@ func TestCreateTraces(t *testing.T) {
 }
 
 func TestWithTracesUnmarshalers(t *testing.T) {
-	unmarshaler := &customTracesUnmarshaler{}
 	f := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	// disable contacting broker
-	cfg.Metadata.Full = false
-	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = unmarshaler.Encoding()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Encoding = "custom"
 		receiver, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		tracesConsumer, ok := receiver.(*kafkaTracesConsumer)
 		require.True(t, ok)
@@ -57,7 +48,7 @@ func TestWithTracesUnmarshalers(t *testing.T) {
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = defaultEncoding
+		cfg := createDefaultConfig().(*Config)
 		receiver, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		tracesConsumer, ok := receiver.(*kafkaTracesConsumer)
 		require.True(t, ok)
@@ -78,15 +69,11 @@ func TestCreateMetrics(t *testing.T) {
 }
 
 func TestWithMetricsUnmarshalers(t *testing.T) {
-	unmarshaler := &customMetricsUnmarshaler{}
 	f := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	// disable contacting broker
-	cfg.Metadata.Full = false
-	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = unmarshaler.Encoding()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Encoding = "custom"
 		receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		metricsConsumer, ok := receiver.(*kafkaMetricsConsumer)
 		require.True(t, ok)
@@ -95,7 +82,7 @@ func TestWithMetricsUnmarshalers(t *testing.T) {
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = defaultEncoding
+		cfg := createDefaultConfig().(*Config)
 		receiver, err := f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		metricsConsumer, ok := receiver.(*kafkaMetricsConsumer)
 		require.True(t, ok)
@@ -115,38 +102,12 @@ func TestCreateLogs(t *testing.T) {
 	require.Error(t, r.Start(context.Background(), componenttest.NewNopHost()))
 }
 
-func TestGetLogsUnmarshaler_encoding_text_error(t *testing.T) {
-	tests := []struct {
-		name     string
-		encoding string
-	}{
-		{
-			name:     "text encoding has typo",
-			encoding: "text_uft-8",
-		},
-		{
-			name:     "text encoding is a random string",
-			encoding: "text_vnbqgoba156",
-		},
-	}
-	for _, test := range tests {
-		t.Run(test.name, func(t *testing.T) {
-			_, err := getLogsUnmarshaler(test.encoding, defaultLogsUnmarshalers("Test Version", zap.NewNop()))
-			assert.ErrorContains(t, err, fmt.Sprintf("unsupported encoding '%v'", test.encoding[5:]))
-		})
-	}
-}
-
 func TestWithLogsUnmarshalers(t *testing.T) {
-	unmarshaler := &customLogsUnmarshaler{}
 	f := NewFactory()
-	cfg := createDefaultConfig().(*Config)
-	// disable contacting broker
-	cfg.Metadata.Full = false
-	cfg.ProtocolVersion = "2.0.0"
 
 	t.Run("custom_encoding", func(t *testing.T) {
-		cfg.Encoding = unmarshaler.Encoding()
+		cfg := createDefaultConfig().(*Config)
+		cfg.Encoding = "custom"
 		receiver, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		logsConsumer, ok := receiver.(*kafkaLogsConsumer)
 		require.True(t, ok)
@@ -155,7 +116,7 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 		require.NotNil(t, receiver)
 	})
 	t.Run("default_encoding", func(t *testing.T) {
-		cfg.Encoding = defaultEncoding
+		cfg := createDefaultConfig().(*Config)
 		receiver, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nil)
 		logsConsumer, ok := receiver.(*kafkaLogsConsumer)
 		require.True(t, ok)
@@ -163,36 +124,4 @@ func TestWithLogsUnmarshalers(t *testing.T) {
 		require.NoError(t, err)
 		assert.NotNil(t, receiver)
 	})
-}
-
-type customTracesUnmarshaler struct{}
-
-type customMetricsUnmarshaler struct{}
-
-type customLogsUnmarshaler struct{}
-
-var _ TracesUnmarshaler = (*customTracesUnmarshaler)(nil)
-
-func (c customTracesUnmarshaler) Unmarshal([]byte) (ptrace.Traces, error) {
-	panic("implement me")
-}
-
-func (c customTracesUnmarshaler) Encoding() string {
-	return "custom"
-}
-
-func (c customMetricsUnmarshaler) Unmarshal([]byte) (pmetric.Metrics, error) {
-	panic("implement me")
-}
-
-func (c customMetricsUnmarshaler) Encoding() string {
-	return "custom"
-}
-
-func (c customLogsUnmarshaler) Unmarshal([]byte) (plog.Logs, error) {
-	panic("implement me")
-}
-
-func (c customLogsUnmarshaler) Encoding() string {
-	return "custom"
 }
