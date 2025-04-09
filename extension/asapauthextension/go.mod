@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
 
-go 1.23.8
+go 1.23.0
 
 require (
 	bitbucket.org/atlassian/go-asap/v2 v2.9.0

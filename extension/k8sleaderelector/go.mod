@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/google/uuid v1.6.0

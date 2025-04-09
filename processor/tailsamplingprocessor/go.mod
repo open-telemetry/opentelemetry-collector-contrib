@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
