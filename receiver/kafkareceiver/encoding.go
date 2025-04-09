@@ -76,6 +76,8 @@ func newLogsUnmarshaler(encoding string, set receiver.Settings, host component.H
 	case "text":
 		return unmarshaler.NewTextLogsUnmarshaler("utf-8")
 	}
+	// There is a special case for text-based encodings, where you can specify
+	// the text encoding (e.g. utf8, utf16) as a suffix in the encoding name.
 	if textEncodingName, ok := strings.CutPrefix(encoding, "text_"); ok {
 		u, err := unmarshaler.NewTextLogsUnmarshaler(textEncodingName)
 		if err != nil {
