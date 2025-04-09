@@ -80,7 +80,7 @@ func (pki *PartitionKeyBuilder) uniqueKey() string {
 	// to avoid collisions on file uploads across different nodes.
     const (
         // Defines the alphabet characters that can be used
-        letters = "abcdefghijklmnopqrstuvwxyz"
+        letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
         // Defines the numeric characters that can be used 
         digits  = "0123456789"
         // Total length of the generated unique string

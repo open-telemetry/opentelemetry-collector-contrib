@@ -179,7 +179,7 @@ func TestPartitionKeyInputsUniqueKey(t *testing.T) {
         uv := (&PartitionKeyBuilder{}).uniqueKey()
         assert.Equal(t, 9, len(uv), "Unique key length must be 9 characters")
         assert.Regexp(t, "^[a-zA-Z]", uv, "First character must be a letter")
-        assert.Regexp(t, "^[a-zA-Z][a-zA-Z0-9]{11}$", uv, "Must match alphanumeric pattern")
+        assert.Regexp(t, "^[a-zA-Z][a-zA-Z0-9]{8}$", uv, "Must match alphanumeric pattern")
         _, ok := seen[uv]
         assert.False(t, ok, "Must not have repeated partition key %q", uv)
         seen[uv] = struct{}{}
