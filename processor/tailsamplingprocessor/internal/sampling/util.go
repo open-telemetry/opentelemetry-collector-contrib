@@ -95,8 +95,8 @@ func invertHasInstrumentationLibrarySpanWithCondition(ilss ptrace.ScopeSpansSlic
 }
 
 func SetAttrOnScopeSpans(data *TraceData, attrName string, attrKey string) {
-	data.Mutex.Lock()
-	defer data.Mutex.Unlock()
+	data.Lock()
+	defer data.Unlock()
 
 	rs := data.ReceivedBatches.ResourceSpans()
 	for i := 0; i < rs.Len(); i++ {

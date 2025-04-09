@@ -5,13 +5,10 @@ package kafka
 
 import (
 	"context"
-	"crypto/tls"
 	"testing"
 
 	"github.com/IBM/sarama"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/config/configtls"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
@@ -47,13 +44,6 @@ func TestAuthentication(t *testing.T) {
 	saramaSASLPLAINConfig.Net.SASL.Password = "pass"
 	saramaSASLPLAINConfig.Net.SASL.Mechanism = sarama.SASLTypePlaintext
 
-	saramaTLSCfg := &sarama.Config{}
-	saramaTLSCfg.Net.TLS.Enable = true
-	tlsClient := configtls.ClientConfig{}
-	tlscfg, err := tlsClient.LoadTLSConfig(context.Background())
-	require.NoError(t, err)
-	saramaTLSCfg.Net.TLS.Config = tlscfg
-
 	saramaSASLAWSIAMOAUTHConfig := &sarama.Config{}
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Enable = true
 	saramaSASLAWSIAMOAUTHConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
@@ -61,10 +51,6 @@ func TestAuthentication(t *testing.T) {
 		ctx:    context.Background(),
 		region: "region",
 	}
-
-	tlsConfig := tls.Config{}
-	saramaSASLAWSIAMOAUTHConfig.Net.TLS.Enable = true
-	saramaSASLAWSIAMOAUTHConfig.Net.TLS.Config = &tlsConfig
 
 	saramaKerberosCfg := &sarama.Config{}
 	saramaKerberosCfg.Net.SASL.Mechanism = sarama.SASLTypeGSSAPI
@@ -102,17 +88,6 @@ func TestAuthentication(t *testing.T) {
 				PlainText: &configkafka.PlainTextConfig{Username: "jdoe", Password: "pass"},
 			},
 			saramaConfig: saramaPlaintext,
-		},
-		{
-			auth:         configkafka.AuthenticationConfig{TLS: &configtls.ClientConfig{}},
-			saramaConfig: saramaTLSCfg,
-		},
-		{
-			auth: configkafka.AuthenticationConfig{TLS: &configtls.ClientConfig{
-				Config: configtls.Config{CAFile: "/doesnotexists"},
-			}},
-			saramaConfig: saramaTLSCfg,
-			err:          "failed to load TLS config",
 		},
 		{
 			auth: configkafka.AuthenticationConfig{
@@ -168,26 +143,11 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			err := ConfigureSaramaAuthentication(context.Background(), test.auth, config)
-			if test.err != "" {
-				assert.ErrorContains(t, err, test.err)
-			} else {
-				// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
-				config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
-				assert.Equal(t, test.saramaConfig, config)
-			}
+			configureSaramaAuthentication(context.Background(), test.auth, config)
+
+			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
+			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
+			assert.Equal(t, test.saramaConfig, config)
 		})
 	}
-}
-
-func TestConfigureSaramaAuthentication_TLS(t *testing.T) {
-	auth := configkafka.AuthenticationConfig{
-		TLS: &configtls.ClientConfig{
-			Config: configtls.Config{
-				CAFile: "/nonexistent",
-			},
-		},
-	}
-	err := ConfigureSaramaAuthentication(context.Background(), auth, &sarama.Config{})
-	require.ErrorContains(t, err, "failed to load TLS config")
 }

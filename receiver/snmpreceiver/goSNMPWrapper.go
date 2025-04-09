@@ -115,105 +115,105 @@ func newGoSNMPWrapper() goSNMPWrapper {
 
 // Close closes the GoSNMP connection
 func (w *otelGoSNMPWrapper) Close() error {
-	return w.GoSNMP.Conn.Close()
+	return w.Conn.Close()
 }
 
 // GetTransport gets the Transport
 func (w *otelGoSNMPWrapper) GetTransport() string {
-	return w.GoSNMP.Transport
+	return w.Transport
 }
 
 // SetTransport sets the Transport
 func (w *otelGoSNMPWrapper) SetTransport(transport string) {
-	w.GoSNMP.Transport = transport
+	w.Transport = transport
 }
 
 // GetTarget gets the Target
 func (w *otelGoSNMPWrapper) GetTarget() string {
-	return w.GoSNMP.Target
+	return w.Target
 }
 
 // SetTarget sets the Target
 func (w *otelGoSNMPWrapper) SetTarget(target string) {
-	w.GoSNMP.Target = target
+	w.Target = target
 }
 
 // GetPort gets the Port
 func (w *otelGoSNMPWrapper) GetPort() uint16 {
-	return w.GoSNMP.Port
+	return w.Port
 }
 
 // SetPort sets the Port
 func (w *otelGoSNMPWrapper) SetPort(port uint16) {
-	w.GoSNMP.Port = port
+	w.Port = port
 }
 
 // GetCommunity gets the Community
 func (w *otelGoSNMPWrapper) GetCommunity() string {
-	return w.GoSNMP.Community
+	return w.Community
 }
 
 // SetCommunity sets the Community
 func (w *otelGoSNMPWrapper) SetCommunity(community string) {
-	w.GoSNMP.Community = community
+	w.Community = community
 }
 
 // GetVersion gets the Version
 func (w *otelGoSNMPWrapper) GetVersion() gosnmp.SnmpVersion {
-	return w.GoSNMP.Version
+	return w.Version
 }
 
 // SetVersion sets the Version
 func (w *otelGoSNMPWrapper) SetVersion(version gosnmp.SnmpVersion) {
-	w.GoSNMP.Version = version
+	w.Version = version
 }
 
 // GetTimeout gets the Timeout
 func (w *otelGoSNMPWrapper) GetTimeout() time.Duration {
-	return w.GoSNMP.Timeout
+	return w.Timeout
 }
 
 // SetTimeout sets the Timeout
 func (w *otelGoSNMPWrapper) SetTimeout(timeout time.Duration) {
-	w.GoSNMP.Timeout = timeout
+	w.Timeout = timeout
 }
 
 // GetMaxOids gets the MaxOids
 func (w *otelGoSNMPWrapper) GetMaxOids() int {
-	return w.GoSNMP.MaxOids
+	return w.MaxOids
 }
 
 // SetMaxOids sets the MaxOids
 func (w *otelGoSNMPWrapper) SetMaxOids(maxOids int) {
-	w.GoSNMP.MaxOids = maxOids
+	w.MaxOids = maxOids
 }
 
 // GetMsgFlags gets the MsgFlags
 func (w *otelGoSNMPWrapper) GetMsgFlags() gosnmp.SnmpV3MsgFlags {
-	return w.GoSNMP.MsgFlags
+	return w.MsgFlags
 }
 
 // SetMsgFlags sets the MsgFlags
 func (w *otelGoSNMPWrapper) SetMsgFlags(msgFlags gosnmp.SnmpV3MsgFlags) {
-	w.GoSNMP.MsgFlags = msgFlags
+	w.MsgFlags = msgFlags
 }
 
 // GetSecurityModel gets the SecurityModel
 func (w *otelGoSNMPWrapper) GetSecurityModel() gosnmp.SnmpV3SecurityModel {
-	return w.GoSNMP.SecurityModel
+	return w.SecurityModel
 }
 
 // SetSecurityModel sets the SecurityModel
 func (w *otelGoSNMPWrapper) SetSecurityModel(securityModel gosnmp.SnmpV3SecurityModel) {
-	w.GoSNMP.SecurityModel = securityModel
+	w.SecurityModel = securityModel
 }
 
 // GetSecurityParameters gets the SecurityParameters
 func (w *otelGoSNMPWrapper) GetSecurityParameters() gosnmp.SnmpV3SecurityParameters {
-	return w.GoSNMP.SecurityParameters
+	return w.SecurityParameters
 }
 
 // SetSecurityParameters sets the SecurityParameters
 func (w *otelGoSNMPWrapper) SetSecurityParameters(securityParameters gosnmp.SnmpV3SecurityParameters) {
-	w.GoSNMP.SecurityParameters = securityParameters
+	w.SecurityParameters = securityParameters
 }

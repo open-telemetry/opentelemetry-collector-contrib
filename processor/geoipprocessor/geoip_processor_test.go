@@ -224,7 +224,7 @@ func TestProcessor(t *testing.T) {
 
 	for _, tt := range testCases {
 		t.Run(tt.name, func(t *testing.T) {
-			var attributes []attribute.Key = defaultAttributes
+			attributes := defaultAttributes
 			if tt.attributes != nil {
 				attributes = tt.attributes
 			}

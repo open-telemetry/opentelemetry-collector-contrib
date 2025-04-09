@@ -71,10 +71,10 @@ func (emd *ec2Metadata) refresh(ctx context.Context) {
 		return
 	}
 
-	emd.instanceID = resp.InstanceIdentityDocument.InstanceID
-	emd.instanceType = resp.InstanceIdentityDocument.InstanceType
-	emd.region = resp.InstanceIdentityDocument.Region
-	emd.instanceIP = resp.InstanceIdentityDocument.PrivateIP
+	emd.instanceID = resp.InstanceID
+	emd.instanceType = resp.InstanceType
+	emd.region = resp.Region
+	emd.instanceIP = resp.PrivateIP
 
 	// notify ec2tags and ebsvolume that the instance id is ready
 	if emd.instanceID != "" {

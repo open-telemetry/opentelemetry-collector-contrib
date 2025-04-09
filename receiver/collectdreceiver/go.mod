@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/collectdreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd v0.123.0

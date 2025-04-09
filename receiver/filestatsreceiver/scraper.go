@@ -63,7 +63,7 @@ func (s *fsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 func newScraper(cfg *Config, settings receiver.Settings) *fsScraper {
 	return &fsScraper{
 		include: cfg.Include,
-		logger:  settings.TelemetrySettings.Logger,
+		logger:  settings.Logger,
 		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

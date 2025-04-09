@@ -41,7 +41,7 @@ func (r *nginxScraper) start(ctx context.Context, host component.Host) error {
 	if err != nil {
 		return err
 	}
-	r.client = client.NewNginxClient(httpClient, r.cfg.ClientConfig.Endpoint)
+	r.client = client.NewNginxClient(httpClient, r.cfg.Endpoint)
 	return nil
 }
 

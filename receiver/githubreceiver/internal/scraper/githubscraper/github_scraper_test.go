@@ -167,7 +167,7 @@ func TestScrape(t *testing.T) {
 
 			ghs := newGitHubScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 			ghs.cfg.GitHubOrg = "open-telemetry"
-			ghs.cfg.ClientConfig.Endpoint = server.URL
+			ghs.cfg.Endpoint = server.URL
 
 			err := ghs.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)

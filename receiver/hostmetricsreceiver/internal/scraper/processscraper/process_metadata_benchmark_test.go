@@ -54,7 +54,7 @@ func BenchmarkGetProcessMetadata(b *testing.B) {
 			defer func() {
 				require.NoError(b, featuregate.GlobalRegistry().Set(useNewGetProcessHandles.ID(), previousValue))
 			}()
-			scraper.config.MetricsBuilderConfig.ResourceAttributes.ProcessParentPid.Enabled = bm.parentPidEnabled
+			scraper.config.ResourceAttributes.ProcessParentPid.Enabled = bm.parentPidEnabled
 
 			for i := 0; i < b.N; i++ {
 				// Typically there are errors, but we are not interested in them for this benchmark

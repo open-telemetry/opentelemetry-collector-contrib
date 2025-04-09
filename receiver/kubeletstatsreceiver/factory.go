@@ -79,26 +79,26 @@ func createMetricsReceiver(
 	}
 
 	if enableCPUUsageMetrics.IsEnabled() {
-		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.ContainerCPUUsage.Enabled = true
+		if cfg.Metrics.ContainerCPUUtilization.Enabled {
+			cfg.Metrics.ContainerCPUUtilization.Enabled = false
+			cfg.Metrics.ContainerCPUUsage.Enabled = true
 		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUsage.Enabled = true
+		if cfg.Metrics.K8sPodCPUUtilization.Enabled {
+			cfg.Metrics.K8sPodCPUUtilization.Enabled = false
+			cfg.Metrics.K8sPodCPUUsage.Enabled = true
 		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
-			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
-			cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUsage.Enabled = true
+		if cfg.Metrics.K8sNodeCPUUtilization.Enabled {
+			cfg.Metrics.K8sNodeCPUUtilization.Enabled = false
+			cfg.Metrics.K8sNodeCPUUsage.Enabled = true
 		}
 	} else {
-		if cfg.MetricsBuilderConfig.Metrics.ContainerCPUUtilization.Enabled {
+		if cfg.Metrics.ContainerCPUUtilization.Enabled {
 			set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
 		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sPodCPUUtilization.Enabled {
+		if cfg.Metrics.K8sPodCPUUtilization.Enabled {
 			set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
 		}
-		if cfg.MetricsBuilderConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+		if cfg.Metrics.K8sNodeCPUUtilization.Enabled {
 			set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
 		}
 	}

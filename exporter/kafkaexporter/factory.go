@@ -17,10 +17,13 @@ import (
 )
 
 const (
-	defaultTracesTopic  = "otlp_spans"
-	defaultMetricsTopic = "otlp_metrics"
-	defaultLogsTopic    = "otlp_logs"
-	defaultEncoding     = "otlp_proto"
+	defaultLogsTopic       = "otlp_logs"
+	defaultLogsEncoding    = "otlp_proto"
+	defaultMetricsTopic    = "otlp_metrics"
+	defaultMetricsEncoding = "otlp_proto"
+	defaultTracesTopic     = "otlp_spans"
+	defaultTracesEncoding  = "otlp_proto"
+
 	// partitioning metrics by resource attributes is disabled by default
 	defaultPartitionMetricsByResourceAttributesEnabled = false
 	// partitioning logs by resource attributes is disabled by default
@@ -45,9 +48,18 @@ func createDefaultConfig() component.Config {
 		QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
 		ClientConfig:    configkafka.NewDefaultClientConfig(),
 		Producer:        configkafka.NewDefaultProducerConfig(),
-		// using an empty topic to track when it has not been set by user, default is based on traces or metrics.
-		Topic:                                "",
-		Encoding:                             defaultEncoding,
+		Logs: SignalConfig{
+			Topic:    defaultLogsTopic,
+			Encoding: defaultLogsEncoding,
+		},
+		Metrics: SignalConfig{
+			Topic:    defaultMetricsTopic,
+			Encoding: defaultMetricsEncoding,
+		},
+		Traces: SignalConfig{
+			Topic:    defaultTracesTopic,
+			Encoding: defaultTracesEncoding,
+		},
 		PartitionMetricsByResourceAttributes: defaultPartitionMetricsByResourceAttributesEnabled,
 		PartitionLogsByResourceAttributes:    defaultPartitionLogsByResourceAttributesEnabled,
 	}
@@ -59,12 +71,6 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultTracesTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newTracesExporter(oCfg, set)
 	return exporterhelper.NewTraces(
 		ctx,
@@ -88,12 +94,6 @@ func createMetricsExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultMetricsTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newMetricsExporter(oCfg, set)
 	return exporterhelper.NewMetrics(
 		ctx,
@@ -117,12 +117,6 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	oCfg := *(cfg.(*Config)) // Clone the config
-	if oCfg.Topic == "" {
-		oCfg.Topic = defaultLogsTopic
-	}
-	if oCfg.Encoding == "otlp_json" {
-		set.Logger.Info("otlp_json is considered experimental and should not be used in a production environment")
-	}
 	exp := newLogsExporter(oCfg, set)
 	return exporterhelper.NewLogs(
 		ctx,

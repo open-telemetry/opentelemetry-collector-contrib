@@ -94,7 +94,7 @@ func New(
 	bq admission2.Queue,
 	netReporter netstats.Interface,
 ) (*Receiver, error) {
-	tracer := set.TelemetrySettings.TracerProvider.Tracer("otel-arrow-receiver")
+	tracer := set.TracerProvider.Tracer("otel-arrow-receiver")
 	return &Receiver{
 		Consumers:    cs,
 		obsrecv:      obsrecv,

@@ -246,7 +246,7 @@ func (s *mongodbScraper) recordOperations(now pcommon.Timestamp, doc bson.M, err
 }
 
 func (s *mongodbScraper) recordOperationsRepl(now pcommon.Timestamp, doc bson.M, errs *scrapererror.ScrapeErrors) {
-	var replDoc bson.M = doc
+	replDoc := doc
 	var highestInsertCount int64 = -1
 
 	if len(s.secondaryClients) > 0 {

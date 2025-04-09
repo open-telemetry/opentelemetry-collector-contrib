@@ -38,7 +38,7 @@ func (l logStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pco
 			logs := slogs.LogRecords()
 			for k := 0; k < logs.Len(); k++ {
 				tCtx := ottllog.NewTransformContext(logs.At(k), slogs.Scope(), rlogs.Resource(), slogs, rlogs, ottllog.WithCache(cache))
-				condition, err := l.BoolExpr.Eval(ctx, tCtx)
+				condition, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					return err
 				}

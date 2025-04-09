@@ -778,8 +778,8 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		skip := false
 		for i, source := range assoc.Sources {
 			// If association configured to take IP address from connection
-			switch {
-			case source.From == ConnectionSource:
+			switch source.From {
+			case ConnectionSource:
 				if pod.Address == "" {
 					skip = true
 					break
@@ -793,7 +793,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					break
 				}
 				ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
-			case source.From == ResourceSource:
+			case ResourceSource:
 				attr := ""
 				switch source.Name {
 				case conventions.AttributeK8SNamespaceName:

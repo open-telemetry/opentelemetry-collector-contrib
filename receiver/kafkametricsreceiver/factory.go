@@ -37,7 +37,7 @@ func createDefaultConfig() component.Config {
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 	if config.ClusterAlias != "" {
-		config.MetricsBuilderConfig.ResourceAttributes.KafkaClusterAlias.Enabled = true
+		config.ResourceAttributes.KafkaClusterAlias.Enabled = true
 	}
 	return config
 }

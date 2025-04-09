@@ -16,11 +16,17 @@ import (
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil"
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/featuregate"
 
 	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
 
 func TestIntegrationInternalMetrics(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
+	defer func() {
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
+	}()
 	expectedMetrics := map[string]struct{}{
 		// Datadog internal metrics on trace and stats writers
 		"datadog.otlp_translator.resources.missing_source": {},

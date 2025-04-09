@@ -47,14 +47,14 @@ func (m *mockCIMetric) RemoveTag(key string) {
 }
 
 func TestUtils_parseDeploymentFromReplicaSet(t *testing.T) {
-	assert.Equal(t, "", parseDeploymentFromReplicaSet("cloudwatch-agent"))
+	assert.Empty(t, parseDeploymentFromReplicaSet("cloudwatch-agent"))
 	assert.Equal(t, "cloudwatch-agent", parseDeploymentFromReplicaSet("cloudwatch-agent-42kcz"))
 }
 
 func TestUtils_parseCronJobFromJob(t *testing.T) {
-	assert.Equal(t, "", parseCronJobFromJob("hello-123"))
+	assert.Empty(t, parseCronJobFromJob("hello-123"))
 	assert.Equal(t, "hello", parseCronJobFromJob("hello-1234567890"))
-	assert.Equal(t, "", parseCronJobFromJob("hello-123456789a"))
+	assert.Empty(t, parseCronJobFromJob("hello-123456789a"))
 }
 
 func TestUtils_addKubernetesInfo(t *testing.T) {
@@ -76,9 +76,9 @@ func TestUtils_addKubernetesInfo(t *testing.T) {
 
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob)
-	assert.Equal(t, "", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
+	assert.Empty(t, metric.GetTag(ci.ContainerNamekey))
+	assert.Empty(t, metric.GetTag(ci.K8sPodNameKey))
+	assert.Empty(t, metric.GetTag(ci.PodIDKey))
 	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
 	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))

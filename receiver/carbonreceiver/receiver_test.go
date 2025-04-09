@@ -237,7 +237,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			m := mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, carbonMetric.Name, m.Name())
 			require.Equal(t, 1, m.Gauge().DataPoints().Len())
-			require.Equal(t, len(recorder.Ended()), len(recorder.Started()))
+			require.Len(t, recorder.Started(), len(recorder.Ended()))
 		})
 	}
 }

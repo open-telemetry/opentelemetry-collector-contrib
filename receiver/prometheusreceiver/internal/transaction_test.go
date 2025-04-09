@@ -2005,7 +2005,7 @@ type buildTestData struct {
 
 func (tt buildTestData) run(t *testing.T, enableNativeHistograms bool) {
 	wants := tt.wants()
-	assert.EqualValues(t, len(wants), len(tt.inputs))
+	assert.Len(t, tt.inputs, len(wants))
 	st := ts
 	for i, page := range tt.inputs {
 		sink := new(consumertest.MetricsSink)
@@ -2159,7 +2159,7 @@ func assertEquivalentMetrics(t *testing.T, want, got pmetric.Metrics) {
 				gi := gotMs.At(k)
 				gmap[gi.Name()] = gi
 			}
-			assert.EqualValues(t, wmap, gmap)
+			assert.Equal(t, wmap, gmap)
 		}
 	}
 }

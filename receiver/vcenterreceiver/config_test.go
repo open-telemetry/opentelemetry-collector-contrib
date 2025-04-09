@@ -104,7 +104,7 @@ func TestLoadConfig(t *testing.T) {
 	expected.Username = "otelu"
 	expected.Password = "${env:VCENTER_PASSWORD}"
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
-	expected.MetricsBuilderConfig.Metrics.VcenterHostCPUUtilization.Enabled = false
+	expected.Metrics.VcenterHostCPUUtilization.Enabled = false
 	expected.CollectionInterval = 5 * time.Minute
 
 	if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {

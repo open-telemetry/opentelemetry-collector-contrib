@@ -124,7 +124,7 @@ func TestTracesPusher_marshal_error(t *testing.T) {
 		}),
 	}
 	config := createDefaultConfig().(*Config)
-	config.Encoding = "trace_encoding"
+	config.Traces.Encoding = "trace_encoding"
 	exp, _ := newMockTracesExporter(t, *config, host)
 
 	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
@@ -156,7 +156,7 @@ func TestTracesPusher_partitioning(t *testing.T) {
 	})
 	t.Run("jaeger_partitioning", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
-		config.Encoding = "jaeger_json"
+		config.Traces.Encoding = "jaeger_json"
 		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
 
 		// Jaeger encodings produce one message per span,
@@ -336,7 +336,7 @@ func TestMetricsPusher_marshal_error(t *testing.T) {
 		}),
 	}
 	config := createDefaultConfig().(*Config)
-	config.Encoding = "metric_encoding"
+	config.Metrics.Encoding = "metric_encoding"
 	exp, _ := newMockMetricsExporter(t, *config, host)
 
 	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
@@ -494,7 +494,7 @@ func TestLogsPusher_marshal_error(t *testing.T) {
 		}),
 	}
 	config := createDefaultConfig().(*Config)
-	config.Encoding = "log_encoding"
+	config.Logs.Encoding = "log_encoding"
 	exp, _ := newMockLogsExporter(t, *config, host)
 
 	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))

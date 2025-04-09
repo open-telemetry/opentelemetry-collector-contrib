@@ -43,6 +43,7 @@ Optional Settings (with defaults):
 - `client_id` (default = otel-collector): consumer client id
 - `collection_interval` (default = 1m): frequency of metric collection/scraping.
 - `initial_delay` (default = `1s`): defines how long this receiver waits before starting.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth` (default none)
     - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
@@ -53,17 +54,7 @@ Optional Settings (with defaults):
         - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
         - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
         - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-    - `tls`
-        - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should only be used
-          if `insecure` is set to true.
-        - `cert_file`: path to the TLS cert to use for TLS required connections. Should only be used if `insecure` is
-          set to true.
-        - `key_file`: path to the TLS key to use for TLS required connections. Should only be used if `insecure` is set
-          to true.
-        - `insecure` (default = false): Disable verifying the server's certificate chain and host
-          name (`InsecureSkipVerify` in the tls config)
-        - `server_name_override`: ServerName indicates the name of the server requested by the client in order to
-          support virtual hosting.
+    - `tls` ((Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
     - `kerberos`
         - `service_name`: Kerberos service name
         - `realm`: Kerberos realm
@@ -112,10 +103,9 @@ receivers:
       - brokers
       - topics
       - consumers
-    auth:
-      tls:
-        ca_file: ca.pem
-        cert_file: cert.pem
-        key_file: key.pem
+    tls:
+      ca_file: ca.pem
+      cert_file: cert.pem
+      key_file: key.pem
     collection_interval: 5s
 ```

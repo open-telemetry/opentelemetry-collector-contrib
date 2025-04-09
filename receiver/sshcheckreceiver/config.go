@@ -39,19 +39,19 @@ func (c Config) SFTPEnabled() bool {
 }
 
 func (c Config) Validate() (err error) {
-	if c.SSHClientSettings.Endpoint == "" {
+	if c.Endpoint == "" {
 		err = multierr.Append(err, errMissingEndpoint)
-	} else if strings.Contains(c.SSHClientSettings.Endpoint, " ") {
+	} else if strings.Contains(c.Endpoint, " ") {
 		err = multierr.Append(err, errInvalidEndpoint)
-	} else if _, _, splitErr := net.SplitHostPort(c.SSHClientSettings.Endpoint); splitErr != nil {
+	} else if _, _, splitErr := net.SplitHostPort(c.Endpoint); splitErr != nil {
 		err = multierr.Append(splitErr, errInvalidEndpoint)
 	}
 
-	if c.SSHClientSettings.Username == "" {
+	if c.Username == "" {
 		err = multierr.Append(err, errMissingUsername)
 	}
 
-	if c.SSHClientSettings.Password == "" && c.KeyFile == "" {
+	if c.Password == "" && c.KeyFile == "" {
 		err = multierr.Append(err, errMissingPasswordAndKeyFile)
 	}
 

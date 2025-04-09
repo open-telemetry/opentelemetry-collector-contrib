@@ -22,7 +22,7 @@ func TestConfig(t *testing.T) {
 			name: "endpoint",
 			expectedConfig: func() *Config {
 				cfg := createDefaultConfig().(*Config)
-				cfg.ServerConfig.NetAddr.Endpoint = "0.0.0.0:3456"
+				cfg.NetAddr.Endpoint = "0.0.0.0:3456"
 				return cfg
 			}(),
 		},
@@ -31,8 +31,8 @@ func TestConfig(t *testing.T) {
 			expectedConfig: func() *Config {
 				cfg := createDefaultConfig().(*Config)
 				tls := configtls.NewDefaultServerConfig()
-				cfg.ServerConfig.TLSSetting = &tls
-				cfg.ServerConfig.TLSSetting.KeyFile = "server.key"
+				cfg.TLSSetting = &tls
+				cfg.TLSSetting.KeyFile = "server.key"
 				return cfg
 			}(),
 		},

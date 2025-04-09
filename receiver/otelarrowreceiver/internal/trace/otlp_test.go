@@ -58,7 +58,7 @@ func (ts *testSink) unblock() {
 }
 
 func (ts *testSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	<-ts.Context.Done()
+	<-ts.Done()
 	return ts.TracesSink.ConsumeTraces(ctx, td)
 }
 
@@ -75,7 +75,7 @@ func TestExport_Success(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, td, traceSink.AllTraces()[0])
+	assert.Equal(t, td, traceSink.AllTraces()[0])
 
 	// One self-tracing spans is issued.
 	require.NoError(t, selfProv.ForceFlush(context.Background()))

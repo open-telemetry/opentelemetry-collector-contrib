@@ -40,7 +40,7 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the jaeger receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -81,7 +81,7 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -98,7 +98,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:14250",
 			Transport: confignet.TransportTypeTCP,
@@ -120,7 +120,7 @@ func TestCreateTLSThriftHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftHTTP = &confighttp.ServerConfig{
+	cfg.(*Config).ThriftHTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:14268",
 		TLSSetting: &configtls.ServerConfig{
 			Config: configtls.Config{
@@ -151,7 +151,7 @@ func TestCreateInvalidThriftBinaryEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftBinaryUDP = &ProtocolUDP{
+	cfg.(*Config).ThriftBinaryUDP = &ProtocolUDP{
 		Endpoint: "0.0.0.0:6832",
 	}
 	set := receivertest.NewNopSettings(metadata.Type)
@@ -165,7 +165,7 @@ func TestCreateInvalidThriftCompactEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.ThriftCompactUDP = &ProtocolUDP{
+	cfg.(*Config).ThriftCompactUDP = &ProtocolUDP{
 		Endpoint: "0.0.0.0:6831",
 	}
 	set := receivertest.NewNopSettings(metadata.Type)

@@ -27,5 +27,5 @@ func TestCluster_GetNodes(t *testing.T) {
 	}
 
 	actualNodes := testCluster.GetNodes()
-	require.Equal(t, len(actualNodes), len(nodes))
+	require.Len(t, nodes, len(actualNodes))
 }

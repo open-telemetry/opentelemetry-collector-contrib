@@ -98,9 +98,10 @@ func (l *LibhoneyEvent) SignalType(logger zap.Logger) string {
 		switch sig {
 		case "trace":
 			if atype, ok := l.Data["meta.annotation_type"]; ok {
-				if atype == "span_event" {
+				switch atype {
+				case "span_event":
 					return "span_event"
-				} else if atype == "link" {
+				case "link":
 					return "span_link"
 				}
 				logger.Warn("invalid annotation type", zap.String("meta.annotation_type", atype.(string)))

@@ -141,8 +141,8 @@ func (r *otelArrowReceiver) startProtocolServers(ctx context.Context, host compo
 			// in which case the default is selected in the arrowRecord package.
 			opts = append(opts, arrowRecord.WithMemoryLimit(r.cfg.Arrow.MemoryLimitMiB<<20))
 		}
-		if r.settings.TelemetrySettings.MeterProvider != nil {
-			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.TelemetrySettings.MeterProvider))
+		if r.settings.MeterProvider != nil {
+			opts = append(opts, arrowRecord.WithMeterProvider(r.settings.MeterProvider))
 		}
 		return arrowRecord.NewConsumer(opts...)
 	}, r.boundedQueue, r.netReporter)

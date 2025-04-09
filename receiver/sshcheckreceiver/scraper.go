@@ -29,7 +29,7 @@ type sshcheckScraper struct {
 // start starts the scraper by creating a new SSH Client on the scraper
 func (s *sshcheckScraper) start(_ context.Context, host component.Host) error {
 	var err error
-	s.Client, err = s.Config.ToClient(host, s.settings)
+	s.Client, err = s.ToClient(host, s.settings)
 	return err
 }
 
@@ -37,7 +37,7 @@ func (s *sshcheckScraper) scrapeSSH(now pcommon.Timestamp) error {
 	var success int64
 
 	start := time.Now()
-	err := s.Client.Dial(s.Config.SSHClientSettings.Endpoint)
+	err := s.Dial(s.Endpoint)
 	if err == nil {
 		success = 1
 	}
@@ -51,7 +51,7 @@ func (s *sshcheckScraper) scrapeSFTP(now pcommon.Timestamp) error {
 
 	start := time.Now()
 	// upgrade to SFTP and read fs
-	sftpc, err := s.Client.SFTPClient()
+	sftpc, err := s.SFTPClient()
 	if err == nil {
 		_, err = sftpc.ReadDir(".")
 		if err == nil {
@@ -85,7 +85,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	cleanup := func() {
-		s.Client.Close()
+		s.Close()
 	}
 
 	// if the context carries a shorter deadline then timeout that quickly
@@ -119,7 +119,7 @@ func (s *sshcheckScraper) scrape(ctx context.Context) (_ pmetric.Metrics, err er
 	}
 
 	rb := s.mb.NewResourceBuilder()
-	rb.SetSSHEndpoint(s.Config.SSHClientSettings.Endpoint)
+	rb.SetSSHEndpoint(s.Endpoint)
 	return s.mb.Emit(metadata.WithResource(rb.Emit())), nil
 }
 

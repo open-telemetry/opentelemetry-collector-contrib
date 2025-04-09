@@ -48,10 +48,10 @@ var _ component.Config = (*Config)(nil)
 // Validate checks if the extension configuration is valid
 func (c *Config) Validate() error {
 	if !c.UseV2 {
-		if c.LegacyConfig.Endpoint == "" {
+		if c.Endpoint == "" {
 			return errHTTPEndpointRequired
 		}
-		if !strings.HasPrefix(c.LegacyConfig.Path, "/") {
+		if !strings.HasPrefix(c.Path, "/") {
 			return errInvalidPath
 		}
 		return nil

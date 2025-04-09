@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/goccy/go-json v0.10.5

@@ -680,6 +680,9 @@ func TestVirtualNodeServerLabels(t *testing.T) {
 	err = pmetrictest.CompareMetrics(expectedMetrics, metrics[0],
 		pmetrictest.IgnoreStartTimestamp(),
 		pmetrictest.IgnoreTimestamp(),
+		pmetrictest.IgnoreScopeMetricsOrder(),
+		pmetrictest.IgnoreMetricsOrder(),
+		pmetrictest.IgnoreMetricDataPointsOrder(),
 	)
 	require.NoError(t, err)
 }

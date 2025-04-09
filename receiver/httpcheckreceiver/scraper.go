@@ -42,8 +42,8 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 		if len(target.Endpoints) > 0 {
 			allEndpoints = append(allEndpoints, target.Endpoints...) // Add all endpoints
 		}
-		if target.ClientConfig.Endpoint != "" {
-			allEndpoints = append(allEndpoints, target.ClientConfig.Endpoint) // Add single endpoint
+		if target.Endpoint != "" {
+			allEndpoints = append(allEndpoints, target.Endpoint) // Add single endpoint
 		}
 
 		// Process each endpoint in the unified list
@@ -57,7 +57,7 @@ func (h *httpcheckScraper) start(ctx context.Context, host component.Host) (err 
 
 			// Clone the target and assign the specific endpoint
 			targetClone := *target
-			targetClone.ClientConfig.Endpoint = endpoint
+			targetClone.Endpoint = endpoint
 
 			h.clients = append(h.clients, client)
 			expandedTargets = append(expandedTargets, &targetClone) // Add the cloned target to expanded targets
@@ -87,7 +87,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			req, err := http.NewRequestWithContext(
 				ctx,
 				h.cfg.Targets[targetIndex].Method,
-				h.cfg.Targets[targetIndex].ClientConfig.Endpoint, // Use the ClientConfig.Endpoint
+				h.cfg.Targets[targetIndex].Endpoint, // Use the ClientConfig.Endpoint
 				http.NoBody,
 			)
 			if err != nil {
@@ -107,7 +107,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 			h.mb.RecordHttpcheckDurationDataPoint(
 				now,
 				time.Since(start).Milliseconds(),
-				h.cfg.Targets[targetIndex].ClientConfig.Endpoint, // Use the correct endpoint
+				h.cfg.Targets[targetIndex].Endpoint, // Use the correct endpoint
 			)
 
 			statusCode := 0
@@ -115,7 +115,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 				h.mb.RecordHttpcheckErrorDataPoint(
 					now,
 					int64(1),
-					h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+					h.cfg.Targets[targetIndex].Endpoint,
 					err.Error(),
 				)
 			} else {
@@ -128,7 +128,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(1),
-						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+						h.cfg.Targets[targetIndex].Endpoint,
 						int64(statusCode),
 						req.Method,
 						class,
@@ -137,7 +137,7 @@ func (h *httpcheckScraper) scrape(ctx context.Context) (pmetric.Metrics, error) 
 					h.mb.RecordHttpcheckStatusDataPoint(
 						now,
 						int64(0),
-						h.cfg.Targets[targetIndex].ClientConfig.Endpoint,
+						h.cfg.Targets[targetIndex].Endpoint,
 						int64(statusCode),
 						req.Method,
 						class,

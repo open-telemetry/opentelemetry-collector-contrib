@@ -26,7 +26,7 @@ type CollectorInstanceInfo struct {
 
 func NewCollectorInstanceInfo(
 	set component.TelemetrySettings,
-) *CollectorInstanceInfo {
+) CollectorInstanceInfo {
 	var info CollectorInstanceInfo
 	for k, v := range set.Resource.Attributes().All() {
 		switch k {
@@ -47,7 +47,7 @@ func NewCollectorInstanceInfo(
 			}
 		}
 	}
-	return &info
+	return info
 }
 
 // Size returns the max number of attributes that defines a collector's

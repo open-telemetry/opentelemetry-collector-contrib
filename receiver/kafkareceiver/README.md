@@ -17,6 +17,8 @@ Kafka receiver receives traces, metrics, and logs from Kafka. Message payload en
 
 Note that metrics and logs only support OTLP.
 
+If used in conjunction with the `kafkaexporter` configured with `include_metadata_keys`. The Kafka receiver will also propagate the Kafka headers to the downstream pipeline, giving access to the rest of the pipeline to arbitrary metadata keys and values.
+
 ## Getting Started
 
 There are no required settings.
@@ -48,6 +50,7 @@ The following settings can be optionally configured:
 - `min_fetch_size` (default = `1`): The minimum number of message bytes to fetch in a request, defaults to 1 byte.
 - `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
 - `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
     - `username`: The username to use.
@@ -58,17 +61,7 @@ The following settings can be optionally configured:
     - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
     - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
     - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-  - `tls`
-    - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-      only be used if `insecure` is set to false.
-    - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `key_file`: path to the TLS key to use for TLS required connections. Should
-      only be used if `insecure` is set to false.
-    - `insecure_skip_verify` (default = false): Disable verifying the server's certificate
-      chain and host name (`InsecureSkipVerify` in the [tls config](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/configtls.go#L100))
-    - `server_name_override`: ServerName indicates the name of the server requested by the client
-      in order to support virtual hosting.
+  - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
   - `kerberos`
     - `service_name`: Kerberos service name
     - `realm`: Kerberos realm
@@ -111,18 +104,17 @@ receivers:
   kafka:
     protocol_version: 2.0.0
 ```
-Example of connecting to kafka using sasl and TLS:
+Example of connecting to kafka using SASL and TLS:
 
 ```yaml
 receivers:
   kafka:
+    tls:
     auth:
       sasl:
         username: "user"
         password: "secret"
         mechanism: "SCRAM-SHA-512"
-      tls:
-        insecure: false
 ```
 Example of header extraction:
 

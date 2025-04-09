@@ -131,12 +131,12 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {
 	// Jaeger encodings do their own partitioning, so disable trace ID
 	// partitioning when they are configured.
-	switch config.Encoding {
+	switch config.Traces.Encoding {
 	case "jaeger_proto", "jaeger_json":
 		config.PartitionTracesByID = false
 	}
 	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[ptrace.Traces], error) {
-		marshaler, err := getTracesMarshaler(config.Encoding, host)
+		marshaler, err := getTracesMarshaler(config.Traces.Encoding, host)
 		if err != nil {
 			return nil, err
 		}
@@ -181,7 +181,7 @@ func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, 
 
 func newLogsExporter(config Config, set exporter.Settings) *kafkaExporter[plog.Logs] {
 	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[plog.Logs], error) {
-		marshaler, err := getLogsMarshaler(config.Encoding, host)
+		marshaler, err := getLogsMarshaler(config.Logs.Encoding, host)
 		if err != nil {
 			return nil, err
 		}
@@ -224,7 +224,7 @@ func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.L
 
 func newMetricsExporter(config Config, set exporter.Settings) *kafkaExporter[pmetric.Metrics] {
 	return newKafkaExporter(config, set, func(host component.Host) (kafkaMessager[pmetric.Metrics], error) {
-		marshaler, err := getMetricsMarshaler(config.Encoding, host)
+		marshaler, err := getMetricsMarshaler(config.Metrics.Encoding, host)
 		if err != nil {
 			return nil, err
 		}

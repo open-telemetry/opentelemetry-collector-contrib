@@ -106,7 +106,7 @@ func TestReception(t *testing.T) {
 	gotTraces := sink.AllTraces()
 	assert.Len(t, gotTraces, 1)
 
-	assert.EqualValues(t, td, gotTraces[0])
+	assert.Equal(t, td, gotTraces[0])
 }
 
 func TestPortsNotOpen(t *testing.T) {
@@ -183,7 +183,7 @@ func TestGRPCReception(t *testing.T) {
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
 
-	assert.EqualValues(t, want, gotTraces[0])
+	assert.Equal(t, want, gotTraces[0])
 }
 
 func TestGRPCReceptionWithTLS(t *testing.T) {
@@ -242,7 +242,7 @@ func TestGRPCReceptionWithTLS(t *testing.T) {
 	want := expectedTraceData(now, nowPlus10min, nowPlus10min2sec)
 
 	assert.Len(t, req.Batch.Spans, want.SpanCount(), "got a conflicting amount of spans")
-	assert.EqualValues(t, want, gotTraces[0])
+	assert.Equal(t, want, gotTraces[0])
 }
 
 func expectedTraceData(t1, t2, t3 time.Time) ptrace.Traces {

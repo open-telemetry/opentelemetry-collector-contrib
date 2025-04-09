@@ -206,7 +206,7 @@ func (melr *MessageEventLogRecord) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Tag")
 	}
 
-	log := melr.LogRecordSlice.AppendEmpty()
+	log := melr.AppendEmpty()
 	attrs := log.Attributes()
 	attrs.PutStr(tagAttributeKey, tag)
 	err = parseRecordToLogRecord(dc, log)
@@ -274,9 +274,9 @@ func (fe *ForwardEventLogRecords) DecodeMsg(dc *msgp.Reader) error {
 		return msgp.WrapError(err, "Record")
 	}
 
-	fe.LogRecordSlice.EnsureCapacity(int(entryLen))
+	fe.EnsureCapacity(int(entryLen))
 	for i := 0; i < int(entryLen); i++ {
-		lr := fe.LogRecordSlice.AppendEmpty()
+		lr := fe.AppendEmpty()
 
 		err = parseEntryToLogRecord(dc, lr)
 		if err != nil {
@@ -400,6 +400,6 @@ func (pfe *PackedForwardEventLogRecords) parseEntries(entriesRaw []byte, isGzipp
 			return err
 		}
 		lr.Attributes().PutStr(tagAttributeKey, tag)
-		lr.MoveTo(pfe.LogRecordSlice.AppendEmpty())
+		lr.MoveTo(pfe.AppendEmpty())
 	}
 }

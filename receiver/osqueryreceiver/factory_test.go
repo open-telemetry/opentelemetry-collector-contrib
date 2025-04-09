@@ -14,9 +14,9 @@ import (
 
 func TestFactory(t *testing.T) {
 	f := NewFactory()
-	assert.EqualValues(t, metadata.Type, f.Type())
+	assert.Equal(t, metadata.Type, f.Type())
 	cfg := f.CreateDefaultConfig()
 	assert.NotNil(t, cfg)
 	duration, _ := time.ParseDuration("30s")
-	assert.Equal(t, duration, cfg.(*Config).ControllerConfig.CollectionInterval)
+	assert.Equal(t, duration, cfg.(*Config).CollectionInterval)
 }

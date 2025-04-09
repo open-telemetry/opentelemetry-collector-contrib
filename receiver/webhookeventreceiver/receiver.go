@@ -96,7 +96,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	}
 
 	// create listener from config
-	ln, err := er.cfg.ServerConfig.ToListener(ctx)
+	ln, err := er.cfg.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -108,7 +108,7 @@ func (er *eventReceiver) Start(ctx context.Context, host component.Host) error {
 	router.GET(er.cfg.HealthPath, er.handleHealthCheck)
 
 	// webhook server standup and configuration
-	er.server, err = er.cfg.ServerConfig.ToServer(ctx, host, er.settings.TelemetrySettings, router)
+	er.server, err = er.cfg.ToServer(ctx, host, er.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

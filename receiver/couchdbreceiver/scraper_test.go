@@ -132,7 +132,7 @@ func TestStart(t *testing.T) {
 	t.Run("start fail", func(t *testing.T) {
 		f := NewFactory()
 		cfg := f.CreateDefaultConfig().(*Config)
-		cfg.ClientConfig.TLSSetting.CAFile = "/non/existent"
+		cfg.TLSSetting.CAFile = "/non/existent"
 		cfg.Username = "otelu"
 		cfg.Password = "otelp"
 		require.NoError(t, xconfmap.Validate(cfg))

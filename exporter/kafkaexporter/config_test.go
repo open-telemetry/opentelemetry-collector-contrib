@@ -60,11 +60,68 @@ func TestLoadConfig(t *testing.T) {
 					config.RequiredAcks = configkafka.WaitForAll
 					return config
 				}(),
+				Logs: SignalConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
+				Metrics: SignalConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
+				Traces: SignalConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
 				Topic:                                "spans",
-				Encoding:                             "otlp_proto",
 				PartitionTracesByID:                  true,
 				PartitionMetricsByResourceAttributes: true,
 				PartitionLogsByResourceAttributes:    true,
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
+			expected: &Config{
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig:    configkafka.NewDefaultClientConfig(),
+				Producer:        configkafka.NewDefaultProducerConfig(),
+				Logs: SignalConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Metrics: SignalConfig{
+					Topic:    "metrics_topic",
+					Encoding: "otlp_proto",
+				},
+				Traces: SignalConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Topic: "legacy_topic",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
+			expected: &Config{
+				TimeoutSettings: exporterhelper.NewDefaultTimeoutConfig(),
+				BackOffConfig:   configretry.NewDefaultBackOffConfig(),
+				QueueSettings:   exporterhelper.NewDefaultQueueConfig(),
+				ClientConfig:    configkafka.NewDefaultClientConfig(),
+				Producer:        configkafka.NewDefaultProducerConfig(),
+				Logs: SignalConfig{
+					Topic:    "otlp_logs",
+					Encoding: "legacy_encoding",
+				},
+				Metrics: SignalConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "metrics_encoding",
+				},
+				Traces: SignalConfig{
+					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Encoding: "legacy_encoding",
 			},
 		},
 	}

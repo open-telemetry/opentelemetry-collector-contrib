@@ -30,9 +30,9 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 	require.NoError(t, xconfmap.Validate(cfg))
 
-	assert.Equal(t, "http://localhost:8080", cfg.ClientConfig.Endpoint)
-	assert.Equal(t, 5*time.Second, cfg.ClientConfig.Timeout)
-	assert.Equal(t, "client.crt", cfg.ClientConfig.TLSSetting.CertFile)
+	assert.Equal(t, "http://localhost:8080", cfg.Endpoint)
+	assert.Equal(t, 5*time.Second, cfg.Timeout)
+	assert.Equal(t, "client.crt", cfg.TLSSetting.CertFile)
 	assert.Equal(t, 30*time.Second, cfg.Interval)
 	assert.Equal(t, "collector-1", cfg.CollectorID)
 }

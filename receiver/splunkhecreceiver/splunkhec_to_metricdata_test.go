@@ -456,7 +456,7 @@ func TestGroupMetricsByResource(t *testing.T) {
 	}
 	md, numDroppedTimeseries := splunkHecToMetricsData(zap.NewNop(), events, func(_ pcommon.Resource) {}, defaultTestingHecConfig)
 	assert.Equal(t, 0, numDroppedTimeseries)
-	assert.EqualValues(t, metrics, md)
+	assert.Equal(t, metrics, md)
 }
 
 func TestConvertTimestamp(t *testing.T) {
