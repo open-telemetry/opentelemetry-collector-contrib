@@ -2,7 +2,6 @@ formatters:
   enable:
     - gci
     - gofumpt
-    - goimports
 
   exclusions:
     paths:
@@ -14,12 +13,6 @@ formatters:
         - standard
         - default
         - prefix(github.com/open-telemetry/opentelemetry-collector-contrib)
-
-    goimports:
-      # put imports beginning with prefix after 3rd-party packages;
-      # it's a comma-separated list of prefixes
-      local-prefixes:
-        - github.com/open-telemetry/opentelemetry-collector-contrib
 
 issues:
   # Maximum issues count per one linter.
@@ -124,15 +117,6 @@ linters:
         - fieldalignment
 
       enable-all: true
-
-      # settings per analyzer
-      settings:
-        printf: # analyzer name, run `go tool vet help` to see all analyzers
-          funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Infof
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Warnf
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Errorf
-            - (github.com/golangci/golangci-lint/v2/pkg/logutils.Log).Fatalf
 
     misspell:
       ignore-rules:
