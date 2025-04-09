@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureblobreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/Azure/azure-event-hubs-go/v3 v3.6.2

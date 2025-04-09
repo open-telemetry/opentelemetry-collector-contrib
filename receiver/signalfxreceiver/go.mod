@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/gorilla/mux v1.8.1

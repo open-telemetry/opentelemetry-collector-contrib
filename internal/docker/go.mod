@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/Microsoft/go-winio v0.6.2

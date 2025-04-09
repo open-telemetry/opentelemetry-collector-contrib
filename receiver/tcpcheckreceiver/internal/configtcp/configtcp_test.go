@@ -55,8 +55,8 @@ func TestAllTCPClientSettings(t *testing.T) {
 			}
 			assert.NoError(t, err)
 
-			assert.EqualValues(t, client.TCPAddrConfig.Endpoint, test.settings.Endpoint)
-			assert.EqualValues(t, client.TCPAddrConfig.DialerConfig.Timeout, test.settings.Timeout)
+			assert.Equal(t, client.TCPAddrConfig.Endpoint, test.settings.Endpoint)
+			assert.Equal(t, client.TCPAddrConfig.DialerConfig.Timeout, test.settings.Timeout)
 		})
 	}
 }
