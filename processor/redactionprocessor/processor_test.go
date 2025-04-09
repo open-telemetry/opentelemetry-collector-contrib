@@ -753,7 +753,7 @@ func TestRedactAllTypesTrue(t *testing.T) {
 		assert.Equal(t, "****", value.Str())
 	}
 }
-  
+
 func TestSpanEventRedacted(t *testing.T) {
 	inBatch := ptrace.NewTraces()
 	rs := inBatch.ResourceSpans().AppendEmpty()
