@@ -1123,8 +1123,10 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		{
 			name: "resource:resource.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+				{Statements: []string{
+					`set(resource.cache["test"], "pass")`,
+					`set(resource.attributes["test"], resource.cache["test"])`,
+				}},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).Resource().Attributes().PutStr("test", "pass")
@@ -1148,8 +1150,10 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		{
 			name: "scope:scope.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+				{Statements: []string{
+					`set(scope.cache["test"], "pass")`,
+					`set(scope.attributes["test"], scope.cache["test"])`,
+				}},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Scope().Attributes().PutStr("test", "pass")
@@ -1171,8 +1175,10 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		{
 			name: "span:span.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(span.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(span.attributes["test"], span.cache["test"]) where span.name == "operationA"`}, SharedCache: true},
+				{Statements: []string{
+					`set(span.cache["test"], "pass")`,
+					`set(span.attributes["test"], span.cache["test"]) where span.name == "operationA"`,
+				}},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
@@ -1194,8 +1200,10 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 		{
 			name: "spanevent:spanevent.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(spanevent.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(spanevent.attributes["test"], spanevent.cache["test"]) where spanevent.name == "eventA"`}, SharedCache: true},
+				{Statements: []string{
+					`set(spanevent.cache["test"], "pass")`,
+					`set(spanevent.attributes["test"], spanevent.cache["test"]) where spanevent.name == "eventA"`,
+				}},
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
@@ -1212,47 +1220,6 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			}},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
-			},
-		},
-		{
-			name: "cache isolation",
-			statements: []common.ContextStatements{
-				{
-					Statements:  []string{`set(span.cache["shared"], "pass")`},
-					SharedCache: true,
-				},
-				{
-					Statements: []string{
-						`set(span.cache["test"], "fail")`,
-						`set(span.attributes["test"], span.cache["test"])`,
-						`set(span.cache["shared"], "fail")`,
-					},
-					Conditions: []string{
-						`span.name == "operationA"`,
-					},
-				},
-				{
-					Context: common.Span,
-					Statements: []string{
-						`set(cache["shared"], "fail")`,
-						`set(attributes["extra"], cache["test"]) where cache["test"] != nil`,
-						`set(cache["test"], "fail")`,
-						`set(attributes["test"], span.cache["test"])`,
-					},
-					Conditions: []string{
-						`name == "operationA"`,
-					},
-				},
-				{
-					Statements:  []string{`set(span.attributes["test"], "pass") where span.cache["shared"] == "pass"`},
-					SharedCache: true,
-					Conditions: []string{
-						`span.name == "operationA"`,
-					},
-				},
-			},
-			want: func(td ptrace.Traces) {
-				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "pass")
 			},
 		},
 	}
