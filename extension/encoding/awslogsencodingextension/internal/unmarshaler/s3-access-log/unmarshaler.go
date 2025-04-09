@@ -168,42 +168,6 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 	return nil
 }
 
-// parseTime from given date
-func parseTime(date string) (time.Time, error) {
-	// This function follows a rigid format as it expects
-	// the date to follow the string format "[DD/MM/YYYY:HH:mm:ss".
-	// This function is up to 4x times faster than using time.Parse,
-	// hence why we use it.
-	if len(date) != 21 {
-		return time.Time{}, errors.New("timestamp field expects format DD/MM/YYYY:HH:mm:ss")
-	}
-
-	var day, year, hour, minute, second int
-	var err error
-
-	if day, err = strconv.Atoi(date[1:3]); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get day from timestamp: %w", err)
-	}
-	month, found := months[date[4:7]]
-	if !found {
-		return time.Time{}, fmt.Errorf("timestamp contains invalid month %q", date[4:5])
-	}
-	if year, err = strconv.Atoi(date[8:12]); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get year from timestamp: %w", err)
-	}
-	if hour, err = strconv.Atoi(date[13:15]); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get hour from timestamp: %w", err)
-	}
-	if minute, err = strconv.Atoi(date[16:18]); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get minute from timestamp: %w", err)
-	}
-	if second, err = strconv.Atoi(date[19:21]); err != nil {
-		return time.Time{}, fmt.Errorf("failed to get second from timestamp: %w", err)
-	}
-
-	return time.Date(year, month, day, hour, minute, second, 0, time.UTC), nil
-}
-
 func addField(field string, value string, resourceAttr *resourceAttributes, record plog.LogRecord) error {
 	switch field {
 	case attributeAWSS3BucketOwner:
@@ -212,7 +176,7 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 		resourceAttr.bucketName = value
 	case timestamp:
 		// The format in S3 access logs at this point is as "[DD/MM/YYYY:HH:mm:ss".
-		t, err := parseTime(value)
+		t, err := time.Parse("02/Jan/2006:15:04:05", value[1:])
 		if err != nil {
 			return fmt.Errorf("failed to get timestamp of log: %w", err)
 		}
@@ -220,7 +184,7 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 	case semconv.AttributeHTTPResponseStatusCode,
 		semconv.AttributeHTTPResponseBodySize,
 		attributeAWSS3ObjectSize,
-		attributeAWSS3TurnAround,
+		attributeAWSS3TurnAroundTime,
 		duration:
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {

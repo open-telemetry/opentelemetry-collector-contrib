@@ -116,7 +116,7 @@ extensions:
 | Bytes sent          | `http.response.body.size`                                                                          |
 | Object size         | `aws.s3.object.size`                                                                               |
 | Total time          | `duration`                                                                                         |
-| Turn around time    | `aws.s3.turn_around`                                                                               |
+| Turn around time    | `aws.s3.turn_around_time`                                                                          |
 | Referer             | `http.request.header.referer`                                                                      |
 | User-Agent          | `user_agent.original`                                                                              |
 | Version ID          | `aws.s3.version_id`                                                                                |

@@ -7,7 +7,6 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
-	"time"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -158,82 +157,6 @@ func TestUnmarshalLogs(t *testing.T) {
 			expected, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
 			require.NoError(t, err)
 			require.NoError(t, plogtest.CompareLogs(expected, logs))
-		})
-	}
-}
-
-func TestParseTime_EqualsTimeParse(t *testing.T) {
-	t.Parallel()
-
-	tests := []string{
-		"[06/Feb/2019:00:00:38",
-		"[16/Jul/2003:17:23:12",
-		"[21/Dec/1997:21:37:01",
-	}
-
-	// check that the result of time.Parse and
-	// parseTime is the same
-	for _, timeStr := range tests {
-		t.Run(timeStr, func(t *testing.T) {
-			t1, err := time.Parse(`[02/Jan/2006:15:04:05 +0000]`, timeStr+" +0000]")
-			require.NoError(t, err)
-
-			t2, err := parseTime(timeStr)
-			require.NoError(t, err)
-
-			require.Equal(t, t1.UnixNano(), t2.UnixNano())
-		})
-	}
-}
-
-func TestParseTime_Format(t *testing.T) {
-	t.Parallel()
-
-	tests := map[string]struct {
-		date       string
-		expectsErr string
-	}{
-		"wrong_format": {
-			date:       "wrong-format",
-			expectsErr: `timestamp field expects format DD/MM/YYYY:HH:mm:ss`,
-		},
-		"invalid_day": {
-			date:       "[in/Feb/2019:00:00:38",
-			expectsErr: `failed to get day from timestamp`,
-		},
-		"invalid_month": {
-			date:       "[06/inv/2019:00:00:38",
-			expectsErr: `timestamp contains invalid month`,
-		},
-		"invalid_year": {
-			date:       "[06/Feb/inva:00:00:38",
-			expectsErr: `failed to get year from timestamp`,
-		},
-		"invalid_hour": {
-			date:       "[06/Feb/2019:in:00:38",
-			expectsErr: `failed to get hour from timestamp`,
-		},
-		"invalid_minute": {
-			date:       "[06/Feb/2019:00:in:38",
-			expectsErr: `failed to get minute from timestamp`,
-		},
-		"invalid_second": {
-			date:       "[06/Feb/2019:00:00:in",
-			expectsErr: `failed to get second from timestamp`,
-		},
-		"valid_date": {
-			date: "[06/Feb/2019:00:00:38",
-		},
-	}
-
-	for name, test := range tests {
-		t.Run(name, func(t *testing.T) {
-			_, err := parseTime(test.date)
-			if test.expectsErr != "" {
-				require.ErrorContains(t, err, test.expectsErr)
-			} else {
-				require.NoError(t, err)
-			}
 		})
 	}
 }

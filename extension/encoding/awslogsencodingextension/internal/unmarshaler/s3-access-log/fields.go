@@ -4,8 +4,6 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	"time"
-
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
@@ -13,10 +11,10 @@ const (
 	timestamp = "timestamp"
 	duration  = "duration"
 
-	attributeAWSS3BucketOwner = "aws.s3.owner"
-	attributeAWSS3ObjectSize  = "aws.s3.object.size"
-	attributeAWSS3TurnAround  = "aws.s3.turn_around"
-	attributeAWSS3AclRequired = "aws.s3.acl_required"
+	attributeAWSS3BucketOwner    = "aws.s3.owner"
+	attributeAWSS3ObjectSize     = "aws.s3.object.size"
+	attributeAWSS3TurnAroundTime = "aws.s3.turn_around_time"
+	attributeAWSS3AclRequired    = "aws.s3.acl_required"
 )
 
 // Some of the attribute names are based on semantic conventions for AWS S3.
@@ -44,7 +42,7 @@ var attributeNames = [...]string{
 	13: semconv.AttributeHTTPResponseBodySize,   // bytes sent
 	14: attributeAWSS3ObjectSize,                // object size
 	15: duration,                                // total time
-	16: attributeAWSS3TurnAround,                // turn around time
+	16: attributeAWSS3TurnAroundTime,            // turn around time
 	17: "http.request.header.referer",           // referer
 	18: semconv.AttributeUserAgentOriginal,      // user agent
 	19: "aws.s3.version_id",                     // version ID
@@ -56,19 +54,4 @@ var attributeNames = [...]string{
 	25: semconv.AttributeTLSProtocolVersion,     // TLS version
 	26: "aws.s3.access_point.arn",               // access point ARN
 	27: attributeAWSS3AclRequired,               // acl required
-}
-
-var months = map[string]time.Month{
-	"Jan": time.January,
-	"Feb": time.February,
-	"Mar": time.March,
-	"Apr": time.April,
-	"May": time.May,
-	"Jun": time.June,
-	"Jul": time.July,
-	"Aug": time.August,
-	"Sep": time.September,
-	"Oct": time.October,
-	"Nov": time.November,
-	"Dec": time.December,
 }
