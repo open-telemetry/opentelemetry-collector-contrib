@@ -106,6 +106,7 @@ func getFullValue(value string, remaining string) (string, string, error) {
 	if end == -1 {
 		return "", "", fmt.Errorf("value %q has no end quote", value)
 	}
+
 	value = value + " " + remaining[:end]
 	remaining = remaining[end+1:]
 	if len(remaining) > 0 && remaining[0] == ' ' { // remove next space if it exists
@@ -129,6 +130,10 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		value, remaining, _ = strings.Cut(remaining, " ")
 		if value, remaining, err = getFullValue(value, remaining); err != nil {
 			return err
+		}
+
+		if value == "" {
+			continue
 		}
 
 		if value == unknownField && attributeNames[i] != attributeAWSS3AclRequired {
