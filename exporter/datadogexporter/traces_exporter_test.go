@@ -244,7 +244,7 @@ func testTracesSource(t *testing.T, enableReceiveResourceSpansV2 bool) {
 					host, tags = getHostTags(data)
 				}
 				assert.Equal(tt.host, host)
-				assert.EqualValues(tt.tags, tags)
+				assert.Equal(tt.tags, tags)
 			case <-timeout:
 				t.Fatal("timeout")
 			}
@@ -327,7 +327,7 @@ func TestNewTracesExporter(t *testing.T) {
 
 	cfg := &datadogconfig.Config{}
 	cfg.API.Key = "ddog_32_characters_long_api_key1"
-	cfg.Metrics.TCPAddrConfig.Endpoint = metricsServer.URL
+	cfg.Metrics.Endpoint = metricsServer.URL
 	params := exportertest.NewNopSettings(metadata.Type)
 
 	// The client should have been created correctly

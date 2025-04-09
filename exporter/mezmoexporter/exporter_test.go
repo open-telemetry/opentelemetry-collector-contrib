@@ -214,7 +214,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 			for _, line := range lines {
 				assert.Positive(t, line.Timestamp)
 				assert.Equal(t, "info", line.Level)
-				assert.Equal(t, "", line.App)
+				assert.Empty(t, line.App)
 				assert.Equal(t, "minimal attribute log", line.Line)
 			}
 
