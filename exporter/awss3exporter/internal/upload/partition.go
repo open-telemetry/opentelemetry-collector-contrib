@@ -76,25 +76,23 @@ func (pki *PartitionKeyBuilder) uniqueKey() string {
         return pki.UniqueKeyFunc()
     }
 
-	// This follows the original "uniqueness" algorithm
+    // This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
     const (
-        // Defines the alphabet characters that can be used
         letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
-        // Defines the numeric characters that can be used 
         digits  = "0123456789"
-        // Total length of the generated unique string
         length  = 9
     )
 
     result := make([]byte, length)
+
     // First character must be a letter to ensure valid key names
-    result[0] = letters[rand.IntN(len(letters))]
-    
+    result[0] = letters[rand.Int63()%int64(len(letters))]
+
     // Remaining characters can be either letters or digits
     combined := letters + digits
     for i := 1; i < length; i++ {
-        result[i] = combined[rand.IntN(len(combined))]
+        result[i] = combined[rand.Int63()%int64(len(combined))]
     }
 
     return string(result)
