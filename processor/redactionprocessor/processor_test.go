@@ -752,6 +752,7 @@ func TestRedactAllTypesTrue(t *testing.T) {
 		value, _ = attr.Get("credit_card_int")
 		assert.Equal(t, "****", value.Str())
 	}
+}
   
 func TestSpanEventRedacted(t *testing.T) {
 	inBatch := ptrace.NewTraces()
