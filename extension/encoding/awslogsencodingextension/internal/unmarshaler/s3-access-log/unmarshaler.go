@@ -87,24 +87,29 @@ func (s *s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, lo
 	}
 }
 
-// removeQuotes removes at most two quotes from original
-func removeQuotes(original string) (string, error) {
-	value1, remaining, found := strings.Cut(original, `"`)
-	if !found {
-		return original, nil
-	}
+// getFullValue checks if value starts with a quote. If it does,
+// then it looks for the rest of the value until the end quote.
+// Otherwise, it returns the value as it is.
+func getFullValue(value string, remaining string) (string, string, error) {
+	if len(value) > 0 && value[0] == '"' {
+		value = value[1:] // remove first quote
+		if len(value) > 0 && value[len(value)-1] == '"' {
+			value = value[:len(value)-1] // remove last quote
+		} else {
+			// get the rest of the value
+			end := strings.IndexByte(remaining, '"')
+			if end == -1 {
+				return "", "", fmt.Errorf("value %q has no end quote", value)
+			}
 
-	value2, remaining, found := strings.Cut(remaining, `"`)
-	if !found {
-		if value1 != "" {
-			return value1, nil
+			value = value + " " + remaining[:end]
+			remaining = remaining[end+1:]
+			if len(remaining) > 0 && remaining[0] == ' ' { // remove next space if it exists
+				remaining = remaining[1:]
+			}
 		}
-		return value2, nil
 	}
-	if remaining != "" {
-		return "", fmt.Errorf("unexpected: %q has data after the second quote", original)
-	}
-	return value2, nil
+	return value, remaining, nil
 }
 
 func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log string) error {
@@ -120,39 +125,22 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 		}
 
 		value, remaining, _ = strings.Cut(remaining, " ")
-		// Values coming from log parsing can contain up to two quotes.
-		// The values that contain just one quote contrary to none or
-		// two quotes, are the ones coming from splitting the request
-		// URI field.
-		// Example:
-		// Input: "GET /amzn-s3-demo-bucket1?versioning HTTP/1.1"
-		// Output of splitting this:
-		//  1: "GET
-		//  2: /amzn-s3-demo-bucket1?versioning
-		//  3: HTTP/1.1"
-		if value, err = removeQuotes(value); err != nil {
+		if value, remaining, err = getFullValue(value, remaining); err != nil {
 			return err
 		}
 
 		if value == unknownField && attributeNames[i] != attributeAWSS3AclRequired {
 			// acl required field can be '-' to indicate that no ACL was required
-			if i == 8 {
-				// The request uri is unknown, so we skip
-				// the next two expected fields in the attributeNames
-				// map: url path and scheme.
-				i += 2
-			}
 			continue
 		}
 
-		if i == 2 {
+		if attributeNames[i] == timestamp {
 			// This is the timestamp that follows a strict format
 			// "[DD/MM/YYYY:HH:mm:ss zone]". Since zone is after a
 			// space, we cut the string again to remove the zone.
 			// Zone is always UTC, so it will always be +0000.
 			_, remaining, _ = strings.Cut(remaining, " ")
 		}
-
 		if err = addField(attributeNames[i], value, resourceAttr, record); err != nil {
 			return err
 		}
@@ -213,6 +201,25 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 			}
 		}
 		record.Attributes().PutStr(field, remaining)
+	case requestURI:
+		method, remaining, _ := strings.Cut(value, " ")
+		if method == "" {
+			return fmt.Errorf("unexpected: request uri %q has no method", value)
+		}
+		record.Attributes().PutStr(semconv.AttributeHTTPRequestMethod, method)
+		path, remaining, _ := strings.Cut(remaining, " ")
+		if path == "" {
+			return fmt.Errorf("unexpected: request uri %q has no path", value)
+		}
+		record.Attributes().PutStr(semconv.AttributeURLPath, path)
+		scheme, remaining, _ := strings.Cut(remaining, " ")
+		if scheme == "" {
+			return fmt.Errorf("unexpected: request uri %q has no scheme", value)
+		}
+		if remaining != "" {
+			return fmt.Errorf("request uri %q does not have expected format <Method Path Scheme>", value)
+		}
+		record.Attributes().PutStr(semconv.AttributeURLScheme, scheme)
 	default:
 		record.Attributes().PutStr(field, value)
 	}

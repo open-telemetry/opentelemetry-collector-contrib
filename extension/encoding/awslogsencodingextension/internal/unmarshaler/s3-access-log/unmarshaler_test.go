@@ -68,6 +68,30 @@ func TestAddField(t *testing.T) {
 			field: semconv.AttributeTLSProtocolVersion,
 			value: "TLSV1.2",
 		},
+		"missing_method_request_uri": {
+			field:       requestURI,
+			value:       "",
+			expectedErr: "has no method",
+		},
+		"missing_path_request_uri": {
+			field:       requestURI,
+			value:       "GET",
+			expectedErr: "has no path",
+		},
+		"missing_scheme_request_uri": {
+			field:       requestURI,
+			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar",
+			expectedErr: "has no scheme",
+		},
+		"unexpected_format_request_uri": {
+			field:       requestURI,
+			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/1.1 unexpected",
+			expectedErr: "does not have expected format <Method Path Scheme>",
+		},
+		"valid_method_request_uri": {
+			field: requestURI,
+			value: "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/1.1",
+		},
 	}
 
 	for name, test := range tests {
@@ -82,45 +106,51 @@ func TestAddField(t *testing.T) {
 	}
 }
 
-func TestRemoveAllQuotes(t *testing.T) {
+func TestGetFullValue(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		value      string
-		result     string
-		expectsErr bool
+		value             string
+		remaining         string
+		expectedValue     string
+		expectedRemaining string
+		expectsErr        bool
 	}{
-		"quoted_value": {
-			value:  `"GET"`,
-			result: "GET",
-		},
-		"one_time_quoted_value_start": {
-			value:  `"GET`,
-			result: "GET",
-		},
-		"one_time_quoted_value_end": {
-			value:  `GET"`,
-			result: "GET",
-		},
 		"no_quotes": {
-			value:  "GET",
-			result: "GET",
+			value:             "-",
+			remaining:         "two more",
+			expectedValue:     "-",
+			expectedRemaining: "two more",
 		},
-		"data_after_quote": {
-			value:      `"Too "Many`,
+		"quotes_value_with_no_space": {
+			value:             `"-"`,
+			remaining:         "two more",
+			expectedValue:     "-",
+			expectedRemaining: "two more",
+		},
+		"quotes_value_with_spaces": {
+			value:             `"one`,
+			remaining:         `space" test`,
+			expectedValue:     "one space",
+			expectedRemaining: "test",
+		},
+		"no_end_quote": {
+			value:      `"one `,
+			remaining:  "space",
 			expectsErr: true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			result, err := removeQuotes(test.value)
+			value, remaining, err := getFullValue(test.value, test.remaining)
 			if test.expectsErr {
 				require.Error(t, err)
 				return
 			}
 			require.NoError(t, err)
-			require.Equal(t, test.result, result)
+			require.Equal(t, test.expectedValue, value)
+			require.Equal(t, test.expectedRemaining, remaining)
 		})
 	}
 }

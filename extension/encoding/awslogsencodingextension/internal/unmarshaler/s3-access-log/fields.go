@@ -11,6 +11,8 @@ const (
 	timestamp = "timestamp"
 	duration  = "duration"
 
+	requestURI = "request.uri"
+
 	attributeAWSS3BucketOwner    = "aws.s3.owner"
 	attributeAWSS3ObjectSize     = "aws.s3.object.size"
 	attributeAWSS3TurnAroundTime = "aws.s3.turn_around_time"
@@ -34,24 +36,22 @@ var attributeNames = [...]string{
 	5:  "aws.request_id",                        // request ID
 	6:  semconv.AttributeRPCMethod,              // operation
 	7:  semconv.AttributeAWSS3Key,               // key
-	8:  semconv.AttributeHTTPRequestMethod,      // request URI - 1st field
-	9:  semconv.AttributeURLPath,                // request URI - 2nd field after space
-	10: semconv.AttributeURLScheme,              // request URI - 3rd field after space
-	11: semconv.AttributeHTTPResponseStatusCode, // HTTP status
-	12: semconv.AttributeErrorType,              // error code
-	13: semconv.AttributeHTTPResponseBodySize,   // bytes sent
-	14: attributeAWSS3ObjectSize,                // object size
-	15: duration,                                // total time
-	16: attributeAWSS3TurnAroundTime,            // turn around time
-	17: "http.request.header.referer",           // referer
-	18: semconv.AttributeUserAgentOriginal,      // user agent
-	19: "aws.s3.version_id",                     // version ID
-	20: "aws.extended_request_id",               // host ID
-	21: "aws.signature.version",                 // signature version
-	22: semconv.AttributeTLSCipher,              // cypher suite
-	23: "aws.s3.auth_type",                      // authentication type
-	24: "http.request.header.host",              // host header
-	25: semconv.AttributeTLSProtocolVersion,     // TLS version
-	26: "aws.s3.access_point.arn",               // access point ARN
-	27: attributeAWSS3AclRequired,               // acl required
+	8:  requestURI,                              // request URI, splits in 3 for 3 different attributes
+	9:  semconv.AttributeHTTPResponseStatusCode, // HTTP status
+	10: semconv.AttributeErrorType,              // error code
+	11: semconv.AttributeHTTPResponseBodySize,   // bytes sent
+	12: attributeAWSS3ObjectSize,                // object size
+	13: duration,                                // total time
+	14: attributeAWSS3TurnAroundTime,            // turn around time
+	15: "http.request.header.referer",           // referer
+	16: semconv.AttributeUserAgentOriginal,      // user agent
+	17: "aws.s3.version_id",                     // version ID
+	18: "aws.extended_request_id",               // host ID
+	19: "aws.signature.version",                 // signature version
+	20: semconv.AttributeTLSCipher,              // cypher suite
+	21: "aws.s3.auth_type",                      // authentication type
+	22: "http.request.header.host",              // host header
+	23: semconv.AttributeTLSProtocolVersion,     // TLS version
+	24: "aws.s3.access_point.arn",               // access point ARN
+	25: attributeAWSS3AclRequired,               // acl required
 }
