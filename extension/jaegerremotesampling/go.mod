@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/jaegerremotesampling
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/fortytw2/leaktest v1.3.0

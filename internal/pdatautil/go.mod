@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0

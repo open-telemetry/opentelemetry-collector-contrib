@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

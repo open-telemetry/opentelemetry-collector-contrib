@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampcustommessages
 
-go 1.23.8
+go 1.23.0
 
 require github.com/open-telemetry/opamp-go v0.19.0
 
