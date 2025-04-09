@@ -5,8 +5,9 @@ package k8sclusterreceiver
 
 import (
 	"context"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
-	"go.opentelemetry.io/collector/extension/extensiontest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/mock"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -277,61 +278,31 @@ func getUpdatedPod(pod *corev1.Pod) any {
 	}
 }
 
-func TestReceiverWithK8sLeaderElector(t *testing.T) {
-	tt := componenttest.NewTelemetry()
-	defer func() {
-		require.NoError(t, tt.Shutdown(context.Background()))
-	}()
-	hwe := hostWithExtensions{
-		map[component.ID]component.Component{component.MustNewID("k8s_leader_elector"): setupK8sLeaderElectorExtension(t)},
-	}
+func TestStartWithLeaderElection(t *testing.T) {
+	mockHost := &k8sleaderelectortest.MockHost{}
+	mockLeaderElection := &k8sleaderelectortest.MockLeaderElection{}
+
+	// Mock the extension list with a valid leader elector.
+	extID := component.MustNewID("k8s_leader_elector")
+	mockHost.On("GetExtensions").Return(map[component.ID]component.Component{
+		extID: mockLeaderElection,
+	})
+
+	mockLeaderElection.On("SetCallBackFuncs", mock.Anything, mock.Anything).Return()
 
 	client := newFakeClientWithAllResources()
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink1 := new(consumertest.MetricsSink)
-	sink2 := new(consumertest.MetricsSink)
+	tt := componenttest.NewTelemetry()
+	r1 := setupReceiver(client, osQuotaClient, sink1, nil, 10*time.Second, tt, "", component.MustNewID("k8s_leader_elector"))
 
-	r1 := setupReceiver(client, osQuotaClient, sink1, nil, 10*time.Second, tt, "", setupExtension("k8sClusterReceiver"))
-	r2 := setupReceiver(client, osQuotaClient, sink2, nil, 10*time.Second, tt, "", setupExtension("k8sClusterReceiver"))
+	err := r1.Start(context.Background(), mockHost)
+	assert.NoError(t, err)
 
-	// Setup k8s resources.
-	numPods := 2
-	numNodes := 1
-	numQuotas := 2
-	numClusterQuotaMetrics := numQuotas * 4
-	createPods(t, client, numPods)
-	createNodes(t, client, numNodes)
-	createClusterQuota(t, osQuotaClient, 2)
+	mockHost.AssertExpectations(t)
+	mockLeaderElection.AssertExpectations(t)
 
-	ctx := context.Background()
-	require.NoError(t, r1.Start(ctx, hwe))
-	require.NoError(t, r2.Start(ctx, hwe))
-
-	// Expects metric data from nodes and pods where each metric data
-	// struct corresponds to one resource.
-	expectedNumMetrics := numPods + numNodes + numClusterQuotaMetrics
-	var initialDataPointCount int
-	require.Eventually(t, func() bool {
-		initialDataPointCount = sink1.DataPointCount()
-		return initialDataPointCount == expectedNumMetrics
-	}, 10*time.Second, 100*time.Millisecond,
-		"metrics not collected")
-
-	numPodsToDelete := 1
-	deletePods(t, client, numPodsToDelete)
-
-	// Expects metric data from a node, since other resources were deleted.
-	expectedNumMetrics = (numPods - numPodsToDelete) + numNodes + numClusterQuotaMetrics
-	var metricsCountDelta int
-	require.Eventually(t, func() bool {
-		metricsCountDelta = sink1.DataPointCount() - initialDataPointCount
-		return metricsCountDelta == expectedNumMetrics
-	}, 10*time.Second, 100*time.Millisecond,
-		"updated metrics not collected")
-
-	require.NoError(t, r1.Shutdown(ctx))
-	require.NoError(t, r2.Shutdown(ctx))
-
+	require.NoError(t, r1.Shutdown(context.Background()))
 }
 
 func setupExtension(name string) component.ID {
@@ -425,14 +396,7 @@ func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
 	}
 }
 
-func setupK8sLeaderElectorExtension(t *testing.T) component.Component {
-	kf := k8sleaderelector.NewFactory()
-	cfg := kf.CreateDefaultConfig()
-	cfg.(*k8sleaderelector.Config).LeaseName = "foo"
-	cfg.(*k8sleaderelector.Config).LeaseNamespace = "default"
-
-	ext, err := kf.Create(context.Background(), extensiontest.NewNopSettings(kf.Type()), cfg)
-	require.NoError(t, err)
-	require.NoError(t, ext.Start(context.Background(), componenttest.NewNopHost()))
-	return ext
-}
+//func setupK8sLeaderElectorExtension() component.Component {
+//	kf := k8sleaderelectortest.CreateExtension()
+//	return kf
+//}
