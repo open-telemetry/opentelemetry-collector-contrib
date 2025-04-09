@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
+package archive // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 
 import (
 	"context"
@@ -11,7 +11,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component/componenttest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
@@ -29,8 +29,8 @@ func TestFindFilesOrder(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	fpInStorage := populatedPersisterData(persister, fps)
 
-	tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, 100, persister)
-	matchables := tracker.FindFiles(fps)
+	archive := NewArchive(context.Background(), zap.L(), 100, persister)
+	matchables := archive.FindFiles(fps)
 
 	require.Len(t, matchables, len(fps), "return slice should be of same length as input slice")
 
@@ -49,31 +49,31 @@ func TestFindFilesOrder(t *testing.T) {
 func TestIndexInBounds(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
 	pollsToArchive := 100
-	tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+	testArchive := NewArchive(context.Background(), zap.L(), 100, persister).(*archive)
 
 	// no index exists. archiveIndex should be 0
-	require.Equal(t, 0, tracker.archiveIndex)
+	require.Equal(t, 0, testArchive.archiveIndex)
 
 	// run archiving. Each time, index should be in bound.
 	for i := 0; i < 1099; i++ {
-		require.Equalf(t, i%pollsToArchive, tracker.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, tracker.archiveIndex)
-		tracker.archive(&fileset.Fileset[*reader.Metadata]{})
-		require.Truef(t, tracker.archiveIndex >= 0 && tracker.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, tracker.archiveIndex)
+		require.Equalf(t, i%pollsToArchive, testArchive.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, testArchive.archiveIndex)
+		testArchive.WriteFiles(&fileset.Fileset[*reader.Metadata]{})
+		require.Truef(t, testArchive.archiveIndex >= 0 && testArchive.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, testArchive.archiveIndex)
 	}
-	oldIndex := tracker.archiveIndex
+	oldIndex := testArchive.archiveIndex
 
 	// re-create archive
-	tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+	testArchive = NewArchive(context.Background(), zap.L(), 100, persister).(*archive)
 
 	// index should exist and new archiveIndex should be equal to oldIndex
-	require.Equalf(t, oldIndex, tracker.archiveIndex, "New index should %d, but was %d", oldIndex, tracker.archiveIndex)
+	require.Equalf(t, oldIndex, testArchive.archiveIndex, "New index should %d, but was %d", oldIndex, testArchive.archiveIndex)
 
 	// re-create archive, with reduced pollsToArchive
 	pollsToArchive = 70
-	tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
 
+	testArchive = NewArchive(context.Background(), zap.L(), pollsToArchive, persister).(*archive)
 	// index should exist but it is out of bounds. So it should reset to 0
-	require.Equalf(t, 0, tracker.archiveIndex, "Index should be reset to 0 but was %d", tracker.archiveIndex)
+	require.Equalf(t, 0, testArchive.archiveIndex, "Index should be reset to 0 but was %d", testArchive.archiveIndex)
 }
 
 func TestArchiveRestoration(t *testing.T) {
@@ -94,7 +94,8 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 	pctFilled := []float32{0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2.00}
 	for _, pct := range pctFilled {
 		persister := testutil.NewUnscopedMockPersister()
-		tracker := NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, pollsToArchive, persister).(*fileTracker)
+		testArchive := NewArchive(context.Background(), zap.L(), pollsToArchive, persister).(*archive)
+
 		iterations := int(pct * float32(pollsToArchive))
 		for i := 0; i < iterations; i++ {
 			fileset := &fileset.Fileset[*reader.Metadata]{}
@@ -103,7 +104,7 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 				// bigger the offset, more recent the element
 				Offset: int64(i),
 			})
-			tracker.archive(fileset)
+			testArchive.WriteFiles(fileset)
 		}
 		// make sure all keys are present in persister
 		for i := 0; i < iterations; i++ {
@@ -122,14 +123,14 @@ func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive 
 			}
 		}
 		require.Equal(t, min(iterations, pollsToArchive), count)
-		tracker = NewFileTracker(context.Background(), componenttest.NewNopTelemetrySettings(), 0, newPollsToArchive, persister).(*fileTracker)
+		testArchive = NewArchive(context.Background(), zap.L(), newPollsToArchive, persister).(*archive)
 		if pollsToArchive > newPollsToArchive {
 			// if archive has shrunk, new archive should contain most recent elements
 			// start from most recent element
-			startIdx := mod(tracker.archiveIndex-1, newPollsToArchive)
+			startIdx := mod(testArchive.archiveIndex-1, newPollsToArchive)
 			mostRecentIteration := iterations - 1
 			for i := 0; i < newPollsToArchive; i++ {
-				val, err := tracker.readArchive(startIdx)
+				val, err := testArchive.readArchive(startIdx)
 				require.NoError(t, err)
 				if val.Len() > 0 {
 					element, err := val.Pop()

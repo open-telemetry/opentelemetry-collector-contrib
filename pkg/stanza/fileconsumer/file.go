@@ -13,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/archive"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/checkpoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/metadata"
@@ -30,7 +31,9 @@ type Manager struct {
 	readerFactory reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
-	noTracking    bool
+	archive       archive.Archive
+
+	noTracking bool
 
 	pollInterval   time.Duration
 	persister      operator.Persister
@@ -49,8 +52,8 @@ func (m *Manager) Start(persister operator.Persister) error {
 		m.set.Logger.Warn("finding files", zap.Error(err))
 	}
 
-	// instantiate the tracker
-	m.instantiateTracker(ctx, persister)
+	// instantiate the tracker and archive
+	m.instantiateTrackerAndArchive(ctx, persister)
 
 	if persister != nil {
 		m.persister = persister
@@ -271,12 +274,17 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 	return r, nil
 }
 
-func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
+func (m *Manager) instantiateTrackerAndArchive(ctx context.Context, persister operator.Persister) {
 	var t tracker.Tracker
+	var a archive.Archive
 	if m.noTracking {
+		// creare a noop archive and noStateTracker if noTracking is enabled
+		a = archive.NewArchive(ctx, m.set.Logger.Named("archive"), 0, nil)
 		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
 	} else {
-		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, m.pollsToArchive, persister)
+		a = archive.NewArchive(ctx, m.set.Logger.Named("archive"), m.pollsToArchive, persister)
+		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, a)
 	}
 	m.tracker = t
+	m.archive = a
 }
