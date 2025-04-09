@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/googlecloudlogentryencodingextension
 
-go 1.23.8
+go 1.23.0
 
 require (
 	cloud.google.com/go/logging v1.13.0

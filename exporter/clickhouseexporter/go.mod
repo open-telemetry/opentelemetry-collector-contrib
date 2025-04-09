@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/ClickHouse/clickhouse-go/v2 v2.34.0

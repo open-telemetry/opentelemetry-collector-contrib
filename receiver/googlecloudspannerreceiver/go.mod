@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/googlecloudspannerreceiver
 
-go 1.23.8
+go 1.23.0
 
 require (
 	cloud.google.com/go/spanner v1.79.0
