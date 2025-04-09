@@ -323,3 +323,4 @@ receiver/windowsperfcountersreceiver
 receiver/windowsservicereceiver
 scraper/zookeeperscraper
 receiver/zookeeperreceiver
+receiver/elasticapmreceiver
