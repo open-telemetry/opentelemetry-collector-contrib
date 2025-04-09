@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlser
 go 1.23.0
 
 require (
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.1
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.2
 	github.com/google/go-cmp v0.7.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.123.0
@@ -42,7 +42,7 @@ require (
 	github.com/DataDog/go-sqllexer v0.1.3 // indirect
 	github.com/JohnCGriffin/overflow v0.0.0-20211019200055-46fa312c352c // indirect
 	github.com/Microsoft/go-winio v0.6.2 // indirect
-	github.com/SAP/go-hdb v1.13.4 // indirect
+	github.com/SAP/go-hdb v1.13.5 // indirect
 	github.com/apache/arrow/go/v15 v15.0.0 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.26.1 // indirect
 	github.com/aws/aws-sdk-go-v2/aws/protocol/eventstream v1.6.2 // indirect
