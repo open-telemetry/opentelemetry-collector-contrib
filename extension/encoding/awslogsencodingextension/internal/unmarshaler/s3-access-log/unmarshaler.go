@@ -91,23 +91,25 @@ func (s *s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, lo
 // then it looks for the rest of the value until the end quote.
 // Otherwise, it returns the value as it is.
 func getFullValue(value string, remaining string) (string, string, error) {
-	if len(value) > 0 && value[0] == '"' {
-		value = value[1:] // remove first quote
-		if len(value) > 0 && value[len(value)-1] == '"' {
-			value = value[:len(value)-1] // remove last quote
-		} else {
-			// get the rest of the value
-			end := strings.IndexByte(remaining, '"')
-			if end == -1 {
-				return "", "", fmt.Errorf("value %q has no end quote", value)
-			}
+	if len(value) == 0 || value[0] != '"' {
+		return value, remaining, nil
+	}
 
-			value = value + " " + remaining[:end]
-			remaining = remaining[end+1:]
-			if len(remaining) > 0 && remaining[0] == ' ' { // remove next space if it exists
-				remaining = remaining[1:]
-			}
-		}
+	value = value[1:] // remove first quote
+	if len(value) > 0 && value[len(value)-1] == '"' {
+		value = value[:len(value)-1] // remove last quote
+		return value, remaining, nil
+	}
+
+	// value ends on next quote, get the rest
+	end := strings.IndexByte(remaining, '"')
+	if end == -1 {
+		return "", "", fmt.Errorf("value %q has no end quote", value)
+	}
+	value = value + " " + remaining[:end]
+	remaining = remaining[end+1:]
+	if len(remaining) > 0 && remaining[0] == ' ' { // remove next space if it exists
+		remaining = remaining[1:]
 	}
 	return value, remaining, nil
 }
