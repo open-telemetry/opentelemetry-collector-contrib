@@ -66,7 +66,7 @@ func TestCreateMetricExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
 			err: nil,
 		},
@@ -128,7 +128,7 @@ func TestCreateLogExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
 			err: nil,
 		},
@@ -188,7 +188,7 @@ func TestCreateTraceExporter(t *testing.T) {
 			conf: applyConfigOption(func(conf *Config) {
 				// Disabling broker check to ensure encoding work
 				conf.Metadata.Full = false
-				conf.Encoding = defaultEncoding
+				conf.Encoding = "otlp_proto"
 			}),
 			err: nil,
 		},
