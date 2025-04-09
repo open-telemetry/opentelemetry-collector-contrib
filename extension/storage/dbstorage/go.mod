@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/dbstorage
 
-go 1.23.0
+go 1.23.8
 
 require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2

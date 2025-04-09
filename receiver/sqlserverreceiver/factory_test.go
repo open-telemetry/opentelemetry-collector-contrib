@@ -102,7 +102,7 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, cfg.Validate())
 				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
@@ -190,7 +190,7 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, cfg.Validate())
 				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)

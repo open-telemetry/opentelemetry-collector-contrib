@@ -57,7 +57,7 @@ func createMetricsReceiverFunc(sqlOpenerFunc sqlquery.SQLOpenerFunc, clientProvi
 			}
 			scope := pcommon.NewInstrumentationScope()
 			scope.SetName(metadata.ScopeName)
-			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, sqlCfg.Config.Telemetry, dbProviderFunc, clientProviderFunc, scope)
+			mp := sqlquery.NewScraper(id, query, sqlCfg.ControllerConfig, settings.Logger, sqlCfg.Telemetry, dbProviderFunc, clientProviderFunc, scope)
 
 			opt := scraperhelper.AddScraper(metadata.Type, mp)
 			opts = append(opts, opt)

@@ -22,7 +22,7 @@ func TestDefaultTracesUnMarshaler(t *testing.T) {
 		"zipkin_thrift",
 	}
 	marshalers := defaultTracesUnmarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -38,7 +38,7 @@ func TestDefaultMetricsUnMarshaler(t *testing.T) {
 		"otlp_json",
 	}
 	marshalers := defaultMetricsUnmarshalers()
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
@@ -58,7 +58,7 @@ func TestDefaultLogsUnMarshaler(t *testing.T) {
 		"azure_resource_logs",
 	}
 	marshalers := defaultLogsUnmarshalers("Test Version", zap.NewNop())
-	assert.Equal(t, len(expectedEncodings), len(marshalers))
+	assert.Len(t, marshalers, len(expectedEncodings))
 	for _, e := range expectedEncodings {
 		t.Run(e, func(t *testing.T) {
 			m, ok := marshalers[e]
