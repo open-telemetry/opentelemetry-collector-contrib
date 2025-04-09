@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -14,7 +15,9 @@ import (
 	"github.com/cenkalti/backoff/v4"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -98,11 +101,22 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
+	var called atomic.Bool
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      &ptrace.ProtoUnmarshaler{},
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
+		unmarshaler: &ptrace.ProtoUnmarshaler{},
+		logger:      zap.NewNop(),
+		ready:       make(chan bool),
+		nextConsumer: func() consumer.Traces {
+			c, err := consumer.NewTraces(func(ctx context.Context, _ ptrace.Traces) error {
+				defer called.Store(true)
+				info := client.FromContext(ctx)
+				assert.Equal(t, []string{"abcdefg"}, info.Metadata.Get("x-tenant-id"))
+				assert.Equal(t, []string{"1234", "5678"}, info.Metadata.Get("x-request-ids"))
+				return nil
+			})
+			require.NoError(t, err)
+			return c
+		}(),
 		obsrecv:          obsrecv,
 		headerExtractor:  &nopHeaderExtractor{},
 		telemetryBuilder: telemetryBuilder,
@@ -128,9 +142,25 @@ func TestTracesConsumerGroupHandler(t *testing.T) {
 		wg.Done()
 	}()
 
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
+	groupClaim.messageChan <- &sarama.ConsumerMessage{
+		Headers: []*sarama.RecordHeader{
+			{
+				Key:   []byte("x-tenant-id"),
+				Value: []byte("abcdefg"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("1234"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("5678"),
+			},
+		},
+	}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	assert.True(t, called.Load()) // Ensure nextConsumer was called.
 }
 
 func TestTracesConsumerGroupHandler_session_done(t *testing.T) {
@@ -363,11 +393,22 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
+	var called atomic.Bool
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      &pmetric.ProtoUnmarshaler{},
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
+		unmarshaler: &pmetric.ProtoUnmarshaler{},
+		logger:      zap.NewNop(),
+		ready:       make(chan bool),
+		nextConsumer: func() consumer.Metrics {
+			c, err := consumer.NewMetrics(func(ctx context.Context, _ pmetric.Metrics) error {
+				defer called.Store(true)
+				info := client.FromContext(ctx)
+				assert.Equal(t, []string{"abcdefg"}, info.Metadata.Get("x-tenant-id"))
+				assert.Equal(t, []string{"1234", "5678"}, info.Metadata.Get("x-request-ids"))
+				return nil
+			})
+			require.NoError(t, err)
+			return c
+		}(),
 		obsrecv:          obsrecv,
 		headerExtractor:  &nopHeaderExtractor{},
 		telemetryBuilder: telemetryBuilder,
@@ -393,9 +434,25 @@ func TestMetricsConsumerGroupHandler(t *testing.T) {
 		wg.Done()
 	}()
 
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
+	groupClaim.messageChan <- &sarama.ConsumerMessage{
+		Headers: []*sarama.RecordHeader{
+			{
+				Key:   []byte("x-tenant-id"),
+				Value: []byte("abcdefg"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("1234"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("5678"),
+			},
+		},
+	}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	assert.True(t, called.Load()) // Ensure nextConsumer was called.
 }
 
 func TestMetricsConsumerGroupHandler_session_done(t *testing.T) {
@@ -640,11 +697,22 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 
 	obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 	require.NoError(t, err)
+	var called atomic.Bool
 	c := logsConsumerGroupHandler{
-		unmarshaler:      &plog.ProtoUnmarshaler{},
-		logger:           zap.NewNop(),
-		ready:            make(chan bool),
-		nextConsumer:     consumertest.NewNop(),
+		unmarshaler: &plog.ProtoUnmarshaler{},
+		logger:      zap.NewNop(),
+		ready:       make(chan bool),
+		nextConsumer: func() consumer.Logs {
+			c, err := consumer.NewLogs(func(ctx context.Context, _ plog.Logs) error {
+				defer called.Store(true)
+				info := client.FromContext(ctx)
+				assert.Equal(t, []string{"abcdefg"}, info.Metadata.Get("x-tenant-id"))
+				assert.Equal(t, []string{"1234", "5678"}, info.Metadata.Get("x-request-ids"))
+				return nil
+			})
+			require.NoError(t, err)
+			return c
+		}(),
 		obsrecv:          obsrecv,
 		headerExtractor:  &nopHeaderExtractor{},
 		telemetryBuilder: telemetryBuilder,
@@ -670,9 +738,25 @@ func TestLogsConsumerGroupHandler(t *testing.T) {
 		wg.Done()
 	}()
 
-	groupClaim.messageChan <- &sarama.ConsumerMessage{}
+	groupClaim.messageChan <- &sarama.ConsumerMessage{
+		Headers: []*sarama.RecordHeader{
+			{
+				Key:   []byte("x-tenant-id"),
+				Value: []byte("abcdefg"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("1234"),
+			},
+			{
+				Key:   []byte("x-request-ids"),
+				Value: []byte("5678"),
+			},
+		},
+	}
 	close(groupClaim.messageChan)
 	wg.Wait()
+	assert.True(t, called.Load()) // Ensure nextConsumer was called.
 }
 
 func TestLogsConsumerGroupHandler_session_done(t *testing.T) {
@@ -979,4 +1063,75 @@ func nopTelemetryBuilder(t *testing.T) *metadata.TelemetryBuilder {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	return telemetryBuilder
+}
+
+func Test_newContextWithHeaders(t *testing.T) {
+	type args struct {
+		ctx     context.Context
+		headers []*sarama.RecordHeader
+	}
+	tests := []struct {
+		name string
+		args args
+		want map[string][]string
+	}{
+		{
+			name: "no headers",
+			args: args{
+				ctx:     context.Background(),
+				headers: []*sarama.RecordHeader{},
+			},
+			want: map[string][]string{},
+		},
+		{
+			name: "single header",
+			args: args{
+				ctx: context.Background(),
+				headers: []*sarama.RecordHeader{
+					{Key: []byte("key1"), Value: []byte("value1")},
+				},
+			},
+			want: map[string][]string{
+				"key1": {"value1"},
+			},
+		},
+		{
+			name: "multiple headers",
+			args: args{
+				ctx: context.Background(),
+				headers: []*sarama.RecordHeader{
+					{Key: []byte("key1"), Value: []byte("value1")},
+					{Key: []byte("key2"), Value: []byte("value2")},
+				},
+			},
+			want: map[string][]string{
+				"key1": {"value1"},
+				"key2": {"value2"},
+			},
+		},
+		{
+			name: "duplicate keys",
+			args: args{
+				ctx: context.Background(),
+				headers: []*sarama.RecordHeader{
+					{Key: []byte("key1"), Value: []byte("value1")},
+					{Key: []byte("key1"), Value: []byte("value2")},
+				},
+			},
+			want: map[string][]string{
+				"key1": {"value1", "value2"},
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := newContextWithHeaders(tt.args.ctx, tt.args.headers)
+			clientInfo := client.FromContext(ctx)
+			for k, wantVal := range tt.want {
+				val := clientInfo.Metadata.Get(k)
+				assert.Equal(t, wantVal, val)
+			}
+		})
+	}
 }
