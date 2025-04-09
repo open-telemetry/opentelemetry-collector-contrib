@@ -7,7 +7,7 @@ change_type: enhancement
 component: gitlabreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: add Gitlab pipeline tracing functionality
+note: add GitLab pipeline tracing functionality
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [35207]

@@ -163,7 +163,7 @@ func (j *glPipelineJob) setSpanData(span ptrace.Span) error {
 func (j *glPipelineJob) setSpanIDs(span ptrace.Span, parentSpanID pcommon.SpanID) error {
 	span.SetParentSpanID(parentSpanID)
 
-	spanID, err := newJobSpanID(j.ID)
+	spanID, err := newJobSpanID(j.ID, j.FinishedAt)
 	if err != nil {
 		return err
 	}

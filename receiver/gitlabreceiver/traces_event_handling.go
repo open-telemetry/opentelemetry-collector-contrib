@@ -132,10 +132,6 @@ func (gtr *gitlabTracesReceiver) createSpan(resourceSpans ptrace.ResourceSpans, 
 // newTraceID creates a deterministic Trace ID based on the provided pipelineID and pipeline finishedAt time.
 // It's not possible to create the traceID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
-	if finishedAt == "" {
-		return pcommon.TraceID{}, errors.New("finishedAt timestamp is empty")
-	}
-
 	_, err := parseGitlabTime(finishedAt)
 	if err != nil {
 		return pcommon.TraceID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
@@ -157,10 +153,6 @@ func newTraceID(pipelineID int, finishedAt string) (pcommon.TraceID, error) {
 // newPipelineSpanID creates a deterministic Parent Span ID based on the provided pipelineID and pipeline finishedAt time.
 // It's not possible to create the pipelineSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error) {
-	if finishedAt == "" {
-		return pcommon.SpanID{}, errors.New("finishedAt timestamp is empty")
-	}
-
 	_, err := parseGitlabTime(finishedAt)
 	if err != nil {
 		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
@@ -177,10 +169,6 @@ func newPipelineSpanID(pipelineID int, finishedAt string) (pcommon.SpanID, error
 // newStageSpanID creates a deterministic Stage Span ID based on the provided pipelineID, stageName, and pipeline finishedAt time.
 // It's not possible to create the stageSpanID during a pipeline execution. Details can be found here: https://github.com/open-telemetry/semantic-conventions/issues/1749#issuecomment-2772544215
 func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommon.SpanID, error) {
-	if finishedAt == "" {
-		return pcommon.SpanID{}, errors.New("finishedAt timestamp is empty")
-	}
-
 	if stageName == "" {
 		return pcommon.SpanID{}, errors.New("stageName is empty")
 	}
@@ -199,7 +187,12 @@ func newStageSpanID(pipelineID int, stageName string, finishedAt string) (pcommo
 }
 
 // newJobSpanID creates a deterministic Job Span ID based on the unique jobID
-func newJobSpanID(jobID int) (pcommon.SpanID, error) {
+func newJobSpanID(jobID int, finishedAt string) (pcommon.SpanID, error) {
+	_, err := parseGitlabTime(finishedAt)
+	if err != nil {
+		return pcommon.SpanID{}, fmt.Errorf("invalid finishedAt timestamp: %w", err)
+	}
+
 	spanID, err := newSpanID(strconv.Itoa(jobID))
 	if err != nil {
 		return pcommon.SpanID{}, err

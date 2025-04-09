@@ -228,9 +228,9 @@ func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType,
 	}
 
 	if gtr.cfg.WebHook.Secret != "" {
-		secret := r.Header.Get(defaultGitlabSecretTokenHeader)
+		secret := r.Header.Get(defaultGitLabSecretTokenHeader)
 		if secret != gtr.cfg.WebHook.Secret {
-			return "", fmt.Errorf("%w: %s", errInvalidHeader, defaultGitlabSecretTokenHeader)
+			return "", fmt.Errorf("%w: %s", errInvalidHeader, defaultGitLabSecretTokenHeader)
 		}
 	}
 
@@ -242,7 +242,7 @@ func (gtr *gitlabTracesReceiver) validateReq(r *http.Request) (gitlab.EventType,
 
 	eventType := gitlab.WebhookEventType(r)
 	if eventType == "" {
-		return "", fmt.Errorf("%w: %s", errMissingHeader, defaultGitlabEventHeader)
+		return "", fmt.Errorf("%w: %s", errMissingHeader, defaultGitLabEventHeader)
 	}
 	return eventType, nil
 }

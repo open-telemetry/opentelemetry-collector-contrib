@@ -63,7 +63,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "empty_body",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         "",
 			expectedCode: http.StatusBadRequest,
@@ -72,7 +72,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "invalid_json",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         "{invalid-json",
 			expectedCode: http.StatusBadRequest,
@@ -81,7 +81,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "unexpected_event_type",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Issue Hook",
+				defaultGitLabEventHeader: "Issue Hook",
 			},
 			body:         "{}",
 			expectedCode: http.StatusBadRequest,
@@ -90,7 +90,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "pipeline_without_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"success","created_at":"2022-01-01 12:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -99,7 +99,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "running_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"running","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -108,7 +108,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "pending_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"pending","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -117,7 +117,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "created_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"created","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -126,7 +126,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "waiting_for_resource_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"waiting_for_resource","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -135,7 +135,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "preparing_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"preparing","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -144,7 +144,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "scheduled_pipeline_with_finishedat",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"scheduled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC"}}`,
 			expectedCode: http.StatusNoContent,
@@ -153,7 +153,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "successful_pipeline",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         validPipelineWebhookEvent,
 			expectedCode: http.StatusOK,
@@ -163,7 +163,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "failed_pipeline",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"failed","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
 			expectedCode: http.StatusOK,
@@ -173,7 +173,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "canceled_pipeline",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"canceled","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
 			expectedCode: http.StatusOK,
@@ -183,7 +183,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "skipped_pipeline",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"skipped","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
 			expectedCode: http.StatusOK,
@@ -193,7 +193,7 @@ func TestHandleWebhook(t *testing.T) {
 			name:   "unknown_status_pipeline",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			body:         `{"object_attributes":{"id":1,"status":"unknown_status","created_at":"2022-01-01 12:00:00 UTC","finished_at":"2022-01-01 13:00:00 UTC","name":"Test Pipeline"},"project":{"id":123,"path_with_namespace":"test/project"}}`,
 			expectedCode: http.StatusNoContent,
@@ -267,7 +267,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "missing_event_header",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabSecretTokenHeader: "secret123",
+				defaultGitLabSecretTokenHeader: "secret123",
 			},
 			secret:  "secret123",
 			wantErr: "missing header: X-Gitlab-Event",
@@ -276,8 +276,8 @@ func TestValidateReq(t *testing.T) {
 			name:   "invalid_secret",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabSecretTokenHeader: "wrongsecret",
-				defaultGitlabEventHeader:       "Pipeline Hook",
+				defaultGitLabSecretTokenHeader: "wrongsecret",
+				defaultGitLabEventHeader:       "Pipeline Hook",
 			},
 			secret:  "secret123",
 			wantErr: "invalid header: X-Gitlab-Token",
@@ -286,8 +286,8 @@ func TestValidateReq(t *testing.T) {
 			name:   "valid_request",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabSecretTokenHeader: "secret123",
-				defaultGitlabEventHeader:       "Pipeline Hook",
+				defaultGitLabSecretTokenHeader: "secret123",
+				defaultGitLabEventHeader:       "Pipeline Hook",
 			},
 			secret:        "secret123",
 			expectedEvent: "Pipeline Hook",
@@ -296,7 +296,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "valid_request_no_secret_configured",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			secret:        "",
 			expectedEvent: "Pipeline Hook",
@@ -305,7 +305,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "valid_request_with_required_headers",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 				"Custom-Header":          "custom-value",
 			},
 			requiredHeaders: map[string]configopaque.String{
@@ -317,7 +317,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "invalid_request_missing_required_header",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 			},
 			requiredHeaders: map[string]configopaque.String{
 				"Custom-Header": "custom-value",
@@ -328,7 +328,7 @@ func TestValidateReq(t *testing.T) {
 			name:   "invalid_request_wrong_required_header_value",
 			method: http.MethodPost,
 			headers: map[string]string{
-				defaultGitlabEventHeader: "Pipeline Hook",
+				defaultGitLabEventHeader: "Pipeline Hook",
 				"Custom-Header":          "wrong-value",
 			},
 			requiredHeaders: map[string]configopaque.String{

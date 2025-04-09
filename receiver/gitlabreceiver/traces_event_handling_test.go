@@ -56,10 +56,10 @@ func TestHandlePipeline(t *testing.T) {
 			spanCount:   5, // Pipeline (1) + stages (2) + jobs (2) = 5 spans
 		},
 		{
-			name:            "invalid_pipeline_missing_finishedat",
+			name:            "invalid_pipeline_missing_finished_at",
 			jsonEvent:       invalidPipelineWebhookEventMissingFinishedAt,
 			expectError:     true,
-			expectedErrText: "finishedAt timestamp is empty",
+			expectedErrText: "invalid finishedAt timestamp: time is empty",
 			spanCount:       0,
 		},
 	}
@@ -295,20 +295,28 @@ func TestNewStageSpanID(t *testing.T) {
 
 func TestNewJobSpanID(t *testing.T) {
 	tests := []struct {
-		name      string
-		id        int
-		expectErr bool
+		name       string
+		id         int
+		finishedAt string
+		expectErr  bool
 	}{
 		{
-			name:      "valid input",
-			id:        12345,
-			expectErr: false,
+			name:       "valid input",
+			id:         12345,
+			finishedAt: "2022-01-01 12:00:00 UTC",
+			expectErr:  false,
+		},
+		{
+			name:       "invalid timestamp",
+			id:         12345,
+			finishedAt: "invalid timestamp",
+			expectErr:  true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			spanID, err := newJobSpanID(tt.id)
+			spanID, err := newJobSpanID(tt.id, tt.finishedAt)
 			if tt.expectErr {
 				require.Error(t, err)
 				require.Equal(t, pcommon.SpanID{}, spanID)
