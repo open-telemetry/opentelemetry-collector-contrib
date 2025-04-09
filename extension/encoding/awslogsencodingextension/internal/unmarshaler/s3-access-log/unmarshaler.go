@@ -238,6 +238,17 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 		default:
 			return fmt.Errorf("unknown value %q for field %q", value, field)
 		}
+	case semconv.AttributeTLSProtocolVersion:
+		// The value is one of following: TLSv1.1, TLSv1.2, TLSv1.3.
+		// We get the version after "v".
+		_, remaining, _ := strings.Cut(value, "v")
+		if remaining == "" {
+			_, remaining, _ = strings.Cut(value, "V")
+			if remaining == "" {
+				return fmt.Errorf("unexpected TLS version: %q", value)
+			}
+		}
+		record.Attributes().PutStr(field, remaining)
 	default:
 		record.Attributes().PutStr(field, value)
 	}

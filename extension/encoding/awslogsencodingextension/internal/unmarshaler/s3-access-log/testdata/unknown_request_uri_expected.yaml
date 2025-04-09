@@ -54,7 +54,7 @@ resourceLogs:
                   stringValue: amzn-s3-demo-bucket1.s3.us-west-1.amazonaws.com
               - key: tls.protocol.version
                 value:
-                  stringValue: TLSV1.2
+                  stringValue: "1.2"
               - key: aws.s3.access_point.arn
                 value:
                   stringValue: arn:aws:s3:us-west-1:123456789012:accesspoint/example-AP
