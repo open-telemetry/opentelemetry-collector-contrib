@@ -57,7 +57,7 @@ func applyReplaceFormat[K any](ctx context.Context, tCtx K, replacementFormat ot
 			return "", errFmt
 		}
 		if !validFormatString(formatStringVal) {
-			return "", fmt.Errorf("replacementFormat must be format string containing a single %%s and no other format specifiers")
+			return "", errors.New("replacementFormat must be format string containing a single %s and no other format specifiers")
 		}
 		replacementVal = fmt.Sprintf(formatStringVal, replacementVal)
 	}

@@ -46,7 +46,7 @@ func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) 
 // Process will route incoming entries based on matching expressions
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	if entry == nil {
-		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
 	env := helper.GetExprEnv(entry)
