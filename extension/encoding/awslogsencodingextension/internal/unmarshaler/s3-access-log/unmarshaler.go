@@ -103,24 +103,18 @@ func scanField(logLine string) (string, string, error) {
 		return value, remaining, nil
 	}
 
+	// if there is a quote, we need to get the rest of the value
 	logLine = logLine[1:] // remove first quote
-	if len(logLine) > 0 && logLine[len(logLine)-1] == '"' {
-		// remove last quote from the value
-		return logLine[:len(logLine)-1], logLine, nil
-	}
-
-	// value ends on next quote, get the rest
-	end := strings.IndexByte(logLine, '"')
-	if end == -1 {
+	value, remaining, found := strings.Cut(logLine, `"`)
+	if !found {
 		return "", "", fmt.Errorf("value %q has no end quote", logLine)
 	}
 
-	value := logLine[:end]
-	remaining := logLine[end+1:]
-	// remove next space if it exists
+	// Remove space after closing quote if present
 	if len(remaining) > 0 && remaining[0] == ' ' {
 		remaining = remaining[1:]
 	}
+
 	return value, remaining, nil
 }
 

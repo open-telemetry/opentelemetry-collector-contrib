@@ -142,6 +142,11 @@ func TestScanField(t *testing.T) {
 			logLine:    `"one `,
 			expectsErr: "has no end quote",
 		},
+		"two_quoted_values": {
+			logLine:           `"one" "two"`,
+			expectedValue:     "one",
+			expectedRemaining: `"two"`,
+		},
 	}
 
 	for name, test := range tests {
