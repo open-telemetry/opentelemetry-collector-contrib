@@ -1643,6 +1643,77 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		assertRecordedItems(t, expected, rec, false)
 	})
 
+	t.Run("unordered attributes", func(t *testing.T) {
+		// Test equal attributes but in a different order. Metrics should be grouped together.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
+
+				type kv struct {
+					k, v string
+				}
+
+				addMetric := func(slice pmetric.MetricSlice, name string, attributes []kv) {
+					metric := slice.AppendEmpty()
+					metric.SetName("foo")
+					dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+					dp.SetDoubleValue(1)
+					for _, kv := range attributes {
+						dp.Attributes().PutStr(kv.k, kv.v)
+					}
+				}
+
+				metrics := pmetric.NewMetrics()
+				resourceA := metrics.ResourceMetrics().AppendEmpty()
+				resourceA.Resource().Attributes().PutStr("a", "a")
+				resourceA.Resource().Attributes().PutStr("b", "b")
+				scopeA := resourceA.ScopeMetrics().AppendEmpty()
+				scopeA.Scope().Attributes().PutStr("c", "c")
+				scopeA.Scope().Attributes().PutStr("d", "d")
+
+				addMetric(scopeA.Metrics(), "a_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
+
+				addMetric(scopeA.Metrics(), "a_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				resourceB := metrics.ResourceMetrics().AppendEmpty()
+				resourceB.Resource().Attributes().PutStr("b", "b")
+				resourceB.Resource().Attributes().PutStr("a", "a")
+				scopeB := resourceB.ScopeMetrics().AppendEmpty()
+				scopeB.Scope().Attributes().PutStr("d", "d")
+				scopeB.Scope().Attributes().PutStr("c", "c")
+
+				addMetric(scopeB.Metrics(), "b_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
+
+				addMetric(scopeB.Metrics(), "b_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				mustSendMetrics(t, exporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Equal(t, 1, len(rec.Items()))
+			})
+		}
+	})
+
 	t.Run("otel", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
