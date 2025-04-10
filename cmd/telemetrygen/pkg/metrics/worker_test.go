@@ -532,6 +532,19 @@ func TestTemporalityStartTimes(t *testing.T) {
 			firstStartTime := firstMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
 			secondStartTime := secondMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
 
+			// Add debug logging before the check
+			t.Logf("Timestamp debug logging:\n"+
+				"First start time:  %v (%d UnixNano)\n"+
+				"Second start time: %v (%d UnixNano)\n"+
+				"Difference: %v\n"+
+				"Temporality: %v",
+				firstStartTime.Format(time.RFC3339Nano),
+				firstStartTime.UnixNano(),
+				secondStartTime.Format(time.RFC3339Nano),
+				secondStartTime.UnixNano(),
+				secondStartTime.Sub(firstStartTime),
+				tt.temporality)
+
 			tt.checkTimes(t, firstStartTime, secondStartTime)
 		})
 	}
