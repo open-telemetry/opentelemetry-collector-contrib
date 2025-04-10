@@ -1,3 +1,3 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/internal/collectd
 
-go 1.23.8
+go 1.23.0
