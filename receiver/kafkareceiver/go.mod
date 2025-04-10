@@ -14,7 +14,11 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin v0.123.0
+	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
 	github.com/stretchr/testify v1.10.0
+	github.com/twmb/franz-go v1.18.1
+	github.com/twmb/franz-go/pkg/kadm v1.15.0
+	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	go.opentelemetry.io/collector/client v1.29.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/component v1.29.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250411074447-4fb7c24ebecc
@@ -88,8 +92,8 @@ require (
 	github.com/openzipkin/zipkin-go v0.4.3 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
-	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475 // indirect
 	github.com/relvacode/iso8601 v1.6.0 // indirect
+	github.com/twmb/franz-go/pkg/kmsg v1.9.0 // indirect
 	github.com/xdg-go/pbkdf2 v1.0.0 // indirect
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
