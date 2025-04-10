@@ -27,7 +27,6 @@ func (fh *FakeHost) GetExporters() map[pipeline.Signal]map[component.ID]componen
 	return nil
 }
 
-// FakeLeaderElection fakes the k8sleaderelector.LeaderElection interface.
 type FakeLeaderElection struct {
 	OnLeading  func(context.Context)
 	OnStopping func()
@@ -44,9 +43,9 @@ func (fle *FakeLeaderElection) InvokeOnLeading() {
 	}
 }
 
-func (fle *FakeLeaderElection) Start(ctx context.Context, host component.Host) error { return nil }
+func (fle *FakeLeaderElection) Start(_ context.Context, _ component.Host) error { return nil }
 
-func (fle *FakeLeaderElection) Shutdown(ctx context.Context) error { return nil }
+func (fle *FakeLeaderElection) Shutdown(_ context.Context) error { return nil }
 
 func (fle *FakeLeaderElection) InvokeOnStopping() {
 	if fle.OnStopping != nil {
