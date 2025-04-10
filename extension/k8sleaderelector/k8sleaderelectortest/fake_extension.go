@@ -1,4 +1,4 @@
-package k8sleaderelectortest
+package k8sleaderelectortest // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
 
 import (
 	"context"
