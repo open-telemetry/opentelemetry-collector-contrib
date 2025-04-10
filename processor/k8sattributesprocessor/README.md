@@ -251,6 +251,18 @@ extract:
       from: node
 ```
 
+## Configuring recommended resource attributes 
+
+The processor can be configured to set the 
+[recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
+
+- `otel_attributes` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+
+```yaml
+  extract:
+    otel_annotations: true 
+```
+
 ### Config example
 
 ```yaml
@@ -275,8 +287,7 @@ k8sattributes/2:
       - tag_name: app.label.component
         key: app.kubernetes.io/component
         from: pod
-    # Extract otel specific annotations as resource attributes - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
-    otel_annotations: true # default is false - use true to enable
+    otel_annotations: true 
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
