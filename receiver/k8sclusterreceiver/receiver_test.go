@@ -6,8 +6,6 @@ package k8sclusterreceiver
 import (
 	"context"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector/k8sleaderelectortest"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -46,14 +44,6 @@ func newNopHost() component.Host {
 	}
 }
 
-type hostWithExtensions struct {
-	extensions map[component.ID]component.Component
-}
-
-func (h hostWithExtensions) GetExtensions() map[component.ID]component.Component {
-	return h.extensions
-}
-
 func TestReceiver(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
@@ -64,7 +54,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", setupExtension(""))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -103,6 +93,42 @@ func TestReceiver(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
+func TestReceiverWithLeaderElection(t *testing.T) {
+	fakeLeaderElection := &k8sleaderelectortest.FakeLeaderElection{}
+	fakeHost := &k8sleaderelectortest.FakeHost{
+		FakeLeaderElection: fakeLeaderElection,
+	}
+
+	client := newFakeClientWithAllResources()
+	osQuotaClient := fakeQuota.NewSimpleClientset()
+	sink := new(consumertest.MetricsSink)
+	tt := componenttest.NewTelemetry()
+	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("k8s_leader_elector"))
+
+	// Setup k8s resources.
+	numPods := 2
+
+	createPods(t, client, numPods)
+
+	err := kr.Start(context.Background(), fakeHost)
+	require.NoError(t, err)
+
+	// elected leader
+	fakeLeaderElection.InvokeOnLeading()
+
+	expectedNumMetrics := numPods
+	var initialDataPointCount int
+	require.Eventually(t, func() bool {
+		initialDataPointCount = sink.DataPointCount()
+		return initialDataPointCount == expectedNumMetrics
+	}, 20*time.Second, 100*time.Millisecond,
+		"metrics not collected")
+
+	// lost election
+	fakeLeaderElection.InvokeOnStopping()
+	require.NoError(t, kr.Shutdown(context.Background()))
+}
+
 func TestNamespacedReceiver(t *testing.T) {
 	tt := componenttest.NewTelemetry()
 	defer func() {
@@ -113,7 +139,7 @@ func TestNamespacedReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test", setupExtension(""))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test", createComponentWithID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -161,7 +187,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "", setupExtension(""))
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "", createComponentWithID("foo"))
 
 	createPods(t, client, 1)
 
@@ -183,7 +209,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", setupExtension(""))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("foo"))
 
 	numPods := 1000
 	numQuotas := 2
@@ -224,7 +250,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "", setupExtension(""))
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "", createComponentWithID("foo"))
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -265,6 +291,10 @@ func TestReceiverWithMetadata(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
+func createComponentWithID(id string) component.ID {
+	return component.MustNewID("foo")
+}
+
 func getUpdatedPod(pod *corev1.Pod) any {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -276,37 +306,6 @@ func getUpdatedPod(pod *corev1.Pod) any {
 			},
 		},
 	}
-}
-
-func TestStartWithLeaderElection(t *testing.T) {
-	mockHost := &k8sleaderelectortest.MockHost{}
-	mockLeaderElection := &k8sleaderelectortest.MockLeaderElection{}
-
-	// Mock the extension list with a valid leader elector.
-	extID := component.MustNewID("k8s_leader_elector")
-	mockHost.On("GetExtensions").Return(map[component.ID]component.Component{
-		extID: mockLeaderElection,
-	})
-
-	mockLeaderElection.On("SetCallBackFuncs", mock.Anything, mock.Anything).Return()
-
-	client := newFakeClientWithAllResources()
-	osQuotaClient := fakeQuota.NewSimpleClientset()
-	sink1 := new(consumertest.MetricsSink)
-	tt := componenttest.NewTelemetry()
-	r1 := setupReceiver(client, osQuotaClient, sink1, nil, 10*time.Second, tt, "", component.MustNewID("k8s_leader_elector"))
-
-	err := r1.Start(context.Background(), mockHost)
-	assert.NoError(t, err)
-
-	mockHost.AssertExpectations(t)
-	mockLeaderElection.AssertExpectations(t)
-
-	require.NoError(t, r1.Shutdown(context.Background()))
-}
-
-func setupExtension(name string) component.ID {
-	return component.NewIDWithName(metadata.Type, name)
 }
 
 func setupReceiver(
@@ -323,7 +322,6 @@ func setupReceiver(
 	if osQuotaClient != nil {
 		distribution = distributionOpenShift
 	}
-
 	config := &Config{
 		CollectionInterval:         1 * time.Second,
 		NodeConditionTypesToReport: []string{"Ready"},
@@ -331,7 +329,10 @@ func setupReceiver(
 		Distribution:               distribution,
 		MetricsBuilderConfig:       metadata.DefaultMetricsBuilderConfig(),
 		Namespace:                  namespace,
-		K8sLeaderElector:           leaderElector,
+	}
+
+	if leaderElector.Type().String() == "k8s_leader_elector" {
+		config.K8sLeaderElector = leaderElector
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
@@ -395,8 +396,3 @@ func gvkToAPIResource(gvk schema.GroupVersionKind) v1.APIResource {
 		Kind:    gvk.Kind,
 	}
 }
-
-//func setupK8sLeaderElectorExtension() component.Component {
-//	kf := k8sleaderelectortest.CreateExtension()
-//	return kf
-//}
