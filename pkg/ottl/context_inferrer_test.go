@@ -283,9 +283,9 @@ func Test_DefaultPriorityContextInferrer(t *testing.T) {
 		"metric",
 		"spanevent",
 		"span",
-		"resource",
 		"scope",
 		"instrumentation_scope",
+		"resource",
 	}
 
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{}).(*priorityContextInferrer)
