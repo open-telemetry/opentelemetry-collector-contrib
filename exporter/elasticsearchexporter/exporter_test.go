@@ -1591,6 +1591,58 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		}, rec)
 	})
 
+	t.Run("ecs dp attribute overwrites resource attribute", func(t *testing.T) {
+		rec := newBulkRecorder()
+		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+			rec.Record(docs)
+			return itemsAllOK(docs)
+		})
+
+		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+			cfg.Mapping.Mode = "ecs"
+		})
+
+		metrics := pmetric.NewMetrics()
+		resource := metrics.ResourceMetrics().AppendEmpty()
+		resource.Resource().Attributes().PutStr("a", "b")
+		scope := resource.ScopeMetrics().AppendEmpty()
+
+		// a=c overwrites a=b in resource attribute
+		scopeMetricFoo := scope.Metrics().AppendEmpty()
+		scopeMetricFoo.SetName("foo")
+		dpFoo := scopeMetricFoo.SetEmptySum().DataPoints().AppendEmpty()
+		dpFoo.SetDoubleValue(1)
+		dpFoo.Attributes().PutStr("a", "c")
+
+		// no attribute, should still serialize as a=b
+		scopeMetricBar := scope.Metrics().AppendEmpty()
+		scopeMetricBar.SetName("bar")
+		dpBar := scopeMetricBar.SetEmptySum().DataPoints().AppendEmpty()
+		dpBar.SetDoubleValue(2)
+
+		// a=b overwrites a=b in resource attribute
+		scopeMetricBaz := scope.Metrics().AppendEmpty()
+		scopeMetricBaz.SetName("baz")
+		dpBaz := scopeMetricBaz.SetEmptySum().DataPoints().AppendEmpty()
+		dpBaz.SetDoubleValue(3)
+		dpBaz.Attributes().PutStr("a", "b")
+
+		mustSendMetrics(t, exporter, metrics)
+
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":2.0,"baz":3.0,"a":"b"}`),
+			},
+		}
+
+		assertRecordedItems(t, expected, rec, false)
+	})
+
 	t.Run("otel", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
