@@ -4,6 +4,7 @@
 package s3accesslog
 
 import (
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
@@ -108,15 +109,19 @@ func TestAddField(t *testing.T) {
 	}
 }
 
-func TestGetFullValue(t *testing.T) {
+func TestScanField(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
 		logLine           string
 		expectedValue     string
 		expectedRemaining string
-		expectsErr        bool
+		expectsErr        string
 	}{
+		"empty": {
+			logLine:    "",
+			expectsErr: io.EOF.Error(),
+		},
 		"no_quotes": {
 			logLine:           "one two three",
 			expectedValue:     "one",
@@ -134,15 +139,15 @@ func TestGetFullValue(t *testing.T) {
 		},
 		"no_end_quote": {
 			logLine:    `"one `,
-			expectsErr: true,
+			expectsErr: "has no end quote",
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
 			value, remaining, err := scanField(test.logLine)
-			if test.expectsErr {
-				require.Error(t, err)
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
 				return
 			}
 			require.NoError(t, err)
