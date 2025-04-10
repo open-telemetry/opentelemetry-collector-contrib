@@ -203,7 +203,7 @@ func withOtelAnnotations(enabled bool) option {
 		if enabled {
 			p.rules.Annotations = append(p.rules.Annotations, kube.FieldExtractionRule{
 				Name:                 "$1",
-				KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io(.+)$`),
+				KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
 				HasKeyRegexReference: true,
 				From:                 kube.MetadataFromPod,
 			})
