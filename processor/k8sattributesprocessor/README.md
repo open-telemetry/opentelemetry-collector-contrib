@@ -256,7 +256,7 @@ extract:
 The processor can be configured to set the 
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
-- `otel_attributes` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+- `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
 
 ```yaml
   extract:
