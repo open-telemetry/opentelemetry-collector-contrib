@@ -275,7 +275,7 @@ k8sattributes/2:
       - tag_name: app.label.component
         key: app.kubernetes.io/component
         from: pod
-    # Apply the operator rules - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
+    # Extract otel specific annotations as resource attributes - see https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md
     otel_annotations: true # default is false - use true to enable
   pod_association:
     - sources:
