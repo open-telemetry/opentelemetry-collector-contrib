@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -74,12 +75,15 @@ func createMockServer() *httptest.Server {
 	return ts
 }
 
-func TestScraper(t *testing.T) {
-	ts := createMockServer()
-	defer ts.Close()
-
-	// in the future add more metrics
+func createConfig(ts *httptest.Server, badConfig bool) *Config {
+	var endpoint string
+	if badConfig {
+		endpoint = "12345"
+	} else {
+		endpoint = ts.URL
+	}
 	metricsettings := metadata.MetricsBuilderConfig{}
+	// in the future add more metrics
 	metricsettings.Metrics.SplunkIndexerThroughput.Enabled = true
 	metricsettings.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled = true
 	metricsettings.Metrics.SplunkDataIndexesExtendedEventCount.Enabled = true
@@ -90,18 +94,17 @@ func TestScraper(t *testing.T) {
 	metricsettings.Metrics.SplunkDataIndexesExtendedBucketWarmCount.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled = true
 	metricsettings.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled = true
-
-	cfg := &Config{
+	return &Config{
 		IdxEndpoint: confighttp.ClientConfig{
-			Endpoint: ts.URL,
+			Endpoint: endpoint,
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		SHEndpoint: confighttp.ClientConfig{
-			Endpoint: ts.URL,
+			Endpoint: endpoint,
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		CMEndpoint: confighttp.ClientConfig{
-			Endpoint: ts.URL,
+			Endpoint: endpoint,
 			Auth:     &configauth.Authentication{AuthenticatorID: component.MustNewIDWithName("basicauth", "client")},
 		},
 		ControllerConfig: scraperhelper.ControllerConfig{
@@ -112,7 +115,13 @@ func TestScraper(t *testing.T) {
 		MetricsBuilderConfig: metricsettings,
 		VersionInfo:          false,
 	}
+}
 
+func TestScraper(t *testing.T) {
+	ts := createMockServer()
+	defer ts.Close()
+
+	cfg := createConfig(ts, false)
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
 			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
@@ -135,4 +144,27 @@ func TestScraper(t *testing.T) {
 	require.NoError(t, err)
 
 	require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+}
+
+func TestScrapeError(t *testing.T) {
+	ts := createMockServer()
+	defer ts.Close()
+
+	cfg := createConfig(ts, true)
+
+	host := &mockHost{
+		extensions: map[component.ID]component.Component{
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
+		},
+	}
+
+	scraper := newSplunkMetricsScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+	client, err := newSplunkEntClient(context.Background(), cfg, host, componenttest.NewNopTelemetrySettings())
+	require.NoError(t, err)
+
+	scraper.splunkClient = client
+
+	_, err = scraper.scrape(context.Background())
+	require.Error(t, err, "scrape failed")
+	require.True(t, scrapererror.IsPartialScrapeError(err), "scrape error is PartialScrapeError")
 }
