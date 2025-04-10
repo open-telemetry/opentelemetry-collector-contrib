@@ -170,7 +170,7 @@ func TestFilterAttributes(t *testing.T) {
 	}
 }
 
-func testCollectorInstanceInfo(t *testing.T) *CollectorInstanceInfo {
+func testCollectorInstanceInfo(t *testing.T) CollectorInstanceInfo {
 	t.Helper()
 
 	set := componenttest.NewNopTelemetrySettings()
