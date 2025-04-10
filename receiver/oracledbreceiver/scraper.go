@@ -23,28 +23,37 @@ import (
 )
 
 const (
-	statsSQL                = "select * from v$sysstat"
-	enqueueDeadlocks        = "enqueue deadlocks"
-	exchangeDeadlocks       = "exchange deadlocks"
-	executeCount            = "execute count"
-	parseCountTotal         = "parse count (total)"
-	parseCountHard          = "parse count (hard)"
-	userCommits             = "user commits"
-	userRollbacks           = "user rollbacks"
-	physicalReads           = "physical reads"
-	physicalReadsDirect     = "physical reads direct"
-	physicalReadIORequests  = "physical read IO requests"
-	physicalWrites          = "physical writes"
-	physicalWritesDirect    = "physical writes direct"
-	physicalWriteIORequests = "physical write IO requests"
-	sessionLogicalReads     = "session logical reads"
-	cpuTime                 = "CPU used by this session"
-	pgaMemory               = "session pga memory"
-	dbBlockGets             = "db block gets"
-	consistentGets          = "consistent gets"
-	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
-	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
+	statsSQL                       = "select * from v$sysstat"
+	enqueueDeadlocks               = "enqueue deadlocks"
+	exchangeDeadlocks              = "exchange deadlocks"
+	executeCount                   = "execute count"
+	parseCountTotal                = "parse count (total)"
+	parseCountHard                 = "parse count (hard)"
+	userCommits                    = "user commits"
+	userRollbacks                  = "user rollbacks"
+	physicalReads                  = "physical reads"
+	physicalReadsDirect            = "physical reads direct"
+	physicalReadIORequests         = "physical read IO requests"
+	physicalWrites                 = "physical writes"
+	physicalWritesDirect           = "physical writes direct"
+	physicalWriteIORequests        = "physical write IO requests"
+	queriesParallelized            = "queries parallelized"
+	ddlStatementsParallelized      = "DDL statements parallelized"
+	dmlStatementsParallelized      = "DML statements parallelized"
+	parallelOpsNotDowngraded       = "Parallel operations not downgraded"
+	parallelOpsDowngradedToSerial  = "Parallel operations downgraded to serial"
+	parallelOpsDowngraded1To25Pct  = "Parallel operations downgraded 1 to 25 pct"
+	parallelOpsDowngraded25To50Pct = "Parallel operations downgraded 25 to 50 pct"
+	parallelOpsDowngraded50To75Pct = "Parallel operations downgraded 50 to 75 pct"
+	parallelOpsDowngraded75To99Pct = "Parallel operations downgraded 75 to 99 pct"
+	sessionLogicalReads            = "session logical reads"
+	cpuTime                        = "CPU used by this session"
+	pgaMemory                      = "session pga memory"
+	dbBlockGets                    = "db block gets"
+	consistentGets                 = "consistent gets"
+	sessionCountSQL                = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
+	systemResourceLimitsSQL        = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
+	tablespaceUsageSQL             = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -116,6 +125,15 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWrites.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesDirect.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalWriteIoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbQueriesParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDdlStatementsParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDmlStatementsParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsNotDowngraded.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngradedToSerial.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded1To25Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded25To50Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded50To75Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded75To99Pct.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
@@ -192,6 +210,51 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case physicalWriteIORequests:
 				err := s.mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case queriesParallelized:
+				err := s.mb.RecordOracledbQueriesParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case ddlStatementsParallelized:
+				err := s.mb.RecordOracledbDdlStatementsParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dmlStatementsParallelized:
+				err := s.mb.RecordOracledbDmlStatementsParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsNotDowngraded:
+				err := s.mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngradedToSerial:
+				err := s.mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded1To25Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded25To50Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded50To75Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded75To99Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
