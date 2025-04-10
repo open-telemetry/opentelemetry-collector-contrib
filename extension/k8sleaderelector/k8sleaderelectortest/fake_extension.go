@@ -29,7 +29,7 @@ type FakeLeaderElection struct {
 	OnStopping func()
 }
 
-func (fle *FakeLeaderElection) SetCallBackFuncs(onLeading k8sleaderelector.StartCallback, onStopping k8sleaderelector.StopCallback) {
+func (fle *FakeLeaderElection) SetCallBackFuncs(onLeading k8sleaderelector.StartCallBack, onStopping k8sleaderelector.StopCallBack) {
 	fle.OnLeading = onLeading
 	fle.OnStopping = onStopping
 }
