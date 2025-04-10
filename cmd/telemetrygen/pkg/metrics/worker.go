@@ -89,8 +89,9 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
+		now := time.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
-			startTime = time.Now().Add(-1 * time.Second)
+			startTime = now.Add(-1 * time.Second)
 		}
 		switch w.metricType {
 		case MetricTypeGauge:
@@ -99,7 +100,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:       time.Now(),
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -116,7 +117,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							StartTime:  startTime,
-							Time:       time.Now(),
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -139,7 +140,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					DataPoints: []metricdata.HistogramDataPoint[int64]{
 						{
 							StartTime:  startTime,
-							Time:       time.Now(),
+							Time:       now,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
