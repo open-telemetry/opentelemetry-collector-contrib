@@ -1185,6 +1185,19 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			},
 		},
 		{
+			name: "span:span.cache multiple entries",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(span.cache["test"], Concat([span.name, "cache"], "-"))`,
+					`set(span.attributes["test"], span.cache["test"])`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Attributes().PutStr("test", "operationA-cache")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Attributes().PutStr("test", "operationB-cache")
+			},
+		},
+		{
 			name: "span:cache",
 			statements: []common.ContextStatements{{
 				Context: common.Span,
@@ -1207,6 +1220,19 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 			},
 			want: func(td ptrace.Traces) {
 				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().At(0).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "spanevent:spanevent.cache multiple entries",
+			statements: []common.ContextStatements{
+				{Statements: []string{
+					`set(spanevent.cache["test"], Concat([spanevent.name, "cache"], "-"))`,
+					`set(spanevent.attributes["test"], spanevent.cache["test"]) where span.name == "operationB"`,
+				}},
+			},
+			want: func(td ptrace.Traces) {
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().At(0).Attributes().PutStr("test", "eventB-cache")
+				td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(1).Events().At(1).Attributes().PutStr("test", "eventB2-cache")
 			},
 		},
 		{
@@ -1468,4 +1494,6 @@ func fillSpanTwo(span ptrace.Span) {
 	status.SetMessage("status-cancelled")
 	event := span.Events().AppendEmpty()
 	event.SetName("eventB")
+	eventB2 := span.Events().AppendEmpty()
+	eventB2.SetName("eventB2")
 }

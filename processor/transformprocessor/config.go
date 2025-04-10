@@ -100,7 +100,7 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 				basicStatements = append(basicStatements, value)
 			} else {
 				if len(basicStatements) > 0 {
-					return errors.New("mixed configuration styles are not supported, please use either Basic or Advanced configurations")
+					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
 				}
 				statementsConfigs = append(statementsConfigs, value)
 			}

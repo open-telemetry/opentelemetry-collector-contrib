@@ -339,5 +339,5 @@ func Test_MixedConfigurationStyles(t *testing.T) {
 
 	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
 	assert.NoError(t, err)
-	assert.ErrorContains(t, sub.Unmarshal(cfg), "mixed configuration styles are not supported, please use either Basic or Advanced configurations")
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
 }

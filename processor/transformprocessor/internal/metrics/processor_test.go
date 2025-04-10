@@ -1802,6 +1802,24 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 			},
 		},
 		{
+			name: "metric:metric.cache multiple entries",
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(metric.cache["test"], Concat([metric.name, "cache"], "-"))`,
+						`set(metric.name, metric.cache["test"])`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("operationA-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(1).SetName("operationB-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(2).SetName("operationC-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(3).SetName("operationD-cache")
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(4).SetName("operationE-cache")
+			},
+		},
+		{
 			name: "datapoint:datapoint.cache",
 			statements: []common.ContextStatements{
 				{Statements: []string{
@@ -1812,6 +1830,21 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 			want: func(td pmetric.Metrics) {
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutStr("test", "pass")
 				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "datapoint:datapoint.cache multiple entries",
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(datapoint.cache["test"], datapoint.value_double)`,
+						`set(datapoint.attributes["test"], datapoint.cache["test"]) where metric.name == "operationA"`,
+					},
+				},
+			},
+			want: func(td pmetric.Metrics) {
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Attributes().PutDouble("test", 1.0)
+				td.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(1).Attributes().PutDouble("test", 3.7)
 			},
 		},
 		{

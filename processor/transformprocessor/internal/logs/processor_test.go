@@ -1117,6 +1117,21 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
 			},
 		},
+		{
+			name: "log:log.cache multiple entries",
+			statements: []common.ContextStatements{
+				{
+					Statements: []string{
+						`set(log.cache["test"], log.body)`,
+						`set(log.attributes["test"], log.cache["test"])`,
+					},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operationA")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "operationB")
+			},
+		},
 	}
 
 	for _, tt := range tests {
