@@ -12,7 +12,12 @@ import (
 	"go.opentelemetry.io/collector/component"
 )
 
-func createBuf(b *testing.B, nLogs int) []byte {
+// newLogFileContent reads data from testdata/valid_s3_access_log.log
+// to get a valid log line. It will add this log line to a byte array
+// and append this line as many times as it takes to reach the desire
+// number of logs defined in nLogs. Each log record is defined in one
+// line. A new line means a new log record.
+func newLogFileContent(b *testing.B, nLogs int) []byte {
 	// get a log line from the testdata
 	data, err := os.ReadFile("testdata/valid_s3_access_log.log")
 	require.NoError(b, err)
@@ -43,7 +48,7 @@ func BenchmarkUnmarshalLogs(b *testing.B) {
 
 	u := s3AccessLogUnmarshaler{buildInfo: component.BuildInfo{}}
 	for name, benchmark := range benchmarks {
-		logs := createBuf(b, benchmark.nLogs)
+		logs := newLogFileContent(b, benchmark.nLogs)
 		b.Run(name, func(b *testing.B) {
 			b.ReportAllocs()
 			for i := 0; i < b.N; i++ {

@@ -8,6 +8,7 @@ import (
 	"bytes"
 	"errors"
 	"fmt"
+	"io"
 	"strconv"
 	"strings"
 	"time"
@@ -87,29 +88,37 @@ func (s *s3AccessLogUnmarshaler) setResourceAttributes(r *resourceAttributes, lo
 	}
 }
 
-// getFullValue checks if value starts with a quote. If it does,
-// then it looks for the rest of the value until the end quote.
-// Otherwise, it returns the value as it is.
-func getFullValue(value string, remaining string) (string, string, error) {
-	if len(value) == 0 || value[0] != '"' {
+// scanField gets the next value in the log line by moving
+// one space. If the value starts with a quote, it moves
+// forward until it finds the ending quote, and considers
+// that just 1 value. Otherwise, it returns the value as
+// it is.
+func scanField(logLine string) (string, string, error) {
+	if logLine == "" {
+		return "", "", io.EOF
+	}
+
+	if logLine[0] != '"' {
+		value, remaining, _ := strings.Cut(logLine, " ")
 		return value, remaining, nil
 	}
 
-	value = value[1:] // remove first quote
-	if len(value) > 0 && value[len(value)-1] == '"' {
+	logLine = logLine[1:] // remove first quote
+	if len(logLine) > 0 && logLine[len(logLine)-1] == '"' {
 		// remove last quote from the value
-		return value[:len(value)-1], remaining, nil
+		return logLine[:len(logLine)-1], logLine, nil
 	}
 
 	// value ends on next quote, get the rest
-	end := strings.IndexByte(remaining, '"')
+	end := strings.IndexByte(logLine, '"')
 	if end == -1 {
-		return "", "", fmt.Errorf("value %q has no end quote", value)
+		return "", "", fmt.Errorf("value %q has no end quote", logLine)
 	}
 
-	value = value + " " + remaining[:end]
-	remaining = remaining[end+1:]
-	if len(remaining) > 0 && remaining[0] == ' ' { // remove next space if it exists
+	value := logLine[:end]
+	remaining := logLine[end+1:]
+	// remove next space if it exists
+	if len(remaining) > 0 && remaining[0] == ' ' {
 		remaining = remaining[1:]
 	}
 	return value, remaining, nil
@@ -127,21 +136,20 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			return errors.New("values in log line exceed the number of available fields")
 		}
 
-		value, remaining, _ = strings.Cut(remaining, " ")
-		if value, remaining, err = getFullValue(value, remaining); err != nil {
+		value, remaining, err = scanField(remaining)
+		if err != nil {
+			if err == io.EOF {
+				break
+			}
 			return err
 		}
 
-		if value == "" {
-			continue
-		}
-
-		if value == unknownField && attributeNames[i] != attributeAWSS3AclRequired {
+		if value == unknownField && i != fieldIndexACLRequired {
 			// acl required field can be '-' to indicate that no ACL was required
 			continue
 		}
 
-		if attributeNames[i] == timestamp {
+		if i == fieldIndexTime {
 			// This is the timestamp that follows a strict format
 			// "[DD/MM/YYYY:HH:mm:ss zone]". Since zone is after a
 			// space, we cut the string again to remove the zone.
@@ -149,12 +157,12 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			_, remaining, _ = strings.Cut(remaining, " ")
 		}
 
-		if err = addField(attributeNames[i], value, resourceAttr, record); err != nil {
+		if err = addField(i, value, resourceAttr, record); err != nil {
 			return err
 		}
 	}
 
-	if i != len(attributeNames) {
+	if i != fieldIndexACLRequired+1 {
 		return errors.New("values in log line are less than the number of available fields")
 	}
 
@@ -164,13 +172,13 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 	return nil
 }
 
-func addField(field string, value string, resourceAttr *resourceAttributes, record plog.LogRecord) error {
+func addField(field int, value string, resourceAttr *resourceAttributes, record plog.LogRecord) error {
 	switch field {
-	case attributeAWSS3BucketOwner:
+	case fieldIndexS3BucketOwner:
 		resourceAttr.bucketOwner = value
-	case semconv.AttributeAWSS3Bucket:
+	case fieldIndexS3BucketName:
 		resourceAttr.bucketName = value
-	case timestamp:
+	case fieldIndexTime:
 		// The format in S3 access logs at this point is as "[DD/MM/YYYY:HH:mm:ss".
 		if value == "" {
 			return errors.New("unexpected: time value is empty")
@@ -180,28 +188,30 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 			return fmt.Errorf("failed to get timestamp of log: %w", err)
 		}
 		record.SetTimestamp(pcommon.NewTimestampFromTime(t))
-	case semconv.AttributeHTTPResponseStatusCode,
-		semconv.AttributeHTTPResponseBodySize,
-		attributeAWSS3ObjectSize,
-		attributeAWSS3TurnAroundTime,
-		duration:
+	case fieldIndexHTTPStatus,
+		fieldIndexBytesSent,
+		fieldIndexObjectSize,
+		fieldIndexTurnAroundTime,
+		fieldIndexTotalTime:
 		n, err := strconv.ParseInt(value, 10, 64)
 		if err != nil {
 			return fmt.Errorf("value for field %q in log line is not a number", field)
 		}
-		record.Attributes().PutInt(field, n)
-	case attributeAWSS3AclRequired:
+		attrName := attributeNames[field]
+		record.Attributes().PutInt(attrName, n)
+	case fieldIndexACLRequired:
+		attrName := attributeNames[field]
 		// If the request required an ACL for authorization, the string is Yes.
 		// If no ACLs were required, the string is -.
 		switch value {
 		case "Yes":
-			record.Attributes().PutBool(field, true)
+			record.Attributes().PutBool(attrName, true)
 		case unknownField:
-			record.Attributes().PutBool(field, false)
+			record.Attributes().PutBool(attrName, false)
 		default:
 			return fmt.Errorf("unknown value %q for field %q", value, field)
 		}
-	case semconv.AttributeTLSProtocolVersion:
+	case fieldIndexTLSVersion:
 		// The value is one of following: TLSv1.1, TLSv1.2, TLSv1.3.
 		// We get the version after "v".
 		_, remaining, _ := strings.Cut(value, "v")
@@ -211,8 +221,9 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 				return fmt.Errorf("missing TLS version: %q", value)
 			}
 		}
-		record.Attributes().PutStr(field, remaining)
-	case requestURI:
+		attrName := attributeNames[fieldIndexTLSVersion]
+		record.Attributes().PutStr(attrName, remaining)
+	case fieldIndexRequestURI:
 		method, remaining, _ := strings.Cut(value, " ")
 		if method == "" {
 			return fmt.Errorf("unexpected: request uri %q has no method", value)
@@ -232,7 +243,8 @@ func addField(field string, value string, resourceAttr *resourceAttributes, reco
 		}
 		record.Attributes().PutStr(semconv.AttributeURLScheme, scheme)
 	default:
-		record.Attributes().PutStr(field, value)
+		attrName := attributeNames[field]
+		record.Attributes().PutStr(attrName, value)
 	}
 	return nil
 }

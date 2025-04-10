@@ -8,15 +8,39 @@ import (
 )
 
 const (
-	timestamp = "timestamp"
-	duration  = "duration"
-
-	requestURI = "request.uri"
+	duration = "duration"
 
 	attributeAWSS3BucketOwner    = "aws.s3.owner"
 	attributeAWSS3ObjectSize     = "aws.s3.object.size"
 	attributeAWSS3TurnAroundTime = "aws.s3.turn_around_time"
 	attributeAWSS3AclRequired    = "aws.s3.acl_required"
+
+	fieldIndexS3BucketOwner    = 0
+	fieldIndexS3BucketName     = 1
+	fieldIndexTime             = 2
+	fieldIndexSourceAddress    = 3
+	fieldIndexRequester        = 4
+	fieldIndexRequestID        = 5
+	fieldIndexOperation        = 6
+	fieldIndexS3Key            = 7
+	fieldIndexRequestURI       = 8
+	fieldIndexHTTPStatus       = 9
+	fieldIndexErrorCode        = 10
+	fieldIndexBytesSent        = 11
+	fieldIndexObjectSize       = 12
+	fieldIndexTotalTime        = 13
+	fieldIndexTurnAroundTime   = 14
+	fieldIndexReferer          = 15
+	fieldIndexUserAgent        = 16
+	fieldIndexVersionID        = 17
+	fieldIndexHostID           = 18
+	fieldIndexSignatureVersion = 19
+	fieldIndexTLSCipher        = 20
+	fieldIndexAuthType         = 21
+	fieldIndexHostHeader       = 22
+	fieldIndexTLSVersion       = 23
+	fieldIndexAccessPointARN   = 24
+	fieldIndexACLRequired      = 25
 )
 
 // Some of the attribute names are based on semantic conventions for AWS S3.
@@ -25,33 +49,30 @@ const (
 // HTTP attributes are based on HTTP semantic conventions.
 // See https://github.com/open-telemetry/semantic-conventions/blob/main/docs/http/http-spans.md.
 //
-// attributeNames maps each available field in the S3 access log to an attribute name.
+// attributeNames maps each available field in the S3 access log to an attribute name. There is
+// a comment in front of each attribute to help the reader navigate the mapping.
 // See available fields: https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html.
 var attributeNames = [...]string{
-	0:  attributeAWSS3BucketOwner,               // bucket owner
-	1:  semconv.AttributeAWSS3Bucket,            // bucket name
-	2:  timestamp,                               // time
-	3:  semconv.AttributeSourceAddress,          // remote IP
-	4:  semconv.AttributeUserID,                 // requester
-	5:  "aws.request_id",                        // request ID
-	6:  semconv.AttributeRPCMethod,              // operation
-	7:  semconv.AttributeAWSS3Key,               // key
-	8:  requestURI,                              // request URI, splits in 3 for 3 different attributes
-	9:  semconv.AttributeHTTPResponseStatusCode, // HTTP status
-	10: semconv.AttributeErrorType,              // error code
-	11: semconv.AttributeHTTPResponseBodySize,   // bytes sent
-	12: attributeAWSS3ObjectSize,                // object size
-	13: duration,                                // total time
-	14: attributeAWSS3TurnAroundTime,            // turn around time
-	15: "http.request.header.referer",           // referer
-	16: semconv.AttributeUserAgentOriginal,      // user agent
-	17: "aws.s3.version_id",                     // version ID
-	18: "aws.extended_request_id",               // host ID
-	19: "aws.signature.version",                 // signature version
-	20: semconv.AttributeTLSCipher,              // cypher suite
-	21: "aws.s3.auth_type",                      // authentication type
-	22: "http.request.header.host",              // host header
-	23: semconv.AttributeTLSProtocolVersion,     // TLS version
-	24: "aws.s3.access_point.arn",               // access point ARN
-	25: attributeAWSS3AclRequired,               // acl required
+	fieldIndexSourceAddress:    semconv.AttributeSourceAddress,          // remote IP
+	fieldIndexRequester:        semconv.AttributeUserID,                 // requester
+	fieldIndexRequestID:        "aws.request_id",                        // request ID
+	fieldIndexOperation:        semconv.AttributeRPCMethod,              // operation
+	fieldIndexS3Key:            semconv.AttributeAWSS3Key,               // key
+	fieldIndexHTTPStatus:       semconv.AttributeHTTPResponseStatusCode, // HTTP status
+	fieldIndexErrorCode:        semconv.AttributeErrorType,              // error code
+	fieldIndexBytesSent:        semconv.AttributeHTTPResponseBodySize,   // bytes sent
+	fieldIndexObjectSize:       attributeAWSS3ObjectSize,                // object size
+	fieldIndexTotalTime:        duration,                                // total time
+	fieldIndexTurnAroundTime:   attributeAWSS3TurnAroundTime,            // turn around time
+	fieldIndexReferer:          "http.request.header.referer",           // referer
+	fieldIndexUserAgent:        semconv.AttributeUserAgentOriginal,      // user agent
+	fieldIndexVersionID:        "aws.s3.version_id",                     // version ID
+	fieldIndexHostID:           "aws.extended_request_id",               // host ID
+	fieldIndexSignatureVersion: "aws.signature.version",                 // signature version
+	fieldIndexTLSCipher:        semconv.AttributeTLSCipher,              // cipher suite
+	fieldIndexAuthType:         "aws.s3.auth_type",                      // authentication type
+	fieldIndexHostHeader:       "http.request.header.host",              // host header
+	fieldIndexTLSVersion:       semconv.AttributeTLSProtocolVersion,     // TLS version
+	fieldIndexAccessPointARN:   "aws.s3.access_point.arn",               // access point ARN
+	fieldIndexACLRequired:      attributeAWSS3AclRequired,               // acl required
 }

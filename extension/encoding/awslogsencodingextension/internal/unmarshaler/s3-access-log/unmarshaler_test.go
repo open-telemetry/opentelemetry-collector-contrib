@@ -8,13 +8,11 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 )
 
 func TestAddField(t *testing.T) {
@@ -24,76 +22,76 @@ func TestAddField(t *testing.T) {
 	// that can cause errors, not all possible
 	// fields in an access log
 	tests := map[string]struct {
-		field       string
+		field       int
 		value       string
 		expectedErr string
 	}{
 		"empty_timestamp": {
-			field:       timestamp,
+			field:       fieldIndexTime,
 			expectedErr: "time value is empty",
 		},
 		"invalid_timestamp": {
-			field:       timestamp,
+			field:       fieldIndexTime,
 			value:       "invalid",
 			expectedErr: "failed to get timestamp of log",
 		},
 		"valid_timestamp": {
-			field: timestamp,
+			field: fieldIndexTime,
 			value: "[06/Feb/2019:00:00:38",
 		},
 		"invalid_number": {
-			field:       attributeAWSS3ObjectSize,
+			field:       fieldIndexObjectSize,
 			value:       "invalid",
 			expectedErr: "in log line is not a number",
 		},
 		"valid_number": {
-			field: attributeAWSS3ObjectSize,
+			field: fieldIndexObjectSize,
 			value: "3462992",
 		},
 		"invalid_acl_value": {
-			field:       attributeAWSS3AclRequired,
+			field:       fieldIndexACLRequired,
 			value:       "invalid",
 			expectedErr: `unknown value "invalid" for field`,
 		},
 		"valid_acl_value": {
-			field: attributeAWSS3AclRequired,
+			field: fieldIndexACLRequired,
 			value: "Yes",
 		},
 		"missing_tls_version": {
-			field:       semconv.AttributeTLSProtocolVersion,
+			field:       fieldIndexTLSVersion,
 			value:       "missing",
 			expectedErr: "missing TLS version",
 		},
 		"valid_tls_version_lowercase": {
-			field: semconv.AttributeTLSProtocolVersion,
+			field: fieldIndexTLSVersion,
 			value: "TLSv1.2",
 		},
 		"valid_tls_version_uppercase": {
-			field: semconv.AttributeTLSProtocolVersion,
+			field: fieldIndexTLSVersion,
 			value: "TLSV1.2",
 		},
 		"missing_method_request_uri": {
-			field:       requestURI,
+			field:       fieldIndexRequestURI,
 			value:       "",
 			expectedErr: "has no method",
 		},
 		"missing_path_request_uri": {
-			field:       requestURI,
+			field:       fieldIndexRequestURI,
 			value:       "GET",
 			expectedErr: "has no path",
 		},
 		"missing_scheme_request_uri": {
-			field:       requestURI,
+			field:       fieldIndexRequestURI,
 			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar",
 			expectedErr: "has no scheme",
 		},
 		"unexpected_format_request_uri": {
-			field:       requestURI,
+			field:       fieldIndexRequestURI,
 			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/1.1 unexpected",
 			expectedErr: "does not have expected format",
 		},
 		"valid_method_request_uri": {
-			field: requestURI,
+			field: fieldIndexRequestURI,
 			value: "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/1.1",
 		},
 	}
@@ -114,40 +112,35 @@ func TestGetFullValue(t *testing.T) {
 	t.Parallel()
 
 	tests := map[string]struct {
-		value             string
-		remaining         string
+		logLine           string
 		expectedValue     string
 		expectedRemaining string
 		expectsErr        bool
 	}{
 		"no_quotes": {
-			value:             "-",
-			remaining:         "two more",
-			expectedValue:     "-",
-			expectedRemaining: "two more",
+			logLine:           "one two three",
+			expectedValue:     "one",
+			expectedRemaining: "two three",
 		},
 		"quotes_value_with_no_space": {
-			value:             `"-"`,
-			remaining:         "two more",
-			expectedValue:     "-",
-			expectedRemaining: "two more",
+			logLine:           `"one" two three`,
+			expectedValue:     "one",
+			expectedRemaining: "two three",
 		},
 		"quotes_value_with_spaces": {
-			value:             `"one`,
-			remaining:         `space" test`,
-			expectedValue:     "one space",
-			expectedRemaining: "test",
+			logLine:           `"one two" three`,
+			expectedValue:     "one two",
+			expectedRemaining: "three",
 		},
 		"no_end_quote": {
-			value:      `"one `,
-			remaining:  "space",
+			logLine:    `"one `,
 			expectsErr: true,
 		},
 	}
 
 	for name, test := range tests {
 		t.Run(name, func(t *testing.T) {
-			value, remaining, err := getFullValue(test.value, test.remaining)
+			value, remaining, err := scanField(test.logLine)
 			if test.expectsErr {
 				require.Error(t, err)
 				return
