@@ -292,7 +292,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 }
 
 func createComponentWithID(id string) component.ID {
-	return component.MustNewID("foo")
+	return component.MustNewID(id)
 }
 
 func getUpdatedPod(pod *corev1.Pod) any {
