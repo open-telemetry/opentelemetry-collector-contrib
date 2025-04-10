@@ -57,15 +57,22 @@ func (h ecsDataPointHasher) hashDataPoint(_ datapoints.DataPoint) uint32 {
 }
 
 func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
-	hasher := fnv.New32a()
+	merged := pcommon.NewMap()
+	merged.EnsureCapacity(resource.Attributes().Len() + dp.Attributes().Len())
+	resource.Attributes().CopyTo(merged)
+	// scope attributes are ignored in ECS mode
+	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+		merged.PutEmpty(k).FromRaw(v.AsRaw())
+		return true
+	})
 
-	mapHashExcludeReservedAttrs(hasher, resource.Attributes())
+	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeReservedAttrs(hasher, dp.Attributes())
+	mapHashExcludeReservedAttrs(hasher, merged)
 
 	return hasher.Sum32()
 }
