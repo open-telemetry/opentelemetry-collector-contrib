@@ -213,10 +213,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
 		for j := 0; j < scopeMetrics.Len(); j++ {
-			scopeMetrics := scopeMetrics.At(j)
-			scope := scopeMetrics.Scope()
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
-				metric := scopeMetrics.Metrics().At(k)
+			scopeMetric := scopeMetrics.At(j)
+			scope := scopeMetric.Scope()
+			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
+				metric := scopeMetric.Metrics().At(k)
 
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
 					index, err := router.routeDataPoint(resource, scope, dp.Attributes())
@@ -235,7 +235,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 							resource:          resource,
 							resourceSchemaURL: resourceMetric.SchemaUrl(),
 							scope:             scope,
-							scopeSchemaURL:    scopeMetrics.SchemaUrl(),
+							scopeSchemaURL:    scopeMetric.SchemaUrl(),
 							dataPoints:        []datapoints.DataPoint{dp},
 						}
 					} else {
