@@ -1103,7 +1103,7 @@ func unmarshallSearchReq(res *http.Response, sr *searchResponse) error {
 
 // Scrape index throughput introspection endpoint
 func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkIndexerThroughput.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1144,7 +1144,7 @@ func (s *splunkScraper) scrapeIndexThroughput(_ context.Context, now pcommon.Tim
 
 // Scrape indexes extended total size
 func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedTotalSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1197,7 +1197,7 @@ func (s *splunkScraper) scrapeIndexesTotalSize(_ context.Context, now pcommon.Ti
 
 // Scrape indexes extended total event count
 func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1244,7 +1244,7 @@ func (s *splunkScraper) scrapeIndexesEventCount(_ context.Context, now pcommon.T
 
 // Scrape indexes extended total bucket count
 func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1297,7 +1297,7 @@ func (s *splunkScraper) scrapeIndexesBucketCount(_ context.Context, now pcommon.
 
 // Scrape indexes extended raw size
 func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedRawSize.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1350,7 +1350,7 @@ func (s *splunkScraper) scrapeIndexesRawSize(_ context.Context, now pcommon.Time
 
 // Scrape indexes extended bucket event count
 func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketEventCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1420,7 +1420,7 @@ func (s *splunkScraper) scrapeIndexesBucketEventCount(_ context.Context, now pco
 
 // Scrape indexes extended bucket hot/warm count
 func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkDataIndexesExtendedBucketHotCount.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1483,7 +1483,7 @@ func (s *splunkScraper) scrapeIndexesBucketHotWarmCount(_ context.Context, now p
 
 // Scrape introspection queues
 func (s *splunkScraper) scrapeIntrospectionQueues(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkServerIntrospectionQueuesCurrent.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1531,7 +1531,7 @@ func (s *splunkScraper) scrapeIntrospectionQueues(_ context.Context, now pcommon
 
 // Scrape introspection queues bytes
 func (s *splunkScraper) scrapeIntrospectionQueuesBytes(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
+	if !s.conf.Metrics.SplunkServerIntrospectionQueuesCurrentBytes.Enabled || !s.splunkClient.isConfigured(typeIdx) {
 		return
 	}
 	i := info[typeIdx].Entries[0].Content
@@ -1578,9 +1578,9 @@ func (s *splunkScraper) scrapeIntrospectionQueuesBytes(_ context.Context, now pc
 
 // Scrape introspection kv store status
 func (s *splunkScraper) scrapeKVStoreStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreStatus.Enabled ||
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkKvstoreBackupStatus.Enabled ||
+	if !s.conf.Metrics.SplunkKvstoreStatus.Enabled ||
+		!s.conf.Metrics.SplunkKvstoreReplicationStatus.Enabled ||
+		!s.conf.Metrics.SplunkKvstoreBackupStatus.Enabled ||
 		!s.splunkClient.isConfigured(typeCm) {
 		return
 	}
@@ -1756,7 +1756,7 @@ func (s *splunkScraper) scrapeSearchArtifacts(_ context.Context, now pcommon.Tim
 
 // Scrape Health Introspection Endpoint
 func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkHealth.Enabled {
+	if !s.conf.Metrics.SplunkHealth.Enabled {
 		return
 	}
 	i := info[typeCm].Entries[0].Content

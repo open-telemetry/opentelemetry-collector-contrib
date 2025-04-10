@@ -46,6 +46,13 @@ exporters:
     application_name: "MyBusinessEnvironment"
     subsystem_name: "MyBusinessSystem"
 
+    # (Optional) Configure the sending queue for batching capabilities
+    sending_queue:
+      sizer: bytes
+      batch:
+        min_size: 4194304 
+        max_size: 8388608
+
     # (Optional) Timeout is the timeout for every attempt to send data to the backend.
     timeout: 30s
 ```
