@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/remotetapextension
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0

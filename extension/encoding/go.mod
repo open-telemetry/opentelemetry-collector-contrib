@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
 
-go 1.23.8
+go 1.23.0
 
 require (
 	go.opentelemetry.io/collector/extension v1.29.1-0.20250402200755-cb5c3f4fb9dc

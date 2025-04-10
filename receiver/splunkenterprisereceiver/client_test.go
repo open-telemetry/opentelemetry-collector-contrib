@@ -126,11 +126,9 @@ func TestClientCreateRequest(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			req, err := test.client.createRequest(ctx, test.sr)
+			req, err := test.client.createRequest(typeIdx, test.sr)
 			require.NoError(t, err)
 			// have to test specific parts since individual fields are pointers
 			require.Equal(t, test.expected.URL, req.URL)
@@ -165,9 +163,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	req, err := client.createAPIRequest(ctx, "/test/endpoint")
+	req, err := client.createAPIRequest(typeIdx, "/test/endpoint")
 	require.NoError(t, err)
 
 	// build the expected request
