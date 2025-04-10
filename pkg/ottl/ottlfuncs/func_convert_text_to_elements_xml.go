@@ -75,10 +75,11 @@ func convertTextToElementsForNode(parent *xmlquery.Node, elementName string) {
 	// Convert any child nodes and count text and element nodes.
 	var valueCount, elementCount int
 	for child := parent.FirstChild; child != nil; child = child.NextSibling {
-		if child.Type == xmlquery.ElementNode {
+		switch child.Type {
+		case xmlquery.ElementNode:
 			convertTextToElementsForNode(child, elementName)
 			elementCount++
-		} else if child.Type == xmlquery.TextNode {
+		case xmlquery.TextNode:
 			valueCount++
 		}
 	}

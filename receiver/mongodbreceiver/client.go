@@ -89,7 +89,7 @@ func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string
 // IndexStats returns the index stats per collection for a given database
 // more information can be found here: https://www.mongodb.com/docs/manual/reference/operator/aggregation/indexStats/
 func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName string) ([]bson.M, error) {
-	db := c.Client.Database(database)
+	db := c.Database(database)
 	collection := db.Collection(collectionName)
 	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{primitive.E{Key: "$indexStats", Value: bson.M{}}}})
 	if err != nil {

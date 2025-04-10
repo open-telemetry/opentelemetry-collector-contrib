@@ -6,6 +6,7 @@ status:
     development: [metrics]
   distributions: []
   codeowners:
-    active: [Hemansh31, atoulme]
+    active: [atoulme]
+    emeritus: [Hemansh31]
 
 tests:

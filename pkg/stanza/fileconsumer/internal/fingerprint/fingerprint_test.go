@@ -41,7 +41,7 @@ func TestNewDoesNotModifyOffset(t *testing.T) {
 	require.NoError(t, err)
 
 	// Validate the fingerprint is the correct size
-	require.Equal(t, len(fingerprint), len(fp.firstBytes))
+	require.Len(t, fp.firstBytes, len(fingerprint))
 
 	// Validate that reading the fingerprint did not adjust the
 	// file descriptor's internal offset (as using Seek does)
