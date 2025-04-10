@@ -19,15 +19,18 @@ provided regex. If any change in available topics matching the regex is detected
 
 The following settings are required:
 
-- `protocol_version` (no default): Kafka protocol version e.g. 2.0.0
+- `topic_regex` regex pattern of the topic name to subscribe to.
 
 The following settings can be optionally configured:
 
 - `brokers` (default = localhost:9092): The list of kafka brokers
 - `resolve_canonical_bootstrap_servers_only` (default = false): Whether to resolve then reverse-lookup broker IPs during startup
-- `topic_regex` regex pattern of the topic name to subscribe to.
+- `protocol_version` (default = 2.1.0): Kafka protocol version e.g. 2.0.0
+- `client_id` (default = "otel-collector"): The client ID to configure the Kafka client with.
+- `topics_sync_interval` (default 5s)
+- `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
-    - `plain_text`
+    - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
         - `username`: The username to use.
         - `password`: The password to use
     - `sasl`
@@ -36,17 +39,7 @@ The following settings can be optionally configured:
         - `mechanism`: The sasl mechanism to use (SCRAM-SHA-256, SCRAM-SHA-512, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER or PLAIN)
         - `aws_msk.region`: AWS Region in case of AWS_MSK_IAM or AWS_MSK_IAM_OAUTHBEARER mechanism
         - `aws_msk.broker_addr`: MSK Broker address in case of AWS_MSK_IAM mechanism
-    - `tls`
-        - `ca_file`: path to the CA cert. For a client this verifies the server certificate. Should
-          only be used if `insecure` is set to false.
-        - `cert_file`: path to the TLS cert to use for TLS required connections. Should
-          only be used if `insecure` is set to false.
-        - `key_file`: path to the TLS key to use for TLS required connections. Should
-          only be used if `insecure` is set to false.
-        - `insecure` (default = false): Disable verifying the server's certificate
-          chain and host name (`InsecureSkipVerify` in the tls config)
-        - `server_name_override`: ServerName indicates the name of the server requested by the client
-          in order to support virtual hosting.
+    - `tls` (Deprecated in v0.124.0: configure tls at the top level): this is an alias for tls at the top level.
     - `kerberos`
         - `service_name`: Kerberos service name
         - `realm`: Kerberos realm
@@ -56,3 +49,8 @@ The following settings can be optionally configured:
         - `config_file`: Path to Kerberos configuration. i.e /etc/krb5.conf
         - `keytab_file`: Path to keytab file. i.e /etc/security/kafka.keytab
         - `disable_fast_negotiation`: Disable PA-FX-FAST negotiation (Pre-Authentication Framework - Fast). Some common Kerberos implementations do not support PA-FX-FAST negotiation. This is set to `false` by default.
+- `metadata`
+  - `full` (default = true): Whether to maintain a full set of metadata. When disabled, the client does not make the initial request to broker at the startup.
+  - `retry`
+    - `max` (default = 3): The number of retries to get metadata
+    - `backoff` (default = 250ms): How long to wait between metadata retries

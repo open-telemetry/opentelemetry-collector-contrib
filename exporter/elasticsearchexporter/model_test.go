@@ -145,7 +145,7 @@ func TestEncodeMetric(t *testing.T) {
 			},
 			dataPoints, &errors, elasticsearch.Index{}, &buf,
 		)
-		require.Empty(t, errors, err)
+		require.Empty(t, errors, "%+v", err)
 		require.NoError(t, err)
 		docsBytes = append(docsBytes, buf.Bytes())
 	}
@@ -1255,7 +1255,7 @@ func TestEncodeLogOtelMode(t *testing.T) {
 
 	for _, tc := range tests {
 		record, scope, resource := createTestOTelLogRecord(t, tc.rec)
-		router := newDocumentRouter(MappingOTel, true, "", &Config{})
+		router := newDocumentRouter(MappingOTel, "", &Config{})
 
 		idx, err := router.routeLogRecord(resource, scope, record.Attributes())
 		require.NoError(t, err)

@@ -34,7 +34,7 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces,
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans, ottlresource.WithCache(cache))
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -52,7 +52,7 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics, ottlresource.WithCache(cache))
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -70,7 +70,7 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs, ottlresource.WithCache(cache))
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
 		}
@@ -101,7 +101,7 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, ca
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
 			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans, ottlscope.WithCache(cache))
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -122,7 +122,7 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics,
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics, ottlscope.WithCache(cache))
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -143,7 +143,7 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *p
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs, ottlscope.WithCache(cache))
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
 			}
@@ -175,12 +175,12 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext[ottlresource.TransformContext, R](ottlresource.ContextName, &rp, parseResourceContextStatements)(pc)
+		err = ottl.WithParserCollectionContext(ottlresource.ContextName, &rp, ottl.WithStatementConverter[ottlresource.TransformContext, R](parseResourceContextStatements))(pc)
 		if err != nil {
 			return err
 		}
 
-		err = ottl.WithParserCollectionContext[ottlscope.TransformContext, R](ottlscope.ContextName, &sp, parseScopeContextStatements)(pc)
+		err = ottl.WithParserCollectionContext(ottlscope.ContextName, &sp, ottl.WithStatementConverter[ottlscope.TransformContext, R](parseScopeContextStatements))(pc)
 		if err != nil {
 			return err
 		}
@@ -191,8 +191,6 @@ func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
 
 func parseResourceContextStatements[R any](
 	pc *ottl.ParserCollection[R],
-	_ *ottl.Parser[ottlresource.TransformContext],
-	_ string,
 	statements ottl.StatementsGetter,
 	parsedStatements []*ottl.Statement[ottlresource.TransformContext],
 ) (R, error) {
@@ -219,8 +217,6 @@ func parseResourceContextStatements[R any](
 
 func parseScopeContextStatements[R any](
 	pc *ottl.ParserCollection[R],
-	_ *ottl.Parser[ottlscope.TransformContext],
-	_ string,
 	statements ottl.StatementsGetter,
 	parsedStatements []*ottl.Statement[ottlscope.TransformContext],
 ) (R, error) {

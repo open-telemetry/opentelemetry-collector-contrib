@@ -56,7 +56,7 @@ func assertItemRequests(t *testing.T, expected, actual []itemRequest, assertOrde
 		slices.SortFunc(actualItems, itemRequestsSortFunc)
 	}
 
-	require.Equal(t, len(expectedItems), len(actualItems), "want %d items, got %d", len(expectedItems), len(actualItems))
+	require.Len(t, actualItems, len(expectedItems), "want %d items, got %d", len(expectedItems), len(actualItems))
 	for i, want := range expectedItems {
 		got := actualItems[i]
 		assert.JSONEq(t, string(want.Action), string(got.Action), "item %d action", i)
@@ -329,6 +329,7 @@ func fillAttributeMap(attrs pcommon.Map, m map[string]any) {
 func TestGetSuffixTime(t *testing.T) {
 	defaultCfg := createDefaultConfig().(*Config)
 	defaultCfg.LogstashFormat.Enabled = true
+	defaultCfg.LogsIndex = "logs-generic-default"
 	testTime := time.Date(2023, 12, 2, 10, 10, 10, 1, time.UTC)
 	index, err := generateIndexWithLogstashFormat(defaultCfg.LogsIndex, &defaultCfg.LogstashFormat, testTime)
 	assert.NoError(t, err)

@@ -1018,6 +1018,200 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 	"external":          AttributeWriteLockTypeExternal,
 }
 
+var MetricsInfo = metricsInfo{
+	MysqlBufferPoolDataPages: metricInfo{
+		Name: "mysql.buffer_pool.data_pages",
+	},
+	MysqlBufferPoolLimit: metricInfo{
+		Name: "mysql.buffer_pool.limit",
+	},
+	MysqlBufferPoolOperations: metricInfo{
+		Name: "mysql.buffer_pool.operations",
+	},
+	MysqlBufferPoolPageFlushes: metricInfo{
+		Name: "mysql.buffer_pool.page_flushes",
+	},
+	MysqlBufferPoolPages: metricInfo{
+		Name: "mysql.buffer_pool.pages",
+	},
+	MysqlBufferPoolUsage: metricInfo{
+		Name: "mysql.buffer_pool.usage",
+	},
+	MysqlClientNetworkIo: metricInfo{
+		Name: "mysql.client.network.io",
+	},
+	MysqlCommands: metricInfo{
+		Name: "mysql.commands",
+	},
+	MysqlConnectionCount: metricInfo{
+		Name: "mysql.connection.count",
+	},
+	MysqlConnectionErrors: metricInfo{
+		Name: "mysql.connection.errors",
+	},
+	MysqlDoubleWrites: metricInfo{
+		Name: "mysql.double_writes",
+	},
+	MysqlHandlers: metricInfo{
+		Name: "mysql.handlers",
+	},
+	MysqlIndexIoWaitCount: metricInfo{
+		Name: "mysql.index.io.wait.count",
+	},
+	MysqlIndexIoWaitTime: metricInfo{
+		Name: "mysql.index.io.wait.time",
+	},
+	MysqlJoins: metricInfo{
+		Name: "mysql.joins",
+	},
+	MysqlLocks: metricInfo{
+		Name: "mysql.locks",
+	},
+	MysqlLogOperations: metricInfo{
+		Name: "mysql.log_operations",
+	},
+	MysqlMysqlxConnections: metricInfo{
+		Name: "mysql.mysqlx_connections",
+	},
+	MysqlMysqlxWorkerThreads: metricInfo{
+		Name: "mysql.mysqlx_worker_threads",
+	},
+	MysqlOpenedResources: metricInfo{
+		Name: "mysql.opened_resources",
+	},
+	MysqlOperations: metricInfo{
+		Name: "mysql.operations",
+	},
+	MysqlPageOperations: metricInfo{
+		Name: "mysql.page_operations",
+	},
+	MysqlPreparedStatements: metricInfo{
+		Name: "mysql.prepared_statements",
+	},
+	MysqlQueryClientCount: metricInfo{
+		Name: "mysql.query.client.count",
+	},
+	MysqlQueryCount: metricInfo{
+		Name: "mysql.query.count",
+	},
+	MysqlQuerySlowCount: metricInfo{
+		Name: "mysql.query.slow.count",
+	},
+	MysqlReplicaSQLDelay: metricInfo{
+		Name: "mysql.replica.sql_delay",
+	},
+	MysqlReplicaTimeBehindSource: metricInfo{
+		Name: "mysql.replica.time_behind_source",
+	},
+	MysqlRowLocks: metricInfo{
+		Name: "mysql.row_locks",
+	},
+	MysqlRowOperations: metricInfo{
+		Name: "mysql.row_operations",
+	},
+	MysqlSorts: metricInfo{
+		Name: "mysql.sorts",
+	},
+	MysqlStatementEventCount: metricInfo{
+		Name: "mysql.statement_event.count",
+	},
+	MysqlStatementEventWaitTime: metricInfo{
+		Name: "mysql.statement_event.wait.time",
+	},
+	MysqlTableAverageRowLength: metricInfo{
+		Name: "mysql.table.average_row_length",
+	},
+	MysqlTableIoWaitCount: metricInfo{
+		Name: "mysql.table.io.wait.count",
+	},
+	MysqlTableIoWaitTime: metricInfo{
+		Name: "mysql.table.io.wait.time",
+	},
+	MysqlTableLockWaitReadCount: metricInfo{
+		Name: "mysql.table.lock_wait.read.count",
+	},
+	MysqlTableLockWaitReadTime: metricInfo{
+		Name: "mysql.table.lock_wait.read.time",
+	},
+	MysqlTableLockWaitWriteCount: metricInfo{
+		Name: "mysql.table.lock_wait.write.count",
+	},
+	MysqlTableLockWaitWriteTime: metricInfo{
+		Name: "mysql.table.lock_wait.write.time",
+	},
+	MysqlTableRows: metricInfo{
+		Name: "mysql.table.rows",
+	},
+	MysqlTableSize: metricInfo{
+		Name: "mysql.table.size",
+	},
+	MysqlTableOpenCache: metricInfo{
+		Name: "mysql.table_open_cache",
+	},
+	MysqlThreads: metricInfo{
+		Name: "mysql.threads",
+	},
+	MysqlTmpResources: metricInfo{
+		Name: "mysql.tmp_resources",
+	},
+	MysqlUptime: metricInfo{
+		Name: "mysql.uptime",
+	},
+}
+
+type metricsInfo struct {
+	MysqlBufferPoolDataPages     metricInfo
+	MysqlBufferPoolLimit         metricInfo
+	MysqlBufferPoolOperations    metricInfo
+	MysqlBufferPoolPageFlushes   metricInfo
+	MysqlBufferPoolPages         metricInfo
+	MysqlBufferPoolUsage         metricInfo
+	MysqlClientNetworkIo         metricInfo
+	MysqlCommands                metricInfo
+	MysqlConnectionCount         metricInfo
+	MysqlConnectionErrors        metricInfo
+	MysqlDoubleWrites            metricInfo
+	MysqlHandlers                metricInfo
+	MysqlIndexIoWaitCount        metricInfo
+	MysqlIndexIoWaitTime         metricInfo
+	MysqlJoins                   metricInfo
+	MysqlLocks                   metricInfo
+	MysqlLogOperations           metricInfo
+	MysqlMysqlxConnections       metricInfo
+	MysqlMysqlxWorkerThreads     metricInfo
+	MysqlOpenedResources         metricInfo
+	MysqlOperations              metricInfo
+	MysqlPageOperations          metricInfo
+	MysqlPreparedStatements      metricInfo
+	MysqlQueryClientCount        metricInfo
+	MysqlQueryCount              metricInfo
+	MysqlQuerySlowCount          metricInfo
+	MysqlReplicaSQLDelay         metricInfo
+	MysqlReplicaTimeBehindSource metricInfo
+	MysqlRowLocks                metricInfo
+	MysqlRowOperations           metricInfo
+	MysqlSorts                   metricInfo
+	MysqlStatementEventCount     metricInfo
+	MysqlStatementEventWaitTime  metricInfo
+	MysqlTableAverageRowLength   metricInfo
+	MysqlTableIoWaitCount        metricInfo
+	MysqlTableIoWaitTime         metricInfo
+	MysqlTableLockWaitReadCount  metricInfo
+	MysqlTableLockWaitReadTime   metricInfo
+	MysqlTableLockWaitWriteCount metricInfo
+	MysqlTableLockWaitWriteTime  metricInfo
+	MysqlTableRows               metricInfo
+	MysqlTableSize               metricInfo
+	MysqlTableOpenCache          metricInfo
+	MysqlThreads                 metricInfo
+	MysqlTmpResources            metricInfo
+	MysqlUptime                  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

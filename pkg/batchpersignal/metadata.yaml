@@ -2,3 +2,4 @@ status:
   class: pkg
   codeowners:
     active: [jpkrohling]
+    seeking_new: true

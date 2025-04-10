@@ -131,7 +131,7 @@ func translateDockerResourceAttributes(attributes pcommon.Map) {
 	result := pcommon.NewMap()
 	result.EnsureCapacity(attributes.Len())
 
-	attributes.Range(func(otKey string, value pcommon.Value) bool {
+	for otKey, value := range attributes.All() {
 		if sumoKey, ok := dockerResourceAttributeTranslations[otKey]; ok {
 			// Only insert if it doesn't exist yet to prevent overwriting.
 			// We have to do it this way since the final return value is not
@@ -150,8 +150,7 @@ func translateDockerResourceAttributes(attributes pcommon.Map) {
 				value.CopyTo(result.PutEmpty(otKey))
 			}
 		}
-		return true
-	})
+	}
 
 	result.CopyTo(attributes)
 }

@@ -65,7 +65,7 @@ func TestFilterDimensions(t *testing.T) {
 				},
 				cfg: DimensionsConfig{
 					Enabled: to.Ptr(true),
-					Overrides: map[string]map[string][]string{
+					Overrides: NestedListAlias{
 						"rt1": {
 							"m1": {
 								"foo",
@@ -117,7 +117,7 @@ func TestBuildDimensionsFilter(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := buildDimensionsFilter(tt.args.dimensionsStr)
-			require.EqualValues(t, tt.expected, actual)
+			require.Equal(t, tt.expected, actual)
 		})
 	}
 }
@@ -165,7 +165,7 @@ func TestSerializeDimensions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			actual := serializeDimensions(tt.args.dimensions)
-			require.EqualValues(t, tt.expected, actual)
+			require.Equal(t, tt.expected, actual)
 		})
 	}
 }

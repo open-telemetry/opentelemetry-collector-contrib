@@ -66,7 +66,7 @@ type Event struct {
 
 // IsMetric returns true if the Splunk event is a metric.
 func (e *Event) IsMetric() bool {
-	return e.Event == HecEventMetricType || (e.Event == nil && len(e.GetMetricValues()) > 0)
+	return e.Event == HecEventMetricType || len(e.GetMetricValues()) > 0
 }
 
 // checks if the field name matches the requirements for a metric datapoint field,

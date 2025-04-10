@@ -1,4 +1,8 @@
 cmd/checkapi
+cmd/checkapi/internal/altpkg/receiver/altreceiver
+cmd/checkapi/internal/altpkg/receiver/badreceiver
+cmd/checkapi/internal/badpkg/receiver/badreceiver
+cmd/checkapi/internal/testpkg/receiver/validreceiver
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
@@ -104,6 +108,8 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+pkg/translator/faro
+exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
 exporter/fileexporter
@@ -144,11 +150,13 @@ exporter/tencentcloudlogserviceexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
+extension/azureauthextension
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
+extension/encoding/awslogsencodingextension
 extension/encoding/googlecloudlogentryencodingextension
 extension/encoding/jaegerencodingextension
 extension/encoding/jsonlogencodingextension
@@ -182,6 +190,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -258,6 +267,7 @@ receiver/jmxreceiver
 receiver/journaldreceiver
 receiver/k8sclusterreceiver
 receiver/k8seventsreceiver
+receiver/k8slogreceiver
 receiver/k8sobjectsreceiver
 receiver/kafkametricsreceiver
 receiver/kafkareceiver
@@ -299,6 +309,7 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
+receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver
