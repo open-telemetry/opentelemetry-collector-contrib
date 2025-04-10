@@ -1663,7 +1663,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 
 				addMetric := func(slice pmetric.MetricSlice, name string, attributes []kv) {
 					metric := slice.AppendEmpty()
-					metric.SetName("foo")
+					metric.SetName(name)
 					dp := metric.SetEmptySum().DataPoints().AppendEmpty()
 					dp.SetDoubleValue(1)
 					for _, kv := range attributes {
@@ -1710,6 +1710,11 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 
 				rec.WaitItems(1)
 				assert.Equal(t, 1, len(rec.Items()))
+				// Sanity check that all metrics are included
+				assert.Contains(t, string(rec.Items()[0].Document), "a_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "a_bar")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_bar")
 			})
 		}
 	})
