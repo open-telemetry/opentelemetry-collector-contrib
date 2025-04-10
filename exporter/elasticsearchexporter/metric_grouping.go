@@ -39,7 +39,7 @@ func newDataPointHasher(mode MappingMode) dataPointHasher {
 // TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
 
 type (
-	// ecsDataPointHasher solely relies on hashCombined because attributes at resource and data point may overwrite one another.
+	// ecsDataPointHasher solely relies on hashCombined because data point attributes overwrite resource attributes on merge.
 	ecsDataPointHasher struct{}
 	// otelDataPointHasher does not use hashCombined as resource, scope and data points are independent.
 	otelDataPointHasher struct{}
