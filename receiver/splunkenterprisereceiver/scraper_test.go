@@ -113,6 +113,7 @@ func createConfig(ts *httptest.Server, badConfig bool) *Config {
 			Timeout:            11 * time.Second,
 		},
 		MetricsBuilderConfig: metricsettings,
+		VersionInfo:          false,
 	}
 }
 
