@@ -61,10 +61,9 @@ func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.In
 	merged.EnsureCapacity(resource.Attributes().Len() + dp.Attributes().Len())
 	resource.Attributes().CopyTo(merged)
 	// scope attributes are ignored in ECS mode
-	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range dp.Attributes().All() {
 		merged.PutEmpty(k).FromRaw(v.AsRaw())
-		return true
-	})
+	}
 
 	hasher := fnv.New32a()
 
