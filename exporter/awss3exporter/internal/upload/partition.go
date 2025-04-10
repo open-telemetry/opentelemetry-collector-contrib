@@ -76,7 +76,6 @@ func (pki *PartitionKeyBuilder) uniqueKey() string {
         return pki.UniqueKeyFunc()
     }
 
-    // This follows the original "uniqueness" algorithm
 	// to avoid collisions on file uploads across different nodes.
     const (
         letters = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
