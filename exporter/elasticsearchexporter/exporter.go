@@ -171,7 +171,10 @@ func (e *elasticsearchExporter) pushLogRecord(
 }
 
 type dataPointGroupKey struct {
-	hash uint32
+	resourceHash uint32
+	scopeHash    uint32
+	dpHash       uint32
+	combinedHash uint32
 }
 type dataPointsGroup struct {
 	resource          pcommon.Resource
@@ -214,11 +217,13 @@ func (e *elasticsearchExporter) pushMetricsData(
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
+		resourceHash := hasher.hashResource(resource)
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
 		for j := 0; j < scopeMetrics.Len(); j++ {
 			scopeMetric := scopeMetrics.At(j)
 			scope := scopeMetric.Scope()
+			scopeHash := hasher.hashScope(scope)
 			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
 				metric := scopeMetric.Metrics().At(k)
 
@@ -233,7 +238,10 @@ func (e *elasticsearchExporter) pushMetricsData(
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
 					key := dataPointGroupKey{
-						hash: hasher.hashDataPoint(resource, scope, dp),
+						resourceHash: resourceHash,
+						scopeHash:    scopeHash,
+						dpHash:       hasher.hashDataPoint(dp),
+						combinedHash: hasher.hashCombined(resource, scope, dp),
 					}
 
 					if dpGroup, ok := groupedDataPoints[key]; !ok {

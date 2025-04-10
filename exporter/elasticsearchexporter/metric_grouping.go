@@ -19,7 +19,10 @@ import (
 // dataPointHasher is an interface for hashing data points by their identity,
 // for grouping into a single document.
 type dataPointHasher interface {
-	hashDataPoint(pcommon.Resource, pcommon.InstrumentationScope, datapoints.DataPoint) uint32
+	hashResource(pcommon.Resource) uint32
+	hashScope(pcommon.InstrumentationScope) uint32
+	hashDataPoint(datapoints.DataPoint) uint32
+	hashCombined(pcommon.Resource, pcommon.InstrumentationScope, datapoints.DataPoint) uint32
 }
 
 func newDataPointHasher(mode MappingMode) dataPointHasher {
@@ -35,11 +38,25 @@ func newDataPointHasher(mode MappingMode) dataPointHasher {
 // TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
 
 type (
-	ecsDataPointHasher  struct{}
+	// ecsDataPointHasher solely relies on hashCombined because attributes at resource and data point may overwrite one another.
+	ecsDataPointHasher struct{}
+	// otelDataPointHasher does not use hashCombined as resource, scope and data points are independent.
 	otelDataPointHasher struct{}
 )
 
-func (h ecsDataPointHasher) hashDataPoint(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
+func (h ecsDataPointHasher) hashResource(_ pcommon.Resource) uint32 {
+	return 0
+}
+
+func (h ecsDataPointHasher) hashScope(_ pcommon.InstrumentationScope) uint32 {
+	return 0
+}
+
+func (h ecsDataPointHasher) hashDataPoint(_ datapoints.DataPoint) uint32 {
+	return 0
+}
+
+func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
 	hasher := fnv.New32a()
 
 	mapHashExcludeReservedAttrs(hasher, resource.Attributes())
@@ -53,12 +70,21 @@ func (h ecsDataPointHasher) hashDataPoint(resource pcommon.Resource, _ pcommon.I
 	return hasher.Sum32()
 }
 
-func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
+func (h otelDataPointHasher) hashResource(resource pcommon.Resource) uint32 {
 	hasher := fnv.New32a()
-
 	mapHashExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	return hasher.Sum32()
+}
+
+func (h otelDataPointHasher) hashScope(scope pcommon.InstrumentationScope) uint32 {
+	hasher := fnv.New32a()
 	hasher.Write([]byte(scope.Name()))
 	mapHashExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
+	return hasher.Sum32()
+}
+
+func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
+	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
@@ -72,6 +98,10 @@ func (h otelDataPointHasher) hashDataPoint(resource pcommon.Resource, scope pcom
 	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	return hasher.Sum32()
+}
+
+func (h otelDataPointHasher) hashCombined(_ pcommon.Resource, _ pcommon.InstrumentationScope, _ datapoints.DataPoint) uint32 {
+	return 0
 }
 
 // mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
