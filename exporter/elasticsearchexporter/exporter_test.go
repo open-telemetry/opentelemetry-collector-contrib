@@ -1569,6 +1569,21 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
 	}
 
+	type kv struct {
+		k, v string
+	}
+
+	// addMetric adds a new metric with name `name` and data point attributes `dpAttrs` to MetricSlice `slice`.
+	addMetric := func(slice pmetric.MetricSlice, name string, dpAttrs []kv) {
+		metric := slice.AppendEmpty()
+		metric.SetName(name)
+		dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		for _, kv := range dpAttrs {
+			dp.Attributes().PutStr(kv.k, kv.v)
+		}
+	}
+
 	t.Run("ecs", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -1608,27 +1623,15 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		scope := resource.ScopeMetrics().AppendEmpty()
 
 		// a=c overwrites a=b in resource attribute
-		scopeMetricFoo := scope.Metrics().AppendEmpty()
-		scopeMetricFoo.SetName("foo")
-		dpFoo := scopeMetricFoo.SetEmptySum().DataPoints().AppendEmpty()
-		dpFoo.SetDoubleValue(1)
-		dpFoo.Attributes().PutStr("a", "c")
+		addMetric(scope.Metrics(), "foo", []kv{{k: "a", v: "c"}})
 
 		// no attribute, should still serialize as a=b
-		scopeMetricBar := scope.Metrics().AppendEmpty()
-		scopeMetricBar.SetName("bar")
-		dpBar := scopeMetricBar.SetEmptySum().DataPoints().AppendEmpty()
-		dpBar.SetDoubleValue(2)
+		addMetric(scope.Metrics(), "bar", nil)
 
 		// a=b overwrites a=b in resource attribute
-		scopeMetricBaz := scope.Metrics().AppendEmpty()
-		scopeMetricBaz.SetName("baz")
-		dpBaz := scopeMetricBaz.SetEmptySum().DataPoints().AppendEmpty()
-		dpBaz.SetDoubleValue(3)
-		dpBaz.Attributes().PutStr("a", "b")
+		addMetric(scope.Metrics(), "baz", []kv{{k: "a", v: "b"}})
 
 		mustSendMetrics(t, exporter, metrics)
-
 		expected := []itemRequest{
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
@@ -1656,20 +1659,6 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
 					cfg.Mapping.Mode = mode
 				})
-
-				type kv struct {
-					k, v string
-				}
-
-				addMetric := func(slice pmetric.MetricSlice, name string, attributes []kv) {
-					metric := slice.AppendEmpty()
-					metric.SetName(name)
-					dp := metric.SetEmptySum().DataPoints().AppendEmpty()
-					dp.SetDoubleValue(1)
-					for _, kv := range attributes {
-						dp.Attributes().PutStr(kv.k, kv.v)
-					}
-				}
 
 				metrics := pmetric.NewMetrics()
 				resourceA := metrics.ResourceMetrics().AppendEmpty()
