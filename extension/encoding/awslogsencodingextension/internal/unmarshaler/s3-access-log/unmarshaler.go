@@ -138,7 +138,7 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 
 		value, remaining, err = scanField(remaining)
 		if err != nil {
-			if err == io.EOF {
+			if errors.Is(err, io.EOF) {
 				break
 			}
 			return err
