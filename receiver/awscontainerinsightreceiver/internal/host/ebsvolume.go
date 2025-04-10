@@ -14,17 +14,16 @@ import (
 	"sync"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.uber.org/zap"
 )
 
 var ebsMountPointRegex = regexp.MustCompile(`kubernetes\.io/aws-ebs/mounts/aws/(.+)/(vol-\w+)$`)
 
 type ebsVolumeClient interface {
-	DescribeVolumesWithContext(context.Context, *ec2.DescribeVolumesInput, ...request.Option) (*ec2.DescribeVolumesOutput, error)
+	DescribeVolumes(ctx context.Context, params *ec2.DescribeVolumesInput, optFns ...func(*ec2.Options)) (*ec2.DescribeVolumesOutput, error)
 }
 
 type ebsVolumeProvider interface {
@@ -52,13 +51,15 @@ type ebsVolume struct {
 
 type ebsVolumeOption func(*ebsVolume)
 
-func newEBSVolume(ctx context.Context, session *session.Session, instanceID string, region string,
+func newEBSVolume(ctx context.Context, cfg aws.Config, instanceID string, region string,
 	refreshInterval time.Duration, logger *zap.Logger, options ...ebsVolumeOption,
 ) ebsVolumeProvider {
+	cfg.Region = region
+
 	e := &ebsVolume{
 		dev2Vol:         make(map[string]string),
 		instanceID:      instanceID,
-		client:          ec2.New(session, aws.NewConfig().WithRegion(region)),
+		client:          ec2.NewFromConfig(cfg),
 		refreshInterval: refreshInterval,
 		maxJitterTime:   3 * time.Second,
 		shutdownC:       make(chan bool),
@@ -85,10 +86,10 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	e.logger.Info("Fetch ebs volumes from ec2 api")
 
 	input := &ec2.DescribeVolumesInput{
-		Filters: []*ec2.Filter{
+		Filters: []ec2types.Filter{
 			{
 				Name:   aws.String("attachment.instance-id"),
-				Values: aws.StringSlice([]string{e.instanceID}),
+				Values: []string{e.instanceID},
 			},
 		},
 	}
@@ -96,7 +97,7 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	devPathSet := make(map[string]bool)
 	allSuccess := false
 	for {
-		result, err := e.client.DescribeVolumesWithContext(ctx, input)
+		result, err := e.client.DescribeVolumes(ctx, input)
 		if err != nil {
 			e.logger.Warn("Fail to call ec2 DescribeVolumes", zap.Error(err))
 			break
@@ -111,7 +112,7 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 		if result.NextToken == nil {
 			break
 		}
-		input.SetNextToken(*result.NextToken)
+		input.NextToken = result.NextToken
 	}
 
 	if allSuccess {
@@ -125,7 +126,7 @@ func (e *ebsVolume) refresh(ctx context.Context) {
 	}
 }
 
-func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachment *ec2.VolumeAttachment) string {
+func (e *ebsVolume) addEBSVolumeMapping(zone *string, attachment ec2types.VolumeAttachment) string {
 	// *attachment.Device is sth like: /dev/xvda
 	devPath := e.findNvmeBlockNameIfPresent(*attachment.Device)
 	if devPath == "" {

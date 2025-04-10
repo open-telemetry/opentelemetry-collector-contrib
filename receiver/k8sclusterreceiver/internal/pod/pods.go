@@ -164,6 +164,9 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta = maps.MergeStringMaps(meta, collectPodReplicaSetProperties(pod, store, logger))
 	}
 
+	meta[constants.K8sKeyNamespaceName] = pod.Namespace
+	meta[constants.K8sKeyPodName] = pod.Name
+
 	podID := experimentalmetricmetadata.ResourceID(pod.UID)
 	return metadata.MergeKubernetesMetadataMaps(map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{
 		podID: {
@@ -172,7 +175,7 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 			ResourceID:    podID,
 			Metadata:      meta,
 		},
-	}, getPodContainerProperties(pod))
+	}, getPodContainerProperties(pod, logger))
 }
 
 // collectPodJobProperties checks if pod owner of type Job is cached. Check owners reference
@@ -249,10 +252,10 @@ func getWorkloadProperties(ref *v1.OwnerReference, labelKey string) map[string]s
 	}
 }
 
-func getPodContainerProperties(pod *corev1.Pod) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
+func getPodContainerProperties(pod *corev1.Pod, logger *zap.Logger) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	km := map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata{}
 	for _, cs := range pod.Status.ContainerStatuses {
-		md := container.GetMetadata(cs)
+		md := container.GetMetadata(pod, cs, logger)
 		km[md.ResourceID] = md
 	}
 	return km

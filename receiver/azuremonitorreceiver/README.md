@@ -18,7 +18,8 @@ This receiver scrapes Azure Monitor API for resources metrics.
 
 The following settings are required:
 
-- `subscription_id`
+- `subscription_ids`: list of subscriptions on which the resource's metrics are collected
+- or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
 The following settings are optional:
 
@@ -78,7 +79,7 @@ Using [Service Principal](https://learn.microsoft.com/en-us/azure/developer/go/a
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     tenant_id: "${tenant_id}"
     client_id: "${client_id}"
     client_secret: "${env:CLIENT_SECRET}"
@@ -98,7 +99,7 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
     client_id: "${env:AZURE_CLIENT_ID}"
@@ -110,7 +111,7 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
 ```
@@ -120,7 +121,7 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 ```yaml
 receivers:
   azuremonitor:
-    subscription_id: "${subscription_id}"
+    subscription_ids: ["${subscription_id}"]
     auth: "default_credentials"
 ```
 
@@ -144,3 +145,53 @@ receivers:
 ## Metrics
 
 Details about the metrics scraped by this receiver can be found in [Supported metrics with Azure Monitor](https://learn.microsoft.com/en-us/azure/azure-monitor/essentials/metrics-supported). This receiver adds the prefix "azure_" to all scraped metrics.
+
+## Azure API calls summary
+At each collection interval, here are the different Azure API that can be called.
+It can be useful to know that, in order to configure the client permission in Azure or to choose the 
+right configuration based on your needs.
+
+### [Subscriptions - Get](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/get?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- subscription_ids is set
+- discover_subscriptions is false or not set
+- resource_attributes.subscription.enabled is true
+cardinality: once per sub id
+```
+### [Subscriptions - List](https://learn.microsoft.com/en-us/rest/api/resources/subscriptions/list?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- discover_subscriptions is true
+cardinality: once per *page of sub
+```
+
+### [Resources - List](https://learn.microsoft.com/en-us/rest/api/resources/resources/list?view=rest-resources-2022-12-01&tabs=HTTP)
+```yaml
+conditions:
+- always
+cardinality: once per sub id
+```
+
+### [Metrics Definitions - List](https://learn.microsoft.com/en-us/rest/api/monitor/metric-definitions/list?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions: always
+cardinality: once per res id and *page of metrics def
+```
+
+### [Metrics - List](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions: always
+cardinality: once per res id, *page of metrics, and **composite key
+```
+> *page size has not been clearly identified, reading the documentation. Even Chat Bots lose themselves
+> with the "top"/"$top" filter that doesn't seem related, and give random results from 10 to 1000...
+> 
+> **the composite key is an identifier formed with info retrieved in metric definitions.
+Useful to group and reduce the number of metrics calls.
+It is composed by 
+> - dimensions,
+> - aggregations, 
+> - minimum timegrain.
+> 
+> It is used to get several metrics in one request.

@@ -127,7 +127,7 @@ func TestUnknownSeverity(t *testing.T) {
 	logEntry := rl.ScopeLogs().At(0).LogRecords().At(0)
 
 	assert.Equal(t, plog.SeverityNumberUnspecified, logEntry.SeverityNumber())
-	assert.Equal(t, "", logEntry.SeverityText())
+	assert.Empty(t, logEntry.SeverityText())
 }
 
 func TestMongoEventToAuditLogData5_0(t *testing.T) {

@@ -113,7 +113,8 @@ func (e *CloudType) UnmarshalText(text []byte) error {
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.Authentication == ServicePrincipalAuth {
+	switch c.Authentication {
+	case ServicePrincipalAuth:
 		if c.ServicePrincipal.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
 		}
@@ -129,7 +130,7 @@ func (c Config) Validate() (err error) {
 		if c.StorageAccountURL == "" {
 			err = multierr.Append(err, errMissingStorageAccountURL)
 		}
-	} else if c.Authentication == ConnectionStringAuth {
+	case ConnectionStringAuth:
 		if c.ConnectionString == "" {
 			err = multierr.Append(err, errMissingConnectionString)
 		}

@@ -162,9 +162,10 @@ func (config *Config) Validate() error {
 			return fmt.Errorf("%q must be in %q", operationFieldName, operationTypeKeys())
 		}
 
-		if rule.Name == rule.Metric1 {
+		switch rule.Name {
+		case rule.Metric1:
 			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric1FieldName)
-		} else if rule.Name == rule.Metric2 {
+		case rule.Metric2:
 			return fmt.Errorf("value of field %q may not match value of field %q", nameFieldName, metric2FieldName)
 		}
 	}

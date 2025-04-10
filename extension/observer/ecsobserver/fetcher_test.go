@@ -130,7 +130,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	attached, err := f.attachTaskDefinition(ctx, tasks)
 	stats := c.Stats()
 	require.NoError(t, err)
-	assert.Equal(t, len(tasks), len(attached))
+	assert.Len(t, attached, len(tasks))
 	assert.Equal(t, nTasks, stats.DescribeTaskDefinition.Called)
 
 	// all cached
@@ -140,7 +140,7 @@ func TestFetcher_AttachTaskDefinitions(t *testing.T) {
 	attached, err = f.attachTaskDefinition(ctx, tasks)
 	stats = c.Stats()
 	require.NoError(t, err)
-	assert.Equal(t, len(tasks), len(attached))
+	assert.Len(t, attached, len(tasks))
 	assert.Equal(t, nTasks, stats.DescribeTaskDefinition.Called) // no api call due to cache
 
 	// add a new task
