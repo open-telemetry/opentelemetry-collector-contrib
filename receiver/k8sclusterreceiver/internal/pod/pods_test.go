@@ -253,6 +253,7 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 				kindNameLabel:                    kindObjName,
 				kindUIDLabel:                     kindObjUID,
 				conventions.AttributeK8SNodeName: "test-node",
+				"k8s.pod.name":                   podNameLabel,
 				"k8s.pod.phase":                  "Unknown", // Default value when phase is not set.
 				"k8s.namespace.name":             namespaceLabel,
 			},
