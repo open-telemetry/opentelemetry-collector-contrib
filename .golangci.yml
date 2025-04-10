@@ -198,12 +198,9 @@ linters:
 
     testifylint:
       disable:
-        - empty # FIXME
         - encoded-compare # has false positives that cannot be fixed with testifylint-fix
         - equal-values # FIXME
         - float-compare
-        - formatter # FIXME
-        - len # FIXME
         - require-error
         - suite-subtest-run
         - useless-assert # FIXME when golangci-lint > 2.0.2

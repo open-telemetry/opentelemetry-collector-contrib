@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/extension/googleclientauthextension
 
-go 1.23.8
+go 1.23.0
 
 exclude github.com/knadh/koanf v1.5.0
 

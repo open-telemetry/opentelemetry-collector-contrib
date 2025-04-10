@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/integrationtest
 
-go 1.23.8
+go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.146

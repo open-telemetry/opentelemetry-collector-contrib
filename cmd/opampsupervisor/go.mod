@@ -1,6 +1,6 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
 
-go 1.23.8
+go 1.23.7
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0

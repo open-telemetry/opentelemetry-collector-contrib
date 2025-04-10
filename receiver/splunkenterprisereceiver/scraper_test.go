@@ -110,6 +110,7 @@ func TestScraper(t *testing.T) {
 			Timeout:            11 * time.Second,
 		},
 		MetricsBuilderConfig: metricsettings,
+		VersionInfo:          false,
 	}
 
 	host := &mockHost{
