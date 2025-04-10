@@ -1494,7 +1494,7 @@ func TestDeploymentExtractionRules(t *testing.T) {
 			n, ok := c.GetDeployment(string(deployment.UID))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			assert.Len(t, n.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)
