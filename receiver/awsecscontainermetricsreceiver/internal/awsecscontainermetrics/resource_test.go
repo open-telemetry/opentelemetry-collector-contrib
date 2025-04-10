@@ -29,7 +29,7 @@ func TestContainerResource(t *testing.T) {
 	r := containerResource(cm, zap.NewNop())
 	require.NotNil(t, r)
 	attrMap := r.Attributes()
-	require.EqualValues(t, 9, attrMap.Len())
+	require.Equal(t, 9, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
@@ -66,7 +66,7 @@ func TestContainerResourceForStoppedContainer(t *testing.T) {
 	getExitCodeAd, found := attrMap.Get(attributeContainerExitCode)
 	require.True(t, found)
 	require.EqualValues(t, 2, getExitCodeAd.Int())
-	require.EqualValues(t, 11, attrMap.Len())
+	require.Equal(t, 11, attrMap.Len())
 	expected := map[string]string{
 		conventions.AttributeContainerName:      "container-1",
 		conventions.AttributeContainerID:        "001",
@@ -100,7 +100,7 @@ func TestTaskResource(t *testing.T) {
 	require.NotNil(t, r)
 
 	attrMap := r.Attributes()
-	require.EqualValues(t, 15, attrMap.Len())
+	require.Equal(t, 15, attrMap.Len())
 	expected := map[string]string{
 		attributeECSCluster:                        "cluster-1",
 		conventions.AttributeAWSECSTaskARN:         "arn:aws:ecs:us-west-2:111122223333:task/default/158d1c8083dd49d6b527399fd6414f5c",
@@ -139,7 +139,7 @@ func TestTaskResourceWithClusterARN(t *testing.T) {
 	require.NotNil(t, r)
 
 	attrMap := r.Attributes()
-	require.EqualValues(t, 15, attrMap.Len())
+	require.Equal(t, 15, attrMap.Len())
 
 	expected := map[string]string{
 		attributeECSCluster:                        "main-cluster",
@@ -167,15 +167,15 @@ func verifyAttributeMap(t *testing.T, expected map[string]string, found pcommon.
 		attributeVal, found := found.Get(key)
 		require.True(t, found)
 
-		require.EqualValues(t, val, attributeVal.Str())
+		require.Equal(t, val, attributeVal.Str())
 	}
 }
 
 func TestGetResourceFromARN(t *testing.T) {
 	region, accountID, taskID := getResourceFromARN("arn:aws:ecs:us-west-2:803860917211:task/test200/d22aaa11bf0e4ab19c2c940a1cbabbee")
-	require.EqualValues(t, "us-west-2", region)
-	require.EqualValues(t, "803860917211", accountID)
-	require.EqualValues(t, "d22aaa11bf0e4ab19c2c940a1cbabbee", taskID)
+	require.Equal(t, "us-west-2", region)
+	require.Equal(t, "803860917211", accountID)
+	require.Equal(t, "d22aaa11bf0e4ab19c2c940a1cbabbee", taskID)
 	region, accountID, taskID = getResourceFromARN("")
 	require.LessOrEqual(t, 0, len(region))
 	require.LessOrEqual(t, 0, len(accountID))
@@ -188,10 +188,10 @@ func TestGetResourceFromARN(t *testing.T) {
 
 func TestGetNameFromCluster(t *testing.T) {
 	clusterName := getNameFromCluster("arn:aws:ecs:region:012345678910:cluster/test")
-	require.EqualValues(t, "test", clusterName)
+	require.Equal(t, "test", clusterName)
 
 	clusterName = getNameFromCluster("not-arn:aws:something/001")
-	require.EqualValues(t, "not-arn:aws:something/001", clusterName)
+	require.Equal(t, "not-arn:aws:something/001", clusterName)
 
 	clusterName = getNameFromCluster("")
 	require.LessOrEqual(t, 0, len(clusterName))

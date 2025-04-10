@@ -89,12 +89,12 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 		return consumererror.NewPermanent(err)
 	}
 
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.config.ClientConfig.Endpoint, bytes.NewReader(buf))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, l.config.Endpoint, bytes.NewReader(buf))
 	if err != nil {
 		return consumererror.NewPermanent(err)
 	}
 
-	for k, v := range l.config.ClientConfig.Headers {
+	for k, v := range l.config.Headers {
 		req.Header.Set(k, string(v))
 	}
 	req.Header.Set("Content-Type", "application/x-protobuf")
@@ -143,7 +143,7 @@ func encode(pb proto.Message) ([]byte, error) {
 }
 
 func (l *lokiExporter) start(ctx context.Context, host component.Host) (err error) {
-	client, err := l.config.ClientConfig.ToClient(ctx, host, l.settings)
+	client, err := l.config.ToClient(ctx, host, l.settings)
 	if err != nil {
 		return err
 	}

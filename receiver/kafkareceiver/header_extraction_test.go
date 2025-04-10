@@ -21,6 +21,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/unmarshaler"
 )
 
 func TestHeaderExtractionTraces(t *testing.T) {
@@ -32,7 +33,7 @@ func TestHeaderExtractionTraces(t *testing.T) {
 	require.NoError(t, err)
 	nextConsumer := &consumertest.TracesSink{}
 	c := tracesConsumerGroupHandler{
-		unmarshaler:      newPdataTracesUnmarshaler(&ptrace.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      &ptrace.ProtoUnmarshaler{},
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,
@@ -95,8 +96,8 @@ func TestHeaderExtractionLogs(t *testing.T) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(receivertest.NewNopSettings(metadata.Type).TelemetrySettings)
 	require.NoError(t, err)
 	nextConsumer := &consumertest.LogsSink{}
-	unmarshaler := newTextLogsUnmarshaler()
-	unmarshaler, err = unmarshaler.WithEnc("utf-8")
+	unmarshaler, err := unmarshaler.NewTextLogsUnmarshaler("utf-8")
+	require.NoError(t, err)
 	c := logsConsumerGroupHandler{
 		unmarshaler:      unmarshaler,
 		logger:           zaptest.NewLogger(t),
@@ -157,7 +158,7 @@ func TestHeaderExtractionMetrics(t *testing.T) {
 	require.NoError(t, err)
 	nextConsumer := &consumertest.MetricsSink{}
 	c := metricsConsumerGroupHandler{
-		unmarshaler:      newPdataMetricsUnmarshaler(&pmetric.ProtoUnmarshaler{}, defaultEncoding),
+		unmarshaler:      &pmetric.ProtoUnmarshaler{},
 		logger:           zaptest.NewLogger(t),
 		ready:            make(chan bool),
 		nextConsumer:     nextConsumer,
