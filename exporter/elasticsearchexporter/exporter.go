@@ -170,6 +170,9 @@ func (e *elasticsearchExporter) pushLogRecord(
 	return bulkIndexerSession.Add(ctx, index.Index, docID, pipeline, buf, nil, docappender.ActionCreate)
 }
 
+type dataPointGroupKey struct {
+	hash uint32
+}
 type dataPointsGroup struct {
 	resource          pcommon.Resource
 	resourceSchemaURL string
@@ -203,7 +206,8 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
-	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32]*dataPointsGroup)
+	// Maintain a 2 layer map to avoid storing lots of copies of index strings
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[dataPointGroupKey]*dataPointsGroup)
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
@@ -225,13 +229,15 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[index]
 					if !ok {
-						groupedDataPoints = make(map[uint32]*dataPointsGroup)
+						groupedDataPoints = make(map[dataPointGroupKey]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
-					dpHash := hasher.hashDataPoint(resource, scope, dp)
-					dpGroup, ok := groupedDataPoints[dpHash]
-					if !ok {
-						groupedDataPoints[dpHash] = &dataPointsGroup{
+					key := dataPointGroupKey{
+						hash: hasher.hashDataPoint(resource, scope, dp),
+					}
+
+					if dpGroup, ok := groupedDataPoints[key]; !ok {
+						groupedDataPoints[key] = &dataPointsGroup{
 							resource:          resource,
 							resourceSchemaURL: resourceMetric.SchemaUrl(),
 							scope:             scope,
