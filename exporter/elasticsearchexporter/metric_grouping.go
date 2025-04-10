@@ -4,6 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
+	"cmp"
 	"encoding/binary"
 	"hash"
 	"hash/fnv"
@@ -71,21 +72,21 @@ func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.In
 	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
 	hasher.Write(timestampBuf)
 
-	mapHashExcludeReservedAttrs(hasher, merged)
+	mapHashSortedExcludeReservedAttrs(hasher, merged)
 
 	return hasher.Sum32()
 }
 
 func (h otelDataPointHasher) hashResource(resource pcommon.Resource) uint32 {
 	hasher := fnv.New32a()
-	mapHashExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
+	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
 	return hasher.Sum32()
 }
 
 func (h otelDataPointHasher) hashScope(scope pcommon.InstrumentationScope) uint32 {
 	hasher := fnv.New32a()
 	hasher.Write([]byte(scope.Name()))
-	mapHashExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
+	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 	return hasher.Sum32()
 }
 
@@ -101,7 +102,7 @@ func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
 
 	hasher.Write([]byte(dp.Metric().Unit()))
 
-	mapHashExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
+	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	return hasher.Sum32()
 }
@@ -110,9 +111,14 @@ func (h otelDataPointHasher) hashCombined(_ pcommon.Resource, _ pcommon.Instrume
 	return 0
 }
 
-// mapHashExcludeReservedAttrs is mapHash but ignoring some reserved attributes.
+// mapHashSortedExcludeReservedAttrs is mapHash but ignoring some reserved attributes and is independent of order in Map.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
-func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
+func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
+	type kv struct {
+		k string
+		v pcommon.Value
+	}
+	kvs := make([]kv, 0, m.Len())
 	for k, v := range m.All() {
 		switch k {
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
@@ -121,8 +127,16 @@ func mapHashExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...strin
 		if slices.Contains(extra, k) {
 			continue
 		}
-		hasher.Write([]byte(k))
-		valueHash(hasher, v)
+		kvs = append(kvs, kv{k: k, v: v})
+	}
+
+	slices.SortFunc(kvs, func(a, b kv) int {
+		return cmp.Compare(a.k, b.k)
+	})
+
+	for _, kv := range kvs {
+		hasher.Write([]byte(kv.k))
+		valueHash(hasher, kv.v)
 	}
 }
 
