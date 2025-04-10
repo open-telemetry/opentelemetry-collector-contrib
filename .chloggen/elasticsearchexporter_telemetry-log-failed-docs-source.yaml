@@ -7,7 +7,7 @@ change_type: enhancement
 component: elasticsearchexporter
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add `telemetry::log_failed_docs_source` and `telemetry::log_failed_docs_source_rate_limit` config to facilitate debugging of failed bulk request items
+note: Add `telemetry::log_failed_docs_input` and `telemetry::log_failed_docs_input_rate_limit` config to facilitate debugging of failed bulk request items
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39205]

@@ -76,10 +76,10 @@ func createDefaultConfig() component.Config {
 			DateFormat:      "%Y.%m.%d",
 		},
 		TelemetrySettings: TelemetrySettings{
-			LogRequestBody:               false,
-			LogResponseBody:              false,
-			LogFailedDocsSource:          false,
-			LogFailedDocsSourceRateLimit: time.Second,
+			LogRequestBody:              false,
+			LogResponseBody:             false,
+			LogFailedDocsInput:          false,
+			LogFailedDocsInputRateLimit: time.Second,
 		},
 		Batcher: BatcherConfig{
 			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck

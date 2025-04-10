@@ -79,13 +79,13 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
-		Client:                   client,
-		MaxDocumentRetries:       maxDocRetries,
-		Pipeline:                 config.Pipeline,
-		RetryOnDocumentStatus:    config.Retry.RetryOnStatus,
-		RequireDataStream:        requireDataStream,
-		CompressionLevel:         compressionLevel,
-		PopulateFailedDocsSource: config.LogFailedDocsSource,
+		Client:                  client,
+		MaxDocumentRetries:      maxDocRetries,
+		Pipeline:                config.Pipeline,
+		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
+		RequireDataStream:       requireDataStream,
+		CompressionLevel:        compressionLevel,
+		PopulateFailedDocsInput: config.LogFailedDocsInput,
 	}
 }
 
@@ -381,10 +381,10 @@ func getErrorHint(index, errorType string) string {
 }
 
 func newFailedDocsSourceLogger(logger *zap.Logger, config *Config) *zap.Logger {
-	if !config.LogFailedDocsSource {
+	if !config.LogFailedDocsInput {
 		return zap.NewNop()
 	}
-	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsSourceRateLimit))
+	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsInputRateLimit))
 }
 
 type bulkIndexers struct {

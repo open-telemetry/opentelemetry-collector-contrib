@@ -112,8 +112,8 @@ type TelemetrySettings struct {
 	LogRequestBody  bool `mapstructure:"log_request_body"`
 	LogResponseBody bool `mapstructure:"log_response_body"`
 
-	LogFailedDocsSource          bool          `mapstructure:"log_failed_docs_source"`
-	LogFailedDocsSourceRateLimit time.Duration `mapstructure:"log_failed_docs_source_rate_limit"`
+	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
+	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
 }
 
 type LogstashFormatSettings struct {
@@ -430,7 +430,7 @@ func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
 	if cfg.TelemetrySettings.LogResponseBody {
 		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
-	if cfg.TelemetrySettings.LogFailedDocsSource {
-		logger.Warn("telemetry::log_failed_docs_source is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	if cfg.TelemetrySettings.LogFailedDocsInput {
+		logger.Warn("telemetry::log_failed_docs_input is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
 }
