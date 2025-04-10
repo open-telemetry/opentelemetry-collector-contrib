@@ -365,6 +365,7 @@ func flushBulkIndexer(
 			fields = append(fields, zap.String("hint", hint))
 		}
 		logger.Error("failed to index document", fields...)
+
 		if resp.Input != "" {
 			fields = append(fields, zap.String("input", resp.Input))
 		}
