@@ -146,12 +146,38 @@ attributes:
   - key: datapoint.foo
   - key: datapoint.bar
     default_value: bar
+  - key: datapoint.baz
+    optional: true
 ```
 
 If attributes are specified then a separate metric will be generated for each unique
-set of attribute values. Optionally, a `default_value` can be used to always include
-the attribute with the value of the attribute defaulting to the value specified in
-`default_value` if the incoming data is missing that attribute.
+set of attribute values. There are three behaviors that can be configured for an
+attribute:
+
+- Without any extra parameters: `datapoint.foo` in the above yaml is an example
+  of such configuration. In this configuration, only the signals which have the said
+  attribute are processed with the attribute's value as one of the attributes for
+  the output metric. If the attribute is missing then the signal is not processed.
+- With `default_value`: `datapoint.bar` in the above yaml is an example of such
+  configuration. In this configuration all the signals are processed irrespective
+  of the attribute being present or not in the input signal. The output metric
+  is categorized as per the incoming value of the attribute and an extra bucket
+  exists with the attribute set to the configured default value for all the signals
+  that were missing the configured attribute.
+- With `optional` set to `true`: `datapoint.baz` in the above yaml is an example
+  of such configuration. If the attribute is configured with `optional` and present
+  in the incoming signal then it will be added directly to the output metric. If
+  it is absent then a new metric with missing attributes will be created. In addition,
+  the `optional` attribute will not impact the decision i.e. even if the `optional`
+  attributes are not present in the incoming signal, the signal will be processed
+  and will produce a metric given all other non-optional attributes are present
+  or have a default value defined.
+
+Note that resource attributes are handled differently, check the resource attributes
+section for more details on this. Think of `attributes` as conditional filters for
+choosing which attributes should be included in the output metric whereas
+`include_resource_attributes` is an include list for customizing resource attributes
+of the output metric.
 
 ### Conditions
 
@@ -201,16 +227,23 @@ include_resource_attributes:
   - key: resource.foo # Include resource.foo attribute if present
   - key: resource.bar # Always include resource.bar attribute, default to bar
     default_value: bar
+  - key: resource.baz # Optional resource.baz attribute is added if present
+    optional: true
 ```
 
-With the above configuration the produced metrics would only have the couple of
-resource attributes specified in the list:
+With the above configuration the produced metrics would have the following
+resource attributes:
 
 - `resource.foo` will be present for the produced metrics if the incoming data also
-  has the attribute defined.
+  has the attribute defined. If the attribute is missing in the incoming data the
+  output metric will be produced without the said attribute.
 - `resource.bar` will always be present because of the `default_value`. If the incoming
   data does not have a resource attribute with name `resource.bar` then the configured
   `default_value` of `bar` will be used.
+- `resource.baz` will behave exactly same as `resource.foo`. Since resource attributes
+  are basically an include list, the `optional` option is a no-op i.e. the resource
+  attributes with `optional` set to `true` behaves identical to an attribute configured
+  without `default_value` or `optional`.
 
 ### Single writer
 
