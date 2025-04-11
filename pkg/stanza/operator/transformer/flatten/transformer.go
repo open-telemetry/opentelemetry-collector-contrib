@@ -24,16 +24,11 @@ type Transformer[T interface {
 }
 
 func (t *Transformer[T]) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
-}
-
-// Process will process an entry with a flatten transformation.
-func (t *Transformer[T]) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.Transform)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
 // Transform will apply the flatten operation to an entry
-func (t *Transformer[T]) Transform(entry *entry.Entry) error {
+func (t *Transformer[T]) process(_ context.Context, entry *entry.Entry) error {
 	parent := t.Field.Parent()
 	val, ok := entry.Delete(t.Field)
 	if !ok {

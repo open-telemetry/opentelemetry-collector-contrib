@@ -95,10 +95,16 @@ func (t *Transformer) Stop() error {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	var errs []error
+	for _, e := range entries {
+		if err := t.process(ctx, e); err != nil {
+			errs = append(errs, t.HandleEntryError(ctx, e, err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
-func (t *Transformer) Process(ctx context.Context, e *entry.Entry) error {
+func (t *Transformer) process(ctx context.Context, e *entry.Entry) error {
 	// Lock the recombine operator because process can't run concurrently
 	t.Lock()
 	defer t.Unlock()

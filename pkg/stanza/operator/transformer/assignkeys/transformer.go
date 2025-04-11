@@ -18,16 +18,11 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
-// Process will process an entry with AssignKeys transformation.
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.Transform)
-}
-
-// Transform will apply AssignKeys to an entry
-func (t *Transformer) Transform(entry *entry.Entry) error {
+// process will apply AssignKeys to an entry
+func (t *Transformer) process(_ context.Context, entry *entry.Entry) error {
 	inputListInterface, ok := entry.Get(t.Field)
 	if !ok {
 		// The field doesn't exist, so ignore it

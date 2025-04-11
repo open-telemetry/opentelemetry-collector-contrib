@@ -35,7 +35,5 @@ func TestProcess(t *testing.T) {
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
 
-	entry := entry.New()
-	result := op.Process(context.Background(), entry)
-	require.NoError(t, result)
+	require.NoError(t, op.ProcessBatch(context.Background(), []*entry.Entry{entry.New()}))
 }

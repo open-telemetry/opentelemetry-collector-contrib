@@ -24,16 +24,11 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
-// Process will process an entry with a add transformation.
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.Transform)
-}
-
-// Transform will apply the add operations to an entry
-func (t *Transformer) Transform(e *entry.Entry) error {
+// process will apply the add operations to an entry
+func (t *Transformer) process(_ context.Context, e *entry.Entry) error {
 	if t.Value != nil {
 		return e.Set(t.Field, t.Value)
 	}

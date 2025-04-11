@@ -18,16 +18,11 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
-}
-
-// Process will process an entry with a remove transformation.
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.Transform)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
 // Transform will apply the remove operation to an entry
-func (t *Transformer) Transform(entry *entry.Entry) error {
+func (t *Transformer) process(_ context.Context, entry *entry.Entry) error {
 	if t.Field.allAttributes {
 		entry.Attributes = nil
 		return nil

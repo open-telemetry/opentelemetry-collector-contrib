@@ -54,7 +54,7 @@ func (r *Reader) Process(ctx context.Context, token string, fileAttributes map[s
 	newEntry := entry.New()
 	newEntry.Body = token
 
-	if err := firstOperator.Process(ctx, newEntry); err != nil {
+	if err := firstOperator.ProcessBatch(ctx, []*entry.Entry{newEntry}); err != nil {
 		r.set.Logger.Error("process header entry", zap.Error(err))
 		// Do not return yet. An entry was added to the logsChan which must be consumed generically.
 	}

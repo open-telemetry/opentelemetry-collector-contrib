@@ -678,14 +678,13 @@ func TestTransformer(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, op.Start(testutil.NewUnscopedMockPersister()))
 			defer func() { require.NoError(t, op.Stop()) }()
-			r := op.(*Transformer)
 
 			fake := testutil.NewFakeOutput(t)
-			err = r.SetOutputs([]operator.Operator{fake})
+			err = op.SetOutputs([]operator.Operator{fake})
 			require.NoError(t, err)
 
 			for _, e := range tc.input {
-				require.NoError(t, r.Process(ctx, e))
+				require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{e}))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
@@ -706,14 +705,13 @@ func TestTransformer(t *testing.T) {
 		set := componenttest.NewNopTelemetrySettings()
 		op, err := cfg.Build(set)
 		require.NoError(t, err)
-		recombine := op.(*Transformer)
 
 		fake := testutil.NewFakeOutput(t)
-		err = recombine.SetOutputs([]operator.Operator{fake})
+		err = op.SetOutputs([]operator.Operator{fake})
 		require.NoError(t, err)
 
 		// Send an entry that isn't the last in a multiline
-		require.NoError(t, recombine.Process(context.Background(), entry.New()))
+		require.NoError(t, op.ProcessBatch(context.Background(), []*entry.Entry{entry.New()}))
 
 		// Ensure that the entry isn't immediately sent
 		select {
@@ -723,7 +721,7 @@ func TestTransformer(t *testing.T) {
 		}
 
 		// Stop the operator
-		require.NoError(t, recombine.Stop())
+		require.NoError(t, op.Stop())
 
 		// Ensure that the entries in the buffer are flushed
 		select {
@@ -743,10 +741,9 @@ func BenchmarkRecombine(b *testing.B) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(b, err)
-	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(b)
-	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
+	require.NoError(b, op.SetOutputs([]operator.Operator{fake}))
 
 	go func() {
 		for {
@@ -772,9 +769,9 @@ func BenchmarkRecombine(b *testing.B) {
 	b.ReportAllocs()
 	for i := 0; i < b.N; i++ {
 		for _, e := range entries {
-			require.NoError(b, recombine.Process(ctx, e))
+			require.NoError(b, op.ProcessBatch(context.Background(), []*entry.Entry{e}))
 		}
-		recombine.flushAllSources(ctx)
+		op.(*Transformer).flushAllSources(ctx)
 	}
 }
 
@@ -787,11 +784,10 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(b, err)
-	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(b)
-	require.NoError(b, recombine.SetOutputs([]operator.Operator{fake}))
-	require.NoError(b, recombine.Start(nil))
+	require.NoError(b, op.SetOutputs([]operator.Operator{fake}))
+	require.NoError(b, op.Start(nil))
 
 	go func() {
 		for {
@@ -810,11 +806,9 @@ func BenchmarkRecombineLimitTrigger(b *testing.B) {
 	ctx := context.Background()
 	b.ResetTimer()
 	for i := 0; i < b.N; i++ {
-		require.NoError(b, recombine.Process(ctx, start))
-		require.NoError(b, recombine.Process(ctx, next))
-		require.NoError(b, recombine.Process(ctx, start))
-		require.NoError(b, recombine.Process(ctx, next))
-		recombine.flushAllSources(ctx)
+		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
+		require.NoError(b, op.ProcessBatch(ctx, []*entry.Entry{start, next}))
+		op.(*Transformer).flushAllSources(ctx)
 	}
 }
 
@@ -841,7 +835,7 @@ func TestTimeout(t *testing.T) {
 	ctx := context.Background()
 
 	require.NoError(t, recombine.Start(nil))
-	require.NoError(t, recombine.Process(ctx, e))
+	require.NoError(t, recombine.ProcessBatch(ctx, []*entry.Entry{e}))
 	select {
 	case <-fake.Received:
 		t.Logf("We shouldn't receive an entry before timeout")
@@ -873,10 +867,9 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 	set := componenttest.NewNopTelemetrySettings()
 	op, err := cfg.Build(set)
 	require.NoError(t, err)
-	recombine := op.(*Transformer)
 
 	fake := testutil.NewFakeOutput(t)
-	require.NoError(t, recombine.SetOutputs([]operator.Operator{fake}))
+	require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 
 	e := entry.New()
 	e.Timestamp = time.Now()
@@ -884,8 +877,8 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 
 	ctx := context.Background()
 
-	require.NoError(t, recombine.Start(nil))
-	require.NoError(t, recombine.Process(ctx, e))
+	require.NoError(t, op.Start(nil))
+	require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{e}))
 
 	done := make(chan struct{})
 	ticker := time.NewTicker(cfg.ForceFlushTimeout / 2)
@@ -899,7 +892,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 				ticker.Stop()
 				return
 			case <-ticker.C:
-				assert.NoError(t, recombine.Process(ctx, next))
+				assert.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{next}))
 			}
 		}
 	}()
@@ -910,7 +903,7 @@ func TestTimeoutWhenAggregationKeepHappen(t *testing.T) {
 		t.Logf("The entry should be flushed by now")
 		t.FailNow()
 	}
-	require.NoError(t, recombine.Stop())
+	require.NoError(t, op.Stop())
 	close(done)
 }
 
@@ -949,10 +942,10 @@ func TestSourceBatchDelete(t *testing.T) {
 
 	ctx := context.Background()
 
-	require.NoError(t, recombine.Process(ctx, start))
+	require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{start}))
 	require.Len(t, recombine.batchMap, 1)
-	require.NoError(t, recombine.Process(ctx, next))
+	require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{next}))
 	require.Empty(t, recombine.batchMap)
 	fake.ExpectEntry(t, expect)
-	require.NoError(t, recombine.Stop())
+	require.NoError(t, op.Stop())
 }

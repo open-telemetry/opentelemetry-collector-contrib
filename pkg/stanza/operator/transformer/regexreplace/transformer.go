@@ -21,14 +21,10 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.replace)
-}
-
-func (t *Transformer) replace(e *entry.Entry) error {
+func (t *Transformer) process(_ context.Context, e *entry.Entry) error {
 	value, ok := t.field.Get(e)
 	if !ok {
 		return nil

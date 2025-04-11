@@ -68,16 +68,7 @@ func (w *WriterOperator) WriteBatch(ctx context.Context, entries []*entry.Entry)
 
 // Write will write an entry to the outputs of the operator.
 func (w *WriterOperator) Write(ctx context.Context, e *entry.Entry) error {
-	for i, op := range w.OutputOperators {
-		if i == len(w.OutputOperators)-1 {
-			return op.Process(ctx, e)
-		}
-		err := op.Process(ctx, e.Copy())
-		if err != nil {
-			w.Logger().Error("Failed to process entry", zap.Error(err))
-		}
-	}
-	return nil
+	return w.WriteBatch(ctx, []*entry.Entry{e})
 }
 
 // CanOutput always returns true for a writer operator.

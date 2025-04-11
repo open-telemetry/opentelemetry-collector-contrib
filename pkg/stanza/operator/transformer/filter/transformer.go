@@ -6,6 +6,7 @@ package filter // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"crypto/rand"
+	"errors"
 	"math/big"
 
 	"github.com/expr-lang/expr/vm"
@@ -23,11 +24,17 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
+	var errs []error
+	for _, e := range entries {
+		if err := t.process(ctx, e); err != nil {
+			errs = append(errs, t.HandleEntryError(ctx, e, err))
+		}
+	}
+	return errors.Join(errs...)
 }
 
 // Process will drop incoming entries that match the filter expression
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
+func (t *Transformer) process(ctx context.Context, entry *entry.Entry) error {
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 

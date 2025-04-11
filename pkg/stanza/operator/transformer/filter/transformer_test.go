@@ -186,7 +186,7 @@ func TestTransformer(t *testing.T) {
 
 			filtered := true
 			mockOutput := testutil.NewMockOperator("output")
-			mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
+			mockOutput.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 				filtered = false
 			})
 
@@ -194,7 +194,7 @@ func TestTransformer(t *testing.T) {
 			require.True(t, ok)
 
 			filterOperator.OutputOperators = []operator.Operator{mockOutput}
-			err = filterOperator.Process(context.Background(), tc.input)
+			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.filtered, filtered)
@@ -212,7 +212,7 @@ func TestFilterDropRatio(t *testing.T) {
 
 	processedEntries := 0
 	mockOutput := testutil.NewMockOperator("output")
-	mockOutput.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
+	mockOutput.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(_ mock.Arguments) {
 		processedEntries++
 	})
 
@@ -236,12 +236,12 @@ func TestFilterDropRatio(t *testing.T) {
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.Process(context.Background(), testEntry)
+		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.Process(context.Background(), testEntry)
+		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 
