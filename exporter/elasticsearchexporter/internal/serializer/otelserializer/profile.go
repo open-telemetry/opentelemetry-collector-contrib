@@ -32,9 +32,8 @@ func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.I
 		return err
 	}
 
-	pushDataAsJSON := func(data any, id, index string) error {
-		var c *bytes.Buffer
-		c, err = toJSON(data)
+	pushDataAsJSON := func(data any, id, index string) (err error) {
+		c, err := toJSON(data)
 		if err != nil {
 			return err
 		}
