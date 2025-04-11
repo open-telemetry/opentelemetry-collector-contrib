@@ -96,11 +96,11 @@ func TestTransformerDropOnError(t *testing.T) {
 	now := time.Now()
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
-	transform := func(_ *entry.Entry) error {
+	process := func(context.Context, *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	err := transformer.ProcessBatchWith(ctx, []*entry.Entry{testEntry}, process)
 	require.Error(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 
@@ -146,11 +146,11 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	now := time.Now()
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
-	transform := func(_ *entry.Entry) error {
+	process := func(context.Context, *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	err := transformer.ProcessBatchWith(ctx, []*entry.Entry{testEntry}, process)
 	require.Error(t, err)
 	output.AssertNotCalled(t, "Process", mock.Anything, mock.Anything)
 
@@ -173,7 +173,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 func TestTransformerSendOnError(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.WarnLevel)
 	set := componenttest.NewNopTelemetrySettings()
@@ -196,13 +196,13 @@ func TestTransformerSendOnError(t *testing.T) {
 	now := time.Now()
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
-	transform := func(_ *entry.Entry) error {
+	process := func(context.Context, *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	err := transformer.ProcessBatchWith(ctx, []*entry.Entry{testEntry}, process)
 	require.Error(t, err)
-	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+	output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
 
 	// Test output logs
 	expectedLogs := []observer.LoggedEntry{
@@ -223,7 +223,7 @@ func TestTransformerSendOnError(t *testing.T) {
 func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 
 	obs, logs := observer.New(zap.DebugLevel)
 	set := componenttest.NewNopTelemetrySettings()
@@ -246,13 +246,13 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	now := time.Now()
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
-	transform := func(_ *entry.Entry) error {
+	process := func(context.Context, *entry.Entry) error {
 		return fmt.Errorf("Failure")
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	err := transformer.ProcessBatchWith(ctx, []*entry.Entry{testEntry}, process)
 	require.Error(t, err)
-	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+	output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
 
 	// Test output logs
 	expectedLogs := []observer.LoggedEntry{
@@ -273,7 +273,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 func TestTransformerProcessWithValid(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
 	transformer := TransformerOperator{
@@ -290,13 +290,13 @@ func TestTransformerProcessWithValid(t *testing.T) {
 	}
 	ctx := context.Background()
 	testEntry := entry.New()
-	transform := func(_ *entry.Entry) error {
+	process := func(context.Context, *entry.Entry) error {
 		return nil
 	}
 
-	err := transformer.ProcessWith(ctx, testEntry, transform)
+	err := transformer.ProcessBatchWith(ctx, []*entry.Entry{testEntry}, process)
 	require.NoError(t, err)
-	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+	output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
 }
 
 func TestTransformerIf(t *testing.T) {
@@ -360,7 +360,7 @@ func TestTransformerIf(t *testing.T) {
 
 			e := entry.New()
 			e.Body = tc.inputBody
-			err = transformer.ProcessWith(context.Background(), e, func(e *entry.Entry) error {
+			err = transformer.ProcessBatchWith(context.Background(), []*entry.Entry{e}, func(_ context.Context, e *entry.Entry) error {
 				e.Body = "parsed"
 				return nil
 			})

@@ -19,16 +19,11 @@ type Transformer struct {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	return t.ProcessBatchWith(ctx, entries, t.Process)
-}
-
-// Process will unquote a string
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	return t.ProcessWith(ctx, entry, t.unquote)
+	return t.ProcessBatchWith(ctx, entries, t.process)
 }
 
 // unquote will unquote a string
-func (t *Transformer) unquote(e *entry.Entry) error {
+func (t *Transformer) process(_ context.Context, e *entry.Entry) error {
 	value, ok := t.field.Get(e)
 	if !ok {
 		return nil

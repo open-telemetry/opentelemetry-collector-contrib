@@ -377,7 +377,7 @@ func TestParserValidTimeInvalidSeverityParse(t *testing.T) {
 func TestParserOutput(t *testing.T) {
 	output := &testutil.Operator{}
 	output.On("ID").Return("test-output")
-	output.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 
 	set := componenttest.NewNopTelemetrySettings()
 	set.Logger = zaptest.NewLogger(t)
@@ -404,7 +404,7 @@ func TestParserOutput(t *testing.T) {
 	testEntry := entry.New()
 	err := parser.ProcessWith(ctx, testEntry, parse)
 	require.NoError(t, err)
-	output.AssertCalled(t, "Process", mock.Anything, mock.Anything)
+	output.AssertCalled(t, "ProcessBatch", mock.Anything, mock.Anything)
 }
 
 func TestParserFields(t *testing.T) {

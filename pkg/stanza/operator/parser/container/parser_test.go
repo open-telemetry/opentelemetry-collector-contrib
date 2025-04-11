@@ -171,7 +171,7 @@ func TestProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err, "did not expect operator function to return an error, this is a bug with the test case")
 
-			err = op.Process(context.Background(), tc.input)
+			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 			require.Equal(t, tc.expect, tc.input)
 			// Stop the operator
@@ -458,13 +458,12 @@ func TestRecombineProcess(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
-			r := op.(*Parser)
 
 			fake := testutil.NewFakeOutput(t)
-			r.OutputOperators = ([]operator.Operator{fake})
+			op.(*Parser).OutputOperators = ([]operator.Operator{fake})
 
 			for _, e := range tc.input {
-				require.NoError(t, r.Process(ctx, e))
+				require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{e}))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)
@@ -523,12 +522,11 @@ func TestProcessWithDockerTime(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
-			r := op.(*Parser)
 
 			fake := testutil.NewFakeOutput(t)
-			r.OutputOperators = ([]operator.Operator{fake})
+			op.(*Parser).OutputOperators = []operator.Operator{fake}
 
-			require.NoError(t, r.Process(ctx, tc.input))
+			require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{tc.input}))
 
 			fake.ExpectEntry(t, tc.expectedOutput)
 
@@ -682,13 +680,12 @@ func TestCRIRecombineProcessWithFailedDownstreamOperator(t *testing.T) {
 			op, err := tc.op()
 			require.NoError(t, err)
 			defer func() { require.NoError(t, op.Stop()) }()
-			r := op.(*Parser)
 
 			fake := testutil.NewFakeOutputWithProcessError(t)
-			r.OutputOperators = ([]operator.Operator{fake})
+			op.(*Parser).OutputOperators = []operator.Operator{fake}
 
 			for _, e := range tc.input {
-				require.NoError(t, r.Process(ctx, e))
+				require.NoError(t, op.ProcessBatch(ctx, []*entry.Entry{e}))
 			}
 
 			fake.ExpectEntries(t, tc.expectedOutput)

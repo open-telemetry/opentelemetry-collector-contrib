@@ -78,27 +78,23 @@ func (t *TransformerOperator) CanProcess() bool {
 
 func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
 	var errs []error
-	for i := range entries {
-		errs = append(errs, process(ctx, entries[i]))
+	for _, e := range entries {
+		// Short circuit if the "if" condition does not match
+		skip, err := t.Skip(ctx, e)
+		if err != nil {
+			errs = append(errs, t.HandleEntryError(ctx, e, err))
+			continue
+		}
+		if skip {
+			return t.Write(ctx, e)
+		}
+
+		if err := process(ctx, e); err != nil {
+			return t.HandleEntryError(ctx, e, err)
+		}
+		return t.Write(ctx, e)
 	}
 	return goerrors.Join(errs...)
-}
-
-// ProcessWith will process an entry with a transform function.
-func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entry, transform TransformFunction) error {
-	// Short circuit if the "if" condition does not match
-	skip, err := t.Skip(ctx, entry)
-	if err != nil {
-		return t.HandleEntryError(ctx, entry, err)
-	}
-	if skip {
-		return t.Write(ctx, entry)
-	}
-
-	if err := transform(entry); err != nil {
-		return t.HandleEntryError(ctx, entry, err)
-	}
-	return t.Write(ctx, entry)
 }
 
 // HandleEntryError will handle an entry error using the on_error strategy.

@@ -194,7 +194,7 @@ func TestTransformer(t *testing.T) {
 
 			mock1 := testutil.NewMockOperator("output1")
 			mock1.On(
-				"Process", mock.Anything, mock.Anything,
+				"ProcessBatch", mock.Anything, mock.Anything,
 			).Return(
 				errors.NewError("Operator can not process logs.", ""),
 			).Run(func(args mock.Arguments) {
@@ -205,18 +205,17 @@ func TestTransformer(t *testing.T) {
 			})
 
 			mock2 := testutil.NewMockOperator("output2")
-			mock2.On("Process", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
+			mock2.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil).Run(func(args mock.Arguments) {
 				results["output2"]++
-				if entry, ok := args[1].(*entry.Entry); ok {
-					attributes = entry.Attributes
+				if entries, ok := args[1].([]*entry.Entry); ok {
+					attributes = entries[0].Attributes
 				}
 			})
 
-			routerOperator := op.(*Transformer)
-			err = routerOperator.SetOutputs([]operator.Operator{mock1, mock2})
+			err = op.SetOutputs([]operator.Operator{mock1, mock2})
 			require.NoError(t, err)
 
-			err = routerOperator.Process(context.Background(), tc.input)
+			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.expectedCounts, results)

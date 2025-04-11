@@ -44,9 +44,9 @@ func TestWriterConfigValidBuild(t *testing.T) {
 
 func TestWriterOperatorWrite(t *testing.T) {
 	output1 := &testutil.Operator{}
-	output1.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output1.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 	output2 := &testutil.Operator{}
-	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output2.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 	writer := WriterOperator{
 		OutputOperators: []operator.Operator{output1, output2},
 	}
@@ -56,15 +56,15 @@ func TestWriterOperatorWrite(t *testing.T) {
 
 	err := writer.Write(ctx, testEntry)
 	require.NoError(t, err)
-	output1.AssertCalled(t, "Process", ctx, mock.Anything)
-	output2.AssertCalled(t, "Process", ctx, mock.Anything)
+	output1.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
+	output2.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
 }
 
 func TestWriterOperatorWriteAfterError(t *testing.T) {
 	output1 := testutil.NewMockOperator("output1")
-	output1.On("Process", mock.Anything, mock.Anything).Return(errors.NewError("Operator can not process logs.", ""))
+	output1.On("ProcessBatch", mock.Anything, mock.Anything).Return(errors.NewError("Operator can not process logs.", ""))
 	output2 := testutil.NewMockOperator("output2")
-	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output2.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 
 	config := WriterConfig{
 		OutputIDs: []string{"output1", "output2"},
@@ -84,8 +84,8 @@ func TestWriterOperatorWriteAfterError(t *testing.T) {
 
 	err = writer.Write(ctx, testEntry)
 	require.NoError(t, err)
-	output1.AssertCalled(t, "Process", ctx, mock.Anything)
-	output2.AssertCalled(t, "Process", ctx, mock.Anything)
+	output1.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
+	output2.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
 }
 
 func TestWriterOperatorCanOutput(t *testing.T) {
@@ -95,9 +95,9 @@ func TestWriterOperatorCanOutput(t *testing.T) {
 
 func TestWriterOperatorOutputs(t *testing.T) {
 	output1 := &testutil.Operator{}
-	output1.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output1.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 	output2 := &testutil.Operator{}
-	output2.On("Process", mock.Anything, mock.Anything).Return(nil)
+	output2.On("ProcessBatch", mock.Anything, mock.Anything).Return(nil)
 	writer := WriterOperator{
 		OutputOperators: []operator.Operator{output1, output2},
 	}
@@ -107,8 +107,8 @@ func TestWriterOperatorOutputs(t *testing.T) {
 
 	err := writer.Write(ctx, testEntry)
 	require.NoError(t, err)
-	output1.AssertCalled(t, "Process", ctx, mock.Anything)
-	output2.AssertCalled(t, "Process", ctx, mock.Anything)
+	output1.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
+	output2.AssertCalled(t, "ProcessBatch", ctx, mock.Anything)
 }
 
 func TestWriterSetOutputsMissing(t *testing.T) {

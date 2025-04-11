@@ -38,24 +38,24 @@ func (t *Transformer) CanProcess() bool {
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
 	var errs []error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, entries[i]))
+		errs = append(errs, t.process(ctx, entries[i]))
 	}
 	return errors.Join(errs...)
 }
 
 // Process will route incoming entries based on matching expressions
-func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
-	if entry == nil {
-		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+func (t *Transformer) process(ctx context.Context, ent *entry.Entry) error {
+	if ent == nil {
+		return fmt.Errorf("got a nil ent, this should not happen and is potentially a bug")
 	}
 
-	env := helper.GetExprEnv(entry)
+	env := helper.GetExprEnv(ent)
 	defer helper.PutExprEnv(env)
 
 	logFields := []zap.Field{
-		zap.Any("entry.timestamp", entry.Timestamp),
+		zap.Any("ent.timestamp", ent.Timestamp),
 	}
-	for attrName, attrValue := range entry.Attributes {
+	for attrName, attrValue := range ent.Attributes {
 		logFields = append(logFields, zap.Any(attrName, attrValue))
 	}
 
@@ -69,17 +69,17 @@ func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
-			if err = route.Attribute(entry); err != nil {
+			if err = route.Attribute(ent); err != nil {
 				logFields = append(logFields, zap.Any("error", err))
-				t.Logger().Error("Failed to label entry", logFields...)
+				t.Logger().Error("Failed to label ent", logFields...)
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
-				err = output.Process(ctx, entry)
+				err = output.ProcessBatch(ctx, []*entry.Entry{ent})
 				logFields = append(logFields, zap.Any("error", err))
 				if err != nil {
-					t.Logger().Error("Failed to process entry", logFields...)
+					t.Logger().Error("Failed to process ent", logFields...)
 				}
 			}
 			break

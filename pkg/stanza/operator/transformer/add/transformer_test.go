@@ -345,11 +345,10 @@ func TestProcessAndBuild(t *testing.T) {
 			op, err := cfg.Build(set)
 			require.NoError(t, err)
 
-			add := op.(*Transformer)
 			fake := testutil.NewFakeOutput(t)
-			require.NoError(t, add.SetOutputs([]operator.Operator{fake}))
+			require.NoError(t, op.SetOutputs([]operator.Operator{fake}))
 			val := tc.input()
-			err = add.Process(context.Background(), val)
+			err = op.ProcessBatch(context.Background(), []*entry.Entry{val})
 			if tc.expectErr {
 				require.Error(t, err)
 			} else {
