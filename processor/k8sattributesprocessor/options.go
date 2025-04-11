@@ -215,7 +215,9 @@ func withOtelAnnotations(enabled bool) option {
 func withServiceAttributes(config ServiceAttributeConfig) option {
 	return func(p *kubernetesprocessor) error {
 		if config.Enabled {
-			// todo
+			p.rules.Service = kube.ServiceRules{
+				Enabled: true,
+			}
 		}
 		return nil
 	}
