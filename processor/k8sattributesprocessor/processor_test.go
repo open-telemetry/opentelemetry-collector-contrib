@@ -1404,10 +1404,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				t,
 				NewFactory().CreateDefaultConfig(),
 				nil,
-				withAutomaticRules(kube.AutomaticRules{
-					Enabled: true,
-					Labels:  true,
-				}),
+				withServiceAttributes(ServiceAttributeConfig{Enabled: true}),
 			)
 			m.kubernetesProcessorOperation(tt.op)
 			m.testConsume(context.Background(),
