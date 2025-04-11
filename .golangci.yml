@@ -75,6 +75,11 @@ linters:
   # all available settings of specific linters
   settings:
     depguard:
+      list-type: blacklist
+      packages:
+      - github.com/Azure/go-autorest
+      packages-with-error-message:
+      github.com/Azure/go-autorest: "This package is deprecated (EOL). Please use an alternative Azure SDK."
       rules:
         denied-deps:
           deny:
