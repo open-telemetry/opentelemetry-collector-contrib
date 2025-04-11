@@ -23,6 +23,7 @@ const (
 type Serializer struct {
 	// Data cache for profiles
 	loadLRUsOnce                 sync.Once
+	lruErr                       error
 	knownTraces                  *lru.LRUSet
 	knownFrames                  *lru.LRUSet
 	knownExecutables             *lru.LRUSet

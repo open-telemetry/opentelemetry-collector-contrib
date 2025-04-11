@@ -148,41 +148,41 @@ func toJSON(d any) (*bytes.Buffer, error) {
 	return bytes.NewBuffer(c), nil
 }
 
-func (s *Serializer) createLRUs() (lruErr error) {
+func (s *Serializer) createLRUs() error {
 	s.loadLRUsOnce.Do(func() {
 		var err error
 
 		// Create LRUs with MinILMRolloverTime as lifetime to avoid losing data by ILM roll-over.
 		s.knownTraces, err = lru.NewLRUSet(knownTracesCacheSize, minILMRolloverTime)
 		if err != nil {
-			lruErr = fmt.Errorf("failed to create traces LRU: %w", err)
+			s.lruErr = fmt.Errorf("failed to create traces LRU: %w", err)
 			return
 		}
 
 		s.knownFrames, err = lru.NewLRUSet(knownFramesCacheSize, minILMRolloverTime)
 		if err != nil {
-			lruErr = fmt.Errorf("failed to create frames LRU: %w", err)
+			s.lruErr = fmt.Errorf("failed to create frames LRU: %w", err)
 			return
 		}
 
 		s.knownExecutables, err = lru.NewLRUSet(knownExecutablesCacheSize, minILMRolloverTime)
 		if err != nil {
-			lruErr = fmt.Errorf("failed to create executables LRU: %w", err)
+			s.lruErr = fmt.Errorf("failed to create executables LRU: %w", err)
 			return
 		}
 
 		s.knownUnsymbolizedFrames, err = lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
 		if err != nil {
-			lruErr = fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
+			s.lruErr = fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
 			return
 		}
 
 		s.knownUnsymbolizedExecutables, err = lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
 		if err != nil {
-			lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
+			s.lruErr = fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
 			return
 		}
 	})
 
-	return
+	return s.lruErr
 }
