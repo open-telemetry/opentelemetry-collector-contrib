@@ -35,17 +35,17 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("cloud.region")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.region-val", val.Str())
+				assert.Equal(t, "cloud.region-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.id-val", val.Str())
+				assert.Equal(t, "host.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", val.Str())
 			}
 		})
 	}

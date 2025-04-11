@@ -37,7 +37,7 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
-require github.com/fsnotify/fsnotify v1.8.0 // indirect
+require github.com/fsnotify/fsnotify v1.9.0 // indirect
 
 require (
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
@@ -88,8 +88,8 @@ require (
 	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411083450-568c3ce6fd43 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
-	golang.org/x/net v0.38.0 // indirect
-	golang.org/x/sys v0.31.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
 	google.golang.org/grpc v1.71.1 // indirect
