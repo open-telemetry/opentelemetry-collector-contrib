@@ -4,16 +4,16 @@
 package headerssetterextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/headerssetterextension"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 var (
-	errMissingHeader        = fmt.Errorf("missing header name")
-	errMissingHeadersConfig = fmt.Errorf("missing headers configuration")
-	errMissingSource        = fmt.Errorf("missing header source, must be 'from_context', 'from_attribute' or 'value'")
-	errConflictingSources   = fmt.Errorf("invalid header source, must either 'from_context', 'from_attribute' or 'value'")
+	errMissingHeader        = errors.New("missing header name")
+	errMissingHeadersConfig = errors.New("missing headers configuration")
+	errMissingSource        = errors.New("missing header source, must be 'from_context', 'from_attribute' or 'value'")
+	errConflictingSources   = errors.New("invalid header source, must either 'from_context', 'from_attribute' or 'value'")
 )
 
 type Config struct {
