@@ -215,10 +215,7 @@ func withOtelAnnotations(enabled bool) option {
 func withServiceAttributes(config ServiceAttributeConfig) option {
 	return func(p *kubernetesprocessor) error {
 		if config.Enabled {
-			p.rules.Service = kube.ServiceRules{
-				Enabled: true,
-			}
-
+			p.rules.Service = true
 			if config.Labels {
 				for _, rule := range kube.AutomaticLabelRules {
 					p.rules.Labels = append(p.rules.Labels, rule)
