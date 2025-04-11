@@ -184,6 +184,8 @@ linters:
         - name: unused-parameter
         # Since Go 1.18, interface{} has an alias: any. This rule proposes to replace instances of interface{} with any.
         - name: use-any
+        # identifies calls to fmt.Errorf that can be safely replaced by, the more efficient, errors.New.
+        - name: use-errors-new
         # report when a variable declaration can be simplified
         - name: var-declaration
         # warns when initialism, variable or package naming conventions are not followed.

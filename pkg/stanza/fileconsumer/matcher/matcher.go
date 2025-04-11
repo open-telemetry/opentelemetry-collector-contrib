@@ -62,7 +62,7 @@ type Sort struct {
 
 func New(c Criteria) (*Matcher, error) {
 	if len(c.Include) == 0 {
-		return nil, fmt.Errorf("'include' must be specified")
+		return nil, errors.New("'include' must be specified")
 	}
 
 	if err := finder.Validate(c.Include); err != nil {
@@ -94,7 +94,7 @@ func New(c Criteria) (*Matcher, error) {
 	}
 
 	if c.OrderingCriteria.TopN < 0 {
-		return nil, fmt.Errorf("'top_n' must be a positive integer")
+		return nil, errors.New("'top_n' must be a positive integer")
 	}
 
 	if c.OrderingCriteria.TopN == 0 {
@@ -103,7 +103,7 @@ func New(c Criteria) (*Matcher, error) {
 
 	if orderingCriteriaNeedsRegex(c.OrderingCriteria.SortBy) {
 		if c.OrderingCriteria.Regex == "" {
-			return nil, fmt.Errorf("'regex' must be specified when 'sort_by' is specified")
+			return nil, errors.New("'regex' must be specified when 'sort_by' is specified")
 		}
 
 		var err error
@@ -141,7 +141,7 @@ func New(c Criteria) (*Matcher, error) {
 			}
 			m.filterOpts = append(m.filterOpts, filter.SortMtime(sc.Ascending))
 		default:
-			return nil, fmt.Errorf("'sort_type' must be specified")
+			return nil, errors.New("'sort_type' must be specified")
 		}
 	}
 
@@ -177,7 +177,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 		errs = errors.Join(errs, err)
 	}
 	if len(files) == 0 {
-		return files, errors.Join(fmt.Errorf("no files match the configured criteria"), errs)
+		return files, errors.Join(errors.New("no files match the configured criteria"), errs)
 	}
 	if len(m.filterOpts) == 0 {
 		return files, errs
