@@ -9,22 +9,24 @@ import (
 	"strings"
 )
 
-func normalizeValue(key string, val any) any {
-	switch key {
-	case
-		"http.request.body.size",
-		"http.request.size",
-		"http.response.body.size",
-		"http.response.size",
-		"http.response.status_code",
-		"server.port":
-		return toInt(val)
-	case "http.server.request.duration":
-		return toFloat(val)
-	case "network.protocol.name":
-		return toLower(val)
+func tryParseFloat64(value any) (float64, bool) {
+	switch v := value.(type) {
+	case float32:
+		return float64(v), true
+	case float64:
+		return v, true
+	case int:
+		return float64(v), true
+	case int32:
+		return float64(v), true
+	case int64:
+		return float64(v), true
+	case string:
+		f, err := strconv.ParseFloat(v, 64)
+		return f, err == nil
+	default:
+		return 0, false
 	}
-	return val
 }
 
 func toLower(value any) any {
