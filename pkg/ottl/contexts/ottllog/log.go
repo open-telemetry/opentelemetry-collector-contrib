@@ -84,15 +84,6 @@ func NewTransformContext(logRecord plog.LogRecord, instrumentationScope pcommon.
 	return tc
 }
 
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
-	}
-}
-
 func (tCtx TransformContext) GetLogRecord() plog.LogRecord {
 	return tCtx.logRecord
 }

@@ -141,7 +141,7 @@ func (p *Parser) Process(ctx context.Context, entry *entry.Entry) (err error) {
 			return fmt.Errorf("failed to recombine the crio log: %w", err)
 		}
 	default:
-		return fmt.Errorf("failed to detect a valid container log format")
+		return errors.New("failed to detect a valid container log format")
 	}
 
 	return nil
@@ -176,7 +176,7 @@ func (p *Parser) Stop() error {
 func (p *Parser) detectFormat(e *entry.Entry) (string, error) {
 	value, ok := e.Get(p.ParseFrom)
 	if !ok {
-		return "", fmt.Errorf("entry cannot be parsed as container logs")
+		return "", errors.New("entry cannot be parsed as container logs")
 	}
 
 	raw, ok := value.(string)
@@ -281,7 +281,7 @@ func (p *Parser) extractk8sMetaFromFilePath(e *entry.Entry) error {
 
 	parsedValues, err := helper.MatchValues(rawLogPath, pathMatcher)
 	if err != nil {
-		return fmt.Errorf("failed to detect a valid log path")
+		return errors.New("failed to detect a valid log path")
 	}
 
 	for originalKey, attributeKey := range k8sMetadataMapping {

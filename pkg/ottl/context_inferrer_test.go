@@ -282,16 +282,16 @@ func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
 	require.ErrorContains(t, err, "unexpected token")
 }
 
-func Test_DefaultPriorityContextInferrer(t *testing.T) {
+func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
 	expectedPriority := []string{
 		"log",
 		"datapoint",
 		"metric",
 		"spanevent",
 		"span",
-		"resource",
 		"scope",
 		"instrumentation_scope",
+		"resource",
 	}
 
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{}).(*priorityContextInferrer)
@@ -299,5 +299,191 @@ func Test_DefaultPriorityContextInferrer(t *testing.T) {
 
 	for pri, ctx := range expectedPriority {
 		require.Equal(t, pri, inferrer.contextPriority[ctx])
+	}
+}
+
+func Test_NewPriorityContextInferrer_InferStatements_DefaultContextsOrder(t *testing.T) {
+	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{
+		"log":                   newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"metric":                newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "scope", "instrumentation_scope", "resource"}),
+		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
+		"spanevent":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"scope":                 newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
+		"instrumentation_scope": newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
+		"resource":              newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+	})
+
+	tests := []struct {
+		name      string
+		statement string
+		expected  string
+	}{
+		{
+			name:      "log,instrumentation_scope,resource",
+			statement: `set(log.attributes["foo"], true) where instrumentation_scope.attributes["foo"] == resource.attributes["foo"]`,
+			expected:  "log",
+		},
+		{
+			name:      "log,scope,resource",
+			statement: `set(log.attributes["foo"], true) where scope.attributes["foo"] == resource.attributes["foo"]`,
+			expected:  "log",
+		},
+		{
+			name:      "instrumentation_scope,resource",
+			statement: `set(instrumentation_scope.attributes["foo"], true) where resource.attributes["foo"] != nil`,
+			expected:  "instrumentation_scope",
+		},
+		{
+			name:      "scope,resource",
+			statement: `set(scope.attributes["foo"], true) where resource.attributes["foo"] != nil`,
+			expected:  "scope",
+		},
+		{
+			name:      "metric,instrumentation_scope,resource",
+			statement: `set(metric.name, "foo") where instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "metric",
+		},
+		{
+			name:      "metric,scope,resource",
+			statement: `set(metric.name, "foo") where scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "metric",
+		},
+		{
+			name:      "datapoint,metric,instrumentation_scope,resource",
+			statement: `set(metric.name, "foo") where datapoint.double_value > 0 and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "datapoint",
+		},
+		{
+			name:      "datapoint,metric,scope,resource",
+			statement: `set(metric.name, "foo") where datapoint.double_value > 0 and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "datapoint",
+		},
+		{
+			name:      "span,instrumentation_scope,resource",
+			statement: `set(span.name, "foo") where instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "span",
+		},
+		{
+			name:      "span,scope,resource",
+			statement: `set(span.name, "foo") where scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "span",
+		},
+		{
+			name:      "spanevent,span,instrumentation_scope,resource",
+			statement: `set(span.name, "foo") where spanevent.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "spanevent",
+		},
+		{
+			name:      "spanevent,span,scope,resource",
+			statement: `set(span.name, "foo") where spanevent.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "spanevent",
+		},
+		{
+			name:      "resource",
+			statement: `set(resource.attributes["bar"], "foo") where dummy.attributes["foo"] != nil`,
+			expected:  "resource",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferred, err := inferrer.inferFromStatements([]string{tt.statement})
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, inferred)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *testing.T) {
+	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{
+		"log":                   newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"metric":                newDummyPriorityContextInferrerCandidate(true, true, []string{"datapoint", "scope", "instrumentation_scope", "resource"}),
+		"datapoint":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"span":                  newDummyPriorityContextInferrerCandidate(true, true, []string{"spanevent", "scope", "instrumentation_scope", "resource"}),
+		"spanevent":             newDummyPriorityContextInferrerCandidate(true, true, []string{"scope", "instrumentation_scope", "resource"}),
+		"scope":                 newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
+		"instrumentation_scope": newDummyPriorityContextInferrerCandidate(true, true, []string{"resource"}),
+		"resource":              newDummyPriorityContextInferrerCandidate(true, true, []string{}),
+	})
+
+	tests := []struct {
+		name      string
+		condition string
+		expected  string
+	}{
+		{
+			name:      "log,instrumentation_scope,resource",
+			condition: `log.attributes["foo"] !=nil and instrumentation_scope.attributes["foo"] == resource.attributes["foo"]`,
+			expected:  "log",
+		},
+		{
+			name:      "log,scope,resource",
+			condition: `log.attributes["foo"] != nil and scope.attributes["foo"] == resource.attributes["foo"]`,
+			expected:  "log",
+		},
+		{
+			name:      "instrumentation_scope,resource",
+			condition: `instrumentation_scope.attributes["foo"] != nil and resource.attributes["foo"] != nil`,
+			expected:  "instrumentation_scope",
+		},
+		{
+			name:      "scope,resource",
+			condition: `scope.attributes["foo"] != nil and resource.attributes["foo"] != nil`,
+			expected:  "scope",
+		},
+		{
+			name:      "metric,instrumentation_scope,resource",
+			condition: `metric.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "metric",
+		},
+		{
+			name:      "metric,scope,resource",
+			condition: `metric.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "metric",
+		},
+		{
+			name:      "datapoint,metric,instrumentation_scope,resource",
+			condition: `metric.name != nil and datapoint.double_value > 0 and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "datapoint",
+		},
+		{
+			name:      "datapoint,metric,scope,resource",
+			condition: `metric.name != nil and datapoint.double_value > 0 and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "datapoint",
+		},
+		{
+			name:      "span,instrumentation_scope,resource",
+			condition: `span.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "span",
+		},
+		{
+			name:      "span,scope,resource",
+			condition: `span.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "span",
+		},
+		{
+			name:      "spanevent,span,instrumentation_scope,resource",
+			condition: `span.name != nil and spanevent.name != nil and instrumentation_scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "spanevent",
+		},
+		{
+			name:      "spanevent,span,scope,resource",
+			condition: `span.name != nil and spanevent.name != nil and scope.name != nil and resource.attributes["foo"] != nil`,
+			expected:  "spanevent",
+		},
+		{
+			name:      "resource",
+			condition: `resource.attributes["bar"] != nil and dummy.attributes["foo"] != nil`,
+			expected:  "resource",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferred, err := inferrer.inferFromConditions([]string{tt.condition})
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, inferred)
+		})
 	}
 }

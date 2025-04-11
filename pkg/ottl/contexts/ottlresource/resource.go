@@ -51,15 +51,6 @@ func NewTransformContext(resource pcommon.Resource, schemaURLItem ctxcommon.Sche
 	return tc
 }
 
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
-	}
-}
-
 func (tCtx TransformContext) GetResource() pcommon.Resource {
 	return tCtx.resource
 }

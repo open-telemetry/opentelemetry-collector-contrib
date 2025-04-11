@@ -5,7 +5,7 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	goerrors "errors"
+	"errors"
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
@@ -13,7 +13,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // NewTransformerConfig creates a new transformer config with default values
@@ -35,13 +35,13 @@ type TransformerConfig struct {
 func (c TransformerConfig) Build(set component.TelemetrySettings) (TransformerOperator, error) {
 	writerOperator, err := c.WriterConfig.Build(set)
 	if err != nil {
-		return TransformerOperator{}, errors.WithDetails(err, "operator_id", c.ID())
+		return TransformerOperator{}, stanza_errors.WithDetails(err, "operator_id", c.ID())
 	}
 
 	switch c.OnError {
 	case SendOnError, SendOnErrorQuiet, DropOnError, DropOnErrorQuiet:
 	default:
-		return TransformerOperator{}, errors.NewError(
+		return TransformerOperator{}, stanza_errors.NewError(
 			"operator config has an invalid `on_error` field.",
 			"ensure that the `on_error` field is set to one of `send`, `send_quiet`, `drop`, `drop_quiet`.",
 			"on_error", c.OnError,
@@ -81,7 +81,7 @@ func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*e
 	for i := range entries {
 		errs = append(errs, process(ctx, entries[i]))
 	}
-	return goerrors.Join(errs...)
+	return errors.Join(errs...)
 }
 
 // ProcessWith will process an entry with a transform function.
@@ -104,7 +104,7 @@ func (t *TransformerOperator) ProcessWith(ctx context.Context, entry *entry.Entr
 // HandleEntryError will handle an entry error using the on_error strategy.
 func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry.Entry, err error) error {
 	if entry == nil {
-		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
 	logFields := []zap.Field{

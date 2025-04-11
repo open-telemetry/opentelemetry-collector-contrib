@@ -103,9 +103,9 @@ func (cfg *Config) Validate() error {
 	case OTLPMetricFormat:
 	case PrometheusFormat:
 	case RemovedGraphiteFormat:
-		return fmt.Errorf("support for the graphite metric format was removed, please use prometheus or otlp instead")
+		return errors.New("support for the graphite metric format was removed, please use prometheus or otlp instead")
 	case RemovedCarbon2Format:
-		return fmt.Errorf("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
+		return errors.New("support for the carbon2 metric format was removed, please use prometheus or otlp instead")
 	default:
 		return fmt.Errorf("unexpected metric format: %s", cfg.MetricFormat)
 	}

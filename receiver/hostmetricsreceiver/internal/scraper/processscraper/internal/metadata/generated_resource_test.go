@@ -40,32 +40,32 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("process.cgroup")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "process.cgroup-val", val.Str())
+				assert.Equal(t, "process.cgroup-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.command")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "process.command-val", val.Str())
+				assert.Equal(t, "process.command-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.command_line")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "process.command_line-val", val.Str())
+				assert.Equal(t, "process.command_line-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.executable.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "process.executable.name-val", val.Str())
+				assert.Equal(t, "process.executable.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.executable.path")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "process.executable.path-val", val.Str())
+				assert.Equal(t, "process.executable.path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.owner")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "process.owner-val", val.Str())
+				assert.Equal(t, "process.owner-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("process.parent_pid")
 			assert.True(t, ok)
