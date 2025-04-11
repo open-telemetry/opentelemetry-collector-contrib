@@ -5,7 +5,7 @@ package arrow
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 
 	arrowpb "github.com/open-telemetry/otel-arrow/api/experimental/arrow/v1"
@@ -390,7 +390,7 @@ func newConnectErrorTestChannel() *connectErrorTestChannel {
 }
 
 func (tc *connectErrorTestChannel) onConnect(_ context.Context) error {
-	return fmt.Errorf("test connect error")
+	return errors.New("test connect error")
 }
 
 func (tc *connectErrorTestChannel) onCloseSend() func() error {
