@@ -9,7 +9,6 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/selection"
 	"k8s.io/client-go/kubernetes"
@@ -270,7 +269,7 @@ func (rules *ExtractionRules) IncludesOwnerMetadata() bool {
 			return true
 		}
 	}
-	return rules.ServiceRules.IsEnabled(conventions.AttributeServiceName)
+	return rules.ServiceRules.Enabled
 }
 
 // FieldExtractionRule is used to specify which fields to extract from pod fields

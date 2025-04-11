@@ -1662,30 +1662,6 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			},
 		},
 		{
-			name: "automatic-container-level-attributes-with-exclude",
-			rules: ExtractionRules{
-				ServiceRules: ServiceRules{
-					Enabled: true,
-					Exclude: []string{conventions.AttributeServiceVersion},
-				},
-			},
-			pod: &pod,
-			want: PodContainers{
-				ByID: map[string]*Container{
-					"container1-id-123":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1"},
-					"container2-id-456":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3-id-abc":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3"},
-					"init-container-id-789": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
-				},
-				ByName: map[string]*Container{
-					"container1":     {ServiceName: "container1", ServiceInstanceID: "test-namespace.test-pod.container1"},
-					"container2":     {ServiceName: "container2", ServiceInstanceID: "test-namespace.test-pod.container2"},
-					"container3":     {ServiceName: "container3", ServiceInstanceID: "test-namespace.test-pod.container3"},
-					"init_container": {ServiceName: "init_container", ServiceInstanceID: "test-namespace.test-pod.init_container"},
-				},
-			},
-		},
-		{
 			name: "image-name-only",
 			rules: ExtractionRules{
 				ContainerImageName: true,
