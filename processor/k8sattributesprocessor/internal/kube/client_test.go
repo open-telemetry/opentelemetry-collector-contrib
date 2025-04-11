@@ -4,7 +4,7 @@
 package kube
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -189,7 +189,7 @@ func TestConstructorErrors(t *testing.T) {
 		}
 		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
 			gotAPIConfig = c
-			return nil, fmt.Errorf("error creating k8s client")
+			return nil, errors.New("error creating k8s client")
 		}
 		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
 		assert.Nil(t, c)
