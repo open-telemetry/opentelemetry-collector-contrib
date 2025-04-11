@@ -1784,7 +1784,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 				mustSendMetrics(t, exporter, metrics)
 
 				rec.WaitItems(1)
-				assert.Equal(t, 1, len(rec.Items()))
+				assert.Len(t, rec.Items(), 1)
 				// Sanity check that all metrics are included
 				assert.Contains(t, string(rec.Items()[0].Document), "a_foo")
 				assert.Contains(t, string(rec.Items()[0].Document), "a_bar")
