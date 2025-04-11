@@ -5,7 +5,6 @@ package awsutil
 
 import (
 	"errors"
-	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -162,8 +161,7 @@ func TestGetSTSCreds(t *testing.T) {
 
 func TestGetProxyAddressFromEnv(t *testing.T) {
 	t.Run("no proxy", func(t *testing.T) {
-		os.Setenv("NO_PROXY", "fake")
-		defer os.Unsetenv("NO_PROXY")
+		t.Setenv("NO_PROXY", "fake")
 		assert.Equal(t, "fake", getProxyAddress(""))
 	})
 
