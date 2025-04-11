@@ -704,7 +704,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		AutomaticRules: AutomaticRules{
+		ServiceRules: ServiceRules{
 			Enabled: true,
 			Labels:  true,
 		},
@@ -1643,7 +1643,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
-				AutomaticRules: AutomaticRules{Enabled: true},
+				ServiceRules: ServiceRules{Enabled: true},
 			},
 			pod: &pod,
 			want: PodContainers{
@@ -1664,7 +1664,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes-with-exclude",
 			rules: ExtractionRules{
-				AutomaticRules: AutomaticRules{
+				ServiceRules: ServiceRules{
 					Enabled: true,
 					Exclude: []string{conventions.AttributeServiceVersion},
 				},
