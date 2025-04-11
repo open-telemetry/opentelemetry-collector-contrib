@@ -82,15 +82,6 @@ func NewTransformContext(dataPoint any, metric pmetric.Metric, metrics pmetric.M
 	return tc
 }
 
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
-	}
-}
-
 func (tCtx TransformContext) GetDataPoint() any {
 	return tCtx.dataPoint
 }
