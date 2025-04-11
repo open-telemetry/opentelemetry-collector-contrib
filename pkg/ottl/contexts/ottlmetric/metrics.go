@@ -4,6 +4,7 @@
 package ottlmetric // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -156,7 +157,7 @@ func parseEnum(val *ottl.EnumSymbol) (*ottl.Enum, error) {
 		}
 		return nil, fmt.Errorf("enum symbol, %s, not found", *val)
 	}
-	return nil, fmt.Errorf("enum symbol not provided")
+	return nil, errors.New("enum symbol not provided")
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {

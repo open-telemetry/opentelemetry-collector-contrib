@@ -5,7 +5,6 @@ package ottlscope // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
-	"fmt"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -143,7 +142,7 @@ func NewParser(
 }
 
 func parseEnum(_ *ottl.EnumSymbol) (*ottl.Enum, error) {
-	return nil, fmt.Errorf("instrumentation scope context does not provide Enum support")
+	return nil, errors.New("instrumentation scope context does not provide Enum support")
 }
 
 func getCache(tCtx TransformContext) pcommon.Map {

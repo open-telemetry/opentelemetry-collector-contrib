@@ -4,6 +4,7 @@
 package receivercreator // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/receivercreator"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -191,7 +192,7 @@ func getScraperConfFromAnnotations(
 	confEndpoint, ok := val.(string)
 	if !ok {
 		logger.Debug("could not extract configured endpoint")
-		return userConfigMap{}, fmt.Errorf("could not extract configured endpoint")
+		return userConfigMap{}, errors.New("could not extract configured endpoint")
 	}
 
 	err := validateEndpoint(confEndpoint, defaultEndpoint)
@@ -281,14 +282,14 @@ func validateEndpoint(endpoint, defaultEndpoint string) error {
 	if uri == nil {
 		u, err := url.Parse("http://" + endpoint)
 		if err != nil {
-			return fmt.Errorf("could not parse endpoint")
+			return errors.New("could not parse endpoint")
 		}
 		uri = u
 	}
 
 	// configured endpoint should include the target Pod's endpoint
 	if uri.Host != defaultEndpoint {
-		return fmt.Errorf("configured endpoint should include target Pod's endpoint")
+		return errors.New("configured endpoint should include target Pod's endpoint")
 	}
 	return nil
 }
