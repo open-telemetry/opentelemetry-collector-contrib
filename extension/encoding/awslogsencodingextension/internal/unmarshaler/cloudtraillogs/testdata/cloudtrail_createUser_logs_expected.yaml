@@ -1,0 +1,69 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: aws-iam-api
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "888888888888"
+    scopeLogs:
+      - scope:
+          name: cloudtrail.processor
+        logRecords:
+          - timeUnixNano: 1689801909000000000
+            severityText: INFO
+            body:
+              stringValue: IAM CreateUser API call for user "Richard"
+            attributes:
+              - key: event.name
+                value: { stringValue: CreateUser }
+              - key: event.id
+                value: { stringValue: ba0801a1-87ec-4d26-be87-EXAMPLE75bbb }
+              - key: event.type
+                value: { stringValue: AwsApiCall }
+              - key: event.category
+                value: { stringValue: Management }
+              - key: aws.service
+                value: { stringValue: iam.amazonaws.com }
+              - key: aws.operation
+                value: { stringValue: CreateUser }
+              - key: aws.request_id
+                value: { stringValue: 2d528c76-329e-410b-9516-EXAMPLE565dc }
+              - key: aws.session.console
+                value: { boolValue: true }
+              - key: aws.event.read_only
+                value: { boolValue: false }
+              - key: principal.id
+                value: { stringValue: AIDA6ON6E4XEGITEXAMPLE }
+              - key: principal.name
+                value: { stringValue: Mary }
+              - key: principal.iam.arn
+                value: { stringValue: arn:aws:iam::888888888888:user/Mary }
+              - key: net.peer.ip
+                value: { stringValue: 192.0.2.0 }
+              - key: user_agent.original
+                value:
+                  stringValue: >-
+                    aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64
+                    exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/iam.create-user
+              - key: tls.version
+                value: { stringValue: TLSv1.2 }
+              - key: tls.cipher
+                value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
+              - key: server.address
+                value: { stringValue: iam.amazonaws.com }
+              - key: aws.target_user.name
+                value: { stringValue: Richard }
+              - key: aws.target_user.arn
+                value: { stringValue: arn:aws:iam::888888888888:user/Richard }
+              - key: aws.target_user.id
+                value: { stringValue: AIDA6ON6E4XEP7EXAMPLE }
+              - key: aws.target_user.path
+                value: { stringValue: "/" }

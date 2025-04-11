@@ -1,0 +1,87 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: aws-ec2-api
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.region
+          value:
+            stringValue: us-east-1
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+    scopeLogs:
+      - scope:
+          name: cloudtrail.processor
+        logRecords:
+          - timeUnixNano: 1689801448000000000
+            severityText: INFO
+            body:
+              stringValue: EC2 StartInstances API call
+            attributes:
+              - key: event.name
+                value: { stringValue: StartInstances }
+              - key: event.id
+                value: { stringValue: e755e09c-42f9-4c5c-9064-EXAMPLE228c7 }
+              - key: event.type
+                value: { stringValue: AwsApiCall }
+              - key: event.category
+                value: { stringValue: Management }
+              - key: aws.service
+                value: { stringValue: ec2.amazonaws.com }
+              - key: aws.operation
+                value: { stringValue: StartInstances }
+              - key: aws.request_id
+                value: { stringValue: e4336db0-149f-4a6b-844d-EXAMPLEb9d16 }
+              - key: aws.session.console
+                value: { boolValue: true }
+              - key: aws.event.read_only
+                value: { boolValue: false }
+              - key: principal.id
+                value: { stringValue: EXAMPLE6E4XEGITWATV6R }
+              - key: principal.name
+                value: { stringValue: Mateo }
+              - key: principal.iam.arn
+                value: { stringValue: arn:aws:iam::123456789012:user/Mateo }
+              - key: net.peer.ip
+                value: { stringValue: 192.0.2.0 }
+              - key: user_agent.original
+                value:
+                  stringValue: >-
+                    aws-cli/2.13.5 Python/3.11.4 Linux/4.14.255-314-253.539.amzn2.x86_64
+                    exec-env/CloudShell exe/x86_64.amzn.2 prompt/off command/ec2.start-instances
+              - key: tls.version
+                value: { stringValue: TLSv1.2 }
+              - key: tls.cipher
+                value: { stringValue: ECDHE-RSA-AES128-GCM-SHA256 }
+              - key: server.address
+                value: { stringValue: ec2.us-east-1.amazonaws.com }
+              - key: aws.request.parameters.instances
+                value:
+                  arrayValue:
+                    values:
+                      - stringValue: i-EXAMPLE56126103cb
+                      - stringValue: i-EXAMPLEaff4840c22
+              - key: aws.response.instances
+                value:
+                  arrayValue:
+                    values:
+                      - kvlistValue:
+                          values:
+                            - key: instanceId
+                              value: { stringValue: i-EXAMPLEaff4840c22 }
+                            - key: previousState
+                              value: { stringValue: stopped }
+                            - key: currentState
+                              value: { stringValue: pending }
+                      - kvlistValue:
+                          values:
+                            - key: instanceId
+                              value: { stringValue: i-EXAMPLE56126103cb }
+                            - key: previousState
+                              value: { stringValue: stopped }
+                            - key: currentState
+                              value: { stringValue: pending }
