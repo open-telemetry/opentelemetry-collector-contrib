@@ -16,6 +16,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
    - Parquet support still to be added.
  - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
+ - [AWS CloudTrail logs](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-log-file-examples.html).
  - (More to be added later.)
 
 Example for Amazon CloudWatch Logs Subscription Filters:
@@ -46,6 +47,13 @@ Example for S3 access logs:
 extensions:
   awslogs_encoding/s3_access_log:
     format: s3_access_log
+```
+
+Example for CloudTrail logs:
+```yaml
+extensions:
+  awslogs_encoding/cloudtrail:
+    format: cloudtrail_logs
 ```
 
 #### VPC flow log record fields
@@ -128,8 +136,6 @@ extensions:
 | TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
 | Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
 | aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |
-
-
 #### AWS WAF log record fields
 
 [AWS WAF log record fields](https://docs.aws.amazon.com/waf/latest/developerguide/logging-fields.html) are mapped this way in the resulting OpenTelemetry log:
@@ -168,3 +174,44 @@ extensions:
 | `cfDistributionTenantId`      | _Currently not supported_                                                                        |
 | `challengeResponse`           | _Currently not supported_                                                                        |
 | `oversizeFields`              | _Currently not supported_                                                                        |
+
+#### CloudTrail log record fields
+
+[CloudTrail log record fields](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/cloudtrail-event-reference-record-contents.html) are mapped this way in the resulting OpenTelemetry log:
+
+| CloudTrail field                      | Attribute in OpenTelemetry log                                                         |
+|---------------------------------------|----------------------------------------------------------------------------------------|
+| `awsRegion`                           | `cloud.region`                                                                         |
+| `recipientAccountId`                  | `cloud.account.id`                                                                     |
+| `eventID`                             | `request.event_id`                                                                     |
+| `eventType`                           | `rpc.system`                                                                           |
+| `eventCategory`                       | `aws.event.category`                                                                   |
+| `eventSource`                         | `rpc.service`                                                                          |
+| `eventName`                           | `rpc.method`                                                                           |
+| `requestID`                           | `aws.request_id`                                                                       |
+| `sourceIPAddress`                     | `net.peer.ip`                                                                          |
+| `userAgent`                           | `user_agent.original`                                                                  |
+| `readOnly`                            | `aws.event.read_only`                                                                  |
+| `sessionCredentialFromConsole`        | `aws.session.console` (set to true if value is "true")                                 |
+| `tlsDetails.tlsVersion`               | `tls.protocol.version` (if available)                                                  |
+| `tlsDetails.cipherSuite`              | `tls.cipher` (if available)                                                            |
+| `tlsDetails.clientProvidedHostHeader` | `server.address` (if available)                                                        |
+
+For User Name operations (e.g. CreateUser, DeleteUser):
+
+| CloudTrail field               | Attribute in OpenTelemetry log                                                                |
+|--------------------------------|-----------------------------------------------------------------------------------------------|
+| `userIdentity.principalId`     | `principal.id` (if available)                                                                 |
+| `userIdentity.userName`        | `principal.name` (if available)                                                               |
+| `userIdentity.arn`             | `principal.iam.arn` (if available)                                                            |
+| `requestParameters.userName`   | `aws.target_user.name` (if available)                                                         |
+| `responseElements.user.arn`    | `aws.target_user.arn` (if available)                                                          |
+| `responseElements.user.userId` | `aws.target_user.id` (if available)                                                           |
+| `responseElements.user.path`   | `aws.target_user.path` (if available)                                                         |
+
+For EC2 instance operations (StartInstances, StopInstances, TerminateInstances, RebootInstances, RunInstances), additional attributes are set:
+
+| CloudTrail field                                    | Attribute in OpenTelemetry log                                                                             |
+|-----------------------------------------------------|------------------------------------------------------------------------------------------------------------|
+| `requestParameters.instancesSet.items[].instanceId` | `aws.request.parameters.instances` (array of instance IDs)                                                 |
+| `responseElements.instancesSet.items[]`             | `aws.response.instances` (array of instance details including instanceId, currentState, and previousState) |
