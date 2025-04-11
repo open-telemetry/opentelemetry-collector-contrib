@@ -542,7 +542,7 @@ checkmetadata: $(CHECKFILE)
 
 .PHONY: checkapi
 checkapi: $(CHECKAPI)
-	$(CHECKAPI) -folder .
+	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
 kind-ready:

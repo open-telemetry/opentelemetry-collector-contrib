@@ -579,6 +579,8 @@ go.opentelemetry.io/auto/sdk v1.1.0 h1:cH53jehLUN6UFLY71z+NDOiNJqDdPRaXzTel0sJyS
 go.opentelemetry.io/auto/sdk v1.1.0/go.mod h1:3wSPjt5PWp2RhlCcmmOial7AvC4DQqZb7a7wCow3W8A=
 go.opentelemetry.io/build-tools v0.21.0 h1:Pq8oGzf+gxzVo+OF/qvuXYx7mK5RQqroyxDZatJn+64=
 go.opentelemetry.io/build-tools v0.21.0/go.mod h1:K3mKlSmwily6RTNCwDYEt7RGWQ1KUWu352WKJp+/DkQ=
+go.opentelemetry.io/build-tools/checkapi v0.22.0 h1:BQSmPLW/CoBnHMsb8Eoe+oHqsAYHlYceDmtFr+coLPo=
+go.opentelemetry.io/build-tools/checkapi v0.22.0/go.mod h1:Yks8jznQBvvcHqkb8yjgZ4WBOm8KlO34tJ2aSptheFw=
 go.opentelemetry.io/build-tools/checkfile v0.21.0 h1:9KmOjOGDZ9ub88qnmHpk4m9qw8mfki3ylPjyUuq3LTY=
 go.opentelemetry.io/build-tools/checkfile v0.21.0/go.mod h1:cJr2PBIQbubYHFE9bvbRWzAAHdQdFMVdI5VD9ETycvw=
 go.opentelemetry.io/build-tools/chloggen v0.21.0 h1:hkmpeTcge4pHqx/CuBmmYW7ojyXxnaC2rI8u4DMng6U=

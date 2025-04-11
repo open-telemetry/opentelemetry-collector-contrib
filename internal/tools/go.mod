@@ -11,7 +11,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi v0.123.0
+	go.opentelemetry.io/build-tools/checkapi v0.22.0
 	go.opentelemetry.io/build-tools/checkfile v0.21.0
 	go.opentelemetry.io/build-tools/chloggen v0.21.0
 	go.opentelemetry.io/build-tools/crosslink v0.21.0
@@ -280,8 +280,6 @@ require (
 	honnef.co/go/tools v0.6.1 // indirect
 	mvdan.cc/unparam v0.0.0-20250301125049-0df0534333a4 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi => ../../cmd/checkapi
 
 // openshift removed all tags from their repo, use the pseudoversion from the release-3.9 branch HEAD
 replace github.com/openshift/api v3.9.0+incompatible => github.com/openshift/api v0.0.0-20180801171038-322a19404e37
