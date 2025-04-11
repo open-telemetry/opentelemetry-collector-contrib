@@ -703,11 +703,8 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		Service: ServiceRules{
-			Enabled: true,
-			Labels:  true,
-		},
-		Labels: AutomaticLabelRules,
+		Service: true,
+		Labels:  AutomaticLabelRules,
 	}
 
 	testCases := []struct {
@@ -1641,7 +1638,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
-				Service: ServiceRules{Enabled: true},
+				Service: true,
 			},
 			pod: &pod,
 			want: PodContainers{

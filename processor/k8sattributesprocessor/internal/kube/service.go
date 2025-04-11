@@ -10,11 +10,6 @@ import (
 	v1 "k8s.io/api/core/v1"
 )
 
-type ServiceRules struct {
-	Enabled bool `mapstructure:"enabled"`
-	Labels  bool `mapstructure:"well_known_labels"`
-}
-
 // AutomaticLabelRules has rules where the last entry wins
 var AutomaticLabelRules = []FieldExtractionRule{
 	{
