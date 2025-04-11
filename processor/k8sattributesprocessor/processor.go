@@ -172,7 +172,6 @@ func (kp *kubernetesprocessor) processResource(ctx context.Context, resource pco
 			setResourceAttribute(resource.Attributes(), key, val)
 		}
 
-		kp.rules.ServiceRules.IsEnabled(conventions.AttributeServiceNamespace)
 		{
 			resource.Attributes().PutStr(conventions.AttributeServiceNamespace, namespace)
 		}
