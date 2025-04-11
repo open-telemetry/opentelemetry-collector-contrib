@@ -16,6 +16,7 @@ import (
 
 type AttributeKeyValue struct {
 	Key          string
+	Optional     bool
 	DefaultValue pcommon.Value
 }
 
@@ -199,8 +200,7 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 func (md *MetricDef[K]) FilterAttributes(attrs pcommon.Map) (pcommon.Map, bool) {
 	// Figure out if all the attributes are available, saves allocation
 	for _, filter := range md.Attributes {
-		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty {
-			// will always add an attribute
+		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
 			continue
 		}
 		if _, ok := attrs.Get(filter.Key); !ok {
@@ -235,6 +235,7 @@ func parseAttributeConfigs(cfgs []config.Attribute) ([]AttributeKeyValue, error)
 		}
 		kvs[i] = AttributeKeyValue{
 			Key:          attr.Key,
+			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
 	}
