@@ -226,7 +226,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if path == "" {
 			return fmt.Errorf("unexpected: request uri %q has no path", value)
 		}
-		res, err := url.Parse(path)
+		res, err := url.ParseRequestURI(path)
 		if err != nil {
 			return fmt.Errorf("request uri path is invalid: %w", err)
 		}
@@ -238,9 +238,6 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		}
 		if res.Scheme != "" {
 			record.Attributes().PutStr(semconv.AttributeURLScheme, res.Scheme)
-		}
-		if res.Fragment != "" {
-			record.Attributes().PutStr(semconv.AttributeURLFragment, res.Fragment)
 		}
 
 		protocol, remaining, _ := strings.Cut(remaining, " ")
