@@ -42,7 +42,7 @@ exporter/alibabacloudlogserviceexporter/                         @open-telemetry
 exporter/awscloudwatchlogsexporter/                              @open-telemetry/collector-contrib-approvers @boostchicken @rapphil
 exporter/awsemfexporter/                                         @open-telemetry/collector-contrib-approvers @Aneurysm9 @mxiamxia
 exporter/awskinesisexporter/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @MovieStoreGuy
-exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski
+exporter/awss3exporter/                                          @open-telemetry/collector-contrib-approvers @atoulme @pdelewski @Erog38
 exporter/awsxrayexporter/                                        @open-telemetry/collector-contrib-approvers @wangzlei @srprash
 exporter/azureblobexporter/                                      @open-telemetry/collector-contrib-approvers @hgaol @MovieStoreGuy
 exporter/azuredataexplorerexporter/                              @open-telemetry/collector-contrib-approvers @ag-ramachandran
