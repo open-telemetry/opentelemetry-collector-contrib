@@ -298,6 +298,9 @@ k8sattributes/2:
         key: app.kubernetes.io/component
         from: pod
     otel_annotations: true 
+    service_attributes:
+      enabled: true
+      well_known_labels: true
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
