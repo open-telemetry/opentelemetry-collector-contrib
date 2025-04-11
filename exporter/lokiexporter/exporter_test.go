@@ -5,6 +5,7 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -338,5 +339,5 @@ func (p *badProtoForCoverage) Reset()         {}
 func (p *badProtoForCoverage) String() string { return "" }
 func (p *badProtoForCoverage) ProtoMessage()  {}
 func (p *badProtoForCoverage) Marshal() (dAtA []byte, err error) {
-	return nil, fmt.Errorf("this is a bad proto")
+	return nil, errors.New("this is a bad proto")
 }
