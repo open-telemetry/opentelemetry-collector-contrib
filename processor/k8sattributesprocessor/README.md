@@ -258,10 +258,19 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+- `service_attributes.enabled` will populate `service.name`, `service.namespace`, `service.instance.id` and `service.version` 
+  attributes based on Kubernetes metadata.
+  - setting `well_known_labels` will also use following labels:
+    - `app.kubernetes.io/name` -> `service.name`
+    - `app.kubernetes.io/instance` -> `service.name`
+    - `app.kubernetes.io/version` -> `service.version`
 
 ```yaml
   extract:
     otel_annotations: true 
+    service_attributes:
+      enabled: true
+      well_known_labels: true
 ```
 
 ### Config example

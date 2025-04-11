@@ -172,14 +172,16 @@ type ExtractConfig struct {
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
 
-	// todo
+	// ServiceAttributes allows to extract service attributes based on kubernetes metadata.
 	ServiceAttributes ServiceAttributeConfig `mapstructure:"service_attributes"`
 }
 
-// todo
+// ServiceAttributeConfig allows to extract service attributes based on kubernetes metadata.
 type ServiceAttributeConfig struct {
+	// Enabled enables the extraction of service attributes based on kubernetes metadata.
 	Enabled bool `mapstructure:"enabled"`
-	Labels  bool `mapstructure:"well_known_labels"`
+	// WellKnownLabels enables the extraction of well-known labels as service attributes.
+	Labels bool `mapstructure:"well_known_labels"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
