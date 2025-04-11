@@ -72,7 +72,7 @@ func TestAddField(t *testing.T) {
 		"missing_path_request_uri": {
 			field:       fieldIndexRequestURI,
 			value:       "GET",
-			expectedErr: "has no path",
+			expectedErr: "has no request URI",
 		},
 		"invalid_request_uri_path": {
 			field:       fieldIndexRequestURI,
