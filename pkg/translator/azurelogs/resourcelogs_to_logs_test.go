@@ -260,8 +260,6 @@ func TestExtractRawAttributes(t *testing.T) {
 }
 
 func TestUnmarshalLogs_Files(t *testing.T) {
-	t.Parallel()
-
 	logsDir := "testdata"
 	expectedDir := "testdata/expected"
 	tests := map[string]struct {
