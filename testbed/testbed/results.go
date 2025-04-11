@@ -127,50 +127,53 @@ func (r *PerformanceResults) Add(_ string, result any) {
 	memoryChartName := fmt.Sprintf("%s - RAM (MiB)", testResult.testName)
 	droppedSpansChartName := fmt.Sprintf("%s - Dropped Span Count", testResult.testName)
 
-	r.benchmarkResults = append(r.benchmarkResults,
-		&benchmarkResult{
-			Name:  "cpu_percentage_avg",
-			Value: testResult.cpuPercentageAvg,
-			Unit:  "%",
-			Extra: cpuChartName,
-		},
-		&benchmarkResult{
-			Name:  "cpu_percentage_max",
-			Value: testResult.cpuPercentageMax,
-			Unit:  "%",
-			Extra: cpuChartName,
-		})
+	runType := ""
+	if t := os.Getenv("RUN_TYPE"); t != "" {
+		runType = fmt.Sprintf("_%s", t)
+	}
+
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  fmt.Sprintf("cpu_percentage_avg%s", runType),
+		Value: testResult.cpuPercentageAvg,
+		Unit:  "%",
+		Extra: cpuChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  fmt.Sprintf("cpu_percentage_max%s", runType),
+		Value: testResult.cpuPercentageMax,
+		Unit:  "%",
+		Extra: cpuChartName,
+	})
 	if testResult.cpuPercentageLimit > 0 {
 		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-			Name:  "cpu_percentage_limit",
+			Name:  fmt.Sprintf("cpu_percentage_limit%s", runType),
 			Value: testResult.cpuPercentageLimit,
 			Unit:  "%",
 			Extra: cpuChartName,
 		})
 	}
-	r.benchmarkResults = append(r.benchmarkResults,
-		&benchmarkResult{
-			Name:  "ram_mib_avg",
-			Value: float64(testResult.ramMibAvg),
-			Unit:  "MiB",
-			Extra: memoryChartName,
-		},
-		&benchmarkResult{
-			Name:  "ram_mib_max",
-			Value: float64(testResult.ramMibMax),
-			Unit:  "MiB",
-			Extra: memoryChartName,
-		})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  fmt.Sprintf("ram_mib_avg%s", runType),
+		Value: float64(testResult.ramMibAvg),
+		Unit:  "MiB",
+		Extra: memoryChartName,
+	})
+	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
+		Name:  fmt.Sprintf("ram_mib_max%s", runType),
+		Value: float64(testResult.ramMibMax),
+		Unit:  "MiB",
+		Extra: memoryChartName,
+	})
 	if testResult.ramMibLimit > 0 {
 		r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-			Name:  "ram_mib_limit",
+			Name:  fmt.Sprintf("ram_mib_limit%s", runType),
 			Value: float64(testResult.ramMibLimit),
 			Unit:  "MiB",
 			Extra: memoryChartName,
 		})
 	}
 	r.benchmarkResults = append(r.benchmarkResults, &benchmarkResult{
-		Name:  "dropped_span_count",
+		Name:  fmt.Sprintf("dropped_span_count%s", runType),
 		Value: float64(testResult.sentSpanCount - testResult.receivedSpanCount),
 		Unit:  "spans",
 		Extra: droppedSpansChartName,
