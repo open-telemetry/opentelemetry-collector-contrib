@@ -9,6 +9,8 @@ signaltometrics:
       attributes:
         - key: key.2
           default_value: bar
+        - key: key.3
+          optional: true
       conditions:
         - attributes["some.optional.1"] != nil
         - resource.attributes["some.optional.2"] != nil
@@ -25,6 +27,8 @@ signaltometrics:
       attributes:
         - key: key.2
           default_value: bar
+        - key: key.3
+          optional: true
       conditions:
         - attributes["some.optional.1"] != nil
         - resource.attributes["some.optional.2"] != nil
@@ -42,6 +46,8 @@ signaltometrics:
       attributes:
         - key: key.2
           default_value: bar
+        - key: key.3
+          optional: true
       conditions:
         - attributes["some.optional.1"] != nil
         - IsDouble(attributes["some.optional.1"])
@@ -57,6 +63,8 @@ signaltometrics:
       attributes:
         - key: key.2
           default_value: bar
+        - key: key.3
+          optional: true
       conditions:
         - attributes["some.optional.1"] != nil
       sum:

@@ -44,6 +44,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 		candidates map[string]*priorityContextInferrerCandidate
 		statements []string
 		expected   string
+		err        string
 	}{
 		{
 			name:     "with priority and statement context",
@@ -109,7 +110,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 				"metric":    newDummyPriorityContextInferrerCandidate(false, false, []string{"datapoint"}),
 				"datapoint": newDummyPriorityContextInferrerCandidate(false, false, []string{}),
 			},
-			expected: "",
+			err: `inferred context "metric" does not support the function "set"`,
 		},
 		{
 			name:       "inferred path context with missing function and no lower context",
@@ -118,7 +119,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			candidates: map[string]*priorityContextInferrerCandidate{
 				"metric": newDummyPriorityContextInferrerCandidate(false, true, []string{}),
 			},
-			expected: "",
+			err: `inferred context "metric" does not support the function "set"`,
 		},
 		{
 			name:       "inferred path context with missing enum",
@@ -135,7 +136,7 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 			priority:   []string{"unknown"},
 			statements: []string{`set(unknown.count, 0)`},
 			candidates: map[string]*priorityContextInferrerCandidate{},
-			expected:   "",
+			err:        `inferred context "unknown" is not a valid candidate`,
 		},
 	}
 
@@ -147,6 +148,11 @@ func Test_NewPriorityContextInferrer_InferStatements(t *testing.T) {
 				withContextInferrerPriorities(tt.priority),
 			)
 			inferredContext, err := inferrer.inferFromStatements(tt.statements)
+			if tt.err != "" {
+				require.ErrorContains(t, err, tt.err)
+				return
+			}
+
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferredContext)
 		})

@@ -127,6 +127,9 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
+				},
 			},
 		},
 		{
@@ -204,6 +207,9 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
+				},
 			},
 		},
 		{
@@ -280,6 +286,9 @@ func TestConfig(t *testing.T) {
 							MinSize: defaultBatcherMinSizeItems,
 						},
 					},
+				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
 				},
 			},
 		},
