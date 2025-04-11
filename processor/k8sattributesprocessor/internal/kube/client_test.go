@@ -703,8 +703,9 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		Service: true,
-		Labels:  AutomaticLabelRules,
+		Service:     true,
+		Labels:      AutomaticLabelRules,
+		Annotations: []FieldExtractionRule{OtelAnnotations()},
 	}
 
 	testCases := []struct {

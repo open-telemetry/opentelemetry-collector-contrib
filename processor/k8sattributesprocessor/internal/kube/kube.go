@@ -384,3 +384,12 @@ type ReplicaSet struct {
 	UID        string
 	Deployment Deployment
 }
+
+func OtelAnnotations() FieldExtractionRule {
+	return FieldExtractionRule{
+		Name:                 "$1",
+		KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+		HasKeyRegexReference: true,
+		From:                 MetadataFromPod,
+	}
+}
