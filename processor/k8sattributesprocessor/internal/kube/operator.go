@@ -16,16 +16,6 @@ type ServiceRules struct {
 	Labels  bool `mapstructure:"well_known_labels"`
 }
 
-func (r *ServiceRules) IsEnabled(key string) bool {
-	return r.Enabled
-}
-
-func (r *ServiceRules) NeedContainer() bool {
-	return r.IsEnabled(conventions.AttributeServiceName) ||
-		r.IsEnabled(conventions.AttributeServiceInstanceID) ||
-		r.IsEnabled(conventions.AttributeServiceVersion)
-}
-
 const DefaultAnnotationPrefix = "resource.opentelemetry.io/"
 
 // AutomaticLabelRules has rules where the last entry wins
