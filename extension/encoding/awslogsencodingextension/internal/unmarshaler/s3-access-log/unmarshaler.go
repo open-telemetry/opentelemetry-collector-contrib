@@ -219,11 +219,11 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		}
 		record.Attributes().PutStr(semconv.AttributeHTTPRequestMethod, method)
 
-		path, remaining, _ := strings.Cut(remaining, " ")
-		if path == "" {
-			return fmt.Errorf("unexpected: request uri %q has no path", value)
+		requestURI, remaining, _ := strings.Cut(remaining, " ")
+		if requestURI == "" {
+			return fmt.Errorf("unexpected: request uri %q has no request URI", value)
 		}
-		res, err := url.ParseRequestURI(path)
+		res, err := url.ParseRequestURI(requestURI)
 		if err != nil {
 			return fmt.Errorf("request uri path is invalid: %w", err)
 		}
