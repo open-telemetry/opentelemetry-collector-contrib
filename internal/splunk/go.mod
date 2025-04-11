@@ -4,10 +4,10 @@ go 1.23.0
 
 require (
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/consumer/consumererror v0.123.1-0.20250402200755-cb5c3f4fb9dc
-	go.opentelemetry.io/collector/exporter v0.123.1-0.20250402200755-cb5c3f4fb9dc
+	go.opentelemetry.io/collector/consumer/consumererror v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/exporter v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/semconv v0.123.1-0.20250402200755-cb5c3f4fb9dc
+	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.uber.org/goleak v1.3.0
 )
 
@@ -35,11 +35,11 @@ require (
 	go.opentelemetry.io/collector/confmap v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/collector/consumer v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/collector/extension v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.123.1-0.20250402200755-cb5c3f4fb9dc // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.123.1-0.20250402200755-cb5c3f4fb9dc // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.123.1-0.20250402200755-cb5c3f4fb9dc // indirect
-	go.opentelemetry.io/collector/pipeline v0.123.1-0.20250402200755-cb5c3f4fb9dc // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/collector/pipeline v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
