@@ -21,9 +21,8 @@ const (
 )
 
 type Serializer struct {
-	mu sync.Mutex
-
 	// Data cache for profiles
+	loadLRUsOnce                 sync.Once
 	knownTraces                  *lru.LRUSet
 	knownFrames                  *lru.LRUSet
 	knownExecutables             *lru.LRUSet
