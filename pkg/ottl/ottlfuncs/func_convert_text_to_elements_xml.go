@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/antchfx/xmlquery"
 
@@ -26,7 +26,7 @@ func createConvertTextToElementsXMLFunction[K any](_ ottl.FunctionContext, oArgs
 	args, ok := oArgs.(*ConvertTextToElementsXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
+		return nil, errors.New("ConvertTextToElementsXML args must be of type *ConvertTextToElementsXMLAguments[K]")
 	}
 
 	xPath := args.XPath.Get()

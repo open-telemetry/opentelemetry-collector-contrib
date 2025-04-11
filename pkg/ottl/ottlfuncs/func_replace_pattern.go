@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"regexp"
 	"strings"
@@ -32,7 +33,7 @@ func createReplacePatternFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argu
 	args, ok := oArgs.(*ReplacePatternArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
+		return nil, errors.New("ReplacePatternFactory args must be of type *ReplacePatternArguments[K]")
 	}
 
 	return replacePattern(args.Target, args.RegexPattern, args.Replacement, args.Function, args.ReplacementFormat)
@@ -86,7 +87,7 @@ func applyOptReplaceFunction[K any](ctx context.Context, tCtx K, compiledPattern
 		}
 		replacementValStr, ok := replacementValRaw.(string)
 		if !ok {
-			return "", fmt.Errorf("the replacement value must be a string")
+			return "", errors.New("the replacement value must be a string")
 		}
 		replacementValStr, errNew = applyReplaceFormat(ctx, tCtx, replacementFormat, replacementValStr)
 		if errNew != nil {
