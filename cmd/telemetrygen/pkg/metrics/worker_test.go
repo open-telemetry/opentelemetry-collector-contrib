@@ -494,8 +494,9 @@ func TestTemporalityStartTimes(t *testing.T) {
 			name:        "Delta temporality has different start timestamps",
 			temporality: AggregationTemporality(metricdata.DeltaTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
-				assert.True(t, secondTime.After(firstTime),
-					"delta metrics should have increasing start times")
+				diff := secondTime.Sub(firstTime)
+				assert.Greater(t, diff, time.Duration(0),
+					"delta metrics should have increasing start times, got difference: %v", diff)
 			},
 		},
 	}
