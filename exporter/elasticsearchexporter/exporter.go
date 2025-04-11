@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
@@ -204,7 +205,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	defer session.End()
 
 	// Maintain a 2 layer map to avoid storing lots of copies of index strings
-	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[HashKey]*dataPointsGroup)
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[metricgroup.HashKey]*dataPointsGroup)
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
@@ -228,7 +229,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[index]
 					if !ok {
-						groupedDataPoints = make(map[HashKey]*dataPointsGroup)
+						groupedDataPoints = make(map[metricgroup.HashKey]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
 					hasher.UpdateDataPoint(dp)
@@ -635,5 +636,15 @@ func (e *elasticsearchExporter) getMappingMode(ctx context.Context) (MappingMode
 		return mode, nil
 	default:
 		return -1, fmt.Errorf("expected one value for %s, got %d", metadataKey, n)
+	}
+}
+
+func newDataPointHasher(mode MappingMode) metricgroup.DataPointHasher {
+	switch mode {
+	case MappingOTel:
+		return &metricgroup.OTelDataPointHasher{}
+	default:
+		// Defaults to ECS for backward compatibility
+		return &metricgroup.ECSDataPointHasher{}
 	}
 }

@@ -25,6 +25,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/objmodel"
 )
 
@@ -115,7 +116,7 @@ func TestEncodeMetric(t *testing.T) {
 	encoder, _ := newEncoder(MappingECS)
 	hasher := newDataPointHasher(MappingECS)
 
-	groupedDataPoints := make(map[HashKey][]datapoints.DataPoint)
+	groupedDataPoints := make(map[metricgroup.HashKey][]datapoints.DataPoint)
 
 	var docsBytes [][]byte
 	rm := metrics.ResourceMetrics().At(0)
