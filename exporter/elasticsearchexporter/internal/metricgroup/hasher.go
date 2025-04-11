@@ -83,6 +83,9 @@ type OTelDataPointHasher struct {
 }
 
 func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
+	// We cannot use exp/metrics/identity here because some resource fields e.g. schema url
+	// are not dimensions and should not be part of the hash.
+
 	hasher := fnv.New32a()
 	// There is special handling to merge geo attributes during serialization,
 	// but we can hash them as if they are separate now.
