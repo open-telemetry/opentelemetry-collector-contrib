@@ -124,9 +124,9 @@ func TestInfo(t *testing.T) {
 	assert.NotNil(t, m)
 
 	// before ebsVolume and ec2Tags are initialized
-	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
-	assert.Equal(t, "", m.GetClusterName())
-	assert.Equal(t, "", m.GetAutoScalingGroupName())
+	assert.Empty(t, m.GetEBSVolumeID("dev"))
+	assert.Empty(t, m.GetClusterName())
+	assert.Empty(t, m.GetAutoScalingGroupName())
 
 	// close the channel so that ebsVolume and ec2Tags can be initialized
 	close(m.instanceIDReadyC)
@@ -201,8 +201,8 @@ func TestInfoForECS(t *testing.T) {
 	assert.NotNil(t, m)
 
 	// before ebsVolume and ec2Tags are initialized
-	assert.Equal(t, "", m.GetEBSVolumeID("dev"))
-	assert.Equal(t, "", m.GetAutoScalingGroupName())
+	assert.Empty(t, m.GetEBSVolumeID("dev"))
+	assert.Empty(t, m.GetAutoScalingGroupName())
 
 	// close the channel so that ebsVolume and ec2Tags can be initialized
 	close(m.instanceIDReadyC)
