@@ -4,9 +4,9 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
 	"time"
 
@@ -79,10 +79,14 @@ type ResourceLogsUnmarshaler struct {
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
+
 	var azureLogs azureRecords
-	decoder := jsoniter.ConfigFastest.NewDecoder(bytes.NewReader(buf))
-	if err := decoder.Decode(&azureLogs); err != nil {
-		return plog.Logs{}, err
+	iter.ReadVal(&azureLogs)
+
+	if iter.Error != nil {
+		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
 	allResourceScopeLogs := map[string]plog.ScopeLogs{}
