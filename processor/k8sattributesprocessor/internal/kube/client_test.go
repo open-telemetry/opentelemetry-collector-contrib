@@ -707,8 +707,7 @@ func TestExtractionRules(t *testing.T) {
 			Enabled: true,
 			Labels:  true,
 		},
-		Annotations: []FieldExtractionRule{AutomaticAnnotationRule(DefaultAnnotationPrefix)},
-		Labels:      AutomaticLabelRules,
+		Labels: AutomaticLabelRules,
 	}
 
 	testCases := []struct {

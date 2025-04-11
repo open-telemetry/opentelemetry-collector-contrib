@@ -179,6 +179,7 @@ type ExtractConfig struct {
 // todo
 type ServiceAttributeConfig struct {
 	Enabled bool `mapstructure:"enabled"`
+	Labels  bool `mapstructure:"well_known_labels"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)

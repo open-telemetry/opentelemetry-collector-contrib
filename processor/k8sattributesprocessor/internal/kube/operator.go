@@ -4,7 +4,6 @@
 package kube // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
 
 import (
-	"regexp"
 	"strings"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -15,8 +14,6 @@ type ServiceRules struct {
 	Enabled bool `mapstructure:"enabled"`
 	Labels  bool `mapstructure:"well_known_labels"`
 }
-
-const DefaultAnnotationPrefix = "resource.opentelemetry.io/"
 
 // AutomaticLabelRules has rules where the last entry wins
 var AutomaticLabelRules = []FieldExtractionRule{
@@ -45,15 +42,6 @@ var serviceNamePrecedence = []string{
 	conventions.AttributeK8SCronJobName,
 	conventions.AttributeK8SJobName,
 	conventions.AttributeK8SPodName,
-}
-
-func AutomaticAnnotationRule(prefix string) FieldExtractionRule {
-	return FieldExtractionRule{
-		Name:                 "$1",
-		KeyRegex:             regexp.MustCompile(`^` + prefix + `(.+)$`),
-		HasKeyRegexReference: true,
-		From:                 MetadataFromPod,
-	}
 }
 
 func AutomaticServiceName(containerName string, names map[string]string) string {
