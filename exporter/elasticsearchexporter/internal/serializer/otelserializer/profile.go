@@ -6,6 +6,7 @@ package otelserializer // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"bytes"
 	"encoding/json"
+	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pprofile"
@@ -26,8 +27,14 @@ const (
 
 // SerializeProfile serializes a profile and calls the `pushData` callback for each generated document.
 func (s *Serializer) SerializeProfile(resource pcommon.Resource, scope pcommon.InstrumentationScope, profile pprofile.Profile, pushData func(*bytes.Buffer, string, string) error) error {
+	err := s.createLRUs()
+	if err != nil {
+		return err
+	}
+
 	pushDataAsJSON := func(data any, id, index string) error {
-		c, err := toJSON(data)
+		var c *bytes.Buffer
+		c, err = toJSON(data)
 		if err != nil {
 			return err
 		}
@@ -140,4 +147,52 @@ func toJSON(d any) (*bytes.Buffer, error) {
 	}
 
 	return bytes.NewBuffer(c), nil
+}
+
+func (s *Serializer) createLRUs() error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	if s.knownTraces == nil {
+		// Create LRUs with MinILMRolloverTime as lifetime to avoid losing data by ILM roll-over.
+		knownTraces, err := lru.NewLRUSet(knownTracesCacheSize, minILMRolloverTime)
+		if err != nil {
+			return fmt.Errorf("failed to create traces LRU: %w", err)
+		}
+		s.knownTraces = knownTraces
+	}
+
+	if s.knownFrames == nil {
+		knownFrames, err := lru.NewLRUSet(knownFramesCacheSize, minILMRolloverTime)
+		if err != nil {
+			return fmt.Errorf("failed to create frames LRU: %w", err)
+		}
+		s.knownFrames = knownFrames
+	}
+
+	if s.knownExecutables == nil {
+		knownExecutables, err := lru.NewLRUSet(knownExecutablesCacheSize, minILMRolloverTime)
+		if err != nil {
+			return fmt.Errorf("failed to create executables LRU: %w", err)
+		}
+		s.knownExecutables = knownExecutables
+	}
+
+	if s.knownUnsymbolizedFrames == nil {
+		knownUnsymbolizedFrames, err := lru.NewLRUSet(knownUnsymbolizedFramesCacheSize, minILMRolloverTime)
+		if err != nil {
+			return fmt.Errorf("failed to create unsymbolized frames LRU: %w", err)
+		}
+		s.knownUnsymbolizedFrames = knownUnsymbolizedFrames
+	}
+
+	if s.knownUnsymbolizedExecutables == nil {
+		knownUnsymbolizedExecutables, err := lru.NewLRUSet(knownUnsymbolizedExecutablesCacheSize, minILMRolloverTime)
+		if err != nil {
+			return fmt.Errorf("failed to create unsymbolized executables LRU: %w", err)
+		}
+		s.knownUnsymbolizedExecutables = knownUnsymbolizedExecutables
+	}
+
+	return nil
 }
