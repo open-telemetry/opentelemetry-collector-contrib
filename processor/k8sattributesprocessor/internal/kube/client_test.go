@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -704,7 +703,7 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		ServiceRules: ServiceRules{
+		Service: ServiceRules{
 			Enabled: true,
 			Labels:  true,
 		},
@@ -1643,7 +1642,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
-				ServiceRules: ServiceRules{Enabled: true},
+				Service: ServiceRules{Enabled: true},
 			},
 			pod: &pod,
 			want: PodContainers{
