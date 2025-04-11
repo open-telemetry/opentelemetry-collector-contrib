@@ -6,6 +6,7 @@ package ec2 // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"strings"
@@ -125,7 +126,7 @@ func (p *Provider) fillHostInfo(ctx context.Context) {
 func (p *Provider) Source(ctx context.Context) (source.Source, error) {
 	p.fillHostInfo(ctx)
 	if p.hostInfo.InstanceID == "" {
-		return source.Source{}, fmt.Errorf("instance ID is unavailable")
+		return source.Source{}, errors.New("instance ID is unavailable")
 	}
 
 	return source.Source{Kind: source.HostnameKind, Identifier: p.hostInfo.InstanceID}, nil
