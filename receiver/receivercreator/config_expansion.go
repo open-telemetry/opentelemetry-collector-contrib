@@ -34,7 +34,7 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (a
 	// results if possible.
 	var expansions []any
 
-	// Loop through configValue one run at a time using exprStartIndex to keep track of
+	// Loop through configValue one rune at a time using exprStartIndex to keep track of
 	// inside or outside of expressions.
 	for i := 0; i < len(configValue); i++ {
 		switch configValue[i] {
@@ -42,7 +42,7 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (a
 			if i+1 == len(configValue) {
 				return nil, errors.New(`encountered escape (\) without value at end of expression`)
 			}
-			if string(configValue[i+1]) != "`" {
+			if configValue[i+1] != '`' {
 				if exprStartIndex == -1 {
 					output.WriteByte(configValue[i])
 				}
