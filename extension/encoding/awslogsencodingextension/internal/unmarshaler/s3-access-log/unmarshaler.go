@@ -242,7 +242,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 			return fmt.Errorf("unexpected: request uri %q has no protocol", value)
 		}
 		if remaining != "" {
-			return fmt.Errorf(`request uri %q does not have expected format "<method> <path> <scheme>"`, value)
+			return fmt.Errorf(`request uri %q does not have expected format "<method> <path> <protocol>"`, value)
 		}
 		name, version, err := netProtocol(protocol)
 		if err != nil {
