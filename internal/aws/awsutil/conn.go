@@ -89,8 +89,13 @@ func getProxyAddress(proxyAddress string) string {
 	case proxyAddress != "":
 		finalProxyAddress = proxyAddress
 
-	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
+	case proxyAddress == "":
+		if os.Getenv("HTTPS_PROXY") != "" {
+			finalProxyAddress = os.Getenv("HTTPS_PROXY")
+		}
+		if os.Getenv("NO_PROXY") != "" {
+			finalProxyAddress = os.Getenv("NO_PROXY")
+		}
 	default:
 		finalProxyAddress = ""
 	}

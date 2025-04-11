@@ -5,6 +5,7 @@ package awsutil
 
 import (
 	"errors"
+	"os"
 	"testing"
 
 	"github.com/aws/aws-sdk-go/aws"
@@ -157,4 +158,20 @@ func TestGetSTSCreds(t *testing.T) {
 	t.Setenv("AWS_STS_REGIONAL_ENDPOINTS", "fake")
 	_, err = getSTSCreds(logger, region, roleArn, externalID)
 	assert.Error(t, err)
+}
+
+func TestGetProxyAddressFromEnv(t *testing.T) {
+	t.Run("no proxy", func(t *testing.T) {
+		os.Setenv("NO_PROXY", "fake")
+		defer os.Unsetenv("NO_PROXY")
+		assert.Equal(t, "fake", getProxyAddress(""))
+	})
+
+	t.Run("normal proxy", func(t *testing.T) {
+		assert.Equal(t, "normal_proxy", getProxyAddress("normal_proxy"))
+	})
+
+	t.Run("https proxy", func(t *testing.T) {
+		assert.Equal(t, "https://normal_proxy", getProxyAddress("https://normal_proxy"))
+	})
 }
