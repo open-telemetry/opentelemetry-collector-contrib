@@ -90,7 +90,7 @@ The Elasticsearch exporter supports the common [`sending_queue` settings][export
 > [!WARNING]
 > The `batcher` config is experimental and may change without notice.
 
-The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go).
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/internal/queue_sender.go).
 
 - `batcher`:
   - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
