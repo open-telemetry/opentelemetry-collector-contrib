@@ -212,9 +212,7 @@ func withServiceAttributes(config ServiceAttributeConfig) option {
 		if config.Enabled {
 			p.rules.Service = true
 			if config.Labels {
-				for _, rule := range kube.AutomaticLabelRules {
-					p.rules.Labels = append(p.rules.Labels, rule)
-				}
+				p.rules.Labels = append(p.rules.Labels, kube.AutomaticLabelRules...)
 			}
 		}
 		return nil
