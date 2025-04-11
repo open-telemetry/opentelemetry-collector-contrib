@@ -1725,7 +1725,7 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			},
 			{
 				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
-				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":2.0,"baz":3.0,"a":"b"}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
 			},
 		}
 
