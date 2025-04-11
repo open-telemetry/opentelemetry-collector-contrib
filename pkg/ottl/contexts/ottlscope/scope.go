@@ -56,15 +56,6 @@ func NewTransformContext(instrumentationScope pcommon.InstrumentationScope, reso
 	return tc
 }
 
-// Experimental: *NOTE* this option is subject to change or removal in the future.
-func WithCache(cache *pcommon.Map) TransformContextOption {
-	return func(p *TransformContext) {
-		if cache != nil {
-			p.cache = *cache
-		}
-	}
-}
-
 func (tCtx TransformContext) GetInstrumentationScope() pcommon.InstrumentationScope {
 	return tCtx.instrumentationScope
 }
