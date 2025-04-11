@@ -14,7 +14,10 @@ import (
 
 // mapHashSortedExcludeReservedAttrs is mapHash but ignoring some reserved attributes and is independent of order in Map.
 // e.g. index is already considered during routing and DS attributes do not need to be considered in hashing
-func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ...string) {
+//
+// TODO(carsonip): use opentelemetry-collector-contrib/pkg/pdatautil/hash.go when it can optionally exclude attributes
+// We could have used it now but it'll involve creating a new Map and copying things over.
+func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extraExcludes ...string) {
 	type kv struct {
 		k string
 		v pcommon.Value
@@ -25,7 +28,7 @@ func mapHashSortedExcludeReservedAttrs(hasher hash.Hash, m pcommon.Map, extra ..
 		case elasticsearch.DataStreamType, elasticsearch.DataStreamDataset, elasticsearch.DataStreamNamespace:
 			continue
 		}
-		if slices.Contains(extra, k) {
+		if slices.Contains(extraExcludes, k) {
 			continue
 		}
 		kvs = append(kvs, kv{k: k, v: v})
