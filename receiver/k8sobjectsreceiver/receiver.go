@@ -24,6 +24,7 @@ import (
 	"k8s.io/client-go/tools/cache"
 	"k8s.io/client-go/tools/watch"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
@@ -66,16 +67,43 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 	}, nil
 }
 
-func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) error {
 	client, err := kr.config.getDynamicClient()
 	if err != nil {
 		return err
 	}
 	kr.client = client
-	kr.setting.Logger.Info("Object Receiver started")
-
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
+
+	if kr.config.K8sLeaderElector != nil {
+		k8sLeaderElector := host.GetExtensions()[*kr.config.K8sLeaderElector]
+		if k8sLeaderElector == nil {
+			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
+		}
+
+		kr.setting.Logger.Debug("trying to become the leader")
+		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
+		if ok != true {
+			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
+		}
+
+		elector.SetCallBackFuncs(
+			func(_ context.Context) {
+				kr.setting.Logger.Info("elected as leader")
+				for _, object := range kr.config.Objects {
+					kr.start(cctx, object)
+				}
+			},
+			func() {
+				kr.setting.Logger.Info("no longer leader, stopping")
+				err = kr.Shutdown(context.Background())
+				if err != nil {
+					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
+				}
+			})
+		return nil
+	}
 
 	for _, object := range kr.config.Objects {
 		kr.start(cctx, object)
