@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"net/url"
 	"strconv"
 	"strings"
 	"time"
@@ -147,8 +148,9 @@ func handleLog(resourceAttr *resourceAttributes, scopeLogs plog.ScopeLogs, log s
 			// This is the timestamp that follows a strict format
 			// "[DD/MM/YYYY:HH:mm:ss zone]". Since zone is after a
 			// space, we cut the string again to remove the zone.
-			// Zone is always UTC, so it will always be +0000.
-			_, remaining, _ = strings.Cut(remaining, " ")
+			var zone string
+			zone, remaining, _ = strings.Cut(remaining, " ")
+			value = value + " " + zone
 		}
 
 		if err = addField(i, value, resourceAttr, record); err != nil {
@@ -173,11 +175,7 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 	case fieldIndexS3BucketName:
 		resourceAttr.bucketName = value
 	case fieldIndexTime:
-		// The format in S3 access logs at this point is as "[DD/MM/YYYY:HH:mm:ss".
-		if value == "" {
-			return errors.New("unexpected: time value is empty")
-		}
-		t, err := time.Parse("02/Jan/2006:15:04:05", value[1:])
+		t, err := time.Parse("[02/Jan/2006:15:04:05 -0700]", value)
 		if err != nil {
 			return fmt.Errorf("failed to get timestamp of log: %w", err)
 		}
@@ -223,22 +221,63 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 			return fmt.Errorf("unexpected: request uri %q has no method", value)
 		}
 		record.Attributes().PutStr(semconv.AttributeHTTPRequestMethod, method)
+
 		path, remaining, _ := strings.Cut(remaining, " ")
 		if path == "" {
 			return fmt.Errorf("unexpected: request uri %q has no path", value)
 		}
-		record.Attributes().PutStr(semconv.AttributeURLPath, path)
-		scheme, remaining, _ := strings.Cut(remaining, " ")
-		if scheme == "" {
-			return fmt.Errorf("unexpected: request uri %q has no scheme", value)
+		res, err := url.Parse(path)
+		if err != nil {
+			return fmt.Errorf("request uri path is invalid: %w", err)
+		}
+		if res.Path != "" {
+			record.Attributes().PutStr(semconv.AttributeURLPath, res.Path)
+		}
+		if res.RawQuery != "" {
+			record.Attributes().PutStr(semconv.AttributeURLQuery, res.RawQuery)
+		}
+		if res.Scheme != "" {
+			record.Attributes().PutStr(semconv.AttributeURLScheme, res.Scheme)
+		}
+		if res.Fragment != "" {
+			record.Attributes().PutStr(semconv.AttributeURLFragment, res.Fragment)
+		}
+
+		protocol, remaining, _ := strings.Cut(remaining, " ")
+		if protocol == "" {
+			return fmt.Errorf("unexpected: request uri %q has no protocol", value)
 		}
 		if remaining != "" {
 			return fmt.Errorf(`request uri %q does not have expected format "<method> <path> <scheme>"`, value)
 		}
-		record.Attributes().PutStr(semconv.AttributeURLScheme, scheme)
+		name, version, err := netProtocol(protocol)
+		if err != nil {
+			return err
+		}
+		record.Attributes().PutStr(semconv.AttributeTLSProtocolName, name)
+		record.Attributes().PutStr(semconv.AttributeTLSProtocolVersion, version)
 	default:
 		attrName := attributeNames[field]
 		record.Attributes().PutStr(attrName, value)
 	}
 	return nil
+}
+
+// netProtocol returns protocol name and version based on proto value
+func netProtocol(proto string) (string, string, error) {
+	name, version, found := strings.Cut(proto, "/")
+	if !found || name == "" || version == "" {
+		return "", "", errors.New(`request uri protocol does not follow expected scheme "<name>/<version>"`)
+	}
+	switch name {
+	case "HTTP":
+		name = "http"
+	case "QUIC":
+		name = "quic"
+	case "SPDY":
+		name = "spdy"
+	default:
+		name = strings.ToLower(name)
+	}
+	return name, version, nil
 }

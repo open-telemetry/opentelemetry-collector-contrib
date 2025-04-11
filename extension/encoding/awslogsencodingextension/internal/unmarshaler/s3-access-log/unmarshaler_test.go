@@ -28,10 +28,6 @@ func TestAddField(t *testing.T) {
 		value       string
 		expectedErr string
 	}{
-		"empty_timestamp": {
-			field:       fieldIndexTime,
-			expectedErr: "time value is empty",
-		},
 		"invalid_timestamp": {
 			field:       fieldIndexTime,
 			value:       "invalid",
@@ -39,7 +35,7 @@ func TestAddField(t *testing.T) {
 		},
 		"valid_timestamp": {
 			field: fieldIndexTime,
-			value: "[06/Feb/2019:00:00:38",
+			value: "[06/Feb/2019:00:00:38 +0000]",
 		},
 		"invalid_number": {
 			field:       fieldIndexObjectSize,
@@ -82,10 +78,30 @@ func TestAddField(t *testing.T) {
 			value:       "GET",
 			expectedErr: "has no path",
 		},
-		"missing_scheme_request_uri": {
+		"invalid_request_uri_path": {
+			field:       fieldIndexRequestURI,
+			value:       "GET " + string([]byte{0x7f}),
+			expectedErr: "request uri path is invalid",
+		},
+		"missing_protocol_request_uri": {
 			field:       fieldIndexRequestURI,
 			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar",
-			expectedErr: "has no scheme",
+			expectedErr: "has no protocol",
+		},
+		"missing_protocol_name_request_uri": {
+			field:       fieldIndexRequestURI,
+			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar /1.1",
+			expectedErr: "request uri protocol does not follow expected scheme",
+		},
+		"missing_protocol_version_request_uri": {
+			field:       fieldIndexRequestURI,
+			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP/",
+			expectedErr: "request uri protocol does not follow expected scheme",
+		},
+		"unexpected_protocol_format_request_uri": {
+			field:       fieldIndexRequestURI,
+			value:       "GET /amzn-s3-demo-bucket1/photos/2019/08/puppy.jpg?x-foo=bar HTTP1.1",
+			expectedErr: "request uri protocol does not follow expected scheme",
 		},
 		"unexpected_format_request_uri": {
 			field:       fieldIndexRequestURI,

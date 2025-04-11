@@ -30,10 +30,16 @@ resourceLogs:
                   stringValue: GET
               - key: url.path
                 value:
-                  stringValue: /amzn-s3-demo-bucket1?versioning
-              - key: url.scheme
+                  stringValue: /amzn-s3-demo-bucket1
+              - key: url.query
                 value:
-                  stringValue: HTTP/1.1
+                  stringValue: versioning
+              - key: tls.protocol.name
+                value:
+                  stringValue: http
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
               - key: http.response.status_code
                 value:
                   intValue: "200"
@@ -61,9 +67,6 @@ resourceLogs:
               - key: http.request.header.host
                 value:
                   stringValue: amzn-s3-demo-bucket1.s3.us-west-1.amazonaws.com
-              - key: tls.protocol.version
-                value:
-                  stringValue: "1.2"
               - key: aws.s3.access_point.arn
                 value:
                   stringValue: arn:aws:s3:us-west-1:123456789012:accesspoint/example-AP
