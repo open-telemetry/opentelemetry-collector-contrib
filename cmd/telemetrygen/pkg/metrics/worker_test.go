@@ -495,8 +495,9 @@ func TestTemporalityStartTimes(t *testing.T) {
 			temporality: AggregationTemporality(metricdata.DeltaTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
 				diff := secondTime.Sub(firstTime)
-				assert.Greater(t, diff, time.Duration(0),
-					"delta metrics should have increasing start times, got difference: %v", diff)
+				t.Logf("Time difference: %v", diff)
+				assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times")
 			},
 		},
 	}
@@ -535,14 +536,12 @@ func TestTemporalityStartTimes(t *testing.T) {
 
 			// Add debug logging before the check
 			t.Logf("Timestamp debug logging:\n"+
-				"First start time:  %v (%d UnixNano)\n"+
-				"Second start time: %v (%d UnixNano)\n"+
+				"First start time:  %s\n"+
+				"Second start time: %s\n"+
 				"Difference: %v\n"+
 				"Temporality: %v",
-				firstStartTime.Format(time.RFC3339Nano),
-				firstStartTime.UnixNano(),
-				secondStartTime.Format(time.RFC3339Nano),
-				secondStartTime.UnixNano(),
+				firstStartTime.String(),
+				secondStartTime.String(),
 				secondStartTime.Sub(firstStartTime),
 				tt.temporality)
 
