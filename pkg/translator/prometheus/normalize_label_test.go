@@ -14,7 +14,7 @@ import (
 func TestSanitize(t *testing.T) {
 	defer testutil.SetFeatureGateForTest(t, dropSanitizationGate, false)()
 
-	require.Empty(t, NormalizeLabel(""), "")
+	require.Empty(t, NormalizeLabel(""))
 	require.Equal(t, "key_test", NormalizeLabel("_test"))
 	require.Equal(t, "key_0test", NormalizeLabel("0test"))
 	require.Equal(t, "test", NormalizeLabel("test"))

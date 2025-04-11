@@ -40,7 +40,7 @@ var errMemoryLimiterDataRefused = errors.New("data refused due to high memory us
 
 // kafkaTracesConsumer uses sarama to consume and handle messages from kafka.
 type kafkaTracesConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Traces
 	topics            []string
@@ -62,7 +62,7 @@ type kafkaTracesConsumer struct {
 
 // kafkaMetricsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaMetricsConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Metrics
 	topics            []string
@@ -84,7 +84,7 @@ type kafkaMetricsConsumer struct {
 
 // kafkaLogsConsumer uses sarama to consume and handle messages from kafka.
 type kafkaLogsConsumer struct {
-	config            Config
+	config            *Config
 	consumerGroup     sarama.ConsumerGroup
 	nextConsumer      consumer.Logs
 	topics            []string
@@ -110,7 +110,7 @@ var (
 	_ receiver.Logs    = (*kafkaLogsConsumer)(nil)
 )
 
-func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
+func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (*kafkaTracesConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -118,7 +118,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 
 	return &kafkaTracesConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Traces.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -133,7 +133,7 @@ func newTracesReceiver(config Config, set receiver.Settings, nextConsumer consum
 	}, nil
 }
 
-func createKafkaClient(ctx context.Context, config Config) (sarama.ConsumerGroup, error) {
+func createKafkaClient(ctx context.Context, config *Config) (sarama.ConsumerGroup, error) {
 	return kafka.NewSaramaConsumerGroup(ctx, config.ClientConfig, config.ConsumerConfig)
 }
 
@@ -149,7 +149,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		return err
 	}
 
-	unmarshaler, err := newTracesUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newTracesUnmarshaler(c.config.Traces.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}
@@ -163,7 +163,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
 		logger:            c.settings.Logger,
-		encoding:          c.config.Encoding,
+		encoding:          c.config.Traces.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),
@@ -215,7 +215,7 @@ func (c *kafkaTracesConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
+func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Metrics) (*kafkaMetricsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -223,7 +223,7 @@ func newMetricsReceiver(config Config, set receiver.Settings, nextConsumer consu
 
 	return &kafkaMetricsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Metrics.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -250,7 +250,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		return err
 	}
 
-	unmarshaler, err := newMetricsUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newMetricsUnmarshaler(c.config.Metrics.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}
@@ -264,7 +264,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
 		logger:            c.settings.Logger,
-		encoding:          c.config.Encoding,
+		encoding:          c.config.Metrics.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),
@@ -316,7 +316,7 @@ func (c *kafkaMetricsConsumer) Shutdown(context.Context) error {
 	return c.consumerGroup.Close()
 }
 
-func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
+func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Logs) (*kafkaLogsConsumer, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -324,7 +324,7 @@ func newLogsReceiver(config Config, set receiver.Settings, nextConsumer consumer
 
 	return &kafkaLogsConsumer{
 		config:            config,
-		topics:            []string{config.Topic},
+		topics:            []string{config.Logs.Topic},
 		nextConsumer:      nextConsumer,
 		consumeLoopWG:     &sync.WaitGroup{},
 		settings:          set,
@@ -351,7 +351,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		return err
 	}
 
-	unmarshaler, err := newLogsUnmarshaler(c.config.Encoding, c.settings, host)
+	unmarshaler, err := newLogsUnmarshaler(c.config.Logs.Encoding, c.settings, host)
 	if err != nil {
 		return err
 	}
@@ -365,7 +365,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
 		logger:            c.settings.Logger,
-		encoding:          c.config.Encoding,
+		encoding:          c.config.Logs.Encoding,
 		unmarshaler:       c.unmarshaler,
 		nextConsumer:      c.nextConsumer,
 		ready:             make(chan bool),

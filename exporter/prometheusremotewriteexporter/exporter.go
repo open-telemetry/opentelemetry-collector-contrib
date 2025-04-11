@@ -235,7 +235,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
-			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}

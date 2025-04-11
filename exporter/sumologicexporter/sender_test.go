@@ -987,7 +987,7 @@ func TestSendCompressGzip(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1008,7 +1008,7 @@ func TestSendCompressGzipDeprecated(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1029,7 +1029,7 @@ func TestSendCompressZstd(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZstd(t, req.Body)
@@ -1050,7 +1050,7 @@ func TestSendCompressDeflate(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZlib(t, req.Body)

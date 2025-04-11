@@ -5,6 +5,7 @@ package tcp
 
 import (
 	"crypto/tls"
+	"fmt"
 	"math/rand/v2"
 	"net"
 	"os"
@@ -117,7 +118,7 @@ func tcpInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -183,7 +184,7 @@ func tcpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -254,7 +255,7 @@ func tlsInputTest(input []byte, expected []string) func(t *testing.T) {
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}

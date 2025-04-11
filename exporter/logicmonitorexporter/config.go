@@ -4,6 +4,7 @@
 package logicmonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logicmonitorexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"strings"
@@ -61,12 +62,12 @@ type LogsConfig struct {
 
 func (c *Config) Validate() error {
 	if c.Endpoint == "" {
-		return fmt.Errorf("endpoint should not be empty")
+		return errors.New("endpoint should not be empty")
 	}
 
 	u, err := url.Parse(c.Endpoint)
 	if err != nil || u.Scheme == "" || u.Host == "" {
-		return fmt.Errorf("endpoint must be valid")
+		return errors.New("endpoint must be valid")
 	}
 	return nil
 }
