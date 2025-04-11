@@ -5,6 +5,7 @@ package ottl // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"testing"
@@ -79,7 +80,7 @@ func testDuration[K any](duration string) (ExprFunc[K], error) {
 			return dur, err
 		}, nil
 	}
-	return nil, fmt.Errorf("duration cannot be empty")
+	return nil, errors.New("duration cannot be empty")
 }
 
 type sumArguments struct {
