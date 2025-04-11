@@ -57,16 +57,12 @@ func TestAddField(t *testing.T) {
 		},
 		"missing_tls_version": {
 			field:       fieldIndexTLSVersion,
-			value:       "missing",
+			value:       "TLSvMissing",
 			expectedErr: "missing TLS version",
 		},
-		"valid_tls_version_lowercase": {
+		"valid_tls_version": {
 			field: fieldIndexTLSVersion,
 			value: "TLSv1.2",
-		},
-		"valid_tls_version_uppercase": {
-			field: fieldIndexTLSVersion,
-			value: "TLSV1.2",
 		},
 		"missing_method_request_uri": {
 			field:       fieldIndexRequestURI,

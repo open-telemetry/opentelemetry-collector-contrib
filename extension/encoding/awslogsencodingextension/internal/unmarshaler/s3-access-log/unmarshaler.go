@@ -205,16 +205,13 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		}
 	case fieldIndexTLSVersion:
 		// The value is one of following: TLSv1.1, TLSv1.2, TLSv1.3.
-		// We get the version after "v".
-		_, remaining, _ := strings.Cut(value, "v")
-		if remaining == "" {
-			_, remaining, _ = strings.Cut(value, "V")
-			if remaining == "" {
-				return fmt.Errorf("missing TLS version: %q", value)
-			}
+		i := strings.IndexRune(value, '1')
+		if i == -1 {
+			return fmt.Errorf("missing TLS version: %q", value)
 		}
+		tlsVersion := value[i:]
 		attrName := attributeNames[fieldIndexTLSVersion]
-		record.Attributes().PutStr(attrName, remaining)
+		record.Attributes().PutStr(attrName, tlsVersion)
 	case fieldIndexRequestURI:
 		method, remaining, _ := strings.Cut(value, " ")
 		if method == "" {
@@ -251,8 +248,8 @@ func addField(field int, value string, resourceAttr *resourceAttributes, record 
 		if err != nil {
 			return err
 		}
-		record.Attributes().PutStr(semconv.AttributeTLSProtocolName, name)
-		record.Attributes().PutStr(semconv.AttributeTLSProtocolVersion, version)
+		record.Attributes().PutStr(semconv.AttributeNetworkProtocolName, name)
+		record.Attributes().PutStr(semconv.AttributeNetworkProtocolVersion, version)
 	default:
 		attrName := attributeNames[field]
 		record.Attributes().PutStr(attrName, value)
