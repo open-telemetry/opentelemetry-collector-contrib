@@ -56,7 +56,7 @@ type accessLogsReceiver struct {
 func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) *accessLogsReceiver {
 	r := &accessLogsReceiver{
 		cancel:        func() {},
-		client:        internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger),
+		client:        internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger),
 		cfg:           cfg,
 		logger:        settings.Logger,
 		consumer:      consumer,

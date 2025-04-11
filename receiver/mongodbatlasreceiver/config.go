@@ -24,6 +24,7 @@ var _ component.Config = (*Config)(nil)
 
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
+	BaseURL                        string                        `mapstructure:"base_url"`
 	PublicKey                      string                        `mapstructure:"public_key"`
 	PrivateKey                     configopaque.String           `mapstructure:"private_key"`
 	Granularity                    string                        `mapstructure:"granularity"`

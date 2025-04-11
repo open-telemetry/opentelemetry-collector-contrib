@@ -44,7 +44,7 @@ type projectContext struct {
 const collectionInterval = time.Minute * 5
 
 func newMongoDBAtlasLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) *logsReceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	client := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
 
 	for _, p := range cfg.Logs.Projects {
 		p.populateIncludesAndExcludes()

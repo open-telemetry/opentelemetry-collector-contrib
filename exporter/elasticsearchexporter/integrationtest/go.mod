@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasti
 go 1.23.7
 
 require (
-	github.com/elastic/go-docappender/v2 v2.6.1
+	github.com/elastic/go-docappender/v2 v2.9.0
 	github.com/gorilla/mux v1.8.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter v0.123.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/filestorage v0.123.0
@@ -52,7 +52,7 @@ require (
 	github.com/elastic/go-freelru v0.16.0 // indirect
 	github.com/elastic/go-grok v0.3.1 // indirect
 	github.com/elastic/go-structform v0.0.12 // indirect
-	github.com/elastic/go-sysinfo v1.15.0 // indirect
+	github.com/elastic/go-sysinfo v1.15.3 // indirect
 	github.com/elastic/go-windows v1.0.2 // indirect
 	github.com/elastic/lunes v0.1.0 // indirect
 	github.com/expr-lang/expr v1.17.2 // indirect
@@ -125,7 +125,7 @@ require (
 	github.com/prometheus/client_golang v1.22.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common v0.62.0 // indirect
-	github.com/prometheus/procfs v0.15.1 // indirect
+	github.com/prometheus/procfs v0.16.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/soheilhy/cmux v0.1.5 // indirect
@@ -140,9 +140,9 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.elastic.co/apm/module/apmelasticsearch/v2 v2.6.3 // indirect
 	go.elastic.co/apm/module/apmhttp/v2 v2.6.3 // indirect
-	go.elastic.co/apm/module/apmzap/v2 v2.6.3 // indirect
-	go.elastic.co/apm/v2 v2.6.3 // indirect
-	go.elastic.co/fastjson v1.4.0 // indirect
+	go.elastic.co/apm/module/apmzap/v2 v2.7.0 // indirect
+	go.elastic.co/apm/v2 v2.7.0 // indirect
+	go.elastic.co/fastjson v1.5.0 // indirect
 	go.etcd.io/bbolt v1.4.0 // indirect
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect

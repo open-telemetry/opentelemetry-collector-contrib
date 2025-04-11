@@ -59,7 +59,7 @@ type eventRecord struct {
 
 func newEventsReceiver(settings rcvr.Settings, c *Config, consumer consumer.Logs) *eventsReceiver {
 	r := &eventsReceiver{
-		client:        internal.NewMongoDBAtlasClient(c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger),
+		client:        internal.NewMongoDBAtlasClient(c.BaseURL, c.PublicKey, string(c.PrivateKey), c.BackOffConfig, settings.Logger),
 		cfg:           c,
 		logger:        settings.Logger,
 		consumer:      consumer,
