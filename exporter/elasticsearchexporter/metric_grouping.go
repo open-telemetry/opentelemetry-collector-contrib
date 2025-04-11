@@ -12,87 +12,109 @@ import (
 	"slices"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
+type HashKey struct {
+	resourceHash uint32
+	scopeHash    uint32
+	dpHash       uint32
+}
+
 // dataPointHasher is an interface for hashing data points by their identity,
 // for grouping into a single document.
 type dataPointHasher interface {
-	hashResource(pcommon.Resource) uint32
-	hashScope(pcommon.InstrumentationScope) uint32
-	hashDataPoint(datapoints.DataPoint) uint32
-	hashCombined(pcommon.Resource, pcommon.InstrumentationScope, datapoints.DataPoint) uint32
+	UpdateResource(pcommon.Resource)
+	UpdateScope(pcommon.InstrumentationScope)
+	UpdateDataPoint(datapoints.DataPoint)
+	HashKey() HashKey
 }
 
 func newDataPointHasher(mode MappingMode) dataPointHasher {
 	switch mode {
 	case MappingOTel:
-		return otelDataPointHasher{}
+		return &otelDataPointHasher{}
 	default:
 		// Defaults to ECS for backward compatibility
-		return ecsDataPointHasher{}
+		return &ecsDataPointHasher{}
 	}
 }
 
 // TODO use https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/internal/exp/metrics/identity
 
+type hashableDataPoint interface {
+	Timestamp() pcommon.Timestamp
+	StartTimestamp() pcommon.Timestamp
+	Metric() pmetric.Metric
+	Attributes() pcommon.Map
+}
+
 type (
 	// ecsDataPointHasher solely relies on hashCombined because data point attributes overwrite resource attributes on merge.
-	ecsDataPointHasher struct{}
+	ecsDataPointHasher struct {
+		resource pcommon.Resource
+		dp       hashableDataPoint
+	}
 	// otelDataPointHasher does not use hashCombined as resource, scope and data points are independent.
-	otelDataPointHasher struct{}
+	otelDataPointHasher struct {
+		resourceHash uint32
+		scopeHash    uint32
+		dpHash       uint32
+	}
 )
 
-func (h ecsDataPointHasher) hashResource(_ pcommon.Resource) uint32 {
-	return 0
+func (h *ecsDataPointHasher) UpdateResource(resource pcommon.Resource) {
+	h.resource = resource
 }
 
-func (h ecsDataPointHasher) hashScope(_ pcommon.InstrumentationScope) uint32 {
-	return 0
+func (h *ecsDataPointHasher) UpdateScope(_ pcommon.InstrumentationScope) {
 }
 
-func (h ecsDataPointHasher) hashDataPoint(_ datapoints.DataPoint) uint32 {
-	return 0
+func (h *ecsDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
+	h.dp = dp
 }
 
-func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.InstrumentationScope, dp datapoints.DataPoint) uint32 {
+func (h *ecsDataPointHasher) HashKey() HashKey {
 	merged := pcommon.NewMap()
-	merged.EnsureCapacity(resource.Attributes().Len() + dp.Attributes().Len())
-	resource.Attributes().CopyTo(merged)
+	merged.EnsureCapacity(h.resource.Attributes().Len() + h.dp.Attributes().Len())
+	h.resource.Attributes().CopyTo(merged)
 	// scope attributes are ignored in ECS mode
-	for k, v := range dp.Attributes().All() {
+	for k, v := range h.dp.Attributes().All() {
 		v.CopyTo(merged.PutEmpty(k))
 	}
 
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
-	binary.LittleEndian.PutUint64(timestampBuf, uint64(dp.Timestamp()))
+	binary.LittleEndian.PutUint64(timestampBuf, uint64(h.dp.Timestamp()))
 	hasher.Write(timestampBuf)
 
 	mapHashSortedExcludeReservedAttrs(hasher, merged)
 
-	return hasher.Sum32()
+	return HashKey{
+		dpHash: hasher.Sum32(),
+	}
 }
 
-func (h otelDataPointHasher) hashResource(resource pcommon.Resource) uint32 {
+func (h *otelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	hasher := fnv.New32a()
 	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
-	return hasher.Sum32()
+	h.resourceHash = hasher.Sum32()
 }
 
-func (h otelDataPointHasher) hashScope(scope pcommon.InstrumentationScope) uint32 {
+func (h *otelDataPointHasher) UpdateScope(scope pcommon.InstrumentationScope) {
 	hasher := fnv.New32a()
 	hasher.Write([]byte(scope.Name()))
 	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
-	return hasher.Sum32()
+	h.scopeHash = hasher.Sum32()
 }
 
-func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
+func (h *otelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 	hasher := fnv.New32a()
 
 	timestampBuf := make([]byte, 8)
@@ -107,11 +129,15 @@ func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
 	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
-	return hasher.Sum32()
+	h.dpHash = hasher.Sum32()
 }
 
-func (h otelDataPointHasher) hashCombined(_ pcommon.Resource, _ pcommon.InstrumentationScope, _ datapoints.DataPoint) uint32 {
-	return 0
+func (h *otelDataPointHasher) HashKey() HashKey {
+	return HashKey{
+		resourceHash: h.resourceHash,
+		scopeHash:    h.scopeHash,
+		dpHash:       h.dpHash,
+	}
 }
 
 // mapHashSortedExcludeReservedAttrs is mapHash but ignoring some reserved attributes and is independent of order in Map.

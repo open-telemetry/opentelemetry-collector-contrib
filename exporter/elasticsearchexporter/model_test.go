@@ -115,16 +115,19 @@ func TestEncodeMetric(t *testing.T) {
 	encoder, _ := newEncoder(MappingECS)
 	hasher := newDataPointHasher(MappingECS)
 
-	groupedDataPoints := make(map[uint32][]datapoints.DataPoint)
+	groupedDataPoints := make(map[HashKey][]datapoints.DataPoint)
 
 	var docsBytes [][]byte
 	rm := metrics.ResourceMetrics().At(0)
 	sm := rm.ScopeMetrics().At(0)
 	m := sm.Metrics().At(0)
 	dps := m.Sum().DataPoints()
+	hasher.UpdateResource(rm.Resource())
+	hasher.UpdateScope(sm.Scope())
 	for i := 0; i < dps.Len(); i++ {
 		dp := datapoints.NewNumber(m, dps.At(i))
-		dpHash := hasher.hashCombined(rm.Resource(), sm.Scope(), dp)
+		hasher.UpdateDataPoint(dp)
+		dpHash := hasher.HashKey()
 		dataPoints, ok := groupedDataPoints[dpHash]
 		if !ok {
 			groupedDataPoints[dpHash] = []datapoints.DataPoint{dp}

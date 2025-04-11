@@ -170,12 +170,6 @@ func (e *elasticsearchExporter) pushLogRecord(
 	return bulkIndexerSession.Add(ctx, index.Index, docID, pipeline, buf, nil, docappender.ActionCreate)
 }
 
-type dataPointGroupKey struct {
-	resourceHash uint32
-	scopeHash    uint32
-	dpHash       uint32
-	combinedHash uint32
-}
 type dataPointsGroup struct {
 	resource          pcommon.Resource
 	resourceSchemaURL string
@@ -210,20 +204,20 @@ func (e *elasticsearchExporter) pushMetricsData(
 	defer session.End()
 
 	// Maintain a 2 layer map to avoid storing lots of copies of index strings
-	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[dataPointGroupKey]*dataPointsGroup)
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[HashKey]*dataPointsGroup)
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
-		resourceHash := hasher.hashResource(resource)
+		hasher.UpdateResource(resource)
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
 		for j := 0; j < scopeMetrics.Len(); j++ {
 			scopeMetric := scopeMetrics.At(j)
 			scope := scopeMetric.Scope()
-			scopeHash := hasher.hashScope(scope)
+			hasher.UpdateScope(scope)
 			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
 				metric := scopeMetric.Metrics().At(k)
 
@@ -234,15 +228,11 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[index]
 					if !ok {
-						groupedDataPoints = make(map[dataPointGroupKey]*dataPointsGroup)
+						groupedDataPoints = make(map[HashKey]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
-					key := dataPointGroupKey{
-						resourceHash: resourceHash,
-						scopeHash:    scopeHash,
-						dpHash:       hasher.hashDataPoint(dp),
-						combinedHash: hasher.hashCombined(resource, scope, dp),
-					}
+					hasher.UpdateDataPoint(dp)
+					key := hasher.HashKey()
 
 					if dpGroup, ok := groupedDataPoints[key]; !ok {
 						groupedDataPoints[key] = &dataPointsGroup{
