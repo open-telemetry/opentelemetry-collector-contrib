@@ -6,6 +6,7 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -598,7 +599,7 @@ service:
 					},
 					rcs,
 				)
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
@@ -853,7 +854,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		mc := &mockOpAMPClient{
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 		}
 
