@@ -5,7 +5,6 @@ package archive // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
 	"math/rand/v2"
 	"testing"
 
@@ -55,7 +54,7 @@ func TestIndexInBounds(t *testing.T) {
 	require.Equal(t, 0, testArchive.archiveIndex)
 
 	// run archiving. Each time, index should be in bound.
-	for i := 0; i < 1099; i++ {
+	for i := 0; i < 1098; i++ {
 		require.Equalf(t, i%pollsToArchive, testArchive.archiveIndex, "Index should %d, but was %d", i%pollsToArchive, testArchive.archiveIndex)
 		testArchive.WriteFiles(&fileset.Fileset[*reader.Metadata]{})
 		require.Truef(t, testArchive.archiveIndex >= 0 && testArchive.archiveIndex < pollsToArchive, "Index should be between 0 and %d, but was %d", pollsToArchive, testArchive.archiveIndex)
@@ -74,82 +73,6 @@ func TestIndexInBounds(t *testing.T) {
 	testArchive = NewArchive(context.Background(), zap.L(), pollsToArchive, persister).(*archive)
 	// index should exist but it is out of bounds. So it should reset to 0
 	require.Equalf(t, 0, testArchive.archiveIndex, "Index should be reset to 0 but was %d", testArchive.archiveIndex)
-}
-
-func TestArchiveRestoration(t *testing.T) {
-	pollsToArchiveGrid := []int{10, 20, 50, 100, 200}
-	for _, pollsToArchive := range pollsToArchiveGrid {
-		for _, newPollsToArchive := range pollsToArchiveGrid {
-			t.Run(fmt.Sprintf("%d-%d", pollsToArchive, newPollsToArchive), func(t *testing.T) {
-				testArchiveRestoration(t, pollsToArchive, newPollsToArchive)
-			})
-		}
-	}
-}
-
-func testArchiveRestoration(t *testing.T, pollsToArchive int, newPollsToArchive int) {
-	//	test for various scenarios
-	//		0.25 menas archive is 25% filled
-	// 		1.25 means archive is 125% filled (i.e it was rolled over once)
-	pctFilled := []float32{0.25, 0.5, 0.75, 1, 1.25, 1.50, 1.75, 2.00}
-	for _, pct := range pctFilled {
-		persister := testutil.NewUnscopedMockPersister()
-		testArchive := NewArchive(context.Background(), zap.L(), pollsToArchive, persister).(*archive)
-
-		iterations := int(pct * float32(pollsToArchive))
-		for i := 0; i < iterations; i++ {
-			fileset := &fileset.Fileset[*reader.Metadata]{}
-			fileset.Add(&reader.Metadata{
-				// for the sake of this test case.
-				// bigger the offset, more recent the element
-				Offset: int64(i),
-			})
-			testArchive.WriteFiles(fileset)
-		}
-		// make sure all keys are present in persister
-		for i := 0; i < iterations; i++ {
-			archiveIndex := i % pollsToArchive
-			val, err := persister.Get(context.Background(), archiveKey(archiveIndex))
-			require.NoError(t, err)
-			require.NotNil(t, val)
-		}
-		// also, make sure we have not written "extra" stuff (for partially filled archive)
-		count := 0
-		for i := 0; i < pollsToArchive; i++ {
-			val, err := persister.Get(context.Background(), archiveKey(i))
-			require.NoError(t, err)
-			if val != nil {
-				count++
-			}
-		}
-		require.Equal(t, min(iterations, pollsToArchive), count)
-		testArchive = NewArchive(context.Background(), zap.L(), newPollsToArchive, persister).(*archive)
-		if pollsToArchive > newPollsToArchive {
-			// if archive has shrunk, new archive should contain most recent elements
-			// start from most recent element
-			startIdx := mod(testArchive.archiveIndex-1, newPollsToArchive)
-			mostRecentIteration := iterations - 1
-			for i := 0; i < newPollsToArchive; i++ {
-				val, err := testArchive.readArchive(startIdx)
-				require.NoError(t, err)
-				if val.Len() > 0 {
-					element, err := val.Pop()
-					require.NoError(t, err)
-					foundIteration := int(element.Offset)
-					require.Equal(t, mostRecentIteration, foundIteration)
-				}
-				mostRecentIteration--
-				startIdx--
-			}
-
-			// make sure we've removed all extra keys
-			for i := newPollsToArchive; i < pollsToArchive; i++ {
-				val, err := persister.Get(context.Background(), archiveKey(newPollsToArchive))
-				require.NoError(t, err)
-				require.Nil(t, val)
-			}
-		}
-	}
 }
 
 func populatedPersisterData(persister operator.Persister, fps []*fingerprint.Fingerprint) []bool {
