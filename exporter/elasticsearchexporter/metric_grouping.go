@@ -79,6 +79,7 @@ func (h ecsDataPointHasher) hashCombined(resource pcommon.Resource, _ pcommon.In
 
 func (h otelDataPointHasher) hashResource(resource pcommon.Resource) uint32 {
 	hasher := fnv.New32a()
+	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
 	return hasher.Sum32()
 }
@@ -86,6 +87,7 @@ func (h otelDataPointHasher) hashResource(resource pcommon.Resource) uint32 {
 func (h otelDataPointHasher) hashScope(scope pcommon.InstrumentationScope) uint32 {
 	hasher := fnv.New32a()
 	hasher.Write([]byte(scope.Name()))
+	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 	return hasher.Sum32()
 }
@@ -102,6 +104,7 @@ func (h otelDataPointHasher) hashDataPoint(dp datapoints.DataPoint) uint32 {
 
 	hasher.Write([]byte(dp.Metric().Unit()))
 
+	// TODO: handle geo attribute consistently as encoding logic
 	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	return hasher.Sum32()
