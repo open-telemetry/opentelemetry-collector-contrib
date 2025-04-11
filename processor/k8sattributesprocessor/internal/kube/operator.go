@@ -8,23 +8,19 @@ import (
 	"strings"
 
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
-	"golang.org/x/exp/slices"
 	v1 "k8s.io/api/core/v1"
 )
 
-type AutomaticRules struct {
-	Enabled            bool     `mapstructure:"enabled"`
-	Labels             bool     `mapstructure:"well_known_labels"`
-	AnnotationPrefixes []string `mapstructure:"annotation_prefixes"`
-	Exclude            []string `mapstructure:"exclude"`
+type ServiceRules struct {
+	Enabled bool `mapstructure:"enabled"`
+	Labels  bool `mapstructure:"well_known_labels"`
 }
 
-func (r *AutomaticRules) IsEnabled(key string) bool {
-	b := r.Enabled && !slices.Contains(r.Exclude, key)
-	return b
+func (r *ServiceRules) IsEnabled(key string) bool {
+	return r.Enabled
 }
 
-func (r *AutomaticRules) NeedContainer() bool {
+func (r *ServiceRules) NeedContainer() bool {
 	return r.IsEnabled(conventions.AttributeServiceName) ||
 		r.IsEnabled(conventions.AttributeServiceInstanceID) ||
 		r.IsEnabled(conventions.AttributeServiceVersion)

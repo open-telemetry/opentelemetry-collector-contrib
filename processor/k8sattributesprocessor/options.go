@@ -212,6 +212,15 @@ func withOtelAnnotations(enabled bool) option {
 	}
 }
 
+func withServiceAttributes(config ServiceAttributeConfig) option {
+	return func(p *kubernetesprocessor) error {
+		if config.Enabled {
+			// todo
+		}
+		return nil
+	}
+}
+
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {

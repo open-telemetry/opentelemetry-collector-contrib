@@ -171,6 +171,14 @@ type ExtractConfig struct {
 	// OtelAnnotations extracts all pod annotations with the prefix "resource.opentelemetry.io" as resource attributes
 	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
+
+	// todo
+	ServiceAttributes ServiceAttributeConfig `mapstructure:"service_attributes"`
+}
+
+// todo
+type ServiceAttributeConfig struct {
+	Enabled bool `mapstructure:"enabled"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
