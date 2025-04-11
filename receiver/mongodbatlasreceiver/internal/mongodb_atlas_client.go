@@ -145,12 +145,14 @@ func NewMongoDBAtlasClient(
 		baseURL = "https://cloud.mongodb.com"
 	}
 
-	log.Debug("Creating MongoDB Atlas client",
-		zap.String("baseURL", baseURL),
-		zap.String("publicKey", publicKey),
-		zap.String("privateKey", privateKey))
+	log.Info("Creating MongoDB Atlas client",
+		zap.String("baseURL", baseURL))
+	
+	client, err := mongodbatlas.New(tc,mongodbatlas.SetBaseURL(baseURL))
+	if err != nil {
+		log.Info("failed to create client", zap.Error(err))
+	}
 
-	client := mongodbatlas.NewClient(tc)
 
 	return &MongoDBAtlasClient{
 		log,
