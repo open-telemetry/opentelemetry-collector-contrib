@@ -11,6 +11,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 )
 
+// HashKey is a struct for comparing data point identity.
 type HashKey struct {
 	resourceHash uint32
 	scopeHash    uint32
@@ -33,19 +34,12 @@ type hashableDataPoint interface {
 	Attributes() pcommon.Map
 }
 
-type (
-	// ECSDataPointHasher solely relies on hashCombined because data point attributes overwrite resource attributes on merge.
-	ECSDataPointHasher struct {
-		resource pcommon.Resource
-		dp       hashableDataPoint
-	}
-	// OTelDataPointHasher does not use hashCombined as resource, scope and data points are independent.
-	OTelDataPointHasher struct {
-		resourceHash uint32
-		scopeHash    uint32
-		dpHash       uint32
-	}
-)
+// ECSDataPointHasher caches resource and data point, and computes a hash on HashKey
+// as data point attributes overwrite resource attributes in ECS mode because they are all stored at root level.
+type ECSDataPointHasher struct {
+	resource pcommon.Resource
+	dp       hashableDataPoint
+}
 
 func (h *ECSDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	h.resource = resource
@@ -78,6 +72,14 @@ func (h *ECSDataPointHasher) HashKey() HashKey {
 	return HashKey{
 		dpHash: hasher.Sum32(),
 	}
+}
+
+// OTelDataPointHasher computes a hash for each of resource, scope and data point on each Update call,
+// to avoid wasteful hashing and sorting on data point sharing the same resource and scope.
+type OTelDataPointHasher struct {
+	resourceHash uint32
+	scopeHash    uint32
+	dpHash       uint32
 }
 
 func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
