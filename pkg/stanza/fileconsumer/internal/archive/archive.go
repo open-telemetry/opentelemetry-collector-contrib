@@ -145,77 +145,20 @@ func (a *archive) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata
 	return checkpoint.SaveKey(context.Background(), a.persister, rmds.Get(), archiveKey(index), ops...)
 }
 
-func (a *archive) archiveEnabled() bool {
-	return a.pollsToArchive > 0 && a.persister != nil
-}
-
 func (a *archive) restoreArchiveIndex(ctx context.Context) {
-	// remove extra "keys" once archive restoration is done
+	var err error
+	// remove extra "keys" in case `pollsToArchive` has changed between collector restarts
 	defer a.removeExtraKeys(ctx)
-	defer func() {
-		// store current pollsToArchive
-		if err := a.persister.Set(ctx, archivePollsToArchiveKey, encodeIndex(a.pollsToArchive)); err != nil {
-			a.logger.Error("Error storing polls_to_archive", zap.Error(err))
-		}
-	}()
-
-	previousPollsToArchive, err := a.getPreviousPollsToArchive(ctx)
-	if err != nil {
-		// if there's an error reading previousPollsToArchive, default to current value
-		previousPollsToArchive = a.pollsToArchive
-	}
 
 	a.archiveIndex, err = a.getArchiveIndex(ctx)
 	if err != nil {
-		a.logger.Error("error while reading the archiveIndexKey. Starting from 0", zap.Error(err))
-		return
-	}
-
-	if previousPollsToArchive < a.pollsToArchive {
-		// if archive size has increased, we just increment the index until we enconter a nil value
-		for a.archiveIndex < a.pollsToArchive && a.isSet(ctx, a.archiveIndex) {
-			a.archiveIndex++
-		}
-	} else if previousPollsToArchive > a.pollsToArchive {
-		// we will only attempt to rewrite archive if the archive size has shrunk
-		a.logger.Warn("polls_to_archive has changed. Will attempt to rewrite archive")
-		a.rewriteArchive(ctx, previousPollsToArchive)
-	}
-}
-
-func (a *archive) rewriteArchive(ctx context.Context, previousPollsToArchive int) {
-	// helper to rewrite data from oldIndex to newIndex
-	rewrite := func(newIdx, oldIdex int) error {
-		oldVal, err := a.persister.Get(ctx, archiveKey(oldIdex))
-		if err != nil {
-			return err
-		}
-		return a.persister.Set(ctx, archiveKey(newIdx), oldVal)
-	}
-	// Calculate the least recent index, w.r.t. new archive size
-
-	leastRecentIndex := mod(a.archiveIndex-a.pollsToArchive, previousPollsToArchive)
-
-	// Refer archive.md for the detailed design
-	if mod(a.archiveIndex-1, previousPollsToArchive) > a.pollsToArchive {
-		for i := 0; i < a.pollsToArchive; i++ {
-			if err := rewrite(i, leastRecentIndex); err != nil {
-				a.logger.Error("error while swapping archive", zap.Error(err))
-			}
-			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
-		}
+		a.logger.Error("error while fetching archive index", zap.Error(err))
 		a.archiveIndex = 0
-	} else {
-		if !a.isSet(ctx, a.archiveIndex) {
-			// If the current index points at an unset key, no need to do anything
-			return
-		}
-		for i := 0; i < a.pollsToArchive-a.archiveIndex; i++ {
-			if err := rewrite(a.archiveIndex+i, leastRecentIndex); err != nil {
-				a.logger.Warn("error while swapping archive", zap.Error(err))
-			}
-			leastRecentIndex = (leastRecentIndex + 1) % previousPollsToArchive
-		}
+	}
+	if a.archiveIndex >= a.pollsToArchive || a.archiveIndex < 0 {
+		// archiveIndex is out of bounds. This most likely happened if `pollsToArchive` changed between collector restarts
+		// we just set archiveIndex to 0 in this case i.e. to reboot the archive index
+		a.archiveIndex = 0
 	}
 }
 
@@ -225,20 +168,6 @@ func (a *archive) removeExtraKeys(ctx context.Context) {
 			a.logger.Error("error while cleaning extra keys", zap.Error(err))
 		}
 	}
-}
-
-func (a *archive) getPreviousPollsToArchive(ctx context.Context) (int, error) {
-	byteIndex, err := a.persister.Get(ctx, archivePollsToArchiveKey)
-	if err != nil {
-		a.logger.Error("error while reading the archiveIndexKey", zap.Error(err))
-		return 0, err
-	}
-	previousPollsToArchive, err := decodeIndex(byteIndex)
-	if err != nil {
-		a.logger.Error("error while decoding previousPollsToArchive", zap.Error(err))
-		return 0, err
-	}
-	return previousPollsToArchive, nil
 }
 
 func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
@@ -253,8 +182,9 @@ func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
 	return archiveIndex, nil
 }
 
-func (a *archive) isSet(ctx context.Context, index int) bool {
-	val, err := a.persister.Get(ctx, archiveKey(index))
+// isSet returns true of index `i` has data present in the archive ring buffer
+func (a *archive) isSet(ctx context.Context, i int) bool {
+	val, err := a.persister.Get(ctx, archiveKey(i))
 	return val != nil && err == nil
 }
 
