@@ -82,7 +82,8 @@ func (h *ECSDataPointHasher) HashKey() HashKey {
 
 func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 	hasher := fnv.New32a()
-	// TODO: handle geo attribute consistently as encoding logic
+	// There is special handling to merge geo attributes during serialization,
+	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, resource.Attributes(), elasticsearch.MappingHintsAttrKey)
 	h.resourceHash = hasher.Sum32()
 }
@@ -90,7 +91,8 @@ func (h *OTelDataPointHasher) UpdateResource(resource pcommon.Resource) {
 func (h *OTelDataPointHasher) UpdateScope(scope pcommon.InstrumentationScope) {
 	hasher := fnv.New32a()
 	hasher.Write([]byte(scope.Name()))
-	// TODO: handle geo attribute consistently as encoding logic
+	// There is special handling to merge geo attributes during serialization,
+	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, scope.Attributes(), elasticsearch.MappingHintsAttrKey)
 	h.scopeHash = hasher.Sum32()
 }
@@ -107,7 +109,8 @@ func (h *OTelDataPointHasher) UpdateDataPoint(dp datapoints.DataPoint) {
 
 	hasher.Write([]byte(dp.Metric().Unit()))
 
-	// TODO: handle geo attribute consistently as encoding logic
+	// There is special handling to merge geo attributes during serialization,
+	// but we can hash them as if they are separate now.
 	mapHashSortedExcludeReservedAttrs(hasher, dp.Attributes(), elasticsearch.MappingHintsAttrKey)
 
 	h.dpHash = hasher.Sum32()
