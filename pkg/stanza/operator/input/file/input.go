@@ -69,13 +69,13 @@ func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRe
 		}
 
 		for k, v := range attributes {
-			if err := ent.Set(entry.NewAttributeField(k), v); err != nil {
+			if err = ent.Set(entry.NewAttributeField(k), v); err != nil {
 				i.Logger().Error("set attribute", zap.Error(err))
 			}
 		}
 
 		if i.includeFileRecordNumber {
-			if err := ent.Set(entry.NewAttributeField(attrs.LogFileRecordNumber), lastRecordNumber-int64(len(tokens))+int64(tokenIndex)+1); err != nil {
+			if err = ent.Set(entry.NewAttributeField(attrs.LogFileRecordNumber), lastRecordNumber-int64(len(tokens))+int64(tokenIndex)+1); err != nil {
 				i.Logger().Error("set record number attribute", zap.Error(err))
 			}
 		}
