@@ -4,6 +4,7 @@
 package helper // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 	"strings"
@@ -146,7 +147,7 @@ func (c *SeverityConfig) Build(_ component.TelemetrySettings) (SeverityParser, e
 	}
 
 	if c.ParseFrom == nil {
-		return SeverityParser{}, fmt.Errorf("missing required field 'parse_from'")
+		return SeverityParser{}, errors.New("missing required field 'parse_from'")
 	}
 
 	p := SeverityParser{

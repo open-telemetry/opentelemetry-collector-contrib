@@ -5,7 +5,7 @@ package ottl
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -752,7 +752,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("key not found in map"),
+			err: errors.New("key not found in map"),
 		},
 		{
 			name: "key not in map",
@@ -768,7 +768,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("key not found in map"),
+			err: errors.New("key not found in map"),
 		},
 		{
 			name: "index too large for pcommon slice",
@@ -784,7 +784,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index 100 out of bounds"),
+			err: errors.New("index 100 out of bounds"),
 		},
 		{
 			name: "negative for pcommon slice",
@@ -800,7 +800,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "index too large for Go slice",
@@ -816,7 +816,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index 100 out of bounds"),
+			err: errors.New("index 100 out of bounds"),
 		},
 		{
 			name: "negative for Go slice",
@@ -832,7 +832,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid int indexing type",
@@ -848,7 +848,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("type, string, does not support int indexing"),
+			err: errors.New("type, string, does not support int indexing"),
 		},
 		{
 			name: "invalid string indexing type",
@@ -864,7 +864,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("type, string, does not support string indexing"),
+			err: errors.New("type, string, does not support string indexing"),
 		},
 	}
 

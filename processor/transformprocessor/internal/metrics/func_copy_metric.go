@@ -5,7 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
@@ -25,7 +25,7 @@ func createCopyMetricFunction(_ ottl.FunctionContext, oArgs ottl.Arguments) (ott
 	args, ok := oArgs.(*copyMetricArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("createCopyMetricFunction args must be of type *copyMetricArguments")
+		return nil, errors.New("createCopyMetricFunction args must be of type *copyMetricArguments")
 	}
 
 	return copyMetric(args.Name, args.Description, args.Unit)

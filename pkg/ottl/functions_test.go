@@ -1615,7 +1615,7 @@ func functionWithNoArguments() (ExprFunc[any], error) {
 func functionWithErr() (ExprFunc[any], error) {
 	return func(context.Context, any) (any, error) {
 		return nil, nil
-	}, fmt.Errorf("error")
+	}, errors.New("error")
 }
 
 type stringSliceArguments struct {
@@ -2003,7 +2003,7 @@ func createFactory[A any](name string, args A, fn any) Factory[any] {
 		funcVal := reflect.ValueOf(fn)
 
 		if funcVal.Kind() != reflect.Func {
-			return nil, fmt.Errorf("a non-function value was passed to createFactory")
+			return nil, errors.New("a non-function value was passed to createFactory")
 		}
 
 		argsVal := reflect.ValueOf(fArgs).Elem()

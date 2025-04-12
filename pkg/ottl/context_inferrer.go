@@ -21,9 +21,9 @@ var defaultContextInferPriority = []string{
 	"metric",
 	"spanevent",
 	"span",
-	"resource",
 	"scope",
 	"instrumentation_scope",
+	"resource",
 }
 
 // contextInferrer is an interface used to infer the OTTL context from statements.

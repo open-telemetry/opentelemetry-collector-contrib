@@ -47,77 +47,77 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("aws.volume.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "aws.volume.id-val", val.Str())
+				assert.Equal(t, "aws.volume.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.id-val", val.Str())
+				assert.Equal(t, "container.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("fs.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "fs.type-val", val.Str())
+				assert.Equal(t, "fs.type-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("gce.pd.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "gce.pd.name-val", val.Str())
+				assert.Equal(t, "gce.pd.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("glusterfs.endpoints.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "glusterfs.endpoints.name-val", val.Str())
+				assert.Equal(t, "glusterfs.endpoints.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("glusterfs.path")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "glusterfs.path-val", val.Str())
+				assert.Equal(t, "glusterfs.path-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.container.name-val", val.Str())
+				assert.Equal(t, "k8s.container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.namespace.name-val", val.Str())
+				assert.Equal(t, "k8s.namespace.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.node.name-val", val.Str())
+				assert.Equal(t, "k8s.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.persistentvolumeclaim.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.persistentvolumeclaim.name-val", val.Str())
+				assert.Equal(t, "k8s.persistentvolumeclaim.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.uid-val", val.Str())
+				assert.Equal(t, "k8s.pod.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.volume.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.volume.name-val", val.Str())
+				assert.Equal(t, "k8s.volume.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.volume.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.volume.type-val", val.Str())
+				assert.Equal(t, "k8s.volume.type-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("partition")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "partition-val", val.Str())
+				assert.Equal(t, "partition-val", val.Str())
 			}
 		})
 	}
