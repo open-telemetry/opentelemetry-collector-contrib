@@ -5,7 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -269,7 +269,7 @@ func Test_ParseXML(t *testing.T) {
 			oArgs: &ParseXMLArguments[any]{
 				Target: ottl.StandardStringGetter[any]{
 					Getter: func(_ context.Context, _ any) (any, error) {
-						return "", fmt.Errorf("failed to get string")
+						return "", errors.New("failed to get string")
 					},
 				},
 			},

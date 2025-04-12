@@ -5,6 +5,7 @@ package ctxutil_test
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -53,7 +54,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -63,7 +64,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -73,7 +74,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
@@ -87,7 +88,7 @@ func Test_GetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type Str does not support string indexing"),
+			err: errors.New("type Str does not support string indexing"),
 		},
 	}
 
@@ -140,7 +141,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -150,7 +151,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -160,7 +161,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid type",
@@ -174,7 +175,7 @@ func Test_SetSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type Str does not support string indexing"),
+			err: errors.New("type Str does not support string indexing"),
 		},
 	}
 
@@ -230,7 +231,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -240,7 +241,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -250,7 +251,7 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid key type",
@@ -264,12 +265,12 @@ func Test_GetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type pcommon.StringSlice does not support indexing"),
+			err: errors.New("type pcommon.StringSlice does not support indexing"),
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  fmt.Errorf("cannot get slice value without key"),
+			err:  errors.New("cannot get slice value without key"),
 		},
 	}
 
@@ -318,7 +319,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -328,7 +329,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -338,7 +339,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid key type",
@@ -352,7 +353,7 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type pcommon.StringSlice does not support indexing"),
+			err: errors.New("type pcommon.StringSlice does not support indexing"),
 		},
 		{
 			name: "invalid value type",
@@ -362,12 +363,12 @@ func Test_SetCommonTypedSliceValue_Invalid(t *testing.T) {
 				},
 			},
 			val: 1,
-			err: fmt.Errorf("invalid value type provided for a slice of string: int"),
+			err: errors.New("invalid value type provided for a slice of string: int"),
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  fmt.Errorf("cannot set slice value without key"),
+			err:  errors.New("cannot set slice value without key"),
 		},
 	}
 
@@ -494,7 +495,7 @@ func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -504,7 +505,7 @@ func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -514,7 +515,7 @@ func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid key type",
@@ -528,12 +529,12 @@ func Test_GetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type pcommon.IntSlice does not support indexing"),
+			err: errors.New("type pcommon.IntSlice does not support indexing"),
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  fmt.Errorf("cannot get slice value without key"),
+			err:  errors.New("cannot get slice value without key"),
 		},
 	}
 
@@ -588,7 +589,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
+			err: errors.New(`unable to resolve an integer index in slice: could not resolve key for map/slice, expecting 'int64' but got '<nil>'`),
 		},
 		{
 			name: "index too large",
@@ -598,7 +599,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index 1 out of bounds"),
+			err: errors.New("index 1 out of bounds"),
 		},
 		{
 			name: "index too small",
@@ -608,7 +609,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid key type",
@@ -622,7 +623,7 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 					G: getSetter,
 				},
 			},
-			err: fmt.Errorf("type pcommon.Int32Slice does not support indexing"),
+			err: errors.New("type pcommon.Int32Slice does not support indexing"),
 		},
 		{
 			name: "invalid value type",
@@ -632,12 +633,12 @@ func Test_SetCommonIntSliceValue_Invalid(t *testing.T) {
 				},
 			},
 			val: "one",
-			err: fmt.Errorf("invalid type provided for setting a slice of int32: string"),
+			err: errors.New("invalid type provided for setting a slice of int32: string"),
 		},
 		{
 			name: "nil key",
 			keys: nil,
-			err:  fmt.Errorf("cannot set slice value without key"),
+			err:  errors.New("cannot set slice value without key"),
 		},
 	}
 

@@ -225,7 +225,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
 		if !ls.Has(labels.MetricName) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))

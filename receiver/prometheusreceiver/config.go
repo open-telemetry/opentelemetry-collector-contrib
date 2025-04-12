@@ -198,7 +198,7 @@ func (cfg *APIServer) Validate() error {
 	}
 
 	if cfg.ServerConfig.Endpoint == "" {
-		return fmt.Errorf("if api_server is enabled, it requires a non-empty server_config endpoint")
+		return errors.New("if api_server is enabled, it requires a non-empty server_config endpoint")
 	}
 
 	return nil
