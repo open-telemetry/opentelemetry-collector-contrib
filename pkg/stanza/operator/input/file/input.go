@@ -5,9 +5,9 @@ package file // import "github.com/open-telemetry/opentelemetry-collector-contri
 
 import (
 	"context"
-	"errors"
 	"fmt"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -40,22 +40,22 @@ func (i *Input) Stop() error {
 }
 
 func (i *Input) emitBatch(ctx context.Context, tokens [][]byte, attributes map[string]any, lastRecordNumber int64) error {
-	entries, conversionError := i.convertTokens(tokens, attributes, lastRecordNumber)
-	if conversionError != nil {
-		conversionError = fmt.Errorf("convert tokens: %w", conversionError)
+	var errs error
+	entries, err := i.convertTokens(tokens, attributes, lastRecordNumber)
+	if err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("convert tokens: %w", err))
 	}
 
-	consumeError := i.WriteBatch(ctx, entries)
-	if consumeError != nil {
-		consumeError = fmt.Errorf("consume entries: %w", consumeError)
+	if err = i.WriteBatch(ctx, entries); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("consume entries: %w", err))
 	}
 
-	return errors.Join(conversionError, consumeError)
+	return errs
 }
 
 func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRecordNumber int64) ([]*entry.Entry, error) {
 	entries := make([]*entry.Entry, 0, len(tokens))
-	var errs []error
+	var errs error
 
 	for tokenIndex, token := range tokens {
 		if len(token) == 0 {
@@ -64,7 +64,7 @@ func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRe
 
 		ent, err := i.NewEntry(i.toBody(token))
 		if err != nil {
-			errs = append(errs, fmt.Errorf("create entry: %w", err))
+			errs = multierr.Append(errs, fmt.Errorf("create entry: %w", err))
 			continue
 		}
 
@@ -82,5 +82,5 @@ func (i *Input) convertTokens(tokens [][]byte, attributes map[string]any, lastRe
 
 		entries = append(entries, ent)
 	}
-	return entries, errors.Join(errs...)
+	return entries, errs
 }
