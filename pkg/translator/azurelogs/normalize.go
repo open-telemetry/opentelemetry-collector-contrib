@@ -4,7 +4,6 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
-	"fmt"
 	"strconv"
 	"strings"
 )
@@ -30,12 +29,10 @@ func tryParseFloat64(value any) (float64, bool) {
 }
 
 func toLower(value any) any {
-	switch v := value.(type) {
-	case string:
-		return strings.ToLower(v)
-	default:
-		return strings.ToLower(fmt.Sprint(value))
+	if s, ok := value.(string); ok {
+		return strings.ToLower(s)
 	}
+	return value
 }
 
 func toFloat(value any) any {
@@ -51,8 +48,7 @@ func toFloat(value any) any {
 	case int64:
 		return float64(v)
 	case string:
-		f, err := strconv.ParseFloat(v, 64)
-		if err == nil {
+		if f, err := strconv.ParseFloat(v, 64); err == nil {
 			return f
 		}
 	}
@@ -64,12 +60,11 @@ func toInt(value any) any {
 	case int:
 		return int64(v)
 	case int32:
-		return int64(int(v))
+		return int64(v)
 	case int64:
-		return value.(int64)
+		return v
 	case string:
-		i, err := strconv.ParseInt(v, 10, 64)
-		if err == nil {
+		if i, err := strconv.ParseInt(v, 10, 64); err == nil {
 			return i
 		}
 	}

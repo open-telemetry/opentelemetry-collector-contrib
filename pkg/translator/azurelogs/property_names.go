@@ -51,12 +51,20 @@ func handleAzureCDNAccessLog(field string, value any, attrs map[string]any, attr
 	case "ErrorInfo":
 		attrs[conventions.AttributeErrorType] = value
 	case "SecurityProtocol":
-		if str, ok := value.(string); ok {
-			if parts := strings.SplitN(str, " ", 2); len(parts) == 2 {
-				attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(parts[0])
-				attrs[conventions.AttributeTLSProtocolVersion] = parts[1]
-			}
+		str, ok := value.(string)
+		if !ok {
+			return
 		}
+		name, remaining, _ := strings.Cut(str, " ")
+		if name == "" || remaining == "" {
+			return
+		}
+		version, remaining, _ := strings.Cut(remaining, " ")
+		if version == "" || remaining != "" {
+			return
+		}
+		attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(name)
+		attrs[conventions.AttributeTLSProtocolVersion] = version
 	default:
 		attrsProps[field] = value
 	}
@@ -104,12 +112,20 @@ func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, att
 	case "errorInfo":
 		attrs[conventions.AttributeErrorType] = value
 	case "securityProtocol":
-		if str, ok := value.(string); ok {
-			if parts := strings.SplitN(str, " ", 2); len(parts) == 2 {
-				attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(parts[0])
-				attrs[conventions.AttributeTLSProtocolVersion] = parts[1]
-			}
+		str, ok := value.(string)
+		if !ok {
+			return
 		}
+		name, remaining, _ := strings.Cut(str, " ")
+		if name == "" || remaining == "" {
+			return
+		}
+		version, remaining, _ := strings.Cut(remaining, " ")
+		if version == "" || remaining != "" {
+			return
+		}
+		attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(name)
+		attrs[conventions.AttributeTLSProtocolVersion] = version
 	default:
 		attrsProps[field] = value
 	}
@@ -249,12 +265,20 @@ func handleAppServiceHTTPLogs(field string, value any, attrs map[string]any, att
 	case "UserAgent":
 		attrs[conventions.AttributeUserAgentOriginal] = value
 	case "Protocol":
-		if str, ok := value.(string); ok {
-			if parts := strings.SplitN(str, "/", 2); len(parts) == 2 {
-				attrs[conventions.AttributeNetworkProtocolName] = strings.ToLower(parts[0])
-				attrs[conventions.AttributeNetworkProtocolVersion] = parts[1]
-			}
+		str, ok := value.(string)
+		if !ok {
+			return
 		}
+		name, remaining, _ := strings.Cut(str, "/")
+		if name == "" || remaining == "" {
+			return
+		}
+		version, remaining, _ := strings.Cut(remaining, "/")
+		if version == "" || remaining != "" {
+			return
+		}
+		attrs[conventions.AttributeNetworkProtocolName] = strings.ToLower(name)
+		attrs[conventions.AttributeNetworkProtocolVersion] = version
 	default:
 		attrsProps[field] = value
 	}
