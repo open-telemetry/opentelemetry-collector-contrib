@@ -11,6 +11,7 @@ import (
 	"github.com/expr-lang/expr/vm"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
+	"go.uber.org/zap/zapcore"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
 	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
@@ -107,23 +108,16 @@ func (t *TransformerOperator) HandleEntryError(ctx context.Context, entry *entry
 		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
-	logFields := []zap.Field{
-		zap.Any("error", err),
-		zap.Any("action", t.OnError),
-		zap.Any("entry.timestamp", entry.Timestamp),
-	}
-	for attrName, attrValue := range entry.Attributes {
-		logFields = append(logFields, zap.Any(attrName, attrValue))
-	}
-
 	if t.OnError == SendOnErrorQuiet || t.OnError == DropOnErrorQuiet {
-		t.Logger().Debug("Failed to process entry", logFields...)
+		// No need to construct the zap attributes if logging not enabled at debug level.
+		if t.Logger().Core().Enabled(zapcore.DebugLevel) {
+			t.Logger().Debug("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
+		}
 	} else {
-		t.Logger().Error("Failed to process entry", logFields...)
+		t.Logger().Error("Failed to process entry", zapAttributes(entry, t.OnError, err)...)
 	}
 	if t.OnError == SendOnError || t.OnError == SendOnErrorQuiet {
-		writeErr := t.Write(ctx, entry)
-		if writeErr != nil {
+		if writeErr := t.Write(ctx, entry); writeErr != nil {
 			err = fmt.Errorf("failed to send entry after error: %w", writeErr)
 		}
 	}
@@ -147,6 +141,17 @@ func (t *TransformerOperator) Skip(_ context.Context, entry *entry.Entry) (bool,
 	return !matches.(bool), nil
 }
 
+func zapAttributes(entry *entry.Entry, action string, err error) []zap.Field {
+	logFields := make([]zap.Field, 0, 3+len(entry.Attributes))
+	logFields = append(logFields, zap.Error(err))
+	logFields = append(logFields, zap.String("action", action))
+	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
+	return logFields
+}
+
 // ProcessFunction is a function that processes an entry.
 type ProcessFunction = func(context.Context, *entry.Entry) error
 
@@ -162,5 +167,5 @@ const SendOnErrorQuiet = "send_quiet"
 // DropOnError specifies an on_error mode for dropping entries after an error.
 const DropOnError = "drop"
 
-// DropOnError specifies an on_error mode for dropping entries after an error but without logging on error level
+// DropOnErrorQuiet specifies an on_error mode for dropping entries after an error but without logging on error level
 const DropOnErrorQuiet = "drop_quiet"
