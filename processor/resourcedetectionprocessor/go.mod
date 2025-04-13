@@ -5,7 +5,6 @@ go 1.23.0
 require (
 	cloud.google.com/go/compute/metadata v0.6.0
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0
-	github.com/aws/aws-sdk-go v1.55.6
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/config v1.29.13
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30
@@ -93,7 +92,6 @@ require (
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/hashicorp/golang-lru v1.0.2 // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
-	github.com/jmespath/go-jmespath v0.4.0 // indirect
 	github.com/josharian/intern v1.0.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/klauspost/compress v1.18.0 // indirect
