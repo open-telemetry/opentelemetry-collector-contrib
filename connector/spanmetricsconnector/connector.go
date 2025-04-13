@@ -76,6 +76,12 @@ type connectorImp struct {
 	// Event dimensions to add to the events metric.
 	eDimensions []utilattri.Dimension
 
+	// Calls dimensions to add to the events metric.
+	callsDimensions []utilattri.Dimension
+
+	// duration dimensions to add to the events metric.
+	durationDimensions []utilattri.Dimension
+
 	events EventsConfig
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
@@ -151,6 +157,8 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		callsDimensions:              newDimensions(cfg.CallsDimensions),
+		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
 	}, nil
 }
@@ -311,8 +319,8 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
 		}
 
-		events := rawMetrics.events
 		if p.events.Enabled {
+			events := rawMetrics.events
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
 			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
@@ -399,25 +407,38 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				if endTime > startTime {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
-				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
+				callsDimensions := p.dimensions
+				callsDimensions = append(callsDimensions, p.callsDimensions...)
+				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
 				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
+					attributes = p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
-				if !p.config.Histogram.Disable {
-					// aggregate histogram metrics
-					h := histograms.GetOrCreate(key, attributes)
-					p.addExemplar(span, duration, h)
-					h.Observe(duration)
-				}
-				// aggregate sums metrics
+
+				// aggregate calls metrics
 				s := sums.GetOrCreate(key, attributes)
 				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 				s.Add(1)
+
+				// aggregate duration metrics
+				if !p.config.Histogram.Disable {
+					durationDimensions := p.dimensions
+					durationDimensions = append(durationDimensions, p.durationDimensions...)
+					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
+					durationAttributes, ok := p.metricKeyToDimensions.Get(durationKey)
+					if !ok {
+						durationAttributes = p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+						p.metricKeyToDimensions.Add(durationKey, durationAttributes)
+					}
+
+					h := histograms.GetOrCreate(durationKey, durationAttributes)
+					p.addExemplar(span, duration, h)
+					h.Observe(duration)
+				}
 
 				// aggregate events metrics
 				if p.events.Enabled {
