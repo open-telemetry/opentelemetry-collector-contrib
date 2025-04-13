@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -36,11 +37,11 @@ func (t *Transformer) CanProcess() bool {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
+	var errs error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, entries[i]))
+		errs = multierr.Append(errs, t.Process(ctx, entries[i]))
 	}
-	return errors.Join(errs...)
+	return errs
 }
 
 // Process will route incoming entries based on matching expressions

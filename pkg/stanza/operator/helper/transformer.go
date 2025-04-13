@@ -10,6 +10,7 @@ import (
 
 	"github.com/expr-lang/expr/vm"
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 
@@ -78,11 +79,11 @@ func (t *TransformerOperator) CanProcess() bool {
 }
 
 func (t *TransformerOperator) ProcessBatchWith(ctx context.Context, entries []*entry.Entry, process ProcessFunction) error {
-	var errs []error
+	var errs error
 	for i := range entries {
-		errs = append(errs, process(ctx, entries[i]))
+		errs = multierr.Append(errs, process(ctx, entries[i]))
 	}
-	return errors.Join(errs...)
+	return errs
 }
 
 // ProcessWith will process an entry with a transform function.

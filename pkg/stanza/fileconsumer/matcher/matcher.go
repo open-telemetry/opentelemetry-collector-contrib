@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/featuregate"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
@@ -173,11 +174,9 @@ type Matcher struct {
 func (m Matcher) MatchFiles() ([]string, error) {
 	var errs error
 	files, err := finder.FindFiles(m.include, m.exclude)
-	if err != nil {
-		errs = errors.Join(errs, err)
-	}
+	errs = multierr.Append(errs, err)
 	if len(files) == 0 {
-		return files, errors.Join(errors.New("no files match the configured criteria"), errs)
+		return files, multierr.Append(errors.New("no files match the configured criteria"), errs)
 	}
 	if len(m.filterOpts) == 0 {
 		return files, errs
@@ -200,7 +199,7 @@ func (m Matcher) MatchFiles() ([]string, error) {
 	for _, groupedFiles := range groups {
 		groupResult, err := filter.Filter(groupedFiles, m.regex, m.filterOpts...)
 		if len(groupResult) == 0 {
-			return groupResult, errors.Join(err, errs)
+			return groupResult, multierr.Append(err, errs)
 		}
 		result = append(result, groupResult...)
 	}
