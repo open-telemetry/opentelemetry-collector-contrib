@@ -13,13 +13,12 @@ for i in "${!TEST_ARRAY[@]}"; do
     curr+="|${TEST_ARRAY[$i]}"
   else
     if [ -n "$curr" ] && (( i>1 )); then
-      MATRIX+=",{\"test\":\"$curr\"}"
+      MATRIX+=",{\"test\":\"$curr\",\"runner\":\"github-benchmark-runner\",\"type\":\"linux-amd64\"},{\"test\":\"$curr\",\"runner\":\"oracle-16cpu-64gb-arm64\",\"type\":\"linux-arm64\"}"
     elif [ -n "$curr" ]; then
-      MATRIX+="{\"test\":\"$curr\"}"
+      MATRIX+="{\"test\":\"$curr\",\"runner\":\"github-benchmark-runner\",\"type\":\"linux-amd64\"},{\"test\":\"$curr\",\"runner\":\"oracle-16cpu-64gb-arm64\",\"type\":\"linux-arm64\"}"
     fi
     curr="${TEST_ARRAY[$i]}"
   fi
 done
-MATRIX+=",{\"test\":\"$curr\",\"runner\":\"github-benchmark-runner\",\"type\":\"linux-amd64\"}]}"
-MATRIX+=",{\"test\":\"$curr\",\"runner\":\"oracle-16cpu-64gb-arm64\",\"type\":\"linux-arm64\"}]}"
+MATRIX+=",{\"test\":\"$curr\",\"runner\":\"github-benchmark-runner\",\"type\":\"linux-amd64\"},{\"test\":\"$curr\",\"runner\":\"oracle-16cpu-64gb-arm64\",\"type\":\"linux-arm64\"}]}"
 echo "loadtest_matrix=$MATRIX" >> "$GITHUB_OUTPUT"
