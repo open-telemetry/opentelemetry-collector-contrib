@@ -10,7 +10,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
@@ -84,13 +83,11 @@ type processHandle interface {
 	CmdlineWithContext(context.Context) (string, error)
 	CmdlineSliceWithContext(context.Context) ([]string, error)
 	TimesWithContext(context.Context) (*cpu.TimesStat, error)
-	PercentWithContext(context.Context, time.Duration) (float64, error)
 	MemoryInfoWithContext(context.Context) (*process.MemoryInfoStat, error)
 	MemoryPercentWithContext(context.Context) (float32, error)
 	IOCountersWithContext(context.Context) (*process.IOCountersStat, error)
 	NumThreadsWithContext(context.Context) (int32, error)
 	CreateTimeWithContext(context.Context) (int64, error)
-	ParentWithContext(context.Context) (*process.Process, error)
 	PpidWithContext(context.Context) (int32, error)
 	PageFaultsWithContext(context.Context) (*process.PageFaultsStat, error)
 	NumCtxSwitchesWithContext(context.Context) (*process.NumCtxSwitchesStat, error)
@@ -106,7 +103,7 @@ type gopsProcessHandles struct {
 }
 
 func (p *gopsProcessHandles) Pid(index int) int32 {
-	return p.handles[index].Process.Pid
+	return p.handles[index].Pid
 }
 
 func (p *gopsProcessHandles) At(index int) processHandle {
@@ -130,7 +127,7 @@ type wrappedProcessHandle struct {
 }
 
 func (p *wrappedProcessHandle) CgroupWithContext(ctx context.Context) (string, error) {
-	pid := p.Process.Pid
+	pid := p.Pid
 	statPath := getEnvWithContext(ctx, string(common.HostProcEnvKey), "/proc", strconv.Itoa(int(pid)), "cgroup")
 	contents, err := os.ReadFile(statPath)
 	if err != nil {

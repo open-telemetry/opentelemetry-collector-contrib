@@ -292,7 +292,7 @@ func TestDetectError(t *testing.T) {
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// hostname fail with 'hostnameSources' set to 'os'
@@ -309,7 +309,7 @@ func TestDetectError(t *testing.T) {
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// OS type fails
@@ -325,7 +325,7 @@ func TestDetectError(t *testing.T) {
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// OS version fails
@@ -341,7 +341,7 @@ func TestDetectError(t *testing.T) {
 	detector = newTestDetector(mdOSVersion, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
 	assert.Error(t, err)
-	assert.Equal(t, "", schemaURL)
+	assert.Empty(t, schemaURL)
 	assert.True(t, internal.IsEmptyResource(res))
 
 	// Host ID fails. All other attributes should be set.

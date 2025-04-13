@@ -4,7 +4,6 @@
 package lokiexporter
 
 import (
-	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -62,10 +61,11 @@ func TestLoadConfigNewExporter(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				DefaultLabelsEnabled: map[string]bool{
 					"exporter": false,
@@ -98,32 +98,32 @@ func TestConfigValidate(t *testing.T) {
 	testCases := []struct {
 		desc string
 		cfg  *Config
-		err  error
+		err  string
 	}{
 		{
 			desc: "QueueSettings are invalid",
-			cfg:  &Config{QueueSettings: exporterhelper.QueueConfig{QueueSize: -1, Enabled: true}},
-			err:  fmt.Errorf("queue settings has invalid configuration"),
+			cfg:  &Config{QueueSettings: exporterhelper.QueueBatchConfig{QueueSize: -1, Enabled: true}},
+			err:  "queue settings has invalid configuration",
 		},
 		{
 			desc: "Endpoint is invalid",
 			cfg:  &Config{},
-			err:  fmt.Errorf("\"endpoint\" must be a valid URL"),
+			err:  "\"endpoint\" must be a valid URL",
 		},
 		{
 			desc: "Config is valid",
 			cfg: &Config{
 				ClientConfig: clientConfig,
 			},
-			err: nil,
+			err: "",
 		},
 	}
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			err := tc.cfg.Validate()
-			if tc.err != nil {
-				assert.ErrorContains(t, err, tc.err.Error())
+			if tc.err != "" {
+				assert.ErrorContains(t, err, tc.err)
 			} else {
 				require.NoError(t, err)
 			}

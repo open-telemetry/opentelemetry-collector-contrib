@@ -296,7 +296,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cmd-val", attrVal.Str())
+					assert.Equal(t, "cmd-val", attrVal.Str())
 				case "redis.cmd.latency":
 					assert.False(t, validatedMetrics["redis.cmd.latency"], "Found a duplicate in the metrics slice: redis.cmd.latency")
 					validatedMetrics["redis.cmd.latency"] = true
@@ -311,10 +311,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cmd-val", attrVal.Str())
+					assert.Equal(t, "cmd-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("percentile")
 					assert.True(t, ok)
-					assert.EqualValues(t, "p50", attrVal.Str())
+					assert.Equal(t, "p50", attrVal.Str())
 				case "redis.cmd.usec":
 					assert.False(t, validatedMetrics["redis.cmd.usec"], "Found a duplicate in the metrics slice: redis.cmd.usec")
 					validatedMetrics["redis.cmd.usec"] = true
@@ -331,7 +331,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("cmd")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cmd-val", attrVal.Str())
+					assert.Equal(t, "cmd-val", attrVal.Str())
 				case "redis.commands":
 					assert.False(t, validatedMetrics["redis.commands"], "Found a duplicate in the metrics slice: redis.commands")
 					validatedMetrics["redis.commands"] = true
@@ -402,7 +402,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "sys", attrVal.Str())
+					assert.Equal(t, "sys", attrVal.Str())
 				case "redis.db.avg_ttl":
 					assert.False(t, validatedMetrics["redis.db.avg_ttl"], "Found a duplicate in the metrics slice: redis.db.avg_ttl")
 					validatedMetrics["redis.db.avg_ttl"] = true
@@ -417,7 +417,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "db-val", attrVal.Str())
+					assert.Equal(t, "db-val", attrVal.Str())
 				case "redis.db.expires":
 					assert.False(t, validatedMetrics["redis.db.expires"], "Found a duplicate in the metrics slice: redis.db.expires")
 					validatedMetrics["redis.db.expires"] = true
@@ -432,7 +432,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "db-val", attrVal.Str())
+					assert.Equal(t, "db-val", attrVal.Str())
 				case "redis.db.keys":
 					assert.False(t, validatedMetrics["redis.db.keys"], "Found a duplicate in the metrics slice: redis.db.keys")
 					validatedMetrics["redis.db.keys"] = true
@@ -447,7 +447,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("db")
 					assert.True(t, ok)
-					assert.EqualValues(t, "db-val", attrVal.Str())
+					assert.Equal(t, "db-val", attrVal.Str())
 				case "redis.keys.evicted":
 					assert.False(t, validatedMetrics["redis.keys.evicted"], "Found a duplicate in the metrics slice: redis.keys.evicted")
 					validatedMetrics["redis.keys.evicted"] = true
@@ -682,7 +682,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("role")
 					assert.True(t, ok)
-					assert.EqualValues(t, "replica", attrVal.Str())
+					assert.Equal(t, "replica", attrVal.Str())
 				case "redis.slaves.connected":
 					assert.False(t, validatedMetrics["redis.slaves.connected"], "Found a duplicate in the metrics slice: redis.slaves.connected")
 					validatedMetrics["redis.slaves.connected"] = true

@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -35,7 +34,7 @@ func NewFactory() exporter.Factory {
 }
 
 func createDefaultConfig() component.Config {
-	batcherConfig := exporterbatcher.NewDefaultConfig()
+	batcherConfig := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 	batcherConfig.Enabled = false
 
 	return &Config{
@@ -69,8 +68,16 @@ func createDefaultConfig() component.Config {
 	}
 }
 
-func createTraceExporter(ctx context.Context, set exporter.Settings, config component.Config) (exporter.Traces, error) {
+func createTraceExporter(
+	ctx context.Context,
+	set exporter.Settings,
+	config component.Config,
+) (exporter.Traces, error) {
 	cfg := config.(*Config)
+
+	if cfg.BatcherConfig.Enabled {
+		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
+	}
 
 	exporter, err := newTracesExporter(cfg, set)
 	if err != nil {
@@ -88,81 +95,99 @@ func createTraceExporter(ctx context.Context, set exporter.Settings, config comp
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(exporter.start),
 		exporterhelper.WithShutdown(exporter.shutdown),
-		exporterhelper.WithBatcher(cfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
 func createMetricsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (exporter.Metrics, error) {
+	cfg := config.(*Config)
+
+	if cfg.BatcherConfig.Enabled {
+		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
+	}
+
 	oce, err := newMetricsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewMetrics(
 		ctx,
 		set,
 		cfg,
 		oce.pushMetrics,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
 func createLogsExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (exporter.Logs, error) {
+	cfg := config.(*Config)
+
+	if cfg.BatcherConfig.Enabled {
+		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
+	}
+
 	oce, err := newLogsExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
+
 	return exporterhelper.NewLogs(
 		ctx,
 		set,
 		cfg,
 		oce.pushLogs,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }
 
 func createProfilesExporter(
 	ctx context.Context,
 	set exporter.Settings,
-	cfg component.Config,
+	config component.Config,
 ) (xexporter.Profiles, error) {
+	cfg := config.(*Config)
+
+	if cfg.BatcherConfig.Enabled {
+		set.Logger.Warn("`batcher` is deprecated, please use `sending_queue` instead")
+	}
+
 	oce, err := newProfilesExporter(cfg, set)
 	if err != nil {
 		return nil, err
 	}
-	oCfg := cfg.(*Config)
+
 	return xexporterhelper.NewProfilesExporter(
 		ctx,
 		set,
 		cfg,
 		oce.pushProfiles,
 		exporterhelper.WithCapabilities(consumer.Capabilities{MutatesData: true}),
-		exporterhelper.WithTimeout(oCfg.TimeoutSettings),
-		exporterhelper.WithRetry(oCfg.BackOffConfig),
-		exporterhelper.WithQueue(oCfg.QueueSettings),
+		exporterhelper.WithTimeout(cfg.TimeoutSettings),
+		exporterhelper.WithRetry(cfg.BackOffConfig),
+		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithStart(oce.start),
 		exporterhelper.WithShutdown(oce.shutdown),
-		exporterhelper.WithBatcher(oCfg.BatcherConfig),
+		exporterhelper.WithBatcher(cfg.BatcherConfig), //nolint:staticcheck
 	)
 }

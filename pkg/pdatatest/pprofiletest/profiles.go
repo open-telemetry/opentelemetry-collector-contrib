@@ -5,6 +5,7 @@ package pprofiletest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -256,11 +257,11 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	}
 
 	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
-		errs = multierr.Append(errs, fmt.Errorf("locationIndicies do not match expected"))
+		errs = multierr.Append(errs, errors.New("locationIndicies do not match expected"))
 	}
 
 	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
-		errs = multierr.Append(errs, fmt.Errorf("comment does not match expected"))
+		errs = multierr.Append(errs, errors.New("comment does not match expected"))
 	}
 
 	if expected.Time() != actual.Time() {

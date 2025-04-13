@@ -45,7 +45,7 @@ func (dp Histogram) DynamicTemplate(_ pmetric.Metric) string {
 }
 
 func (dp Histogram) DocCount() uint64 {
-	return dp.HistogramDataPoint.Count()
+	return dp.Count()
 }
 
 func (dp Histogram) Metric() pmetric.Metric {

@@ -1,5 +1,4 @@
 # This file is auto-generated. Do not edit manually.
-cmd/checkapi cmd/checkapi
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
