@@ -207,7 +207,6 @@ linters:
         - float-compare
         - require-error
         - suite-subtest-run
-        - useless-assert # FIXME when golangci-lint > 2.0.2
 
       enable-all: true
 
