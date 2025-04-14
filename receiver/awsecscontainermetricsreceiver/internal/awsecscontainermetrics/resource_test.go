@@ -177,13 +177,13 @@ func TestGetResourceFromARN(t *testing.T) {
 	require.Equal(t, "803860917211", accountID)
 	require.Equal(t, "d22aaa11bf0e4ab19c2c940a1cbabbee", taskID)
 	region, accountID, taskID = getResourceFromARN("")
-	require.LessOrEqual(t, 0, len(region))
-	require.LessOrEqual(t, 0, len(accountID))
-	require.LessOrEqual(t, 0, len(taskID))
+	require.Empty(t, region)
+	require.Empty(t, accountID)
+	require.Empty(t, taskID)
 	region, accountID, taskID = getResourceFromARN("notarn:aws:ecs:us-west-2:803860917211:task/test2")
-	require.LessOrEqual(t, 0, len(region))
-	require.LessOrEqual(t, 0, len(accountID))
-	require.LessOrEqual(t, 0, len(taskID))
+	require.Empty(t, region)
+	require.Empty(t, accountID)
+	require.Empty(t, taskID)
 }
 
 func TestGetNameFromCluster(t *testing.T) {
@@ -194,5 +194,5 @@ func TestGetNameFromCluster(t *testing.T) {
 	require.Equal(t, "not-arn:aws:something/001", clusterName)
 
 	clusterName = getNameFromCluster("")
-	require.LessOrEqual(t, 0, len(clusterName))
+	require.Empty(t, clusterName)
 }
