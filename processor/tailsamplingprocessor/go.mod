@@ -6,9 +6,9 @@ require (
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da
 	github.com/google/uuid v1.6.0
 	github.com/hashicorp/golang-lru/v2 v2.0.7
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.123.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.124.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/confmap v1.30.0

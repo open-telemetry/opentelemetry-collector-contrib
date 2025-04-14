@@ -3,9 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookee
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.123.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper v0.124.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.36.0
 	go.opentelemetry.io/collector/component v1.30.0
@@ -60,8 +60,8 @@ require (
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/morikuni/aec v1.0.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.123.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.123.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.0 // indirect
 	github.com/opencontainers/go-digest v1.0.0 // indirect
 	github.com/opencontainers/image-spec v1.1.1 // indirect
 	github.com/pkg/errors v0.9.1 // indirect

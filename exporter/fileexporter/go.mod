@@ -5,9 +5,9 @@ go 1.23.0
 require (
 	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/klauspost/compress v1.18.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.123.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.123.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/otlpencodingextension v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
@@ -44,7 +44,7 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.123.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding v0.124.0 // indirect
 	github.com/pmezard/go-difflib v1.0.1-0.20181226105442-5d4384ee4fb2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/configretry v1.30.0 // indirect
