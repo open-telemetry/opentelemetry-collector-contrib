@@ -205,7 +205,7 @@ password: "changeme"`
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
+				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
 				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
 			} else {
@@ -519,7 +519,7 @@ include:
 			}
 			if !test.wantError {
 				require.NoError(t, err)
-				require.Equal(t, subreceiverTemplate.receiverConfig.config, test.expectedReceiver.receiverConfig.config)
+				require.Equal(t, subreceiverTemplate.config, test.expectedReceiver.config)
 				require.Equal(t, subreceiverTemplate.signals, test.expectedReceiver.signals)
 				require.Equal(t, subreceiverTemplate.id, test.expectedReceiver.id)
 			} else {

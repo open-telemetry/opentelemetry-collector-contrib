@@ -200,7 +200,7 @@ func (m *metricSplunkAggregationQueueRatio) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -209,6 +209,8 @@ func (m *metricSplunkAggregationQueueRatio) recordDataPoint(start pcommon.Timest
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -251,7 +253,7 @@ func (m *metricSplunkBucketsSearchableStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string) {
+func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -261,6 +263,8 @@ func (m *metricSplunkBucketsSearchableStatus) recordDataPoint(start pcommon.Time
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	dp.Attributes().PutStr("splunk.indexer.searchable", splunkIndexerSearchableAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -303,7 +307,7 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -312,6 +316,8 @@ func (m *metricSplunkDataIndexesExtendedBucketCount) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -354,7 +360,7 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -364,6 +370,8 @@ func (m *metricSplunkDataIndexesExtendedBucketEventCount) recordDataPoint(start 
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -406,7 +414,7 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -416,6 +424,8 @@ func (m *metricSplunkDataIndexesExtendedBucketHotCount) recordDataPoint(start pc
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -458,7 +468,7 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -468,6 +478,8 @@ func (m *metricSplunkDataIndexesExtendedBucketWarmCount) recordDataPoint(start p
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
 	dp.Attributes().PutStr("splunk.bucket.dir", splunkBucketDirAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -510,7 +522,7 @@ func (m *metricSplunkDataIndexesExtendedEventCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -519,6 +531,8 @@ func (m *metricSplunkDataIndexesExtendedEventCount) recordDataPoint(start pcommo
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -561,7 +575,7 @@ func (m *metricSplunkDataIndexesExtendedRawSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -570,6 +584,8 @@ func (m *metricSplunkDataIndexesExtendedRawSize) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -612,7 +628,7 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -621,6 +637,8 @@ func (m *metricSplunkDataIndexesExtendedTotalSize) recordDataPoint(start pcommon
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -663,7 +681,7 @@ func (m *metricSplunkHealth) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string) {
+func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -673,6 +691,8 @@ func (m *metricSplunkHealth) recordDataPoint(start pcommon.Timestamp, ts pcommon
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.feature", splunkFeatureAttributeValue)
 	dp.Attributes().PutStr("splunk.feature.health", splunkFeatureHealthAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -715,7 +735,7 @@ func (m *metricSplunkIndexerAvgRate) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -724,6 +744,8 @@ func (m *metricSplunkIndexerAvgRate) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -766,7 +788,7 @@ func (m *metricSplunkIndexerCPUTime) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -775,6 +797,8 @@ func (m *metricSplunkIndexerCPUTime) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -817,7 +841,7 @@ func (m *metricSplunkIndexerQueueRatio) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -826,6 +850,8 @@ func (m *metricSplunkIndexerQueueRatio) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -868,7 +894,7 @@ func (m *metricSplunkIndexerRawWriteTime) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -877,6 +903,8 @@ func (m *metricSplunkIndexerRawWriteTime) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -919,7 +947,7 @@ func (m *metricSplunkIndexerThroughput) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string) {
+func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -928,6 +956,8 @@ func (m *metricSplunkIndexerThroughput) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.indexer.status", splunkIndexerStatusAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -970,7 +1000,7 @@ func (m *metricSplunkIndexesAvgSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -979,6 +1009,8 @@ func (m *metricSplunkIndexesAvgSize) recordDataPoint(start pcommon.Timestamp, ts
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1021,7 +1053,7 @@ func (m *metricSplunkIndexesAvgUsage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1030,6 +1062,8 @@ func (m *metricSplunkIndexesAvgUsage) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1072,7 +1106,7 @@ func (m *metricSplunkIndexesBucketCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1081,6 +1115,8 @@ func (m *metricSplunkIndexesBucketCount) recordDataPoint(start pcommon.Timestamp
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1123,7 +1159,7 @@ func (m *metricSplunkIndexesMedianDataAge) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1132,6 +1168,8 @@ func (m *metricSplunkIndexesMedianDataAge) recordDataPoint(start pcommon.Timesta
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1174,7 +1212,7 @@ func (m *metricSplunkIndexesSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1183,6 +1221,8 @@ func (m *metricSplunkIndexesSize) recordDataPoint(start pcommon.Timestamp, ts pc
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1225,7 +1265,7 @@ func (m *metricSplunkIoAvgIops) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1234,6 +1274,8 @@ func (m *metricSplunkIoAvgIops) recordDataPoint(start pcommon.Timestamp, ts pcom
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1276,7 +1318,7 @@ func (m *metricSplunkKvstoreBackupStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
+func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1285,6 +1327,8 @@ func (m *metricSplunkKvstoreBackupStatus) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1327,7 +1371,7 @@ func (m *metricSplunkKvstoreReplicationStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
+func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1336,6 +1380,8 @@ func (m *metricSplunkKvstoreReplicationStatus) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1378,7 +1424,7 @@ func (m *metricSplunkKvstoreStatus) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string) {
+func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1389,6 +1435,8 @@ func (m *metricSplunkKvstoreStatus) recordDataPoint(start pcommon.Timestamp, ts 
 	dp.Attributes().PutStr("splunk.kvstore.storage.engine", splunkKvstoreStorageEngineAttributeValue)
 	dp.Attributes().PutStr("splunk.kvstore.external", splunkKvstoreExternalAttributeValue)
 	dp.Attributes().PutStr("splunk.kvstore.status.value", splunkKvstoreStatusValueAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1431,7 +1479,7 @@ func (m *metricSplunkLicenseIndexUsage) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
+func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1440,6 +1488,8 @@ func (m *metricSplunkLicenseIndexUsage) recordDataPoint(start pcommon.Timestamp,
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.index.name", splunkIndexNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1482,7 +1532,7 @@ func (m *metricSplunkParseQueueRatio) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1491,6 +1541,8 @@ func (m *metricSplunkParseQueueRatio) recordDataPoint(start pcommon.Timestamp, t
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1533,7 +1585,7 @@ func (m *metricSplunkPipelineSetCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1542,6 +1594,8 @@ func (m *metricSplunkPipelineSetCount) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1584,7 +1638,7 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1593,6 +1647,8 @@ func (m *metricSplunkSchedulerAvgExecutionLatency) recordDataPoint(start pcommon
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1635,7 +1691,7 @@ func (m *metricSplunkSchedulerAvgRunTime) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1644,6 +1700,8 @@ func (m *metricSplunkSchedulerAvgRunTime) recordDataPoint(start pcommon.Timestam
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1686,7 +1744,7 @@ func (m *metricSplunkSchedulerCompletionRatio) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1695,6 +1753,8 @@ func (m *metricSplunkSchedulerCompletionRatio) recordDataPoint(start pcommon.Tim
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1737,7 +1797,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string) {
+func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1746,6 +1806,8 @@ func (m *metricSplunkServerIntrospectionQueuesCurrent) recordDataPoint(start pco
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1788,7 +1850,7 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string) {
+func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1797,6 +1859,8 @@ func (m *metricSplunkServerIntrospectionQueuesCurrentBytes) recordDataPoint(star
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.queue.name", splunkQueueNameAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1839,7 +1903,7 @@ func (m *metricSplunkServerSearchartifactsAdhoc) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1848,6 +1912,8 @@ func (m *metricSplunkServerSearchartifactsAdhoc) recordDataPoint(start pcommon.T
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1890,7 +1956,7 @@ func (m *metricSplunkServerSearchartifactsCompleted) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1899,6 +1965,8 @@ func (m *metricSplunkServerSearchartifactsCompleted) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1941,7 +2009,7 @@ func (m *metricSplunkServerSearchartifactsIncomplete) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -1950,6 +2018,8 @@ func (m *metricSplunkServerSearchartifactsIncomplete) recordDataPoint(start pcom
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -1992,7 +2062,7 @@ func (m *metricSplunkServerSearchartifactsInvalid) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2001,6 +2071,8 @@ func (m *metricSplunkServerSearchartifactsInvalid) recordDataPoint(start pcommon
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2043,7 +2115,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2052,6 +2124,8 @@ func (m *metricSplunkServerSearchartifactsJobCacheCount) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2094,7 +2168,7 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2104,6 +2178,8 @@ func (m *metricSplunkServerSearchartifactsJobCacheSize) recordDataPoint(start pc
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
 	dp.Attributes().PutStr("splunk.searchartifacts.cache.type", splunkSearchartifactsCacheTypeAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2146,7 +2222,7 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2155,6 +2231,8 @@ func (m *metricSplunkServerSearchartifactsSavedsearches) recordDataPoint(start p
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2197,7 +2275,7 @@ func (m *metricSplunkServerSearchartifactsScheduled) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
+func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2206,6 +2284,8 @@ func (m *metricSplunkServerSearchartifactsScheduled) recordDataPoint(start pcomm
 	dp.SetTimestamp(ts)
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2248,7 +2328,7 @@ func (m *metricSplunkTypingQueueRatio) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
+func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
 	if !m.config.Enabled {
 		return
 	}
@@ -2257,6 +2337,8 @@ func (m *metricSplunkTypingQueueRatio) recordDataPoint(start pcommon.Timestamp, 
 	dp.SetTimestamp(ts)
 	dp.SetDoubleValue(val)
 	dp.Attributes().PutStr("splunk.host", splunkHostAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.build", splunkSplunkdBuildAttributeValue)
+	dp.Attributes().PutStr("splunk.splunkd.version", splunkSplunkdVersionAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -2527,208 +2609,208 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordSplunkAggregationQueueRatioDataPoint adds a data point to splunk.aggregation.queue.ratio metric.
-func (mb *MetricsBuilder) RecordSplunkAggregationQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkAggregationQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkAggregationQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkAggregationQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkBucketsSearchableStatusDataPoint adds a data point to splunk.buckets.searchable.status metric.
-func (mb *MetricsBuilder) RecordSplunkBucketsSearchableStatusDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string) {
-	mb.metricSplunkBucketsSearchableStatus.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkIndexerSearchableAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkBucketsSearchableStatusDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkIndexerSearchableAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkBucketsSearchableStatus.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkIndexerSearchableAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedBucketCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.count metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedBucketCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedBucketEventCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.event.count metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedBucketEventCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketEventCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketEventCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedBucketHotCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.hot.count metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedBucketHotCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketHotCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketHotCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint adds a data point to splunk.data.indexes.extended.bucket.warm.count metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedBucketWarmCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedBucketWarmCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkBucketDirAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedBucketWarmCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkBucketDirAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedEventCountDataPoint adds a data point to splunk.data.indexes.extended.event.count metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedEventCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedEventCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedEventCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedEventCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedRawSizeDataPoint adds a data point to splunk.data.indexes.extended.raw.size metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedRawSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedRawSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedRawSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkDataIndexesExtendedTotalSizeDataPoint adds a data point to splunk.data.indexes.extended.total.size metric.
-func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkDataIndexesExtendedTotalSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkDataIndexesExtendedTotalSizeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkDataIndexesExtendedTotalSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkHealthDataPoint adds a data point to splunk.health metric.
-func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string) {
-	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkHealthDataPoint(ts pcommon.Timestamp, val int64, splunkFeatureAttributeValue string, splunkFeatureHealthAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkHealth.recordDataPoint(mb.startTime, ts, val, splunkFeatureAttributeValue, splunkFeatureHealthAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerAvgRateDataPoint adds a data point to splunk.indexer.avg.rate metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerAvgRateDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkIndexerAvgRate.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexerAvgRateDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerAvgRate.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerCPUTimeDataPoint adds a data point to splunk.indexer.cpu.time metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerCPUTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkIndexerCPUTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexerCPUTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerCPUTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerQueueRatioDataPoint adds a data point to splunk.indexer.queue.ratio metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkIndexerQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexerQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerRawWriteTimeDataPoint adds a data point to splunk.indexer.raw.write.time metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerRawWriteTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkIndexerRawWriteTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexerRawWriteTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerRawWriteTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexerThroughputDataPoint adds a data point to splunk.indexer.throughput metric.
-func (mb *MetricsBuilder) RecordSplunkIndexerThroughputDataPoint(ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string) {
-	mb.metricSplunkIndexerThroughput.recordDataPoint(mb.startTime, ts, val, splunkIndexerStatusAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexerThroughputDataPoint(ts pcommon.Timestamp, val float64, splunkIndexerStatusAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexerThroughput.recordDataPoint(mb.startTime, ts, val, splunkIndexerStatusAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexesAvgSizeDataPoint adds a data point to splunk.indexes.avg.size metric.
-func (mb *MetricsBuilder) RecordSplunkIndexesAvgSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkIndexesAvgSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexesAvgSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexesAvgSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexesAvgUsageDataPoint adds a data point to splunk.indexes.avg.usage metric.
-func (mb *MetricsBuilder) RecordSplunkIndexesAvgUsageDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkIndexesAvgUsage.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexesAvgUsageDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexesAvgUsage.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexesBucketCountDataPoint adds a data point to splunk.indexes.bucket.count metric.
-func (mb *MetricsBuilder) RecordSplunkIndexesBucketCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkIndexesBucketCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexesBucketCountDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexesBucketCount.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexesMedianDataAgeDataPoint adds a data point to splunk.indexes.median.data.age metric.
-func (mb *MetricsBuilder) RecordSplunkIndexesMedianDataAgeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkIndexesMedianDataAge.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexesMedianDataAgeDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexesMedianDataAge.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIndexesSizeDataPoint adds a data point to splunk.indexes.size metric.
-func (mb *MetricsBuilder) RecordSplunkIndexesSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkIndexesSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIndexesSizeDataPoint(ts pcommon.Timestamp, val float64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIndexesSize.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkIoAvgIopsDataPoint adds a data point to splunk.io.avg.iops metric.
-func (mb *MetricsBuilder) RecordSplunkIoAvgIopsDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkIoAvgIops.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkIoAvgIopsDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkIoAvgIops.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkKvstoreBackupStatusDataPoint adds a data point to splunk.kvstore.backup.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreBackupStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
-	mb.metricSplunkKvstoreBackupStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreBackupStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkKvstoreBackupStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkKvstoreReplicationStatusDataPoint adds a data point to splunk.kvstore.replication.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string) {
-	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreReplicationStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkKvstoreReplicationStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkKvstoreStatusDataPoint adds a data point to splunk.kvstore.status metric.
-func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string) {
-	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusValueAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkKvstoreStatusDataPoint(ts pcommon.Timestamp, val int64, splunkKvstoreStorageEngineAttributeValue string, splunkKvstoreExternalAttributeValue string, splunkKvstoreStatusValueAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkKvstoreStatus.recordDataPoint(mb.startTime, ts, val, splunkKvstoreStorageEngineAttributeValue, splunkKvstoreExternalAttributeValue, splunkKvstoreStatusValueAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkLicenseIndexUsageDataPoint adds a data point to splunk.license.index.usage metric.
-func (mb *MetricsBuilder) RecordSplunkLicenseIndexUsageDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string) {
-	mb.metricSplunkLicenseIndexUsage.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkLicenseIndexUsageDataPoint(ts pcommon.Timestamp, val int64, splunkIndexNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkLicenseIndexUsage.recordDataPoint(mb.startTime, ts, val, splunkIndexNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkParseQueueRatioDataPoint adds a data point to splunk.parse.queue.ratio metric.
-func (mb *MetricsBuilder) RecordSplunkParseQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkParseQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkParseQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkParseQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkPipelineSetCountDataPoint adds a data point to splunk.pipeline.set.count metric.
-func (mb *MetricsBuilder) RecordSplunkPipelineSetCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkPipelineSetCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkPipelineSetCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkPipelineSetCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkSchedulerAvgExecutionLatencyDataPoint adds a data point to splunk.scheduler.avg.execution.latency metric.
-func (mb *MetricsBuilder) RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkSchedulerAvgExecutionLatency.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkSchedulerAvgExecutionLatencyDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSchedulerAvgExecutionLatency.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkSchedulerAvgRunTimeDataPoint adds a data point to splunk.scheduler.avg.run.time metric.
-func (mb *MetricsBuilder) RecordSplunkSchedulerAvgRunTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkSchedulerAvgRunTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkSchedulerAvgRunTimeDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSchedulerAvgRunTime.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkSchedulerCompletionRatioDataPoint adds a data point to splunk.scheduler.completion.ratio metric.
-func (mb *MetricsBuilder) RecordSplunkSchedulerCompletionRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkSchedulerCompletionRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkSchedulerCompletionRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkSchedulerCompletionRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerIntrospectionQueuesCurrentDataPoint adds a data point to splunk.server.introspection.queues.current metric.
-func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string) {
-	mb.metricSplunkServerIntrospectionQueuesCurrent.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerIntrospectionQueuesCurrent.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint adds a data point to splunk.server.introspection.queues.current.bytes metric.
-func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string) {
-	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerIntrospectionQueuesCurrentBytesDataPoint(ts pcommon.Timestamp, val int64, splunkQueueNameAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerIntrospectionQueuesCurrentBytes.recordDataPoint(mb.startTime, ts, val, splunkQueueNameAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsAdhocDataPoint adds a data point to splunk.server.searchartifacts.adhoc metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsAdhocDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsAdhoc.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsAdhocDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsAdhoc.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsCompletedDataPoint adds a data point to splunk.server.searchartifacts.completed metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsCompletedDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsCompleted.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsCompletedDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsCompleted.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsIncompleteDataPoint adds a data point to splunk.server.searchartifacts.incomplete metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsIncompleteDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsIncomplete.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsIncompleteDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsIncomplete.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsInvalidDataPoint adds a data point to splunk.server.searchartifacts.invalid metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsInvalidDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsInvalid.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsInvalidDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsInvalid.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsJobCacheCountDataPoint adds a data point to splunk.server.searchartifacts.job.cache.count metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsJobCacheCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheCountDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsJobCacheCount.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsJobCacheSizeDataPoint adds a data point to splunk.server.searchartifacts.job.cache.size metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsJobCacheSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSearchartifactsCacheTypeAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsJobCacheSizeDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSearchartifactsCacheTypeAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsJobCacheSize.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSearchartifactsCacheTypeAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsSavedsearchesDataPoint adds a data point to splunk.server.searchartifacts.savedsearches metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsSavedsearches.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsSavedsearchesDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsSavedsearches.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkServerSearchartifactsScheduledDataPoint adds a data point to splunk.server.searchartifacts.scheduled metric.
-func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsScheduledDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string) {
-	mb.metricSplunkServerSearchartifactsScheduled.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkServerSearchartifactsScheduledDataPoint(ts pcommon.Timestamp, val int64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkServerSearchartifactsScheduled.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // RecordSplunkTypingQueueRatioDataPoint adds a data point to splunk.typing.queue.ratio metric.
-func (mb *MetricsBuilder) RecordSplunkTypingQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string) {
-	mb.metricSplunkTypingQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue)
+func (mb *MetricsBuilder) RecordSplunkTypingQueueRatioDataPoint(ts pcommon.Timestamp, val float64, splunkHostAttributeValue string, splunkSplunkdBuildAttributeValue string, splunkSplunkdVersionAttributeValue string) {
+	mb.metricSplunkTypingQueueRatio.recordDataPoint(mb.startTime, ts, val, splunkHostAttributeValue, splunkSplunkdBuildAttributeValue, splunkSplunkdVersionAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

@@ -348,16 +348,16 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
-				switch {
-				case v.metadata.metricDataType == pmetric.MetricTypeSum:
+				switch v.metadata.metricDataType {
+				case pmetric.MetricTypeSum:
 					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterSumMetrics, v.metrics)
-				case v.metadata.metricDataType == pmetric.MetricTypeGauge:
+				case pmetric.MetricTypeGauge:
 					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterGaugeMetrics, v.metrics)
-				case v.metadata.metricDataType == pmetric.MetricTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					assert.Len(t, v.metrics, 1)
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)

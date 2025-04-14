@@ -92,6 +92,44 @@ func TestGetCredsProviderFromConfig(t *testing.T) {
 	}
 }
 
+func TestGetCredsProviderFromWebIdentityConfig(t *testing.T) {
+	tests := []struct {
+		name        string
+		cfg         *Config
+		shouldError bool
+	}{
+		{
+			"valid_token",
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/token_file"}},
+			false,
+		},
+		{
+			"missing_token_file",
+			&Config{Region: "region", Service: "service", AssumeRole: AssumeRole{ARN: "arn:aws:iam::123456789012:role/my_role", WebIdentityTokenFile: "testdata/no_token_file"}},
+			true,
+		},
+	}
+	// run tests
+	for _, testcase := range tests {
+		t.Run(testcase.name, func(t *testing.T) {
+			credsProvider, err := getCredsProviderFromWebIdentityConfig(testcase.cfg)
+
+			if testcase.shouldError {
+				assert.Error(t, err)
+				assert.Nil(t, credsProvider)
+				return
+			}
+
+			require.NoError(t, err)
+			require.NotNil(t, credsProvider)
+
+			// Should always error out as we are not providing a real token.
+			_, err = (*credsProvider).Retrieve(context.Background())
+			assert.Error(t, err)
+		})
+	}
+}
+
 func TestCloneRequest(t *testing.T) {
 	req1, err := http.NewRequest(http.MethodGet, "https://example.com", nil)
 	assert.NoError(t, err)
