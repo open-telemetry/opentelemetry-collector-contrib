@@ -296,16 +296,22 @@ type SASLConfig struct {
 	Username string `mapstructure:"username"`
 	// Password to be used on authentication
 	Password string `mapstructure:"password"`
-	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
+	// SASL Mechanism to be used, possible values are: (PLAIN, AWS_MSK_IAM, AWS_MSK_IAM_OAUTHBEARER, OAUTHBEARER, SCRAM-SHA-256 or SCRAM-SHA-512).
 	Mechanism string `mapstructure:"mechanism"`
 	// SASL Protocol Version to be used, possible values are: (0, 1). Defaults to 0.
 	Version int `mapstructure:"version"`
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
+	// Name of the OAUTH extension to use
+	TokenSourceExtension string `mapstructure:"token_source_extension"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
+	case "OAUTHBEARER":
+		if c.TokenSourceExtension == "" {
+			return errors.New("token_source_extension is required")
+		}
 	case "AWS_MSK_IAM", "AWS_MSK_IAM_OAUTHBEARER":
 		// TODO validate c.AWSMSK
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
@@ -318,7 +324,7 @@ func (c SASLConfig) Validate() error {
 		}
 	default:
 		return fmt.Errorf(
-			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'AWS_MSK_IAM_OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
+			"mechanism should be one of 'PLAIN', 'AWS_MSK_IAM', 'AWS_MSK_IAM_OAUTHBEARER', 'OAUTHBEARER', 'SCRAM-SHA-256' or 'SCRAM-SHA-512'. configured value %v",
 			c.Mechanism,
 		)
 	}

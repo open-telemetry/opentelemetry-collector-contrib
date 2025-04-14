@@ -13,6 +13,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 )
 
 // configureSaramaAuthentication configures authentication in sarama.Config.
@@ -63,6 +65,9 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 	case "AWS_MSK_IAM_OAUTHBEARER":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
 		saramaConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{ctx: ctx, region: config.AWSMSK.Region}
+	case "OAUTHBEARER":
+		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
+		saramaConfig.Net.SASL.TokenProvider = &oauthTokenProvider{config.token_source_extension}
 	}
 }
 
@@ -83,6 +88,17 @@ func configureKerberos(config configkafka.KerberosConfig, saramaConfig *sarama.C
 	saramaConfig.Net.SASL.GSSAPI.DisablePAFXFAST = config.DisablePAFXFAST
 }
 
+// Generic OAUTH provider
+type oauthTokenProvider struct {
+	ctx    context.Context
+}
+
+func (c *oauthTokenProvider) Token() (*sarama.AccessToken, error) {
+	token, _, err := signer.GenerateAuthToken(c.ctx, c.region)
+	return &sarama.AccessToken{Token: token}, err
+}
+
+// AWS MSK OAUTH provider
 type awsMSKTokenProvider struct {
 	ctx    context.Context
 	region string

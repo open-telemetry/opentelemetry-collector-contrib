@@ -26,6 +26,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
+
+	"golang.org/x/oauth2"
+	"google.golang.org/grpc/credentials"
+
 )
 
 type kafkaErrors struct {
@@ -78,9 +82,12 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) error
 	}
 	e.messager = messager
 
+	var tokenSource oauth2.TokenSource = e.getTokenSource(ctx, host)
+
 	producer, err := kafka.NewSaramaSyncProducer(
 		ctx, e.cfg.ClientConfig, e.cfg.Producer,
 		e.cfg.TimeoutSettings.Timeout,
+		tokenSource,
 	)
 	if err != nil {
 		return err
@@ -124,6 +131,25 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 			}
 		}
 		return err
+	}
+	return nil
+}
+
+func (e *kafkaExporter[T]) getTokenSource(ctx context.Context, host component.Host) credentials.PerRPCCredentials {
+	if e.cfg.ClientConfig.Authentication.SASL.TokenSourceExtension != nil {
+		var perRPCCreds oauth2.TokenSource
+		// Get the auth client from the configured extensions
+		authClient, err := e.cfg.Authentication.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
+		if err != nil {
+			return err
+		}
+
+		// The actual object returned if a TokenSource we will pass to the Kafka client
+		perRPCCreds, err = authClient.PerRPCCredentials()
+		if err != nil {
+			return err
+		}
+		return perRPCCreds
 	}
 	return nil
 }
