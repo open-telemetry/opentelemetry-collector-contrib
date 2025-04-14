@@ -5,7 +5,7 @@ package parser // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding/hex"
-	"fmt"
+	"errors"
 	"net/url"
 	"slices"
 	"time"
@@ -23,7 +23,7 @@ import (
 // GetDatasetFromRequest extracts the dataset name from the request path
 func GetDatasetFromRequest(path string) (string, error) {
 	if path == "" {
-		return "", fmt.Errorf("missing dataset name")
+		return "", errors.New("missing dataset name")
 	}
 	dataset, err := url.PathUnescape(path)
 	if err != nil {

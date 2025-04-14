@@ -5,7 +5,7 @@ package azureblobexporter // import "github.com/open-telemetry/opentelemetry-col
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"io"
 	"path/filepath"
 	"strings"
@@ -272,7 +272,7 @@ func TestExporterAppendBlobError(t *testing.T) {
 	assert.NoError(t, ae.start(context.Background(), componenttest.NewNopHost()))
 
 	mockClient := &mockAzBlobClient{url: "http://mock"}
-	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(fmt.Errorf("append error"))
+	mockClient.On("AppendBlock", mock.Anything, "logs", mock.Anything, mock.Anything, mock.Anything).Return(errors.New("append error"))
 	ae.client = mockClient
 
 	logs := testdata.GenerateLogsTwoLogRecordsSameResource()

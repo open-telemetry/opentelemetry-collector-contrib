@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"fmt"
+	"errors"
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -66,7 +66,7 @@ func (c *Config) SetDefaults() {
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
 	if c.TotalDuration <= 0 && c.NumMetrics <= 0 {
-		return fmt.Errorf("either `metrics` or `duration` must be greater than 0")
+		return errors.New("either `metrics` or `duration` must be greater than 0")
 	}
 
 	if c.TraceID != "" {

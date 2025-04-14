@@ -258,22 +258,22 @@ func HashResource(resource map[string]any) uint64 {
 	}
 
 	for _, k := range hw.keySlice {
-		hw.h.Write([]byte(k)) //nolint:errcheck
-		hw.h.Write(pairSep)   //nolint:errcheck
+		_, _ = hw.h.WriteString(k)
+		_, _ = hw.h.Write(pairSep)
 
 		switch t := resource[k].(type) {
 		case string:
-			hw.h.Write([]byte(t)) //nolint:errcheck
+			_, _ = hw.h.WriteString(t)
 		case []byte:
-			hw.h.Write(t) //nolint:errcheck
+			_, _ = hw.h.Write(t)
 		case bool, int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64, float32, float64:
 			binary.Write(hw.h, binary.BigEndian, t) //nolint:errcheck // nothing to do about it
 		default:
 			b, _ := json.Marshal(t)
-			hw.h.Write(b) //nolint:errcheck
+			_, _ = hw.h.Write(b)
 		}
 
-		hw.h.Write(pairSep) //nolint:errcheck
+		_, _ = hw.h.Write(pairSep)
 	}
 
 	return hw.h.Sum64()

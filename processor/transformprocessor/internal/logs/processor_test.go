@@ -1037,8 +1037,12 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		{
 			name: "resource:resource.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(resource.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(resource.attributes["test"], resource.cache["test"])`}, SharedCache: true},
+				{
+					Statements: []string{
+						`set(resource.cache["test"], "pass")`,
+						`set(resource.attributes["test"], resource.cache["test"])`,
+					},
+				},
 			},
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
@@ -1062,8 +1066,12 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		{
 			name: "scope:scope.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(scope.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(scope.attributes["test"], scope.cache["test"])`}, SharedCache: true},
+				{
+					Statements: []string{
+						`set(scope.cache["test"], "pass")`,
+						`set(scope.attributes["test"], scope.cache["test"])`,
+					},
+				},
 			},
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).Scope().Attributes().PutStr("test", "pass")
@@ -1085,8 +1093,10 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 		{
 			name: "log:log.cache",
 			statements: []common.ContextStatements{
-				{Statements: []string{`set(log.cache["test"], "pass")`}, SharedCache: true},
-				{Statements: []string{`set(log.attributes["test"], log.cache["test"])`}, SharedCache: true},
+				{Statements: []string{
+					`set(log.cache["test"], "pass")`,
+					`set(log.attributes["test"], log.cache["test"])`,
+				}},
 			},
 			want: func(td plog.Logs) {
 				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
@@ -1108,36 +1118,18 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 			},
 		},
 		{
-			name: "cache isolation",
+			name: "log:log.cache multiple entries",
 			statements: []common.ContextStatements{
 				{
-					Statements:  []string{`set(log.cache["shared"], "fail")`},
-					SharedCache: true,
-				},
-				{
 					Statements: []string{
-						`set(log.cache["test"], "pass")`,
+						`set(log.cache["test"], log.body)`,
 						`set(log.attributes["test"], log.cache["test"])`,
-						`set(log.attributes["test"], log.cache["shared"])`,
 					},
-				},
-				{
-					Context: common.Log,
-					Statements: []string{
-						`set(cache["test"], "pass")`,
-						`set(attributes["test"], cache["test"])`,
-						`set(attributes["test"], cache["shared"])`,
-						`set(attributes["test"], log.cache["shared"])`,
-					},
-				},
-				{
-					Statements:  []string{`set(log.attributes["test"], "pass") where log.cache["shared"] == "fail"`},
-					SharedCache: true,
 				},
 			},
 			want: func(td plog.Logs) {
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
-				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "operationA")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "operationB")
 			},
 		},
 	}

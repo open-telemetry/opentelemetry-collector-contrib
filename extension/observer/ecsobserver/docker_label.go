@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
 
@@ -40,7 +41,7 @@ func (d *DockerLabelConfig) newMatcher(options matcherOptions) (targetMatcher, e
 		return nil, fmt.Errorf("metrics_ports is not supported in docker_labels, got %v", d.MetricsPorts)
 	}
 	if d.PortLabel == "" {
-		return nil, fmt.Errorf("port_label is empty")
+		return nil, errors.New("port_label is empty")
 	}
 	expSetting, err := d.newExportSetting()
 	if err != nil {

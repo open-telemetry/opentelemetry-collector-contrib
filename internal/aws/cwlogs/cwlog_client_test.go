@@ -538,7 +538,7 @@ func (err *UnknownError) Message() string {
 }
 
 func (err *UnknownError) OrigErr() error {
-	return fmt.Errorf("OrigErr")
+	return errors.New("OrigErr")
 }
 
 func TestLogUnknownError(t *testing.T) {

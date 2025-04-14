@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -178,7 +179,7 @@ func (h *histogramMetrics) insert(ctx context.Context, db *sql.DB) error {
 func (h *histogramMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	histogram, ok := metrics.(pmetric.Histogram)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of Histogram")
+		return errors.New("metrics param is not type of Histogram")
 	}
 	h.count += histogram.DataPoints().Len()
 	h.histogramModel = append(h.histogramModel, &histogramModel{

@@ -3,7 +3,7 @@
 
 package coralogixprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/coralogixprocessor"
 
-import "fmt"
+import "errors"
 
 type samplingConfig struct {
 	enabled         bool  `mapstructure:"enabled"`
@@ -20,10 +20,10 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	if c.sampling.enabled && c.sampling.maxCacheSizeMib <= 0 {
-		return fmt.Errorf("max_cache_size_mib must be a positive integer")
+		return errors.New("max_cache_size_mib must be a positive integer")
 	}
 	if c.sampling.enabled && c.sampling.maxCacheSizeMib != 0 {
-		return fmt.Errorf("max_cache_size_mib can only be defined when sampling is enabled")
+		return errors.New("max_cache_size_mib can only be defined when sampling is enabled")
 	}
 	return nil
 }

@@ -300,18 +300,18 @@ func Test_ParseStatements_NoContextInferredError(t *testing.T) {
 	statements := mockGetter{values: []string{`set(bar.attributes["bar"], "foo")`}}
 	_, err = pc.ParseStatements(statements)
 
-	assert.ErrorContains(t, err, "unable to infer context from statements")
+	assert.ErrorContains(t, err, "unable to infer a valid context")
 }
 
 func Test_ParseStatements_ContextInferenceError(t *testing.T) {
-	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
+	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings(), WithParserCollectionContext[any, any]("foo", mockParser(t, WithPathContextNames[any]([]string{"foo"})), WithStatementConverter(newNopParsedStatementsConverter[any]())))
 	require.NoError(t, err)
 	pc.contextInferrer = &mockFailingContextInferrer{err: errors.New("inference error")}
 
 	statements := mockGetter{values: []string{`set(bar.attributes["bar"], "foo")`}}
 	_, err = pc.ParseStatements(statements)
 
-	assert.EqualError(t, err, "inference error")
+	assert.ErrorContains(t, err, "inference error")
 }
 
 func Test_ParseStatements_UnknownContextError(t *testing.T) {

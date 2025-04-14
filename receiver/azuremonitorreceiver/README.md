@@ -35,6 +35,7 @@ The following settings are optional:
 - `cloud` (default = `AzureCloud`): defines which Azure cloud to use. Valid values: `AzureCloud`, `AzureUSGovernment`, `AzureChinaCloud`.
 - `dimensions.enabled` (default = `true`): allows to opt out from automatically split by all the dimensions of the resource type.
 - `dimensions.overrides` (default = `{}`): if dimensions are enabled, it allows you to specify a set of dimensions for a particular metric. This is a two levels map with first key being the resource type and second key being the metric name. Programmatic value should be used for metric name https://learn.microsoft.com/en-us/azure/azure-monitor/reference/metrics-index
+- `use_batch_api` (default = `false`): Use the batch API to fetch metrics. This is useful when the number of subscriptions is high and the API calls are rate limited.
 
 Authenticating using service principal requires following additional settings:
 
@@ -70,6 +71,27 @@ receivers:
       "microsoft.eventhub/namespaces": # scraper will fetch only the metrics listed below:
         IncomingMessages: [total]     # metric IncomingMessages with aggregation "Total"
         NamespaceCpuUsage: [*]        # metric NamespaceCpuUsage with all known aggregations
+```
+
+### Use Batch API (experimental)
+
+There's two API to collect metrics in Azure Monitor:
+- the **Azure Resource Manager (ARM) API** (currently by default)
+- the **Azure Monitor Metrics Data Plane API** (with ``use_batch_api=true``)
+
+The Azure Monitor Metrics Data Plane API present some interesting benefits, especially regarding **rate limits**.
+
+> Some highlights from [announcement blog post - Jan 31, 2024](https://techcommunity.microsoft.com/blog/azureobservabilityblog/azure-monitor--announcing-general-availability-of-azure-monitor-metrics-data-pla/4041394)
+> - **Higher Querying Limits**: This API is designed to handle metric data queries for resources with higher query limits compared to existing Azure Resource Manager APIs. This is particularly advantageous for customers with large subscriptions containing numerous resources. While the REST API allows only 12,000 API calls per hour, the Azure Metrics Data Plane API elevates this limit to a staggering 360,000 API calls per hour. This increase in query throughput ensures a more efficient and streamlined experience for customers.
+> - **Efficiency**: The efficiency of this API shines when collecting metrics for multiple resources. Instead of making multiple API calls for each resource, the Azure Metrics Data Plane API offers a single batch API call that can accommodate up to 50 resource IDs. This results in higher throughput and more efficient querying, making it a time-saving solution.
+> - **Improved Performance**: The performance of client-side services can be greatly enhanced by reducing the number of calls required to extract the same amount of metric data for resources. The Azure Metrics Data Plane API optimizes the data retrieval process, ultimately leading to improved performance across the board.
+
+Good news is that it's **very easy for you to try out!**
+```yaml
+receivers:
+  azuremonitor:
+    use_bath_api: true
+    ... # no change for other configs
 ```
 
 ### Example Configurations
@@ -176,14 +198,25 @@ cardinality: once per sub id
 ### [Metrics Definitions - List](https://learn.microsoft.com/en-us/rest/api/monitor/metric-definitions/list?view=rest-monitor-2023-10-01&tabs=HTTP)
 ```yaml
 conditions: always
-cardinality: once per res id and *page of metrics def
+cardinality:
+  - if use_batch_api is false, once per res id and *page of metrics def
+  - if use_batch_api is true, once per res type and *page of metrics def
 ```
 
 ### [Metrics - List](https://learn.microsoft.com/en-us/rest/api/monitor/metrics/list?view=rest-monitor-2023-10-01&tabs=HTTP)
 ```yaml
-conditions: always
+conditions:
+- use_batch_api is false
 cardinality: once per res id, *page of metrics, and **composite key
 ```
+
+### [Metrics Batch - Batch](https://learn.microsoft.com/en-us/rest/api/monitor/metrics-batch/batch?view=rest-monitor-2023-10-01&tabs=HTTP)
+```yaml
+conditions:
+- use_batch_api is true
+cardinality: once per res type and **composite key
+```
+
 > *page size has not been clearly identified, reading the documentation. Even Chat Bots lose themselves
 > with the "top"/"$top" filter that doesn't seem related, and give random results from 10 to 1000...
 > 

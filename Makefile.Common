@@ -73,11 +73,9 @@ GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
-TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 
 GOTESTSUM_OPT?= --rerun-fails=1
-TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
@@ -238,15 +236,6 @@ misspell-correction: $(TOOLS_BIN_DIR)/misspell
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
-
-.PHONY: testifylint
-testifylint: $(TESTIFYLINT)
-	@echo "running $(TESTIFYLINT)"
-	$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
-
-.PHONY: testifylint-fix
-testifylint-fix:
-	@$(MAKE) testifylint TESTIFYLINT_OPT="${TESTIFYLINT_OPT} --fix"
 
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci

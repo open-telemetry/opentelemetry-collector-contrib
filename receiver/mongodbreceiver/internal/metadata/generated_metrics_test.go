@@ -301,7 +301,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "hit", attrVal.Str())
+					assert.Equal(t, "hit", attrVal.Str())
 				case "mongodb.collection.count":
 					assert.False(t, validatedMetrics["mongodb.collection.count"], "Found a duplicate in the metrics slice: mongodb.collection.count")
 					validatedMetrics["mongodb.collection.count"] = true
@@ -344,7 +344,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "active", attrVal.Str())
+					assert.Equal(t, "active", attrVal.Str())
 				case "mongodb.cursor.count":
 					assert.False(t, validatedMetrics["mongodb.cursor.count"], "Found a duplicate in the metrics slice: mongodb.cursor.count")
 					validatedMetrics["mongodb.cursor.count"] = true
@@ -429,7 +429,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", attrVal.Str())
 				case "mongodb.extent.count":
 					assert.False(t, validatedMetrics["mongodb.extent.count"], "Found a duplicate in the metrics slice: mongodb.extent.count")
 					validatedMetrics["mongodb.extent.count"] = true
@@ -510,7 +510,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("collection")
 					assert.True(t, ok)
-					assert.EqualValues(t, "collection-val", attrVal.Str())
+					assert.Equal(t, "collection-val", attrVal.Str())
 				case "mongodb.index.count":
 					assert.False(t, validatedMetrics["mongodb.index.count"], "Found a duplicate in the metrics slice: mongodb.index.count")
 					validatedMetrics["mongodb.index.count"] = true
@@ -567,10 +567,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
+					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "shared", attrVal.Str())
+					assert.Equal(t, "shared", attrVal.Str())
 				case "mongodb.lock.acquire.time":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.time"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.time")
 					validatedMetrics["mongodb.lock.acquire.time"] = true
@@ -587,10 +587,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
+					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "shared", attrVal.Str())
+					assert.Equal(t, "shared", attrVal.Str())
 				case "mongodb.lock.acquire.wait_count":
 					assert.False(t, validatedMetrics["mongodb.lock.acquire.wait_count"], "Found a duplicate in the metrics slice: mongodb.lock.acquire.wait_count")
 					validatedMetrics["mongodb.lock.acquire.wait_count"] = true
@@ -607,10 +607,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
+					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "shared", attrVal.Str())
+					assert.Equal(t, "shared", attrVal.Str())
 				case "mongodb.lock.deadlock.count":
 					assert.False(t, validatedMetrics["mongodb.lock.deadlock.count"], "Found a duplicate in the metrics slice: mongodb.lock.deadlock.count")
 					validatedMetrics["mongodb.lock.deadlock.count"] = true
@@ -627,10 +627,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("lock_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "parallel_batch_write_mode", attrVal.Str())
+					assert.Equal(t, "parallel_batch_write_mode", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("lock_mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "shared", attrVal.Str())
+					assert.Equal(t, "shared", attrVal.Str())
 				case "mongodb.memory.usage":
 					assert.False(t, validatedMetrics["mongodb.memory.usage"], "Found a duplicate in the metrics slice: mongodb.memory.usage")
 					validatedMetrics["mongodb.memory.usage"] = true
@@ -647,7 +647,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "resident", attrVal.Str())
+					assert.Equal(t, "resident", attrVal.Str())
 				case "mongodb.network.io.receive":
 					assert.False(t, validatedMetrics["mongodb.network.io.receive"], "Found a duplicate in the metrics slice: mongodb.network.io.receive")
 					validatedMetrics["mongodb.network.io.receive"] = true
@@ -720,7 +720,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", attrVal.Str())
 				case "mongodb.operation.latency.time":
 					assert.False(t, validatedMetrics["mongodb.operation.latency.time"], "Found a duplicate in the metrics slice: mongodb.operation.latency.time")
 					validatedMetrics["mongodb.operation.latency.time"] = true
@@ -735,7 +735,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "mongodb.operation.repl.count":
 					assert.False(t, validatedMetrics["mongodb.operation.repl.count"], "Found a duplicate in the metrics slice: mongodb.operation.repl.count")
 					validatedMetrics["mongodb.operation.repl.count"] = true
@@ -752,7 +752,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", attrVal.Str())
 				case "mongodb.operation.time":
 					assert.False(t, validatedMetrics["mongodb.operation.time"], "Found a duplicate in the metrics slice: mongodb.operation.time")
 					validatedMetrics["mongodb.operation.time"] = true
@@ -769,7 +769,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "insert", attrVal.Str())
+					assert.Equal(t, "insert", attrVal.Str())
 				case "mongodb.page_faults":
 					assert.False(t, validatedMetrics["mongodb.page_faults"], "Found a duplicate in the metrics slice: mongodb.page_faults")
 					validatedMetrics["mongodb.page_faults"] = true

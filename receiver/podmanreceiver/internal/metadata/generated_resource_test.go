@@ -36,22 +36,22 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("container.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.id-val", val.Str())
+				assert.Equal(t, "container.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.image.name-val", val.Str())
+				assert.Equal(t, "container.image.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.name-val", val.Str())
+				assert.Equal(t, "container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.runtime")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.runtime-val", val.Str())
+				assert.Equal(t, "container.runtime-val", val.Str())
 			}
 		})
 	}

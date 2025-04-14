@@ -5,7 +5,7 @@ package groupbytraceprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -24,8 +24,8 @@ const (
 )
 
 var (
-	errDiskStorageNotSupported    = fmt.Errorf("option 'disk storage' not supported in this release")
-	errDiscardOrphansNotSupported = fmt.Errorf("option 'discard orphans' not supported in this release")
+	errDiskStorageNotSupported    = errors.New("option 'disk storage' not supported in this release")
+	errDiscardOrphansNotSupported = errors.New("option 'discard orphans' not supported in this release")
 )
 
 // NewFactory returns a new factory for the Filter processor.

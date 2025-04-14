@@ -746,3 +746,36 @@ func TestWithExcludes(t *testing.T) {
 		})
 	}
 }
+
+func TestOtelAnnotations(t *testing.T) {
+	tests := []struct {
+		name            string
+		enabled         bool
+		wantAnnotations []kube.FieldExtractionRule
+	}{
+		{
+			name: "no automatic rules",
+		},
+		{
+			name:    "default automatic rules",
+			enabled: true,
+			wantAnnotations: []kube.FieldExtractionRule{
+				{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := kubernetesprocessor{}
+			rules := withOtelAnnotations(tt.enabled)
+			err := rules(&p)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantAnnotations, p.rules.Annotations)
+		})
+	}
+}

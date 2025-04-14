@@ -5,6 +5,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -80,7 +81,7 @@ type ProviderSender struct {
 // NewLoadGenerator creates a ProviderSender to send DataProvider-generated telemetry via a DataSender.
 func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (LoadGenerator, error) {
 	if sender == nil {
-		return nil, fmt.Errorf("cannot create load generator without DataSender")
+		return nil, errors.New("cannot create load generator without DataSender")
 	}
 
 	ps := &ProviderSender{

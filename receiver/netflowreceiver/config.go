@@ -3,7 +3,9 @@
 
 package netflowreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/netflowreceiver"
 
-import "fmt"
+import (
+	"errors"
+)
 
 // Config represents the receiver config settings within the collector's config.yaml
 type Config struct {
@@ -42,15 +44,15 @@ func (cfg *Config) Validate() error {
 		}
 	}
 	if !validScheme {
-		return fmt.Errorf("scheme must be netflow or sflow")
+		return errors.New("scheme must be netflow or sflow")
 	}
 
 	if cfg.Sockets <= 0 {
-		return fmt.Errorf("sockets must be greater than 0")
+		return errors.New("sockets must be greater than 0")
 	}
 
 	if cfg.Workers <= 0 {
-		return fmt.Errorf("workers must be greater than 0")
+		return errors.New("workers must be greater than 0")
 	}
 
 	if cfg.QueueSize <= 0 {
@@ -58,7 +60,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Port <= 0 {
-		return fmt.Errorf("port must be greater than 0")
+		return errors.New("port must be greater than 0")
 	}
 
 	return nil

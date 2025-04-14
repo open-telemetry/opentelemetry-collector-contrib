@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("mysql.instance.endpoint")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "mysql.instance.endpoint-val", val.Str())
+				assert.Equal(t, "mysql.instance.endpoint-val", val.Str())
 			}
 		})
 	}

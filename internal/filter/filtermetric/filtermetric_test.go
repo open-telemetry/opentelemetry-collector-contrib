@@ -5,7 +5,7 @@ package filtermetric
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -162,7 +162,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 				MatchType:   filterconfig.MetricExpr,
 				Expressions: []string{"MetricName == metricA"},
 			},
-			err: fmt.Errorf("expressions configuration cannot be converted to OTTL - see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#configuration for OTTL configuration"),
+			err: errors.New("expressions configuration cannot be converted to OTTL - see https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/processor/filterprocessor#configuration for OTTL configuration"),
 		},
 
 		// Complex

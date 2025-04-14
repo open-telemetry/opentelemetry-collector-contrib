@@ -10,7 +10,7 @@ import (
 	"reflect"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/v2/bson"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
@@ -646,10 +646,9 @@ func (s *mongodbScraper) recordIndexAccess(now pcommon.Timestamp, documents []bs
 	var indexAccessTotal int64
 	for _, doc := range documents {
 		metricAttributes := fmt.Sprintf("%s, %s", dbName, collectionName)
-		indexAccess, ok := doc["accesses"].(bson.M)["ops"]
-		if !ok {
-			err := errors.New("could not find key for index access metric")
-			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, err))
+		indexAccess, err := dig(doc, []string{"accesses", "ops"})
+		if err != nil {
+			errs.AddPartial(1, fmt.Errorf(collectMetricWithAttributes, metricName, metricAttributes, errors.New("could not find key for index access metric")))
 			return
 		}
 		indexAccessValue, err := parseInt(indexAccess)
@@ -710,14 +709,19 @@ func getOperationTimeValues(document bson.M, collectionPathName, operation strin
 }
 
 func digForCollectionPathNames(document bson.M) ([]string, error) {
-	docTotals, ok := document["totals"].(bson.M)
-	if !ok {
-		return nil, errKeyNotFound
+	docTotals, err := dig(document, []string{"totals"})
+	if err != nil {
+		return nil, err
 	}
+	docTotalsMap, ok := docTotals.(bson.D)
+	if !ok {
+		return nil, fmt.Errorf("expected bson.D, got %T", docTotals)
+	}
+
 	var collectionPathNames []string
-	for collectionPathName := range docTotals {
-		if collectionPathName != "note" {
-			collectionPathNames = append(collectionPathNames, collectionPathName)
+	for _, v := range docTotalsMap {
+		if v.Key != "note" {
+			collectionPathNames = append(collectionPathNames, v.Key)
 		}
 	}
 	return collectionPathNames, nil
@@ -743,7 +747,35 @@ func dig(document bson.M, path []string) (any, error) {
 	if len(remainingPath) == 0 {
 		return value, nil
 	}
-	return dig(value.(bson.M), remainingPath)
+	if value, ok := value.(bson.M); ok {
+		return dig(value, remainingPath)
+	}
+	if value, ok := value.(bson.D); ok {
+		return digBsonD(value, remainingPath)
+	}
+	return nil, fmt.Errorf("expected bson.M, got %T", value)
+}
+
+func digBsonD(value bson.D, remainingPath []string) (any, error) {
+	if len(remainingPath) == 0 {
+		return value, nil
+	}
+	curItem, remainingPath := remainingPath[0], remainingPath[1:]
+	for _, v := range value {
+		if v.Key == curItem {
+			if len(remainingPath) == 0 {
+				return v.Value, nil
+			}
+			if value, ok := v.Value.(bson.D); ok {
+				return digBsonD(value, remainingPath)
+			}
+			if value, ok := v.Value.(bson.M); ok {
+				return dig(value, remainingPath)
+			}
+			return nil, fmt.Errorf("expected bson.M or bson.D, got %T", v.Value)
+		}
+	}
+	return nil, errKeyNotFound
 }
 
 func parseInt(val any) (int64, error) {

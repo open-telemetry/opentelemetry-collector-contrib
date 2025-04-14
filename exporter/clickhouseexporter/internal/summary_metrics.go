@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -154,7 +155,7 @@ func (s *summaryMetrics) insert(ctx context.Context, db *sql.DB) error {
 func (s *summaryMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	summary, ok := metrics.(pmetric.Summary)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of Summary")
+		return errors.New("metrics param is not type of Summary")
 	}
 	s.count += summary.DataPoints().Len()
 	s.summaryModel = append(s.summaryModel, &summaryModel{

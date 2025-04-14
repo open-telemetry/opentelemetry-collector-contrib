@@ -141,7 +141,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 	}()
 
 	md1 := &MockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), fmt.Errorf("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
 
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))
@@ -160,7 +160,7 @@ func TestDetectResource_Error_ContextDeadline_WithErrPropagation(t *testing.T) {
 
 func TestDetectResource_Error_ContextDeadline_WithoutErrPropagation(t *testing.T) {
 	md1 := &MockDetector{}
-	md1.On("Detect").Return(pcommon.NewResource(), fmt.Errorf("err1"))
+	md1.On("Detect").Return(pcommon.NewResource(), errors.New("err1"))
 
 	md2 := &MockDetector{}
 	md2.On("Detect").Return(pcommon.NewResource(), errors.New("err2"))

@@ -4,6 +4,7 @@
 package azuremonitorexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/azuremonitorexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 	"os"
@@ -37,7 +38,7 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 	connectionVars := &ConnectionVars{}
 
 	if connectionString == "" && instrumentationKey == "" {
-		return nil, fmt.Errorf("ConnectionString and InstrumentationKey cannot be empty")
+		return nil, errors.New("ConnectionString and InstrumentationKey cannot be empty")
 	}
 	if len(connectionString) > ConnectionStringMaxLength {
 		return nil, fmt.Errorf("ConnectionString exceeds maximum length of %d characters", ConnectionStringMaxLength)
@@ -62,7 +63,7 @@ func parseConnectionString(exporterConfig *Config) (*ConnectionVars, error) {
 
 		key, value := strings.TrimSpace(kv[0]), strings.TrimSpace(kv[1])
 		if key == "" {
-			return nil, fmt.Errorf("key cannot be empty")
+			return nil, errors.New("key cannot be empty")
 		}
 		values[key] = value
 	}

@@ -46,8 +46,65 @@ func TestLoadConfig(t *testing.T) {
 					config.GroupID = "the_group_id"
 					return config
 				}(),
-				Topic:    "spans",
-				Encoding: "otlp_proto",
+				Logs: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
+				},
+				Topic: "spans",
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "metrics_topic",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Topic: "legacy_topic",
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "legacy_encoding",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "metrics_encoding",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Encoding: "legacy_encoding",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
 				},
@@ -82,8 +139,18 @@ func TestLoadConfig(t *testing.T) {
 					config.HeartbeatInterval = 15 * time.Second
 					return config
 				}(),
-				Topic:    "logs",
-				Encoding: "direct",
+				Logs: TopicEncodingConfig{
+					Topic:    "logs",
+					Encoding: "direct",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,

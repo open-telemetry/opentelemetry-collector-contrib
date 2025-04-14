@@ -1581,7 +1581,7 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 			Getter: func(_ context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Duration)
 				if !ok {
-					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+					return nil, errors.New("unable to convert transform context to map of strings to times")
 				}
 				return m[p.Name()], nil
 			},
@@ -1596,7 +1596,7 @@ func testParsePath[K any](p Path[K]) (GetSetter[any], error) {
 			Getter: func(_ context.Context, tCtx any) (any, error) {
 				m, ok := tCtx.(map[string]time.Time)
 				if !ok {
-					return nil, fmt.Errorf("unable to convert transform context to map of strings to times")
+					return nil, errors.New("unable to convert transform context to map of strings to times")
 				}
 				return m[p.Name()], nil
 			},
@@ -2126,9 +2126,9 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 		if enum, ok := testSymbolTable[*val]; ok {
 			return &enum, nil
 		}
-		return nil, fmt.Errorf("enum symbol not found")
+		return nil, errors.New("enum symbol not found")
 	}
-	return nil, fmt.Errorf("enum symbol not provided")
+	return nil, errors.New("enum symbol not provided")
 }
 
 func Test_parseValueExpression_full(t *testing.T) {
@@ -2599,7 +2599,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 		{
 			name: "IgnoreError error from condition",
 			condition: func(context.Context, any) (bool, error) {
-				return true, fmt.Errorf("test")
+				return true, errors.New("test")
 			},
 			function: func(_ context.Context, _ any) (any, error) {
 				return 1, nil
@@ -2609,7 +2609,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 		{
 			name: "PropagateError error from condition",
 			condition: func(context.Context, any) (bool, error) {
-				return true, fmt.Errorf("test")
+				return true, errors.New("test")
 			},
 			function: func(_ context.Context, _ any) (any, error) {
 				return 1, nil
@@ -2622,7 +2622,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return true, nil
 			},
 			function: func(_ context.Context, _ any) (any, error) {
-				return 1, fmt.Errorf("test")
+				return 1, errors.New("test")
 			},
 			errorMode: IgnoreError,
 		},
@@ -2632,14 +2632,14 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return true, nil
 			},
 			function: func(_ context.Context, _ any) (any, error) {
-				return 1, fmt.Errorf("test")
+				return 1, errors.New("test")
 			},
 			errorMode: PropagateError,
 		},
 		{
 			name: "SilentError error from condition",
 			condition: func(context.Context, any) (bool, error) {
-				return true, fmt.Errorf("test")
+				return true, errors.New("test")
 			},
 			function: func(_ context.Context, _ any) (any, error) {
 				return 1, nil
@@ -2652,7 +2652,7 @@ func Test_Statements_Execute_Error(t *testing.T) {
 				return true, nil
 			},
 			function: func(_ context.Context, _ any) (any, error) {
-				return 1, fmt.Errorf("test")
+				return 1, errors.New("test")
 			},
 			errorMode: SilentError,
 		},
@@ -2724,7 +2724,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 			name: "Single erroring condition is treated as false when using Ignore with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 			},
 			errorMode:      IgnoreError,
@@ -2735,7 +2735,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 			name: "erroring condition is ignored when using Ignore with OR",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 				alwaysTrue[any],
 			},
@@ -2777,7 +2777,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 			name: "Single erroring condition is treated as false when using Ignore with AND",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 			},
 			errorMode:      IgnoreError,
@@ -2788,7 +2788,7 @@ func Test_ConditionSequence_Eval(t *testing.T) {
 			name: "erroring condition is ignored when using Ignore with AND",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 				alwaysTrue[any],
 			},
@@ -2831,7 +2831,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			name: "Propagate Error from condition",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 			},
 			errorMode: PropagateError,
@@ -2840,7 +2840,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			name: "Ignore Error from function with IgnoreError",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 			},
 			errorMode: IgnoreError,
@@ -2849,7 +2849,7 @@ func Test_ConditionSequence_Eval_Error(t *testing.T) {
 			name: "Ignore Error from function with SilentError",
 			conditions: []boolExpressionEvaluator[any]{
 				func(context.Context, any) (bool, error) {
-					return true, fmt.Errorf("test")
+					return true, errors.New("test")
 				},
 			},
 			errorMode: SilentError,

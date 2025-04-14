@@ -25,7 +25,7 @@ var (
 	errMissingSubscriptionIDs = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
 	errMissingClientID        = errors.New(`"ClientID" is not specified in config`)
 	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
-	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile"" is not specified in config`)
+	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
 	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
 
 	monitorServices = []string{
@@ -255,6 +255,7 @@ type Config struct {
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 }
 

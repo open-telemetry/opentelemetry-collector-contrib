@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -34,7 +34,7 @@ func Test_aggregateOnAttributes(t *testing.T) {
 			t:          aggregateutil.Sum,
 			attributes: attr,
 			want:       nil,
-			wantErr:    fmt.Errorf("aggregate_on_attributes does not support aggregating Summary metrics"),
+			wantErr:    errors.New("aggregate_on_attributes does not support aggregating Summary metrics"),
 		},
 		{
 			name:  "non-matching attribute",

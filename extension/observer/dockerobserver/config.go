@@ -4,7 +4,7 @@
 package dockerobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver"
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -44,10 +44,10 @@ func (config Config) Validate() error {
 		return err
 	}
 	if config.Timeout == 0 {
-		return fmt.Errorf("timeout must be specified")
+		return errors.New("timeout must be specified")
 	}
 	if config.CacheSyncInterval == 0 {
-		return fmt.Errorf("cache_sync_interval must be specified")
+		return errors.New("cache_sync_interval must be specified")
 	}
 	return nil
 }

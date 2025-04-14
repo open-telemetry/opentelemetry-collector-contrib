@@ -334,7 +334,7 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 		case <-ctx.Done():
 			return nil, ctx.Err()
 		case <-prweWAL.stopChan:
-			return nil, fmt.Errorf("attempt to read from WAL after stopped")
+			return nil, errors.New("attempt to read from WAL after stopped")
 		default:
 		}
 
@@ -344,7 +344,7 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 
 		prweWAL.mu.Lock()
 		if prweWAL.wal == nil {
-			return nil, fmt.Errorf("attempt to read from closed WAL")
+			return nil, errors.New("attempt to read from closed WAL")
 		}
 		protoBlob, err = prweWAL.wal.Read(index)
 		if err == nil { // The read succeeded.
@@ -369,7 +369,7 @@ func (prweWAL *prweWAL) readPrompbFromWAL(ctx context.Context, index uint64) (wr
 			case <-ctx.Done():
 				return nil, ctx.Err()
 			case <-prweWAL.stopChan:
-				return nil, fmt.Errorf("attempt to read from WAL after stopped")
+				return nil, errors.New("attempt to read from WAL after stopped")
 			}
 		}
 

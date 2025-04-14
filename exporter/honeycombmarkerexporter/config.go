@@ -4,6 +4,7 @@
 package honeycombmarkerexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/honeycombmarkerexporter"
 
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
@@ -61,11 +62,11 @@ var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	if cfg.APIKey == "" {
-		return fmt.Errorf("invalid API Key")
+		return errors.New("invalid API Key")
 	}
 
 	if len(cfg.Markers) == 0 {
-		return fmt.Errorf("no markers supplied")
+		return errors.New("no markers supplied")
 	}
 	for _, m := range cfg.Markers {
 		if m.Type == "" {

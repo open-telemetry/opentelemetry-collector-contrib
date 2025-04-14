@@ -190,11 +190,8 @@ func TestTransformer(t *testing.T) {
 				filtered = false
 			})
 
-			filterOperator, ok := op.(*Transformer)
-			require.True(t, ok)
-
-			filterOperator.OutputOperators = []operator.Operator{mockOutput}
-			err = filterOperator.Process(context.Background(), tc.input)
+			op.(*Transformer).OutputOperators = []operator.Operator{mockOutput}
+			err = op.ProcessBatch(context.Background(), []*entry.Entry{tc.input})
 			require.NoError(t, err)
 
 			require.Equal(t, tc.filtered, filtered)
@@ -236,12 +233,12 @@ func TestFilterDropRatio(t *testing.T) {
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.Process(context.Background(), testEntry)
+		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 
 	for i := 1; i < 11; i++ {
-		err = filterOperator.Process(context.Background(), testEntry)
+		err = filterOperator.ProcessBatch(context.Background(), []*entry.Entry{testEntry})
 		require.NoError(t, err)
 	}
 

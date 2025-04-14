@@ -6,6 +6,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
@@ -156,7 +157,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 func (g *gaugeMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	gauge, ok := metrics.(pmetric.Gauge)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of Gauge")
+		return errors.New("metrics param is not type of Gauge")
 	}
 	g.count += gauge.DataPoints().Len()
 	g.gaugeModels = append(g.gaugeModels, &gaugeModel{

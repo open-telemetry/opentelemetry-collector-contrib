@@ -7,7 +7,6 @@ import (
 	"context"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -30,10 +29,10 @@ func (r resourceStatements) Context() ContextID {
 	return Resource
 }
 
-func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
+func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
-		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans, ottlresource.WithCache(cache))
+		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -48,10 +47,10 @@ func (r resourceStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces,
 	return nil
 }
 
-func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
+func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
-		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics, ottlresource.WithCache(cache))
+		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -66,10 +65,10 @@ func (r resourceStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	return nil
 }
 
-func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error {
+func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
-		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs, ottlresource.WithCache(cache))
+		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -95,12 +94,12 @@ func (s scopeStatements) Context() ContextID {
 	return Scope
 }
 
-func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, cache *pcommon.Map) error {
+func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
 		for j := 0; j < rspans.ScopeSpans().Len(); j++ {
 			sspans := rspans.ScopeSpans().At(j)
-			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans, ottlscope.WithCache(cache))
+			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -116,12 +115,12 @@ func (s scopeStatements) ConsumeTraces(ctx context.Context, td ptrace.Traces, ca
 	return nil
 }
 
-func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics, cache *pcommon.Map) error {
+func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) error {
 	for i := 0; i < md.ResourceMetrics().Len(); i++ {
 		rmetrics := md.ResourceMetrics().At(i)
 		for j := 0; j < rmetrics.ScopeMetrics().Len(); j++ {
 			smetrics := rmetrics.ScopeMetrics().At(j)
-			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics, ottlscope.WithCache(cache))
+			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err
@@ -137,12 +136,12 @@ func (s scopeStatements) ConsumeMetrics(ctx context.Context, md pmetric.Metrics,
 	return nil
 }
 
-func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs, cache *pcommon.Map) error {
+func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		for j := 0; j < rlogs.ScopeLogs().Len(); j++ {
 			slogs := rlogs.ScopeLogs().At(j)
-			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs, ottlscope.WithCache(cache))
+			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
 			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				return err

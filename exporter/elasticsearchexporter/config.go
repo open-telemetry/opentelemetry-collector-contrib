@@ -111,6 +111,9 @@ func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
 type TelemetrySettings struct {
 	LogRequestBody  bool `mapstructure:"log_request_body"`
 	LogResponseBody bool `mapstructure:"log_response_body"`
+
+	LogFailedDocsInput          bool          `mapstructure:"log_failed_docs_input"`
+	LogFailedDocsInputRateLimit time.Duration `mapstructure:"log_failed_docs_input_rate_limit"`
 }
 
 type LogstashFormatSettings struct {
@@ -417,5 +420,17 @@ func handleDeprecatedConfig(cfg *Config, logger *zap.Logger) {
 	}
 	if cfg.TracesDynamicIndex.Enabled {
 		logger.Warn("traces_dynamic_index::enabled has been deprecated, and will be removed in a future version. It is now a no-op. Dynamic document routing is now the default. See Elasticsearch Exporter README.")
+	}
+}
+
+func handleTelemetryConfig(cfg *Config, logger *zap.Logger) {
+	if cfg.LogRequestBody {
+		logger.Warn("telemetry::log_request_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.LogResponseBody {
+		logger.Warn("telemetry::log_response_body is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
+	}
+	if cfg.LogFailedDocsInput {
+		logger.Warn("telemetry::log_failed_docs_input is enabled, and may expose sensitive data; It should only be used for testing or debugging.")
 	}
 }

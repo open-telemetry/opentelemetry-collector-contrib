@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -26,7 +27,7 @@ func createConvertSummaryCountValToSumFunction(_ ottl.FunctionContext, oArgs ott
 	args, ok := oArgs.(*convertSummaryCountValToSumArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("convertSummaryCountValToSumFactory args must be of type *convertSummaryCountValToSumArguments")
+		return nil, errors.New("convertSummaryCountValToSumFactory args must be of type *convertSummaryCountValToSumArguments")
 	}
 
 	return convertSummaryCountValToSum(args.StringAggTemp, args.Monotonic)

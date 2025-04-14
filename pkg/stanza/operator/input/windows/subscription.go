@@ -28,7 +28,7 @@ type Subscription struct {
 // If the remote server is not reachable, it returns an error indicating the failure.
 func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, bookmark Bookmark) error {
 	if s.handle != 0 {
-		return fmt.Errorf("subscription handle is already open")
+		return errors.New("subscription handle is already open")
 	}
 
 	signalEvent, err := windows.CreateEvent(nil, 0, 0, nil)
@@ -80,7 +80,7 @@ func (s *Subscription) Read(maxReads int) ([]Event, int, error) {
 	}
 
 	if maxReads < 1 {
-		return nil, 0, fmt.Errorf("max reads must be greater than 0")
+		return nil, 0, errors.New("max reads must be greater than 0")
 	}
 
 	events, actualMaxReads, err := s.readWithRetry(maxReads)

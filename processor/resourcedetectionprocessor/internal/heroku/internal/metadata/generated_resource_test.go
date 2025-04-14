@@ -40,42 +40,42 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("heroku.app.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "heroku.app.id-val", val.Str())
+				assert.Equal(t, "heroku.app.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("heroku.dyno.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "heroku.dyno.id-val", val.Str())
+				assert.Equal(t, "heroku.dyno.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("heroku.release.commit")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "heroku.release.commit-val", val.Str())
+				assert.Equal(t, "heroku.release.commit-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("heroku.release.creation_timestamp")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "heroku.release.creation_timestamp-val", val.Str())
+				assert.Equal(t, "heroku.release.creation_timestamp-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("service.instance.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "service.instance.id-val", val.Str())
+				assert.Equal(t, "service.instance.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("service.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "service.name-val", val.Str())
+				assert.Equal(t, "service.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("service.version")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "service.version-val", val.Str())
+				assert.Equal(t, "service.version-val", val.Str())
 			}
 		})
 	}

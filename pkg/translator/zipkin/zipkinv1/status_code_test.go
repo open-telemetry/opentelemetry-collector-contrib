@@ -4,7 +4,7 @@
 package zipkinv1
 
 import (
-	"fmt"
+	"errors"
 	"strconv"
 	"testing"
 
@@ -26,7 +26,7 @@ func TestAttribToStatusCode(t *testing.T) {
 			name: "nil",
 			attr: pcommon.NewValueEmpty(),
 			code: 0,
-			err:  fmt.Errorf("nil attribute"),
+			err:  errors.New("nil attribute"),
 		},
 
 		{
@@ -39,7 +39,7 @@ func TestAttribToStatusCode(t *testing.T) {
 			name: "invalid-int-code",
 			attr: pcommon.NewValueInt(int64(1 << 32)),
 			code: 0,
-			err:  fmt.Errorf("outside of the int32 range"),
+			err:  errors.New("outside of the int32 range"),
 		},
 
 		{
@@ -59,7 +59,7 @@ func TestAttribToStatusCode(t *testing.T) {
 			name: "bool-code",
 			attr: pcommon.NewValueBool(true),
 			code: 0,
-			err:  fmt.Errorf("invalid attribute type"),
+			err:  errors.New("invalid attribute type"),
 		},
 	}
 

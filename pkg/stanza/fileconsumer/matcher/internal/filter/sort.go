@@ -4,6 +4,7 @@
 package filter // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/filter"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"sort"
@@ -27,7 +28,7 @@ type regexSortOption struct {
 
 func newRegexSortOption(regexKey string, parseFunc parseFunc, compareFunc compareFunc) (Option, error) {
 	if regexKey == "" {
-		return nil, fmt.Errorf("regex key must be specified")
+		return nil, errors.New("regex key must be specified")
 	}
 	return regexSortOption{
 		regexKey:    regexKey,
@@ -110,7 +111,7 @@ func SortAlphabetical(regexKey string, ascending bool) (Option, error) {
 
 func SortTemporal(regexKey string, ascending bool, layout string, location string) (Option, error) {
 	if layout == "" {
-		return nil, fmt.Errorf("layout must be specified")
+		return nil, errors.New("layout must be specified")
 	}
 	if location == "" {
 		location = "UTC"

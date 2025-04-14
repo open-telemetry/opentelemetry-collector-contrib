@@ -5,7 +5,7 @@ package pulsarexporter // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"github.com/apache/pulsar-client-go/pulsar"
 	"go.opentelemetry.io/collector/component"
@@ -18,7 +18,7 @@ import (
 	"go.uber.org/zap"
 )
 
-var errUnrecognizedEncoding = fmt.Errorf("unrecognized encoding")
+var errUnrecognizedEncoding = errors.New("unrecognized encoding")
 
 type PulsarTracesProducer struct {
 	cfg       Config

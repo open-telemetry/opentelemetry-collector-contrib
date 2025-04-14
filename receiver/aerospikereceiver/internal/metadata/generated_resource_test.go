@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("aerospike.namespace")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "aerospike.namespace-val", val.Str())
+				assert.Equal(t, "aerospike.namespace-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("aerospike.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "aerospike.node.name-val", val.Str())
+				assert.Equal(t, "aerospike.node.name-val", val.Str())
 			}
 		})
 	}

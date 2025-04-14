@@ -5,7 +5,6 @@ package fileexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"errors"
-	"fmt"
 	"strings"
 	"time"
 
@@ -101,10 +100,10 @@ func (cfg *Config) Validate() error {
 		return errors.New("path must be non-empty")
 	}
 	if cfg.Append && cfg.Compression != "" {
-		return fmt.Errorf("append and compression enabled at the same time is not supported")
+		return errors.New("append and compression enabled at the same time is not supported")
 	}
 	if cfg.Append && cfg.Rotation != nil {
-		return fmt.Errorf("append and rotation enabled at the same time is not supported")
+		return errors.New("append and rotation enabled at the same time is not supported")
 	}
 	if cfg.FormatType != formatTypeJSON && cfg.FormatType != formatTypeProto {
 		return errors.New("format type is not supported")

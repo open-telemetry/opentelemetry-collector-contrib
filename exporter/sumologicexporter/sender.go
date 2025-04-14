@@ -383,7 +383,7 @@ func isEmptyAttributeValue(att pcommon.Value) bool {
 // returns array of records which has not been sent correctly and error
 func (s *sender) sendNonOTLPLogs(ctx context.Context, rl plog.ResourceLogs, flds fields) ([]plog.LogRecord, error) {
 	if s.config.LogFormat == OTLPLogFormat {
-		return nil, fmt.Errorf("attempting to send OTLP logs as non-OTLP data")
+		return nil, errors.New("attempting to send OTLP logs as non-OTLP data")
 	}
 
 	var (
@@ -459,7 +459,7 @@ func (s *sender) sendOTLPLogs(ctx context.Context, ld plog.Logs) error {
 // sendNonOTLPMetrics sends metrics in right format basing on the s.config.MetricFormat
 func (s *sender) sendNonOTLPMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, []error) {
 	if s.config.MetricFormat == OTLPMetricFormat {
-		return md, []error{fmt.Errorf("attempting to send OTLP metrics as non-OTLP data")}
+		return md, []error{errors.New("attempting to send OTLP metrics as non-OTLP data")}
 	}
 
 	var (

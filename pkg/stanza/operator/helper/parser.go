@@ -5,12 +5,12 @@ package helper // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
+	stanza_errors "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/errors"
 )
 
 // NewParserConfig creates a new parser config with default values
@@ -42,7 +42,7 @@ func (c ParserConfig) Build(set component.TelemetrySettings) (ParserOperator, er
 	}
 
 	if c.BodyField != nil && c.ParseTo.String() == entry.NewBodyField().String() {
-		return ParserOperator{}, fmt.Errorf("`parse_to: body` not allowed when `body` is configured")
+		return ParserOperator{}, errors.New("`parse_to: body` not allowed when `body` is configured")
 	}
 
 	parserOperator := ParserOperator{
@@ -129,7 +129,7 @@ func (p *ParserOperator) ProcessWithCallback(ctx context.Context, entry *entry.E
 func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, parse ParseFunction) error {
 	value, ok := entry.Get(p.ParseFrom)
 	if !ok {
-		err := errors.NewError(
+		err := stanza_errors.NewError(
 			"Entry is missing the expected parse_from field.",
 			"Ensure that all incoming entries contain the parse_from field.",
 			"parse_from", p.ParseFrom.String(),
@@ -143,7 +143,7 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 	}
 
 	if err := entry.Set(p.ParseTo, newValue); err != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(err, "set parse_to"))
+		return p.HandleEntryError(ctx, entry, stanza_errors.Wrap(err, "set parse_to"))
 	}
 
 	if p.BodyField != nil {
@@ -174,16 +174,16 @@ func (p *ParserOperator) ParseWith(ctx context.Context, entry *entry.Entry, pars
 
 	// Handle parsing errors after attempting to parse all
 	if timeParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(timeParseErr, "time parser"))
+		return p.HandleEntryError(ctx, entry, stanza_errors.Wrap(timeParseErr, "time parser"))
 	}
 	if severityParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(severityParseErr, "severity parser"))
+		return p.HandleEntryError(ctx, entry, stanza_errors.Wrap(severityParseErr, "severity parser"))
 	}
 	if traceParseErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(traceParseErr, "trace parser"))
+		return p.HandleEntryError(ctx, entry, stanza_errors.Wrap(traceParseErr, "trace parser"))
 	}
 	if scopeNameParserErr != nil {
-		return p.HandleEntryError(ctx, entry, errors.Wrap(scopeNameParserErr, "scope_name parser"))
+		return p.HandleEntryError(ctx, entry, stanza_errors.Wrap(scopeNameParserErr, "scope_name parser"))
 	}
 	return nil
 }

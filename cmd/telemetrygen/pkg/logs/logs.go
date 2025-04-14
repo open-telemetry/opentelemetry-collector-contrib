@@ -5,6 +5,7 @@ package logs
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"sync/atomic"
@@ -147,7 +148,7 @@ func createExporter(cfg *Config, logger *zap.Logger) (sdklog.Exporter, error) {
 func parseSeverity(severityText string, severityNumber int32) (string, log.Severity, error) {
 	sn := log.Severity(severityNumber)
 	if sn < log.SeverityTrace1 || sn > log.SeverityFatal4 {
-		return "", log.SeverityUndefined, fmt.Errorf("severity-number is out of range, the valid range is [1,24]")
+		return "", log.SeverityUndefined, errors.New("severity-number is out of range, the valid range is [1,24]")
 	}
 
 	// severity number should match well-known severityText

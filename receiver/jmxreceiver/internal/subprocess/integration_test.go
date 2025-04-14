@@ -7,6 +7,7 @@ package subprocess
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -231,7 +232,7 @@ func (suite *SubprocessIntegrationSuite) TestSendingStdinFails() {
 
 	subprocess := NewSubprocess(&Config{ExecutablePath: "echo", Args: []string{"finished"}}, logger)
 
-	intentionalError := fmt.Errorf("intentional failure")
+	intentionalError := errors.New("intentional failure")
 	subprocess.sendToStdIn = func(string, io.Writer) error {
 		return intentionalError
 	}

@@ -5,7 +5,7 @@ package arrow
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 	"testing"
 	"time"
@@ -171,7 +171,7 @@ func TestStreamEncodeError(t *testing.T) {
 		t.Run(string(pname), func(t *testing.T) {
 			tc := newStreamTestCase(t, pname)
 
-			testErr := fmt.Errorf("test encode error")
+			testErr := errors.New("test encode error")
 			tc.fromTracesCall.Times(1).Return(nil, testErr)
 
 			tc.start(newHealthyTestChannel())

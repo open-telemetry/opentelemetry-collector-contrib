@@ -4,7 +4,7 @@
 package parseutils
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -161,13 +161,13 @@ h`,
 			name:        "unclosed quotes",
 			input:       "a 'b c",
 			delimiter:   " ",
-			expectedErr: fmt.Errorf("never reached the end of a quoted value"),
+			expectedErr: errors.New("never reached the end of a quoted value"),
 		},
 		{
 			name:        "mismatched quotes",
 			input:       `a 'b c' "d '`,
 			delimiter:   " ",
-			expectedErr: fmt.Errorf("never reached the end of a quoted value"),
+			expectedErr: errors.New("never reached the end of a quoted value"),
 		},
 		{
 			name:      "tab delimiters",
@@ -218,13 +218,13 @@ func Test_ParseKeyValuePairs(t *testing.T) {
 			name:        "no delimiter found",
 			pairs:       []string{"ab"},
 			delimiter:   "=",
-			expectedErr: fmt.Errorf("cannot split \"ab\" into 2 items, got 1 item(s)"),
+			expectedErr: errors.New("cannot split \"ab\" into 2 items, got 1 item(s)"),
 		},
 		{
 			name:        "no delimiter found 2x",
 			pairs:       []string{"ab", "cd"},
 			delimiter:   "=",
-			expectedErr: fmt.Errorf("cannot split \"ab\" into 2 items, got 1 item(s); cannot split \"cd\" into 2 items, got 1 item(s)"),
+			expectedErr: errors.New("cannot split \"ab\" into 2 items, got 1 item(s); cannot split \"cd\" into 2 items, got 1 item(s)"),
 		},
 		{
 			name:      "empty pairs",
@@ -236,7 +236,7 @@ func Test_ParseKeyValuePairs(t *testing.T) {
 			name:        "empty pair string",
 			pairs:       []string{""},
 			delimiter:   "=",
-			expectedErr: fmt.Errorf("cannot split \"\" into 2 items, got 1 item(s)"),
+			expectedErr: errors.New("cannot split \"\" into 2 items, got 1 item(s)"),
 		},
 		{
 			name:      "empty delimiter",

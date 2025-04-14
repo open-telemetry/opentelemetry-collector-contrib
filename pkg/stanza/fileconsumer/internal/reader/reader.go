@@ -51,7 +51,6 @@ type Reader struct {
 	emitFunc               emit.Callback
 	deleteAtEOF            bool
 	needsUpdateFingerprint bool
-	includeFileRecordNum   bool
 	compression            string
 	acquireFSLock          bool
 	maxBatchSize           int
@@ -224,13 +223,9 @@ func (r *Reader) readContents(ctx context.Context) {
 		}
 		numTokensBatched++
 
-		if r.includeFileRecordNum {
-			r.RecordNum++
-		}
-
+		r.RecordNum++
 		if r.maxBatchSize > 0 && numTokensBatched >= r.maxBatchSize {
-			err := r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum)
-			if err != nil {
+			if err = r.emitFunc(ctx, tokenBodies[:numTokensBatched], r.FileAttributes, r.RecordNum); err != nil {
 				r.set.Logger.Error("failed to emit token", zap.Error(err))
 			}
 			numTokensBatched = 0

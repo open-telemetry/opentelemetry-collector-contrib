@@ -5,6 +5,7 @@ package prometheusexporter // import "github.com/open-telemetry/opentelemetry-co
 
 import (
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"sort"
 	"sync"
@@ -97,7 +98,7 @@ func (c *collector) processMetrics(rm pmetric.ResourceMetrics) (n int) {
 	return c.accumulator.Accumulate(rm)
 }
 
-var errUnknownMetricType = fmt.Errorf("unknown metric type")
+var errUnknownMetricType = errors.New("unknown metric type")
 
 func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.Map) (prometheus.Metric, error) {
 	switch metric.Type() {

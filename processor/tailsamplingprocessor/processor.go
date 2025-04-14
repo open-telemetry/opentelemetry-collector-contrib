@@ -5,6 +5,7 @@ package tailsamplingprocessor // import "github.com/open-telemetry/opentelemetry
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"runtime"
@@ -263,7 +264,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 
 	for _, cfg := range cfgs {
 		if cfg.Name == "" {
-			return fmt.Errorf("policy name cannot be empty")
+			return errors.New("policy name cannot be empty")
 		}
 
 		if _, exists := policyNames[cfg.Name]; exists {

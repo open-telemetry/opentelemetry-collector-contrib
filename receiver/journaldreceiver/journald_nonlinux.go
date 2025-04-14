@@ -7,7 +7,7 @@ package journaldreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
@@ -30,5 +30,5 @@ func createLogsReceiver(
 	_ component.Config,
 	_ consumer.Logs,
 ) (receiver.Logs, error) {
-	return nil, fmt.Errorf("journald is only supported on linux")
+	return nil, errors.New("journald is only supported on linux")
 }

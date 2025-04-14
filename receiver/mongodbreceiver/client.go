@@ -9,16 +9,15 @@ import (
 	"fmt"
 
 	"github.com/hashicorp/go-version"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
 	"go.uber.org/zap"
 )
 
 // client is an interface that exposes functionality towards a mongo environment
 type client interface {
-	ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error)
+	ListDatabaseNames(ctx context.Context, filters any, opts ...options.Lister[options.ListDatabasesOptions]) ([]string, error)
 	ListCollectionNames(ctx context.Context, DBName string) ([]string, error)
 	Disconnect(context.Context) error
 	GetVersion(context.Context) (*version.Version, error)
@@ -38,8 +37,8 @@ type mongodbClient struct {
 
 // newClient creates a new client to connect and query mongo for the
 // mongodbreceiver
-var newClient = func(ctx context.Context, config *Config, logger *zap.Logger, secondary bool) (client, error) {
-	driver, err := mongo.Connect(ctx, config.ClientOptions(secondary))
+var newClient = func(_ context.Context, config *Config, logger *zap.Logger, secondary bool) (client, error) {
+	driver, err := mongo.Connect(config.ClientOptions(secondary))
 	if err != nil {
 		return nil, err
 	}
@@ -91,7 +90,7 @@ func (c *mongodbClient) ListCollectionNames(ctx context.Context, database string
 func (c *mongodbClient) IndexStats(ctx context.Context, database, collectionName string) ([]bson.M, error) {
 	db := c.Database(database)
 	collection := db.Collection(collectionName)
-	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{primitive.E{Key: "$indexStats", Value: bson.M{}}}})
+	cursor, err := collection.Aggregate(context.Background(), mongo.Pipeline{bson.D{bson.E{Key: "$indexStats", Value: bson.M{}}}})
 	if err != nil {
 		return nil, err
 	}

@@ -38,7 +38,7 @@ import (
 
 func TestTracesReceiverStart(t *testing.T) {
 	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(metadata.Type),
@@ -78,7 +78,7 @@ func TestTracesReceiver_error(t *testing.T) {
 
 	expectedErr := errors.New("handler error")
 	c := kafkaTracesConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -370,7 +370,7 @@ func TestMetricsReceiver_error(t *testing.T) {
 
 	expectedErr := errors.New("handler error")
 	c := kafkaMetricsConsumer{
-		config:           Config{Encoding: defaultEncoding},
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
@@ -634,7 +634,7 @@ func TestMetricsConsumerGroupHandler_error_nextConsumer(t *testing.T) {
 
 func TestLogsReceiverStart(t *testing.T) {
 	c := kafkaLogsConsumer{
-		config:           *createDefaultConfig().(*Config),
+		config:           createDefaultConfig(),
 		nextConsumer:     consumertest.NewNop(),
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         receivertest.NewNopSettings(metadata.Type),
@@ -678,7 +678,7 @@ func TestLogsReceiver_error(t *testing.T) {
 		consumeLoopWG:    &sync.WaitGroup{},
 		settings:         settings,
 		consumerGroup:    &testConsumerGroup{err: expectedErr},
-		config:           *createDefaultConfig().(*Config),
+		config:           createDefaultConfig(),
 		telemetryBuilder: nopTelemetryBuilder(t),
 	}
 

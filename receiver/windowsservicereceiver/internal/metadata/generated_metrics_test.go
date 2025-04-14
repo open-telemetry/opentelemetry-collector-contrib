@@ -99,10 +99,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("name")
 					assert.True(t, ok)
-					assert.EqualValues(t, "name-val", attrVal.Str())
+					assert.Equal(t, "name-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("startup_mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "boot_start", attrVal.Str())
+					assert.Equal(t, "boot_start", attrVal.Str())
 				}
 			}
 		})

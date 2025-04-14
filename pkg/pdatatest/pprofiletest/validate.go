@@ -16,17 +16,17 @@ func ValidateProfile(pp pprofile.Profile) error {
 	stLen := pp.StringTable().Len()
 	if stLen < 1 {
 		// Return here to avoid panicking when accessing the string table.
-		return fmt.Errorf("empty string table, must at least contain the empty string")
+		return errors.New("empty string table, must at least contain the empty string")
 	}
 
 	if pp.StringTable().At(0) != "" {
-		errs = errors.Join(errs, fmt.Errorf("string table must start with the empty string"))
+		errs = errors.Join(errs, errors.New("string table must start with the empty string"))
 	}
 
 	if pp.SampleType().Len() < 1 {
 		// Since the proto field 'default_sample_type_index' is always valid, there must be at least
 		// one sample type in the profile.
-		errs = errors.Join(errs, fmt.Errorf("missing sample type, need at least a default"))
+		errs = errors.Join(errs, errors.New("missing sample type, need at least a default"))
 	}
 
 	errs = errors.Join(errs, validateSampleType(pp))

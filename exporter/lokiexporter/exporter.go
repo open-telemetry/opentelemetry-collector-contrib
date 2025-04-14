@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -74,7 +75,7 @@ func (l *lokiExporter) sendPushRequest(ctx context.Context, tenant string, reque
 	pushReq := request.PushRequest
 	report := request.Report
 	if len(pushReq.Streams) == 0 {
-		return consumererror.NewPermanent(fmt.Errorf("failed to transform logs into Loki log streams"))
+		return consumererror.NewPermanent(errors.New("failed to transform logs into Loki log streams"))
 	}
 	if len(report.Errors) > 0 {
 		l.settings.Logger.Info(

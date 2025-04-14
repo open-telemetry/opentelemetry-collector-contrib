@@ -5,7 +5,7 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"net/http"
 )
 
@@ -22,12 +22,12 @@ func ContextWithClient(ctx context.Context, client *http.Client) context.Context
 func ClientFromContext(ctx context.Context) (*http.Client, error) {
 	v := ctx.Value(clientContextKey)
 	if v == nil {
-		return nil, fmt.Errorf("no http.Client in context")
+		return nil, errors.New("no http.Client in context")
 	}
 	var c *http.Client
 	var ok bool
 	if c, ok = v.(*http.Client); !ok {
-		return nil, fmt.Errorf("invalid value found in context")
+		return nil, errors.New("invalid value found in context")
 	}
 
 	return c, nil

@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"golang.org/x/sys/windows"
 
@@ -165,18 +166,18 @@ func (i *Input) Stop() error {
 
 	var errs error
 	if err := i.subscription.Close(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close subscription: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close subscription: %w", err))
 	}
 
 	if err := i.bookmark.Close(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close bookmark: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close bookmark: %w", err))
 	}
 
 	if err := i.publisherCache.evictAll(); err != nil {
-		errs = errors.Join(errs, fmt.Errorf("failed to close publishers: %w", err))
+		errs = multierr.Append(errs, fmt.Errorf("failed to close publishers: %w", err))
 	}
 
-	return errors.Join(errs, i.stopRemoteSession())
+	return multierr.Append(errs, i.stopRemoteSession())
 }
 
 // readOnInterval will read events with respect to the polling interval until it reaches the end of the channel.
@@ -272,7 +273,7 @@ func (i *Input) renderDeepAndSend(ctx context.Context, event Event, publisher Pu
 	if err == nil {
 		return i.sendEvent(ctx, deepEvent)
 	}
-	return errors.Join(
+	return multierr.Append(
 		fmt.Errorf("render deep event: %w", err),
 		i.renderSimpleAndSend(ctx, event),
 	)
@@ -297,7 +298,7 @@ func (i *Input) processEventWithRenderingInfo(ctx context.Context, event Event) 
 
 	publisher, err := i.publisherCache.get(providerName)
 	if err != nil {
-		return errors.Join(
+		return multierr.Append(
 			fmt.Errorf("open event source for provider %q: %w", providerName, err),
 			i.renderSimpleAndSend(ctx, event),
 		)

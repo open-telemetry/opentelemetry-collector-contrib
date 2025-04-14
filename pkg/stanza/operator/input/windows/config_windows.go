@@ -6,7 +6,7 @@
 package windows // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/input/windows"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -25,20 +25,20 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 	}
 
 	if c.Channel == "" {
-		return nil, fmt.Errorf("missing required `channel` field")
+		return nil, errors.New("missing required `channel` field")
 	}
 
 	if c.MaxReads < 1 {
-		return nil, fmt.Errorf("the `max_reads` field must be greater than zero")
+		return nil, errors.New("the `max_reads` field must be greater than zero")
 	}
 
 	if c.StartAt != "end" && c.StartAt != "beginning" {
-		return nil, fmt.Errorf("the `start_at` field must be set to `beginning` or `end`")
+		return nil, errors.New("the `start_at` field must be set to `beginning` or `end`")
 	}
 
 	if (c.Remote.Server != "" || c.Remote.Username != "" || c.Remote.Password != "") && // any not empty
 		(c.Remote.Server == "" || c.Remote.Username == "" || c.Remote.Password == "") { // any empty
-		return nil, fmt.Errorf("remote configuration must have non-empty `username` and `password`")
+		return nil, errors.New("remote configuration must have non-empty `username` and `password`")
 	}
 
 	input := &Input{

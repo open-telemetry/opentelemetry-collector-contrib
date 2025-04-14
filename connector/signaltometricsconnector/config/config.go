@@ -48,7 +48,7 @@ type Config struct {
 
 func (c *Config) Validate() error {
 	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 {
-		return fmt.Errorf("no configuration provided, at least one should be specified")
+		return errors.New("no configuration provided, at least one should be specified")
 	}
 	var multiError error // collect all errors at once
 	if len(c.Spans) > 0 {
@@ -123,6 +123,7 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 
 type Attribute struct {
 	Key          string `mapstructure:"key"`
+	Optional     bool   `mapstructure:"optional"`
 	DefaultValue any    `mapstructure:"default_value"`
 }
 
@@ -183,7 +184,10 @@ func (mi *MetricInfo) validateAttributes() error {
 	duplicate := map[string]struct{}{}
 	for _, attr := range mi.Attributes {
 		if attr.Key == "" {
-			return fmt.Errorf("attribute key missing")
+			return errors.New("attribute key missing")
+		}
+		if attr.DefaultValue != nil && attr.Optional {
+			return errors.New("only one of default_value or optional should be set")
 		}
 		if _, ok := duplicate[attr.Key]; ok {
 			return fmt.Errorf("duplicate key found in attributes config: %s", attr.Key)

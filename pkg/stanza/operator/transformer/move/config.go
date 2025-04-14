@@ -4,7 +4,7 @@
 package move // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/move"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -46,7 +46,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.To == entry.NewNilField() || c.From == entry.NewNilField() {
-		return nil, fmt.Errorf("move: missing to or from field")
+		return nil, errors.New("move: missing to or from field")
 	}
 
 	return &Transformer{

@@ -308,11 +308,11 @@ func (e bodymapModeEncoder) encodeLog(
 }
 
 func (bodymapModeEncoder) encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding spans")
+	return errors.New("bodymap mode does not support encoding spans")
 }
 
 func (bodymapModeEncoder) encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding span events")
+	return errors.New("bodymap mode does not support encoding span events")
 }
 
 type metricsUnsupportedEncoder struct {

@@ -5,6 +5,7 @@ package filter // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"crypto/rand"
+	"errors"
 	"fmt"
 	"math/big"
 
@@ -58,7 +59,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.DropRatio < 0.0 || c.DropRatio > 1.0 {
-		return nil, fmt.Errorf("drop_ratio must be a number between 0 and 1")
+		return nil, errors.New("drop_ratio must be a number between 0 and 1")
 	}
 
 	return &Transformer{

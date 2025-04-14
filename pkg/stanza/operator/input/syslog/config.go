@@ -77,7 +77,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 		tcpInput.SetOutputIDs([]string{syslogParser.ID()})
 		if err := tcpInput.SetOutputs([]operator.Operator{syslogParser}); err != nil {
-			return nil, fmt.Errorf("failed to set outputs")
+			return nil, errors.New("failed to set outputs")
 		}
 
 		return &Input{
@@ -105,7 +105,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 
 		udpInput.SetOutputIDs([]string{syslogParser.ID()})
 		if err := udpInput.SetOutputs([]operator.Operator{syslogParser}); err != nil {
-			return nil, fmt.Errorf("failed to set outputs")
+			return nil, errors.New("failed to set outputs")
 		}
 
 		return &Input{
@@ -115,5 +115,5 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		}, nil
 	}
 
-	return nil, fmt.Errorf("need tcp config or udp config")
+	return nil, errors.New("need tcp config or udp config")
 }

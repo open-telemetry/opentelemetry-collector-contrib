@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v70/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 

@@ -4,7 +4,7 @@
 package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter"
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"strings"
 	"time"
@@ -174,7 +174,7 @@ func routeRecord(
 	if mode == MappingBodyMap {
 		dsType, _ = getFromAttributes(elasticsearch.DataStreamType, defaultDSType, recordAttr, scopeAttr, resourceAttr)
 		if dsType != "logs" && dsType != "metrics" {
-			return elasticsearch.Index{}, fmt.Errorf("data_stream.type cannot be other than logs or metrics")
+			return elasticsearch.Index{}, errors.New("data_stream.type cannot be other than logs or metrics")
 		}
 	}
 

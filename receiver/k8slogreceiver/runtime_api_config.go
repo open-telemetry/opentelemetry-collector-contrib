@@ -3,6 +3,7 @@
 
 package k8slogreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8slogreceiver"
 import (
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/confmap"
@@ -25,7 +26,7 @@ type RuntimeAPIConfig struct {
 // Unmarshal is the trick to unmarshal the config with different types.
 func (c *RuntimeAPIConfig) Unmarshal(component *confmap.Conf) error {
 	if !component.IsSet("type") {
-		return fmt.Errorf("missing required field 'type'")
+		return errors.New("missing required field 'type'")
 	}
 	typeInterface := component.Get("type")
 

@@ -5,6 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -30,7 +31,7 @@ func createAggregateOnAttributeValueFunction(_ ottl.FunctionContext, oArgs ottl.
 	args, ok := oArgs.(*aggregateOnAttributeValueArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
+		return nil, errors.New("AggregateOnAttributeValueFactory args must be of type *AggregateOnAttributeValueArguments")
 	}
 
 	t, err := aggregateutil.ConvertToAggregationFunction(args.AggregationFunction)

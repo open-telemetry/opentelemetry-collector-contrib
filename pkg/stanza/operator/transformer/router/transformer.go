@@ -9,6 +9,7 @@ import (
 	"fmt"
 
 	"github.com/expr-lang/expr/vm"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -36,50 +37,39 @@ func (t *Transformer) CanProcess() bool {
 }
 
 func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
+	var errs error
 	for i := range entries {
-		errs = append(errs, t.Process(ctx, entries[i]))
+		errs = multierr.Append(errs, t.Process(ctx, entries[i]))
 	}
-	return errors.Join(errs...)
+	return errs
 }
 
 // Process will route incoming entries based on matching expressions
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	if entry == nil {
-		return fmt.Errorf("got a nil entry, this should not happen and is potentially a bug")
+		return errors.New("got a nil entry, this should not happen and is potentially a bug")
 	}
 
 	env := helper.GetExprEnv(entry)
 	defer helper.PutExprEnv(env)
 
-	logFields := []zap.Field{
-		zap.Any("entry.timestamp", entry.Timestamp),
-	}
-	for attrName, attrValue := range entry.Attributes {
-		logFields = append(logFields, zap.Any(attrName, attrValue))
-	}
-
 	for _, route := range t.routes {
 		matches, err := vm.Run(route.Expression, env)
 		if err != nil {
-			logFields = append(logFields, zap.Any("error", err))
-			t.Logger().Warn("Running expression returned an error", logFields...)
+			t.Logger().Warn("Running expression returned an error", zapAttributes(entry, err)...)
 			continue
 		}
 
 		// we compile the expression with "AsBool", so this should be safe
 		if matches.(bool) {
 			if err = route.Attribute(entry); err != nil {
-				logFields = append(logFields, zap.Any("error", err))
-				t.Logger().Error("Failed to label entry", logFields...)
+				t.Logger().Error("Failed to label entry", zapAttributes(entry, err)...)
 				return err
 			}
 
 			for _, output := range route.OutputOperators {
-				err = output.Process(ctx, entry)
-				logFields = append(logFields, zap.Any("error", err))
-				if err != nil {
-					t.Logger().Error("Failed to process entry", logFields...)
+				if err = output.Process(ctx, entry); err != nil {
+					t.Logger().Error("Failed to process entry", zapAttributes(entry, err)...)
 				}
 			}
 			break
@@ -149,4 +139,14 @@ func (t *Transformer) findOperator(operators []operator.Operator, operatorID str
 		}
 	}
 	return nil, fmt.Errorf("operator %s does not exist", operatorID)
+}
+
+func zapAttributes(entry *entry.Entry, err error) []zap.Field {
+	logFields := make([]zap.Field, 0, 2+len(entry.Attributes))
+	logFields = append(logFields, zap.Time("entry.timestamp", entry.Timestamp))
+	for attrName, attrValue := range entry.Attributes {
+		logFields = append(logFields, zap.Any(attrName, attrValue))
+	}
+	logFields = append(logFields, zap.Error(err))
+	return logFields
 }

@@ -5,7 +5,7 @@ package gcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp"
@@ -74,7 +74,7 @@ func TestDetect(t *testing.T) {
 			detector: newTestDetector(&fakeGCPDetector{
 				projectID:      "my-project",
 				cloudPlatform:  gcp.GKE,
-				gceHostNameErr: fmt.Errorf("metadata endpoint is concealed"),
+				gceHostNameErr: errors.New("metadata endpoint is concealed"),
 				gkeHostID:      "1472385723456792345",
 				gkeClusterName: "my-cluster",
 				gkeRegion:      "us-central1",
@@ -425,7 +425,7 @@ func TestDetect(t *testing.T) {
 		{
 			desc: "error",
 			detector: newTestDetector(&fakeGCPDetector{
-				err: fmt.Errorf("failed to get metadata"),
+				err: errors.New("failed to get metadata"),
 			}),
 			expectErr: true,
 			expectedResource: map[string]any{

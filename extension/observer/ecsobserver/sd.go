@@ -5,6 +5,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"time"
@@ -29,7 +30,7 @@ type serviceDiscoveryOptions struct {
 
 func newDiscovery(cfg Config, opts serviceDiscoveryOptions) (*serviceDiscovery, error) {
 	if opts.Fetcher == nil {
-		return nil, fmt.Errorf("fetcher is nil")
+		return nil, errors.New("fetcher is nil")
 	}
 	matchers, err := newMatchers(cfg, matcherOptions{Logger: opts.Logger})
 	if err != nil {

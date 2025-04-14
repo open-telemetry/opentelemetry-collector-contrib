@@ -775,22 +775,6 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 	require.Contains(t, err.Error(), expectError)
 }
 
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	tCtx := NewTransformContext(
-		ptrace.NewSpan(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		ptrace.NewScopeSpans(),
-		ptrace.NewResourceSpans(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, getCache(tCtx))
-}
-
 func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {
 	span := ptrace.NewSpan()
 	span.SetTraceID(traceID)

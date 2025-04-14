@@ -1,6 +1,8 @@
 exporters:
     file:
         path: /test/logs/output.log
+    file/2:
+        path: ./foo
 extensions:
     health_check:
         endpoint: localhost:8000
@@ -20,6 +22,11 @@ receivers:
         include:
             - /test/logs/input.log
         start_at: beginning
+    journald:
+        directory: /run/log/journal
+        priority: info
+        units:
+            - ssh
 service:
     extensions:
         - health_check

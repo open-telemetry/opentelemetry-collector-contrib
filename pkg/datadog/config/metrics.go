@@ -5,6 +5,7 @@ package config // import "github.com/open-telemetry/opentelemetry-collector-cont
 
 import (
 	"encoding"
+	"errors"
 	"fmt"
 
 	otlpmetrics "github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
@@ -80,7 +81,7 @@ type HistogramConfig struct {
 
 func (c *HistogramConfig) validate() error {
 	if c.Mode == HistogramModeNoBuckets && !c.SendAggregations {
-		return fmt.Errorf("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
+		return errors.New("'nobuckets' mode and `send_aggregation_metrics` set to false will send no histogram metrics")
 	}
 	return nil
 }

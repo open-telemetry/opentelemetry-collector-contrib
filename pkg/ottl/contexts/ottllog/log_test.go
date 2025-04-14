@@ -619,12 +619,12 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			log, il, resource := createTelemetry(tt.bodyType)
 
-			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs(), WithCache(&testCache))
+			tCtx := NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
 
-			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs(), WithCache(&testCache))
+			tCtx = NewTransformContext(log, il, resource, plog.NewScopeLogs(), plog.NewResourceLogs())
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
@@ -692,22 +692,6 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	tCtx := NewTransformContext(
-		plog.NewLogRecord(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		plog.NewScopeLogs(),
-		plog.NewResourceLogs(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry(bodyType string) (plog.LogRecord, pcommon.InstrumentationScope, pcommon.Resource) {

@@ -38,32 +38,32 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("flink.job.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "flink.job.name-val", val.Str())
+				assert.Equal(t, "flink.job.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("flink.resource.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "jobmanager", val.Str())
+				assert.Equal(t, "jobmanager", val.Str())
 			}
 			val, ok = res.Attributes().Get("flink.subtask.index")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "flink.subtask.index-val", val.Str())
+				assert.Equal(t, "flink.subtask.index-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("flink.task.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "flink.task.name-val", val.Str())
+				assert.Equal(t, "flink.task.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("flink.taskmanager.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "flink.taskmanager.id-val", val.Str())
+				assert.Equal(t, "flink.taskmanager.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("host.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "host.name-val", val.Str())
+				assert.Equal(t, "host.name-val", val.Str())
 			}
 		})
 	}

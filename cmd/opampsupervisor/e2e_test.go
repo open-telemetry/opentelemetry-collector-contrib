@@ -626,6 +626,8 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 		{
 			name: "With service.AllowNoPipelines",
 			cfg:  "nocap",
+			precheck: func(t *testing.T) {
+			},
 		},
 		{
 			name: "Without service.AllowNoPipelines",
@@ -643,6 +645,7 @@ func TestSupervisorBootstrapsCollector(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			tt.precheck(t)
 			agentDescription := atomic.Value{}
 
 			// Load the Supervisor config so we can get the location of

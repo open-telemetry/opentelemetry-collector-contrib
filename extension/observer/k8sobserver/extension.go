@@ -5,7 +5,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 	"time"
 
@@ -43,10 +43,10 @@ type k8sObserver struct {
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
 func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 	if k.once == nil {
-		return fmt.Errorf("cannot Start() partial k8sObserver (nil *sync.Once)")
+		return errors.New("cannot Start() partial k8sObserver (nil *sync.Once)")
 	}
 	if k.handler == nil {
-		return fmt.Errorf("cannot Start() partial k8sObserver (nil *handler)")
+		return errors.New("cannot Start() partial k8sObserver (nil *handler)")
 	}
 
 	k.once.Do(func() {

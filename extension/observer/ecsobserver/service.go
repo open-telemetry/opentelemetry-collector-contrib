@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -29,7 +30,7 @@ func (s *ServiceConfig) validate() error {
 
 func (s *ServiceConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if s.NamePattern == "" {
-		return nil, fmt.Errorf("name_pattern is empty")
+		return nil, errors.New("name_pattern is empty")
 	}
 
 	nameRegex, err := regexp.Compile(s.NamePattern)

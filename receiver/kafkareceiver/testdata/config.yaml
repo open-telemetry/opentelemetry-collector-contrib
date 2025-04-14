@@ -6,11 +6,20 @@ kafka:
   resolve_canonical_bootstrap_servers_only: true
   client_id: the_client_id
   group_id: the_group_id
+kafka/legacy_topic:
+  topic: legacy_topic
+  metrics:
+    topic: metrics_topic
+kafka/legacy_encoding:
+  encoding: legacy_encoding
+  metrics:
+    encoding: metrics_encoding
 kafka/logs:
-  topic: logs
+  logs:
+    topic: logs
+    encoding: direct
   session_timeout: 45s
   heartbeat_interval: 15s
-  encoding: direct
   brokers:
     - "coffee:123"
     - "foobar:456"

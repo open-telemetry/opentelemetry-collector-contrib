@@ -5,6 +5,7 @@ package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sort"
 	"strings"
@@ -103,17 +104,17 @@ func newTaskFetcher(opts taskFetcherOptions) (*taskFetcher, error) {
 	// Even if user didn't specify any service related config, we still generates a valid filter
 	// that matches nothing. See service.go serviceConfigsToFilter.
 	if fetcher.serviceNameFilter == nil {
-		return nil, fmt.Errorf("serviceNameFilter can't be nil")
+		return nil, errors.New("serviceNameFilter can't be nil")
 	}
 	// Return early if any clients are mocked, caller should overrides all the clients when mocking.
 	if fetcher.ecs != nil || fetcher.ec2 != nil {
 		return &fetcher, nil
 	}
 	if opts.Cluster == "" {
-		return nil, fmt.Errorf("missing ECS cluster for task fetcher")
+		return nil, errors.New("missing ECS cluster for task fetcher")
 	}
 	if opts.Region == "" {
-		return nil, fmt.Errorf("missing aws region for task fetcher")
+		return nil, errors.New("missing aws region for task fetcher")
 	}
 	logger.Debug("Init TaskFetcher", zap.String("Region", opts.Region), zap.String("Cluster", opts.Cluster))
 	awsCfg := aws.NewConfig().WithRegion(opts.Region).WithCredentialsChainVerboseErrors(true)

@@ -6,6 +6,7 @@ package bearertokenauthextension // import "github.com/open-telemetry/openteleme
 import (
 	"context"
 	"crypto/subtle"
+	"errors"
 	"fmt"
 	"net/http"
 	"os"
@@ -90,7 +91,7 @@ func (b *BearerTokenAuth) Start(ctx context.Context, _ component.Host) error {
 	}
 
 	if b.shutdownCH != nil {
-		return fmt.Errorf("bearerToken file monitoring is already running")
+		return errors.New("bearerToken file monitoring is already running")
 	}
 
 	// Read file once
@@ -194,7 +195,7 @@ func (b *BearerTokenAuth) Shutdown(_ context.Context) error {
 	}
 
 	if b.shutdownCH == nil {
-		return fmt.Errorf("bearerToken file monitoring is not running")
+		return errors.New("bearerToken file monitoring is not running")
 	}
 	b.shutdownCH <- struct{}{}
 	close(b.shutdownCH)

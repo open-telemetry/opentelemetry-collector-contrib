@@ -34,12 +34,12 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.node.name-val", val.Str())
+				assert.Equal(t, "k8s.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.node.uid-val", val.Str())
+				assert.Equal(t, "k8s.node.uid-val", val.Str())
 			}
 		})
 	}
