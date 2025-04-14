@@ -85,12 +85,12 @@ var histogramBucketSamples = []struct {
 func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
-	startTime := time.Now()
+	startTime := w.clock.Now()
 
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
-		now := time.Now()
+		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
 			startTime = now.Add(-1 * time.Second)
 		}
