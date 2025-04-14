@@ -4,7 +4,7 @@
 package datasetexporter
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -74,7 +74,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("api_key is required"),
+			expected: errors.New("api_key is required"),
 		},
 		{
 			name: "missing dataset_url",
@@ -84,7 +84,7 @@ func TestConfigValidate(t *testing.T) {
 					MaxLifetime: bufferMaxLifetime,
 				},
 			},
-			expected: fmt.Errorf("dataset_url is required"),
+			expected: errors.New("dataset_url is required"),
 		},
 	}
 

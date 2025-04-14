@@ -70,13 +70,13 @@ type solaceTracesReceiver struct {
 func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consumer.Traces) (receiver.Traces, error) {
 	factory, err := newAMQPMessagingServiceFactory(config, set.Logger)
 	if err != nil {
-		set.Logger.Warn("Error validating messaging service configuration", zap.Any("error", err))
+		set.Logger.Warn("Error validating messaging service configuration", zap.Error(err))
 		return nil, err
 	}
 
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
-		set.Logger.Warn("Error registering metrics", zap.Any("error", err))
+		set.Logger.Warn("Error registering metrics", zap.Error(err))
 		return nil, err
 	}
 

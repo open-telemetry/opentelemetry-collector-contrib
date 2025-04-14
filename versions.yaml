@@ -6,7 +6,6 @@ module-sets:
     version: v0.123.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
