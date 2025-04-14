@@ -151,6 +151,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = metricsProcessor.ConsumeMetrics(context.Background(), inputMetrics)
 		require.NoError(t, err)
+		require.NoError(t, metricsProcessor.Shutdown(context.Background()))
 
 		actualMetrics := nextMetrics.AllMetrics()
 		require.Len(t, actualMetrics, 1)
@@ -170,6 +171,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = tracesProcessor.ConsumeTraces(context.Background(), inputTraces)
 		require.NoError(t, err)
+		require.NoError(t, tracesProcessor.Shutdown(context.Background()))
 
 		actualTraces := nextTraces.AllTraces()
 		require.Len(t, actualTraces, 1)
@@ -194,6 +196,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.Len(t, actualLogs, 1)
 		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
+		require.NoError(t, logsProcessor.Shutdown(context.Background()))
 	}
 }
 
