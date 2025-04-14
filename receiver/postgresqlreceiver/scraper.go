@@ -170,7 +170,7 @@ func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQu
 
 	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
 	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("v0.0.1")
+	scopedLog.Scope().SetVersion("0.0.1")
 
 	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
 	if err != nil {

@@ -50,4 +50,4 @@ resourceLogs:
               stringValue: sample
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver
-          version: v0.0.1
+          version: 0.0.1

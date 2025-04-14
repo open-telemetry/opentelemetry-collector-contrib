@@ -391,7 +391,7 @@ func TestScraperExcludeDatabase(t *testing.T) {
 //go:embed testdata/scraper/query-sample/expectedSql.sql
 var expectedScrapeSampleQuery string
 
-func TestScrapeLogs(t *testing.T) {
+func TestScrapeQuerySample(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Databases = []string{}
 	//nolint:staticcheck
