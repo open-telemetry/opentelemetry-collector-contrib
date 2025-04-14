@@ -37,7 +37,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("server.address")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "server.address-val", val.Str())
+				assert.Equal(t, "server.address-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("server.port")
 			assert.Equal(t, tt == "all_set", ok)
@@ -47,17 +47,17 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok = res.Attributes().Get("sqlserver.computer.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "sqlserver.computer.name-val", val.Str())
+				assert.Equal(t, "sqlserver.computer.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("sqlserver.database.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "sqlserver.database.name-val", val.Str())
+				assert.Equal(t, "sqlserver.database.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("sqlserver.instance.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "sqlserver.instance.name-val", val.Str())
+				assert.Equal(t, "sqlserver.instance.name-val", val.Str())
 			}
 		})
 	}

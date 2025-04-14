@@ -4,6 +4,7 @@
 package googlecloudpubsubexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/googlecloudpubsubexporter"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -82,7 +83,7 @@ func (config *WatermarkConfig) validate() error {
 
 func (cfg *OrderingConfig) validate() error {
 	if cfg.Enabled && cfg.FromResourceAttribute == "" {
-		return fmt.Errorf("'from_resource_attribute' is required if ordering is enabled")
+		return errors.New("'from_resource_attribute' is required if ordering is enabled")
 	}
 	return nil
 }

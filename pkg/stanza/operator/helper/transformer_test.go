@@ -5,7 +5,7 @@ package helper
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -97,7 +97,7 @@ func TestTransformerDropOnError(t *testing.T) {
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
-		return fmt.Errorf("Failure")
+		return errors.New("failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
@@ -109,15 +109,15 @@ func TestTransformerDropOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				{Key: "error", Type: zapcore.ErrorType, Interface: fmt.Errorf("Failure")},
-				zap.Any("action", "drop"),
-				zap.Any("entry.timestamp", now),
-				zap.Any(attrs.LogFilePath, "/test/file"),
+				zap.Error(errors.New("failure")),
+				zap.String("action", "drop"),
+				zap.Time("entry.timestamp", now),
+				zap.String(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
 	require.Equal(t, 1, logs.Len())
-	require.Equalf(t, expectedLogs, logs.AllUntimed(), "expected logs do not match")
+	require.Equal(t, expectedLogs, logs.AllUntimed())
 }
 
 func TestTransformerDropOnErrorQuiet(t *testing.T) {
@@ -147,7 +147,7 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
-		return fmt.Errorf("Failure")
+		return errors.New("Failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
@@ -159,10 +159,10 @@ func TestTransformerDropOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
-				zap.Any("action", "drop_quiet"),
-				zap.Any("entry.timestamp", now),
-				zap.Any(attrs.LogFilePath, "/test/file"),
+				{Key: "error", Type: 26, Interface: errors.New("Failure")},
+				zap.String("action", "drop_quiet"),
+				zap.Time("entry.timestamp", now),
+				zap.String(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
@@ -197,7 +197,7 @@ func TestTransformerSendOnError(t *testing.T) {
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
-		return fmt.Errorf("Failure")
+		return errors.New("Failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
@@ -209,10 +209,10 @@ func TestTransformerSendOnError(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.ErrorLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
-				zap.Any("action", "send"),
-				zap.Any("entry.timestamp", now),
-				zap.Any(attrs.LogFilePath, "/test/file"),
+				{Key: "error", Type: 26, Interface: errors.New("Failure")},
+				zap.String("action", "send"),
+				zap.Time("entry.timestamp", now),
+				zap.String(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}
@@ -247,7 +247,7 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 	testEntry.Timestamp = now
 	testEntry.AddAttribute(attrs.LogFilePath, "/test/file")
 	transform := func(_ *entry.Entry) error {
-		return fmt.Errorf("Failure")
+		return errors.New("Failure")
 	}
 
 	err := transformer.ProcessWith(ctx, testEntry, transform)
@@ -259,10 +259,10 @@ func TestTransformerSendOnErrorQuiet(t *testing.T) {
 		{
 			Entry: zapcore.Entry{Level: zap.DebugLevel, Message: "Failed to process entry"},
 			Context: []zapcore.Field{
-				{Key: "error", Type: 26, Interface: fmt.Errorf("Failure")},
-				zap.Any("action", "send_quiet"),
-				zap.Any("entry.timestamp", now),
-				zap.Any(attrs.LogFilePath, "/test/file"),
+				{Key: "error", Type: 26, Interface: errors.New("Failure")},
+				zap.String("action", "send_quiet"),
+				zap.Time("entry.timestamp", now),
+				zap.String(attrs.LogFilePath, "/test/file"),
 			},
 		},
 	}

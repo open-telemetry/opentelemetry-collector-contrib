@@ -4,7 +4,7 @@
 package mezmoexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/mezmoexporter"
 
 import (
-	"fmt"
+	"errors"
 	"net/url"
 	"time"
 
@@ -57,11 +57,11 @@ func (c *Config) Validate() error {
 
 	parsed, err = url.Parse(c.IngestURL)
 	if c.IngestURL == "" || err != nil {
-		return fmt.Errorf(`"ingest_url" must be a valid URL`)
+		return errors.New(`"ingest_url" must be a valid URL`)
 	}
 
 	if parsed.Host == "" {
-		return fmt.Errorf(`"ingest_url" must contain a valid host`)
+		return errors.New(`"ingest_url" must contain a valid host`)
 	}
 
 	return nil

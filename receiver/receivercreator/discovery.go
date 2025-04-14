@@ -121,7 +121,7 @@ func (builder *k8sHintsBuilder) createScraper(
 	defaultEndpoint := getStringEnv(env, endpointConfigKey)
 	userConfMap, err := getScraperConfFromAnnotations(annotations, defaultEndpoint, fmt.Sprint(port), builder.logger)
 	if err != nil {
-		return nil, fmt.Errorf("could not create receiver configuration: %v", zap.Any("err", err))
+		return nil, fmt.Errorf("could not create receiver configuration: %v", zap.Error(err))
 	}
 
 	recTemplate, err := newReceiverTemplate(fmt.Sprintf("%v/%v_%v", subreceiverKey, pod.UID, port), userConfMap)
