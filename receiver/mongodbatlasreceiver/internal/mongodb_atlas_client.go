@@ -9,6 +9,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"net/url"
 	"strconv"
 	"sync"
 	"time"
@@ -142,15 +143,32 @@ func NewMongoDBAtlasClient(
 	tc := &http.Client{Transport: roundTripper}
 
 	if baseURL == "" {
-		baseURL = "https://cloud.mongodb.com"
+		baseURL = mongodbatlas.CloudURL
 	}
 
-	log.Debug("Creating MongoDB Atlas client",
-		zap.String("baseURL", baseURL))
+	if !isValidURL(baseURL) {
+		log.Error("Invalid baseURL provided, using default:", zap.String("providedURL", baseURL), zap.String("defaultURL", mongodbatlas.CloudURL))
+		baseURL = mongodbatlas.CloudURL // Fallback to the default if invalid
+	}
 
 	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL(baseURL))
 	if err != nil {
-		log.Info("failed to create client", zap.Error(err))
+		log.Error("Failed to create client", zap.Error(err))
+	}
+
+	log.Info("Testing MongoDB Atlas API connection",
+		zap.String("baseURL", baseURL))
+
+	// Test the connection by making a simple API call (list organizations)
+	_, _, err = client.Organizations.List(context.Background(), &mongodbatlas.OrganizationsListOptions{})
+	if err != nil {
+		log.Error("Failed to connect to MongoDB Atlas API. Possible invalid base URL or credentials:",
+			zap.String("baseURL", baseURL),
+			zap.Error(err), // Include the underlying error for more details
+		)
+	} else {
+		log.Info("Successfully connected to MongoDB Atlas API",
+			zap.String("baseURL", baseURL))
 	}
 
 	return &MongoDBAtlasClient{
@@ -159,6 +177,18 @@ func NewMongoDBAtlasClient(
 		defaultTransporter,
 		roundTripper,
 	}
+}
+
+// isValidURL checks if a string is a valid URL.
+func isValidURL(str string) bool {
+	u, err := url.ParseRequestURI(str)
+	if err != nil {
+		return false
+	}
+	if u.Scheme == "" || u.Host == "" {
+		return false
+	}
+	return true
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {
