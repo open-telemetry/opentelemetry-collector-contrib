@@ -8,8 +8,10 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"os"
+	"sync"
 
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -42,6 +44,7 @@ type Reader struct {
 	file                   *os.File
 	reader                 io.Reader
 	fingerprintSize        int
+	bufPool                *sync.Pool
 	initialBufferSize      int
 	maxLogSize             int
 	headerSplitFunc        bufio.SplitFunc
@@ -116,7 +119,9 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 }
 
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
-	s := scanner.New(r, r.maxLogSize, r.initialBufferSize, r.Offset, r.headerSplitFunc)
+	bufPtr := r.getBufPtrFromPool()
+	defer r.bufPool.Put(bufPtr)
+	s := scanner.New(r, r.maxLogSize, *bufPtr, r.Offset, r.headerSplitFunc)
 
 	// Read the tokens from the file until no more header tokens are found or the end of file is reached.
 	for {
@@ -176,15 +181,19 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 }
 
 func (r *Reader) readContents(ctx context.Context) {
-	// Create the scanner to read the contents of the file.
-	bufferSize := r.initialBufferSize
-	if r.TokenLenState.MinimumLength > bufferSize {
+	var buf []byte
+	fmt.Println(r.fileName)
+	if r.TokenLenState.MinimumLength <= r.initialBufferSize {
+		bufPtr := r.getBufPtrFromPool()
+		buf = *bufPtr
+		defer r.bufPool.Put(bufPtr)
+	} else {
 		// If we previously saw a potential token larger than the default buffer,
-		// size the buffer to be at least one byte larger so we can see if there's more data
-		bufferSize = r.TokenLenState.MinimumLength + 1
+		// size the buffer to be at least one byte larger so we can see if there's more data.
+		// Usually, expect this to be a rare event so that we don't bother pooling this special buffer size.
+		buf = make([]byte, 0, r.TokenLenState.MinimumLength+1)
 	}
-
-	s := scanner.New(r, r.maxLogSize, bufferSize, r.Offset, r.contentSplitFunc)
+	s := scanner.New(r, r.maxLogSize, buf, r.Offset, r.contentSplitFunc)
 
 	tokenBodies := make([][]byte, r.maxBatchSize)
 	numTokensBatched := 0
@@ -318,4 +327,13 @@ func (r *Reader) updateFingerprint() {
 		return // fingerprint tampered, likely due to truncation
 	}
 	r.Fingerprint = refreshedFingerprint
+}
+
+func (r *Reader) getBufPtrFromPool() *[]byte {
+	bufP := r.bufPool.Get()
+	if bufP == nil {
+		buf := make([]byte, 0, r.initialBufferSize)
+		return &buf
+	}
+	return bufP.(*[]byte)
 }

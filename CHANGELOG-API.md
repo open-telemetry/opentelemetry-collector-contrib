@@ -7,6 +7,25 @@ If you are looking for user-facing changes, check out [CHANGELOG.md](./CHANGELOG
 
 <!-- next version -->
 
+## v0.124.0
+
+### 🛑 Breaking changes 🛑
+
+- `extension/headerssetter`: Change `DefaultValue` to use `configopaque.String` type. (#39127)
+- `datadogexporter`: Remove deprecated exporter configs. The exporter now uses pkg/datadog/config (#39104)
+  No impact to end users
+- `pkg/ottl`: Remove experimental transform context option `WithCache` from all OTTL contexts. (#39338)
+
+### 💡 Enhancements 💡
+
+- `pkg/pdatatest`: Introduce IgnoreExemplars, IgnoreExemplarSlice and ChangeDatapointAttributeValue to CompareMetricsOption (#39004)
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/kubeletstats`: support user defined CA path for service account using the configtls option `ca_file` (#39291)
+
+<!-- previous-version -->
+
 ## v0.123.0
 
 ### 🛑 Breaking changes 🛑
