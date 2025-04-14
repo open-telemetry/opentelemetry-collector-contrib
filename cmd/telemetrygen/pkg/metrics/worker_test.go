@@ -486,18 +486,20 @@ func TestTemporalityStartTimes(t *testing.T) {
 			name:        "Cumulative temporality keeps same start timestamp",
 			temporality: AggregationTemporality(metricdata.CumulativeTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
-				assert.Equal(t, firstTime, secondTime,
-					"cumulative metrics should have same start time")
+				if !assert.Equal(t, firstTime, secondTime,
+					"cumulative metrics should have same start time") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
 			},
 		},
 		{
 			name:        "Delta temporality has different start timestamps",
 			temporality: AggregationTemporality(metricdata.DeltaTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
-				diff := secondTime.Sub(firstTime)
-				t.Logf("Time difference: %v", diff)
-				assert.True(t, secondTime.After(firstTime),
-					"delta metrics should have increasing start times")
+				if !assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
 			},
 		},
 	}
@@ -539,18 +541,17 @@ func TestTemporalityStartTimes(t *testing.T) {
 			firstStartTime := firstMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
 			secondStartTime := secondMetric.Data.(metricdata.Sum[int64]).DataPoints[0].StartTime
 
-			// Add debug logging before the check
-			t.Logf("Timestamp debug logging:\n"+
-				"First start time:  %s\n"+
-				"Second start time: %s\n"+
-				"Difference: %v\n"+
-				"Temporality: %v",
-				firstStartTime.String(),
-				secondStartTime.String(),
-				secondStartTime.Sub(firstStartTime),
-				tt.temporality)
-
 			tt.checkTimes(t, firstStartTime, secondStartTime)
 		})
 	}
+}
+
+func logTimestampDiff(t *testing.T, firstTime, secondTime time.Time) {
+	t.Logf("Timestamp debug logging:\n"+
+		"First start time:  %s\n"+
+		"Second start time: %s\n"+
+		"Difference: %v",
+		firstTime.String(),
+		secondTime.String(),
+		secondTime.Sub(firstTime))
 }
