@@ -11,8 +11,8 @@ require (
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250414090001-28ca163a928b
+	go.opentelemetry.io/collector/pdata v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0

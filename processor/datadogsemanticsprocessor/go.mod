@@ -6,14 +6,14 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.2
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.26.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.29.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/component v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/component/componentstatus v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/confmap v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/consumer v1.29.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/confmap v1.29.1-0.20250414090001-28ca163a928b
+	go.opentelemetry.io/collector/consumer v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/processor v1.29.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/pdata v1.29.1-0.20250414090001-28ca163a928b
+	go.opentelemetry.io/collector/processor v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/processor/processorhelper v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/processor/processortest v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411074447-4fb7c24ebecc
@@ -68,7 +68,7 @@ require (
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250414090001-28ca163a928b // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
 	go.opentelemetry.io/collector/pdata/testdata v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
