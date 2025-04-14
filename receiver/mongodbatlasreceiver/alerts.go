@@ -121,7 +121,12 @@ func newAlertsReceiver(params rcvr.Settings, baseConfig *Config, consumer consum
 	}
 
 	if recv.mode == alertModePoll {
-		recv.client = internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		client, err := internal.NewMongoDBAtlasClient(recv.baseURL, recv.publicKey, recv.privateKey, recv.backoffConfig, recv.telemetrySettings.Logger)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create MongoDB Atlas client for alerts receiver: %w", err)
+		}
+
+		recv.client = client
 		return recv, nil
 	}
 	s := &http.Server{
