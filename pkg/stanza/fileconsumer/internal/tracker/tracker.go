@@ -4,8 +4,6 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
-	"context"
-
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -44,7 +42,7 @@ type fileTracker struct {
 	archive archive.Archive
 }
 
-func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles int, archive archive.Archive) Tracker {
+func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, archive archive.Archive) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)

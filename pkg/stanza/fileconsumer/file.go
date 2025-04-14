@@ -283,7 +283,7 @@ func (m *Manager) instantiateTrackerAndArchive(ctx context.Context, persister op
 		t = tracker.NewNoStateTracker(m.set, m.maxBatchFiles)
 	} else {
 		a = archive.NewArchive(ctx, m.set.Logger.Named("archive"), m.pollsToArchive, persister)
-		t = tracker.NewFileTracker(ctx, m.set, m.maxBatchFiles, a)
+		t = tracker.NewFileTracker(m.set, m.maxBatchFiles, a)
 	}
 	m.tracker = t
 	m.archive = a

@@ -38,9 +38,8 @@ func NewArchive(ctx context.Context, logger *zap.Logger, pollsToArchive int, per
 		}
 		a.restoreArchiveIndex(ctx)
 		return a
-	} else {
-		return &nopArchive{}
 	}
+	return &nopArchive{}
 }
 
 type archive struct {
@@ -212,10 +211,6 @@ func archiveKey(i int) string {
 	return fmt.Sprintf("knownFiles%d", i)
 }
 
-func mod(x, y int) int {
-	return (x + y) % y
-}
-
 type nopArchive struct{}
 
 func (*nopArchive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
@@ -223,5 +218,5 @@ func (*nopArchive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata 
 	return make([]*reader.Metadata, len(fps))
 }
 
-func (*nopArchive) WriteFiles(metadata *fileset.Fileset[*reader.Metadata]) {
+func (*nopArchive) WriteFiles(*fileset.Fileset[*reader.Metadata]) {
 }
