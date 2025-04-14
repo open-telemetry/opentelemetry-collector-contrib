@@ -215,14 +215,6 @@ golint:
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
 
-.PHONY: gotestifylint
-gotestifylint:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint"
-
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint-fix"
-
 .PHONY: goporto
 goporto: $(PORTO)
 	$(PORTO) -w --include-internal --skip-dirs "^cmd$$" ./
