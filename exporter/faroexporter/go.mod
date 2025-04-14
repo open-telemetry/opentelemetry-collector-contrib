@@ -4,7 +4,7 @@ go 1.23.3
 
 require (
 	github.com/grafana/faro/pkg/go v0.0.0-20250314155512-06a06da3b8bc
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.123.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro v0.124.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
