@@ -7,7 +7,9 @@ status:
     alpha: [logs]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [jpkrohling, jmacd]
+    active: [jmacd]
+    emeritus: [jpkrohling]
+    seeking_new: true
 
 tests:
   config:

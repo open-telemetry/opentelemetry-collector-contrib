@@ -1475,101 +1475,224 @@ func TestExporterMetrics(t *testing.T) {
 }
 
 func TestExporterMetrics_Grouping(t *testing.T) {
-	addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
-		fooMetric := metricSlice.AppendEmpty()
-		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyGauge().DataPoints()
-		fooDp := fooDps.AppendEmpty()
-		fooDp.SetIntValue(1)
-		fooOtherDp := fooDps.AppendEmpty()
-		fillAttributeMap(fooOtherDp.Attributes(), map[string]any{
-			"dp.attribute": "dp.attribute.value",
-		})
-		fooOtherDp.SetDoubleValue(1.0)
+	{
+		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
+			fooMetric := metricSlice.AppendEmpty()
+			fooMetric.SetName("metric.foo")
+			fooDps := fooMetric.SetEmptyGauge().DataPoints()
+			fooDp := fooDps.AppendEmpty()
+			fooDp.SetIntValue(1)
+			fooOtherDp := fooDps.AppendEmpty()
+			fillAttributeMap(fooOtherDp.Attributes(), map[string]any{
+				"dp.attribute": "dp.attribute.value",
+			})
+			fooOtherDp.SetDoubleValue(1.0)
 
-		barMetric := metricSlice.AppendEmpty()
-		barMetric.SetName("metric.bar")
-		barDps := barMetric.SetEmptyGauge().DataPoints()
-		barDp := barDps.AppendEmpty() // dp without attribute
-		barDp.SetDoubleValue(1.0)
-		barOtherDp := barDps.AppendEmpty()
-		fillAttributeMap(barOtherDp.Attributes(), map[string]any{
-			"dp.attribute": "dp.attribute.value",
-		})
-		barOtherDp.SetDoubleValue(1.0)
-		barOtherIndexDp := barDps.AppendEmpty()
-		fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-			"dp.attribute":                    "dp.attribute.value",
-			elasticsearch.DataStreamNamespace: "bar",
-		})
-		barOtherIndexDp.SetDoubleValue(1.0)
+			barMetric := metricSlice.AppendEmpty()
+			barMetric.SetName("metric.bar")
+			barDps := barMetric.SetEmptyGauge().DataPoints()
+			barDp := barDps.AppendEmpty() // dp without attribute
+			barDp.SetDoubleValue(1.0)
+			barOtherDp := barDps.AppendEmpty()
+			fillAttributeMap(barOtherDp.Attributes(), map[string]any{
+				"dp.attribute": "dp.attribute.value",
+			})
+			barOtherDp.SetDoubleValue(1.0)
+			barOtherIndexDp := barDps.AppendEmpty()
+			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
+				"dp.attribute":                    "dp.attribute.value",
+				elasticsearch.DataStreamNamespace: "bar",
+			})
+			barOtherIndexDp.SetDoubleValue(1.0)
 
-		bazMetric := metricSlice.AppendEmpty()
-		bazMetric.SetName("metric.baz")
-		bazDps := bazMetric.SetEmptyGauge().DataPoints()
-		bazDp := bazDps.AppendEmpty()
-		bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
-		bazDp.SetDoubleValue(1.0)
+			bazMetric := metricSlice.AppendEmpty()
+			bazMetric.SetName("metric.baz")
+			bazDps := bazMetric.SetEmptyGauge().DataPoints()
+			bazDp := bazDps.AppendEmpty()
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
+			bazDp.SetDoubleValue(1.0)
+		}
+
+		metrics := pmetric.NewMetrics()
+		resourceA := metrics.ResourceMetrics().AppendEmpty()
+		resourceA.SetSchemaUrl("http://example.com/resource_schema")
+		fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
+			elasticsearch.DataStreamNamespace: "resource.namespace",
+		})
+		scopeAA := resourceA.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeAA.Metrics())
+
+		scopeAB := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
+			elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
+		})
+		scopeAB.SetSchemaUrl("http://example.com/scope_schema")
+		addToMetricSlice(scopeAB.Metrics())
+
+		scopeAC := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
+			// ecs: scope attributes are ignored, and duplicates are dropped silently.
+			// otel: scope attributes are dimensions and should result in a separate group.
+			"some.scope.attribute": "scope.ac",
+		})
+		addToMetricSlice(scopeAC.Metrics())
+
+		resourceB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeBA.Metrics())
+
+		scopeBB := resourceB.ScopeMetrics().AppendEmpty()
+		scopeBB.Scope().SetName("scope.bb")
+		addToMetricSlice(scopeBB.Metrics())
+
+		// identical resource
+		resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
+
+		assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
+			var sum int
+			for _, v := range wantDocsPerIndex {
+				sum += v
+			}
+			rec.WaitItems(sum)
+
+			actualDocsPerIndex := make(map[string]int)
+			for _, item := range rec.Items() {
+				idx := gjson.GetBytes(item.Action, "create._index")
+				actualDocsPerIndex[idx.String()]++
+			}
+			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
+		}
+
+		t.Run("ecs", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "ecs"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic-bar":                 2, // AA, BA
+				"metrics-generic-resource.namespace":  3,
+				"metrics-scope.ab-bar":                1,
+				"metrics-scope.ab-resource.namespace": 3,
+				"metrics-generic-default":             3,
+			}, rec)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "otel"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
+				"metrics-generic.otel-resource.namespace":  6, // AA, AC
+				"metrics-scope.ab.otel-bar":                1, // AB->bar
+				"metrics-scope.ab.otel-resource.namespace": 3, // AB
+				"metrics-generic.otel-default":             6, // BA, BB
+			}, rec)
+
+			type resourceScope struct {
+				resource attribute.Distinct
+				scope    attribute.Distinct
+			}
+
+			resourceScopeGroupings := make(map[resourceScope]int)
+			for _, item := range rec.Items() {
+				resource := gjson.GetBytes(item.Document, "resource")
+				require.True(t, resource.Exists())
+				scope := gjson.GetBytes(item.Document, "scope")
+				require.True(t, scope.Exists())
+				rs := resourceScope{
+					resource: mapToDistinct(resource.Value().(map[string]any)),
+					scope:    mapToDistinct(scope.Value().(map[string]any)),
+				}
+				resourceScopeGroupings[rs]++
+			}
+
+			assert.Equal(t, map[resourceScope]int{
+				{
+					// AA
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(nil),
+				}: 4,
+				{
+					// AB
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/scope_schema",
+					}),
+				}: 4,
+				{
+					// AC
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"some.scope.attribute": "scope.ac"},
+					}),
+				}: 4,
+				{
+					// BA
+					resource: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"my.resource": "resource.b"},
+					}),
+					scope: mapToDistinct(nil),
+				}: 4,
+				{
+					// BB
+					resource: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"my.resource": "resource.b"},
+					}),
+					scope: mapToDistinct(map[string]any{
+						"name": "scope.bb",
+					}),
+				}: 4,
+			}, resourceScopeGroupings)
+		})
 	}
 
-	metrics := pmetric.NewMetrics()
-	resourceA := metrics.ResourceMetrics().AppendEmpty()
-	resourceA.SetSchemaUrl("http://example.com/resource_schema")
-	fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
-		elasticsearch.DataStreamNamespace: "resource.namespace",
-	})
-	scopeAA := resourceA.ScopeMetrics().AppendEmpty()
-	addToMetricSlice(scopeAA.Metrics())
-
-	scopeAB := resourceA.ScopeMetrics().AppendEmpty()
-	fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
-		elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
-	})
-	scopeAB.SetSchemaUrl("http://example.com/scope_schema")
-	addToMetricSlice(scopeAB.Metrics())
-
-	scopeAC := resourceA.ScopeMetrics().AppendEmpty()
-	fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
-		// ecs: scope attributes are ignored, and duplicates are dropped silently.
-		// otel: scope attributes are dimensions and should result in a separate group.
-		"some.scope.attribute": "scope.ac",
-	})
-	addToMetricSlice(scopeAC.Metrics())
-
-	resourceB := metrics.ResourceMetrics().AppendEmpty()
-	fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
-		"my.resource": "resource.b",
-	})
-	scopeBA := resourceB.ScopeMetrics().AppendEmpty()
-	addToMetricSlice(scopeBA.Metrics())
-
-	scopeBB := resourceB.ScopeMetrics().AppendEmpty()
-	scopeBB.Scope().SetName("scope.bb")
-	addToMetricSlice(scopeBB.Metrics())
-
-	// identical resource
-	resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
-	fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
-		"my.resource": "resource.b",
-	})
-	addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
-
-	assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
-		var sum int
-		for _, v := range wantDocsPerIndex {
-			sum += v
-		}
-		rec.WaitItems(sum)
-
-		actualDocsPerIndex := make(map[string]int)
-		for _, item := range rec.Items() {
-			idx := gjson.GetBytes(item.Action, "create._index")
-			actualDocsPerIndex[idx.String()]++
-		}
-		assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
+	type kv struct {
+		k, v string
 	}
 
-	t.Run("ecs", func(t *testing.T) {
+	// addMetric adds a new metric with name `name` and data point attributes `dpAttrs` to MetricSlice `slice`.
+	addMetric := func(slice pmetric.MetricSlice, name string, dpAttrs []kv) {
+		metric := slice.AppendEmpty()
+		metric.SetName(name)
+		dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		for _, kv := range dpAttrs {
+			dp.Attributes().PutStr(kv.k, kv.v)
+		}
+	}
+
+	t.Run("ecs dp attribute overwrites resource attribute", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1580,99 +1703,95 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 			cfg.Mapping.Mode = "ecs"
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		metrics := pmetric.NewMetrics()
+		resource := metrics.ResourceMetrics().AppendEmpty()
+		resource.Resource().Attributes().PutStr("a", "b")
+		scope := resource.ScopeMetrics().AppendEmpty()
 
-		assertDocsInIndices(t, map[string]int{
-			"metrics-generic-bar":                 2, // AA, BA
-			"metrics-generic-resource.namespace":  3,
-			"metrics-scope.ab-bar":                1,
-			"metrics-scope.ab-resource.namespace": 3,
-			"metrics-generic-default":             3,
-		}, rec)
+		// a=c overwrites a=b in resource attribute
+		addMetric(scope.Metrics(), "foo", []kv{{k: "a", v: "c"}})
+
+		// no attribute, should still serialize as a=b
+		addMetric(scope.Metrics(), "bar", nil)
+
+		// a=b overwrites a=b in resource attribute
+		addMetric(scope.Metrics(), "baz", []kv{{k: "a", v: "b"}})
+
+		mustSendMetrics(t, exporter, metrics)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
+			},
+		}
+
+		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("otel", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("unordered attributes", func(t *testing.T) {
+		// Test equal attributes but in a different order. Metrics should be grouped together.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
 
-		mustSendMetrics(t, exporter, metrics)
+				metrics := pmetric.NewMetrics()
+				resourceA := metrics.ResourceMetrics().AppendEmpty()
+				resourceA.Resource().Attributes().PutStr("a", "a")
+				resourceA.Resource().Attributes().PutStr("b", "b")
+				scopeA := resourceA.ScopeMetrics().AppendEmpty()
+				scopeA.Scope().Attributes().PutStr("c", "c")
+				scopeA.Scope().Attributes().PutStr("d", "d")
 
-		assertDocsInIndices(t, map[string]int{
-			"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
-			"metrics-generic.otel-resource.namespace":  6, // AA, AC
-			"metrics-scope.ab.otel-bar":                1, // AB->bar
-			"metrics-scope.ab.otel-resource.namespace": 3, // AB
-			"metrics-generic.otel-default":             6, // BA, BB
-		}, rec)
+				addMetric(scopeA.Metrics(), "a_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
 
-		type resourceScope struct {
-			resource attribute.Distinct
-			scope    attribute.Distinct
+				addMetric(scopeA.Metrics(), "a_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				resourceB := metrics.ResourceMetrics().AppendEmpty()
+				resourceB.Resource().Attributes().PutStr("b", "b")
+				resourceB.Resource().Attributes().PutStr("a", "a")
+				scopeB := resourceB.ScopeMetrics().AppendEmpty()
+				scopeB.Scope().Attributes().PutStr("d", "d")
+				scopeB.Scope().Attributes().PutStr("c", "c")
+
+				addMetric(scopeB.Metrics(), "b_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
+
+				addMetric(scopeB.Metrics(), "b_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				mustSendMetrics(t, exporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Len(t, rec.Items(), 1)
+				// Sanity check that all metrics are included
+				assert.Contains(t, string(rec.Items()[0].Document), "a_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "a_bar")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_bar")
+			})
 		}
-
-		resourceScopeGroupings := make(map[resourceScope]int)
-		for _, item := range rec.Items() {
-			resource := gjson.GetBytes(item.Document, "resource")
-			require.True(t, resource.Exists())
-			scope := gjson.GetBytes(item.Document, "scope")
-			require.True(t, scope.Exists())
-			rs := resourceScope{
-				resource: mapToDistinct(resource.Value().(map[string]any)),
-				scope:    mapToDistinct(scope.Value().(map[string]any)),
-			}
-			resourceScopeGroupings[rs]++
-		}
-
-		assert.Equal(t, map[resourceScope]int{
-			{
-				// AA
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(nil),
-			}: 4,
-			{
-				// AB
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/scope_schema",
-				}),
-			}: 4,
-			{
-				// AC
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"some.scope.attribute": "scope.ac"},
-				}),
-			}: 4,
-			{
-				// BA
-				resource: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"my.resource": "resource.b"},
-				}),
-				scope: mapToDistinct(nil),
-			}: 4,
-			{
-				// BB
-				resource: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"my.resource": "resource.b"},
-				}),
-				scope: mapToDistinct(map[string]any{
-					"name": "scope.bb",
-				}),
-			}: 4,
-		}, resourceScopeGroupings)
 	})
 }
 

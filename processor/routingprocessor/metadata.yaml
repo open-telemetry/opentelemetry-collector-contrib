@@ -16,8 +16,7 @@ status:
       migration: Use routing connector (https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36616)
   distributions: [contrib]
   codeowners:
-    active: [jpkrohling]
-    seeking_new: true
+    emeritus: [jpkrohling]
 
 tests:
   config:

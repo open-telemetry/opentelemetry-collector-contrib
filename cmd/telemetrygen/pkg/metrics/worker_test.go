@@ -5,7 +5,6 @@ package metrics
 
 import (
 	"context"
-	"runtime"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -478,9 +477,6 @@ func configWithMultipleAttributes(metric MetricType, qty int) *Config {
 }
 
 func TestTemporalityStartTimes(t *testing.T) {
-	if runtime.GOOS == "windows" {
-		t.Skip("http://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39219")
-	}
 	tests := []struct {
 		name        string
 		temporality AggregationTemporality
@@ -490,16 +486,20 @@ func TestTemporalityStartTimes(t *testing.T) {
 			name:        "Cumulative temporality keeps same start timestamp",
 			temporality: AggregationTemporality(metricdata.CumulativeTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
-				assert.Equal(t, firstTime, secondTime,
-					"cumulative metrics should have same start time")
+				if !assert.Equal(t, firstTime, secondTime,
+					"cumulative metrics should have same start time") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
 			},
 		},
 		{
 			name:        "Delta temporality has different start timestamps",
 			temporality: AggregationTemporality(metricdata.DeltaTemporality),
 			checkTimes: func(t *testing.T, firstTime, secondTime time.Time) {
-				assert.True(t, secondTime.After(firstTime),
-					"delta metrics should have increasing start times")
+				if !assert.True(t, secondTime.After(firstTime),
+					"delta metrics should have increasing start times") {
+					logTimestampDiff(t, firstTime, secondTime)
+				}
 			},
 		},
 	}
@@ -507,6 +507,10 @@ func TestTemporalityStartTimes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &mockExporter{}
+			clock := &mockClock{
+				now: time.Now(),
+			}
+
 			running := &atomic.Bool{}
 			running.Store(true)
 
@@ -522,6 +526,7 @@ func TestTemporalityStartTimes(t *testing.T) {
 				limitPerSecond:         rate.Inf,
 				logger:                 zap.NewNop(),
 				wg:                     wg,
+				clock:                  clock,
 			}
 
 			w.simulateMetrics(resource.Default(), m, nil)
@@ -539,4 +544,14 @@ func TestTemporalityStartTimes(t *testing.T) {
 			tt.checkTimes(t, firstStartTime, secondStartTime)
 		})
 	}
+}
+
+func logTimestampDiff(t *testing.T, firstTime, secondTime time.Time) {
+	t.Logf("Timestamp debug logging:\n"+
+		"First start time:  %s\n"+
+		"Second start time: %s\n"+
+		"Difference: %v",
+		firstTime.String(),
+		secondTime.String(),
+		secondTime.Sub(firstTime))
 }
