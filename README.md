@@ -75,6 +75,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
