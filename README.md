@@ -114,7 +114,6 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
@@ -122,6 +121,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 Emeritus Maintainers
 
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).
