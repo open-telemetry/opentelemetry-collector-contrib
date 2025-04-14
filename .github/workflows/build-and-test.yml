@@ -303,7 +303,7 @@ jobs:
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
-        if: startsWith( matrix.go-version, '~1.23' )  && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
