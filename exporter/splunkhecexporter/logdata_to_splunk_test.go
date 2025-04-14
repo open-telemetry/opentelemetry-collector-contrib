@@ -516,7 +516,6 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
 				logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
 				logRecord.Attributes().PutStr("custom", "custom")
-				//logRecord.SetTimestamp(ts)
 				logRecord.SetObservedTimestamp(ts)
 				return logRecord
 			},
