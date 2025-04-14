@@ -197,7 +197,6 @@ const (
 	TypePodEFA          = "PodEFA"
 	TypeNodeEFA         = "NodeEFA"
 	TypeHyperPodNode    = "HyperPodNode"
-	TypeNodeNVME        = "NodeNVME"
 
 	// unit
 	UnitBytes       = "Bytes"
