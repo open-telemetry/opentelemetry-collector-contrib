@@ -115,3 +115,14 @@ func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon
 
 	return nil
 }
+
+func (g *geoIPProcessor) shutdown(ctx context.Context) error {
+	for _, geoProvider := range g.providers {
+		err := geoProvider.Close(ctx)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}

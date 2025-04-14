@@ -112,6 +112,7 @@ func TestProviderLocation(t *testing.T) {
 			}
 
 			assert.True(t, tt.expectedAttributes.Equals(&actualAttributes))
+			assert.NoError(t, provider.Close(context.Background()))
 		})
 	}
 }

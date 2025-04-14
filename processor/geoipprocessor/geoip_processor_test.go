@@ -40,7 +40,6 @@ type providerMock struct {
 
 var (
 	_ provider.GeoIPProvider        = (*providerMock)(nil)
-	_ provider.GeoIPProvider        = (*providerMock)(nil)
 	_ provider.GeoIPProviderFactory = (*providerFactoryMock)(nil)
 )
 
@@ -58,6 +57,10 @@ func (fm *providerFactoryMock) CreateGeoIPProvider(ctx context.Context, settings
 
 func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set, error) {
 	return pm.LocationF(ctx, ip)
+}
+
+func (pm *providerMock) Close(context.Context) error {
+	return nil
 }
 
 var baseMockProvider = providerMock{
