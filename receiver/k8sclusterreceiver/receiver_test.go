@@ -54,7 +54,7 @@ func TestReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("foo"))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", component.MustNewID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -103,7 +103,7 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 	tt := componenttest.NewTelemetry()
-	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("k8s_leader_elector"))
+	kr := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", component.MustNewID("k8s_leader_elector"))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -139,7 +139,7 @@ func TestNamespacedReceiver(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test", createComponentWithID("foo"))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "test", component.MustNewID("foo"))
 
 	// Setup k8s resources.
 	numPods := 2
@@ -187,7 +187,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 	client := newFakeClientWithAllResources()
 
 	// Mock initial cache sync timing out, using a small timeout.
-	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "", createComponentWithID("foo"))
+	r := setupReceiver(client, nil, consumertest.NewNop(), nil, 1*time.Millisecond, tt, "", component.MustNewID("foo"))
 
 	createPods(t, client, 1)
 
@@ -209,7 +209,7 @@ func TestReceiverWithManyResources(t *testing.T) {
 	osQuotaClient := fakeQuota.NewSimpleClientset()
 	sink := new(consumertest.MetricsSink)
 
-	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", createComponentWithID("foo"))
+	r := setupReceiver(client, osQuotaClient, sink, nil, 10*time.Second, tt, "", component.MustNewID("foo"))
 
 	numPods := 1000
 	numQuotas := 2
@@ -250,7 +250,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 
 	logsConsumer := new(consumertest.LogsSink)
 
-	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "", createComponentWithID("foo"))
+	r := setupReceiver(client, nil, metricsConsumer, logsConsumer, 10*time.Second, tt, "", component.MustNewID("foo"))
 	r.config.MetadataExporters = []string{"nop/withmetadata"}
 
 	// Setup k8s resources.
@@ -291,10 +291,6 @@ func TestReceiverWithMetadata(t *testing.T) {
 	require.NoError(t, r.Shutdown(ctx))
 }
 
-func createComponentWithID(id string) component.ID {
-	return component.MustNewID(id)
-}
-
 func getUpdatedPod(pod *corev1.Pod) any {
 	return &corev1.Pod{
 		ObjectMeta: v1.ObjectMeta{
@@ -332,7 +328,7 @@ func setupReceiver(
 	}
 
 	if leaderElector.Type().String() == "k8s_leader_elector" {
-		config.K8sLeaderElector = leaderElector
+		config.K8sLeaderElector = &leaderElector
 	}
 
 	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)

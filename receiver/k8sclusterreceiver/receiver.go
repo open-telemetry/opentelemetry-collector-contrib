@@ -104,14 +104,14 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 	ctx, kr.cancel = context.WithCancel(ctx)
 
 	// if extension is defined start with k8s leader elector
-	if kr.config.K8sLeaderElector.Type().String() != "" {
+	if kr.config.K8sLeaderElector != nil {
 		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election")
 		extList := host.GetExtensions()
 		if extList == nil {
 			return errors.New("extension list is empty")
 		}
 
-		ext := extList[kr.config.K8sLeaderElector]
+		ext := extList[*kr.config.K8sLeaderElector]
 		if ext == nil {
 			return errors.New("extension k8s leader elector not found")
 		}
