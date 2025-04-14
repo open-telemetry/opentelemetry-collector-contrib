@@ -29,14 +29,14 @@ jobs:
       loadtest_matrix: ${{ steps.splitloadtest.outputs.loadtest_matrix }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
         with:
-          go-version: "1.23.8"
+          go-version: "1.24.2"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: |
             ~/go/bin
@@ -52,7 +52,7 @@ jobs:
       - run: make genoteltestbedcol
       - run: make oteltestbedcol
       - name: Upload Testbed Binaries
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: testbed-binaries
           path: ./bin/*
@@ -68,14 +68,14 @@ jobs:
       matrix: ${{ fromJson(needs.setup-environment.outputs.loadtest_matrix) }}
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
+      - uses: actions/setup-go@0aaccfd150d50ccaeb58ebd88d36e91967a5f35b # v5
         with:
-          go-version: "1.23.8"
+          go-version: "1.24.2"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        uses: actions/cache@5a3ec84eff668545956fd18022155c47e93e2684 # v4
         with:
           path: |
             ~/go/bin
@@ -90,7 +90,7 @@ jobs:
         run: make install-tools
       - run: mkdir -p results && touch results/TESTRESULTS.md
       - name: Download Testbed Binaries
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+        uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4
         with:
           name: testbed-binaries
           path: bin/
@@ -110,13 +110,13 @@ jobs:
       - name: Upload Test Results
         if: ${{ failure() || success() }}
         continue-on-error: true
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: test-result-archive-${{steps.filename.outputs.name}}
           path: ./*.tar
       - run: cp testbed/tests/results/benchmarks.json testbed/tests/results/${{steps.filename.outputs.name}}.json
       - name: Upload benchmarks.json
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
           name: benchmark-results-${{steps.filename.outputs.name}}
           path: testbed/tests/results/${{steps.filename.outputs.name}}.json
@@ -132,7 +132,7 @@ jobs:
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4
+      - uses: actions/download-artifact@95815c38cf2ff2164869cbab79da8d1f422bc89e # v4
         with:
           pattern: benchmark-results-*
           merge-multiple: true
