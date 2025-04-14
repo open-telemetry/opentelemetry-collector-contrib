@@ -42,11 +42,30 @@ var errMemoryLimiterDataRefused = errors.New("data refused due to high memory us
 
 type consumeMessageFunc func(ctx context.Context, message *sarama.ConsumerMessage) error
 
+// messageHandler provides a generic interface for handling
+// messages for a pdata type (T).
 type messageHandler[T any] interface {
+	// unmarshalData unmarshals the message payload into a pdata type (plog.Logs, etc.)
+	// and returns the number of items (log records, metric data points, spans) within it.
 	unmarshalData(data []byte) (T, int, error)
+
+	// consumeData passes the unmarshaled data to the next consumer for the signal type.
+	// This simply calls the signal-specific Consume* method.
 	consumeData(ctx context.Context, data T) error
+
+	// getResources returns the resources associated with the unmarshaled data.
+	// This is used for header extraction for adding resource attributes.
 	getResources(T) iter.Seq[pcommon.Resource]
+
+	// startObsReport starts an observation report for the unmarshaled data.
+	//
+	// This simply calls the the signal-specific receiverhelper.ObsReport.Start*Op method.
 	startObsReport(ctx context.Context) context.Context
+
+	// endObsReport ends the observation report for the unmarshaled data.
+	//
+	// This simply calls the signal-specific receiverherlper.ObsReport.End*Op method,
+	// passing the configured encoding and number of items returned by unmarshalData.
 	endObsReport(ctx context.Context, n int, err error)
 }
 
