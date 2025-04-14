@@ -172,20 +172,3 @@ type healthDetails struct {
 	Health   string                   `json:"health"`
 	Features map[string]healthDetails `json:"features,omitempty"`
 }
-
-// '/services/cluster/manager/status'
-type indexersClusterManagerStatus struct {
-	Entries []idxClusterManagerStatusEntry `json:"entry"`
-}
-type idxClusterManagerStatusEntry struct {
-	Name    string                         `json:"name"`
-	Content idxClusterManagerStatusContent `json:"content"`
-}
-
-type idxClusterManagerStatusContent struct {
-	RollingRestartFlag      bool   `json:"rolling_restart_flag,omitempty"`
-	RollingRestartOrUpgrade bool   `json:"rolling_restart_or_upgrade,omitempty"`
-	RollingRestartType      string `json:"rolling_restart_type,omitempty"`
-	SearchableRolling       bool   `json:"searchable_rolling,omitempty"`
-	ServiceReadyFlag        bool   `json:"service_ready_flag,omitempty"`
-}

@@ -21,6 +21,7 @@ internal/common
 
 # Start deprecated components list
 
+processor/routingprocessor/
 
 
 # End deprecated components list

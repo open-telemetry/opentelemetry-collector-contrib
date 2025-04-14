@@ -331,7 +331,7 @@ func TestScrapeV2(t *testing.T) {
 
 func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
+	cfg.Metrics = metadata.MetricsConfig{
 		ContainerUptime: metricEnabled,
 	}
 	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -409,12 +409,12 @@ func (cb *testConfigBuilder) withEndpoint(endpoint string) *testConfigBuilder {
 }
 
 func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigBuilder {
-	cb.config.MetricsBuilderConfig.Metrics = ms
+	cb.config.Metrics = ms
 	return cb
 }
 
 func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
-	cb.config.MetricsBuilderConfig.ResourceAttributes = ras
+	cb.config.ResourceAttributes = ras
 	return cb
 }
 
