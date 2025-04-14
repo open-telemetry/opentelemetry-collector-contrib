@@ -14,19 +14,19 @@ import (
 )
 
 type (
-	StartCallBack = func(context.Context)
-	StopCallBack  = func()
+	StartCallback = func(context.Context)
+	StopCallback  = func()
 )
 
 // LeaderElection Interface allows the invoker to set the callback functions
 // that would be invoked when the leader wins or loss the election.
 type LeaderElection interface {
 	extension.Extension
-	SetCallBackFuncs(StartCallBack, StopCallBack)
+	SetCallBackFuncs(StartCallback, StopCallback)
 }
 
 // SetCallBackFuncs set the functions that can be invoked when the leader wins or loss the election
-func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallBack, onStopLeading StopCallBack) {
+func (lee *leaderElectionExtension) SetCallBackFuncs(onStartLeading StartCallback, onStopLeading StopCallback) {
 	lee.onStartedLeading = append(lee.onStartedLeading, onStartLeading)
 	lee.onStoppedLeading = append(lee.onStoppedLeading, onStopLeading)
 }
@@ -40,8 +40,8 @@ type leaderElectionExtension struct {
 	cancel        context.CancelFunc
 	waitGroup     sync.WaitGroup
 
-	onStartedLeading []StartCallBack
-	onStoppedLeading []StopCallBack
+	onStartedLeading []StartCallback
+	onStoppedLeading []StopCallback
 }
 
 // If the receiver sets a callback function then it would be invoked when the leader wins the election
