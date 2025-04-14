@@ -505,6 +505,10 @@ func TestTemporalityStartTimes(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &mockExporter{}
+			clock := &mockClock{
+				now: time.Now(),
+			}
+
 			running := &atomic.Bool{}
 			running.Store(true)
 
@@ -520,6 +524,7 @@ func TestTemporalityStartTimes(t *testing.T) {
 				limitPerSecond:         rate.Inf,
 				logger:                 zap.NewNop(),
 				wg:                     wg,
+				clock:                  clock,
 			}
 
 			w.simulateMetrics(resource.Default(), m, nil)
