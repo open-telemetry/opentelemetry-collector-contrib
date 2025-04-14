@@ -72,6 +72,7 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
+- [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
