@@ -5,6 +5,7 @@ package geoipprocessor
 
 import (
 	"os"
+	"runtime"
 	"testing"
 
 	"go.opentelemetry.io/otel/attribute"
@@ -29,4 +30,8 @@ func TestProcessorWithMaxMind(t *testing.T) {
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
+
+	// ensure resources have been clean up (no open files left)
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38961
+	runtime.GC()
 }
