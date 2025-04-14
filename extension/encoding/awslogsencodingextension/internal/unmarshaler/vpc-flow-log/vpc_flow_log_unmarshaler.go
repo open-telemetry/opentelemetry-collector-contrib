@@ -293,7 +293,6 @@ func handleField(
 	}
 
 	switch field {
-	// TODO Add support for ECS fields
 	case "srcaddr":
 		// handled later
 		addr.source = value
@@ -390,6 +389,26 @@ func handleField(
 		record.Attributes().PutStr("aws.vpc.flow.destination.service", value)
 	case "traffic-path":
 		record.Attributes().PutStr("aws.vpc.flow.traffic_path", value)
+	case "ecs-cluster-arn":
+		record.Attributes().PutStr(conventions.AttributeAWSECSClusterARN, value)
+	case "ecs-cluster-name":
+		record.Attributes().PutStr("aws.ecs.cluster.name", value)
+	case "ecs-container-instance-arn":
+		record.Attributes().PutStr("aws.ecs.container.instance.arn", value)
+	case "ecs-container-instance-id":
+		record.Attributes().PutStr("aws.ecs.container.instance.id", value)
+	case "ecs-container-id":
+		record.Attributes().PutStr("aws.ecs.container.id", value)
+	case "ecs-second-container-id":
+		record.Attributes().PutStr("aws.ecs.second.container.id", value)
+	case "ecs-service-name":
+		record.Attributes().PutStr("aws.ecs.service.name", value)
+	case "ecs-task-definition-arn":
+		record.Attributes().PutStr("aws.ecs.task.definition.arn", value)
+	case "ecs-task-arn":
+		record.Attributes().PutStr(conventions.AttributeAWSECSTaskARN, value)
+	case "ecs-task-id":
+		record.Attributes().PutStr(conventions.AttributeAWSECSTaskID, value)
 	case "reject-reason":
 		record.Attributes().PutStr("aws.vpc.flow.reject_reason", value)
 	default:

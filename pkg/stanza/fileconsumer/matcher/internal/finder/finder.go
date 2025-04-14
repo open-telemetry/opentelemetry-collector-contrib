@@ -4,12 +4,12 @@
 package finder // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher/internal/finder"
 
 import (
-	"errors"
 	"fmt"
 	"maps"
 	"slices"
 
 	"github.com/bmatcuk/doublestar/v4"
+	"go.uber.org/multierr"
 )
 
 func Validate(globs []string) error {
@@ -30,7 +30,7 @@ func FindFiles(includes []string, excludes []string) ([]string, error) {
 	for _, include := range includes {
 		matches, err := doublestar.FilepathGlob(include, doublestar.WithFilesOnly(), doublestar.WithFailOnIOErrors())
 		if err != nil {
-			errs = errors.Join(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
+			errs = multierr.Append(errs, fmt.Errorf("find files with '%s' pattern: %w", include, err))
 			// the same pattern could cause an IO error due to one file or directory,
 			// but also could still find files without `doublestar.WithFailOnIOErrors()`.
 			matches, _ = doublestar.FilepathGlob(include, doublestar.WithFilesOnly())

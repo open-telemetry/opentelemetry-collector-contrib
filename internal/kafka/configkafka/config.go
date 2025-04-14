@@ -311,10 +311,10 @@ func (c SASLConfig) Validate() error {
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
-			return fmt.Errorf("username is required")
+			return errors.New("username is required")
 		}
 		if c.Password == "" {
-			return fmt.Errorf("password is required")
+			return errors.New("password is required")
 		}
 	default:
 		return fmt.Errorf(

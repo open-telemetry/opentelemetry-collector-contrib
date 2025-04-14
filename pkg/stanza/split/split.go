@@ -6,6 +6,7 @@ package split // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bufio"
 	"bytes"
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -23,10 +24,10 @@ type Config struct {
 func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
 	if enc == encoding.Nop {
 		if c.LineEndPattern != "" {
-			return nil, fmt.Errorf("line_end_pattern should not be set when using nop encoding")
+			return nil, errors.New("line_end_pattern should not be set when using nop encoding")
 		}
 		if c.LineStartPattern != "" {
-			return nil, fmt.Errorf("line_start_pattern should not be set when using nop encoding")
+			return nil, errors.New("line_start_pattern should not be set when using nop encoding")
 		}
 		return NoSplitFunc(maxLogSize), nil
 	}
@@ -51,7 +52,7 @@ func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bu
 		return LineStartSplitFunc(re, c.OmitPattern, flushAtEOF), nil
 	}
 
-	return nil, fmt.Errorf("only one of line_start_pattern or line_end_pattern can be set")
+	return nil, errors.New("only one of line_start_pattern or line_end_pattern can be set")
 }
 
 // LineStartSplitFunc creates a bufio.SplitFunc that splits an incoming stream into

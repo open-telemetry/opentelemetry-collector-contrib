@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("tlscheck.target")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "tlscheck.target-val", val.Str())
+				assert.Equal(t, "tlscheck.target-val", val.Str())
 			}
 		})
 	}

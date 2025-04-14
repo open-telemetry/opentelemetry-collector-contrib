@@ -169,10 +169,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("level")
 					assert.True(t, ok)
-					assert.EqualValues(t, "self", attrVal.Str())
+					assert.Equal(t, "self", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("mode")
 					assert.True(t, ok)
-					assert.EqualValues(t, "system", attrVal.Str())
+					assert.Equal(t, "system", attrVal.Str())
 				case "apache.current_connections":
 					assert.False(t, validatedMetrics["apache.current_connections"], "Found a duplicate in the metrics slice: apache.current_connections")
 					validatedMetrics["apache.current_connections"] = true
@@ -267,7 +267,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "open", attrVal.Str())
+					assert.Equal(t, "open", attrVal.Str())
 				case "apache.traffic":
 					assert.False(t, validatedMetrics["apache.traffic"], "Found a duplicate in the metrics slice: apache.traffic")
 					validatedMetrics["apache.traffic"] = true
@@ -312,7 +312,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "busy", attrVal.Str())
+					assert.Equal(t, "busy", attrVal.Str())
 				}
 			}
 		})

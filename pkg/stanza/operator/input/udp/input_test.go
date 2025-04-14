@@ -4,6 +4,7 @@
 package udp
 
 import (
+	"fmt"
 	"math/rand/v2"
 	"net"
 	"strconv"
@@ -61,7 +62,7 @@ func udpInputTest(input []byte, expected []string, cfg *Config) func(t *testing.
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}
@@ -131,7 +132,7 @@ func udpInputAttributesTest(input []byte, expected []string) func(t *testing.T) 
 
 		select {
 		case entry := <-entryChan:
-			require.FailNow(t, "Unexpected entry: %s", entry)
+			require.FailNow(t, fmt.Sprintf("Unexpected entry: %s", entry))
 		case <-time.After(100 * time.Millisecond):
 			return
 		}

@@ -6,6 +6,7 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -177,7 +178,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	s := Supervisor{
 		telemetrySettings:            newNopTelemetrySettings(),
 		persistentState:              &persistentState{},
-		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
+		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}, Agent: config.Agent{ConfigFiles: []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"}}},
 		pidProvider:                  staticPIDProvider(1234),
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -600,7 +601,7 @@ service:
 					},
 					rcs,
 				)
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
@@ -855,7 +856,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		mc := &mockOpAMPClient{
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 		}
 
