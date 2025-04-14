@@ -3,10 +3,9 @@
 
 module-sets:
   contrib-base:
-    version: v0.122.0
+    version: v0.123.0
     modules:
       - github.com/open-telemetry/opentelemetry-collector-contrib
-      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
@@ -79,6 +78,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/asapauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/awsproxy
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/azureauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
@@ -121,6 +121,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage/redisstorageextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/sumologicextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/tpmextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/containerinsight
       - github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs
@@ -165,6 +166,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azure
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs
+      - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki
       - github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/opencensus
@@ -298,6 +300,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sshcheckreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/statsdreceiver
+      - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/systemdreceiver
       - github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver
@@ -321,3 +324,7 @@ excluded-modules:
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/e2etest
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/badpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/testpkg/receiver/validreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/badreceiver
+  - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/checkapi/internal/altpkg/receiver/altreceiver

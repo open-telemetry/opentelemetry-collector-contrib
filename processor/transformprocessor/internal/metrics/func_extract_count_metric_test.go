@@ -4,7 +4,7 @@
 package metrics
 
 import (
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -146,7 +146,7 @@ func Test_extractCountMetric(t *testing.T) {
 			name:         "gauge (error)",
 			input:        getTestGaugeMetric(),
 			monotonicity: false,
-			wantErr:      fmt.Errorf("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
+			wantErr:      errors.New("extract_count_metric requires an input metric of type Histogram, ExponentialHistogram or Summary, got Gauge"),
 		},
 	}
 	for _, tt := range tests {

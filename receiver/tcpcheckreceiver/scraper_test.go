@@ -156,7 +156,7 @@ func TestScraper(t *testing.T) {
 				},
 			}
 
-			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+			cfg.CollectionInterval = 100 * time.Millisecond
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)
@@ -215,7 +215,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 				},
 			}
 
-			cfg.ControllerConfig.CollectionInterval = 100 * time.Millisecond
+			cfg.CollectionInterval = 100 * time.Millisecond
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			scraper := newScraper(cfg, settings)

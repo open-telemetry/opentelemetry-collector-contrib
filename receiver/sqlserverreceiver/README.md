@@ -7,7 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fsqlserver%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fsqlserver) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fsqlserver%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fsqlserver) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@StefanKurek](https://www.github.com/StefanKurek), [@sincejune](https://www.github.com/sincejune) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@StefanKurek](https://www.github.com/StefanKurek), [@sincejune](https://www.github.com/sincejune), [@crobert-1](https://www.github.com/crobert-1) \| Seeking more code owners! |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -34,6 +34,9 @@ Direct connection options (optional, but all must be specified to enable):
 - `server`: IP Address or hostname of SQL Server instance to connect to.
 - `port`: Port of the SQL Server instance to connect to.
 
+For finer control over the direct connection use the `datasource`, a.k.a. the "connection string", instead.
+Note: it can't be used in conjunction with the `username`, `password`, `server` and `port` options.
+
 Windows-specific options:
 - `computer_name` (optional): The computer name identifies the SQL Server name or IP address of the computer being monitored.
   If specified, `instance_name` is also required to be defined. This option is ignored in non-Windows environments.
@@ -46,6 +49,9 @@ Top-Query collection specific options (only useful when top-query collection are
 - `enabled`: (optional, default = `false`): Enable collection of top queries.
   - e.g. `sqlserver` receiver will fetch 1000 (value: `max_query_sample_count`) queries from database and report the top 200 (value: `top_query_count`) which used the most CPU time.
 
+Query sample collection related options (only useful when query sample is enabled)
+- `max_rows_per_query`: (optional, default = `100`) use this to limit rows returned by the sampling query.
+- `enabled`: (optional, default = `false`): Enable collection of sample queries.
 Example:
 
 ```yaml
@@ -92,6 +98,9 @@ Top query collection enabled:
           lookback_time: 60
           max_query_sample_count: 1000
           top_query_count: 200
+        query_sample_collection:
+          enabled: true
+          max_rows_per_query: 1450
           
 ```
 ## Metrics

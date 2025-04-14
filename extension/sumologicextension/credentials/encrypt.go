@@ -9,6 +9,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"io"
 )
@@ -103,7 +104,7 @@ func decrypt(data []byte, encryptionKey []byte) ([]byte, error) {
 		}
 		nonceSize := gcm.NonceSize()
 		if nonceSize > len(data) {
-			return nil, fmt.Errorf("unable to decrypt credentials")
+			return nil, errors.New("unable to decrypt credentials")
 		}
 		nonce, ciphertext := data[:nonceSize], data[nonceSize:]
 		plaintext, err := gcm.Open(nil, nonce, ciphertext, nil)

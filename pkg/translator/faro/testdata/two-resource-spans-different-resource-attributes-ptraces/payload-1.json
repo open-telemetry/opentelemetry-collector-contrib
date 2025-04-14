@@ -1,0 +1,42 @@
+{
+  "traces": {
+    "resourceSpans": [
+      {
+        "resource": {
+          "attributes": [
+            {
+              "key": "service.name",
+              "value": {
+                "stringValue": "testapp"
+              }
+            }
+          ],
+          "droppedAttributesCount": 0
+        },
+        "scopeSpans": [
+          {
+            "scope": {
+              "name": "@opentelemetry/instrumentation-fetch",
+              "version": "0.48.0"
+            },
+            "spans": [
+              {
+                "traceId": "bac44bf5d6d040fc5fdf9bc22442c6f2",
+                "spanId": "f71b2cc42962650f",
+                "name": "HTTP GET",
+                "kind": 3,
+                "startTimeUnixNano": "1718700770771000000",
+                "endTimeUnixNano": "1718700770800000000"
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "meta": {
+    "app": {
+      "name": "testapp"
+    }
+  }
+}

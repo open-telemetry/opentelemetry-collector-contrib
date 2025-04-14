@@ -6,7 +6,6 @@ package otelserializer
 import (
 	"bytes"
 	"encoding/json"
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -33,7 +32,8 @@ func TestSerializeMetricsConflict(t *testing.T) {
 
 	var validationErrors []error
 	var buf bytes.Buffer
-	_, err := SerializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
+	ser := New()
+	_, err := ser.SerializeMetrics(resourceMetrics.Resource(), "", scopeMetrics.Scope(), "", dataPoints, &validationErrors, elasticsearch.Index{}, &buf)
 	if err != nil {
 		t.Errorf("Metrics() error = %v", err)
 	}
@@ -47,7 +47,7 @@ func TestSerializeMetricsConflict(t *testing.T) {
 	}
 
 	assert.Len(t, validationErrors, 1)
-	assert.Equal(t, fmt.Errorf("metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z"), validationErrors[0])
+	assert.EqualError(t, validationErrors[0], "metric with name 'foo' has already been serialized in document with timestamp 1970-01-01T00:00:00.000000000Z")
 
 	assert.Equal(t, map[string]any{
 		"@timestamp": "0.0",

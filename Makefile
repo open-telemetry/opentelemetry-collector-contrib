@@ -122,7 +122,8 @@ genlabels:
 		awk '{ print $$1 }' | \
 		sed -E 's%(.+)/$$%\1%' | \
 		while read -r COMPONENT; do \
-			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E 's%^(.+)/(.+)\1%\1/\2%'); \
+			PREFIX=$$(printf '%s' "$${COMPONENT}" | sed -E 's%([^/])/.+%\1%'); \
+			LABEL_NAME=$$(printf '%s\n' "$${COMPONENT}" | sed -E "s%^(.+)/(.+)$${PREFIX}%\1/\2%"); \
 			if (( $${#LABEL_NAME} > 50 )); then \
 				OIFS=$${IFS}; \
 				IFS='/'; \
@@ -198,6 +199,10 @@ gorunbuilttest:
 gointegration-test:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-test"
 
+.PHONY: gointegration-sudo-test
+gointegration-sudo-test:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-sudo-test"
+
 .PHONY: gofmt
 gofmt:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="fmt"
@@ -209,14 +214,6 @@ golint:
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
-
-.PHONY: gotestifylint
-gotestifylint:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint"
-
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint-fix"
 
 .PHONY: goporto
 goporto: $(PORTO)
@@ -537,7 +534,7 @@ checkmetadata: $(CHECKFILE)
 
 .PHONY: checkapi
 checkapi: $(CHECKAPI)
-	$(CHECKAPI) -folder .
+	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
 kind-ready:

@@ -103,6 +103,27 @@ collector is running to be used as the endpoint. If the hostNetwork flag is
 set, and the collector is running in a pod, this hostname will resolve to the
 node's network namespace.
 
+#### Custom CA
+
+The service account client, by default, uses the CA certificate located at 
+`/var/run/secrets/kubernetes.io/serviceaccount/ca.crt` to validate the kubelet certificate. 
+If the kubelet server uses a certificate issued by a different CA, 
+specify the custom CA certificate path using the `ca_file` option.
+
+##### AKS Custom CA example
+
+This use case applies to AKS cluster, where the kubelet certificate is issued by 
+`/etc/kubernetes/certs/kubeletserver.crt`
+
+```yaml
+receivers:
+  kubeletstats:
+    collection_interval: 20s
+    auth_type: "serviceAccount"
+    endpoint: "https://${env:K8S_NODE_NAME}:10250"
+    ca_file: "/etc/kubernetes/certs/kubeletserver.crt"
+```
+
 ### Read Only Endpoint Example
 
 The following config can be used to collect Kubelet metrics from read-only endpoint:

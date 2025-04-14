@@ -5,6 +5,7 @@ package k8snode // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -27,7 +28,7 @@ type k8snodeProvider struct {
 
 func NewProvider(nodeName string, apiConf k8sconfig.APIConfig) (Provider, error) {
 	if nodeName == "" {
-		return nil, fmt.Errorf("nodeName can't be empty")
+		return nil, errors.New("nodeName can't be empty")
 	}
 	k8sAPIClient, err := k8sconfig.MakeClient(apiConf)
 	if err != nil {
