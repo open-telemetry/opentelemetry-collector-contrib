@@ -70,20 +70,19 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 
 func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, err error) {
 	r = &Reader{
-		Metadata:             m,
-		set:                  f.TelemetrySettings,
-		file:                 file,
-		fileName:             file.Name(),
-		fingerprintSize:      f.FingerprintSize,
-		initialBufferSize:    f.InitialBufferSize,
-		maxLogSize:           f.MaxLogSize,
-		decoder:              f.Encoding.NewDecoder(),
-		deleteAtEOF:          f.DeleteAtEOF,
-		includeFileRecordNum: f.IncludeFileRecordNumber,
-		compression:          f.Compression,
-		acquireFSLock:        f.AcquireFSLock,
-		maxBatchSize:         DefaultMaxBatchSize,
-		emitFunc:             f.EmitFunc,
+		Metadata:          m,
+		set:               f.TelemetrySettings,
+		file:              file,
+		fileName:          file.Name(),
+		fingerprintSize:   f.FingerprintSize,
+		initialBufferSize: f.InitialBufferSize,
+		maxLogSize:        f.MaxLogSize,
+		decoder:           f.Encoding.NewDecoder(),
+		deleteAtEOF:       f.DeleteAtEOF,
+		compression:       f.Compression,
+		acquireFSLock:     f.AcquireFSLock,
+		maxBatchSize:      DefaultMaxBatchSize,
+		emitFunc:          f.EmitFunc,
 	}
 	r.set.Logger = r.set.Logger.With(zap.String("path", r.fileName))
 
