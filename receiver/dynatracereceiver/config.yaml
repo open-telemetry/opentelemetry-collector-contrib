@@ -1,0 +1,42 @@
+receivers:
+  dynatrace:
+    API_ENDPOINT: ${env:API_ENDPOINT}
+    API_TOKEN: ${env:API_TOKEN}
+    metric_selectors:
+      - builtin:containers.cpu.usageTime
+      - builtin:containers.memory.residentSetBytes
+      - builtin:host.disk.writeTime
+      - builtin:host.disk.readTime
+      - builtin:host.disk.used
+      - builtin:host.disk.avail
+      - builtin:host.net.nic.trafficOut
+      - builtin:host.net.nic.trafficIn 
+      - builtin:kubernetes.node.conditions
+    resolution: 1h
+    from: now-30s
+    to: now
+    poll_interval: 30s 
+    max_retries: 3
+    http_timeout: 30s
+
+exporters:
+  debug:
+
+processors:
+  batch:
+  resource:
+    attributes:
+      - key: environment
+        value: ${env:DEPLOYMENT_ENVIRONMENT}
+        action: upsert
+      - key: team_owner
+        value: "team-sid"
+        action: insert
+
+service:
+  pipelines:
+    metrics:
+      receivers: [dynatrace]
+      processors: [resource, batch]
+      exporters: [debug]
+

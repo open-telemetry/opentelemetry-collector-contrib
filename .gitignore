@@ -44,3 +44,6 @@ internal/tools/testresults/*
 go.work*
 
 /result
+
+# environment variable
+.env
