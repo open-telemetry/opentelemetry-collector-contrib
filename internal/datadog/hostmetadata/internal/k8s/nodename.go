@@ -51,8 +51,17 @@ func (p *nodeNameProviderImpl) NodeName(ctx context.Context) (string, error) {
 	// NOTE: If changing this, check if the RBAC rules on the docs or examples need updates.
 	pod, err := p.client.CoreV1().Pods(namespace).Get(ctx, podName, metav1.GetOptions{})
 	if err != nil {
+		fmt.Println(err)
 		return "", err
 	}
+
+	if _, ok := pod.Labels["eks.amazonaws.com/fargate-profile"]; ok {
+		// this means that we are in eks fargate. virtual_node and pod_name
+		// are required.
+		id := "virtual_node:" + pod.Spec.NodeName + ",pod_name:" + podName
+		return id, eksFargateErr
+	}
+
 	return pod.Spec.NodeName, nil
 }
 
