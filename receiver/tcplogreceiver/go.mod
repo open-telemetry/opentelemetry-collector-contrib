@@ -18,7 +18,7 @@ require (
 require (
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/confmap/xconfmap v0.123.1-0.20250414090001-28ca163a928b
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/pdata v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/receiver/receivertest v0.123.1-0.20250414090001-28ca163a928b
 	go.uber.org/zap v1.27.0

@@ -73,7 +73,7 @@ require (
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/config/confignet v1.29.1-0.20250414090001-28ca163a928b // indirect
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250414090001-28ca163a928b // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.123.1-0.20250414090001-28ca163a928b // indirect
 	go.opentelemetry.io/collector/exporter/xexporter v0.123.1-0.20250414090001-28ca163a928b // indirect
 	go.opentelemetry.io/collector/extension/xextension v0.123.1-0.20250414090001-28ca163a928b // indirect

@@ -7,7 +7,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.123.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250414090001-28ca163a928b
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/receiver/otlpreceiver v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/receiver/receivertest v0.123.1-0.20250414090001-28ca163a928b
 )

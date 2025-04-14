@@ -27,7 +27,7 @@ require (
 require (
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/confmap/xconfmap v0.123.1-0.20250414090001-28ca163a928b
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/processor/processorhelper v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/processor/processortest v0.123.1-0.20250414090001-28ca163a928b
 	golang.org/x/exp v0.0.0-20240506185415-9bf2ced13842

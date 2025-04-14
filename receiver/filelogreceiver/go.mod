@@ -22,7 +22,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.123.0
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/confmap/xconfmap v0.123.1-0.20250414090001-28ca163a928b
-	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/consumer/consumertest v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/pipeline v0.123.1-0.20250414090001-28ca163a928b
 	go.opentelemetry.io/collector/receiver/receivertest v0.123.1-0.20250414090001-28ca163a928b
