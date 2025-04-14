@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/component v1.29.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/pdata/pprofile v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411074447-4fb7c24ebecc
 	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/goleak v1.3.0
