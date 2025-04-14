@@ -145,27 +145,17 @@ func (a *archive) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata
 }
 
 func (a *archive) restoreArchiveIndex(ctx context.Context) {
+	// restoreArchiveIndex loads last known archive index from the storage.
 	var err error
-	// remove extra "keys" in case `pollsToArchive` has changed between collector restarts
-	defer a.removeExtraKeys(ctx)
-
 	a.archiveIndex, err = a.getArchiveIndex(ctx)
 	if err != nil {
-		a.logger.Error("error while fetching archive index", zap.Error(err))
+		a.logger.Error("error while fetching archive index. Resetting it to 0", zap.Error(err))
 		a.archiveIndex = 0
 	}
-	if a.archiveIndex >= a.pollsToArchive || a.archiveIndex < 0 {
+	if a.archiveIndex >= a.pollsToArchive {
 		// archiveIndex is out of bounds. This most likely happened if `pollsToArchive` changed between collector restarts
 		// we just set archiveIndex to 0 in this case i.e. to reboot the archive index
 		a.archiveIndex = 0
-	}
-}
-
-func (a *archive) removeExtraKeys(ctx context.Context) {
-	for i := a.pollsToArchive; a.isSet(ctx, i); i++ {
-		if err := a.persister.Delete(ctx, archiveKey(i)); err != nil {
-			a.logger.Error("error while cleaning extra keys", zap.Error(err))
-		}
 	}
 }
 
@@ -179,12 +169,6 @@ func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
 		return 0, err
 	}
 	return archiveIndex, nil
-}
-
-// isSet returns true of index `i` has data present in the archive ring buffer
-func (a *archive) isSet(ctx context.Context, i int) bool {
-	val, err := a.persister.Get(ctx, archiveKey(i))
-	return val != nil && err == nil
 }
 
 func encodeIndex(val int) []byte {
