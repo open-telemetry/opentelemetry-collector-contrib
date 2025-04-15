@@ -370,8 +370,7 @@ metrics:
     unit: "{status}"
     gauge:
       value_type: int
-<<<<<<< HEAD
-    attributes: [splunk.feature, splunk.feature.health]
+    attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
   # `services/cluster/manager/status`
   splunk.indexer.rollingrestart.status:
     enabled: false
@@ -380,9 +379,6 @@ metrics:
     gauge:
       value_type: int
     attributes: [splunk.searchable.restart, splunk.rollingorrestart]
-=======
-    attributes: [splunk.feature, splunk.feature.health, splunk.splunkd.build, splunk.splunkd.version]
->>>>>>> f9909c592d1f88ec55fa9df91b5cac610e683d56
 
 tests:
   config:
