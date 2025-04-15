@@ -12,10 +12,10 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/drivertest"
 	"go.uber.org/zap"
 )
 
@@ -24,7 +24,7 @@ import (
 // while also testing with exclusively mtest.
 type fakeClient struct{ mock.Mock }
 
-func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters any, opts ...*options.ListDatabasesOptions) ([]string, error) {
+func (fc *fakeClient) ListDatabaseNames(ctx context.Context, filters any, opts ...options.Lister[options.ListDatabasesOptions]) ([]string, error) {
 	args := fc.Called(ctx, filters, opts)
 	return args.Get(0).([]string), args.Error(1)
 }
@@ -87,29 +87,33 @@ func (fc *fakeClient) RunCommand(ctx context.Context, db string, command bson.M)
 }
 
 func TestListDatabaseNames(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-
-	mont.Run("list database names", func(mt *mtest.T) {
-		// mocking out a listdatabase call
-		mt.AddMockResponses(mtest.CreateSuccessResponse(
-			primitive.E{
-				Key: "databases",
-				Value: []struct {
-					Name string `bson:"name,omitempty"`
-				}{
-					{
-						Name: "admin",
-					},
-				},
-			}))
-		driver := mt.Client
-		client := &mongodbClient{
-			Client: driver,
-		}
-		dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
-		require.NoError(t, err)
-		require.Equal(t, "admin", dbNames[0])
+	mont := drivertest.NewMockDeployment()
+	mont.AddResponses(bson.D{
+		bson.E{
+			Key:   "ok",
+			Value: 1,
+		},
+		bson.E{
+			Key: "databases",
+			Value: []struct {
+				Name string `bson:"name,omitempty"`
+			}{
+				{Name: "admin"},
+			},
+		},
 	})
+	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+	opts.Deployment = mont
+	c, err := mongo.Connect(opts)
+	require.NoError(t, err)
+
+	client := &mongodbClient{
+		Client: c,
+	}
+	dbNames, err := client.ListDatabaseNames(context.Background(), bson.D{})
+	require.NoError(t, err)
+	require.Equal(t, "admin", dbNames[0])
 }
 
 type commandString = string
@@ -121,8 +125,6 @@ const (
 )
 
 func TestRunCommands(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
-
 	loadedDbStats, err := loadDBStats()
 	require.NoError(t, err)
 	loadedServerStatus, err := loadServerStatus()
@@ -149,7 +151,9 @@ func TestRunCommands(t *testing.T) {
 			cmd:      serverStatusType,
 			response: loadedServerStatus,
 			validate: func(t *testing.T, m bson.M) {
-				require.Equal(t, int32(0), m["mem"].(bson.M)["mapped"])
+				mem, err := dig(m, []string{"mem", "mapped"})
+				require.NoError(t, err)
+				require.Equal(t, int32(0), mem)
 			},
 		},
 		{
@@ -157,97 +161,112 @@ func TestRunCommands(t *testing.T) {
 			cmd:      topType,
 			response: loadedTop,
 			validate: func(t *testing.T, m bson.M) {
-				require.Equal(t, int32(540), m["totals"].(bson.M)["local.oplog.rs"].(bson.M)["commands"].(bson.M)["time"])
+				commands, err := dig(m, []string{"totals", "local.oplog.rs", "commands", "time"})
+				require.NoError(t, err)
+				require.Equal(t, int32(540), commands)
 			},
 		},
 	}
 
 	for _, tc := range testCases {
-		mont.Run(tc.desc, func(mt *mtest.T) {
-			mt.AddMockResponses(tc.response)
-			driver := mt.Client
-			client := mongodbClient{
-				Client: driver,
-				logger: zap.NewNop(),
-			}
-			var result bson.M
-			switch tc.cmd {
-			case serverStatusType:
-				result, err = client.ServerStatus(context.Background(), "test")
-			case dbStatsType:
-				result, err = client.DBStats(context.Background(), "test")
-			case topType:
-				result, err = client.TopStats(context.Background())
-			}
-			require.NoError(t, err)
-			if tc.validate != nil {
-				tc.validate(t, result)
-			}
-		})
+		mont := drivertest.NewMockDeployment()
+		mont.AddResponses(tc.response)
+		opts := options.Client()
+		//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+		opts.Deployment = mont
+		c, err := mongo.Connect(opts)
+		require.NoError(t, err)
+
+		client := &mongodbClient{
+			Client: c,
+			logger: zap.NewNop(),
+		}
+
+		var result bson.M
+		switch tc.cmd {
+		case serverStatusType:
+			result, err = client.ServerStatus(context.Background(), "test")
+		case dbStatsType:
+			result, err = client.DBStats(context.Background(), "test")
+		case topType:
+			result, err = client.TopStats(context.Background())
+		}
+		require.NoError(t, err)
+		if tc.validate != nil {
+			tc.validate(t, result)
+		}
 	}
 }
 
 func TestGetVersion(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	mont := drivertest.NewMockDeployment()
 
 	buildInfo, err := loadBuildInfo()
 	require.NoError(t, err)
 
-	mont.Run("test connection", func(mt *mtest.T) {
-		mt.AddMockResponses(
-			// retrieving build info
-			buildInfo,
-		)
+	mont.AddResponses(buildInfo)
 
-		driver := mt.Client
-		client := mongodbClient{
-			Client: driver,
-			logger: zap.NewNop(),
-		}
+	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+	opts.Deployment = mont
+	c, err := mongo.Connect(opts)
+	require.NoError(t, err)
 
-		version, err := client.GetVersion(context.TODO())
-		require.NoError(t, err)
-		require.Equal(t, "4.4.10", version.String())
-	})
+	client := mongodbClient{
+		Client: c,
+		logger: zap.NewNop(),
+	}
+
+	version, err := client.GetVersion(context.TODO())
+	require.NoError(t, err)
+	require.Equal(t, "4.4.10", version.String())
 }
 
 func TestGetVersionFailures(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	mt := drivertest.NewMockDeployment()
 
 	malformedBuildInfo := bson.D{
-		primitive.E{Key: "ok", Value: 1},
-		primitive.E{Key: "version", Value: 1},
+		bson.E{Key: "ok", Value: 1},
+		bson.E{Key: "version", Value: 1},
 	}
 
 	testCases := []struct {
 		desc         string
-		responses    []primitive.D
+		responses    []bson.D
 		partialError string
 	}{
 		{
-			desc:         "Unable to run buildInfo",
-			responses:    []primitive.D{mtest.CreateCommandErrorResponse(mtest.CommandError{})},
+			desc: "Unable to run buildInfo",
+			responses: []bson.D{{
+				bson.E{Key: "ok", Value: 0},
+				bson.E{Key: "code", Value: mongo.CommandError{}.Code},
+				bson.E{Key: "errmsg", Value: mongo.CommandError{}.Message},
+				bson.E{Key: "codeName", Value: mongo.CommandError{}.Name},
+			}},
 			partialError: "unable to get build info",
 		},
 		{
 			desc:         "unable to parse version",
-			responses:    []primitive.D{mtest.CreateSuccessResponse(), malformedBuildInfo},
+			responses:    []bson.D{malformedBuildInfo},
 			partialError: "unable to parse mongo version from server",
 		},
 	}
 
 	for _, tc := range testCases {
-		mont.Run(tc.desc, func(mt *mtest.T) {
-			mt.AddMockResponses(tc.responses...)
-			driver := mt.Client
-			client := mongodbClient{
-				Client: driver,
-				logger: zap.NewNop(),
-			}
+		mt.AddResponses(tc.responses...)
+		opts := options.Client()
+		//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+		opts.Deployment = mt
+		c, err := mongo.Connect(opts)
+		require.NoError(t, err)
 
-			_, err := client.GetVersion(context.TODO())
-			require.ErrorContains(t, err, tc.partialError)
-		})
+		client := mongodbClient{
+			Client: c,
+			logger: zap.NewNop(),
+		}
+
+		_, err = client.GetVersion(context.Background())
+		require.ErrorContains(t, err, tc.partialError)
 	}
 }
 

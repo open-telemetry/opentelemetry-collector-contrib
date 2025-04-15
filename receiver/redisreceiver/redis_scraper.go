@@ -209,9 +209,10 @@ func (rs *redisScraper) recordCmdStatsMetrics(ts pcommon.Timestamp, cmd, val str
 		if err != nil { // skip bad items
 			continue
 		}
-		if subParts[0] == "calls" {
+		switch subParts[0] {
+		case "calls":
 			rs.mb.RecordRedisCmdCallsDataPoint(ts, parsed, cmd)
-		} else if subParts[0] == "usec" {
+		case "usec":
 			rs.mb.RecordRedisCmdUsecDataPoint(ts, parsed, cmd)
 		}
 	}

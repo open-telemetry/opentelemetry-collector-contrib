@@ -27,7 +27,7 @@ type Manager struct {
 	wg     sync.WaitGroup
 	cancel context.CancelFunc
 
-	readerFactory reader.Factory
+	readerFactory *reader.Factory
 	fileMatcher   *matcher.Matcher
 	tracker       tracker.Tracker
 	noTracking    bool

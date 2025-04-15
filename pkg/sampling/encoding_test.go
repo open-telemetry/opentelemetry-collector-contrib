@@ -5,7 +5,7 @@ package sampling
 
 import (
 	"encoding/binary"
-	"fmt"
+	"errors"
 	"math/rand/v2"
 	"strconv"
 	"testing"
@@ -43,7 +43,7 @@ func must[T any](t T, err error) T {
 //	require.Error(t, value)
 func mustNot[T any](_ T, err error) error {
 	if err == nil {
-		return fmt.Errorf("expected an error, got nil")
+		return errors.New("expected an error, got nil")
 	}
 	return err
 }

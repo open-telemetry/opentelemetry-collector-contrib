@@ -54,7 +54,7 @@ func (c *Client) Dial(endpoint string) (err error) {
 }
 
 func (c *Client) SFTPClient() (*SFTPClient, error) {
-	if c.Client == nil || c.Client.Conn == nil {
+	if c.Client == nil || c.Conn == nil {
 		return nil, errors.New("SSH client not initialized")
 	}
 	client, err := sftp.NewClient(c.Client)

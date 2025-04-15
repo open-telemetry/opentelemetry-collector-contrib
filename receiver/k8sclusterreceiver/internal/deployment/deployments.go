@@ -11,7 +11,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/constants"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
-	imetadata "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 // Transform transforms the pod to remove the fields that we don't use to reduce RAM utilization.
@@ -28,7 +27,7 @@ func Transform(deployment *appsv1.Deployment) *appsv1.Deployment {
 	}
 }
 
-func RecordMetrics(mb *imetadata.MetricsBuilder, dep *appsv1.Deployment, ts pcommon.Timestamp) {
+func RecordMetrics(mb *metadata.MetricsBuilder, dep *appsv1.Deployment, ts pcommon.Timestamp) {
 	mb.RecordK8sDeploymentDesiredDataPoint(ts, int64(*dep.Spec.Replicas))
 	mb.RecordK8sDeploymentAvailableDataPoint(ts, int64(dep.Status.AvailableReplicas))
 	rb := mb.NewResourceBuilder()

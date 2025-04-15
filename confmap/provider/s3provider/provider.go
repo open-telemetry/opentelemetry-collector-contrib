@@ -7,6 +7,7 @@ package s3provider // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -132,7 +133,7 @@ func s3URISplit(uri string) (string, string, string, error) {
 	// check empty fields
 	if bucket == "" || region == "" || key == "" {
 		// This error should never happen because of the regexp pattern
-		return "", "", "", fmt.Errorf("invalid s3-uri with empty fields")
+		return "", "", "", errors.New("invalid s3-uri with empty fields")
 	}
 
 	return bucket, region, key, nil

@@ -59,6 +59,134 @@ resourceMetrics:
                   timeUnixNano: "1000000"
             name: with_resource_foo_only
             unit: ms
+          - description: The configured optional attribute will be added as-is
+            histogram:
+              aggregationTemporality: 1
+              dataPoints:
+                - bucketCounts:
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "1"
+                  count: "4"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 28902
+                  timeUnixNano: "1000000"
+                - attributes:
+                    - key: db.name
+                      value:
+                        stringValue: main
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "1"
+                    - "1"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "2"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 1500
+                  timeUnixNano: "1000000"
+                - attributes:
+                    - key: db.name
+                      value:
+                        stringValue: main_v2
+                  bucketCounts:
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "2"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                    - "0"
+                  count: "2"
+                  explicitBounds:
+                    - 2
+                    - 4
+                    - 6
+                    - 8
+                    - 10
+                    - 50
+                    - 100
+                    - 200
+                    - 400
+                    - 800
+                    - 1000
+                    - 1400
+                    - 2000
+                    - 5000
+                    - 10000
+                    - 15000
+                  sum: 1000
+                  timeUnixNano: "1000000"
+            name: optional.histogram
+            unit: ms
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector
   - resource:

@@ -128,7 +128,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl(),
+		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
@@ -141,7 +141,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 	expectedMetrics := allMetrics
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
-	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
+	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
 	}
@@ -153,7 +153,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	var expectedResourceMetrics []string
 	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
-	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
+	assert.Len(t, returnedResourceMetrics, len(expectedResourceMetrics))
 	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}

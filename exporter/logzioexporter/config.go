@@ -52,6 +52,6 @@ func (c *Config) checkAndWarnDeprecatedOptions(logger hclog.Logger) {
 	if c.CustomEndpoint != "" {
 		logger.Warn("You are using the deprecated `custom_endpoint` option that will be removed in the next release; please use `endpoint` configuration instead: https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp")
 		logger.Warn("Mapping `custom_endpoint` -> `Endpoint`")
-		c.ClientConfig.Endpoint = c.CustomEndpoint
+		c.Endpoint = c.CustomEndpoint
 	}
 }
