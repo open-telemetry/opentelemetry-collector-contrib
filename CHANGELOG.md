@@ -7,6 +7,129 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.124.0
+
+### 🛑 Breaking changes 🛑
+
+- `splunkenterprisereceiver`: added new attributes to the receiver and modified config (#36330)
+- `extension/headerssetter`: Change `DefaultValue` to use `configopaque.String` type. (#39127)
+- `splunkenterprisereceiver`: disabled default metrics except for splunkHealth to ensure scrapes run on Splunk instance are opt-in (#39068)
+- `processor/transform`: Fix Basic Config style to properly handle `cache` access. (#38926)
+  The Transform processor now requires only one configuration style per processor's configuration, which means Advanced Config and Basic Config cannot be used together anymore.
+- `sqlserverreceiver`: update the unit of `db.lock_timeout` attribute from millisecond to second. this attribute is part of the emitted query sample collection. (#39042)
+
+### 🚩 Deprecations 🚩
+
+- `datadogexporter`: Deprecate config `host_metadata::first_resource` (#39069)
+  Opt in to https://docs.datadoghq.com/opentelemetry/mapping/host_metadata/ instead. Its behavior is more predictable and provides more flexibility.
+- `datadogexporter`: Deprecate feature gate `exporter.datadogexporter.metricexportnativeclient`. Datadog exporter now uses the serializer to send metrics by default. (#39148)
+  Use feature gate `exporter.datadogexporter.metricexportserializerclient` instead
+- `kafkaexporter`: Deprecate `auth::tls` and introduce `tls` config (#37776)
+- `kafkametricsreceiver`: Deprecate `auth::tls` and introduce `tls` config (#37776)
+- `kafkareceiver`: Deprecate `auth::tls` and introduce `tls` config (#37776)
+- `kafkatopicsobserverextension`: Deprecate `auth::tls` and introduce `tls` config (#37776)
+- `kafkaexporter`: deprecate `topic` and `encoding`, introduce signal-specific configuration (#35432)
+- `kafkareceiver`: Add signal-specific topic and encoding config, deprecate existing topic/encoding config. (#32735)
+
+### 🚀 New components 🚀
+
+- `googlecloudlogentryencodingextension`: Add Google Cloud LogEntry Encoding Extension to support decoding logs produced by Google Cloud services (#37531)
+- `stefreceiver`: Make the receiver initially code complete (#38979)
+
+### 💡 Enhancements 💡
+
+- `azureblobexporter`: support for append blob in azure blob storage exporter (#39075)
+- `alertmanagerexporter`: Add alert labels based on event attribute list in alermanager exporter (#38063)
+- `alertmanagerexporter`: Add support for api version in Alertmanager endpoint, default is v2 (#38694)
+- `azureauthextension`: Add implement for extensionauth.HTTPClient and extensionauth.Server interface functions. (#39178)
+- `azureblobexporter`: change to alpha for azure blob exporter (#39272)
+- `azuremonitorreceiver`: Add subscription name resource attribute (#39029)
+- `azuremonitorreceiver`: Allow to use metrics:getBatch API (Azure Monitor Metrics Data Plane) (#38651)
+- `servicegraphconnector`: Change database_name_attribute to accept a list of values. (#37777)
+- `datadogexporter`: Move feature gate `exporter.datadogexporter.metricexportserializerclient` to beta. Datadog exporter now uses the serializer to send metrics by default. (#39148)
+  The serializer has overall better performance and throughput. Note the deprecated `host_metadata::hostname_source::first_resource` config is ignored in the serializer.
+- `elasticsearchexporter`: Add `telemetry::log_failed_docs_input` and `telemetry::log_failed_docs_input_rate_limit` config to facilitate debugging of failed bulk request items (#39205)
+  Additionally, log a warning about potentially exposing sensitive data on any enabled `telemetry` config.
+- `kafkareceiver`: Propagate Kafka headers as metadata (#39129)
+  Allwos the Kafka receiver to propagate Kafka headers as client.Info (metadata). Allowing downstream processors and exporters to access the values via the enriched context.
+- `kafkaexporter`: Propagate metadata keys as headers (#39130)
+  Adds a new config option specifying a list of metadata keys that should be propagated as Kafka message headers.
+- `faroexporter`: Completes the implementation of the Faro exporter. (#35319)
+- `farotranslator`: Adds support for user actions in the Faro translator. (#39141)
+- `receivercreator`: Add kafkatopicsobserver to the receivercreator configuration (#37665)
+- `clickhouseexporter`: use a more precise conversion function to create TTL (#38942)
+- `kafkaexporter`: enable partitioning for all encodings (#39001, #38999)
+  With the exception of Jaeger encodings which have their own partitioning logic,
+  partitioning is now independent of the encoding used. This means that all encodings
+  now support partitioning.
+  
+- `signalfxexporter`: Errors will now include the URL that it was trying to access (#39026)
+- `splunkhecexporter`: Errors will now include the URL that it was trying to access (#39026)
+- `telemetrygen`: Fix flaky test TestTemporalityStartTimes (#39219)
+- `k8sattributesprocessor`: Add option to configure automatic resource attributes - with annotation prefix (#37114)
+  Implements [Specify resource attributes using Kubernetes annotations](https://github.com/open-telemetry/semantic-conventions/blob/main/docs/non-normative/k8s-attributes.md#specify-resource-attributes-using-kubernetes-annotations).
+  
+  If you are using the file log receiver, you can now create the same resource attributes as traces (via OTLP) received
+  from an application instrumented with the OpenTelemetry Operator -
+  simply by adding the `extract: { otel_annotations: true }` configuration to the `k8sattributesprocessor` processor.
+  See the [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/processor/k8sattributesprocessor/README.md#config-example) for more details.
+  
+- `signaltometricsconnector`: Allow to configure `optional` attributes which are copied as-is to the output metric. (#38600)
+- `oracledbreceiver`: Add support for parallel operations metrics (#39215)
+  The following metrics are now available, all disabled by default:
+  - 'DDL statements parallelized'
+  - 'DML statements parallelized'
+  - 'Parallel operations not downgraded'
+  - 'Parallel operations downgraded to serial'
+  - 'Parallel operations downgraded (1-25%)'
+  - 'Parallel operations downgraded (25-50%)'
+  - 'Parallel operations downgraded (50-75%)'
+  - 'Parallel operations downgraded (75-99%)'
+  
+- `ottlprofile`: Add OTTL support for profiles. (#36104)
+- `k8sclusterreceiver`: Add missing attributes to entities in experimental entity feature (#39038)
+- `pkg/stanza`: Use buffer pool for the read buffers to limit allocations" (#39373)
+- `postgresqlreceiver`: add top query collection to help end user identify which query were executed in the postgresql database. (#39311)
+- `sqlserverreceiver`: Allow full control of the "connection string" via the `datasource` configuration option (#39235)
+- `azureauthextension`: Use credentials to handle the access token. (#39057)
+- `sigv4auth`: Added support for authenticating with AssumeRoleWithWebIdentity API (#103107)
+  Adds the ability to specify the authenticator with an OIDC JWT and AWS IAM role to be assumed
+  using the AssumeRoleWithWebIdentity API instead of just the AssumeRole API.
+  
+- `spanmetricsconnector`: Initialise new calls_total metrics at 0 (#38537)
+- `pkg/stanza`: Remove unnecessary slice allocation to track errors (even nil) (#39367)
+- `awslogs_encoding`: Add support for VPC flow logs sent to S3 in plain text format. (#38896)
+- `opampsupervisor`: add support for including local configuration files (#37886)
+- `awslogsencodingextension`: Rename aws.eni.id attribute to network.interface.name and update README (#39051)
+- `awslogsencodingextension`: Add support for ECS fields. (#39241)
+- `awslogsencodingextension`: Improve performance when unmarshalling plain-text VPC flow logs. (#39043)
+
+### 🧰 Bug fixes 🧰
+
+- `metricstransformprocessor`: Fix aggregation of exponential histograms in metricstransform processor. (#39143)
+  Fix a panic when the number of populated buckets varies, and fix summing of counts for the Zero bucket.
+- `datadogexporter`: Fix a bug on missing APM stats when feature gate `exporter.datadogexporter.metricexportserializerclient` is enabled. (#39148)
+- `datadogexporter`: Fix a bug on `instrumentation_scope_metadata_as_tags` not being honored when feature gate `exporter.datadogexporter.metricexportserializerclient` is enabled. (#39148)
+- `elasticsearchexporter`: Handle edge cases in metrics grouping causing TSDB version_conflict_engine_exception (#38083)
+  Fix 2 edge cases where metrics grouping were not done correctly:
+  1. In ecs mode, metric grouping now considers data point attributes overwriting resource attributes.
+  2. In ecs and otel mode, attributes are now sorted before hashing. Metrics with attributes but in different order are now grouped together.
+  
+- `pkg/ottl`: Fix OTTL context inference order to prioritize the `scope` context over `resource`. (#39155)
+- `servicegraphconnector`: Metrics for spans with extra dimensions configured are incorrectly being aggregated together despite the dimension values being different. (#39160)
+- `pkg/ottl`: Fix so replace_all_patterns can replace keys using optional function (#32896)
+  When using the `replace_all_patterns` with `key` and `optional` function on the replacement, the value was being replaced with the key. This change fixes that and now the key is replaced as intended.
+- `servicegraphconnector`: Fix collectClientLatencyMetrics method bug (#39184)
+- `testbed`: Specify `storage` parameter for filelog receiver in benchmarks (#39217)
+- `awss3exporter`: Fixes an issue where the AWS S3 Exporter was forcing an ACL to be set, leading to unexpected behavior in S3 bucket permissions (#39346)
+  Current behavior of the AWS S3 Exporter is to set the ACL to 'private' by default, this removes that behavior and sets no ACL if not specified.
+- `connector/spanmetrics`: This change proposes moving the start timestamp (and last seen timestamp) from the resourceMetrics level to the individual metrics level. This will ensure that each metric has its own accurate start and last seen timestamps, regardless of its relationship to other spans. (#35994)
+- `receiver/kubeletstats`: support user defined CA path for service account using the configtls option `ca_file` (#39291)
+- `telemetrygen`: fix startTimestamp when generating cumulative temporality datapoints. (#38232)
+- `splunkenterprisereceiver`: Fixes `otelcol_scraper_errored_metric_points` metric, which was not incrementing properly (#38691)
+
+<!-- previous-version -->
+
 ## v0.123.0
 
 ### 🛑 Breaking changes 🛑
