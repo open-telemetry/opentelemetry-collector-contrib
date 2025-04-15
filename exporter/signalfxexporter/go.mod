@@ -6,14 +6,14 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/gobwas/glob v0.2.3
 	github.com/gogo/protobuf v1.3.2
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/experimentalmetricmetadata v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/signalfx v0.124.1
 	github.com/shirou/gopsutil/v4 v4.25.3
 	github.com/signalfx/com_signalfx_metrics_protobuf v0.0.3
 	github.com/stretchr/testify v1.10.0

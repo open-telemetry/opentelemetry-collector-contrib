@@ -6,8 +6,8 @@ require (
 	github.com/cenkalti/backoff/v4 v4.3.0
 	github.com/docker/go-connections v0.5.0
 	github.com/elastic/lunes v0.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.36.0
 	go.opentelemetry.io/collector/client v1.30.0

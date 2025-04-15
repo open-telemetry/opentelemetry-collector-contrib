@@ -11,8 +11,8 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
 	github.com/stretchr/testify v1.10.0
 	github.com/twmb/murmur3 v1.1.8
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6

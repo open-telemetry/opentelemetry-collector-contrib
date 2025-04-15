@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opense
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
 	github.com/opensearch-project/opensearch-go/v2 v2.3.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0

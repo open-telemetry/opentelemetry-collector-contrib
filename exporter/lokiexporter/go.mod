@@ -7,7 +7,7 @@ require (
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v1.0.0
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/loki v0.124.1
 	github.com/prometheus/common v0.62.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.30.0

@@ -5,32 +5,32 @@ go 1.23.7
 require (
 	github.com/fluent/fluent-logger-golang v1.9.0
 	github.com/jaegertracing/jaeger-idl v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/connector/spanmetricsconnector v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/carbonexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sapmexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/syslogexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/zipkinexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/carbonreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sapmreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/signalfxreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkhecreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/syslogreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zipkinreceiver v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter v0.124.1
 	github.com/prometheus/common v0.62.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/shirou/gopsutil/v4 v4.25.3

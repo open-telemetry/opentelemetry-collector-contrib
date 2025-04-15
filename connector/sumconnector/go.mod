@@ -3,11 +3,11 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/connector/sumco
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
