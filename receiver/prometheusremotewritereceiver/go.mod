@@ -125,3 +125,7 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics => ../../internal/exp/metrics
+
+replace go.opentelemetry.io/collector/config/confighttp => github.com/cardinalhq/opentelemetry-collector/config/confighttp v0.0.0-20250411101659-db48f79d3530
+
+replace go.opentelemetry.io/collector/config/configcompression => github.com/cardinalhq/opentelemetry-collector/config/configcompression v0.0.0-20250411101659-db48f79d3530

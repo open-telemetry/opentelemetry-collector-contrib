@@ -207,6 +207,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver v0.124.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver v0.124.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver v0.124.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusremotewritereceiver v0.124.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/pulsarreceiver v0.124.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefareceiver v0.124.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver v0.124.0
@@ -270,3 +271,5 @@ providers:
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
 replaces:
+  - go.opentelemetry.io/collector/config/confighttp => github.com/cardinalhq/opentelemetry-collector/config/confighttp v0.0.0-20250411101659-db48f79d3530
+  - go.opentelemetry.io/collector/config/configcompression => github.com/cardinalhq/opentelemetry-collector/config/configcompression v0.0.0-20250411101659-db48f79d3530

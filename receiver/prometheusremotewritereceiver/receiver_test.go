@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"testing"
@@ -18,6 +19,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -417,6 +419,63 @@ func TestTranslateV2(t *testing.T) {
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(tc.expectedMetrics, metrics))
 			assert.Equal(t, tc.expectedStats, stats)
+		})
+	}
+}
+
+func TestSnappyCompression(t *testing.T) {
+	// Create a test server using the same configuration as in Start()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "localhost:9090" // Use a random port
+
+	// Create the receiver
+	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	// Start the server
+	host := componenttest.NewNopHost()
+	err = prwReceiver.Start(context.Background(), host)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, prwReceiver.Shutdown(context.Background()))
+	}()
+
+	// Create test data with something, just for the sake of getting something compressed.
+	testRequests := []*writev2.Request{{Symbols: []string{"", "__name__", "test_metric1"}}, {Symbols: []string{"", "__name__", "test_metric2"}}}
+
+	// Send requests with snappy compression
+	for i, req := range testRequests {
+		t.Run(fmt.Sprintf("request_%d", i), func(t *testing.T) {
+			// Marshal the request
+			pBuf := proto.NewBuffer(nil)
+			err := pBuf.Marshal(req)
+			assert.NoError(t, err)
+
+			// Compress with snappy
+			compressedBody := snappy.Encode(nil, pBuf.Bytes())
+
+			// Create HTTP request
+			httpReq, err := http.NewRequest(http.MethodPost, fmt.Sprintf("http://0.0.0.0:9090/api/v1/write"), bytes.NewBuffer(compressedBody))
+			assert.NoError(t, err)
+
+			// Set required headers
+			httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+			httpReq.Header.Set("Content-Encoding", "snappy")
+
+			// Send request
+			client := &http.Client{}
+			resp, err := client.Do(httpReq)
+			assert.NoError(t, err)
+
+			body, err := io.ReadAll(resp.Body)
+			assert.NoError(t, err)
+			defer resp.Body.Close()
+
+			// Verify response
+			assert.Equal(t, http.StatusNoContent, resp.StatusCode)
+			t.Log(string(body))
 		})
 	}
 }
