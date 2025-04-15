@@ -87,7 +87,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS type: %w", err)
 	}
-
 	osVersion, err := d.provider.OSVersion()
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS version: %w", err)
@@ -104,9 +103,10 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if errIPs != nil {
 			return pcommon.NewResource(), "", fmt.Errorf("failed getting host IP addresses: %w", errIPs)
 		}
-		for _, ip := range hostIPs {
-			hostIPAttribute = append(hostIPAttribute, ip.String())
-		}
+		for _, result := range hostIPs {
+			attr := fmt.Sprintf("Interface: %s, IP: %s", result.InterfaceName, result.IP.String())
+			hostIPAttribute = append(hostIPAttribute, attr)
+		}	
 	}
 
 	var hostMACAttribute []any
@@ -115,8 +115,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		if errMACs != nil {
 			return pcommon.NewResource(), "", fmt.Errorf("failed to get host MAC addresses: %w", errMACs)
 		}
-		for _, mac := range hostMACs {
-			hostMACAttribute = append(hostMACAttribute, toIEEERA(mac))
+		for _, result := range hostMACs {
+			attr := fmt.Sprintf("Interface: %s, MAC: %s", result.InterfaceName, toIEEERA(result.MAC))
+			hostMACAttribute = append(hostMACAttribute, attr)
 		}
 	}
 

@@ -6,6 +6,7 @@ package system
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"testing"
 
@@ -73,14 +74,14 @@ func (m *mockMetadata) ReverseLookupHost() (string, error) {
 	return args.String(0), args.Error(1)
 }
 
-func (m *mockMetadata) HostIPs() ([]net.IP, error) {
+func (m *mockMetadata) HostIPs() ([]system.InterfaceIP, error) {
 	args := m.MethodCalled("HostIPs")
-	return args.Get(0).([]net.IP), args.Error(1)
+	return args.Get(0).([]system.InterfaceIP), args.Error(1)
 }
 
-func (m *mockMetadata) HostMACs() ([]net.HardwareAddr, error) {
+func (m *mockMetadata) HostMACs() ([]system.InterfaceMAC, error) {
 	args := m.MethodCalled("HostMACs")
-	return args.Get(0).([]net.HardwareAddr), args.Error(1)
+	return args.Get(0).([]system.InterfaceMAC), args.Error(1)
 }
 
 func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
@@ -89,11 +90,23 @@ func (m *mockMetadata) CPUInfo(_ context.Context) ([]cpu.InfoStat, error) {
 }
 
 var (
-	testIPsAttribute = []any{"192.168.1.140", "fe80::abc2:4a28:737a:609e"}
-	testIPsAddresses = []net.IP{net.ParseIP(testIPsAttribute[0].(string)), net.ParseIP(testIPsAttribute[1].(string))}
+	testIPs = []system.InterfaceIP{
+		{IP: net.ParseIP("192.168.1.140"), InterfaceName: "eth0"},
+		{IP: net.ParseIP("fe80::abc2:4a28:737a:609e"), InterfaceName: "eth1"},
+	}
+	testIPsAttribute = []any{
+		fmt.Sprintf("Interface: %s, IP: %s", "eth0", "192.168.1.140"),
+		fmt.Sprintf("Interface: %s, IP: %s", "eth1", "fe80::abc2:4a28:737a:609e"),
+	}
 
-	testMACsAttribute = []any{"00-00-00-00-00-01", "DE-AD-BE-EF-00-00"}
-	testMACsAddresses = []net.HardwareAddr{{0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, {0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00}}
+	testMACs = []system.InterfaceMAC{
+		{MAC: net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x01}, InterfaceName: "eth0"},
+		{MAC: net.HardwareAddr{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00}, InterfaceName: "eth1"},
+	}
+	testMACsAttribute = []any{
+		fmt.Sprintf("Interface: %s, MAC: %s", "eth0", "00-00-00-00-00-01"),
+		fmt.Sprintf("Interface: %s, MAC: %s", "eth1", "DE-AD-BE-EF-00-00"),
+	}
 )
 
 func TestNewDetector(t *testing.T) {
@@ -129,12 +142,12 @@ func TestToIEEERA(t *testing.T) {
 		expected string
 	}{
 		{
-			addr:     testMACsAddresses[0],
-			expected: testMACsAttribute[0].(string),
+			addr:     net.HardwareAddr{0x00, 0x00, 0x00, 0x00, 0x00, 0x01},
+			expected: "00-00-00-00-00-01",
 		},
 		{
-			addr:     testMACsAddresses[1],
-			expected: testMACsAttribute[1].(string),
+			addr:     net.HardwareAddr{0xDE, 0xAD, 0xBE, 0xEF, 0x00, 0x00},
+			expected: "DE-AD-BE-EF-00-00",
 		},
 	}
 
@@ -164,8 +177,8 @@ func TestDetectFQDNAvailable(t *testing.T) {
 	md.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
-	md.On("HostIPs").Return(testIPsAddresses, nil)
-	md.On("HostMACs").Return(testMACsAddresses, nil)
+	md.On("HostIPs").Return(testIPs, nil)
+	md.On("HostMACs").Return(testMACs, nil)
 
 	detector := newTestDetector(md, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -222,8 +235,8 @@ func TestEnableHostID(t *testing.T) {
 	mdHostname.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("HostID").Return("3", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
-	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
+	mdHostname.On("HostIPs").Return(testIPs, nil)
+	mdHostname.On("HostMACs").Return(testMACs, nil)
 
 	detector := newTestDetector(mdHostname, []string{"dns", "os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -253,8 +266,8 @@ func TestUseHostname(t *testing.T) {
 	mdHostname.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostname.On("HostID").Return("1", nil)
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
-	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
+	mdHostname.On("HostIPs").Return(testIPs, nil)
+	mdHostname.On("HostMACs").Return(testMACs, nil)
 
 	detector := newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -286,8 +299,8 @@ func TestDetectError(t *testing.T) {
 	mdFQDN.On("Hostname").Return("", errors.New("err"))
 	mdFQDN.On("HostID").Return("", errors.New("err"))
 	mdFQDN.On("HostArch").Return("amd64", nil)
-	mdFQDN.On("HostIPs").Return(testIPsAddresses, nil)
-	mdFQDN.On("HostMACs").Return(testMACsAddresses, nil)
+	mdFQDN.On("HostIPs").Return(testIPs, nil)
+	mdFQDN.On("HostMACs").Return(testMACs, nil)
 
 	detector := newTestDetector(mdFQDN, []string{"dns"}, allEnabledConfig())
 	res, schemaURL, err := detector.Detect(context.Background())
@@ -303,8 +316,8 @@ func TestDetectError(t *testing.T) {
 	mdHostname.On("Hostname").Return("", errors.New("err"))
 	mdHostname.On("HostID").Return("", errors.New("err"))
 	mdHostname.On("HostArch").Return("amd64", nil)
-	mdHostname.On("HostIPs").Return(testIPsAddresses, nil)
-	mdHostname.On("HostMACs").Return(testMACsAddresses, nil)
+	mdHostname.On("HostIPs").Return(testIPs, nil)
+	mdHostname.On("HostMACs").Return(testMACs, nil)
 
 	detector = newTestDetector(mdHostname, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -320,7 +333,7 @@ func TestDetectError(t *testing.T) {
 	mdOSType.On("OSVersion").Return("", "22.04.2 LTS (Jammy Jellyfish)")
 	mdOSType.On("HostID").Return("1", nil)
 	mdOSType.On("HostArch").Return("amd64", nil)
-	mdOSType.On("HostIPs").Return(testIPsAddresses, nil)
+	mdOSType.On("HostIPs").Return(testIPs, nil)
 
 	detector = newTestDetector(mdOSType, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -336,7 +349,7 @@ func TestDetectError(t *testing.T) {
 	mdOSVersion.On("OSVersion").Return("", errors.New("err"))
 	mdOSVersion.On("HostID").Return("1", nil)
 	mdOSVersion.On("HostArch").Return("amd64", nil)
-	mdOSVersion.On("HostIPs").Return(testIPsAddresses, nil)
+	mdOSVersion.On("HostIPs").Return(testIPs, nil)
 
 	detector = newTestDetector(mdOSVersion, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -352,8 +365,8 @@ func TestDetectError(t *testing.T) {
 	mdHostID.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdHostID.On("HostID").Return("", errors.New("err"))
 	mdHostID.On("HostArch").Return("arm64", nil)
-	mdHostID.On("HostIPs").Return(testIPsAddresses, nil)
-	mdHostID.On("HostMACs").Return(testMACsAddresses, nil)
+	mdHostID.On("HostIPs").Return(testIPs, nil)
+	mdHostID.On("HostMACs").Return(testMACs, nil)
 
 	detector = newTestDetector(mdHostID, []string{"os"}, allEnabledConfig())
 	res, schemaURL, err = detector.Detect(context.Background())
@@ -378,8 +391,8 @@ func TestDetectCPUInfo(t *testing.T) {
 	md.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	md.On("HostID").Return("2", nil)
 	md.On("HostArch").Return("amd64", nil)
-	md.On("HostIPs").Return(testIPsAddresses, nil)
-	md.On("HostMACs").Return(testMACsAddresses, nil)
+	md.On("HostIPs").Return(testIPs, nil)
+	md.On("HostMACs").Return(testMACs, nil)
 	md.On("CPUInfo").Return([]cpu.InfoStat{{Family: "some"}}, nil)
 
 	cfg := allEnabledConfig()

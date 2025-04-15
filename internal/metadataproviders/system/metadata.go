@@ -70,13 +70,24 @@ type Provider interface {
 	HostArch() (string, error)
 
 	// HostIPs returns the host's IP interfaces
-	HostIPs() ([]net.IP, error)
+	HostIPs() ([]InterfaceIP, error)
 
 	// HostMACs returns the host's MAC addresses
-	HostMACs() ([]net.HardwareAddr, error)
+	HostMACs() ([]InterfaceMAC, error)
 
 	// CPUInfo returns the host's CPU info
 	CPUInfo(ctx context.Context) ([]cpu.InfoStat, error)
+}
+
+type InterfaceIP struct {
+	IP            net.IP
+	InterfaceName string
+}
+
+// Define a new struct for interface MACs
+type InterfaceMAC struct {
+	MAC           net.HardwareAddr
+	InterfaceName string
 }
 
 type systemMetadataProvider struct {
@@ -182,7 +193,7 @@ func (systemMetadataProvider) HostArch() (string, error) {
 	return internal.GOARCHtoHostArch(runtime.GOARCH), nil
 }
 
-func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
+func (p systemMetadataProvider) HostIPs() (interfaceIPs []InterfaceIP, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -209,13 +220,16 @@ func (p systemMetadataProvider) HostIPs() (ips []net.IP, err error) {
 				continue
 			}
 
-			ips = append(ips, ip)
+			interfaceIPs = append(interfaceIPs, InterfaceIP{
+				IP:            ip,
+				InterfaceName: iface.Name,
+			})
 		}
 	}
-	return ips, err
+	return interfaceIPs, err
 }
 
-func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) {
+func (p systemMetadataProvider) HostMACs() (interfaceMACs []InterfaceMAC, err error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, err
@@ -226,10 +240,12 @@ func (p systemMetadataProvider) HostMACs() (macs []net.HardwareAddr, err error) 
 		if iface.Flags&net.FlagUp == 0 || iface.Flags&net.FlagLoopback != 0 {
 			continue
 		}
-
-		macs = append(macs, iface.HardwareAddr)
+		interfaceMACs = append(interfaceMACs, InterfaceMAC{
+			MAC:           iface.HardwareAddr,
+			InterfaceName: iface.Name,
+		})
 	}
-	return macs, err
+	return interfaceMACs, err
 }
 
 func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, error) {
