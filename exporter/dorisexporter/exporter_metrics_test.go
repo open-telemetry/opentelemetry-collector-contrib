@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -61,7 +62,7 @@ func TestPushMetricData(t *testing.T) {
 		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
-	err0 := fmt.Errorf("Not Started")
+	err0 := errors.New("Not Started")
 	for i := 0; err0 != nil && i < 10; i++ { // until server started
 		err0 = exporter.pushMetricData(ctx, simpleMetrics(10, map[pmetric.MetricType]struct{}{
 			pmetric.MetricTypeGauge:                {},
