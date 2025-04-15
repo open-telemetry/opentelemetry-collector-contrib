@@ -5,6 +5,7 @@ package ottlfuncs
 
 import (
 	"context"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -19,15 +20,22 @@ func Test_keepMatchingKeys(t *testing.T) {
 	in.PutStr("foo1", "bar")
 	in.PutInt("foo2", 3)
 
-	target := &ottl.StandardPMapGetter[pcommon.Map]{
-		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
+		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
 			return tCtx, nil
+		},
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
+			if v, ok := m.(pcommon.Map); ok {
+				v.CopyTo(tCtx)
+				return nil
+			}
+			return errors.New("expected pcommon.Map")
 		},
 	}
 
 	tests := []struct {
 		name      string
-		target    ottl.PMapGetter[pcommon.Map]
+		target    ottl.PMapGetSetter[pcommon.Map]
 		pattern   string
 		want      func() *pcommon.Map
 		wantError bool
@@ -100,9 +108,12 @@ func Test_keepMatchingKeys(t *testing.T) {
 
 func Test_keepMatchingKeys_bad_input(t *testing.T) {
 	input := pcommon.NewValueInt(1)
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
@@ -114,9 +125,12 @@ func Test_keepMatchingKeys_bad_input(t *testing.T) {
 }
 
 func Test_keepMatchingKeys_get_nil(t *testing.T) {
-	target := &ottl.StandardPMapGetter[any]{
-		Getter: func(_ context.Context, tCtx any) (any, error) {
-			return tCtx, nil
+	target := &ottl.StandardPMapGetSetter[any]{
+		Getter: func(_ context.Context, tCtx any) (pcommon.Map, error) {
+			if v, ok := tCtx.(pcommon.Map); ok {
+				return v, nil
+			}
+			return pcommon.Map{}, errors.New("expected pcommon.Map")
 		},
 	}
 
