@@ -6,12 +6,12 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/json-iterator/go v1.1.12
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/ackextension v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.124.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.0
 	go.opentelemetry.io/collector/component/componentstatus v0.124.0
@@ -54,9 +54,9 @@ require (
 	github.com/mitchellh/reflectwalk v1.0.2 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.124.0 // indirect
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.0 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.124.1 // indirect
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil v0.124.1 // indirect
 	github.com/pierrec/lz4/v4 v4.1.22 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rs/cors v1.11.1 // indirect
