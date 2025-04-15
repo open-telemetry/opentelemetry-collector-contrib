@@ -8,7 +8,6 @@ import (
 	"compress/gzip"
 	"context"
 	"errors"
-	"fmt"
 	"io"
 	"os"
 	"sync"
@@ -182,7 +181,6 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 
 func (r *Reader) readContents(ctx context.Context) {
 	var buf []byte
-	fmt.Println(r.fileName)
 	if r.TokenLenState.MinimumLength <= r.initialBufferSize {
 		bufPtr := r.getBufPtrFromPool()
 		buf = *bufPtr
