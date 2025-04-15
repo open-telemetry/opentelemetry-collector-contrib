@@ -11,12 +11,12 @@ require (
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkapi v0.22.0
-	go.opentelemetry.io/build-tools/checkfile v0.21.0
-	go.opentelemetry.io/build-tools/chloggen v0.21.0
-	go.opentelemetry.io/build-tools/crosslink v0.21.0
-	go.opentelemetry.io/build-tools/githubgen v0.21.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.21.0
-	go.opentelemetry.io/build-tools/multimod v0.21.0
+	go.opentelemetry.io/build-tools/checkfile v0.22.0
+	go.opentelemetry.io/build-tools/chloggen v0.22.0
+	go.opentelemetry.io/build-tools/crosslink v0.22.0
+	go.opentelemetry.io/build-tools/githubgen v0.22.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.22.0
+	go.opentelemetry.io/build-tools/multimod v0.22.0
 	go.opentelemetry.io/collector/cmd/builder v0.124.0
 	go.opentelemetry.io/collector/cmd/mdatagen v0.124.0
 	go.uber.org/goleak v1.3.0
@@ -247,7 +247,7 @@ require (
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.21.0 // indirect
+	go.opentelemetry.io/build-tools v0.22.0 // indirect
 	go.opentelemetry.io/collector/component v1.30.0 // indirect
 	go.opentelemetry.io/collector/confmap v1.30.0 // indirect
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.30.0 // indirect
@@ -268,7 +268,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.28.0 // indirect
+	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect
