@@ -13,9 +13,9 @@ require (
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
 	github.com/leodido/go-syslog/v4 v4.2.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fastjson v1.6.4
 	go.opentelemetry.io/collector/component v1.30.0
