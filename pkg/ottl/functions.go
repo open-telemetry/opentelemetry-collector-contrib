@@ -472,6 +472,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 			return nil, err
 		}
 		return arg, nil
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		arg, err := buildSlice[PMapGetSetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
 	case strings.HasPrefix(name, "StringGetter"):
 		arg, err := buildSlice[StringGetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
@@ -541,6 +547,8 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		fallthrough
 	case strings.HasPrefix(name, "Setter"):
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):

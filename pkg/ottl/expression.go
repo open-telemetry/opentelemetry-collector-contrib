@@ -406,6 +406,103 @@ func (g StandardFunctionGetter[K]) Get(args Arguments) (Expr[K], error) {
 	return Expr[K]{exprFunc: fn}, nil
 }
 
+// PMapGetSetter is an interface that combines the Getter and Setter interfaces for pcommon.Map.
+// It should be used to represent the ability to both get and set a value.
+type PMapGetSetter[K any] interface {
+	PMapGetter[K]
+	PMapSetter[K]
+}
+
+// StandardPMapGetSetter is a basic implementation of PMapGetSetter.
+type StandardPMapGetSetter[K any] struct {
+	Getter func(ctx context.Context, tCtx K) (any, error)
+	Setter func(ctx context.Context, tCtx K, m any) error
+}
+
+func (g StandardPMapGetSetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
+	val, err := g.Getter(ctx, tCtx)
+	if err != nil {
+		return pcommon.Map{}, fmt.Errorf("error getting value in %T: %w", g, err)
+	}
+	if val == nil {
+		return pcommon.Map{}, TypeError("expected pcommon.Map but got nil")
+	}
+	switch v := val.(type) {
+	case pcommon.Map:
+		return v, nil
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return v.Map(), nil
+		}
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
+	case map[string]any:
+		m := pcommon.NewMap()
+		err = m.FromRaw(v)
+		if err != nil {
+			return pcommon.Map{}, err
+		}
+		return m, nil
+	default:
+		return pcommon.Map{}, TypeError(fmt.Sprintf("expected pcommon.Map but got %T", val))
+	}
+}
+
+func (g StandardPMapGetSetter[K]) Set(ctx context.Context, tCtx K, val any) error {
+	switch v := val.(type) {
+	case pcommon.Map:
+		return g.Setter(ctx, tCtx, v)
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return g.Setter(ctx, tCtx, v.Map())
+		}
+		return TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
+	case map[string]any:
+		m := pcommon.NewMap()
+		err := m.FromRaw(v)
+		if err != nil {
+			return err
+		}
+		return g.Setter(ctx, tCtx, m)
+	default:
+		return TypeError(fmt.Sprintf("expected pcommon.Map but got %T", val))
+	}
+}
+
+// PMapSetter is a Setter that takes a pcommon.Map.
+type PMapSetter[K any] interface {
+	// Set takes a pcommon.Map value.
+	Set(ctx context.Context, tCtx K, m any) error
+}
+
+// StandardPMapSetter is a basic implementation of PMapSetter.
+type StandardPMapSetter[K any] struct {
+	Setter func(ctx context.Context, tCtx K, m any) error
+}
+
+// Set takes a pcommon.Map value.
+// If the value is not a pcommon.Map a new TypeError is returned.
+// If there is an error setting the value it will be returned.
+func (g StandardPMapSetter[K]) Set(ctx context.Context, tCtx K, val any) error {
+	switch v := val.(type) {
+	case pcommon.Map:
+		return g.Setter(ctx, tCtx, v)
+	case pcommon.Value:
+		if v.Type() == pcommon.ValueTypeMap {
+			return g.Setter(ctx, tCtx, v.Map())
+		}
+		return TypeError(fmt.Sprintf("expected pcommon.Map but got %v", v.Type()))
+	case map[string]any:
+		m := pcommon.NewMap()
+		err := m.FromRaw(v)
+		if err != nil {
+			return err
+		}
+		return g.Setter(ctx, tCtx, m)
+	default:
+		return TypeError(fmt.Sprintf("expected pcommon.Map but got %T", val))
+	}
+}
+
 // PMapGetter is a Getter that must return a pcommon.Map.
 type PMapGetter[K any] interface {
 	// Get retrieves a pcommon.Map value.
