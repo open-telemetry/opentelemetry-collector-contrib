@@ -135,11 +135,11 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 	}
 
 	if !state.Exists {
-		return fmt.Errorf("agent package must be marked as existing")
+		return errors.New("agent package must be marked as existing")
 	}
 
 	if state.Type != protobufs.PackageType_PackageType_TopLevel {
-		return fmt.Errorf("agent package must be marked as top level")
+		return errors.New("agent package must be marked as top level")
 	}
 
 	p.topLevelHash = state.Hash
@@ -150,10 +150,10 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 
 func (packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
-		return fmt.Errorf("only agent package is supported")
+		return errors.New("only agent package is supported")
 	}
 
-	return fmt.Errorf("agent package already exists")
+	return errors.New("agent package already exists")
 }
 
 func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
@@ -166,7 +166,7 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 
 func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
 	if packageName != agentPackageKey {
-		return fmt.Errorf("package does not exist")
+		return errors.New("package does not exist")
 	}
 
 	by, err := io.ReadAll(data)
@@ -318,7 +318,7 @@ func verifyPackageHash(packageBytes, expectedHash []byte) error {
 func parsePackageSignature(signature []byte) (b64Cert, b64Signature []byte, err error) {
 	splitSignature := bytes.SplitN(signature, []byte(" "), 2)
 	if len(splitSignature) != 2 {
-		return nil, nil, fmt.Errorf("signature must be formatted as a space separated cert and signature")
+		return nil, nil, errors.New("signature must be formatted as a space separated cert and signature")
 	}
 
 	return splitSignature[0], splitSignature[1], nil
