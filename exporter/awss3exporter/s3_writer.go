@@ -60,6 +60,12 @@ func newUploadManager(
 		})
 	}
 
+	var managerOpts []upload.ManagerOpt
+	if conf.S3Uploader.ACL != "" {
+		managerOpts = append(managerOpts,
+			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
+	}
+
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
@@ -72,6 +78,6 @@ func newUploadManager(
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
-		s3types.ObjectCannedACL(conf.S3Uploader.ACL),
+		managerOpts...,
 	), nil
 }
