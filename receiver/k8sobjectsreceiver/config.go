@@ -4,7 +4,6 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
-	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -68,93 +67,17 @@ type Config struct {
 	makeDynamicClient   func() (dynamic.Interface, error)
 }
 
-func (c *Config) Validate() error {
-	zapCfg := zap.NewProductionConfig()
-	logger, err := zapCfg.Build()
-	if err != nil {
-		return fmt.Errorf("failed to create logger: %w", err)
-	}
+func (c *Config) SetLogger(logger *zap.Logger) {
 	c.logger = logger
+}
 
-	if c.ErrorMode == "" {
-		c.ErrorMode = PropagateError
-	}
-
+func (c *Config) Validate() error {
 	switch c.ErrorMode {
 	case PropagateError, IgnoreError, SilentError:
+		return nil
 	default:
 		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
 	}
-
-	validObjects, err := c.getValidObjects()
-	if err != nil {
-		if c.ErrorMode == PropagateError {
-			return err
-		}
-		if c.ErrorMode == IgnoreError {
-			c.logger.Warn("Error getting valid objects", zap.Error(err))
-		}
-	}
-
-	var validConfigs []*K8sObjectsConfig
-
-	for _, object := range c.Objects {
-		gvrs, ok := validObjects[object.Name]
-		if !ok {
-			if c.ErrorMode == PropagateError {
-				return fmt.Errorf("resource not found: %s", object.Name)
-			}
-			if c.ErrorMode == IgnoreError {
-				availableResource := make([]string, 0, len(validObjects))
-				for k := range validObjects {
-					availableResource = append(availableResource, k)
-				}
-				c.logger.Warn("Resource not found",
-					zap.String("resource", object.Name),
-					zap.Strings("available_resources", availableResource))
-			}
-			continue
-		}
-
-		gvr := gvrs[0]
-		for i := range gvrs {
-			if gvrs[i].Group == object.Group {
-				gvr = gvrs[i]
-				break
-			}
-		}
-
-		if object.Mode == "" {
-			object.Mode = defaultMode
-		} else if _, ok := modeMap[object.Mode]; !ok {
-			return fmt.Errorf("invalid mode: %v", object.Mode)
-		}
-
-		if object.Mode == PullMode && object.Interval == 0 {
-			object.Interval = defaultPullInterval
-		}
-
-		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
-			return errors.New("the Exclude config can only be used with watch mode")
-		}
-
-		object.gvr = gvr
-		validConfigs = append(validConfigs, object)
-	}
-
-	c.Objects = validConfigs
-
-	if len(validConfigs) == 0 {
-		msg := "no valid Kubernetes objects found to watch"
-		if c.ErrorMode == PropagateError {
-			return errors.New(msg)
-		}
-		if c.ErrorMode == IgnoreError {
-			c.logger.Warn(msg)
-		}
-	}
-
-	return nil
 }
 
 func (c *Config) getDiscoveryClient() (discovery.ServerResourcesInterface, error) {
