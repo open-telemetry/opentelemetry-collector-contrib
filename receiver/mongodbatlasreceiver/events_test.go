@@ -53,7 +53,7 @@ func TestStartAndShutdown(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			r, e:= newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
+			r, e := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
 			if e != nil {
 				t.Fatalf("failed to create receiver: %v", e)
 			}
