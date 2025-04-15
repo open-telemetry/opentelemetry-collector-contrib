@@ -329,10 +329,6 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
 	}
 
-	if err = s.getFeatureGates(); err != nil {
-		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
-	}
-
 	agentVersion, err := s.getBootstrapInfo()
 	if err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
@@ -1552,7 +1548,13 @@ func (s *Supervisor) runAgentProcess() {
 
 			select {
 			case <-stopRequest.start:
-				err := s.commander.Start(context.Background())
+				// need to get bootstrap info after updating agent binary
+				_, err := s.getBootstrapInfo()
+				if err != nil {
+					s.telemetrySettings.Logger.Error("Could not get bootstrap info", zap.Error(err))
+				}
+				// now restart the agent
+				_, err = s.startAgentCommand()
 				if err != nil {
 					s.telemetrySettings.Logger.Error("Could not start agent process", zap.Error(err))
 				}
