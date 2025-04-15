@@ -24,7 +24,9 @@ func basicProfiles() pprofiletest.Profiles {
 		ResourceProfiles: []pprofiletest.ResourceProfile{
 			{
 				Resource: pprofiletest.Resource{
-					Attributes: []pprofiletest.Attribute{{"key1", "value1"}},
+					Attributes: []pprofiletest.Attribute{
+						{Key: "key1", Value: "value1"},
+					},
 				},
 				ScopeProfiles: []pprofiletest.ScopeProfile{
 					{
@@ -35,9 +37,9 @@ func basicProfiles() pprofiletest.Profiles {
 								},
 								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
 								Attributes: []pprofiletest.Attribute{
-									{"process.executable.build_id.htlhash", "600DCAFE4A110000F2BF38C493F5FB92"},
-									{"profile.frame.type", "native"},
-									{"host.id", "localhost"},
+									{Key: "process.executable.build_id.htlhash", Value: "600DCAFE4A110000F2BF38C493F5FB92"},
+									{Key: "profile.frame.type", Value: "native"},
+									{Key: "host.id", Value: "localhost"},
 								},
 								Sample: []pprofiletest.Sample{
 									{
