@@ -1802,7 +1802,7 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 			s.settings.Logger.Debug(feature.Health)
 			s.mb.RecordSplunkHealthDataPoint(now, 0, k, feature.Health, i.Build, i.Version)
 		}
-		s.traverseHealthDetailFeatures(feature, now)
+		s.traverseHealthDetailFeatures(feature, now, i)
 	}
 }
 
