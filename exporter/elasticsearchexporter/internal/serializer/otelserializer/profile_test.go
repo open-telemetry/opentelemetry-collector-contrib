@@ -16,7 +16,50 @@ import (
 	"go.opentelemetry.io/collector/pdata/pprofile"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer/serializeprofiles"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
+
+func basicProfiles() pprofiletest.Profiles {
+	return pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: pprofiletest.Resource{
+					Attributes: []pprofiletest.Attribute{{"key1", "value1"}},
+				},
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Profile: []pprofiletest.Profile{
+							{
+								SampleType: []pprofiletest.ValueType{
+									{Typ: "samples", Unit: "count"},
+								},
+								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
+								Attributes: []pprofiletest.Attribute{
+									{"process.executable.build_id.htlhash", "600DCAFE4A110000F2BF38C493F5FB92"},
+									{"profile.frame.type", "native"},
+									{"host.id", "localhost"},
+								},
+								Sample: []pprofiletest.Sample{
+									{
+										TimestampsUnixNano: []uint64{0},
+										Value:              []int64{1},
+										Locations: []pprofiletest.Location{
+											{
+												Mapping: &pprofiletest.Mapping{},
+												Address: 111,
+											},
+										},
+									},
+								},
+								ProfileID: pprofile.NewProfileIDEmpty(),
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
 
 func TestSerializeProfile(t *testing.T) {
 	tests := []struct {
@@ -158,45 +201,13 @@ func BenchmarkSerializeProfile(b *testing.B) {
 	ser, err := New()
 	require.NoError(b, err)
 
-	profiles := pprofile.NewProfiles()
-	resource := profiles.ResourceProfiles().AppendEmpty()
-	scope := resource.ScopeProfiles().AppendEmpty()
-	profile := scope.Profiles().AppendEmpty()
+	profiles := basicProfiles().Transform()
+	resource := profiles.ResourceProfiles().At(0)
+	scope := resource.ScopeProfiles().At(0)
+	profile := scope.Profiles().At(0)
 	pushData := func(_ *bytes.Buffer, _ string, _ string) error {
 		return nil
 	}
-
-	profile.StringTable().Append("samples", "count", "cpu", "nanoseconds")
-	st := profile.SampleType().AppendEmpty()
-	st.SetTypeStrindex(0)
-	st.SetUnitStrindex(1)
-	pt := profile.PeriodType()
-	pt.SetTypeStrindex(2)
-	pt.SetUnitStrindex(3)
-
-	a := profile.AttributeTable().AppendEmpty()
-	a.SetKey("process.executable.build_id.htlhash")
-	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
-	a = profile.AttributeTable().AppendEmpty()
-	a.SetKey("profile.frame.type")
-	a.Value().SetStr("native")
-	a = profile.AttributeTable().AppendEmpty()
-	a.SetKey("host.id")
-	a.Value().SetStr("localhost")
-
-	profile.AttributeIndices().Append(2)
-
-	sample := profile.Sample().AppendEmpty()
-	sample.TimestampsUnixNano().Append(0)
-	sample.SetLocationsLength(1)
-
-	m := profile.MappingTable().AppendEmpty()
-	m.AttributeIndices().Append(0)
-
-	l := profile.LocationTable().AppendEmpty()
-	l.SetMappingIndex(0)
-	l.SetAddress(111)
-	l.AttributeIndices().Append(1)
 
 	b.ReportAllocs()
 	b.ResetTimer()
