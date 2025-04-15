@@ -23,6 +23,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
@@ -40,7 +41,6 @@ type elasticsearchExporter struct {
 	documentEncoders         [NumMappingModes]documentEncoder
 	documentRouters          [NumMappingModes]documentRouter
 	spanEventDocumentRouters [NumMappingModes]documentRouter
-	dataPointHashers         [NumMappingModes]dataPointHasher
 }
 
 func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
@@ -63,7 +63,6 @@ func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsear
 		exporter.documentEncoders[mappingMode] = encoder
 		exporter.documentRouters[mappingMode] = newDocumentRouter(mappingMode, index, cfg)
 		exporter.spanEventDocumentRouters[mappingMode] = newDocumentRouter(mappingMode, cfg.LogsIndex, cfg)
-		exporter.dataPointHashers[mappingMode] = newDataPointHasher(mappingMode)
 	}
 	return exporter, nil
 }
@@ -191,30 +190,30 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 		index       elasticsearch.Index
 	}
 
-	groupedDataPointsByIndex := make(map[mappingIndexKey]map[uint32]*dataPointsGroup)
+	// Maintain a 2 layer map to avoid storing lots of copies of index strings
+	groupedDataPointsByIndex := make(map[mappingIndexKey]map[metricgroup.HashKey]*dataPointsGroup)
 
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
-	resourceMetrics := metrics.ResourceMetrics()
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		resourceMetric := resourceMetrics.At(i)
-		resource := resourceMetric.Resource()
-		scopeMetrics := resourceMetric.ScopeMetrics()
-
-		for j := 0; j < scopeMetrics.Len(); j++ {
-			scopeMetrics := scopeMetrics.At(j)
+	for _, resourceMetrics := range metrics.ResourceMetrics().All() {
+		resource := resourceMetrics.Resource()
+		var hasher metricgroup.DataPointHasher
+		var prevScopeMappingMode MappingMode
+		for _, scopeMetrics := range resourceMetrics.ScopeMetrics().All() {
 			scope := scopeMetrics.Scope()
-
 			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
 			if err != nil {
 				return err
 			}
 			router := e.documentRouters[int(mappingMode)]
-			hasher := e.dataPointHashers[int(mappingMode)]
+			if hasher == nil || mappingMode != prevScopeMappingMode {
+				hasher = newDataPointHasher(mappingMode)
+				hasher.UpdateResource(resource)
+			}
+			prevScopeMappingMode = mappingMode
 
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
-				metric := scopeMetrics.Metrics().At(k)
-
+			hasher.UpdateScope(scope)
+			for _, metric := range scopeMetrics.Metrics().All() {
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
 					index, err := router.routeDataPoint(resource, scope, dp.Attributes())
 					if err != nil {
@@ -226,15 +225,16 @@ func (e *elasticsearchExporter) pushMetricsData(ctx context.Context, metrics pme
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[key]
 					if !ok {
-						groupedDataPoints = make(map[uint32]*dataPointsGroup)
+						groupedDataPoints = make(map[metricgroup.HashKey]*dataPointsGroup)
 						groupedDataPointsByIndex[key] = groupedDataPoints
 					}
-					dpHash := hasher.hashDataPoint(resource, scope, dp)
-					dpGroup, ok := groupedDataPoints[dpHash]
-					if !ok {
-						groupedDataPoints[dpHash] = &dataPointsGroup{
+					hasher.UpdateDataPoint(dp)
+					hashKey := hasher.HashKey()
+
+					if dpGroup, ok := groupedDataPoints[hashKey]; !ok {
+						groupedDataPoints[hashKey] = &dataPointsGroup{
 							resource:          resource,
-							resourceSchemaURL: resourceMetric.SchemaUrl(),
+							resourceSchemaURL: resourceMetrics.SchemaUrl(),
 							scope:             scope,
 							scopeSchemaURL:    scopeMetrics.SchemaUrl(),
 							dataPoints:        []datapoints.DataPoint{dp},
@@ -661,4 +661,14 @@ func (e *elasticsearchExporter) parseMappingMode(s string) (MappingMode, error) 
 		)
 	}
 	return mode, nil
+}
+
+func newDataPointHasher(mode MappingMode) metricgroup.DataPointHasher {
+	switch mode {
+	case MappingOTel:
+		return &metricgroup.OTelDataPointHasher{}
+	default:
+		// Defaults to ECS for backward compatibility
+		return &metricgroup.ECSDataPointHasher{}
+	}
 }
