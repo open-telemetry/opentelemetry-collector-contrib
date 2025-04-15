@@ -513,7 +513,7 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
-Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.16.5, 8.17.3, 8.19.0, 9.0.0.
+Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.17.6, 8.19.0, 9.0.0.
 If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
 
 ```shell
@@ -531,6 +531,8 @@ PUT _component_template/metrics-otel@custom
   }
 }
 ```
+
+After installing this component template, if you have previously ingested data, you'll have to wait until the time series data stream's old index's `end_time`. It may take up to 30 minute by default, see [time series data stream look ahead time](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds-index-settings.html).
 
 While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.
