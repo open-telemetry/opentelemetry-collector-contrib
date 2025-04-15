@@ -1,6 +1,15 @@
 resourceLogs:
   - resource:
-      attributes: []
+      attributes:
+      - key: sqlserver.computer.name
+        value:
+          stringValue: DESKTOP-GHAEGRD
+      - key: sqlserver.instance.name
+        value:
+          stringValue: sqlserver
+      - key: host.name
+        value:
+          stringValue: "0.0.0.0"
     scopeLogs:
       - logRecords:
           - attributes:
