@@ -57,7 +57,7 @@ func mergeMaps[K any](target ottl.PMapGetter[K], source ottl.Optional[ottl.PMapG
 	}
 
 	if source.IsEmpty() && sources.IsEmpty() {
-		return nil, fmt.Errorf("at least one of the optional arguments ('source' or 'sources') must be provided")
+		return nil, errors.New("at least one of the optional arguments ('source' or 'sources') must be provided")
 	}
 
 	return func(ctx context.Context, tCtx K) (any, error) {
