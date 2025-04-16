@@ -183,6 +183,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/datadogsemanticsprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatorateprocessor
+      - github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor
       - github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor
