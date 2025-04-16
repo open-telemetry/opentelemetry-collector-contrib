@@ -4,6 +4,7 @@
 package ecsobserver // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/ecsobserver"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 
@@ -29,7 +30,7 @@ func (t *TaskDefinitionConfig) validate() error {
 
 func (t *TaskDefinitionConfig) newMatcher(opts matcherOptions) (targetMatcher, error) {
 	if t.ArnPattern == "" {
-		return nil, fmt.Errorf("arn_pattern is empty")
+		return nil, errors.New("arn_pattern is empty")
 	}
 
 	arnRegex, err := regexp.Compile(t.ArnPattern)

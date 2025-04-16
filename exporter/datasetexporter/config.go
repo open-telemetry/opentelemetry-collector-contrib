@@ -4,6 +4,7 @@
 package datasetexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datasetexporter"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -184,10 +185,10 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 // If any of the required fields are missing or have invalid values, it returns an error.
 func (c *Config) Validate() error {
 	if c.APIKey == "" {
-		return fmt.Errorf("api_key is required")
+		return errors.New("api_key is required")
 	}
 	if c.DatasetURL == "" {
-		return fmt.Errorf("dataset_url is required")
+		return errors.New("dataset_url is required")
 	}
 
 	return nil

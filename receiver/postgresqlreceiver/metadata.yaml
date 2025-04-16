@@ -4,6 +4,7 @@ status:
   class: receiver
   stability:
     unmaintained: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     seeking_new: true
@@ -369,3 +370,6 @@ metrics:
       aggregation_temporality: cumulative
 tests:
   config:
+  goleak:
+    ignore:
+      any: "github.com/godbus/dbus.(*Conn).inWorker"

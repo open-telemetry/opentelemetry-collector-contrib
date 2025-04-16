@@ -50,10 +50,10 @@ func validatePort(port string) error {
 func validateTarget(ct *CertificateTarget) error {
 	// Check that exactly one of endpoint or file_path is specified
 	if ct.Endpoint != "" && ct.FilePath != "" {
-		return fmt.Errorf("cannot specify both endpoint and file_path")
+		return errors.New("cannot specify both endpoint and file_path")
 	}
 	if ct.Endpoint == "" && ct.FilePath == "" {
-		return fmt.Errorf("must specify either endpoint or file_path")
+		return errors.New("must specify either endpoint or file_path")
 	}
 
 	// Validate endpoint if specified
