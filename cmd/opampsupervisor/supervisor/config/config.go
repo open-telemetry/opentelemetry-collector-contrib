@@ -278,6 +278,9 @@ func (a AgentSignature) Validate() error {
 // the signer of the agent. This allows restricting the valid signers, such
 // that only very specific sources are trusted as signers for an agent.
 // You can read more about Cosign and signing here.
+// Issuer and Subject are used to strictly match their values.
+// IssuerRegExp and SubjectRegExp can be used instead to match the values using a regular expression.
+// These are the values that are used to verify the identity of the signer.
 // https://docs.sigstore.dev/cosign/signing/overview/
 type AgentSignatureIdentity struct {
 	// Issuer is the OIDC Issuer for the identity
