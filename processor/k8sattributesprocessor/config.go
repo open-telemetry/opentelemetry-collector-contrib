@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -257,6 +258,15 @@ type FilterConfig struct {
 	//
 	// Check FieldFilterConfig for more details.
 	Labels []FieldFilterConfig `mapstructure:"labels"`
+}
+
+func (cfg *FilterConfig) Validate() error {
+	if cfg.NodeFromEnvVar != "" {
+		if _, ok := os.LookupEnv(cfg.NodeFromEnvVar); !ok {
+			return fmt.Errorf("`node_from_env_var` is configured but envvar %q is not set", cfg.NodeFromEnvVar)
+		}
+	}
+	return nil
 }
 
 // FieldFilterConfig allows specifying exactly one filter by a field.
