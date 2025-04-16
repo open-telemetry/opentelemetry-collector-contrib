@@ -4,6 +4,7 @@
 package lru
 
 import (
+	"errors"
 	"testing"
 	"time"
 
@@ -71,19 +72,14 @@ func TestLRUSetLifeTime(t *testing.T) {
 func TestNilLRUSet(t *testing.T) {
 	cache := &LRUSet{}
 
+	var lockCalled bool
 	err := cache.WithLock(func(lock LockedLRUSet) error {
-		assert.False(t, lock.CheckAndAdd("a"))
-		assert.False(t, lock.CheckAndAdd("a"))
-		assert.False(t, lock.CheckAndAdd("b"))
-
-		assert.InDelta(t, 0.0, testing.AllocsPerRun(5, func() {
-			_ = lock.CheckAndAdd("c")
-		}), 0)
-
+		lockCalled = true
 		return nil
 	})
 
-	assert.NoError(t, err)
+	require.Equal(t, errors.New("missing LRUSet or mutex"), err)
+	assert.False(t, lockCalled)
 }
 
 func BenchmarkLRUSetCheck(b *testing.B) {
