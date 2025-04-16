@@ -621,19 +621,19 @@ func verifySummaryMetric(t *testing.T, db *sqlx.DB) {
 }
 
 func verifyLogTable(t *testing.T, logExporter *logsExporter) {
-	db := sqlx.NewDb(logExporter.client, driverName)
+	db := sqlx.NewDb(logExporter.client, clickhouseDriverName)
 	_, err := db.Query("select * from otel.otel_logs")
 	require.NoError(t, err)
 }
 
 func verifyTraceTable(t *testing.T, traceExporter *tracesExporter) {
-	db := sqlx.NewDb(traceExporter.client, driverName)
+	db := sqlx.NewDb(traceExporter.client, clickhouseDriverName)
 	_, err := db.Query("select * from otel.otel_traces")
 	require.NoError(t, err)
 }
 
 func verifyMetricTable(t *testing.T, metricExporter *metricsExporter) {
-	db := sqlx.NewDb(metricExporter.client, driverName)
+	db := sqlx.NewDb(metricExporter.client, clickhouseDriverName)
 	_, err := db.Query("select * from otel.otel_metrics_gauge")
 	require.NoError(t, err)
 }
