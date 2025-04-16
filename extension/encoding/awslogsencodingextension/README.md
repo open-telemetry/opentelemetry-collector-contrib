@@ -15,6 +15,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
    - Parquet support still to be added.
+ - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - (More to be added later.)
 
 Example for Amazon CloudWatch Logs Subscription Filters:
@@ -32,12 +33,19 @@ receivers:
 Example for VPC flow logs:
 ```yaml
 extensions:
-  awslogs_encoding/cloudwatch:
+  awslogs_encoding/vpc_flow_log:
     format: vpc_flow_log
     vpc_flow_log:
       # options [parquet, plain-text]. 
       # parquet option still needs to be implemented.
       file_format: plain-text 
+```
+
+Example for S3 access logs:
+```yaml
+extensions:
+  awslogs_encoding/s3_access_log:
+    format: s3_access_log
 ```
 
 #### VPC flow log record fields
@@ -86,3 +94,37 @@ extensions:
 | `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
 | `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
 | `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
+
+#### S3 access log record fields
+
+[S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
+
+
+| AWS field           | OpenTelemetry Field                                                                                                                                                                                                                                                                                     |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Bucket owner        | `aws.s3.owner`                                                                                                                                                                                                                                                                                          |
+| Bucket              | `aws.s3.bucket`                                                                                                                                                                                                                                                                                         |
+| Time                | Log timestamp                                                                                                                                                                                                                                                                                           |
+| Remote IP           | `source.address`                                                                                                                                                                                                                                                                                        |
+| Requester           | `user.id`                                                                                                                                                                                                                                                                                               |
+| Request ID          | `aws.request_id`                                                                                                                                                                                                                                                                                        |
+| Operation           | `rpc.method`                                                                                                                                                                                                                                                                                            |
+| Key                 | `aws.s3.key`                                                                                                                                                                                                                                                                                            |
+| Request URI         | Split by space: <br> 1. `http.request.method` <br> 2. URL is parsed:<br> &nbsp;&nbsp; 1. `url.path`<br> &nbsp;&nbsp; 2. `url.scheme`<br> &nbsp;&nbsp; 3. `url.query` <br>3. Protocol splits in character `/`:<br> &nbsp;&nbsp; 1.`network.protocol.name`<br> &nbsp;&nbsp; 2. `network.protocol.version` |
+| HTTP status         | `http.response.status_code`                                                                                                                                                                                                                                                                             |
+| Error code          | `error.type`                                                                                                                                                                                                                                                                                            |
+| Bytes sent          | `http.response.body.size`                                                                                                                                                                                                                                                                               |
+| Object size         | `aws.s3.object.size`                                                                                                                                                                                                                                                                                    |
+| Total time          | `duration`                                                                                                                                                                                                                                                                                              |
+| Turn around time    | `aws.s3.turn_around_time`                                                                                                                                                                                                                                                                               |
+| Referer             | `http.request.header.referer`                                                                                                                                                                                                                                                                           |
+| User-Agent          | `user_agent.original`                                                                                                                                                                                                                                                                                   |
+| Version ID          | `aws.s3.version_id`                                                                                                                                                                                                                                                                                     |
+| Host ID             | `aws.extended_request_id`                                                                                                                                                                                                                                                                               |
+| Signature version   | `aws.signature.version`                                                                                                                                                                                                                                                                                 |
+| Cipher suite        | `tls.cipher`                                                                                                                                                                                                                                                                                            |
+| Authentication Type | `aws.s3.auth_type`                                                                                                                                                                                                                                                                                      |
+| Host header         | `http.request.header.host`                                                                                                                                                                                                                                                                              |
+| TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
+| Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
+| aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |

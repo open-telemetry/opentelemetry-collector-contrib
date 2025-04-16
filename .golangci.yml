@@ -121,6 +121,14 @@ linters:
 
       enable-all: true
 
+      settings:
+        printf: # analyzer name, run `go tool vet help` to see all analyzers
+          funcs: # run `go tool vet help printf` to see available settings for `printf` analyzer
+            - Infof
+            - Warnf
+            - Errorf
+            - Fatalf
+
     misspell:
       ignore-rules:
         - cancelled
