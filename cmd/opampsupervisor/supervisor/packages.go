@@ -59,6 +59,8 @@ type packageManager struct {
 }
 
 type agentManager interface {
+	// stopAgentProcess stops the agent process.
+	// It returns a channel that can be closed to signal the agent should be started again.
 	stopAgentProcess(ctx context.Context) (chan struct{}, error)
 }
 
@@ -104,7 +106,7 @@ func (p packageManager) AllPackagesHash() ([]byte, error) {
 	return p.persistentState.AllPackagesHash, nil
 }
 
-func (p packageManager) SetAllPackagesHash(hash []byte) error {
+func (p *packageManager) SetAllPackagesHash(hash []byte) error {
 	p.persistentState.mux.Lock()
 	defer p.persistentState.mux.Unlock()
 	return p.persistentState.SetAllPackagesHash(hash)
@@ -148,7 +150,7 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 	return nil
 }
 
-func (packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
+func (p packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
 		return errors.New("only agent package is supported")
 	}
@@ -156,7 +158,7 @@ func (packageManager) CreatePackage(packageName string, _ protobufs.PackageType)
 	return errors.New("agent package already exists")
 }
 
-func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
+func (p packageManager) FileContentHash(packageName string) ([]byte, error) {
 	if packageName != agentPackageKey {
 		return nil, nil
 	}
@@ -164,48 +166,41 @@ func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 	return p.topLevelHash, nil
 }
 
-func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
+// UpdateContent updates the content of the agent package.
+// The order of operations is as follows:
+// 1. Download data from the data stream.
+// 2. Verify the package integrity and signature.
+// 3. Verify the tarball contains the otelcol-contrib binary.
+// 4. Extract data from tarball to a temporary file.
+// 5. Stop the agent process.
+// 6. Backup the existing agent file.
+// 7. Overwrite the existing agent file with the new agent.
+// 8. Delete the backup after a successful update.
+// Agent process is restarted when this function returns.
+func (p packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
 	if packageName != agentPackageKey {
 		return errors.New("package does not exist")
 	}
 
+	// 1. Read data from the data stream.
 	by, err := io.ReadAll(data)
 	if err != nil {
 		return fmt.Errorf("read package bytes: %w", err)
 	}
 
-	err = verifyPackageHash(by, contentHash)
-	if err != nil {
+	// 2. Verify the package integrity and signature.
+	if err := verifyPackageHash(by, contentHash); err != nil {
 		return fmt.Errorf("could not verify package integrity: %w", err)
 	}
-
 	b64Cert, b64Signature, err := parsePackageSignature(signature)
 	if err != nil {
 		return fmt.Errorf("could not parse package signature: %w", err)
 	}
-
-	err = verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature)
-	if err != nil {
+	if err := verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
-	// overwrite agent process
-	startAgent, err := p.am.stopAgentProcess(ctx)
-	if err != nil {
-		return fmt.Errorf("stop agent process: %w", err)
-	}
-
-	// We always want to start the agent process again, even if we fail to write the agent file
-	defer close(startAgent)
-
-	// Create a backup in case we fail to write the agent
-	// verify collector backup path is clear
-	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
-	if err = renameFile(p.agentExePath, agentBackupPath); err != nil {
-		return fmt.Errorf("rename collector exe path to backup path: %w", err)
-	}
-
-	// Create reader for new agent
+	// 3. Create reader for new agent & verify the tarball contains the otelcol-contrib binary.
 	gzipReader, err := gzip.NewReader(bytes.NewBuffer(by))
 	if err != nil {
 		return fmt.Errorf("create gzip reader: %w", err)
@@ -225,41 +220,50 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 		}
 	}
 
-	// open collector destination file
-	agentFile, err := os.OpenFile(p.agentExePath, os.O_RDWR|os.O_CREATE, 0o700)
+	// 4. Extract data from tarball to a temporary file.
+	tmpFilePath := filepath.Join(p.storageDir, "collector.tmp")
+	tmpAgentFile, err := os.OpenFile(tmpFilePath, os.O_RDWR|os.O_CREATE, 0o700)
 	if err != nil {
-		return fmt.Errorf("open file: %w", err)
+		return fmt.Errorf("open tmp file: %w", err)
 	}
-	defer agentFile.Close()
+	defer tmpAgentFile.Close()
 
-	// Seek to beginning of and truncate the current agent file
-	_, err = agentFile.Seek(0, io.SeekStart)
-	if err != nil {
-		return fmt.Errorf("seek to beginning of agent file: %w", err)
-	}
-
-	err = agentFile.Truncate(0)
-	if err != nil {
-		return fmt.Errorf("truncate agent file: %w", err)
+	if _, err := io.CopyN(tmpAgentFile, tar, maxAgentBytes); err != nil {
+		return fmt.Errorf("write collector to tmp file: %w", err)
 	}
 
-	// Write new agent to existing agent file.
-	// We only copy up to maxAgentBytes to avoid compression bombs.
-	_, err = io.CopyN(agentFile, tar, maxAgentBytes)
-	switch {
-	case errors.Is(err, io.EOF): // OK
-	case err != nil:
-		restoreErr := renameFile(agentBackupPath, p.agentExePath)
-		return errors.Join(fmt.Errorf("write package to file: %w", err), restoreErr)
-	default:
-		restoreErr := renameFile(agentBackupPath, p.agentExePath)
-		return errors.Join(fmt.Errorf("agent package met or exceeded %d bytes", maxAgentBytes), restoreErr)
+	// 5. Stop the agent process.
+	startAgent, err := p.am.stopAgentProcess(ctx)
+	if err != nil {
+		return fmt.Errorf("stop agent process: %w", err)
+	}
+
+	// We always want to start the agent process again, even if we fail to write the agent file
+	defer close(startAgent)
+
+	// 6. Backup the existing agent file.
+	agentBackupPath := filepath.Join(p.storageDir, "collector.bak")
+	if err = renameFile(p.agentExePath, agentBackupPath); err != nil {
+		return fmt.Errorf("rename collector exe path to backup path: %w", err)
+	}
+
+	// 7. Overwrite the existing agent file with the new agent.
+	if err := renameFile(tmpFilePath, p.agentExePath); err != nil {
+		if restoreErr := renameFile(agentBackupPath, p.agentExePath); restoreErr != nil {
+			return errors.Join(fmt.Errorf("rename tmp file to agent executable path: %w", err), fmt.Errorf("restore agent backup: %w", restoreErr))
+		}
+		return fmt.Errorf("successfully restored backup, but failed to rename tmp file to agent executable path: %w", err)
+	}
+
+	// 8. Delete the backup after a successful update.
+	if err := os.Remove(agentBackupPath); err != nil {
+		return fmt.Errorf("delete agent backup: %w", err)
 	}
 
 	return nil
 }
 
-func (p *packageManager) DeletePackage(packageName string) error {
+func (p packageManager) DeletePackage(packageName string) error {
 	if packageName != agentPackageKey {
 		// We only take the agent package, so the package already doesn't exist.
 		return nil
@@ -269,7 +273,7 @@ func (p *packageManager) DeletePackage(packageName string) error {
 	return errors.New("cannot delete top-level package")
 }
 
-func (p *packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
+func (p packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
 	lastStatusBytes, err := os.ReadFile(p.lastPackageStatusPath())
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -302,7 +306,7 @@ func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatu
 	return nil
 }
 
-func (p *packageManager) lastPackageStatusPath() string {
+func (p packageManager) lastPackageStatusPath() string {
 	return filepath.Join(p.storageDir, lastPackageStatusFileName)
 }
 
@@ -338,6 +342,9 @@ func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, pa
 		return fmt.Errorf("create signature: %w", err)
 	}
 
+	// VerifyBlobSignature uses the provided checkOpts to verify the signature of the package.
+	// Specifically it uses the public Fulcio certificates to verify the identity of the signature and
+	// a Rekor client to verify the validity of the signature against a transparency log.
 	_, err = cosign.VerifyBlobSignature(ctx, ociSig, checkOpts)
 	if err != nil {
 		return fmt.Errorf("verify blob: %w", err)
@@ -346,6 +353,12 @@ func verifyPackageSignature(ctx context.Context, checkOpts *cosign.CheckOpts, pa
 	return nil
 }
 
+// createCosignCheckOpts creates a cosign.CheckOpts from the signature options.
+// These options provide information needed to verify the signature of the package.
+// The options consist of public Fulcio certificates to verify the identity of the signature,
+// a Rekor client to verify the integrity of the signature against a transparency log,
+// and a set of identities that the signature must match. More information about the
+// cosign.CheckOpts can be found in the specification (../specification/README.md#collector-executable-updates-flow).
 func createCosignCheckOpts(signatureOpts config.AgentSignature) (*cosign.CheckOpts, error) {
 	rootCerts, err := fulcio.GetRoots()
 	if err != nil {
