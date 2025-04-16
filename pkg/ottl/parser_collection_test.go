@@ -409,6 +409,35 @@ func Test_ParseStatements_StatementsConverterGetterType(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func Test_ParseStatements_WithContextInferenceConditions(t *testing.T) {
+	metricParser := mockParser(t, WithPathContextNames[any]([]string{"metric", "resource"}))
+	resourceParser := mockParser(t, WithPathContextNames[any]([]string{"resource"}))
+
+	failingConverter := func(
+		_ *ParserCollection[any],
+		_ StatementsGetter,
+		_ []*Statement[any],
+	) (any, error) {
+		return nil, errors.New(`invalid context inferred, got: "resource", expected: "metric"`)
+	}
+
+	pc, err := NewParserCollection(
+		componenttest.NewNopTelemetrySettings(),
+		WithParserCollectionContext("metric", metricParser, WithStatementConverter(newNopParsedStatementsConverter[any]())),
+		WithParserCollectionContext("resource", resourceParser, WithStatementConverter(failingConverter)),
+	)
+
+	require.NoError(t, err)
+
+	result, err := pc.ParseStatements(
+		NewStatementsGetter([]string{`set(resource.attributes["bar"], "bar")`}),
+		WithContextInferenceConditions([]string{`metric.attributes["foo"] == "foo"`}),
+	)
+
+	require.NoError(t, err)
+	require.NotNil(t, result)
+}
+
 func Test_ParseStatementsWithContext_UnknownContextError(t *testing.T) {
 	pc, err := NewParserCollection[any](componenttest.NewNopTelemetrySettings())
 	require.NoError(t, err)

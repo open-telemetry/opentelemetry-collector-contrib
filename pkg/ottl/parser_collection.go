@@ -18,16 +18,6 @@ type StatementsGetter interface {
 	GetStatements() []string
 }
 
-// ContextInferenceHintsProvider provides a set of OTTLs used by the ParserCollection
-// context inferrer to determine the context of some statements. This is particularly
-// useful when the statements alone are insufficient for context inference or when a
-// less specific parser is desired.
-//
-// Experimental: *NOTE* this API is subject to change or removal in the future.
-type ContextInferenceHintsProvider interface {
-	GetConditionsForContextInference() []string
-}
-
 // NewStatementsGetter creates a new StatementsGetter.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
@@ -330,6 +320,27 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 	}
 }
 
+type parseCollectionContextInferenceOptions struct {
+	conditions []string
+}
+
+// ParserCollectionContextInferenceOption allows configuring the context inference and use
+// this option with the supported parsing functions.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+type ParserCollectionContextInferenceOption func(p *parseCollectionContextInferenceOptions)
+
+// WithContextInferenceConditions sets additional OTTL conditions to be used to enhance
+// the context inference process. This is particularly useful when the statements alone are
+// insufficient for determine the correct context, or when a less-specific context is desired.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+func WithContextInferenceConditions(conditions []string) ParserCollectionContextInferenceOption {
+	return func(p *parseCollectionContextInferenceOptions) {
+		p.conditions = conditions
+	}
+}
+
 // ParseStatements parses the given statements into [R] using the configured context's ottl.Parser
 // and subsequently calling the ParsedStatementsConverter function.
 // The statement's context is automatically inferred from the [Path.Context] values, choosing the
@@ -343,12 +354,15 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 // parser is desired.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
-func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, error) {
+func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter, options ...ParserCollectionContextInferenceOption) (R, error) {
 	statementsValues := statements.GetStatements()
-	var conditionsValues []string
-	if hintsProvider, ok := statements.(ContextInferenceHintsProvider); ok {
-		conditionsValues = hintsProvider.GetConditionsForContextInference()
+
+	parseStatementsOpts := parseCollectionContextInferenceOptions{}
+	for _, opt := range options {
+		opt(&parseStatementsOpts)
 	}
+
+	conditionsValues := parseStatementsOpts.conditions
 
 	var inferredContext string
 	var err error
