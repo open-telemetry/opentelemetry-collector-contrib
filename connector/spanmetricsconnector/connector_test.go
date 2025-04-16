@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -717,7 +718,7 @@ func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error
 
 func TestConsumeMetricsErrors(t *testing.T) {
 	// Prepare
-	fakeErr := fmt.Errorf("consume metrics error")
+	fakeErr := errors.New("consume metrics error")
 
 	core, observedLogs := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(core)

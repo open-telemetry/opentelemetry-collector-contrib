@@ -5,6 +5,7 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 	"testing"
@@ -59,7 +60,7 @@ func TestPushLogData(t *testing.T) {
 		assert.Equal(t, http.ErrServerClosed, err)
 	}()
 
-	err0 := fmt.Errorf("Not Started")
+	err0 := errors.New("Not Started")
 	for i := 0; err0 != nil && i < 10; i++ { // until server started
 		err0 = exporter.pushLogData(ctx, simpleLogs(10))
 		time.Sleep(100 * time.Millisecond)

@@ -734,10 +734,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "receive", attrVal.Str())
+					assert.Equal(t, "receive", attrVal.Str())
 				case "k8s.node.network.io":
 					assert.False(t, validatedMetrics["k8s.node.network.io"], "Found a duplicate in the metrics slice: k8s.node.network.io")
 					validatedMetrics["k8s.node.network.io"] = true
@@ -754,10 +754,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "receive", attrVal.Str())
+					assert.Equal(t, "receive", attrVal.Str())
 				case "k8s.node.uptime":
 					assert.False(t, validatedMetrics["k8s.node.uptime"], "Found a duplicate in the metrics slice: k8s.node.uptime")
 					validatedMetrics["k8s.node.uptime"] = true
@@ -1006,10 +1006,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "receive", attrVal.Str())
+					assert.Equal(t, "receive", attrVal.Str())
 				case "k8s.pod.network.io":
 					assert.False(t, validatedMetrics["k8s.pod.network.io"], "Found a duplicate in the metrics slice: k8s.pod.network.io")
 					validatedMetrics["k8s.pod.network.io"] = true
@@ -1026,10 +1026,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("interface")
 					assert.True(t, ok)
-					assert.EqualValues(t, "interface-val", attrVal.Str())
+					assert.Equal(t, "interface-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "receive", attrVal.Str())
+					assert.Equal(t, "receive", attrVal.Str())
 				case "k8s.pod.uptime":
 					assert.False(t, validatedMetrics["k8s.pod.uptime"], "Found a duplicate in the metrics slice: k8s.pod.uptime")
 					validatedMetrics["k8s.pod.uptime"] = true

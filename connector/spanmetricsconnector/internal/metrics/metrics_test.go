@@ -401,7 +401,7 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 			sm := SumMetrics{
 				metrics: tt.metrics,
 			}
-			sum := sm.GetOrCreate(tt.key, tt.attributes)
+			sum := sm.GetOrCreate(tt.key, tt.attributes, pcommon.Timestamp(0))
 			assert.Len(t, sm.metrics, tt.expectedCount)
 			if tt.expectedCreated {
 				assert.Equal(t, tt.attributes, sum.attributes)
@@ -472,10 +472,10 @@ func TestSumMetrics_BuildMetrics(t *testing.T) {
 				metrics: tt.metrics,
 			}
 			metric := pmetric.NewMetric()
-			startTimestamp := func(Key) pcommon.Timestamp { return 0 }
+			startTimestamp := func(Key, pcommon.Timestamp) pcommon.Timestamp { return 0 }
 			timestamp := pcommon.Timestamp(1000)
 
-			sm.BuildMetrics(metric, startTimestamp, timestamp, tt.temporality)
+			sm.BuildMetrics(metric, timestamp, startTimestamp, tt.temporality)
 
 			assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
 			assert.Equal(t, tt.temporality, metric.Sum().AggregationTemporality())
