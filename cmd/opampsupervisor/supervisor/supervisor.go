@@ -619,6 +619,7 @@ func (s *Supervisor) getBootstrapInfo() (agentVersion string, err error) {
 			return "", errors.New(msg)
 		}
 	case err = <-done:
+		span.SetStatus(codes.Ok, "")
 		return agentVersion, err
 	}
 }

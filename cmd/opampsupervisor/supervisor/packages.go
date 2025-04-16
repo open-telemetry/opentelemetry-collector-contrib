@@ -100,7 +100,7 @@ func newPackageManager(
 	}, nil
 }
 
-func (p packageManager) AllPackagesHash() ([]byte, error) {
+func (p *packageManager) AllPackagesHash() ([]byte, error) {
 	p.persistentState.mux.Lock()
 	defer p.persistentState.mux.Unlock()
 	return p.persistentState.AllPackagesHash, nil
@@ -112,11 +112,11 @@ func (p *packageManager) SetAllPackagesHash(hash []byte) error {
 	return p.persistentState.SetAllPackagesHash(hash)
 }
 
-func (packageManager) Packages() ([]string, error) {
+func (p *packageManager) Packages() ([]string, error) {
 	return []string{agentPackageKey}, nil
 }
 
-func (p packageManager) PackageState(packageName string) (state types.PackageState, err error) {
+func (p *packageManager) PackageState(packageName string) (state types.PackageState, err error) {
 	if packageName == agentPackageKey {
 		return types.PackageState{
 			Exists:  true,
@@ -150,7 +150,7 @@ func (p *packageManager) SetPackageState(packageName string, state types.Package
 	return nil
 }
 
-func (p packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
+func (p *packageManager) CreatePackage(packageName string, _ protobufs.PackageType) error {
 	if packageName != agentPackageKey {
 		return errors.New("only agent package is supported")
 	}
@@ -158,7 +158,7 @@ func (p packageManager) CreatePackage(packageName string, _ protobufs.PackageTyp
 	return errors.New("agent package already exists")
 }
 
-func (p packageManager) FileContentHash(packageName string) ([]byte, error) {
+func (p *packageManager) FileContentHash(packageName string) ([]byte, error) {
 	if packageName != agentPackageKey {
 		return nil, nil
 	}
@@ -177,7 +177,7 @@ func (p packageManager) FileContentHash(packageName string) ([]byte, error) {
 // 7. Overwrite the existing agent file with the new agent.
 // 8. Delete the backup after a successful update.
 // Agent process is restarted when this function returns.
-func (p packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
+func (p *packageManager) UpdateContent(ctx context.Context, packageName string, data io.Reader, contentHash, signature []byte) error {
 	if packageName != agentPackageKey {
 		return errors.New("package does not exist")
 	}
@@ -189,14 +189,14 @@ func (p packageManager) UpdateContent(ctx context.Context, packageName string, d
 	}
 
 	// 2. Verify the package integrity and signature.
-	if err := verifyPackageHash(by, contentHash); err != nil {
+	if err = verifyPackageHash(by, contentHash); err != nil {
 		return fmt.Errorf("could not verify package integrity: %w", err)
 	}
 	b64Cert, b64Signature, err := parsePackageSignature(signature)
 	if err != nil {
 		return fmt.Errorf("could not parse package signature: %w", err)
 	}
-	if err := verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
+	if err = verifyPackageSignature(ctx, p.checkOpts, by, b64Cert, b64Signature); err != nil {
 		return fmt.Errorf("could not verify package signature: %w", err)
 	}
 
@@ -228,8 +228,10 @@ func (p packageManager) UpdateContent(ctx context.Context, packageName string, d
 	}
 	defer tmpAgentFile.Close()
 
-	if _, err := io.CopyN(tmpAgentFile, tar, maxAgentBytes); err != nil {
-		return fmt.Errorf("write collector to tmp file: %w", err)
+	if _, err = io.CopyN(tmpAgentFile, tar, maxAgentBytes); err != nil {
+		if !errors.Is(err, io.EOF) {
+			return fmt.Errorf("write collector to tmp file: %w", err)
+		}
 	}
 
 	// 5. Stop the agent process.
@@ -248,7 +250,7 @@ func (p packageManager) UpdateContent(ctx context.Context, packageName string, d
 	}
 
 	// 7. Overwrite the existing agent file with the new agent.
-	if err := renameFile(tmpFilePath, p.agentExePath); err != nil {
+	if err = renameFile(tmpFilePath, p.agentExePath); err != nil {
 		if restoreErr := renameFile(agentBackupPath, p.agentExePath); restoreErr != nil {
 			return errors.Join(fmt.Errorf("rename tmp file to agent executable path: %w", err), fmt.Errorf("restore agent backup: %w", restoreErr))
 		}
@@ -256,14 +258,14 @@ func (p packageManager) UpdateContent(ctx context.Context, packageName string, d
 	}
 
 	// 8. Delete the backup after a successful update.
-	if err := os.Remove(agentBackupPath); err != nil {
+	if err = os.Remove(agentBackupPath); err != nil {
 		return fmt.Errorf("delete agent backup: %w", err)
 	}
 
 	return nil
 }
 
-func (p packageManager) DeletePackage(packageName string) error {
+func (p *packageManager) DeletePackage(packageName string) error {
 	if packageName != agentPackageKey {
 		// We only take the agent package, so the package already doesn't exist.
 		return nil
@@ -273,7 +275,7 @@ func (p packageManager) DeletePackage(packageName string) error {
 	return errors.New("cannot delete top-level package")
 }
 
-func (p packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
+func (p *packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, error) {
 	lastStatusBytes, err := os.ReadFile(p.lastPackageStatusPath())
 	switch {
 	case errors.Is(err, os.ErrNotExist):
@@ -292,7 +294,7 @@ func (p packageManager) LastReportedStatuses() (*protobufs.PackageStatuses, erro
 	return &ret, nil
 }
 
-func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatuses) error {
+func (p *packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatuses) error {
 	lastStatusBytes, err := proto.Marshal(statuses)
 	if err != nil {
 		return fmt.Errorf("marshal statuses: %w", err)
@@ -306,7 +308,7 @@ func (p packageManager) SetLastReportedStatuses(statuses *protobufs.PackageStatu
 	return nil
 }
 
-func (p packageManager) lastPackageStatusPath() string {
+func (p *packageManager) lastPackageStatusPath() string {
 	return filepath.Join(p.storageDir, lastPackageStatusFileName)
 }
 
