@@ -5,10 +5,12 @@ package geoipprocessor
 
 import (
 	"context"
+	"errors"
 	"net"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -36,6 +38,7 @@ type providerFactoryMock struct {
 
 type providerMock struct {
 	LocationF func(context.Context, net.IP) (attribute.Set, error)
+	CloseF    func(context.Context) error
 }
 
 var (
@@ -59,13 +62,16 @@ func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set,
 	return pm.LocationF(ctx, ip)
 }
 
-func (pm *providerMock) Close(context.Context) error {
-	return nil
+func (pm *providerMock) Close(ctx context.Context) error {
+	return pm.CloseF(ctx)
 }
 
 var baseMockProvider = providerMock{
 	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -81,6 +87,9 @@ var baseMockFactory = providerFactoryMock{
 var baseProviderMock = providerMock{
 	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -238,4 +247,24 @@ func TestProcessor(t *testing.T) {
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
+}
+
+func TestProcessorShutdownError(t *testing.T) {
+	// processor with two mocked providers that return error on close
+	processor := geoIPProcessor{
+		providers: []provider.GeoIPProvider{
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 1")
+				},
+			},
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 2")
+				},
+			},
+		},
+	}
+
+	assert.EqualError(t, processor.shutdown(context.Background()), "test error 1; test error 2")
 }

@@ -61,7 +61,10 @@ func (g *maxMindProvider) Location(_ context.Context, ipAddress net.IP) (attribu
 // Close unmaps the geo database file from virtual memory and returns the
 // resources to the system.
 func (g *maxMindProvider) Close(context.Context) error {
-	return g.geoReader.Close()
+	if g.geoReader != nil {
+		return g.geoReader.Close()
+	}
+	return nil
 }
 
 // cityAttributes returns a list of key-values containing geographical metadata associated to the provided IP. The key names are populated using the internal geo IP conventions package. If an invalid or nil IP is provided, an error is returned.
