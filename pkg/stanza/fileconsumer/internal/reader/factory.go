@@ -8,6 +8,7 @@ import (
 	"errors"
 	"fmt"
 	"os"
+	"sync"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +35,7 @@ type Factory struct {
 	HeaderConfig            *header.Config
 	FromBeginning           bool
 	FingerprintSize         int
+	BufPool                 sync.Pool
 	InitialBufferSize       int
 	MaxLogSize              int
 	Encoding                encoding.Encoding
@@ -75,6 +77,7 @@ func (f *Factory) NewReaderFromMetadata(file *os.File, m *Metadata) (r *Reader, 
 		file:              file,
 		fileName:          file.Name(),
 		fingerprintSize:   f.FingerprintSize,
+		bufPool:           &f.BufPool,
 		initialBufferSize: f.InitialBufferSize,
 		maxLogSize:        f.MaxLogSize,
 		decoder:           f.Encoding.NewDecoder(),

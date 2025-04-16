@@ -6,13 +6,13 @@ require (
 	github.com/google/uuid v1.6.0
 	github.com/solarwindscloud/apm-proto v1.0.8
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/component/componenttest v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/config/configgrpc v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/confmap v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/confmap/xconfmap v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/extension v1.29.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/extension/extensiontest v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/component v1.30.0
+	go.opentelemetry.io/collector/component/componenttest v0.124.0
+	go.opentelemetry.io/collector/config/configgrpc v0.124.0
+	go.opentelemetry.io/collector/confmap v1.30.0
+	go.opentelemetry.io/collector/confmap/xconfmap v0.124.0
+	go.opentelemetry.io/collector/extension v1.30.0
+	go.opentelemetry.io/collector/extension/extensiontest v0.124.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	google.golang.org/grpc v1.71.1
@@ -37,16 +37,16 @@ require (
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/stretchr/objx v0.5.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/client v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/config/configauth v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/config/confignet v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/config/configopaque v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/config/configtls v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/collector/client v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.124.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/confignet v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configopaque v1.30.0 // indirect
+	go.opentelemetry.io/collector/config/configtls v1.30.0 // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.30.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.124.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.30.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.60.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect

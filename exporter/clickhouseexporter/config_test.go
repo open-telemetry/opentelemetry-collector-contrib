@@ -49,6 +49,7 @@ func TestLoadConfig(t *testing.T) {
 			id: component.NewIDWithName(metadata.Type, "full"),
 			expected: &Config{
 				collectorVersion: "unknown",
+				driverName:       clickhouseDriverName,
 				Endpoint:         defaultEndpoint,
 				Database:         "otel",
 				Username:         "foo",

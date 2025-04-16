@@ -20,6 +20,8 @@ type Manager interface {
 	Upload(ctx context.Context, data []byte) error
 }
 
+type ManagerOpt func(Manager)
+
 type s3manager struct {
 	bucket       string
 	builder      *PartitionKeyBuilder
@@ -30,14 +32,20 @@ type s3manager struct {
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, acl s3types.ObjectCannedACL) Manager {
-	return &s3manager{
+func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, opts ...ManagerOpt) Manager {
+	manager := &s3manager{
 		bucket:       bucket,
 		builder:      builder,
 		uploader:     manager.NewUploader(service),
 		storageClass: storageClass,
-		acl:          acl,
 	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(manager)
+		}
+	}
+
+	return manager
 }
 
 func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
@@ -85,5 +93,15 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 		return content, nil
 	default:
 		return bytes.NewBuffer(raw), nil
+	}
+}
+
+func WithACL(acl s3types.ObjectCannedACL) func(Manager) {
+	return func(m Manager) {
+		s3m, ok := m.(*s3manager)
+		if !ok {
+			return
+		}
+		s3m.acl = acl
 	}
 }

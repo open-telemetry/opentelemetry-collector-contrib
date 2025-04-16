@@ -65,14 +65,14 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 
 	genClient, restClient, err := ghs.createClients()
 	if err != nil {
-		ghs.logger.Sugar().Errorf("unable to create clients", zap.Error(err))
+		ghs.logger.Sugar().Error("unable to create clients", zap.Error(err))
 	}
 
 	// Do some basic validation to ensure the values provided actually exist in github
 	// prior to making queries against that org or user value
 	loginType, err := ghs.login(ctx, genClient, ghs.cfg.GitHubOrg)
 	if err != nil {
-		ghs.logger.Sugar().Errorf("error logging into GitHub via GraphQL", zap.Error(err))
+		ghs.logger.Sugar().Error("error logging into GitHub via GraphQL", zap.Error(err))
 		return ghs.mb.Emit(), err
 	}
 
@@ -89,7 +89,7 @@ func (ghs *githubScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	// and the recording the total count of repositories
 	repos, count, err := ghs.getRepos(ctx, genClient, sq)
 	if err != nil {
-		ghs.logger.Sugar().Errorf("error getting repo data", zap.Error(err))
+		ghs.logger.Sugar().Error("error getting repo data", zap.Error(err))
 		return ghs.mb.Emit(), err
 	}
 

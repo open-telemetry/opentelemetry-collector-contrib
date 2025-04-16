@@ -62,4 +62,4 @@ resourceLogs:
             eventName: "query event"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: 0.0.1
+          version: latest

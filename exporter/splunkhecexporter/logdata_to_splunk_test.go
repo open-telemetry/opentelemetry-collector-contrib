@@ -507,6 +507,30 @@ func Test_mapLogRecordToSplunkEvent(t *testing.T) {
 					"myhost", "myapp", "myapp-type"),
 			},
 		},
+		{
+			name: "valid timestamp",
+			logRecordFn: func() plog.LogRecord {
+				logRecord := plog.NewLogRecord()
+				logRecord.Body().SetStr("mylog")
+				logRecord.Attributes().PutStr(splunk.DefaultSourceLabel, "myapp")
+				logRecord.Attributes().PutStr(splunk.DefaultSourceTypeLabel, "myapp-type")
+				logRecord.Attributes().PutStr(conventions.AttributeHostName, "myhost")
+				logRecord.Attributes().PutStr("custom", "custom")
+				logRecord.SetObservedTimestamp(ts)
+				return logRecord
+			},
+			logResourceFn: pcommon.NewResource,
+			configDataFn: func() *Config {
+				config := createDefaultConfig().(*Config)
+				config.Source = "source"
+				config.SourceType = "sourcetype"
+				return config
+			},
+			wantSplunkEvents: []*splunk.Event{
+				commonLogSplunkEvent("mylog", ts, map[string]any{"custom": "custom"},
+					"myhost", "myapp", "myapp-type"),
+			},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

@@ -27,6 +27,11 @@ const (
 	ErrHostPort            = "invalid config: 'endpoint' must be in the form <host>:<port> no matter what 'transport' is configured"
 )
 
+type QuerySampleCollection struct {
+	Enabled         bool  `mapstructure:"enabled"`
+	MaxRowsPerQuery int64 `mapstructure:"max_rows_per_query"`
+}
+
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Username                       string                         `mapstructure:"username"`
@@ -37,6 +42,7 @@ type Config struct {
 	configtls.ClientConfig         `mapstructure:"tls,omitempty"` // provides SSL details
 	ConnectionPool                 `mapstructure:"connection_pool,omitempty"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
+	QuerySampleCollection          `mapstructure:"query_sample_collection,omitempty"`
 }
 
 type ConnectionPool struct {

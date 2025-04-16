@@ -152,7 +152,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
-	readerFactory := reader.Factory{
+	readerFactory := &reader.Factory{
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),

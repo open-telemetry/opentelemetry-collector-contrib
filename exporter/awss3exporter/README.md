@@ -6,7 +6,7 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fawss3%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fawss3) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fawss3%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fawss3) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@pdelewski](https://www.github.com/pdelewski) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@pdelewski](https://www.github.com/pdelewski), [@Erog38](https://www.github.com/Erog38) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -19,25 +19,25 @@ This exporter targets to support proto/json format.
 
 The following exporter configuration parameters are supported.
 
-| Name                      | Description                                                                                                                                | Default     |
-|:--------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|-------------|
-| `region`                  | AWS region.                                                                                                                                | "us-east-1" |
-| `s3_bucket`               | S3 bucket                                                                                                                                  |             |
-| `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                      |             |
+| Name                      | Description                                                                                                                                | Default                                     |
+|:--------------------------|:-------------------------------------------------------------------------------------------------------------------------------------------|---------------------------------------------|
+| `region`                  | AWS region.                                                                                                                                | "us-east-1"                                 |
+| `s3_bucket`               | S3 bucket                                                                                                                                  |                                             |
+| `s3_prefix`               | prefix for the S3 key (root directory inside bucket).                                                                                      |                                             |
 | `s3_partition_format`     | filepath formatting for the partition; See [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) for format specification. | "year=%Y/month=%m/day=%d/hour=%H/minute=%M" |
-| `role_arn`                | the Role ARN to be assumed                                                                                                                 |             |
-| `file_prefix`             | file prefix defined by user                                                                                                                |             |
-| `marshaler`               | marshaler used to produce output data                                                                                                      | `otlp_json` |
-| `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |             |
-| `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |             |
-| `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                   |             |
-| `storage_class`           | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)                                          | STANDARD    |
-| `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                 | private     |
-| `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false       |
-| `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false       |
-| `compression`             | should the file be compressed                                                                                                              | none        |
-| `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled    |
-| `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s          |
+| `role_arn`                | the Role ARN to be assumed                                                                                                                 |                                             |
+| `file_prefix`             | file prefix defined by user                                                                                                                |                                             |
+| `marshaler`               | marshaler used to produce output data                                                                                                      | `otlp_json`                                 |
+| `encoding`                | Encoding extension to use to marshal data. Overrides the `marshaler` configuration option if set.                                          |                                             |
+| `encoding_file_extension` | file format extension suffix when using the `encoding` configuration option. May be left empty for no suffix to be appended.               |                                             |
+| `endpoint`                | (REST API endpoint) overrides the endpoint used by the exporter instead of constructing it from `region` and `s3_bucket`                   |                                             |
+| `storage_class`           | [S3 storageclass](https://docs.aws.amazon.com/AmazonS3/latest/userguide/storage-class-intro.html)                                          | STANDARD                                    |
+| `acl`                     | [S3 Object Canned ACL](https://docs.aws.amazon.com/AmazonS3/latest/userguide/acl-overview.html#canned-acl)                                 | none (does not set by default)              |
+| `s3_force_path_style`     | [set this to `true` to force the request to use path-style addressing](http://docs.aws.amazon.com/AmazonS3/latest/dev/VirtualHosting.html) | false                                       |
+| `disable_ssl`             | set this to `true` to disable SSL when sending requests                                                                                    | false                                       |
+| `compression`             | should the file be compressed                                                                                                              | none                                        |
+| `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled                                    |
+| `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s                                          |
 
 
 ### Marshaler

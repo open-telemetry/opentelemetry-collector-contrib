@@ -42,13 +42,11 @@ check_collector_versions_correct() {
    echo "Checking $collector_module is used with $collector_mod_version"
 
    # Loop through all the module files, checking the collector version
-   for mod_file in $mod_files; do
-      if [ "${GNU_SED_INSTALLED}" = false ]; then
-         sed -i '' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file
-      else
-         sed -i'' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_file
-      fi
-   done
+   if [ "${GNU_SED_INSTALLED}" = false ]; then
+      sed -i '' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_files
+   else
+      sed -i'' "s|$collector_module [^ ]*|$collector_module $collector_mod_version|g" $mod_files
+   fi
 }
 
 MAIN_MOD_FILE="./cmd/otelcontribcol/go.mod"

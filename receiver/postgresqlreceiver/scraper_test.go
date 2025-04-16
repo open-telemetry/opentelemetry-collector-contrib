@@ -5,18 +5,25 @@ package postgresqlreceiver
 
 import (
 	"context"
+	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
 	"path/filepath"
 	"testing"
 
+	"github.com/DATA-DOG/go-sqlmock"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
+	"github.com/tj/assert"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
 )
@@ -381,10 +388,67 @@ func TestScraperExcludeDatabase(t *testing.T) {
 	runTest(false, "exclude.yaml")
 }
 
+//go:embed testdata/scraper/query-sample/expectedSql.sql
+var expectedScrapeSampleQuery string
+
+func TestScrapeQuerySample(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.Databases = []string{}
+	//nolint:staticcheck
+	cfg.QuerySampleCollection.Enabled = true
+	db, mock, err := sqlmock.New(sqlmock.QueryMatcherOption(sqlmock.QueryMatcherEqual))
+	assert.NoError(t, err)
+
+	defer db.Close()
+
+	factory := mockSimpleClientFactory{
+		db: db,
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	logger, err := zap.NewProduction()
+	assert.NoError(t, err)
+	settings.TelemetrySettings = component.TelemetrySettings{
+		Logger: logger,
+	}
+	scraper := newPostgreSQLScraper(settings, cfg, factory)
+	mock.ExpectQuery(expectedScrapeSampleQuery).WillReturnRows(sqlmock.NewRows(
+		[]string{"datname", "usename", "client_addrs", "client_hostname", "client_port", "query_start", "wait_event_type", "wait_event", "query_id", "pid", "application_name", "state", "query"},
+	).FromCSVString("postgres,otelu,11.4.5.14,otel,114514,2025-02-12T16:37:54.843+08:00,,,123131231231,1450,receiver,idle,select * from pg_stat_activity where id = 32"))
+	actualLogs, err := scraper.scrapeQuerySamples(context.Background(), 30)
+	assert.NoError(t, err)
+	expectedFile := filepath.Join("testdata", "scraper", "query-sample", "expected.yaml")
+	expectedLogs, err := golden.ReadLogs(expectedFile)
+	require.NoError(t, err)
+	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
+	assert.NoError(t, errs)
+}
+
 type (
-	mockClientFactory struct{ mock.Mock }
-	mockClient        struct{ mock.Mock }
+	mockClientFactory       struct{ mock.Mock }
+	mockClient              struct{ mock.Mock }
+	mockSimpleClientFactory struct {
+		db *sql.DB
+	}
 )
+
+// close implements postgreSQLClientFactory.
+func (m mockSimpleClientFactory) close() error {
+	return nil
+}
+
+// getClient implements postgreSQLClientFactory.
+func (m mockSimpleClientFactory) getClient(_ string) (client, error) {
+	return &postgreSQLClient{
+		client:  m.db,
+		closeFn: m.close,
+	}, nil
+}
+
+// getQuerySamples implements client.
+func (m *mockClient) getQuerySamples(_ context.Context, _ int64, _ *zap.Logger) ([]map[string]any, error) {
+	panic("this should not be invoked")
+}
 
 var _ client = &mockClient{}
 

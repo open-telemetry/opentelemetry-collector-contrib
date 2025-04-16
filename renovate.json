@@ -207,6 +207,15 @@
         "google.golang.org/grpc"
       ],
       "allowedVersions": "!/v1.68.0$/"
+    },
+    {
+      "matchManagers": [
+        "gomod"
+      ],
+      "groupName": "All github.com/knadh/koanf packages",
+      "matchPackageNames": [
+        "github.com/knadh/koanf{/,}**"
+      ]
     }
   ],
   "ignoreDeps": [

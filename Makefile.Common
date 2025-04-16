@@ -10,6 +10,9 @@ SRC_ROOT := $(shell git rev-parse --show-toplevel)
 # SRC_PARENT_DIR is the absolute path of source tree's parent directory
 SRC_PARENT_DIR := $(shell dirname $(SRC_ROOT))
 
+COVER_DIR?=coverage
+COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
+
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
 # These ldflags allow the build tool to omit the symbol table, debug information, and the DWARF symbol table to downscale binary size.
@@ -18,7 +21,7 @@ GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
 GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
 GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
-GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
+COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
@@ -108,7 +111,7 @@ test-with-cover: $(GOTESTSUM)
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) ./... $(COVER_OPT)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: test-with-junit
@@ -118,9 +121,9 @@ test-with-junit: $(GOTESTSUM)
 
 .PHONY: test-with-junit-and-cover
 test-with-junit-and-cover: $(GOTESTSUM)
+	mkdir -p $(COVER_DIR_ABS)
 	mkdir -p $(JUNIT_OUT_DIR)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT_WITH_COVERAGE) ./...
-	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./... $(COVER_OPT)
 
 .PHONY: buildtest
 buildtest:

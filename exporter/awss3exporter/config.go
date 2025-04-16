@@ -95,7 +95,7 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if !validACLs[c.S3Uploader.ACL] {
+	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 

@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -161,6 +162,51 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	p.collectDatabaseLocks(ctx, now, listClient, &errs)
 
 	return p.mb.Emit(), errs.combine()
+}
+
+func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName(metadata.ScopeName)
+	scopedLog.Scope().SetVersion("0.0.1")
+
+	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	if err != nil {
+		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		return logs, err
+	}
+
+	var errs errsMux
+
+	logRecords := scopedLog.LogRecords()
+
+	p.collectQuerySamples(ctx, dbClient, &logRecords, maxRowsPerQuery, &errs, p.logger)
+
+	defer dbClient.Close()
+
+	return logs, nil
+}
+
+func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, logRecords *plog.LogRecordSlice, limit int64, mux *errsMux, logger *zap.Logger) {
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
+	if err != nil {
+		mux.addPartial(err)
+		return
+	}
+	for _, atts := range attributes {
+		record := logRecords.AppendEmpty()
+		record.SetTimestamp(timestamp)
+		record.SetEventName("query sample")
+		if err := record.Attributes().FromRaw(atts); err != nil {
+			mux.addPartial(err)
+			logger.Error("failed to read attributes from row", zap.Error(err))
+		}
+		record.Body().SetStr("sample")
+	}
 }
 
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {

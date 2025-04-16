@@ -6,24 +6,24 @@ require (
 	github.com/Khan/genqlient v0.8.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.6
-	github.com/golangci/golangci-lint/v2 v2.1.1
+	github.com/golangci/golangci-lint/v2 v2.1.2
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
 	go.opentelemetry.io/build-tools/checkapi v0.22.0
-	go.opentelemetry.io/build-tools/checkfile v0.21.0
-	go.opentelemetry.io/build-tools/chloggen v0.21.0
-	go.opentelemetry.io/build-tools/crosslink v0.21.0
-	go.opentelemetry.io/build-tools/githubgen v0.21.0
-	go.opentelemetry.io/build-tools/issuegenerator v0.21.0
-	go.opentelemetry.io/build-tools/multimod v0.21.0
-	go.opentelemetry.io/collector/cmd/builder v0.123.1-0.20250411074447-4fb7c24ebecc
-	go.opentelemetry.io/collector/cmd/mdatagen v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/build-tools/checkfile v0.22.0
+	go.opentelemetry.io/build-tools/chloggen v0.22.0
+	go.opentelemetry.io/build-tools/crosslink v0.22.0
+	go.opentelemetry.io/build-tools/githubgen v0.22.0
+	go.opentelemetry.io/build-tools/issuegenerator v0.22.0
+	go.opentelemetry.io/build-tools/multimod v0.22.0
+	go.opentelemetry.io/collector/cmd/builder v0.124.0
+	go.opentelemetry.io/collector/cmd/mdatagen v0.124.0
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.32.0
 	golang.org/x/vuln v1.1.4
 	gotest.tools/gotestsum v1.12.1
-	mvdan.cc/gofumpt v0.7.0
+	mvdan.cc/gofumpt v0.8.0
 )
 
 require (
@@ -91,7 +91,7 @@ require (
 	github.com/firefart/nonamedreturns v1.0.6 // indirect
 	github.com/fsnotify/fsnotify v1.8.0 // indirect
 	github.com/fzipp/gocyclo v0.6.0 // indirect
-	github.com/ghostiam/protogetter v0.3.13 // indirect
+	github.com/ghostiam/protogetter v0.3.15 // indirect
 	github.com/go-critic/go-critic v0.13.0 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
@@ -156,11 +156,11 @@ require (
 	github.com/kulti/thelper v0.6.3 // indirect
 	github.com/kunwardeep/paralleltest v1.0.14 // indirect
 	github.com/lasiar/canonicalheader v1.1.2 // indirect
-	github.com/ldez/exptostd v0.4.2 // indirect
+	github.com/ldez/exptostd v0.4.3 // indirect
 	github.com/ldez/gomoddirectives v0.6.1 // indirect
 	github.com/ldez/grignotin v0.9.0 // indirect
 	github.com/ldez/tagliatelle v0.7.1 // indirect
-	github.com/ldez/usetesting v0.4.2 // indirect
+	github.com/ldez/usetesting v0.4.3 // indirect
 	github.com/leonklingele/grouper v1.1.2 // indirect
 	github.com/lucasb-eyer/go-colorful v1.2.0 // indirect
 	github.com/macabu/inamedparam v0.2.0 // indirect
@@ -247,14 +247,14 @@ require (
 	go-simpler.org/musttag v0.13.0 // indirect
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/build-tools v0.21.0 // indirect
-	go.opentelemetry.io/collector/component v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/confmap v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/featuregate v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/filter v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.123.1-0.20250411074447-4fb7c24ebecc // indirect
-	go.opentelemetry.io/collector/pdata v1.29.1-0.20250411074447-4fb7c24ebecc // indirect
+	go.opentelemetry.io/build-tools v0.22.0 // indirect
+	go.opentelemetry.io/collector/component v1.30.0 // indirect
+	go.opentelemetry.io/collector/confmap v1.30.0 // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.30.0 // indirect
+	go.opentelemetry.io/collector/featuregate v1.30.0 // indirect
+	go.opentelemetry.io/collector/filter v0.124.0 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.124.0 // indirect
+	go.opentelemetry.io/collector/pdata v1.30.0 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
@@ -268,7 +268,7 @@ require (
 	golang.org/x/exp/typeparams v0.0.0-20250210185358-939b2ce775ac // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/net v0.39.0 // indirect
-	golang.org/x/oauth2 v0.28.0 // indirect
+	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/telemetry v0.0.0-20240522233618-39ace7a40ae7 // indirect

@@ -14,6 +14,7 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
+	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -27,7 +28,7 @@ func TestNewS3Manager(t *testing.T) {
 		&PartitionKeyBuilder{},
 		s3.New(s3.Options{}),
 		"STANDARD",
-		"private",
+		WithACL(s3types.ObjectCannedACLPrivate),
 	)
 
 	assert.NotNil(t, sm, "Must have a valid client returned")
@@ -155,7 +156,7 @@ func TestS3ManagerUpload(t *testing.T) {
 					Region:       "local",
 				}),
 				"STANDARD_IA",
-				"private",
+				WithACL(s3types.ObjectCannedACLPrivate),
 			)
 
 			// Using a mocked virtual clock to fix the timestamp used
