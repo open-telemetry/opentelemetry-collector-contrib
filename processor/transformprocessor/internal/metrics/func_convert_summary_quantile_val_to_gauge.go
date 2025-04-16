@@ -5,7 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"strconv"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -27,7 +27,7 @@ func createConvertSummaryQuantileValToGaugeFunction(_ ottl.FunctionContext, oArg
 	args, ok := oArgs.(*convertSummaryQuantileValToGaugeArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("convertSummaryQuantileValToGaugeFactory args must be of type *convertSummaryQuantileValToGaugeArguments")
+		return nil, errors.New("convertSummaryQuantileValToGaugeFactory args must be of type *convertSummaryQuantileValToGaugeArguments")
 	}
 
 	return convertSummaryQuantileValToGauge(args.AttributeKey, args.Suffix)
