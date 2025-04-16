@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	"go.opentelemetry.io/otel/attribute"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/geoipprocessor/internal/provider"
@@ -114,4 +115,16 @@ func (g *geoIPProcessor) processAttributes(ctx context.Context, metadata pcommon
 	}
 
 	return nil
+}
+
+func (g *geoIPProcessor) shutdown(ctx context.Context) error {
+	var errs error
+	for _, geoProvider := range g.providers {
+		err := geoProvider.Close(ctx)
+		if err != nil {
+			errs = multierr.Append(errs, err)
+		}
+	}
+
+	return errs
 }

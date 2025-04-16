@@ -92,7 +92,8 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	geoProcessor := newGeoIPProcessor(geoCfg, providers, set)
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, geoProcessor.processMetrics, processorhelper.WithShutdown(geoProcessor.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -101,7 +102,8 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	geoProcessor := newGeoIPProcessor(geoCfg, providers, set)
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, geoProcessor.processTraces, processorhelper.WithShutdown(geoProcessor.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
@@ -110,5 +112,6 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, newGeoIPProcessor(geoCfg, providers, set).processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	geoProcessor := newGeoIPProcessor(geoCfg, providers, set)
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, geoProcessor.processLogs, processorhelper.WithShutdown(geoProcessor.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
