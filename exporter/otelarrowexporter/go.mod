@@ -4,8 +4,8 @@ go 1.23.0
 
 require (
 	github.com/apache/arrow/go/v16 v16.1.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.124.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/grpcutil v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow v0.124.1
 	github.com/open-telemetry/otel-arrow v0.35.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/client v1.30.0
