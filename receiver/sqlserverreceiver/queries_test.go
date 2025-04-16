@@ -76,24 +76,16 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		instanceName             string
 		maxQuerySampleCount      uint
 		lookbackTime             uint
-		getQuery                 func(string, uint, uint) (string, error)
+		getQuery                 func() string
 		expectedQueryValFilename string
 	}{
 		{
-			name:                     "Test query text and query plan without instance name",
+			name:                     "Test query text and query plan",
 			instanceName:             "",
 			maxQuerySampleCount:      1000,
 			lookbackTime:             60,
 			getQuery:                 getSQLServerQueryTextAndPlanQuery,
 			expectedQueryValFilename: "databaseTopQueryWithoutInstanceName.txt",
-		},
-		{
-			name:                     "Test query text and query plan with instance name",
-			instanceName:             "instanceName",
-			maxQuerySampleCount:      2000,
-			lookbackTime:             120,
-			getQuery:                 getSQLServerQueryTextAndPlanQuery,
-			expectedQueryValFilename: "databaseTopQueryWithInstanceName.txt",
 		},
 	}
 
@@ -101,8 +93,7 @@ func TestQueryTextAndPlanQueryContents(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			expected, err := os.ReadFile(path.Join("./testdata", tt.expectedQueryValFilename))
 			require.NoError(t, err)
-
-			actual, err := tt.getQuery(tt.instanceName, tt.maxQuerySampleCount, tt.lookbackTime)
+			actual := tt.getQuery()
 			require.NoError(t, err)
 			require.Equal(t, strings.TrimSpace(string(expected)), strings.TrimSpace(actual))
 		})
@@ -113,7 +104,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 	queryTests := []struct {
 		name                     string
 		instanceName             string
-		getQuery                 func(uint64) string
+		getQuery                 func() string
 		expectedQueryValFilename string
 		maxRowsPerQuery          uint64
 	}{
@@ -132,7 +123,7 @@ func TestGetSQLServerQuerySamplesQuery(t *testing.T) {
 			require.NoError(t, err)
 			// Replace all will fix newlines when testing on Windows
 			expected := strings.ReplaceAll(string(expectedBytes), "\r\n", "\n")
-			actual := strings.ReplaceAll(tt.getQuery(tt.maxRowsPerQuery), "\r\n", "\n")
+			actual := strings.ReplaceAll(tt.getQuery(), "\r\n", "\n")
 			require.Equal(t, expected, actual)
 		})
 	}

@@ -87,8 +87,6 @@ type resourceMetrics struct {
 	sums       metrics.SumMetrics
 	events     metrics.SumMetrics
 	attributes pcommon.Map
-	// startTimestamp captures when the first data points for this resource are recorded.
-	startTimestamp pcommon.Timestamp
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
 }
@@ -281,8 +279,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
 		deltaMetricKeys := make(map[metrics.Key]bool)
-		startTimeGenerator := func(mk metrics.Key) pcommon.Timestamp {
-			startTime := rawMetrics.startTimestamp
+		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
 			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
 					startTime = lastTimestamp
@@ -301,21 +298,21 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
-		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
-			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		for mk := range deltaMetricKeys {
@@ -379,7 +376,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
+		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
 		events := rm.events
@@ -408,12 +405,12 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 				if !p.config.Histogram.Disable {
 					// aggregate histogram metrics
-					h := histograms.GetOrCreate(key, attributes)
+					h := histograms.GetOrCreate(key, attributes, startTimestamp)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
 				}
 				// aggregate sums metrics
-				s := sums.GetOrCreate(key, attributes)
+				s := sums.GetOrCreate(key, attributes, startTimestamp)
 				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
@@ -437,7 +434,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
-						e := events.GetOrCreate(eKey, eAttributes)
+						e := events.GetOrCreate(eKey, eAttributes, startTimestamp)
 						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
@@ -475,16 +472,15 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	return pdatautil.MapHash(m)
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
 	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms:     initHistogramMetrics(p.config),
-			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			attributes:     attr,
-			startTimestamp: startTimestamp,
+			histograms: initHistogramMetrics(p.config),
+			sums:       metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:     metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			attributes: attr,
 		}
 		p.resourceMetrics.Add(key, v)
 	}

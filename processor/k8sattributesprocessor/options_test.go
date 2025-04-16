@@ -41,7 +41,7 @@ func TestWithFilterNode(t *testing.T) {
 
 	p = &kubernetesprocessor{}
 	assert.NoError(t, withFilterNode("testnode", "NODE_NAME")(p))
-	assert.Equal(t, "", p.filters.Node)
+	assert.Empty(t, p.filters.Node)
 
 	t.Setenv("NODE_NAME", "nodefromenv")
 	p = &kubernetesprocessor{}
@@ -743,6 +743,39 @@ func TestWithExcludes(t *testing.T) {
 			opt := withExcludes(tt.args)
 			assert.NoError(t, opt(p))
 			assert.Equal(t, tt.want, p.podIgnore)
+		})
+	}
+}
+
+func TestOtelAnnotations(t *testing.T) {
+	tests := []struct {
+		name            string
+		enabled         bool
+		wantAnnotations []kube.FieldExtractionRule
+	}{
+		{
+			name: "no automatic rules",
+		},
+		{
+			name:    "default automatic rules",
+			enabled: true,
+			wantAnnotations: []kube.FieldExtractionRule{
+				{
+					Name:                 "$1",
+					KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+					HasKeyRegexReference: true,
+					From:                 kube.MetadataFromPod,
+				},
+			},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := kubernetesprocessor{}
+			rules := withOtelAnnotations(tt.enabled)
+			err := rules(&p)
+			assert.NoError(t, err)
+			assert.Equal(t, tt.wantAnnotations, p.rules.Annotations)
 		})
 	}
 }

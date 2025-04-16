@@ -5,7 +5,7 @@ package ecs // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
@@ -22,7 +22,7 @@ type mockProvider struct {
 }
 
 func (*mockProvider) FetchContainerMetadata() (*ecsutil.ContainerMetadata, error) {
-	return nil, fmt.Errorf("not implemented")
+	return nil, errors.New("not implemented")
 }
 
 func (p *mockProvider) FetchTaskMetadata() (*ecsutil.TaskMetadata, error) {
@@ -68,7 +68,7 @@ func TestECSProvider(t *testing.T) {
 		},
 		{
 			name:     "endpoint query failed",
-			provider: newMock(nil, fmt.Errorf("network error")),
+			provider: newMock(nil, errors.New("network error")),
 
 			onErr:  "failed to fetch task metadata: network error",
 			srcErr: "failed to fetch task metadata: network error",

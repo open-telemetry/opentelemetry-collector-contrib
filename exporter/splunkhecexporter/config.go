@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/splunk"
@@ -71,7 +70,7 @@ type Config struct {
 
 	// Experimental: This configuration is at the early stage of development and may change without backward compatibility
 	// until https://github.com/open-telemetry/opentelemetry-collector/issues/8122 is resolved.
-	BatcherConfig exporterbatcher.Config `mapstructure:"batcher"` //nolint:staticcheck
+	BatcherConfig exporterhelper.BatcherConfig `mapstructure:"batcher"` //nolint:staticcheck
 
 	// LogDataEnabled can be used to disable sending logs by the exporter.
 	LogDataEnabled bool `mapstructure:"log_data_enabled"`
@@ -146,7 +145,7 @@ type Config struct {
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
-	out, err = url.Parse(cfg.ClientConfig.Endpoint)
+	out, err = url.Parse(cfg.Endpoint)
 	if err != nil {
 		return out, err
 	}
@@ -162,7 +161,7 @@ func (cfg *Config) Validate() error {
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
-	if cfg.ClientConfig.Endpoint == "" {
+	if cfg.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	_, err := cfg.getURL()

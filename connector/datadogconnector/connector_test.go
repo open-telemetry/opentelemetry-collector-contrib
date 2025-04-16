@@ -169,10 +169,7 @@ func TestContainerTags(t *testing.T) {
 	})
 	assert.Equal(t, 3, count)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -228,10 +225,7 @@ func testReceiveResourceSpansV2(t *testing.T, enableReceiveResourceSpansV2 bool)
 	err = connector.ConsumeTraces(context.Background(), trace)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 
@@ -287,10 +281,7 @@ func testOperationAndResourceNameV2(t *testing.T, enableOperationAndResourceName
 	err = connector.ConsumeTraces(context.Background(), trace)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 

@@ -84,7 +84,7 @@ resourceLogs:
                   intValue: 0
               - key: sqlserver.lock_timeout
                 value:
-                  intValue: 0
+                  doubleValue: 0
               - key: sqlserver.deadlock_priority
                 value:
                   intValue: 0
@@ -107,4 +107,4 @@ resourceLogs:
               stringValue: sample
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: v0.0.1
+          version: latest

@@ -4,7 +4,7 @@
 package datasetexporter
 
 import (
-	"fmt"
+	"errors"
 	"path/filepath"
 	"testing"
 	"time"
@@ -188,17 +188,17 @@ func createExporterTests() []CreateTest {
 		{
 			name:          "broken",
 			config:        &Config{},
-			expectedError: fmt.Errorf("api_key is required"),
+			expectedError: errors.New("api_key is required"),
 		},
 		{
 			name:          "missing-url",
 			config:        &Config{APIKey: "AAA"},
-			expectedError: fmt.Errorf("dataset_url is required"),
+			expectedError: errors.New("dataset_url is required"),
 		},
 		{
 			name:          "missing-key",
 			config:        &Config{DatasetURL: "bbb"},
-			expectedError: fmt.Errorf("api_key is required"),
+			expectedError: errors.New("api_key is required"),
 		},
 		{
 			name: "valid",

@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exporterhelper/xexporterhelper"
 	"go.opentelemetry.io/collector/exporter/xexporter"
@@ -77,13 +76,15 @@ func createDefaultConfig() component.Config {
 			DateFormat:      "%Y.%m.%d",
 		},
 		TelemetrySettings: TelemetrySettings{
-			LogRequestBody:  false,
-			LogResponseBody: false,
+			LogRequestBody:              false,
+			LogResponseBody:             false,
+			LogFailedDocsInput:          false,
+			LogFailedDocsInputRateLimit: time.Second,
 		},
 		Batcher: BatcherConfig{
-			Config: exporterbatcher.Config{ //nolint:staticcheck
+			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 				FlushTimeout: 30 * time.Second,
-				SizeConfig: exporterbatcher.SizeConfig{ //nolint:staticcheck
+				SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
 					Sizer:   exporterhelper.RequestSizerTypeItems,
 					MinSize: defaultBatcherMinSizeItems,
 				},
@@ -107,6 +108,7 @@ func createLogsExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.LogsIndex)
 	if err != nil {
@@ -129,6 +131,7 @@ func createMetricsExporter(
 ) (exporter.Metrics, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.MetricsIndex)
 	if err != nil {
@@ -150,6 +153,7 @@ func createTracesExporter(ctx context.Context,
 ) (exporter.Traces, error) {
 	cf := cfg.(*Config)
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, cf.TracesIndex)
 	if err != nil {
@@ -176,6 +180,7 @@ func createProfilesExporter(
 	cf := cfg.(*Config)
 
 	handleDeprecatedConfig(cf, set.Logger)
+	handleTelemetryConfig(cf, set.Logger)
 
 	exporter, err := newExporter(cf, set, "")
 	if err != nil {
@@ -203,7 +208,7 @@ func exporterhelperOptions(
 		exporterhelper.WithQueue(cfg.QueueSettings),
 	}
 	if cfg.Batcher.enabledSet {
-		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.Config)) //nolint:staticcheck
+		opts = append(opts, exporterhelper.WithBatcher(cfg.Batcher.BatcherConfig)) //nolint:staticcheck
 
 		// Effectively disable timeout_sender because timeout is enforced in bulk indexer.
 		//
