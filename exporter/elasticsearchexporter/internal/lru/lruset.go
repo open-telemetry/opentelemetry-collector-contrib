@@ -4,7 +4,6 @@
 package lru // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/lru"
 
 import (
-	"errors"
 	"time"
 
 	"github.com/cespare/xxhash"
@@ -35,10 +34,6 @@ type LRUSet struct {
 }
 
 func (l *LRUSet) WithLock(fn func(LockedLRUSet) error) error {
-	if l == nil || l.syncMu == nil {
-		return errors.New("missing LRUSet or mutex")
-	}
-
 	lru := l.syncMu.WLock()
 	defer l.syncMu.WUnlock(&lru)
 
