@@ -165,6 +165,7 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/datadogsemanticsprocessor processor/datadogsemantics
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
+processor/dnslookupprocessor processor/dnslookup
 processor/filterprocessor processor/filter
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs

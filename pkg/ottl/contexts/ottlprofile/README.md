@@ -1,7 +1,7 @@
 # Profile Context
 
 > [!NOTE]
-> This documentation applies only to version `0.121.0` and later. Information on earlier versions is not available.
+> This documentation applies only to version `0.124.0` and later. Information on earlier versions is not available.
 
 The Profile Context is a Context implementation for [pdata Profiles](https://github.com/open-telemetry/opentelemetry-collector/tree/main/pdata/pprofile), the collector's internal representation for OTLP profile data.  This Context should be used when interacted with OTLP profiles.
 
