@@ -32,6 +32,10 @@ type mockFailingContextInferrer struct {
 	err error
 }
 
+func (r *mockFailingContextInferrer) infer(_ []string, _ []string) (string, error) {
+	return "", r.err
+}
+
 func (r *mockFailingContextInferrer) inferFromStatements(_ []string) (string, error) {
 	return "", r.err
 }
@@ -42,6 +46,10 @@ func (r *mockFailingContextInferrer) inferFromConditions(_ []string) (string, er
 
 type mockStaticContextInferrer struct {
 	value string
+}
+
+func (r *mockStaticContextInferrer) infer(_ []string, _ []string) (string, error) {
+	return r.value, nil
 }
 
 func (r *mockStaticContextInferrer) inferFromStatements(_ []string) (string, error) {

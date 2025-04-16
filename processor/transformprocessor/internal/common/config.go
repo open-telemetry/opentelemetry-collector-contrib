@@ -10,7 +10,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
-var _ ottl.StatementsGetter = (*ContextStatements)(nil)
+var (
+	_ ottl.StatementsGetter              = (*ContextStatements)(nil)
+	_ ottl.ContextInferenceHintsProvider = (*ContextStatements)(nil)
+)
 
 type ContextID string
 
@@ -46,6 +49,10 @@ type ContextStatements struct {
 
 func (c ContextStatements) GetStatements() []string {
 	return c.Statements
+}
+
+func (c ContextStatements) GetConditionsForContextInference() []string {
+	return c.Conditions
 }
 
 func toContextStatements(statements any) (*ContextStatements, error) {

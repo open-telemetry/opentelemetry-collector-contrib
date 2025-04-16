@@ -18,6 +18,16 @@ type StatementsGetter interface {
 	GetStatements() []string
 }
 
+// ContextInferenceHintsProvider provides a set of OTTLs used by the ParserCollection
+// context inferrer to determine the context of some statements. This is particularly
+// useful when the statements alone are insufficient for context inference or when a
+// less specific parser is desired.
+//
+// Experimental: *NOTE* this API is subject to change or removal in the future.
+type ContextInferenceHintsProvider interface {
+	GetConditionsForContextInference() []string
+}
+
 // NewStatementsGetter creates a new StatementsGetter.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
@@ -327,22 +337,38 @@ func EnableParserCollectionModifiedPathsLogging[R any](enabled bool) ParserColle
 // If no contexts are present in the statements, or if the inferred value is not supported by
 // the [ParserCollection], it returns an error.
 // If parsing the statements fails, it returns the underlying [ottl.Parser.ParseStatements] error.
+// If the provided StatementsGetter also implements ContextInferenceHintsProvider, it uses the
+// additional OTTL conditions to enhance the context inference. This is particularly useful when
+// the statements alone are insufficient for determine the correct context, or if an less-specific
+// parser is desired.
 //
 // Experimental: *NOTE* this API is subject to change or removal in the future.
 func (pc *ParserCollection[R]) ParseStatements(statements StatementsGetter) (R, error) {
 	statementsValues := statements.GetStatements()
-	inferredContext, err := pc.contextInferrer.inferFromStatements(statementsValues)
+	var conditionsValues []string
+	if hintsProvider, ok := statements.(ContextInferenceHintsProvider); ok {
+		conditionsValues = hintsProvider.GetConditionsForContextInference()
+	}
+
+	var inferredContext string
+	var err error
+	if len(conditionsValues) > 0 {
+		inferredContext, err = pc.contextInferrer.infer(statementsValues, conditionsValues)
+	} else {
+		inferredContext, err = pc.contextInferrer.inferFromStatements(statementsValues)
+	}
+
 	if err != nil {
-		return *new(R), fmt.Errorf("unable to infer a valid context (%+q) from statements %+q: %w", pc.supportedContextNames(), statementsValues, err)
+		return *new(R), fmt.Errorf("unable to infer a valid context (%+q) from statements %+q and conditions %+q: %w", pc.supportedContextNames(), statementsValues, conditionsValues, err)
 	}
 
 	if inferredContext == "" {
-		return *new(R), fmt.Errorf("unable to infer context from statements, path's first segment must be a valid context name: %+q, and at least one context must be capable of parsing all statements: %+q", pc.supportedContextNames(), statementsValues)
+		return *new(R), fmt.Errorf("unable to infer context from statements %+q and conditions %+q, path's first segment must be a valid context name %+q, and at least one context must be capable of parsing all statements", pc.supportedContextNames(), statementsValues, conditionsValues)
 	}
 
 	_, ok := pc.contextParsers[inferredContext]
 	if !ok {
-		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q is not a supported context: %+q`, inferredContext, statementsValues, pc.supportedContextNames())
+		return *new(R), fmt.Errorf(`context "%s" inferred from the statements %+q and conditions %+q is not a supported context: %+q`, inferredContext, statementsValues, conditionsValues, pc.supportedContextNames())
 	}
 
 	return pc.ParseStatementsWithContext(inferredContext, statements, false)
