@@ -212,98 +212,26 @@ func TestLoadConfig(t *testing.T) {
 				ErrorMode: ottl.PropagateError,
 				TraceStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+						Statements: []string{
+							`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
 					},
 				},
 				MetricStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
+						Statements: []string{
+							`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
+						},
 					},
 				},
 				LogStatements: []common.ContextStatements{
 					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(resource.attributes["name"], "bear")`},
-					},
-				},
-			},
-		},
-		{
-			id: component.NewIDWithName(metadata.Type, "mixed_configuration_styles"),
-			expected: &Config{
-				ErrorMode: ottl.PropagateError,
-				TraceStatements: []common.ContextStatements{
-					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "bear") where span.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "span",
 						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
+							`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`,
+							`set(resource.attributes["name"], "bear")`,
 						},
-					},
-					{
-						Statements: []string{`set(span.attributes["name"], "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(span.name, "lion") where span.attributes["http.path"] == "/animal"`},
-					},
-				},
-				MetricStatements: []common.ContextStatements{
-					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "bear") where resource.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "resource",
-						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					{
-						Statements: []string{`set(metric.name, "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(metric.name, "lion") where resource.attributes["http.path"] == "/animal"`},
-					},
-				},
-				LogStatements: []common.ContextStatements{
-					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "bear") where log.attributes["http.path"] == "/animal"`},
-					},
-					{
-						Context: "resource",
-						Statements: []string{
-							`set(attributes["name"], "bear")`,
-							`keep_keys(attributes, ["http.method", "http.path"])`,
-						},
-					},
-					{
-						Statements: []string{`set(log.attributes["name"], "lion")`},
-					},
-					{
-						SharedCache: true,
-						Statements:  []string{`set(log.body, "lion") where log.attributes["http.path"] == "/animal"`},
 					},
 				},
 			},
@@ -400,4 +328,16 @@ func Test_UnknownErrorMode(t *testing.T) {
 	sub, err := cm.Sub(id.String())
 	assert.NoError(t, err)
 	assert.Error(t, sub.Unmarshal(cfg))
+}
+
+func Test_MixedConfigurationStyles(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "mixed_configuration_styles").String())
+	assert.NoError(t, err)
+	assert.ErrorContains(t, sub.Unmarshal(cfg), "configuring multiple configuration styles is not supported")
 }

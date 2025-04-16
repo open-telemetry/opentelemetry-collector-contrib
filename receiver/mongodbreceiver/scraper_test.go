@@ -15,8 +15,10 @@ import (
 	"github.com/hashicorp/go-version"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
-	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/mongo/integration/mtest"
+	"go.mongodb.org/mongo-driver/v2/bson"
+	"go.mongodb.org/mongo-driver/v2/mongo"
+	"go.mongodb.org/mongo-driver/v2/mongo/options"
+	"go.mongodb.org/mongo-driver/v2/x/mongo/driver/drivertest"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -345,56 +347,58 @@ func TestScraperScrape(t *testing.T) {
 }
 
 func TestTopMetricsAggregation(t *testing.T) {
-	mont := mtest.New(t, mtest.NewOptions().ClientType(mtest.Mock))
+	mt := drivertest.NewMockDeployment()
+	opts := options.Client()
+	//nolint:staticcheck // Using deprecated Deployment field for testing purposes
+	opts.Deployment = mt
+	c, err := mongo.Connect(opts)
+	require.NoError(t, err)
 
 	loadedTop, err := loadTop()
 	require.NoError(t, err)
 
-	mont.Run("test top stats are aggregated correctly", func(mt *mtest.T) {
-		mt.AddMockResponses(loadedTop)
-		driver := mt.Client
-		client := mongodbClient{
-			Client: driver,
-			logger: zap.NewNop(),
-		}
-		var doc bson.M
-		doc, err = client.TopStats(context.Background())
-		require.NoError(t, err)
+	mt.AddResponses(loadedTop)
+	client := mongodbClient{
+		Client: c,
+		logger: zap.NewNop(),
+	}
+	var doc bson.M
+	doc, err = client.TopStats(context.Background())
+	require.NoError(t, err)
 
-		collectionPathNames, err := digForCollectionPathNames(doc)
-		require.NoError(t, err)
-		require.ElementsMatch(t, collectionPathNames,
-			[]string{
-				"config.transactions",
-				"test.admin",
-				"test.orders",
-				"admin.system.roles",
-				"local.system.replset",
-				"test.products",
-				"admin.system.users",
-				"admin.system.version",
-				"config.system.sessions",
-				"local.oplog.rs",
-				"local.startup_log",
-			})
+	collectionPathNames, err := digForCollectionPathNames(doc)
+	require.NoError(t, err)
+	require.ElementsMatch(t, collectionPathNames,
+		[]string{
+			"config.transactions",
+			"test.admin",
+			"test.orders",
+			"admin.system.roles",
+			"local.system.replset",
+			"test.products",
+			"admin.system.users",
+			"admin.system.version",
+			"config.system.sessions",
+			"local.oplog.rs",
+			"local.startup_log",
+		})
 
-		actualOperationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames, operationsMap)
-		require.NoError(t, err)
+	actualOperationTimeValues, err := aggregateOperationTimeValues(doc, collectionPathNames, operationsMap)
+	require.NoError(t, err)
 
-		// values are taken from testdata/top.json
-		expectedInsertValues := 0 + 0 + 0 + 0 + 0 + 11302 + 0 + 1163 + 0 + 0 + 0
-		expectedQueryValues := 0 + 0 + 6072 + 0 + 0 + 0 + 44 + 0 + 0 + 0 + 2791
-		expectedUpdateValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 155 + 9962 + 0
-		expectedRemoveValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 3750 + 0
-		expectedGetmoreValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0
-		expectedCommandValues := 540 + 397 + 4009 + 0 + 0 + 23285 + 0 + 10993 + 0 + 10116 + 0
-		require.EqualValues(t, expectedInsertValues, actualOperationTimeValues["insert"])
-		require.EqualValues(t, expectedQueryValues, actualOperationTimeValues["queries"])
-		require.EqualValues(t, expectedUpdateValues, actualOperationTimeValues["update"])
-		require.EqualValues(t, expectedRemoveValues, actualOperationTimeValues["remove"])
-		require.EqualValues(t, expectedGetmoreValues, actualOperationTimeValues["getmore"])
-		require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
-	})
+	// values are taken from testdata/top.json
+	expectedInsertValues := 0 + 0 + 0 + 0 + 0 + 11302 + 0 + 1163 + 0 + 0 + 0
+	expectedQueryValues := 0 + 0 + 6072 + 0 + 0 + 0 + 44 + 0 + 0 + 0 + 2791
+	expectedUpdateValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 155 + 9962 + 0
+	expectedRemoveValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 3750 + 0
+	expectedGetmoreValues := 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0 + 0
+	expectedCommandValues := 540 + 397 + 4009 + 0 + 0 + 23285 + 0 + 10993 + 0 + 10116 + 0
+	require.EqualValues(t, expectedInsertValues, actualOperationTimeValues["insert"])
+	require.EqualValues(t, expectedQueryValues, actualOperationTimeValues["queries"])
+	require.EqualValues(t, expectedUpdateValues, actualOperationTimeValues["update"])
+	require.EqualValues(t, expectedRemoveValues, actualOperationTimeValues["remove"])
+	require.EqualValues(t, expectedGetmoreValues, actualOperationTimeValues["getmore"])
+	require.EqualValues(t, expectedCommandValues, actualOperationTimeValues["commands"])
 }
 
 func TestServerAddressAndPort(t *testing.T) {

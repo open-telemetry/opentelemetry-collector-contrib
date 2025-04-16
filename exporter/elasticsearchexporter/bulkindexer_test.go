@@ -115,10 +115,11 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 
 func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 	tests := []struct {
-		name          string
-		roundTripFunc func(*http.Request) (*http.Response, error)
-		wantMessage   string
-		wantFields    []zap.Field
+		name               string
+		roundTripFunc      func(*http.Request) (*http.Response, error)
+		logFailedDocsInput bool
+		wantMessage        string
+		wantFields         []zap.Field
 	}{
 		{
 			name: "500",
@@ -162,12 +163,34 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			wantMessage: "failed to index document",
 			wantFields:  []zap.Field{zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs")},
 		},
+		{
+			name: "known version conflict error with logFailedDocsInput",
+			roundTripFunc: func(*http.Request) (*http.Response, error) {
+				return &http.Response{
+					StatusCode: http.StatusOK,
+					Header:     http.Header{"X-Elastic-Product": []string{"Elasticsearch"}},
+					Body: io.NopCloser(strings.NewReader(
+						`{"items":[{"create":{"_index":".ds-metrics-generic.otel-default","status":400,"error":{"type":"version_conflict_engine_exception","reason":""}}}]}`)),
+				}, nil
+			},
+			logFailedDocsInput: true,
+			wantMessage:        "failed to index document; input may contain sensitive data",
+			wantFields: []zap.Field{
+				zap.String("hint", "check the \"Known issues\" section of Elasticsearch Exporter docs"),
+				zap.String("input", `{"create":{"_index":"foo"}}
+{"foo": "bar"}
+`),
+			},
+		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			cfg := Config{NumWorkers: 1, Flush: FlushSettings{Interval: time.Hour, Bytes: 1}}
+			if tt.logFailedDocsInput {
+				cfg.LogFailedDocsInput = true
+			}
 			client, err := elasticsearch.NewClient(elasticsearch.Config{Transport: &mockTransport{
 				RoundTripFunc: tt.roundTripFunc,
 			}})
