@@ -199,7 +199,7 @@ func mapNodeInfoFunc(nodes []cluster.Node, nodeF nodeFunc, policy *as.InfoPolicy
 			name := nd.GetName()
 			metrics, err := nodeF(nd, policy)
 			if err != nil {
-				logger.Errorf("mapNodeInfoFunc err: %w", err)
+				logger.Errorf("mapNodeInfoFunc err: %v", err)
 			}
 
 			ns := nodeStats{
