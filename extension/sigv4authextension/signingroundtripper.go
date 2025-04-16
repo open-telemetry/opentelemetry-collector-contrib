@@ -70,7 +70,7 @@ func (si *signingRoundTripper) signRequest(req *http.Request) (*http.Request, er
 	// Use user provided service/region if specified, use inferred service/region if not, then sign the request
 	service, region := si.inferServiceAndRegion(req2)
 	if si.credsProvider == nil {
-		return nil, fmt.Errorf("a credentials provider is not set")
+		return nil, errors.New("a credentials provider is not set")
 	}
 	creds, err := (*si.credsProvider).Retrieve(req2.Context())
 	if err != nil {

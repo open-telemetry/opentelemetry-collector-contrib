@@ -445,7 +445,7 @@ func Test_newPathGetSetter(t *testing.T) {
 
 			spanEvent, span, il, resource := createTelemetry()
 
-			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1), WithCache(&testCache))
+			tCtx := NewTransformContext(spanEvent, span, il, resource, ptrace.NewScopeSpans(), ptrace.NewResourceSpans(), WithEventIndex(1))
 
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
@@ -623,23 +623,6 @@ func TestHigherContextCacheAccessError(t *testing.T) {
 			require.Contains(t, err.Error(), expectError)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	tCtx := NewTransformContext(
-		ptrace.NewSpanEvent(),
-		ptrace.NewSpan(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		ptrace.NewScopeSpans(),
-		ptrace.NewResourceSpans(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry() (ptrace.SpanEvent, ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {

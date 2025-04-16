@@ -5,7 +5,7 @@ package spanprocessor
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -67,7 +67,7 @@ func TestFactory_CreateTraces_InvalidConfig(t *testing.T) {
 					Rules: []string{"\\"},
 				},
 			},
-			err: fmt.Errorf("invalid regexp pattern \\"),
+			err: errors.New("invalid regexp pattern \\"),
 		},
 	}
 

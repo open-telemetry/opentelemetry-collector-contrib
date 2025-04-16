@@ -7,7 +7,7 @@ import (
 	"context"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
@@ -33,11 +33,11 @@ func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespac
 }
 
 func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context, _ *zap.Logger) string {
-	var reservations []*ec2.Reservation
+	var reservations []types.Reservation
 	return detectorUtils.getClusterNameTagFromReservations(reservations)
 }
 
-func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []*ec2.Reservation) string {
+func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []types.Reservation) string {
 	return clusterName
 }
 

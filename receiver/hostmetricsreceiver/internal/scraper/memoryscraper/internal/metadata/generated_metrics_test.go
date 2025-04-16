@@ -170,7 +170,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "buffered", attrVal.Str())
+					assert.Equal(t, "buffered", attrVal.Str())
 				case "system.memory.utilization":
 					assert.False(t, validatedMetrics["system.memory.utilization"], "Found a duplicate in the metrics slice: system.memory.utilization")
 					validatedMetrics["system.memory.utilization"] = true
@@ -185,7 +185,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "buffered", attrVal.Str())
+					assert.Equal(t, "buffered", attrVal.Str())
 				}
 			}
 		})

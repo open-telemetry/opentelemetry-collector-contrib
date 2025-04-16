@@ -6,9 +6,9 @@ package stdout // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 	"encoding/json"
-	"errors"
 	"sync"
 
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -23,11 +23,11 @@ type Output struct {
 }
 
 func (o *Output) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
-	var errs []error
+	var errs error
 	for i := range entries {
-		errs = append(errs, o.Process(ctx, entries[i]))
+		errs = multierr.Append(errs, o.Process(ctx, entries[i]))
 	}
-	return errors.Join(errs...)
+	return errs
 }
 
 // Process will log entries received.

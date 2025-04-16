@@ -384,7 +384,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "ready", attrVal.Str())
+					assert.Equal(t, "ready", attrVal.Str())
 				case "rabbitmq.message.delivered":
 					assert.False(t, validatedMetrics["rabbitmq.message.delivered"], "Found a duplicate in the metrics slice: rabbitmq.message.delivered")
 					validatedMetrics["rabbitmq.message.delivered"] = true
