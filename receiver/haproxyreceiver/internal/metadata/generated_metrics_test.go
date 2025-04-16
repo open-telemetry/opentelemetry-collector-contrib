@@ -453,7 +453,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("status_code")
 					assert.True(t, ok)
-					assert.EqualValues(t, "1xx", attrVal.Str())
+					assert.Equal(t, "1xx", attrVal.Str())
 				case "haproxy.responses.denied":
 					assert.False(t, validatedMetrics["haproxy.responses.denied"], "Found a duplicate in the metrics slice: haproxy.responses.denied")
 					validatedMetrics["haproxy.responses.denied"] = true

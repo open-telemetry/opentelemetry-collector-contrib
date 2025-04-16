@@ -22,6 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
+        - azureblob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -43,6 +44,7 @@ components:
         - loadbalancing
         - logicmonitor
         - logzio
+        - loki
         - mezmo
         - opencensus
         - opensearch
@@ -63,6 +65,7 @@ components:
     extension:
         - ack
         - asapclient
+        - awscloudwatchmetricstreams_encoding
         - awsproxy
         - basicauth
         - bearertokenauth

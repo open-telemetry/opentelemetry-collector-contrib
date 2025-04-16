@@ -28,7 +28,7 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestTracesExporter(t, defaultEndpoint)
+		exporter := newTestTracesExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushTracesData(t, exporter, simpleTraces(1))
 		mustPushTracesData(t, exporter, simpleTraces(2))
 
@@ -43,7 +43,7 @@ func TestExporter_pushTracesData(t *testing.T) {
 			return nil
 		})
 
-		exporter := newTestTracesExporter(t, defaultEndpoint)
+		exporter := newTestTracesExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushTracesData(t, exporter, simpleTraces(1))
 	})
 }
@@ -103,6 +103,7 @@ func mustPushTracesData(t *testing.T, exporter *tracesExporter, td ptrace.Traces
 
 func TestTracesClusterConfig(t *testing.T) {
 	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestTracesExporter(t, dsn, fns...)
 		clusterTest.verifyConfig(t, exporter.cfg)
 	})
@@ -110,6 +111,7 @@ func TestTracesClusterConfig(t *testing.T) {
 
 func TestTracesTableEngineConfig(t *testing.T) {
 	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestTracesExporter(t, dsn, fns...)
 		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
 	})

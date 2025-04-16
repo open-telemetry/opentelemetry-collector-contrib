@@ -6,6 +6,7 @@ package supervisor
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"os"
@@ -104,11 +105,10 @@ telemetry:
 func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor {
 	t.Helper()
 
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 	configuration = fmt.Sprintf(configuration, filepath.Join(tmpDir, "storage"), executablePath)
 
@@ -176,7 +176,7 @@ func Test_composeEffectiveConfig(t *testing.T) {
 	s := Supervisor{
 		telemetrySettings:            newNopTelemetrySettings(),
 		persistentState:              &persistentState{},
-		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}},
+		config:                       config.Supervisor{Capabilities: config.Capabilities{AcceptsRemoteConfig: acceptsRemoteConfig}, Agent: config.Agent{ConfigFiles: []string{"testdata/local_config1.yaml", "testdata/local_config2.yaml"}}},
 		pidProvider:                  staticPIDProvider(1234),
 		hasNewConfig:                 make(chan struct{}, 1),
 		agentConfigOwnMetricsSection: &atomic.Value{},
@@ -599,7 +599,7 @@ service:
 					},
 					rcs,
 				)
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				return nil
@@ -854,7 +854,7 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		mc := &mockOpAMPClient{
 			updateEffectiveConfigFunc: func(_ context.Context) error {
 				updatedClientEffectiveConfig = true
-				return fmt.Errorf("unexpected error")
+				return errors.New("unexpected error")
 			},
 		}
 
@@ -1513,8 +1513,7 @@ service:
 }
 
 func TestSupervisor_configStrictUnmarshal(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	configuration := `
 server:
@@ -1528,7 +1527,7 @@ capabilities:
 `
 
 	cfgPath := filepath.Join(tmpDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configuration), 0o600)
+	err := os.WriteFile(cfgPath, []byte(configuration), 0o600)
 	require.NoError(t, err)
 
 	_, err = config.Load(cfgPath)
