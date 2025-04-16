@@ -3,11 +3,11 @@ type: zookeeper
 status:
   class: receiver
   stability:
-    unmaintained: [metrics]
+    alpha: [metrics]
   distributions: [contrib]
   codeowners:
+    active: [akats7]
     emeritus: [djaglowski]
     seeking_new: true
-
 tests:
   config:
