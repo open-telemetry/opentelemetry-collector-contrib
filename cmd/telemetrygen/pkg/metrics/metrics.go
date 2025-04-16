@@ -77,6 +77,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			wg:                     &wg,
 			logger:                 logger.With(zap.Int("worker", i)),
 			index:                  i,
+			clock:                  &realClock{},
 		}
 		exp, err := expF()
 		if err != nil {

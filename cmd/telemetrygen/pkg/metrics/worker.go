@@ -29,6 +29,7 @@ type worker struct {
 	wg                     *sync.WaitGroup              // notify when done
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
+	clock                  Clock                        // clock
 }
 
 // We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
@@ -84,13 +85,14 @@ var histogramBucketSamples = []struct {
 func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
-	startTime := time.Now()
+	startTime := w.clock.Now()
 
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
+		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
-			startTime = time.Now().Add(-1 * time.Second)
+			startTime = now.Add(-1 * time.Second)
 		}
 		switch w.metricType {
 		case MetricTypeGauge:
@@ -99,7 +101,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:       time.Now(),
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -116,7 +118,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
 							StartTime:  startTime,
-							Time:       time.Now(),
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -139,7 +141,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					DataPoints: []metricdata.HistogramDataPoint[int64]{
 						{
 							StartTime:  startTime,
-							Time:       time.Now(),
+							Time:       now,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
 							Count:      totalCount,
