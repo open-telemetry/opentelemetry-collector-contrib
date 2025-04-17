@@ -120,6 +120,17 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 
+	var hostInterfaceAttribute []any
+	if d.cfg.ResourceAttributes.HostInterface.Enabled {
+		interfaces, err := d.provider.HostInterfaces()
+		if err != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host interfaces: %w", err)
+		}
+		for _, iface := range interfaces {
+			hostInterfaceAttribute = append(hostInterfaceAttribute, iface.Name)
+		}
+	}
+
 	osDescription, err := d.provider.OSDescription(ctx)
 	if err != nil {
 		return pcommon.NewResource(), "", fmt.Errorf("failed getting OS description: %w", err)
@@ -152,6 +163,7 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 			d.rb.SetHostArch(hostArch)
 			d.rb.SetHostIP(hostIPAttribute)
 			d.rb.SetHostMac(hostMACAttribute)
+			d.rb.SetHostInterface(hostInterfaceAttribute)
 			d.rb.SetOsDescription(osDescription)
 			if len(cpuInfo) > 0 {
 				setHostCPUInfo(d, cpuInfo[0])
