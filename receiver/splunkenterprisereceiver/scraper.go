@@ -103,6 +103,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeKVStoreStatus,
 		s.scrapeSearchArtifacts,
 		s.scrapeHealth,
+		s.scrapeIndexerClusterManagerStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1849,4 +1850,41 @@ func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs 
 	}
 
 	return info
+}
+
+// Scrape Indexer Cluster Manger Status Endpoint
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
+		return
+	}
+
+	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
+
+	ept := apiDict[`SplunkIndexerClusterManagerStatus`]
+	var icms indexersClusterManagerStatus
+
+	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	if err != nil {
+		errs <- err
+		return
+	}
+
+	res, err := s.splunkClient.makeRequest(req)
+	if err != nil {
+		errs <- err
+		return
+	}
+	defer res.Body.Close()
+
+	if err := json.NewDecoder(res.Body).Decode(&icms); err != nil {
+		errs <- err
+		return
+	}
+
+	for _, ic := range icms.Entries {
+		if ic.Content.RollingRestartOrUpgrade {
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
+		}
+		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
+	}
 }
