@@ -248,7 +248,7 @@ receivers:
 ### Network metrics from all interfaces for Node and Pod
 
 By default, `k8s.[node|pod].network.*` metrics are collected only for the default network interface (e.g. `eth0`). To enable network IO/error metrics collection from all available interfaces on Node/Pod level - you can use `add_all_interfaces_metrics` configuration parameters. Please be aware that enabling this options will increase the amount of produced network metrics and increase network metrics cardinality, because of `interface` attribute.
-For example, if you would like to have network IO/error metrics from all network interfaces for both Pod and Node level you can use following configuration.following configuration.
+For example, if you would like to have network IO/error metrics from all network interfaces for both Pod and Node level you can use the following configuration.
 
 ```yaml
 receivers:
