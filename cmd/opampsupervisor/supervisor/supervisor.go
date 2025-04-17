@@ -25,7 +25,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
-	"github.com/knadh/koanf/maps"
+	koanfmaps "github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
@@ -146,7 +146,7 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Internal config state for agent use. See the configState struct for more details.
+	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
@@ -1193,6 +1193,7 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
+	configMapExists := config.GetConfig().GetConfigMap() != nil
 	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
 
 	if !configMapIsEmpty {
@@ -1273,7 +1274,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapIsEmpty,
+		configMapIsEmpty: configMapExists && configMapIsEmpty,
 	}
 
 	configChanged = false
@@ -1795,15 +1796,29 @@ func (s *Supervisor) getTracer() trace.Tracer {
 // extension lists by concatenating the two.
 // Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
 func configMergeFunc(src, dest map[string]any) error {
-	srcExtensions := maps.Search(src, []string{"service", "extensions"})
-	destExtensions := maps.Search(dest, []string{"service", "extensions"})
+	srcExtensions := koanfmaps.Search(src, []string{"service", "extensions"})
+	destExtensions := koanfmaps.Search(dest, []string{"service", "extensions"})
 
-	maps.Merge(src, dest)
+	koanfmaps.Merge(src, dest)
 
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
-				service["extensions"] = append(destExt, srcExt...)
+				allExt := append(destExt, srcExt...)
+				// This is a small hack to ensure that the order is consitent and
+				// follows this simple rule: extensions from [src], then from [dest],
+				// in the order that they appear.
+				// We cannot use other simpler methods, like [sort.Strings], because
+				// we work with a `[]any` that cannot be cast to `[]string`.
+				seenExt := make(map[any]struct{}, len(allExt))
+				var uniqueExts []any
+				for _, ext := range allExt {
+					if _, ok := seenExt[ext]; !ok {
+						seenExt[ext] = struct{}{}
+						uniqueExts = append(uniqueExts, ext)
+					}
+				}
+				service["extensions"] = uniqueExts
 			}
 		}
 	}
