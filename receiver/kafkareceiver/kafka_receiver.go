@@ -42,9 +42,8 @@ var errMemoryLimiterDataRefused = errors.New("data refused due to high memory us
 
 type consumeMessageFunc func(ctx context.Context, message *sarama.ConsumerMessage) error
 
-// messageHandler provides a generic interface for handling
-// messages for a pdata type (T).
-type messageHandler[T any] interface {
+// messageHandler provides a generic interface for handling messages for a pdata type.
+type messageHandler[T plog.Logs | pmetric.Metrics | ptrace.Traces] interface {
 	// unmarshalData unmarshals the message payload into a pdata type (plog.Logs, etc.)
 	// and returns the number of items (log records, metric data points, spans) within it.
 	unmarshalData(data []byte) (T, int, error)
@@ -138,7 +137,7 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 	return newKafkaConsumer(config, set, []string{config.Traces.Topic}, newConsumeMessageFunc)
 }
 
-func newMessageHandlerConsumeFunc[T any](
+func newMessageHandlerConsumeFunc[T plog.Logs | pmetric.Metrics | ptrace.Traces](
 	config *Config,
 	logger *zap.Logger,
 	unmarshalFailedCounter metric.Int64Counter,
