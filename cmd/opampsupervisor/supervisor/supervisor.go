@@ -1678,10 +1678,6 @@ func (s *Supervisor) onMessage(ctx context.Context, msg *types.MessageData) {
 
 // processRemoteConfigMessage processes an AgentRemoteConfig message, returning true if the agent config has changed.
 func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig) bool {
-	if msg == nil {
-		return false
-	}
-
 	if err := s.saveLastReceivedConfig(msg); err != nil {
 		s.telemetrySettings.Logger.Error("Could not save last received remote config", zap.Error(err))
 	}
