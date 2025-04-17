@@ -205,7 +205,7 @@ func TestExtractEbsIDsUsedByKubernetes(t *testing.T) {
 
 			ebsIDs := e.extractEbsIDsUsedByKubernetes()
 
-			assert.Equal(t, test.expectedVolumeCount, len(ebsIDs))
+			assert.Len(t, ebsIDs, test.expectedVolumeCount)
 			if test.expectedVolumeCount > 0 {
 				assert.Equal(t, test.expected, ebsIDs[test.devPath])
 			}

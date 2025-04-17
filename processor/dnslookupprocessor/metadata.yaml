@@ -1,0 +1,8 @@
+type: dnslookup
+
+status:
+  class: processor
+  stability:
+    development: [traces, metrics, logs]
+  codeowners:
+    active: [andrzej-stencel, kaisecheng, edmocosta]

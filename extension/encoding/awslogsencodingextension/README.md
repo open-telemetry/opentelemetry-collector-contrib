@@ -15,6 +15,7 @@ This extension unmarshals logs encoded in formats produced by AWS services, incl
  - [Amazon CloudWatch Logs Subscription Filters](https://docs.aws.amazon.com/AmazonCloudWatch/latest/logs/SubscriptionFilters.html).
  - [VPC flow log records](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html) sent to S3 in plain text.
    - Parquet support still to be added.
+ - [S3 access log records](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html).
  - (More to be added later.)
 
 Example for Amazon CloudWatch Logs Subscription Filters:
@@ -32,7 +33,7 @@ receivers:
 Example for VPC flow logs:
 ```yaml
 extensions:
-  awslogs_encoding/cloudwatch:
+  awslogs_encoding/vpc_flow_log:
     format: vpc_flow_log
     vpc_flow_log:
       # options [parquet, plain-text]. 
@@ -40,51 +41,90 @@ extensions:
       file_format: plain-text 
 ```
 
+Example for S3 access logs:
+```yaml
+extensions:
+  awslogs_encoding/s3_access_log:
+    format: s3_access_log
+```
+
 #### VPC flow log record fields
 
 [VPC flow log record fields](https://docs.aws.amazon.com/vpc/latest/userguide/flow-log-records.html#flow-logs-fields) are mapped this way in the resulting OpenTelemetry log:
 
-| Flow log field               | Attribute in OpenTelemetry log                                                                        |  Available?  |
-|------------------------------|-------------------------------------------------------------------------------------------------------|:------------:|
-| `version`                    | `aws.vpc.flow.log.version`                                                                            |      🟢      |
-| `account-id`                 | `cloud.account.id`                                                                                    |      🟢      |
-| `interface-id`               | `network.interface.name`                                                                              |      🟢      |
-| `srcaddr`                    | `source.address`: if `pkt-srcaddr` not filled or the same <br> `network.peer.address`: otherwise      |      🟢      |
-| `pkt-srcaddr`                | `source.address` if filled                                                                            |      🟢      |
-| `dstaddr`                    | `destination.address`: if `pkt-dstaddr` not filled or the same <br> `network.peer.address`: otherwise |      🟢      |
-| `pkt-dstaddr`                | `destination.address` if filled                                                                       |      🟢      |
-| `srcport`                    | `source.port`                                                                                         |      🟢      |
-| `dstport`                    | `destination.port`                                                                                    |      🟢      |
-| `protocol`                   | `network.protocol.name`                                                                               |      🟢      |
-| `packets`                    | `aws.vpc.flow.packets`                                                                                |      🟢      |
-| `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |      🟢      |
-| `start`                      | `aws.vpc.flow.start`                                                                                  |      🟢      |
-| `end`                        | Log timestamp                                                                                         |      🟢      |
-| `action`                     | `aws.vpc.flow.action`                                                                                 |      🟢      |
-| `log-status`                 | `aws.vpc.flow.status`                                                                                 |      🟢      |
-| `vpc-id`                     | `aws.vpc.id`                                                                                          |      🟢      |
-| `subnet-id`                  | `aws.vpc.subnet.id`                                                                                   |      🟢      |
-| `instance-id`                | `host.id`                                                                                             |      🟢      |
-| `tcp-flags`                  | `network.tcp.flags`                                                                                   |      🟢      |
-| `type`                       | `network.type`                                                                                        |      🟢      |
-| `region`                     | `cloud.region`                                                                                        |      🟢      |
-| `az-id`                      | `aws.az.id`                                                                                           |      🟢      |
-| `sublocation-type`           | `aws.sublocation.type`                                                                                |      🟢      |
-| `sublocation-id`             | `aws.sublocation.id`                                                                                  |      🟢      |
-| `pkt-src-aws-service`        | `aws.vpc.flow.source.service`                                                                         |      🟢      |
-| `pkt-dst-aws-service`        | `aws.vpc.flow.destination.service`                                                                    |      🟢      |
-| `flow-direction`             | `network.io.direction`                                                                                |      🟢      |
-| `traffic-path`               | `aws.vpc.flow.traffic_path`                                                                           |      🟢      |
-| `ecs-cluster-arn`            | `aws.ecs.cluster.arn`                                                                                 |      🔴      |
-| `ecs-cluster-name`           | `aws.ecs.cluster.name`                                                                                |      🔴      |
-| `ecs-container-instance-arn` | `aws.ecs.container.instance.arn`                                                                      |      🔴      |
-| `ecs-container-instance-id`  | `aws.ecs.container.instance.id`                                                                       |      🔴      |
-| `ecs-container-id`           | `aws.ecs.container.id`                                                                                |      🔴      |
-| `ecs-second-container-id`    | `aws.ecs.second.container.arn`                                                                        |      🔴      |
-| `ecs-service-name`           | `aws.ecs.service.name`                                                                                |      🔴      |
-| `ecs-task-definition-arn`    | `aws.ecs.task.definition.arn`                                                                         |      🔴      |
-| `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |      🔴      |
-| `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |      🔴      |
-| `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |      🟢      |
+| Flow log field               | Attribute in OpenTelemetry log                                                                        |
+|------------------------------|-------------------------------------------------------------------------------------------------------|
+| `version`                    | `aws.vpc.flow.log.version`                                                                            |
+| `account-id`                 | `cloud.account.id`                                                                                    |
+| `interface-id`               | `network.interface.name`                                                                              |
+| `srcaddr`                    | `source.address`: if `pkt-srcaddr` not filled or the same <br> `network.peer.address`: otherwise      |
+| `pkt-srcaddr`                | `source.address` if filled                                                                            |
+| `dstaddr`                    | `destination.address`: if `pkt-dstaddr` not filled or the same <br> `network.peer.address`: otherwise |
+| `pkt-dstaddr`                | `destination.address` if filled                                                                       |
+| `srcport`                    | `source.port`                                                                                         |
+| `dstport`                    | `destination.port`                                                                                    |
+| `protocol`                   | `network.protocol.name`                                                                               |
+| `packets`                    | `aws.vpc.flow.packets`                                                                                |
+| `bytes`                      | `aws.vpc.flow.bytes`                                                                                  |
+| `start`                      | `aws.vpc.flow.start`                                                                                  |
+| `end`                        | Log timestamp                                                                                         |
+| `action`                     | `aws.vpc.flow.action`                                                                                 |
+| `log-status`                 | `aws.vpc.flow.status`                                                                                 |
+| `vpc-id`                     | `aws.vpc.id`                                                                                          |
+| `subnet-id`                  | `aws.vpc.subnet.id`                                                                                   |
+| `instance-id`                | `host.id`                                                                                             |
+| `tcp-flags`                  | `network.tcp.flags`                                                                                   |
+| `type`                       | `network.type`                                                                                        |
+| `region`                     | `cloud.region`                                                                                        |
+| `az-id`                      | `aws.az.id`                                                                                           |
+| `sublocation-type`           | `aws.sublocation.type`                                                                                |
+| `sublocation-id`             | `aws.sublocation.id`                                                                                  |
+| `pkt-src-aws-service`        | `aws.vpc.flow.source.service`                                                                         |
+| `pkt-dst-aws-service`        | `aws.vpc.flow.destination.service`                                                                    |
+| `flow-direction`             | `network.io.direction`                                                                                |
+| `traffic-path`               | `aws.vpc.flow.traffic_path`                                                                           |
+| `ecs-cluster-arn`            | `aws.ecs.cluster.arn`                                                                                 |
+| `ecs-cluster-name`           | `aws.ecs.cluster.name`                                                                                |
+| `ecs-container-instance-arn` | `aws.ecs.container.instance.arn`                                                                      |
+| `ecs-container-instance-id`  | `aws.ecs.container.instance.id`                                                                       |
+| `ecs-container-id`           | `aws.ecs.container.id`                                                                                |
+| `ecs-second-container-id`    | `aws.ecs.second.container.id`                                                                         |
+| `ecs-service-name`           | `aws.ecs.service.name`                                                                                |
+| `ecs-task-definition-arn`    | `aws.ecs.task.definition.arn`                                                                         |
+| `ecs-task-arn`               | `aws.ecs.task.arn`                                                                                    |
+| `ecs-task-id`                | `aws.ecs.task.id`                                                                                     |
+| `reject-reason`              | `aws.vpc.flow.reject_reason`                                                                          |
+
+#### S3 access log record fields
+
+[S3 access log record fields](https://docs.aws.amazon.com/AmazonS3/latest/userguide/LogFormat.html) are mapped this way in the resulting OpenTelemetry log:
 
 
+| AWS field           | OpenTelemetry Field                                                                                                                                                                                                                                                                                     |
+|---------------------|---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| Bucket owner        | `aws.s3.owner`                                                                                                                                                                                                                                                                                          |
+| Bucket              | `aws.s3.bucket`                                                                                                                                                                                                                                                                                         |
+| Time                | Log timestamp                                                                                                                                                                                                                                                                                           |
+| Remote IP           | `source.address`                                                                                                                                                                                                                                                                                        |
+| Requester           | `user.id`                                                                                                                                                                                                                                                                                               |
+| Request ID          | `aws.request_id`                                                                                                                                                                                                                                                                                        |
+| Operation           | `rpc.method`                                                                                                                                                                                                                                                                                            |
+| Key                 | `aws.s3.key`                                                                                                                                                                                                                                                                                            |
+| Request URI         | Split by space: <br> 1. `http.request.method` <br> 2. URL is parsed:<br> &nbsp;&nbsp; 1. `url.path`<br> &nbsp;&nbsp; 2. `url.scheme`<br> &nbsp;&nbsp; 3. `url.query` <br>3. Protocol splits in character `/`:<br> &nbsp;&nbsp; 1.`network.protocol.name`<br> &nbsp;&nbsp; 2. `network.protocol.version` |
+| HTTP status         | `http.response.status_code`                                                                                                                                                                                                                                                                             |
+| Error code          | `error.type`                                                                                                                                                                                                                                                                                            |
+| Bytes sent          | `http.response.body.size`                                                                                                                                                                                                                                                                               |
+| Object size         | `aws.s3.object.size`                                                                                                                                                                                                                                                                                    |
+| Total time          | `duration`                                                                                                                                                                                                                                                                                              |
+| Turn around time    | `aws.s3.turn_around_time`                                                                                                                                                                                                                                                                               |
+| Referer             | `http.request.header.referer`                                                                                                                                                                                                                                                                           |
+| User-Agent          | `user_agent.original`                                                                                                                                                                                                                                                                                   |
+| Version ID          | `aws.s3.version_id`                                                                                                                                                                                                                                                                                     |
+| Host ID             | `aws.extended_request_id`                                                                                                                                                                                                                                                                               |
+| Signature version   | `aws.signature.version`                                                                                                                                                                                                                                                                                 |
+| Cipher suite        | `tls.cipher`                                                                                                                                                                                                                                                                                            |
+| Authentication Type | `aws.s3.auth_type`                                                                                                                                                                                                                                                                                      |
+| Host header         | `http.request.header.host`                                                                                                                                                                                                                                                                              |
+| TLS version         | `tls.protocol.version`                                                                                                                                                                                                                                                                                  |
+| Access point ARN    | `aws.s3.access_point.arn`                                                                                                                                                                                                                                                                               |
+| aclRequired         | `aws.s3.acl_required`                                                                                                                                                                                                                                                                                   |

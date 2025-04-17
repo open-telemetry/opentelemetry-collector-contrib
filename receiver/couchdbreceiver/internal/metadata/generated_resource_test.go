@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("couchdb.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "couchdb.node.name-val", val.Str())
+				assert.Equal(t, "couchdb.node.name-val", val.Str())
 			}
 		})
 	}

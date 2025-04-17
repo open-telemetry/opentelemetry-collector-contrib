@@ -1,6 +1,15 @@
 resourceLogs:
   - resource:
-      attributes: []
+      attributes:
+      - key: sqlserver.computer.name
+        value:
+          stringValue: DESKTOP-GHAEGRD
+      - key: sqlserver.instance.name
+        value:
+          stringValue: sqlserver
+      - key: host.name
+        value:
+          stringValue: "0.0.0.0"
     scopeLogs:
       - logRecords:
           - attributes:
@@ -107,4 +116,4 @@ resourceLogs:
               stringValue: sample
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: v0.0.1
+          version: latest
