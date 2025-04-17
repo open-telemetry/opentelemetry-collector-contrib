@@ -86,6 +86,18 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
+		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.ErrorSourceHandling),
+	}
+}
+
+func bulkIndexerIncludeSourceOnError(esh ErrorSourceHandling) docappender.Value {
+	switch esh {
+	case IncludeSourceOnError:
+		return docappender.True
+	case ExcludeSourceOnError:
+		return docappender.False
+	default:
+		return docappender.Unset
 	}
 }
 

@@ -21,6 +21,14 @@ import (
 	"go.uber.org/zap"
 )
 
+type ErrorSourceHandling uint8
+
+const (
+	DiscardErrorReason ErrorSourceHandling = iota
+	IncludeSourceOnError
+	ExcludeSourceOnError
+)
+
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
@@ -74,9 +82,23 @@ type Config struct {
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 
-	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
+
+	// ErrorSourceHandling configures the handling of source document in Bulk
+	// Index responses on error. The available options are:
+	//  - DiscardErrorReason: The error reason is dropped entirely.
+	//  - IncludeSourceOnError: Include part of source document on error.
+	//  - ExcludeSourceOnError: Exclude part of source document on error.
+	//
+	// Defaults to DiscardErrorReason.
+	// The IncludeSourceOnError and ExcludeSourceOnError option requires
+	// Elasticsearch 8.18+.
+	//
+	// WARNING: if set to IncludeSourceOnError, the user is responsible for
+	// sanitizing the error as it may contain sensitive data from the source.
+	ErrorSourceHandling ErrorSourceHandling `mapstructure:"error_source_handling"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
