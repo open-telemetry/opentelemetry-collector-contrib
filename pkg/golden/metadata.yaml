@@ -3,6 +3,6 @@ type: golden
 status:
   class: pkg
   stability:
-    alpha: [ traces, metrics, logs ]
+    alpha: [ traces, metrics, logs, profiles ]
   codeowners:
     active: [djaglowski, atoulme]

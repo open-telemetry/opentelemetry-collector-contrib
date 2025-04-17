@@ -12,6 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"gopkg.in/yaml.v3"
 )
@@ -175,6 +176,57 @@ func WriteTraces(tb testing.TB, filePath string, traces ptrace.Traces) error {
 func writeTraces(filePath string, traces ptrace.Traces) error {
 	unmarshaler := &ptrace.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalTraces(traces)
+	if err != nil {
+		return err
+	}
+	var jsonVal map[string]any
+	if err = json.Unmarshal(fileBytes, &jsonVal); err != nil {
+		return err
+	}
+	b := &bytes.Buffer{}
+	enc := yaml.NewEncoder(b)
+	enc.SetIndent(2)
+	if err := enc.Encode(jsonVal); err != nil {
+		return err
+	}
+	return os.WriteFile(filePath, b.Bytes(), 0o600)
+}
+
+// ReadProfiles reads a pprofile.Profiles from the specified YAML or JSON file.
+func ReadProfiles(filePath string) (pprofile.Profiles, error) {
+	b, err := os.ReadFile(filePath)
+	if err != nil {
+		return pprofile.Profiles{}, err
+	}
+	if strings.HasSuffix(filePath, ".yaml") || strings.HasSuffix(filePath, ".yml") {
+		var m map[string]any
+		if err = yaml.Unmarshal(b, &m); err != nil {
+			return pprofile.Profiles{}, err
+		}
+		b, err = json.Marshal(m)
+		if err != nil {
+			return pprofile.Profiles{}, err
+		}
+	}
+	unmarshaler := pprofile.JSONUnmarshaler{}
+	return unmarshaler.UnmarshalProfiles(b)
+}
+
+// WriteProfiles writes a pprofile.Profiles to the specified file in YAML format.
+func WriteProfiles(tb testing.TB, filePath string, profiles pprofile.Profiles) error {
+	if err := writeProfiles(filePath, profiles); err != nil {
+		return err
+	}
+	tb.Logf("Golden file successfully written to %s.", filePath)
+	tb.Log("NOTE: The WriteProfiles call must be removed in order to pass the test.")
+	tb.Fail()
+	return nil
+}
+
+// writeProfiles writes a pprofile.Profiles to the specified file in YAML format.
+func writeProfiles(filePath string, profiles pprofile.Profiles) error {
+	unmarshaler := &pprofile.JSONMarshaler{}
+	fileBytes, err := unmarshaler.MarshalProfiles(profiles)
 	if err != nil {
 		return err
 	}

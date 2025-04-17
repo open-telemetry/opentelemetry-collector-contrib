@@ -16,7 +16,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 )
 
 func TestWriteMetrics(t *testing.T) {
@@ -322,4 +325,89 @@ func TestSortAndNormalizeMetrics(t *testing.T) {
 	normalizeTimestamps(before)
 
 	require.Equal(t, before, after)
+}
+
+func TestReadProfiles(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	actualProfiles, err := ReadProfiles(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func TestWriteProfiles(t *testing.T) {
+	profiles := CreateTestProfiles()
+
+	actualFile := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, writeProfiles(actualFile, profiles))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// os.ReadFile adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestProfilesRoundTrip(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	tempDir := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, writeProfiles(tempDir, expectedProfiles))
+
+	actualProfiles, err := ReadProfiles(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func CreateTestProfiles() pprofile.Profiles {
+	return pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: pprofiletest.Resource{
+					Attributes: []pprofiletest.Attribute{
+						{Key: "key1", Value: "value1"},
+					},
+				},
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Profile: []pprofiletest.Profile{
+							{
+								SampleType: []pprofiletest.ValueType{
+									{Typ: "samples", Unit: "count"},
+								},
+								PeriodType: pprofiletest.ValueType{Typ: "cpu", Unit: "nanoseconds"},
+								Attributes: []pprofiletest.Attribute{
+									{Key: "process.executable.build_id.htlhash", Value: "600DCAFE4A110000F2BF38C493F5FB92"},
+									{Key: "profile.frame.type", Value: "native"},
+									{Key: "host.id", Value: "localhost"},
+								},
+								Sample: []pprofiletest.Sample{
+									{
+										TimestampsUnixNano: []uint64{0},
+										Value:              []int64{1},
+										Locations: []pprofiletest.Location{
+											{
+												Mapping: &pprofiletest.Mapping{},
+												Address: 111,
+											},
+										},
+									},
+								},
+								ProfileID: pprofile.NewProfileIDEmpty(),
+							},
+						},
+					},
+				},
+			},
+		},
+	}.Transform()
 }
