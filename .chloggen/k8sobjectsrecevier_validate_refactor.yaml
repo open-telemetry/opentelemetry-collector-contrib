@@ -7,7 +7,7 @@ change_type: breaking
 component: k8sobjectsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Refactor Validate() to only validate static config without external calls to Kubernetes API server as discussed in [38851](https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/38851#discussion_r2046811250).
+note: Check for K8s API objects existence on receiver startup and not during config validation.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [38803]

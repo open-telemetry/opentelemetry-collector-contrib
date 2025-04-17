@@ -30,6 +30,7 @@ import (
 type k8sobjectsreceiver struct {
 	setting         receiver.Settings
 	config          *Config
+	objects         []*K8sObjectsConfig
 	stopperChanList []chan struct{}
 	client          dynamic.Interface
 	consumer        consumer.Logs
@@ -50,17 +51,21 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		return nil, err
 	}
 
-	for _, object := range config.Objects {
-		object.exclude = make(map[apiWatch.EventType]bool)
-		for _, item := range object.ExcludeWatchType {
-			object.exclude[item] = true
+	objects := make([]*K8sObjectsConfig, len(config.Objects))
+	for i, obj := range config.Objects {
+		copied := *obj // Copy the object
+		objects[i] = &copied
+		objects[i].exclude = make(map[apiWatch.EventType]bool)
+		for _, item := range objects[i].ExcludeWatchType {
+			objects[i].exclude[item] = true
 		}
 	}
 
 	return &k8sobjectsreceiver{
 		setting:  params,
-		consumer: consumer,
 		config:   config,
+		objects:  objects,
+		consumer: consumer,
 		obsrecv:  obsrecv,
 		mu:       sync.Mutex{},
 	}, nil
@@ -79,7 +84,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		return err
 	}
 
-	for _, object := range kr.config.Objects {
+	for _, object := range kr.objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
 			availableResource := make([]string, len(validObjects))
@@ -104,7 +109,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
 
-	for _, object := range kr.config.Objects {
+	for _, object := range kr.objects {
 		kr.start(cctx, object)
 	}
 	return nil
