@@ -143,7 +143,7 @@ func TestAuthentication(t *testing.T) {
 	for _, test := range tests {
 		t.Run("", func(t *testing.T) {
 			config := &sarama.Config{}
-			configureSaramaAuthentication(context.Background(), test.auth, config)
+			configureSaramaAuthentication(context.Background(), test.auth, config, nil)
 
 			// equalizes SCRAMClientGeneratorFunc to do assertion with the same reference.
 			config.Net.SASL.SCRAMClientGeneratorFunc = test.saramaConfig.Net.SASL.SCRAMClientGeneratorFunc
