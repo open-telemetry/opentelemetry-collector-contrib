@@ -26,7 +26,7 @@ import (
 
 	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
-	koanfmaps "github.com/knadh/koanf/maps"
+	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/rawbytes"
 	"github.com/knadh/koanf/v2"
@@ -1796,10 +1796,10 @@ func (s *Supervisor) getTracer() trace.Tracer {
 // extension lists by concatenating the two.
 // Will be resolved by https://github.com/open-telemetry/opentelemetry-collector/issues/8754
 func configMergeFunc(src, dest map[string]any) error {
-	srcExtensions := koanfmaps.Search(src, []string{"service", "extensions"})
-	destExtensions := koanfmaps.Search(dest, []string{"service", "extensions"})
+	srcExtensions := maps.Search(src, []string{"service", "extensions"})
+	destExtensions := maps.Search(dest, []string{"service", "extensions"})
 
-	koanfmaps.Merge(src, dest)
+	maps.Merge(src, dest)
 
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
