@@ -1194,7 +1194,6 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	configMapExists := config.GetConfig().GetConfigMap() != nil
 	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
 
 	if !configMapIsEmpty {
@@ -1275,7 +1274,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapExists && configMapIsEmpty,
+		configMapIsEmpty: configMapIsEmpty && config != nil,
 	}
 
 	configChanged = false
