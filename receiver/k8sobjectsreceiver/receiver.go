@@ -72,6 +72,33 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		return err
 	}
 	kr.client = client
+
+	// Validate objects against K8s API
+	validObjects, err := kr.config.getValidObjects()
+	if err != nil {
+		return err
+	}
+
+	for _, object := range kr.config.Objects {
+		gvrs, ok := validObjects[object.Name]
+		if !ok {
+			availableResource := make([]string, len(validObjects))
+			for k := range validObjects {
+				availableResource = append(availableResource, k)
+			}
+			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
+		}
+
+		gvr := gvrs[0]
+		for i := range gvrs {
+			if gvrs[i].Group == object.Group {
+				gvr = gvrs[i]
+				break
+			}
+		}
+		object.gvr = gvr
+	}
+
 	kr.setting.Logger.Info("Object Receiver started")
 
 	cctx, cancel := context.WithCancel(ctx)
