@@ -91,7 +91,8 @@ type Config struct {
 	//
 	// This setting requires Elasticsearch 8.18+. Using it in prior versions
 	// have no effect.
-	// It is also overridden by DiscardErrorReason if it is true.
+	// This setting is overridden by DiscardErrorReason if DiscardErrorReason
+	// is true.
 	//
 	// WARNING: if set to true, the user is responsible for sanitizing the
 	// error as it may contain sensitive data from the source.

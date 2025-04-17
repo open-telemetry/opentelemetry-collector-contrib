@@ -327,6 +327,7 @@ However, note that users are responsible for sanitizing the error responses them
 
 Aside from `include_source_on_error`, the exporter also exposes the `discard_error_reason` configuration.
 It is disabled by default. Set it to `true` to discard the bulk index responses' error reason entirely (for security reasons).
+If set to `true`, this will override the `include_source_on_error` configuration.
 
 ### Elasticsearch node discovery
 
