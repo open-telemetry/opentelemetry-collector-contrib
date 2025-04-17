@@ -160,9 +160,10 @@ func TestGetSTSCreds(t *testing.T) {
 }
 
 func TestGetProxyAddressFromEnv(t *testing.T) {
-	t.Run("no proxy", func(t *testing.T) {
-		t.Setenv("NO_PROXY", "fake")
-		assert.Equal(t, "fake", getProxyAddress(""))
+	t.Run("exclude proxy from https proxy", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "https://fake.com,https://bar.com,https://foo.com")
+		t.Setenv("NO_PROXY", "https://fake.com")
+		assert.Equal(t, "https://bar.com,https://foo.com", getProxyAddress(""))
 	})
 
 	t.Run("normal proxy", func(t *testing.T) {
