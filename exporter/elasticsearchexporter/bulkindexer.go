@@ -86,19 +86,19 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
-		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.ErrorSourceHandling),
+		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.DiscardErrorReason, config.IncludeSourceOnError),
 	}
 }
 
-func bulkIndexerIncludeSourceOnError(esh ErrorSourceHandling) docappender.Value {
-	switch esh {
-	case IncludeSourceOnError:
-		return docappender.True
-	case ExcludeSourceOnError:
-		return docappender.False
-	default:
+func bulkIndexerIncludeSourceOnError(discardErrorReason, includeSourceOnError bool) docappender.Value {
+	if discardErrorReason {
+		// Unset means to discard error reason.
 		return docappender.Unset
 	}
+	if includeSourceOnError {
+		return docappender.True
+	}
+	return docappender.False
 }
 
 func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {

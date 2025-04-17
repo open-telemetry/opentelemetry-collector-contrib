@@ -21,14 +21,6 @@ import (
 	"go.uber.org/zap"
 )
 
-type ErrorSourceHandling uint8
-
-const (
-	DiscardErrorReason ErrorSourceHandling = iota
-	IncludeSourceOnError
-	ExcludeSourceOnError
-)
-
 // Config defines configuration for Elastic exporter.
 type Config struct {
 	QueueSettings exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
@@ -86,19 +78,24 @@ type Config struct {
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
 
-	// ErrorSourceHandling configures the handling of source document in Bulk
-	// Index responses on error. The available options are:
-	//  - DiscardErrorReason: The error reason is dropped entirely.
-	//  - IncludeSourceOnError: Include part of source document on error.
-	//  - ExcludeSourceOnError: Exclude part of source document on error.
+	// DiscardErrorReason discards the error reason on bulk index error responses.
+	// Defaults to false.
 	//
-	// Defaults to DiscardErrorReason.
-	// The IncludeSourceOnError and ExcludeSourceOnError option requires
-	// Elasticsearch 8.18+.
+	// This setting has a higher precedence than IncludeSourceOnError, i.e. if
+	// this is enabled, IncludeSourceOnError will be ignored.
+	DiscardErrorReason bool `mapstructure:"discard_error_reason"`
+
+	// IncludeSourceOnError configures whether the bulk index responses include
+	// a part of the source document on error.
+	// Defaults to false.
 	//
-	// WARNING: if set to IncludeSourceOnError, the user is responsible for
-	// sanitizing the error as it may contain sensitive data from the source.
-	ErrorSourceHandling ErrorSourceHandling `mapstructure:"error_source_handling"`
+	// This setting requires Elasticsearch 8.18+. Using it in prior versions
+	// have no effect.
+	// It is also overridden by DiscardErrorReason if it is true.
+	//
+	// WARNING: if set to true, the user is responsible for sanitizing the
+	// error as it may contain sensitive data from the source.
+	IncludeSourceOnError bool `mapstructure:"include_source_on_error"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
