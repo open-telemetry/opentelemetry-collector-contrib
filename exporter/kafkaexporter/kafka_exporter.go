@@ -7,29 +7,28 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
+	"google.golang.org/grpc/credentials/oauth"
 	"iter"
+	"strings"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter/internal/marshaler"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/topic"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil"
-
-	"golang.org/x/oauth2"
-	"google.golang.org/grpc/credentials"
-
 )
 
 type kafkaErrors struct {
@@ -82,12 +81,12 @@ func (e *kafkaExporter[T]) Start(ctx context.Context, host component.Host) error
 	}
 	e.messager = messager
 
-	var tokenSource oauth2.TokenSource = e.getTokenSource(ctx, host)
+	extensions := host.GetExtensions())
+	tokenSource, err := e.getTokenSource(ctx, extensions)
 
 	producer, err := kafka.NewSaramaSyncProducer(
 		ctx, e.cfg.ClientConfig, e.cfg.Producer,
 		e.cfg.TimeoutSettings.Timeout,
-		tokenSource,
 	)
 	if err != nil {
 		return err
@@ -135,23 +134,40 @@ func (e *kafkaExporter[T]) exportData(ctx context.Context, data T) error {
 	return nil
 }
 
-func (e *kafkaExporter[T]) getTokenSource(ctx context.Context, host component.Host) credentials.PerRPCCredentials {
-	if e.cfg.ClientConfig.Authentication.SASL.TokenSourceExtension != nil {
-		var perRPCCreds oauth2.TokenSource
-		// Get the auth client from the configured extensions
-		authClient, err := e.cfg.Authentication.GetGRPCClientAuthenticator(ctx, host.GetExtensions())
-		if err != nil {
-			return err
-		}
+func (e *kafkaExporter[T]) GetGRPCClientAuthenticator(_ context.Context, extensions map[component.ID]component.Component) (extensionauth.GRPCClient, error) {
+	var authenticatorID = e.cfg.Authentication.SASL.TokenSourceExtension
 
-		// The actual object returned if a TokenSource we will pass to the Kafka client
-		perRPCCreds, err = authClient.PerRPCCredentials()
-		if err != nil {
-			return err
+	if ext, found := extensions[authenticatorID]; found {
+		if client, ok := ext.(extensionauth.GRPCClient); ok {
+			return client, nil
 		}
-		return perRPCCreds
+		return nil, errors.New("GRPC authenticator not found")
 	}
-	return nil
+	return nil, fmt.Errorf("failed to resolve authenticator %q: %w", authenticatorID, errors.New("authenticator not found"))
+}
+
+func (e *kafkaExporter[T]) getTokenSource(_ context.Context, extensions map[component.ID]component.Component) (*oauth.TokenSource, error) {
+	auth, err := e.GetGRPCClientAuthenticator(context.Background(), extensions)
+	if err != nil {
+		return nil, err
+	}
+
+	// only oauth2 auth is supported for now
+	if _, ok := auth.(*oauth2clientauthextension.OauthClientAuthenticator); !ok {
+		return nil, fmt.Errorf("Only oauth2clientauthextension is supported at this moment, but got %T", auth)
+	}
+
+	creds, err := auth.PerRPCCredentials()
+	if err != nil {
+		return nil, err
+	}
+
+	tokenSource := creds.(oauth.TokenSource)
+	if err != nil {
+		return nil, err
+	}
+
+	return &tokenSource, nil
 }
 
 func newTracesExporter(config Config, set exporter.Settings) *kafkaExporter[ptrace.Traces] {

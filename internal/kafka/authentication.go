@@ -7,14 +7,13 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/sha512"
+	"google.golang.org/grpc/credentials/oauth"
 
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension"
 )
 
 // configureSaramaAuthentication configures authentication in sarama.Config.
@@ -24,12 +23,13 @@ func configureSaramaAuthentication(
 	ctx context.Context,
 	config configkafka.AuthenticationConfig,
 	saramaConfig *sarama.Config,
+	tokenProvider oauth.TokenSource,
 ) {
 	if config.PlainText != nil {
 		configurePlaintext(*config.PlainText, saramaConfig)
 	}
 	if config.SASL != nil {
-		configureSASL(ctx, *config.SASL, saramaConfig)
+		configureSASL(ctx, *config.SASL, saramaConfig, tokenProvider)
 	}
 	if config.Kerberos != nil {
 		configureKerberos(*config.Kerberos, saramaConfig)
@@ -42,7 +42,7 @@ func configurePlaintext(config configkafka.PlainTextConfig, saramaConfig *sarama
 	saramaConfig.Net.SASL.Password = config.Password
 }
 
-func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaConfig *sarama.Config) {
+func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaConfig *sarama.Config, tokenProvider oauth.TokenSource) {
 	saramaConfig.Net.SASL.Enable = true
 	saramaConfig.Net.SASL.User = config.Username
 	saramaConfig.Net.SASL.Password = config.Password
@@ -67,7 +67,7 @@ func configureSASL(ctx context.Context, config configkafka.SASLConfig, saramaCon
 		saramaConfig.Net.SASL.TokenProvider = &awsMSKTokenProvider{ctx: ctx, region: config.AWSMSK.Region}
 	case "OAUTHBEARER":
 		saramaConfig.Net.SASL.Mechanism = sarama.SASLTypeOAuth
-		saramaConfig.Net.SASL.TokenProvider = &oauthTokenProvider{config.token_source_extension}
+		saramaConfig.Net.SASL.TokenProvider = &oauthTokenProvider{tokenSource: tokenProvider}
 	}
 }
 
@@ -88,13 +88,15 @@ func configureKerberos(config configkafka.KerberosConfig, saramaConfig *sarama.C
 	saramaConfig.Net.SASL.GSSAPI.DisablePAFXFAST = config.DisablePAFXFAST
 }
 
-// Generic OAUTH provider
+// AWS MSK OAUTH provider
 type oauthTokenProvider struct {
-	ctx    context.Context
+	tokenSource oauth.TokenSource
 }
 
+// Token return the AWS session token for the AWS_MSK_IAM_OAUTHBEARER mechanism
 func (c *oauthTokenProvider) Token() (*sarama.AccessToken, error) {
-	token, _, err := signer.GenerateAuthToken(c.ctx, c.region)
+	// TODO: finish and test
+	token, err := c.tokenSource.TokenSource.Token()
 	return &sarama.AccessToken{Token: token}, err
 }
 

@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/gogo/protobuf v1.3.2
 	github.com/jaegertracing/jaeger-idl v0.5.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchpersignal v0.124.1
@@ -25,6 +26,7 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.124.0
 	go.opentelemetry.io/collector/exporter v0.124.0
 	go.opentelemetry.io/collector/exporter/exportertest v0.124.0
+	go.opentelemetry.io/collector/extension/extensionauth v1.30.0
 	go.opentelemetry.io/collector/pdata v1.30.0
 	go.opentelemetry.io/collector/pdata/testdata v0.124.0
 	go.uber.org/goleak v1.3.0
@@ -33,6 +35,7 @@ require (
 )
 
 require (
+	cloud.google.com/go/compute/metadata v0.6.0 // indirect
 	github.com/apache/thrift v0.21.0 // indirect
 	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.1 // indirect
 	github.com/aws/aws-sdk-go-v2 v1.36.3 // indirect
@@ -111,6 +114,7 @@ require (
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/oauth2 v0.29.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
@@ -144,3 +148,5 @@ replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin => ../../pkg/translator/zipkin
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden => ../../pkg/golden
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension => ../../extension/oauth2clientauthextension

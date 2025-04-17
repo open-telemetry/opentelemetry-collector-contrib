@@ -75,7 +75,6 @@ func NewSaramaSyncProducer(
 	clientConfig configkafka.ClientConfig,
 	producerConfig configkafka.ProducerConfig,
 	producerTimeout time.Duration,
-	tokenSource TokenSource
 ) (sarama.SyncProducer, error) {
 	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
 	if err != nil {

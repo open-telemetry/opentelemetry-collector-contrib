@@ -6,6 +6,7 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/component"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -303,13 +304,13 @@ type SASLConfig struct {
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
 	// Name of the OAUTH extension to use
-	TokenSourceExtension string `mapstructure:"token_source_extension"`
+	TokenSourceExtension component.ID `mapstructure:"token_source_extension,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "OAUTHBEARER":
-		if c.TokenSourceExtension == "" {
+		if c.TokenSourceExtension.String() == "" {
 			return errors.New("token_source_extension is required")
 		}
 	case "AWS_MSK_IAM", "AWS_MSK_IAM_OAUTHBEARER":

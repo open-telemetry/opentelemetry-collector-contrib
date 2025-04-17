@@ -1,3 +1,5 @@
+cloud.google.com/go/compute/metadata v0.6.0 h1:A6hENjEsCDtC1k8byVsgwvVcioamEHvZ4j01OwKxG9I=
+cloud.google.com/go/compute/metadata v0.6.0/go.mod h1:FjyFAW1MW0C203CEOMDTu3Dk1FlqW3Rga40jzHL4hfg=
 github.com/IBM/sarama v1.45.1 h1:nY30XqYpqyXOXSNoe2XCgjj9jklGM1Ye94ierUb1jQ0=
 github.com/IBM/sarama v1.45.1/go.mod h1:qifDhA3VWSrQ1TjSMyxDl3nYL3oX2C83u+G6L79sq4w=
 github.com/apache/thrift v0.21.0 h1:tdPmh/ptjE1IJnhbhrcl2++TauVjy242rkV/UzJChnE=
@@ -117,6 +119,8 @@ github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd h1:TRLaZ9cD/w
 github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd/go.mod h1:6dJC0mAP4ikYIbvyc7fijjWJddQyLn8Ig3JB5CqoB9Q=
 github.com/modern-go/reflect2 v1.0.2 h1:xBagoLtFs94CBntxluKeaWgTMpvLxC4ur3nMaC9Gz0M=
 github.com/modern-go/reflect2 v1.0.2/go.mod h1:yWuevngMOJpCy52FWWMvUC8ws7m/LJsjYzDa0/r8luk=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.124.1 h1:w22Wm0C3Dut9k/AAV/TL7rEBfUR3Yr17pwHKJxPdM1o=
+github.com/open-telemetry/opentelemetry-collector-contrib/extension/oauth2clientauthextension v0.124.1/go.mod h1:PA389QrR5O/PgREBtCSZRVCr7Z2T9VlHxmsi8jFTlzY=
 github.com/openzipkin/zipkin-go v0.4.3 h1:9EGwpqkgnwdEIJ+Od7QVSEIH+ocmm5nPat0G7sjsSdg=
 github.com/openzipkin/zipkin-go v0.4.3/go.mod h1:M9wCJZFWCo2RiY+o1eBCEMe0Dp2S5LDHcMZmk3RmK7c=
 github.com/pierrec/lz4/v4 v4.1.22 h1:cKFw6uJDK+/gfw5BcDL0JL5aBsAFdsIT18eRtLj7VIU=
@@ -187,6 +191,8 @@ go.opentelemetry.io/collector/exporter/xexporter v0.124.0 h1:Itfn2+F4ki8hObOtPCe
 go.opentelemetry.io/collector/exporter/xexporter v0.124.0/go.mod h1:dNK/PPY02gA9BawIKHyVk8kIFdYvqVZ2A+LlMZucIPY=
 go.opentelemetry.io/collector/extension v1.30.0 h1:AJqntAp1p40Q1az2Vze3OHiMURq56KWnUxaLzs1ghaA=
 go.opentelemetry.io/collector/extension v1.30.0/go.mod h1:a21WpypFQp9x0Go7yMOknYmIKvdIoWGzjz+h1WMjzLk=
+go.opentelemetry.io/collector/extension/extensionauth v1.30.0 h1:HfNT4F1LDEyuItoHq01LrPiUmMpfc5LnOfE4OYVSghA=
+go.opentelemetry.io/collector/extension/extensionauth v1.30.0/go.mod h1:bVWkWyyd0aCYu+x6q4HdezfzL0QAqlq5PO7NwckXe4s=
 go.opentelemetry.io/collector/extension/extensiontest v0.124.0 h1:pWfKxEqvq5vVdQy+UIerw5j7ZrXezxsfQfuUe8g/xVo=
 go.opentelemetry.io/collector/extension/extensiontest v0.124.0/go.mod h1:DLVRyW7tJt8TtYq0Wr5BUsM494YqDiIjN8YCmbVKqjs=
 go.opentelemetry.io/collector/extension/xextension v0.124.0 h1:Yzf11HXaiMHfS50Zy/CYKfJjoi+/w/tgRZdDQ2VIdW0=
@@ -252,6 +258,8 @@ golang.org/x/net v0.6.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.7.0/go.mod h1:2Tu9+aMcznHK/AK1HMvgo6xiTLG5rD5rZLDS+rp2Bjs=
 golang.org/x/net v0.37.0 h1:1zLorHbz+LYj7MQlSf1+2tPIIgibq2eL5xkrGk6f+2c=
 golang.org/x/net v0.37.0/go.mod h1:ivrbrMbzFq5J41QOQh0siUuly180yBYtLp+CKbEaFx8=
+golang.org/x/oauth2 v0.29.0 h1:WdYw2tdTK1S8olAzWHdgeqfy+Mtm9XNhv/xJsY65d98=
+golang.org/x/oauth2 v0.29.0/go.mod h1:onh5ek6nERTohokkhCD/y2cV4Do3fxFHFuAejCkRWT8=
 golang.org/x/sync v0.0.0-20190423024810-112230192c58/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20190911185100-cd5d95a43a6e/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
 golang.org/x/sync v0.0.0-20201020160332-67f06af15bc9/go.mod h1:RxMgew5VJxzue5/jJTE5uejpjVlOe/izrB70Jof72aM=
