@@ -313,6 +313,19 @@ The behaviour of this bulk indexing can be configured with the following setting
   - `max_interval` (default=1m): Max waiting time if a HTTP request failed.
   - `retry_on_status` (default=[429]): Status codes that trigger request or document level retries. Request level retry and document level retry status codes are shared and cannot be configured separately. To avoid duplicates, it defaults to `[429]`.
 
+#### Bulk indexing source document handling on error
+
+With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
+This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+
+In this exporter, the equivalent configuration is named `error_source_handling`, and it has 3 options:
+
+| Enum | Name                 | Description                                                                                                                                                       |
+|------|----------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| 0    | DiscardErrorReason   | Default. Discards the error reason entirely (for security reasons).                                                                                               |
+| 1    | IncludeSourceOnError | Includes the source document in the error response. Does not discard error reason. Users are expected to sanitize any potential sensitive information themselves. |
+| 2    | ExcludeSourceOnError | Excludes the source document in the error response. Does not discard error reason.                                                                                |                                                                              
+
 > [!NOTE]
 > The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
 

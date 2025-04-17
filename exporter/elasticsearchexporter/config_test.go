@@ -354,6 +354,14 @@ func TestConfig(t *testing.T) {
 				cfg.Batcher.MaxSize = 200
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "include_source_on_error"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.ErrorSourceHandling = IncludeSourceOnError
+			}),
+		},
 	}
 
 	for _, tt := range tests {
