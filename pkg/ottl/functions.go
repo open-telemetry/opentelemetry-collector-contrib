@@ -427,7 +427,19 @@ func (p *Parser[K]) buildArgs(ed editor, argsVal reflect.Value) error {
 		if isOptional {
 			field.Set(manager.set(val))
 		} else {
-			field.Set(reflect.ValueOf(val))
+			switch {
+			case strings.HasPrefix(fieldType.Name(), "PMapGetSetter"):
+				field.Set(reflect.ValueOf(StandardPMapGetSetter[K]{
+					Getter: func(ctx context.Context, tCtx K) (any, error) {
+						return val.(StandardGetSetter[K]).Getter(ctx, tCtx)
+					},
+					Setter: func(ctx context.Context, tCtx K, m any) error {
+						return val.(StandardGetSetter[K]).Setter(ctx, tCtx, m)
+					},
+				}))
+			default:
+				field.Set(reflect.ValueOf(val))
+			}
 		}
 	}
 
@@ -468,6 +480,12 @@ func (p *Parser[K]) buildSliceArg(argVal value, argType reflect.Type) (any, erro
 		return arg, nil
 	case strings.HasPrefix(name, "PMapGetter"):
 		arg, err := buildSlice[PMapGetter[K]](argVal, argType, p.buildArg, name)
+		if err != nil {
+			return nil, err
+		}
+		return arg, nil
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		arg, err := buildSlice[PMapGetSetter[K]](argVal, argType, p.buildArg, name)
 		if err != nil {
 			return nil, err
 		}
@@ -541,6 +559,8 @@ func (p *Parser[K]) buildGetSetterFromPath(path *path) (GetSetter[K], error) {
 func (p *Parser[K]) buildArg(argVal value, argType reflect.Type) (any, error) {
 	name := argType.Name()
 	switch {
+	case strings.HasPrefix(name, "PMapGetSetter"):
+		fallthrough
 	case strings.HasPrefix(name, "Setter"):
 		fallthrough
 	case strings.HasPrefix(name, "GetSetter"):
