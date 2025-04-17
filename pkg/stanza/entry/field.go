@@ -5,6 +5,7 @@ package entry // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"strings"
 )
@@ -108,18 +109,18 @@ func newField(s string, rootable bool) (Field, error) {
 	switch keys[0] {
 	case AttributesPrefix:
 		if !rootable && len(keys) == 1 {
-			return Field{}, fmt.Errorf("attributes cannot be referenced without subfield")
+			return Field{}, errors.New("attributes cannot be referenced without subfield")
 		}
 		return NewAttributeField(keys[1:]...), nil
 	case ResourcePrefix:
 		if !rootable && len(keys) == 1 {
-			return Field{}, fmt.Errorf("resource cannot be referenced without subfield")
+			return Field{}, errors.New("resource cannot be referenced without subfield")
 		}
 		return NewResourceField(keys[1:]...), nil
 	case BodyPrefix:
 		return NewBodyField(keys[1:]...), nil
 	default:
-		return Field{}, fmt.Errorf("unrecognized prefix")
+		return Field{}, errors.New("unrecognized prefix")
 	}
 }
 
@@ -158,7 +159,7 @@ func fromJSONDot(s string) ([]string, error) {
 			state = InUnbracketedToken
 		case InBracket:
 			if c != '\'' && c != '"' {
-				return nil, fmt.Errorf("strings in brackets must be surrounded by quotes")
+				return nil, errors.New("strings in brackets must be surrounded by quotes")
 			}
 			state = InQuote
 			quoteChar = c
@@ -170,7 +171,7 @@ func fromJSONDot(s string) ([]string, error) {
 			}
 		case OutQuote:
 			if c != ']' {
-				return nil, fmt.Errorf("found characters between closed quote and closing bracket")
+				return nil, errors.New("found characters between closed quote and closing bracket")
 			}
 			state = OutBracket
 		case OutBracket:
@@ -181,7 +182,7 @@ func fromJSONDot(s string) ([]string, error) {
 			case '[':
 				state = InBracket
 			default:
-				return nil, fmt.Errorf("bracketed access must be followed by a dot or another bracketed access")
+				return nil, errors.New("bracketed access must be followed by a dot or another bracketed access")
 			}
 		case InUnbracketedToken:
 			switch c {
@@ -197,12 +198,12 @@ func fromJSONDot(s string) ([]string, error) {
 
 	switch state {
 	case InBracket, OutQuote:
-		return nil, fmt.Errorf("found unclosed left bracket")
+		return nil, errors.New("found unclosed left bracket")
 	case InQuote:
 		if quoteChar == '"' {
-			return nil, fmt.Errorf("found unclosed double quote")
+			return nil, errors.New("found unclosed double quote")
 		}
-		return nil, fmt.Errorf("found unclosed single quote")
+		return nil, errors.New("found unclosed single quote")
 	case InUnbracketedToken:
 		fields = append(fields, s[tokenStart:])
 	case Begin, OutBracket:
@@ -210,7 +211,7 @@ func fromJSONDot(s string) ([]string, error) {
 	}
 
 	if len(fields) == 0 {
-		return nil, fmt.Errorf("fields size is 0")
+		return nil, errors.New("fields size is 0")
 	}
 
 	return fields, nil

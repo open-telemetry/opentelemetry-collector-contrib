@@ -118,8 +118,13 @@ func mapLogRecordToSplunkEvent(res pcommon.Resource, lr plog.LogRecord, config *
 		}
 	}
 
+	ts := lr.Timestamp()
+	if ts == 0 {
+		ts = lr.ObservedTimestamp()
+	}
+
 	return &splunk.Event{
-		Time:       nanoTimestampToEpochMilliseconds(lr.Timestamp()),
+		Time:       nanoTimestampToEpochMilliseconds(ts),
 		Host:       host,
 		Source:     source,
 		SourceType: sourcetype,

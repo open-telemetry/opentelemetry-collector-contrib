@@ -1,5 +1,6 @@
 CREATE USER otelu WITH PASSWORD 'otelp';
 GRANT SELECT ON pg_stat_database TO otelu;
+GRANT pg_monitor TO otelu;
 
 CREATE TABLE table1 (
     id serial PRIMARY KEY
