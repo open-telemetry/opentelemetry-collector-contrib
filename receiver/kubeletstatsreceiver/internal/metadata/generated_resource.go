@@ -146,3 +146,21 @@ func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	rb.res = pcommon.NewResource()
 	return r
 }
+
+// SetK8sNodeAnnotation sets provided value as "k8s.node.annotation.*" attribute.
+func (rb *ResourceBuilder) SetK8sNodeAnnotation(val map[string]string) {
+	if rb.config.K8sNodeAnnotations.Enabled {
+		for k,v := range val {
+			rb.res.Attributes().PutStr("k8s.node.annotation."+k, v)
+		}
+	}
+}
+
+// SetK8sNodeLabel sets provided value as "k8s.node.label.*" attribute.
+func (rb *ResourceBuilder) SetK8sNodeLabel(val map[string]string) {
+	if rb.config.K8sNodeLabels.Enabled {
+		for k,v := range val {
+			rb.res.Attributes().PutStr("k8s.node.label."+k, v)
+		}
+	}
+}
