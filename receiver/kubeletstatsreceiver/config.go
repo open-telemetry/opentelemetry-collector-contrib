@@ -58,7 +58,7 @@ type Config struct {
 
 	// NetworkCollectAllInterfaces allows to enable collecting metrics from all network interfaces instead of default one
 	// Can be set separately for Pod and Node network metrics
-	NetworkCollectAllInterfaces NetworkInterfacesEnablerConfig `mapstructure:"add_all_interfaces_metrics"`
+	NetworkCollectAllInterfaces NetworkInterfacesEnablerConfig `mapstructure:"collect_all_network_interfaces"`
 }
 
 type NetworkInterfacesEnablerConfig struct {
