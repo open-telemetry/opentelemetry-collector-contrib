@@ -9,7 +9,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
 )
 
-func LogFunctions() map[string]ottl.Factory[ottllog.TransformContext] {
+func LogFunctions(additionalLogFuncs []ottl.Factory[ottllog.TransformContext]) map[string]ottl.Factory[ottllog.TransformContext] {
 	// No logs-only functions yet.
-	return ottlfuncs.StandardFuncs[ottllog.TransformContext]()
+	logFunctions := ottlfuncs.StandardFuncs[ottllog.TransformContext]()
+	for _, fn := range additionalLogFuncs {
+		logFunctions[fn.Name()] = fn
+	}
+	return logFunctions
 }
