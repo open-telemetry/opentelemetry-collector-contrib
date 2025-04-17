@@ -1,14 +1,8 @@
 resourceProfiles:
-  - resource:
-      attributes:
-        - key: key1
-          value:
-            stringValue: value1
+  - resource: {}
     scopeProfiles:
       - profiles:
           - attributeIndices:
-              - 0
-              - 1
               - 2
             attributeTable:
               - key: process.executable.build_id.htlhash
@@ -20,30 +14,25 @@ resourceProfiles:
               - key: host.id
                 value:
                   stringValue: localhost
-            locationIndices:
-              - 0
             locationTable:
               - address: "111"
+                attributeIndices:
+                  - 1
+                mappingIndex: 0
             mappingTable:
-              - {}
+              - attributeIndices:
+                  - 0
             periodType:
-              typeStrindex: 3
-              unitStrindex: 4
+              typeStrindex: 2
+              unitStrindex: 3
             profileId: ""
             sample:
               - locationsLength: 1
                 timestampsUnixNano:
                   - "0"
-                value:
-                  - "1"
             sampleType:
-              - typeStrindex: 1
-                unitStrindex: 2
-              - aggregationTemporality: 1
-                typeStrindex: 1
-                unitStrindex: 2
+              - unitStrindex: 1
             stringTable:
-              - ""
               - samples
               - count
               - cpu
