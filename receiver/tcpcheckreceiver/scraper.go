@@ -4,6 +4,7 @@ package tcpcheckreceiver // import "github.com/open-telemetry/opentelemetry-coll
 
 import (
 	"context"
+	"strings"
 	"sync"
 	"time"
 
@@ -12,6 +13,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
@@ -22,6 +24,7 @@ type scraper struct {
 	settings           component.TelemetrySettings
 	mb                 *metadata.MetricsBuilder
 	getConnectionState func(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState, error)
+	errorCounts        map[string]int64
 }
 
 type TCPConnectionState struct {
@@ -44,9 +47,28 @@ func getConnectionState(tcpConfig *confignet.TCPAddrConfig) (TCPConnectionState,
 	return state, nil
 }
 
-func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex) {
+func (s *scraper) errorListener(ctx context.Context, eQueue <-chan error, eOut chan<- *scrapererror.ScrapeErrors) {
+	errs := &scrapererror.ScrapeErrors{}
+
+	for {
+		select {
+		case <-ctx.Done():
+			eOut <- errs
+			return
+		case err, ok := <-eQueue:
+			if !ok {
+				eOut <- errs
+				return
+			}
+			errs.AddPartial(1, err)
+		}
+	}
+}
+
+func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAddrConfig, wg *sync.WaitGroup, mux *sync.Mutex, errChan chan<- error) {
 	defer wg.Done()
 	const pointValue int64 = 1
+	const failPointValue int64 = 0
 
 	start := time.Now()
 	_, err := s.getConnectionState(tcpConfig)
@@ -58,33 +80,73 @@ func (s *scraper) scrapeEndpoint(tcpConfig *confignet.TCPAddrConfig, wg *sync.Wa
 	defer mux.Unlock()
 
 	if err != nil {
-		// Record error data point and log the error
-		s.mb.RecordTcpcheckErrorDataPoint(now, pointValue, tcpConfig.Endpoint, err.Error())
+		// Convert error to appropriate error code
+		var errorCode metadata.AttributeErrorCode
+		switch {
+		case strings.Contains(err.Error(), "connection refused"):
+			errorCode = metadata.AttributeErrorCodeConnectionRefused
+		case strings.Contains(err.Error(), "timeout"):
+			errorCode = metadata.AttributeErrorCodeConnectionTimeout
+		case strings.Contains(err.Error(), "invalid endpoint"):
+			errorCode = metadata.AttributeErrorCodeInvalidEndpoint
+		case strings.Contains(err.Error(), "network is unreachable"):
+			errorCode = metadata.AttributeErrorCodeNetworkUnreachable
+		default:
+			errorCode = metadata.AttributeErrorCodeUnknownError
+		}
+
+		// Increment error count for this endpoint
+		s.errorCounts[tcpConfig.Endpoint]++
+
+		// Record error metrics with the current error count
+		s.mb.RecordTcpcheckErrorDataPoint(now, s.errorCounts[tcpConfig.Endpoint], tcpConfig.Endpoint, errorCode)
 		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err))
+		s.mb.RecordTcpcheckStatusDataPoint(now, failPointValue, tcpConfig.Endpoint)
+		// Send error to channel
+		select {
+		case <-ctx.Done():
+			return
+		case errChan <- err:
+		}
 		return
 	}
 
-	// Record success data points
+	// Record success metrics
 	s.mb.RecordTcpcheckDurationDataPoint(now, duration, tcpConfig.Endpoint)
 	s.mb.RecordTcpcheckStatusDataPoint(now, pointValue, tcpConfig.Endpoint)
 }
 
-func (s *scraper) scrape(_ context.Context) (pmetric.Metrics, error) {
+func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	if s.cfg == nil || len(s.cfg.Targets) == 0 {
 		return pmetric.NewMetrics(), errMissingTargets
 	}
+	// Initialize error counts if not already done
+	if s.errorCounts == nil {
+		s.errorCounts = make(map[string]int64)
+	}
 
 	var wg sync.WaitGroup
-	wg.Add(len(s.cfg.Targets))
+	var errs *scrapererror.ScrapeErrors
 	var mux sync.Mutex
 
+	errOut := make(chan *scrapererror.ScrapeErrors)
+	errChan := make(chan error, len(s.cfg.Targets))
+
+	// Start error listener
+	go func() {
+		s.errorListener(ctx, errChan, errOut)
+	}()
+
+	wg.Add(len(s.cfg.Targets))
 	for _, tcpConfig := range s.cfg.Targets {
-		// endpoint and dialer
-		go s.scrapeEndpoint(tcpConfig, &wg, &mux)
+		go s.scrapeEndpoint(ctx, tcpConfig, &wg, &mux, errChan)
 	}
 
 	wg.Wait()
-	return s.mb.Emit(), nil
+	close(errChan)
+	errs = <-errOut
+
+	return s.mb.Emit(), errs.Combine()
 }
 
 func newScraper(cfg *Config, settings receiver.Settings) *scraper {

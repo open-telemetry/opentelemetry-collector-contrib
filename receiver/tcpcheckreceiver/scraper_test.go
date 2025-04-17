@@ -200,8 +200,7 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 			require.NoError(t, err)
 
 			if runtime.GOOS == "windows" {
-				expectedError := "dial tcp 127.0.0.1:9999: connectex: No connection could be made because the target machine actively refused it."
-				expectedMetrics = updateErrorCodeInMetrics(expectedMetrics, expectedError)
+				expectedMetrics = updateErrorCodeInMetrics(expectedMetrics, "connection_refused")
 			}
 
 			cfg := &Config{
@@ -215,18 +214,64 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 				},
 			}
 
-			cfg.CollectionInterval = 100 * time.Millisecond
 			settings := receivertest.NewNopSettings(metadata.Type)
-
 			scraper := newScraper(cfg, settings)
+
+			// Initialize metrics builder
+			scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
+
 			actualMetrics, err := scraper.scrape(context.Background())
-			require.NoError(t, err, "failed scrape")
+			require.Error(t, err, "expected connection refused error")
+			require.Contains(t, err.Error(), "connection refused", "error should contain 'connection refused'")
+
+			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+				rm := actualMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						fmt.Printf("Metric %d: %s\n", k+1, m.Name())
+						if m.Name() == "tcpcheck.error" {
+							dps := m.Sum().DataPoints()
+							for l := 0; l < dps.Len(); l++ {
+								dp := dps.At(l)
+								if val, ok := dp.Attributes().Get("error.code"); ok {
+									fmt.Printf("Error code: %s\n", val.Str())
+								}
+							}
+						}
+					}
+				}
+			}
+
+			// Create a new metrics object with only the error metric
+			filteredMetrics := pmetric.NewMetrics()
+			actualRm := filteredMetrics.ResourceMetrics().AppendEmpty()
+			// Ensure the resource map is empty to match the expected metrics
+			actualRm.Resource().Attributes().Clear()
+			actualSm := actualRm.ScopeMetrics().AppendEmpty()
+			actualSm.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver")
+			actualSm.Scope().SetVersion("latest")
+
+			// Copy only the error metric
+			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+				rm := actualMetrics.ResourceMetrics().At(i)
+				for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+					sm := rm.ScopeMetrics().At(j)
+					for k := 0; k < sm.Metrics().Len(); k++ {
+						m := sm.Metrics().At(k)
+						if m.Name() == "tcpcheck.error" {
+							m.CopyTo(actualSm.Metrics().AppendEmpty())
+						}
+					}
+				}
+			}
 
 			require.NoError(
 				t,
 				pmetrictest.CompareMetrics(
 					expectedMetrics,
-					actualMetrics,
+					filteredMetrics,
 					pmetrictest.IgnoreTimestamp(),
 					pmetrictest.IgnoreStartTimestamp(),
 				),
@@ -235,11 +280,145 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 	}
 }
 
-func updateErrorCodeInMetrics(metrics pmetric.Metrics, newErrorCode string) pmetric.Metrics {
+func updateErrorCodeInMetrics(metrics pmetric.Metrics, errorCode string) pmetric.Metrics {
 	metrics.ResourceMetrics().At(0).
 		ScopeMetrics().At(0).
 		Metrics().At(0).
 		Sum().DataPoints().At(0).
-		Attributes().PutStr("error.code", newErrorCode)
+		Attributes().PutStr("error.code", errorCode)
 	return metrics
+}
+
+func TestScraper_ErrorMetric_Increments(t *testing.T) {
+	// Invalid port to force connection error
+	endpoint := "localhost:0"
+
+	cfg := &Config{
+		Targets: []*confignet.TCPAddrConfig{
+			{
+				Endpoint: endpoint,
+				DialerConfig: confignet.DialerConfig{
+					Timeout: 1 * time.Second,
+				},
+			},
+		},
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	scraper := newScraper(cfg, settings)
+
+	// Simulate 3 failed scrapes
+	for idx := 0; idx < 3; idx++ {
+		metrics, err := scraper.scrape(context.Background())
+		require.Error(t, err)
+		require.NotNil(t, metrics)
+
+		// Check error count after each scrape
+		rmSlice := metrics.ResourceMetrics()
+		require.NotZero(t, rmSlice.Len(), "Expected non-zero metrics after scrape %d", idx+1)
+
+		var errorCount int64
+		found := false
+
+		for i := 0; i < rmSlice.Len(); i++ {
+			rm := rmSlice.At(i)
+			smSlice := rm.ScopeMetrics()
+			for j := 0; j < smSlice.Len(); j++ {
+				sm := smSlice.At(j)
+				metrics := sm.Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					m := metrics.At(k)
+					if m.Name() == "tcpcheck.error" {
+						dps := m.Sum().DataPoints()
+						for l := 0; l < dps.Len(); l++ {
+							dp := dps.At(l)
+							if val, ok := dp.Attributes().Get("tcpcheck.endpoint"); ok && val.Str() == endpoint {
+								errorCount = dp.IntValue()
+								found = true
+								break
+							}
+						}
+					}
+				}
+			}
+		}
+
+		require.True(t, found, "Expected to find tcpcheck.error metric after scrape %d", idx+1)
+		require.Equal(t, int64(idx+1), errorCount, "Expected error count to be %d after %d failed scrapes", idx+1, idx+1)
+	}
+}
+
+func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
+	endpoints := []string{
+		"localhost:0",   // Invalid port
+		"invalid:host",  // Invalid host format
+		"missing:port:", // Invalid port format
+	}
+
+	cfg := &Config{
+		Targets: []*confignet.TCPAddrConfig{
+			{
+				Endpoint: endpoints[0],
+				DialerConfig: confignet.DialerConfig{
+					Timeout: 1 * time.Second,
+				},
+			},
+			{
+				Endpoint: endpoints[1],
+				DialerConfig: confignet.DialerConfig{
+					Timeout: 1 * time.Second,
+				},
+			},
+			{
+				Endpoint: endpoints[2],
+				DialerConfig: confignet.DialerConfig{
+					Timeout: 1 * time.Second,
+				},
+			},
+		},
+	}
+
+	settings := receivertest.NewNopSettings(metadata.Type)
+	scraper := newScraper(cfg, settings)
+
+	// Simulate 5 failed scrapes
+	for idx := 0; idx < 5; idx++ {
+		metrics, err := scraper.scrape(context.Background())
+		require.Error(t, err)
+		require.NotNil(t, metrics)
+
+		// Check error count after each scrape
+		rmSlice := metrics.ResourceMetrics()
+		require.NotZero(t, rmSlice.Len(), "Expected non-zero metrics after scrape %d", idx+1)
+
+		errorCounts := make(map[string]int64)
+		totalErrors := int64(0)
+
+		for i := 0; i < rmSlice.Len(); i++ {
+			rm := rmSlice.At(i)
+			smSlice := rm.ScopeMetrics()
+			for j := 0; j < smSlice.Len(); j++ {
+				sm := smSlice.At(j)
+				metrics := sm.Metrics()
+				for k := 0; k < metrics.Len(); k++ {
+					m := metrics.At(k)
+					if m.Name() == "tcpcheck.error" {
+						dps := m.Sum().DataPoints()
+						for l := 0; l < dps.Len(); l++ {
+							dp := dps.At(l)
+							if val, ok := dp.Attributes().Get("tcpcheck.endpoint"); ok {
+								endpoint := val.Str()
+								errorCounts[endpoint] = dp.IntValue()
+								totalErrors += dp.IntValue()
+							}
+						}
+					}
+				}
+			}
+		}
+
+		// Verify total errors
+		require.Equal(t, int64(idx+1)*int64(len(endpoints)), totalErrors,
+			"Expected total errors to be %d after %d failed scrapes", (idx+1)*len(endpoints), idx+1)
+	}
 }
