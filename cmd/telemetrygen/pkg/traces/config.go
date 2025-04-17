@@ -4,7 +4,7 @@
 package traces
 
 import (
-	"fmt"
+	"errors"
 	"time"
 
 	"github.com/spf13/pflag"
@@ -64,7 +64,7 @@ func (c *Config) SetDefaults() {
 // Validate validates the test scenario parameters.
 func (c *Config) Validate() error {
 	if c.TotalDuration <= 0 && c.NumTraces <= 0 {
-		return fmt.Errorf("either `traces` or `duration` must be greater than 0")
+		return errors.New("either `traces` or `duration` must be greater than 0")
 	}
 	return nil
 }

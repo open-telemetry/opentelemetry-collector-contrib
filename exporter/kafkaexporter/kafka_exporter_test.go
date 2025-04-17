@@ -6,7 +6,6 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -110,7 +109,7 @@ func TestTracesPusher_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
 
-	expErr := fmt.Errorf("failed to send")
+	expErr := errors.New("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
 	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
@@ -343,7 +342,7 @@ func TestMetricsPusher_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
 
-	expErr := fmt.Errorf("failed to send")
+	expErr := errors.New("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
 	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
@@ -522,7 +521,7 @@ func TestLogsPusher_err(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
 
-	expErr := fmt.Errorf("failed to send")
+	expErr := errors.New("failed to send")
 	producer.ExpectSendMessageAndFail(expErr)
 
 	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
