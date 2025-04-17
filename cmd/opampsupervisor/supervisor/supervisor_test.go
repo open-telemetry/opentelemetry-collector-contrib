@@ -1097,6 +1097,8 @@ func (mockOpAMPClient) RequestConnectionSettings(_ *protobufs.ConnectionSettings
 	return nil
 }
 
+func (mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
 func (m mockOpAMPClient) SetCustomCapabilities(customCapabilities *protobufs.CustomCapabilities) error {
 	if m.setCustomCapabilitiesFunc != nil {
 		return m.setCustomCapabilitiesFunc(customCapabilities)
@@ -1117,8 +1119,6 @@ func (m mockOpAMPClient) SendCustomMessage(message *protobufs.CustomMessage) (me
 func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) (err error) {
 	return nil
 }
-
-func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
 
 type mockConn struct {
 	sendFunc func(ctx context.Context, message *protobufs.ServerToAgent) error

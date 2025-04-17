@@ -4,8 +4,10 @@
 package supervisor
 
 import (
+	"encoding/hex"
 	"errors"
 	"os"
+	"sync"
 
 	"github.com/google/uuid"
 	"gopkg.in/yaml.v3"
@@ -13,15 +15,22 @@ import (
 
 // persistentState represents persistent state for the supervisor
 type persistentState struct {
-	InstanceID uuid.UUID `yaml:"instance_id"`
+	InstanceID      uuid.UUID       `yaml:"instance_id"`
+	AllPackagesHash hexEncodedBytes `yaml:"all_packages_hash"`
 
 	// Path to the config file that the state should be saved to.
 	// This is not marshaled.
-	configPath string `yaml:"-"`
+	configPath string     `yaml:"-"`
+	mux        sync.Mutex `yaml:"-"`
 }
 
 func (p *persistentState) SetInstanceID(id uuid.UUID) error {
 	p.InstanceID = id
+	return p.writeState()
+}
+
+func (p *persistentState) SetAllPackagesHash(hash []byte) error {
+	p.AllPackagesHash = hexEncodedBytes(hash)
 	return p.writeState()
 }
 
@@ -77,4 +86,24 @@ func createNewPersistentState(file string) (*persistentState, error) {
 	}
 
 	return p, p.writeState()
+}
+
+// hexEncodedBytes is a rebranded byte slice
+// that supports marhalling/unmarshalling as YAML
+// to/from a hex string.
+type hexEncodedBytes []byte
+
+var (
+	_ yaml.Marshaler   = (*hexEncodedBytes)(nil)
+	_ yaml.Unmarshaler = (*hexEncodedBytes)(nil)
+)
+
+func (h hexEncodedBytes) MarshalYAML() (any, error) {
+	return hex.EncodeToString(h), nil
+}
+
+func (h *hexEncodedBytes) UnmarshalYAML(value *yaml.Node) error {
+	var err error
+	*h, err = hex.DecodeString(value.Value)
+	return err
 }
