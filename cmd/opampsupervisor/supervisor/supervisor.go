@@ -1191,13 +1191,13 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 1) the remote config from OpAMP Server
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
-func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 
-	if !configMapIsEmpty {
-		c := config.GetConfig()
+	if hasIncomingConfigMap {
+		c := incomingConfig.GetConfig()
 
 		// Sort to make sure the order of merging is stable.
 		var names []string
@@ -1274,7 +1274,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapIsEmpty && config != nil,
+		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
 	}
 
 	configChanged = false
