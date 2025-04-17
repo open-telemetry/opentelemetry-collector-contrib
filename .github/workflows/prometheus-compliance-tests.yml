@@ -56,7 +56,7 @@ jobs:
       - name: Copy binary to compliance directory
         # The required name of the downloaded artifact is `otelcol_0.42.0_linux_amd64`, so we place the collector contrib artifact under the same name in the bin folder to run.
         # Source: https://github.com/prometheus/compliance/blob/12cbdf92abf7737531871ab7620a2de965fc5382/remote_write_sender/targets/otel.go#L8
-        run: mkdir compliance/remotewrite/sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remotewrite/sender/bin/otelcol_0.42.0_linux_amd64
+        run: mkdir compliance/remotewrite/sender/bin && cp opentelemetry-collector-contrib/bin/otelcontribcol_linux_amd64 compliance/remotewrite/sender/bin/otelcol_0.123.1_linux_amd64
       - name: clean up mod file
         run: go mod tidy
         working-directory: compliance/remotewrite/sender

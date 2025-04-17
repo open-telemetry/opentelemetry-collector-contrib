@@ -125,7 +125,11 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
 		}, nil
 	case MappingOTel:
-		return otelModeEncoder{serializer: otelserializer.New()}, nil
+		ser, err := otelserializer.New()
+		if err != nil {
+			return nil, err
+		}
+		return otelModeEncoder{serializer: ser}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }
@@ -308,11 +312,11 @@ func (e bodymapModeEncoder) encodeLog(
 }
 
 func (bodymapModeEncoder) encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding spans")
+	return errors.New("bodymap mode does not support encoding spans")
 }
 
 func (bodymapModeEncoder) encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding span events")
+	return errors.New("bodymap mode does not support encoding span events")
 }
 
 type metricsUnsupportedEncoder struct {

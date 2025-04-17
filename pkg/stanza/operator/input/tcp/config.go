@@ -6,6 +6,7 @@ package tcp // import "github.com/open-telemetry/opentelemetry-collector-contrib
 import (
 	"bufio"
 	"context"
+	"errors"
 	"fmt"
 	"net"
 	"time"
@@ -96,7 +97,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.ListenAddress == "" {
-		return nil, fmt.Errorf("missing required parameter 'listen_address'")
+		return nil, errors.New("missing required parameter 'listen_address'")
 	}
 
 	// validate the input address
