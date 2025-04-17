@@ -416,7 +416,7 @@ type PMapGetSetter[K any] interface {
 // StandardPMapGetSetter is a basic implementation of PMapGetSetter.
 type StandardPMapGetSetter[K any] struct {
 	Getter func(ctx context.Context, tCtx K) (any, error)
-	Setter func(ctx context.Context, tCtx K, m any) error
+	Setter func(ctx context.Context, tCtx K, val any) error
 }
 
 func (g StandardPMapGetSetter[K]) Get(ctx context.Context, tCtx K) (pcommon.Map, error) {
