@@ -297,7 +297,9 @@ service:
 			got := s.cfgState.Load().(*configState).mergedConfig
 
 			k := koanf.New("::")
-			k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+			err = k.Load(rawbytes.Provider(tt.wantConfig), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc))
+			require.NoError(t, err)
+
 			gotParsed, err := k.Marshal(yaml.Parser())
 
 			require.NoError(t, err)
