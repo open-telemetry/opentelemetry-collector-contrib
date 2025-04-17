@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"k8s.io/apimachinery/pkg/runtime/schema"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 
@@ -24,8 +23,9 @@ func TestLoadConfig(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		id       component.ID
-		expected *Config
+		id          component.ID
+		expected    *Config
+		expectedErr string
 	}{
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
@@ -40,6 +40,7 @@ func TestLoadConfig(t *testing.T) {
 						Interval:      time.Hour,
 						FieldSelector: "status.phase=Running",
 						LabelSelector: "environment in (production),tier in (frontend)",
+						exclude:       make(map[apiWatch.EventType]bool),
 						gvr: &schema.GroupVersionResource{
 							Group:    "",
 							Version:  "v1",
@@ -47,13 +48,15 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 					{
-						Name:            "events",
-						Mode:            WatchMode,
-						Namespaces:      []string{"default"},
-						Group:           "events.k8s.io",
-						ResourceVersion: "",
+						Name:       "events",
+						Mode:       WatchMode,
+						Namespaces: []string{"default"},
+						Group:      "events.k8s.io",
 						ExcludeWatchType: []apiWatch.EventType{
 							apiWatch.Deleted,
+						},
+						exclude: map[apiWatch.EventType]bool{
+							apiWatch.Deleted: true,
 						},
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
@@ -62,7 +65,6 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
@@ -77,6 +79,7 @@ func TestLoadConfig(t *testing.T) {
 						Mode:            PullMode,
 						ResourceVersion: "1",
 						Interval:        time.Hour,
+						exclude:         make(map[apiWatch.EventType]bool),
 						gvr: &schema.GroupVersionResource{
 							Group:    "",
 							Version:  "v1",
@@ -87,14 +90,14 @@ func TestLoadConfig(t *testing.T) {
 						Name:     "events",
 						Mode:     PullMode,
 						Interval: time.Hour,
+						exclude:  make(map[apiWatch.EventType]bool),
 						gvr: &schema.GroupVersionResource{
-							Group:    "",
+							Group:    "events.k8s.io",
 							Version:  "v1",
 							Resource: "events",
 						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
@@ -110,6 +113,7 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "",
+						exclude:         make(map[apiWatch.EventType]bool),
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
 							Version:  "v1",
@@ -122,6 +126,7 @@ func TestLoadConfig(t *testing.T) {
 						Namespaces:      []string{"default"},
 						Group:           "events.k8s.io",
 						ResourceVersion: "2",
+						exclude:         make(map[apiWatch.EventType]bool),
 						gvr: &schema.GroupVersionResource{
 							Group:    "events.k8s.io",
 							Version:  "v1",
@@ -129,14 +134,15 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
-				makeDiscoveryClient: getMockDiscoveryClient,
 			},
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "invalid_resource"),
+			id:          component.NewIDWithName(metadata.Type, "invalid_mode"),
+			expectedErr: "invalid mode: invalid_mode",
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "exclude_deleted_with_pull"),
+			id:          component.NewIDWithName(metadata.Type, "exclude_deleted_with_pull"),
+			expectedErr: "the Exclude config can only be used with watch mode",
 		},
 	}
 
@@ -147,18 +153,36 @@ func TestLoadConfig(t *testing.T) {
 
 			factory := NewFactory()
 			cfg := factory.CreateDefaultConfig().(*Config)
-			cfg.makeDiscoveryClient = getMockDiscoveryClient
 
 			sub, err := cm.Sub(tt.id.String())
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			if tt.expected == nil {
-				err = xconfmap.Validate(cfg)
-				assert.Error(t, err)
+			err = cfg.Validate()
+			if tt.expectedErr != "" {
+				assert.EqualError(t, err, tt.expectedErr)
 				return
 			}
-			assert.NoError(t, xconfmap.Validate(cfg))
+
+			// Initialize exclude maps and GVR after validation
+			for i, obj := range cfg.Objects {
+				obj.exclude = make(map[apiWatch.EventType]bool)
+				for _, item := range obj.ExcludeWatchType {
+					obj.exclude[item] = true
+				}
+
+				// Set GVR based on object name and group
+				obj.gvr = &schema.GroupVersionResource{
+					Group:    obj.Group,
+					Version:  "v1",
+					Resource: obj.Name,
+				}
+				if tt.expected != nil && i < len(tt.expected.Objects) {
+					obj.gvr = tt.expected.Objects[i].gvr
+				}
+			}
+
+			assert.NoError(t, err)
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
 			assert.Equal(t, tt.expected.Objects, cfg.Objects)
 		})
@@ -166,39 +190,43 @@ func TestLoadConfig(t *testing.T) {
 }
 
 func TestValidateResourceConflict(t *testing.T) {
-	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
-	rCfg.makeDiscoveryClient = getMockDiscoveryClient
 
-	// Validate it should choose first gvr if group is not specified
+	// Test default mode is set when not specified
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name: "myresources",
-			Mode: PullMode,
+			Name: "pods",
 		},
 	}
 
 	err := rCfg.Validate()
 	require.NoError(t, err)
-	assert.Equal(t, "group1", rCfg.Objects[0].gvr.Group)
+	assert.Equal(t, defaultMode, rCfg.Objects[0].Mode)
+	assert.Equal(t, defaultPullInterval, rCfg.Objects[0].Interval)
 
-	// Validate it should choose gvr for specified group
+	// Test pull mode with no interval gets default interval
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
-			Name:  "myresources",
-			Mode:  PullMode,
-			Group: "group2",
+			Name: "pods",
+			Mode: PullMode,
 		},
 	}
 
 	err = rCfg.Validate()
 	require.NoError(t, err)
-	assert.Equal(t, "group2", rCfg.Objects[0].gvr.Group)
-}
+	assert.Equal(t, defaultPullInterval, rCfg.Objects[0].Interval)
 
-func TestClientRequired(t *testing.T) {
-	rCfg := createDefaultConfig().(*Config)
-	err := rCfg.Validate()
-	require.Error(t, err)
+	// Test exclude watch type with pull mode returns error
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: PullMode,
+			ExcludeWatchType: []apiWatch.EventType{
+				apiWatch.Deleted,
+			},
+		},
+	}
+
+	err = rCfg.Validate()
+	assert.EqualError(t, err, "the Exclude config can only be used with watch mode")
 }

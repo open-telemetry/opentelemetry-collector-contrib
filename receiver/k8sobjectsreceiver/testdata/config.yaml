@@ -36,3 +36,7 @@ k8sobjects/exclude_deleted_with_pull:
     - name: events
       mode: pull
       exclude_watch_type: [DELETED]
+k8sobjects/invalid_mode:
+  objects:
+    - name: pods
+      mode: invalid_mode
