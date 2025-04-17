@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -1804,7 +1805,7 @@ func configMergeFunc(src, dest map[string]any) error {
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
-				allExt := append(destExt, srcExt...)
+				allExt := slices.Concat(destExt, srcExt)
 				// This is a small hack to ensure that the order is consitent and
 				// follows this simple rule: extensions from [src], then from [dest],
 				// in the order that they appear.
