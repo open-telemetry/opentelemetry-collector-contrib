@@ -48,7 +48,7 @@ func Test_replaceAllPatterns(t *testing.T) {
 		Getter: func(_ context.Context, tCtx pcommon.Map) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx pcommon.Map, m any) error {
+		Setter: func(_ context.Context, tCtx pcommon.Map, m any) error {
 			if v, ok := m.(pcommon.Map); ok {
 				v.MoveTo(tCtx)
 				return nil
@@ -616,7 +616,7 @@ func Test_replaceAllPatterns_bad_function_result(t *testing.T) {
 		Getter: func(_ context.Context, tCtx any) (any, error) {
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx any, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.MoveTo(v2)
@@ -654,7 +654,7 @@ func Test_replaceAllPatterns_get_nil(t *testing.T) {
 			assert.Nil(t, tCtx)
 			return tCtx, nil
 		},
-		Setter: func(ctx context.Context, tCtx any, m any) error {
+		Setter: func(_ context.Context, tCtx any, m any) error {
 			if v, ok := tCtx.(pcommon.Map); ok {
 				if v2, ok2 := m.(pcommon.Map); ok2 {
 					v.MoveTo(v2)
