@@ -1,0 +1,51 @@
+resourceProfiles:
+  - resource:
+      attributes:
+        - key: key1
+          value:
+            stringValue: value1
+    scopeProfiles:
+      - profiles:
+          - attributeIndices:
+              - 0
+              - 1
+              - 2
+            attributeTable:
+              - key: process.executable.build_id.htlhash
+                value:
+                  stringValue: 600DCAFE4A110000F2BF38C493F5FB92
+              - key: profile.frame.type
+                value:
+                  stringValue: native
+              - key: host.id
+                value:
+                  stringValue: localhost
+            locationIndices:
+              - 0
+            locationTable:
+              - address: "111"
+            mappingTable:
+              - {}
+            periodType:
+              typeStrindex: 3
+              unitStrindex: 4
+            profileId: ""
+            sample:
+              - locationsLength: 1
+                timestampsUnixNano:
+                  - "0"
+                value:
+                  - "1"
+            sampleType:
+              - typeStrindex: 1
+                unitStrindex: 2
+              - aggregationTemporality: 1
+                typeStrindex: 1
+                unitStrindex: 2
+            stringTable:
+              - ""
+              - samples
+              - count
+              - cpu
+              - nanoseconds
+        scope: {}
