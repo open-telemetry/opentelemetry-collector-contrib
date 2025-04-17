@@ -45,6 +45,8 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
+
+	AdditionalOTTLFunc []ottl.Factory[K]
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
