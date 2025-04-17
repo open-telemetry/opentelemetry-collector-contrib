@@ -67,6 +67,7 @@ Example:
 ```yaml
   k8s_cluster:
     auth_type: kubeConfig
+    k8s_leader_elector: <reference k8s leader elector extension>
     node_conditions_to_report: [Ready, MemoryPressure]
     allocatable_types_to_report: [cpu, memory]
     metrics:
@@ -79,6 +80,16 @@ Example:
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go)
 with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
+
+### k8s_leader_elector
+Provide name of the k8s leader elector extension defined in config. This allows multiple instances of k8s cluster
+receiver to be executed on a cluster. At a given time only the pod which has the is active.
+
+```yaml
+    k8s_cluster:
+        k8s_leader_elector: k8s_leader_elector
+...
+```
 
 ### node_conditions_to_report
 
@@ -95,6 +106,7 @@ k8s_cluster:
     - MemoryPressure
 ...
 ```
+
 
 ### metadata_exporters
 

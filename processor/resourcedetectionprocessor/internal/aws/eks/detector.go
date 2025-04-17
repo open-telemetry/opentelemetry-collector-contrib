@@ -10,10 +10,10 @@ import (
 	"os"
 	"strings"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -43,7 +43,7 @@ const (
 type detectorUtils interface {
 	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
 	getClusterName(ctx context.Context, logger *zap.Logger) string
-	getClusterNameTagFromReservations([]*ec2.Reservation) string
+	getClusterNameTagFromReservations([]types.Reservation) string
 	getCloudAccountID(ctx context.Context, logger *zap.Logger) string
 }
 
@@ -142,29 +142,31 @@ func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, na
 
 func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger) string {
 	defaultErrorMessage := "Unable to get EKS cluster name"
-	sess, err := session.NewSession()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		logger.Warn(defaultErrorMessage, zap.Error(err))
 		return ""
 	}
 
-	ec2Svc := ec2metadata.New(sess)
-	region, err := ec2Svc.Region()
+	imdsClient := imds.NewFromConfig(cfg)
+	resp, err := imdsClient.GetRegion(ctx, &imds.GetRegionInput{})
 	if err != nil {
 		logger.Warn(defaultErrorMessage, zap.Error(err))
 		return ""
 	}
 
-	svc := ec2.New(sess, aws.NewConfig().WithRegion(region))
-	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
+	cfg.Region = resp.Region
+	ec2Client := ec2.NewFromConfig(cfg)
+
+	instanceIdentityDocument, err := imdsClient.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
 		logger.Warn(defaultErrorMessage, zap.Error(err))
 		return ""
 	}
 
-	instances, err := svc.DescribeInstances(&ec2.DescribeInstancesInput{
-		InstanceIds: []*string{
-			aws.String(instanceIdentityDocument.InstanceID),
+	instances, err := ec2Client.DescribeInstances(ctx, &ec2.DescribeInstancesInput{
+		InstanceIds: []string{
+			instanceIdentityDocument.InstanceID,
 		},
 	})
 	if err != nil {
@@ -181,7 +183,7 @@ func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger
 	return clusterName
 }
 
-func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.Reservation) string {
+func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []types.Reservation) string {
 	for _, reservation := range reservations {
 		for _, instance := range reservation.Instances {
 			for _, tag := range instance.Tags {
@@ -203,14 +205,14 @@ func (e eksDetectorUtils) getClusterNameTagFromReservations(reservations []*ec2.
 
 func (e eksDetectorUtils) getCloudAccountID(ctx context.Context, logger *zap.Logger) string {
 	defaultErrorMessage := "Unable to get EKS cluster account ID"
-	sess, err := session.NewSession()
+	cfg, err := config.LoadDefaultConfig(ctx)
 	if err != nil {
 		logger.Warn(defaultErrorMessage, zap.Error(err))
 		return ""
 	}
 
-	ec2Svc := ec2metadata.New(sess)
-	instanceIdentityDocument, err := ec2Svc.GetInstanceIdentityDocumentWithContext(ctx)
+	imdsClient := imds.NewFromConfig(cfg)
+	instanceIdentityDocument, err := imdsClient.GetInstanceIdentityDocument(ctx, &imds.GetInstanceIdentityDocumentInput{})
 	if err != nil {
 		logger.Warn(defaultErrorMessage, zap.Error(err))
 		return ""

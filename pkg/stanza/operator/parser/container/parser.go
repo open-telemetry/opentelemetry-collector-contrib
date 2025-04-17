@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/goccy/go-json"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/timeutils"
@@ -155,21 +156,19 @@ func (p *Parser) Stop() error {
 		// nothing is started return
 		return nil
 	}
-	var stopErrs []error
-	err := p.recombineParser.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
+	var errs error
+	if err := p.recombineParser.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal recombine operator: %w", err))
 	}
 	// the recombineParser will call the Process of the criLogEmitter synchronously so the entries will be first
 	// written to the channel before the Stop of the recombineParser returns. Then since the criLogEmitter handles
 	// the entries synchronously it is safe to call its Stop.
 	// After criLogEmitter is stopped the crioConsumer will consume the remaining messages and return.
-	err = p.criLogEmitter.Stop()
-	if err != nil {
-		stopErrs = append(stopErrs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
+	if err := p.criLogEmitter.Stop(); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("unable to stop the internal LogEmitter: %w", err))
 	}
 	p.criConsumers.Wait()
-	return errors.Join(stopErrs...)
+	return errs
 }
 
 // detectFormat will detect the container log format
