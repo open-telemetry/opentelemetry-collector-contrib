@@ -532,7 +532,7 @@ PUT _component_template/metrics-otel@custom
 }
 ```
 
-After installing this component template, if you've previously ingested data, you'll need to wait until the old index of the time series data stream reaches its `end_time`. This can take up to 30 minutes by default. See [time series data stream look ahead time](https://www.elastic.co/guide/en/elasticsearch/reference/current/tsds-index-settings.html) for more information.
+After installing this component template, if you've previously ingested data, you'll need to wait until the old index of the time series data stream reaches its `end_time`. This can take up to 30 minutes by default. See [time series index look-ahead time](https://www.elastic.co/docs/reference/elasticsearch/index-settings/time-series) for more information.
 
 While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.
