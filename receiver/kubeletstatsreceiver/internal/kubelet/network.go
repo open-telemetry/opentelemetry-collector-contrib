@@ -24,6 +24,8 @@ func addNetworkMetrics(mb *metadata.MetricsBuilder, networkMetrics metadata.Netw
 			recordInterfaceDataPoint(mb, networkMetrics.IO, &s.Interfaces[i], getInterfaceIO, currentTime)
 			recordInterfaceDataPoint(mb, networkMetrics.Errors, &s.Interfaces[i], getInterfaceErrors, currentTime)
 		}
+		// Because stats.NetworkStats.Interfaces contains metrics for all interfaces, including default,
+		// we don't need to iterate over stats.NetworkStats.InterfaceStats for it, hence we return here
 		return
 	}
 
