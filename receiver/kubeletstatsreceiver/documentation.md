@@ -20,6 +20,14 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Double | Cumulative | true |
 
+### container.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
+
 ### container.cpu.utilization
 
 Container CPU utilization
@@ -107,6 +115,14 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Double | Cumulative | true |
+
+### k8s.node.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
 
 ### k8s.node.cpu.utilization
 
@@ -225,6 +241,14 @@ Total cumulative CPU time (sum of all cores) spent by the container/pod/node sin
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Double | Cumulative | true |
+
+### k8s.pod.cpu.usage
+
+Total CPU usage (sum of all cores per second) averaged over the sample window
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {cpu} | Gauge | Double |
 
 ### k8s.pod.cpu.utilization
 
@@ -386,14 +410,6 @@ metrics:
     enabled: true
 ```
 
-### container.cpu.usage
-
-Total CPU usage (sum of all cores per second) averaged over the sample window
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cpu} | Gauge | Double |
-
 ### container.uptime
 
 The time since the container started
@@ -450,14 +466,6 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
-### k8s.node.cpu.usage
-
-Total CPU usage (sum of all cores per second) averaged over the sample window
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cpu} | Gauge | Double |
-
 ### k8s.node.uptime
 
 The time since the node started
@@ -473,14 +481,6 @@ Pod cpu utilization as a ratio of the node's capacity
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
-
-### k8s.pod.cpu.usage
-
-Total CPU usage (sum of all cores per second) averaged over the sample window
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| {cpu} | Gauge | Double |
 
 ### k8s.pod.cpu_limit_utilization
 

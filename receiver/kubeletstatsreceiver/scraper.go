@@ -60,15 +60,12 @@ func newKubeletScraper(
 	if EnableCPUUsageMetrics.IsEnabled() {
 		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
 			metricsConfig.Metrics.ContainerCPUUtilization.Enabled = false
-			metricsConfig.Metrics.ContainerCPUUsage.Enabled = true
 		}
 		if metricsConfig.Metrics.K8sPodCPUUtilization.Enabled {
 			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = false
-			metricsConfig.Metrics.K8sPodCPUUsage.Enabled = true
 		}
 		if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
 			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
-			metricsConfig.Metrics.K8sNodeCPUUsage.Enabled = true
 		}
 	} else {
 		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
