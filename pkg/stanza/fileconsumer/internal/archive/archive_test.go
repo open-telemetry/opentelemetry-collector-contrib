@@ -5,6 +5,7 @@ package archive // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"fmt"
 	"math/rand/v2"
 	"testing"
 
@@ -19,6 +20,88 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
+
+func TestConstructor(t *testing.T) {
+	t.Run("no-op archive", func(t *testing.T) {
+		// scenario 1: pollsToArchive is set to 0 and persister is non-nil
+		a := NewArchive(context.Background(), zap.L(), 0, testutil.NewUnscopedMockPersister())
+		_, isNop := a.(*nopArchive)
+		require.True(t, isNop, "expected no-op archive")
+
+		// scenario 2: persister is set to nil and pollsToArchive is non-zero
+		a = NewArchive(context.Background(), zap.L(), 100, nil)
+		_, isNop = a.(*nopArchive)
+		require.True(t, isNop, "expected no-op archive")
+	})
+
+	t.Run("archive", func(t *testing.T) {
+		a := NewArchive(context.Background(), zap.L(), 100, testutil.NewUnscopedMockPersister())
+		_, isArchive := a.(*archive)
+		require.True(t, isArchive, "expected archive")
+	})
+}
+
+func TestArchiveCRUD(t *testing.T) {
+	// pollsToArchiveMatrix contains different polls_to_archive settings to test
+	pollsToArchiveMatrix := []int{10, 20, 50, 100, 200}
+
+	for _, p := range pollsToArchiveMatrix {
+		t.Run(fmt.Sprintf("pollsToArchive:%d", p), func(t *testing.T) { testArchive(t, p) })
+	}
+}
+
+func testArchive(t *testing.T, pollsToArchive int) {
+	persister := testutil.NewUnscopedMockPersister()
+	a := NewArchive(context.Background(), zap.L(), pollsToArchive, persister)
+	archive, isArchive := a.(*archive)
+	require.True(t, isArchive, "expected archive")
+	require.Equal(t, 0, archive.archiveIndex, "expected archiveIndex to be 0 at the beginning")
+
+	m := make(map[int]*fingerprint.Fingerprint)
+
+	// rolledOverFps contains the fingerprints that were previously a part of archive, but are now rolled over i.e. removed.
+	// archive should no longer contain such fingerprints
+	rolledOverFps := make([]*fingerprint.Fingerprint, 0)
+
+	for i := 0; i < 50; i++ {
+		fp := fingerprint.New([]byte(createRandomString(100)))
+
+		if oldFp, isRollover := m[i%pollsToArchive]; isRollover {
+			// store the fp if we've already written to this index
+			rolledOverFps = append(rolledOverFps, oldFp)
+		}
+
+		m[i%pollsToArchive] = fp
+
+		set := fileset.New[*reader.Metadata](0)
+		set.Add(&reader.Metadata{Fingerprint: fp})
+
+		archive.WriteFiles(set)
+	}
+
+	// sub-test 1: rolled over fingerprints should not be a part of archive
+	for _, fp := range rolledOverFps {
+		matchedData := archive.FindFiles([]*fingerprint.Fingerprint{fp})
+		require.Nil(t, matchedData[0])
+	}
+
+	// sub-test 2: newer fingerprints should be part of archive
+	for index, fp := range m {
+		new, err := archive.readArchive(index)
+		require.Equalf(t, new.Len(), 1, "index %d should have exactly one item", index)
+		require.NoError(t, err)
+
+		// FindFiles removes the data from persister.
+		matchedData := archive.FindFiles([]*fingerprint.Fingerprint{fp})
+		require.NotNil(t, matchedData[0])
+		require.True(t, fp.Equal(matchedData[0].GetFingerprint()), "expected fingerprints to match")
+
+		// archive should no longer contain data (as FindFiles removed the data)
+		new, err = archive.readArchive(index)
+		require.Equalf(t, new.Len(), 0, "index %d should no longer have any items", index)
+		require.NoError(t, err)
+	}
+}
 
 func TestFindFilesOrder(t *testing.T) {
 	fps := make([]*fingerprint.Fingerprint, 0)
@@ -90,4 +173,16 @@ func populatedPersisterData(persister operator.Persister, fps []*fingerprint.Fin
 	_ = checkpoint.SaveKey(context.Background(), persister, md[:len(md)/2], "knownFiles0")
 	_ = checkpoint.SaveKey(context.Background(), persister, md[len(md)/2:], "knownFiles1")
 	return fpInStorage
+}
+
+func createRandomString(length int) string {
+	// some characters for the random generation
+	const letterBytes = " ,.;:*-+/[]{}<>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+	b := make([]byte, length)
+	for i := range b {
+		b[i] = letterBytes[rand.IntN(len(letterBytes))]
+	}
+
+	return string(b)
 }
