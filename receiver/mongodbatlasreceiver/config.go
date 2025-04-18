@@ -131,19 +131,16 @@ var (
 
 	// Access Logs Errors
 	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
+
+	// Config Errors
+	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
 )
 
 func (c *Config) Validate() error {
 	var errs error
 	baseurl := c.BaseURL
-	if u, err := url.ParseRequestURI(baseurl); err != nil {
-		errs = multierr.Append(errs, fmt.Errorf("base_url is not valid: %w", err))
-		if u.Scheme == "" {
-			errs = multierr.Append(errs, fmt.Errorf("base_url must contain a scheme (http or https)"))
-		}
-		if u.Host == "" {
-			errs = multierr.Append(errs, fmt.Errorf("base_url must contain a host"))
-		}
+	if err := validateEndpoint(baseurl); err != nil {
+		return fmt.Errorf("invalid base_url %q: %w", baseurl, err)
 	}
 
 	for _, project := range c.Projects {
@@ -252,6 +249,26 @@ func (a AlertConfig) validateListenConfig() error {
 func (e EventsConfig) validate() error {
 	if len(e.Projects) == 0 && len(e.Organizations) == 0 {
 		return errNoEvents
+	}
+	return nil
+}
+
+func validateEndpoint(endpoint string) error {
+	if endpoint == "" {
+		return errConfigEmptyEndpoint
+	}
+
+	u, err := url.Parse(endpoint)
+	if err != nil {
+		return err
+	}
+	switch u.Scheme {
+	case "http", "https":
+	default:
+		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
+	}
+	if u.Host == "" {
+		return fmt.Errorf("host must not be empty")
 	}
 	return nil
 }
