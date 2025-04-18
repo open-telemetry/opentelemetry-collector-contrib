@@ -4,521 +4,379 @@
 package cwlogs
 
 import (
+	"context"
 	"errors"
 	"fmt"
-	"net/http"
+	"sync/atomic"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/client/metadata"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs"
-	"github.com/aws/aws-sdk-go/service/cloudwatchlogs/cloudwatchlogsiface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs"
+	"github.com/aws/aws-sdk-go-v2/service/cloudwatchlogs/types"
+	"github.com/aws/smithy-go"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
 
-func newAlwaysPassMockLogClient(putLogEventsFunc func(args mock.Arguments)) *Client {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
+type mockCloudWatchClient struct {
+	createLogGroupCount atomic.Int32
+	createLogGroupFuncs []func(ctx context.Context, params *cloudwatchlogs.CreateLogGroupInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error)
+	createLogGroup      func(ctx context.Context, params *cloudwatchlogs.CreateLogGroupInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error)
 
-	svc.On("PutLogEvents", mock.Anything).Return(
-		&cloudwatchlogs.PutLogEventsOutput{
-			NextSequenceToken: &expectedNextSequenceToken,
-		},
-		nil).Run(putLogEventsFunc)
+	createLogStreamCount atomic.Int32
+	createLogStreamFuncs []func(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error)
+	createLogStream      func(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error)
 
-	svc.On("CreateLogGroup", mock.Anything).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil)
+	putLogEventsCount atomic.Int32
+	putLogEventsFuncs []func(ctx context.Context, params *cloudwatchlogs.PutLogEventsInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error)
+	putLogEvents      func(ctx context.Context, params *cloudwatchlogs.PutLogEventsInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error)
 
-	svc.On("CreateLogStream", mock.Anything).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil)
-
-	svc.On("DescribeLogStreams", mock.Anything).Return(
-		&cloudwatchlogs.DescribeLogStreamsOutput{
-			LogStreams: []*cloudwatchlogs.LogStream{{UploadSequenceToken: &expectedNextSequenceToken}},
-		},
-		nil)
-	return newCloudWatchLogClient(svc, 0, nil, logger)
+	putRetentionPolicy func(ctx context.Context, params *cloudwatchlogs.PutRetentionPolicyInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutRetentionPolicyOutput, error)
+	tagResource        func(ctx context.Context, params *cloudwatchlogs.TagResourceInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.TagResourceOutput, error)
 }
 
-type mockCloudWatchLogsClient struct {
-	cloudwatchlogsiface.CloudWatchLogsAPI
-	mock.Mock
+func (m *mockCloudWatchClient) CreateLogGroup(ctx context.Context, params *cloudwatchlogs.CreateLogGroupInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+	i := int(m.createLogGroupCount.Add(1) - 1)
+	if i < len(m.createLogGroupFuncs) {
+		return m.createLogGroupFuncs[i](ctx, params, optFns...)
+	}
+
+	return m.createLogGroup(ctx, params, optFns...)
 }
 
-func (svc *mockCloudWatchLogsClient) PutLogEvents(input *cloudwatchlogs.PutLogEventsInput) (*cloudwatchlogs.PutLogEventsOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.PutLogEventsOutput), args.Error(1)
+func (m *mockCloudWatchClient) CreateLogStream(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+	i := int(m.createLogStreamCount.Add(1) - 1)
+	if i < len(m.createLogStreamFuncs) {
+		return m.createLogStreamFuncs[i](ctx, params, optFns...)
+	}
+
+	return m.createLogStream(ctx, params, optFns...)
 }
 
-func (svc *mockCloudWatchLogsClient) CreateLogGroup(input *cloudwatchlogs.CreateLogGroupInput) (*cloudwatchlogs.CreateLogGroupOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.CreateLogGroupOutput), args.Error(1)
+func (m *mockCloudWatchClient) PutLogEvents(ctx context.Context, params *cloudwatchlogs.PutLogEventsInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+	i := int(m.putLogEventsCount.Add(1) - 1)
+	if i < len(m.putLogEventsFuncs) {
+		return m.putLogEventsFuncs[i](ctx, params, optFns...)
+	}
+
+	return m.putLogEvents(ctx, params, optFns...)
 }
 
-func (svc *mockCloudWatchLogsClient) CreateLogStream(input *cloudwatchlogs.CreateLogStreamInput) (*cloudwatchlogs.CreateLogStreamOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.CreateLogStreamOutput), args.Error(1)
+func (m *mockCloudWatchClient) PutRetentionPolicy(ctx context.Context, params *cloudwatchlogs.PutRetentionPolicyInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutRetentionPolicyOutput, error) {
+	return m.putRetentionPolicy(ctx, params, optFns...)
 }
 
-func (svc *mockCloudWatchLogsClient) DescribeLogStreams(input *cloudwatchlogs.DescribeLogStreamsInput) (*cloudwatchlogs.DescribeLogStreamsOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.DescribeLogStreamsOutput), args.Error(1)
-}
-
-func (svc *mockCloudWatchLogsClient) PutRetentionPolicy(input *cloudwatchlogs.PutRetentionPolicyInput) (*cloudwatchlogs.PutRetentionPolicyOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.PutRetentionPolicyOutput), args.Error(1)
-}
-
-func (svc *mockCloudWatchLogsClient) TagResource(input *cloudwatchlogs.TagResourceInput) (*cloudwatchlogs.TagResourceOutput, error) {
-	args := svc.Called(input)
-	return args.Get(0).(*cloudwatchlogs.TagResourceOutput), args.Error(1)
+func (m *mockCloudWatchClient) TagResource(ctx context.Context, params *cloudwatchlogs.TagResourceInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.TagResourceOutput, error) {
+	return m.tagResource(ctx, params, optFns...)
 }
 
 // Tests
 var (
-	previousSequenceToken     = "0000"
-	expectedNextSequenceToken = "1111"
-	logGroup                  = "logGroup"
-	logStreamName             = "logStream"
-	emptySequenceToken        = ""
+	logGroup      = "logGroup"
+	logStreamName = "logStream"
 )
 
-func TestPutLogEvents_HappyCase(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
+func TestPutLogEvents(t *testing.T) {
+	tests := []struct {
+		name      string
+		client    cloudWatchClient
+		expectErr bool
+	}{
+		{
+			name: "Happy path",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return &cloudwatchlogs.PutLogEventsOutput{}, nil
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Some rejected info",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return &cloudwatchlogs.PutLogEventsOutput{
+						RejectedLogEventsInfo: &types.RejectedLogEventsInfo{
+							ExpiredLogEventEndIndex:  aws.Int32(1),
+							TooNewLogEventStartIndex: aws.Int32(2),
+							TooOldLogEventEndIndex:   aws.Int32(3),
+						},
+					}, nil
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Non-AWS error",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, errors.New("some random error")
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "InvalidParameterException",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &types.InvalidParameterException{}
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "OperationAbortedException",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &types.OperationAbortedException{}
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "ServiceUnavailableException",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &types.ServiceUnavailableException{}
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "UnknownException",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &smithy.OperationError{
+						Err: errors.New("unknownException"),
+					}
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "ThrottlingException",
+			client: &mockCloudWatchClient{
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &types.ThrottlingException{}
+				},
+			},
+			expectErr: true,
+		},
+		{
+			name: "Successful after ResourceNotFoundException",
+			client: &mockCloudWatchClient{
+				createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+					return nil, nil
+				},
+				putLogEventsFuncs: []func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return nil, nil
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "All retries fail",
+			client: &mockCloudWatchClient{
+				createLogGroup: func(_ context.Context, _ *cloudwatchlogs.CreateLogGroupInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+					return nil, &types.ResourceNotFoundException{}
+				},
+				createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+					return nil, &types.ResourceNotFoundException{}
+				},
+				putLogEvents: func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+					return nil, &types.ResourceNotFoundException{}
+				},
+			},
+			expectErr: true,
+		},
 	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logger := zap.NewNop()
+			client := newCloudWatchLogClient(test.client, 0, nil, logger)
+			err := client.PutLogEvents(context.Background(), &cloudwatchlogs.PutLogEventsInput{
+				LogGroupName:  aws.String(logGroup),
+				LogStreamName: aws.String(logStreamName),
+			}, defaultRetryCount)
+			if test.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
 }
 
-func TestPutLogEvents_HappyCase_SomeRejectedInfo(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	rejectedLogEventsInfo := &cloudwatchlogs.RejectedLogEventsInfo{
-		ExpiredLogEventEndIndex:  aws.Int64(1),
-		TooNewLogEventStartIndex: aws.Int64(2),
-		TooOldLogEventEndIndex:   aws.Int64(3),
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken:     &expectedNextSequenceToken,
-		RejectedLogEventsInfo: rejectedLogEventsInfo,
+func TestPutLogEvents_WithOpts(t *testing.T) {
+	tests := []struct {
+		name         string
+		logRetention int32
+		tags         map[string]string
+		client       cloudWatchClient
+		expectErr    bool
+	}{
+		{
+			name:         "Log retention - never expire",
+			logRetention: 0,
+			client: &mockCloudWatchClient{
+				createLogGroup: func(_ context.Context, _ *cloudwatchlogs.CreateLogGroupInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+					return &cloudwatchlogs.CreateLogGroupOutput{}, nil
+				},
+				createLogStreamFuncs: []func(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+					},
+				},
+				putLogEventsFuncs: []func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return &cloudwatchlogs.PutLogEventsOutput{}, nil
+					},
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:         "Log retention - set",
+			logRetention: 365,
+			client: &mockCloudWatchClient{
+				createLogGroup: func(_ context.Context, _ *cloudwatchlogs.CreateLogGroupInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+					return &cloudwatchlogs.CreateLogGroupOutput{}, nil
+				},
+				createLogStreamFuncs: []func(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+					},
+				},
+				putLogEventsFuncs: []func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return &cloudwatchlogs.PutLogEventsOutput{}, nil
+					},
+				},
+				putRetentionPolicy: func(_ context.Context, _ *cloudwatchlogs.PutRetentionPolicyInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutRetentionPolicyOutput, error) {
+					return &cloudwatchlogs.PutRetentionPolicyOutput{}, nil
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name:         "With tags",
+			logRetention: 0,
+			tags: map[string]string{
+				"key": "value",
+			},
+			client: &mockCloudWatchClient{
+				createLogGroup: func(_ context.Context, _ *cloudwatchlogs.CreateLogGroupInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+					return &cloudwatchlogs.CreateLogGroupOutput{}, nil
+				},
+				createLogStreamFuncs: []func(ctx context.Context, params *cloudwatchlogs.CreateLogStreamInput, optFns ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+					},
+				},
+				putLogEventsFuncs: []func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.PutLogEventsInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.PutLogEventsOutput, error) {
+						return &cloudwatchlogs.PutLogEventsOutput{}, nil
+					},
+				},
+			},
+			expectErr: false,
+		},
 	}
 
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil)
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logger := zap.NewNop()
+			client := newCloudWatchLogClient(test.client, test.logRetention, nil, logger)
+			err := client.PutLogEvents(context.Background(), &cloudwatchlogs.PutLogEventsInput{}, defaultRetryCount)
+			if test.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
 }
 
-func TestPutLogEvents_NonAWSError(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, errors.New("some random error")).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_InvalidParameterException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-
-	invalidParameterException := &cloudwatchlogs.InvalidParameterException{}
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, invalidParameterException).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_OperationAbortedException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
+func TestCreateStream(t *testing.T) {
+	tests := []struct {
+		name      string
+		client    cloudWatchClient
+		expectErr bool
+	}{
+		{
+			name: "Happy path",
+			client: &mockCloudWatchClient{
+				createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+					return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Already exists",
+			client: &mockCloudWatchClient{
+				createLogStream: func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+					return nil, &types.ResourceAlreadyExistsException{}
+				},
+			},
+			expectErr: false,
+		},
+		{
+			name: "Resource not found",
+			client: &mockCloudWatchClient{
+				createLogGroup: func(_ context.Context, _ *cloudwatchlogs.CreateLogGroupInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogGroupOutput, error) {
+					return &cloudwatchlogs.CreateLogGroupOutput{}, nil
+				},
+				createLogStreamFuncs: []func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error){
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return nil, &types.ResourceNotFoundException{}
+					},
+					func(_ context.Context, _ *cloudwatchlogs.CreateLogStreamInput, _ ...func(*cloudwatchlogs.Options)) (*cloudwatchlogs.CreateLogStreamOutput, error) {
+						return &cloudwatchlogs.CreateLogStreamOutput{}, nil
+					},
+				},
+			},
+			expectErr: false,
+		},
 	}
 
-	operationAbortedException := &cloudwatchlogs.OperationAbortedException{}
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, operationAbortedException).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_ServiceUnavailableException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			logger := zap.NewNop()
+			client := newCloudWatchLogClient(test.client, 0, nil, logger)
+			err := client.CreateStream(context.Background(), &logGroup, &logStreamName)
+			if test.expectErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
 	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-
-	serviceUnavailableException := &cloudwatchlogs.ServiceUnavailableException{}
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, serviceUnavailableException).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_UnknownException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-
-	unknownException := awserr.New("unknownException", "", nil)
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, unknownException).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_ThrottlingException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &previousSequenceToken,
-	}
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-
-	throttlingException := awserr.New(errCodeThrottlingException, "", nil)
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, throttlingException).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestPutLogEvents_ResourceNotFoundException(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestLogRetention_NeverExpire(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
-
-	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	// PutRetentionPolicy is not called because it is set to 0
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestLogRetention_RetentionDaysInputted(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
-
-	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	svc.On("PutRetentionPolicy",
-		&cloudwatchlogs.PutRetentionPolicyInput{LogGroupName: &logGroup, RetentionInDays: aws.Int64(365)}).Return(new(cloudwatchlogs.PutRetentionPolicyOutput), nil).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
-
-	client := newCloudWatchLogClient(svc, 365, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestSetTags_NotCalled(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
-
-	// Tags not added because it is not set
-
-	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestSetTags_Called(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: &expectedNextSequenceToken,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	avalue := "avalue"
-	sampleTags := map[string]*string{"akey": &avalue}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), awsErr).Once()
-
-	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup, Tags: sampleTags}).Return(new(cloudwatchlogs.CreateLogGroupOutput), nil).Once()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, nil).Once()
-
-	client := newCloudWatchLogClient(svc, 0, sampleTags, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestPutLogEvents_AllRetriesFail(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-	putLogEventsInput := &cloudwatchlogs.PutLogEventsInput{
-		LogGroupName:  &logGroup,
-		LogStreamName: &logStreamName,
-		SequenceToken: &emptySequenceToken,
-	}
-
-	putLogEventsOutput := &cloudwatchlogs.PutLogEventsOutput{
-		NextSequenceToken: nil,
-	}
-	awsErr := &cloudwatchlogs.ResourceNotFoundException{}
-
-	svc.On("PutLogEvents", putLogEventsInput).Return(putLogEventsOutput, awsErr).Twice()
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil).Twice()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.PutLogEvents(putLogEventsInput, defaultRetryCount)
-
-	svc.AssertExpectations(t)
-	assert.Error(t, err)
-}
-
-func TestCreateStream_HappyCase(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(new(cloudwatchlogs.CreateLogStreamOutput), nil)
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.CreateStream(&logGroup, &logStreamName)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestCreateStream_CreateLogStream_ResourceAlreadyExists(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-
-	resourceAlreadyExistsException := &cloudwatchlogs.ResourceAlreadyExistsException{}
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
-		new(cloudwatchlogs.CreateLogStreamOutput), resourceAlreadyExistsException)
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.CreateStream(&logGroup, &logStreamName)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
-}
-
-func TestCreateStream_CreateLogStream_ResourceNotFound(t *testing.T) {
-	logger := zap.NewNop()
-	svc := new(mockCloudWatchLogsClient)
-
-	resourceNotFoundException := &cloudwatchlogs.ResourceNotFoundException{}
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
-		new(cloudwatchlogs.CreateLogStreamOutput), resourceNotFoundException).Once()
-
-	svc.On("CreateLogGroup",
-		&cloudwatchlogs.CreateLogGroupInput{LogGroupName: &logGroup}).Return(
-		new(cloudwatchlogs.CreateLogGroupOutput), nil)
-
-	svc.On("CreateLogStream",
-		&cloudwatchlogs.CreateLogStreamInput{LogGroupName: &logGroup, LogStreamName: &logStreamName}).Return(
-		new(cloudwatchlogs.CreateLogStreamOutput), nil).Once()
-
-	client := newCloudWatchLogClient(svc, 0, nil, logger)
-	err := client.CreateStream(&logGroup, &logStreamName)
-
-	svc.AssertExpectations(t)
-	assert.NoError(t, err)
 }
 
 type UnknownError struct {
@@ -551,7 +409,6 @@ func TestLogUnknownError(t *testing.T) {
 }
 
 func TestUserAgent(t *testing.T) {
-	logger := zap.NewNop()
 	expectedComponentName := "mockComponentName"
 	tests := []struct {
 		name                 string
@@ -646,19 +503,10 @@ func TestUserAgent(t *testing.T) {
 		},
 	}
 
-	testSession, _ := session.NewSession()
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			cwlog := NewClient(logger, &aws.Config{}, tc.buildInfo, tc.logGroupName, 0, map[string]*string{}, testSession, expectedComponentName, tc.clientOptions...)
-			logClient := cwlog.svc.(*cloudwatchlogs.CloudWatchLogs)
-
-			req := request.New(aws.Config{}, metadata.ClientInfo{}, logClient.Handlers, nil, &request.Operation{
-				HTTPMethod: http.MethodGet,
-				HTTPPath:   "/",
-			}, nil, nil)
-
-			logClient.Handlers.Build.Run(req)
-			assert.Contains(t, req.HTTPRequest.UserAgent(), tc.expectedUserAgentStr)
+			actual := newCollectorUserAgent(tc.buildInfo, tc.logGroupName, expectedComponentName, tc.clientOptions...)
+			assert.Contains(t, tc.expectedUserAgentStr, actual)
 		})
 	}
 }
