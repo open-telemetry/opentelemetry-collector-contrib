@@ -1,4 +1,6 @@
 SELECT TOP(@top)
+  REPLACE(@@SERVERNAME,'\',':') AS [sql_instance],
+  HOST_NAME() AS [computer_name],
   DB_NAME(r.database_id) AS db_name,
   ISNULL(c.client_net_address, '') as client_address,
   ISNULL(c.client_tcp_port, '') AS client_port,

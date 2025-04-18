@@ -7,6 +7,14 @@ If you are looking for developer-facing changes, check out [CHANGELOG-API.md](./
 
 <!-- next version -->
 
+## v0.124.1
+
+### 🧰 Bug fixes 🧰
+
+- `receiver/filelog`: Remove printing to console the names of files which are read by File Log receiver (#39414)
+
+<!-- previous-version -->
+
 ## v0.124.0
 
 ### 🛑 Breaking changes 🛑

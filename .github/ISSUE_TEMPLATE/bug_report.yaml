@@ -188,6 +188,7 @@ body:
       - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
+      - processor/dnslookup
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs

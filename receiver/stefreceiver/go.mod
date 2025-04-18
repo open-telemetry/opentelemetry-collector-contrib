@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/receiver/stefre
 go 1.23.0
 
 require (
-	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.124.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefexporter v0.124.1
 	github.com/splunk/stef/go/grpc v0.0.5-0.20250328192643-20ae67012e0c
 	github.com/splunk/stef/go/otel v0.0.5-0.20250328192643-20ae67012e0c
 	github.com/splunk/stef/go/pdata v0.0.5-0.20250328192643-20ae67012e0c
@@ -77,7 +77,7 @@ require (
 	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
