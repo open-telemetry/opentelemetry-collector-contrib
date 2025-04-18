@@ -257,10 +257,22 @@ The processor can be configured to set the
 [recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
 
 - `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+- `service_attributes.enabled` will populate `service.name`, `service.namespace`, `service.instance.id` and `service.version` 
+  attributes based on Kubernetes metadata.
+  - setting `well_known_labels` will also use the following labels:
+    - `app.kubernetes.io/name` -> `service.name`
+    - `app.kubernetes.io/instance` -> `service.name`
+    - `app.kubernetes.io/version` -> `service.version`
+
+Note that `well_known_labels` has to be enabled explicitly, because you might already use those labels -
+but don't want them to be used as `service.name` or `service.version`.
 
 ```yaml
   extract:
     otel_annotations: true 
+    service_attributes:
+      enabled: true
+      well_known_labels: true
 ```
 
 ### Config example
@@ -288,6 +300,9 @@ k8sattributes/2:
         key: app.kubernetes.io/component
         from: pod
     otel_annotations: true 
+    service_attributes:
+      enabled: true
+      well_known_labels: true
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
