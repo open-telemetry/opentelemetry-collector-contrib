@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
-	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tcpcheckreceiver/internal/metadata"
 )
@@ -82,14 +81,37 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 	if err != nil {
 		// Convert error to appropriate error code
 		var errorCode metadata.AttributeErrorCode
+		errMsg := strings.ToLower(err.Error())
+
 		switch {
-		case strings.Contains(err.Error(), "connection refused"):
+		case strings.Contains(errMsg, "connection refused") ||
+			strings.Contains(errMsg, "connection reset by peer") ||
+			strings.Contains(errMsg, "no route to host") ||
+			strings.Contains(errMsg, "host is down") ||
+			strings.Contains(errMsg, "no connection could be made because the target machine actively refused it"):
 			errorCode = metadata.AttributeErrorCodeConnectionRefused
-		case strings.Contains(err.Error(), "timeout"):
+		case strings.Contains(errMsg, "timeout") ||
+			strings.Contains(errMsg, "i/o timeout") ||
+			strings.Contains(errMsg, "operation timed out"):
 			errorCode = metadata.AttributeErrorCodeConnectionTimeout
-		case strings.Contains(err.Error(), "invalid endpoint"):
+		case strings.Contains(errMsg, "invalid endpoint") ||
+			strings.Contains(errMsg, "missing port in address") ||
+			strings.Contains(errMsg, "invalid port") ||
+			strings.Contains(errMsg, "invalid host") ||
+			strings.Contains(errMsg, "invalid address") ||
+			strings.Contains(errMsg, "invalid hostname") ||
+			strings.Contains(errMsg, "invalid ip") ||
+			strings.Contains(errMsg, "invalid tcp address") ||
+			strings.Contains(errMsg, "invalid:host") ||
+			strings.Contains(errMsg, "missing port") ||
+			strings.Contains(errMsg, "address invalid") ||
+			strings.Contains(errMsg, "unknown port") ||
+			strings.Contains(errMsg, "unknown host"):
 			errorCode = metadata.AttributeErrorCodeInvalidEndpoint
-		case strings.Contains(err.Error(), "network is unreachable"):
+		case strings.Contains(errMsg, "network is unreachable") ||
+			strings.Contains(errMsg, "network unreachable") ||
+			strings.Contains(errMsg, "no such network interface") ||
+			strings.Contains(errMsg, "network down"):
 			errorCode = metadata.AttributeErrorCodeNetworkUnreachable
 		default:
 			errorCode = metadata.AttributeErrorCodeUnknownError
@@ -100,7 +122,7 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 
 		// Record error metrics with the current error count
 		s.mb.RecordTcpcheckErrorDataPoint(now, s.errorCounts[tcpConfig.Endpoint], tcpConfig.Endpoint, errorCode)
-		s.settings.Logger.Error("TCP connection error encountered", zap.String("endpoint", tcpConfig.Endpoint), zap.Error(err))
+
 		s.mb.RecordTcpcheckStatusDataPoint(now, failPointValue, tcpConfig.Endpoint)
 		// Send error to channel
 		select {

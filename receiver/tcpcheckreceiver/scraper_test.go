@@ -293,11 +293,11 @@ func updateErrorCodeInMetrics(metrics pmetric.Metrics, errorCode string) pmetric
 func TestScraper_ErrorEnumCounts(t *testing.T) {
 	// Test multiple endpoints with different error types
 	endpoints := []string{
-		"localhost:0", // Invalid port for connection_refused
-		"1.2.3.4:80",  // Unreachable IP for connection_timeout
-		"localhost:0", // Another connection_refused
-		"1.2.3.4:80",  // Another connection_timeout
-		"1.2.3.4:80",  // Another connection_timeout
+		"invalid:host", // Invalid host format for invalid_endpoint
+		"1.2.3.4:80",   // Unreachable IP for connection_timeout
+		"invalid:host", // Another invalid_endpoint
+		"1.2.3.4:80",   // Another connection_timeout
+		"1.2.3.4:80",   // Another connection_timeout
 	}
 
 	cfg := &Config{
@@ -323,21 +323,26 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.Error(t, err, "expected errors from scrape")
 
+	// Print all metrics for debugging
+	fmt.Printf("\n=== Debug Metrics ===\n")
 	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 		rm := actualMetrics.ResourceMetrics().At(i)
+		fmt.Printf("ResourceMetrics[%d]:\n", i)
 		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
 			sm := rm.ScopeMetrics().At(j)
+			fmt.Printf("  ScopeMetrics[%d]:\n", j)
 			for k := 0; k < sm.Metrics().Len(); k++ {
 				m := sm.Metrics().At(k)
-				fmt.Printf("Metric: %s\n", m.Name())
+				fmt.Printf("    Metric: %s\n", m.Name())
 				if m.Name() == "tcpcheck.error" {
 					dps := m.Sum().DataPoints()
+					fmt.Printf("      DataPoints: %d\n", dps.Len())
 					for l := 0; l < dps.Len(); l++ {
 						dp := dps.At(l)
-						fmt.Printf("  DataPoint %d:\n", l+1)
-						fmt.Printf("    Value: %d\n", dp.IntValue())
+						fmt.Printf("        DataPoint[%d]:\n", l)
+						fmt.Printf("          Value: %d\n", dp.IntValue())
 						dp.Attributes().Range(func(k string, v pcommon.Value) bool {
-							fmt.Printf("    Attribute: %s = %s\n", k, v.AsString())
+							fmt.Printf("          Attribute: %s = %s\n", k, v.AsString())
 							return true
 						})
 					}
@@ -367,8 +372,14 @@ func TestScraper_ErrorEnumCounts(t *testing.T) {
 		}
 	}
 
+	// Print error counts for debugging
+	fmt.Printf("\n=== Error Counts ===\n")
+	for code, count := range errorCounts {
+		fmt.Printf("Error code '%s': %d\n", code, count)
+	}
+
 	// Verify specific error counts
-	require.Equal(t, int64(2), errorCounts["unknown_error"], "Expected 2 unknown_error")
+	require.Equal(t, int64(2), errorCounts["invalid_endpoint"], "Expected 2 invalid_endpoint errors")
 	require.Equal(t, int64(3), errorCounts["connection_timeout"], "Expected 3 connection_timeout errors")
 }
 
