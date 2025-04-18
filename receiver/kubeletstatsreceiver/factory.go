@@ -27,7 +27,7 @@ const (
 
 var enableCPUUsageMetrics = featuregate.GlobalRegistry().MustRegister(
 	enableCPUUsageMetricsFeatureFlag,
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled the container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics will be replaced by the container.cpu.usage, k8s.pod.cpu.usage and k8s.node.cpu.usage"),
 	featuregate.WithRegisterFromVersion("v0.110.0"),
 	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27885"),
