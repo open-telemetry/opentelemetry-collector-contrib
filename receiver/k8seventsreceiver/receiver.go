@@ -8,19 +8,24 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/fields"
 	k8s "k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/kube"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/metadata"
 )
 
 type k8seventsReceiver struct {
 	config          *Config
+	options         []option
+	rules           kube.ExtractionRules
 	settings        receiver.Settings
 	logsConsumer    consumer.Logs
 	stopperChanList []chan struct{}
@@ -35,6 +40,7 @@ func newReceiver(
 	set receiver.Settings,
 	config *Config,
 	consumer consumer.Logs,
+	options ...option,
 ) (receiver.Logs, error) {
 	transport := "http"
 
@@ -50,14 +56,25 @@ func newReceiver(
 	return &k8seventsReceiver{
 		settings:     set,
 		config:       config,
+		options:      options,
 		logsConsumer: consumer,
 		startTime:    time.Now(),
 		obsrecv:      obsrecv,
 	}, nil
 }
 
-func (kr *k8seventsReceiver) Start(ctx context.Context, _ component.Host) error {
+func (kr *k8seventsReceiver) Start(ctx context.Context, host component.Host) error {
 	kr.ctx, kr.cancel = context.WithCancel(ctx)
+
+	allOptions := append(createReceiverOpts(kr.config), kr.options...)
+
+	for _, opt := range allOptions {
+		if err := opt(kr); err != nil {
+			kr.settings.Logger.Error("Could not apply option", zap.Error(err))
+			componentstatus.ReportStatus(host, componentstatus.NewFatalErrorEvent(err))
+			return err
+		}
+	}
 
 	k8sInterface, err := kr.config.getK8sClient()
 	if err != nil {
@@ -108,7 +125,7 @@ func (kr *k8seventsReceiver) startWatch(ns string, client k8s.Interface) {
 
 func (kr *k8seventsReceiver) handleEvent(ev *corev1.Event) {
 	if kr.allowEvent(ev) {
-		ld := k8sEventToLogData(kr.settings.Logger, ev)
+		ld := k8sEventToLogData(kr.settings.Logger, ev, &kr.rules)
 
 		ctx := kr.obsrecv.StartLogsOp(kr.ctx)
 		consumerErr := kr.logsConsumer.ConsumeLogs(ctx, ld)

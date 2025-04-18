@@ -1,3 +1,14 @@
 k8s_events:
 k8s_events/all_settings:
-  namespaces: [ default, my_namespace ]
+  namespaces: [default, my_namespace]
+  extract:
+    annotations:
+      - tag_name: a1 # extracts value of annotation with key `annotation-one` and inserts it as a tag with key `a1`
+        key: annotation-one
+      - tag_name: a2 # extracts value of annotation with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+        key_regex: annotation-two
+    labels:
+      - tag_name: l1 # extracts value of label with key `label1` and inserts it as a tag with key `l1`
+        key: label1
+      - tag_name: l2 # extracts value of label with key `label2` with regexp and inserts it as a tag with key `l2`
+        key_regex: label2

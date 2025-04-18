@@ -149,6 +149,8 @@ func getEvent() *corev1.Event {
 			Name:              "1",
 			Namespace:         "test",
 			CreationTimestamp: v1.Now(),
+			Labels:            make(map[string]string),
+			Annotations:       make(map[string]string),
 		},
 		Source: corev1.EventSource{
 			Component: "testComponent",

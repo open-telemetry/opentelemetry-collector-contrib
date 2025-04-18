@@ -81,6 +81,26 @@ data:
 EOF
 ```
 
+## Extracting attributes from event labels and annotations
+
+The k8seventsreceiver can also set resource attributes from k8s labels and annotations of event.
+This config represents a list of annotations/labels that are extracted from event and added to log.
+Each item is specified as a config of an optional tag_name (representing the tag name to tag the spans with),
+key (representing the key used to extract value) or key_regex (representing the key regex used to extract the value).
+
+A few examples to use this config are as follows:
+
+```yaml
+extract:
+  annotations: # same can be applied for labels
+    - tag_name: a1 # extracts value of annotation from event with key `annotation-one` and inserts it as a tag with key `a1`
+      key: annotation-one
+    - tag_name: k8s.event.annotations.$1 # extracts value of annotation from event with key matching the regex
+      key_regex: topology.kubernetes.io/(.*)
+  labels:
+    - key: label1 # extracts value of label from event with key `label1` and inserts it as a tag with key `k8s.event.labels.label1`
+```
+
 ### Service Account
 
 Create a service account that the collector should use.
