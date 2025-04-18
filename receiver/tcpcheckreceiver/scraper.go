@@ -87,8 +87,7 @@ func (s *scraper) scrapeEndpoint(ctx context.Context, tcpConfig *confignet.TCPAd
 		case strings.Contains(errMsg, "connection refused") ||
 			strings.Contains(errMsg, "connection reset by peer") ||
 			strings.Contains(errMsg, "no route to host") ||
-			strings.Contains(errMsg, "host is down") ||
-			strings.Contains(errMsg, "no connection could be made because the target machine actively refused it"):
+			strings.Contains(errMsg, "host is down"):
 			errorCode = metadata.AttributeErrorCodeConnectionRefused
 		case strings.Contains(errMsg, "timeout") ||
 			strings.Contains(errMsg, "i/o timeout") ||

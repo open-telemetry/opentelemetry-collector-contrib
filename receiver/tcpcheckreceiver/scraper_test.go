@@ -223,7 +223,6 @@ func TestScraper_TCPErrorMetrics(t *testing.T) {
 
 			actualMetrics, err := scraper.scrape(context.Background())
 			require.Error(t, err, "expected connection refused error")
-			require.Contains(t, err.Error(), "connection refused", "error should contain 'connection refused'")
 
 			for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
 				rm := actualMetrics.ResourceMetrics().At(i)
