@@ -133,7 +133,7 @@ var (
 	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
 
 	// Config Errors
-	errConfigEmptyEndpoint    = errors.New("endpoint must not be empty")
+	errConfigEmptyEndpoint = errors.New("endpoint must not be empty")
 )
 
 func (c *Config) Validate() error {
@@ -268,7 +268,7 @@ func validateEndpoint(endpoint string) error {
 		return fmt.Errorf(`invalid scheme %q, expected "http" or "https"`, u.Scheme)
 	}
 	if u.Host == "" {
-		return fmt.Errorf("host must not be empty")
+		return errors.New("host must not be empty")
 	}
 	return nil
 }
