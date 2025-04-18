@@ -38,6 +38,12 @@ receivers:
       port: 6343
       sockets: 16
       workers: 32
+  netflow/raw:
+    - scheme: netflow
+      port: 2055
+      sockets: 16
+      workers: 32
+      send_raw: true
 
 processors:
   batch:
@@ -73,6 +79,12 @@ You would then configure your network devices to send netflow, sflow, or ipfix d
 | sockets | The number of sockets to use | 1 | 1 |
 | workers | The number of workers used to decode incoming flow messages | 2 | 2 |
 | queue_size | The size of the incoming netflow packets queue, it will always be at least 1000. | 5000 | 1000 |
+| send_raw   | Whether to send raw flow messages instead of parsing them                        | `true`, `false`    | `false`   |
+
+When `send_raw` is set to `true`, the receiver will:
+
+- Skip parsing the netflow/sflow messages
+- Send the raw message as the log body
 
 ## Data format
 
