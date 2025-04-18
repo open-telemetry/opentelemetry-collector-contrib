@@ -7,7 +7,8 @@ package proxy // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"bytes"
 	"context"
-	"errors"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net"
@@ -16,9 +17,7 @@ import (
 	"net/url"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	v4 "github.com/aws/aws-sdk-go/aws/signer/v4"
+	v4 "github.com/aws/aws-sdk-go-v2/aws/signer/v4"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -48,25 +47,34 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		cfg.ServiceName = "xray"
 	}
 
-	awsCfg, sess, err := getAWSConfigSession(cfg, logger)
+	awsCfg, err := getAWSConfig(cfg, logger)
 	if err != nil {
 		return nil, err
 	}
 
-	awsEndPoint, err := getServiceEndpoint(awsCfg, cfg.ServiceName)
-	if err != nil {
-		return nil, err
+	// Determine AWS service endpoint
+	var serviceEndpoint string
+	if cfg.AWSEndpoint != "" {
+		serviceEndpoint = cfg.AWSEndpoint
+	} else {
+		// Constructing the endpoint URL format for the region
+		serviceEndpoint = fmt.Sprintf("https://%s.%s.amazonaws.com", cfg.ServiceName, awsCfg.Region)
 	}
 
 	// Parse url from endpoint
-	awsURL, err := url.Parse(awsEndPoint)
+	awsURL, err := url.Parse(serviceEndpoint)
 	if err != nil {
 		return nil, fmt.Errorf("unable to parse AWS service endpoint: %w", err)
 	}
 
-	signer := &v4.Signer{
-		Credentials: sess.Config.Credentials,
-	}
+	// Create credentials provider from the AWS config
+	credsProvider := awsCfg.Credentials
+
+	// Create a signer that will sign requests
+	signer := v4.NewSigner(func(options *v4.SignerOptions) {
+		options.Logger = awsCfg.Logger
+		options.LogSigning = awsCfg.ClientLogMode.IsSigning()
+	})
 
 	transport, err := proxyServerTransport(cfg)
 	if err != nil {
@@ -97,15 +105,59 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 			body, err := consume(req.Body)
 			if err != nil {
 				logger.Error("Unable to consume request body", zap.Error(err))
-
 				// Forward unsigned request
 				return
 			}
 
-			// Sign request. signer.Sign() also repopulates the request body.
-			_, err = signer.Sign(req, body, cfg.ServiceName, *awsCfg.Region, time.Now())
+			// Sign the request using AWS SDK v2
+			ctx := context.Background()
+			creds, err := credsProvider.Retrieve(ctx)
+			if err != nil {
+				logger.Error("Unable to retrieve credentials", zap.Error(err))
+				return
+			}
+
+			// Get payload hash
+			var payloadHash string
+			if body == nil {
+				payloadHash = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855" // SHA256 hash of empty string
+			} else {
+				bodyBytes, _ := io.ReadAll(body)
+				hash := sha256.Sum256(bodyBytes)
+				payloadHash = hex.EncodeToString(hash[:])
+				// Reset the reader
+				body = bytes.NewReader(bodyBytes)
+				// Reset the request body
+				req.Body = io.NopCloser(bytes.NewReader(bodyBytes))
+			}
+
+			// Create signing request
+			signReq, err := http.NewRequest(req.Method, req.URL.String(), io.NopCloser(body))
+			if err != nil {
+				logger.Error("Failed to create signing request", zap.Error(err))
+				return
+			}
+
+			// Copy headers from original request to signing request
+			for k, vv := range req.Header {
+				for _, v := range vv {
+					signReq.Header.Add(k, v)
+				}
+			}
+
+			// Sign the request
+			err = signer.SignHTTP(ctx, creds, signReq, payloadHash, cfg.ServiceName, awsCfg.Region, time.Now())
 			if err != nil {
 				logger.Error("Unable to sign request", zap.Error(err))
+				return
+			}
+
+			// Copy signed headers back to original request
+			for k, vv := range signReq.Header {
+				req.Header.Del(k)
+				for _, v := range vv {
+					req.Header.Add(k, v)
+				}
 			}
 		},
 	}
@@ -115,24 +167,6 @@ func NewServer(cfg *Config, logger *zap.Logger) (Server, error) {
 		Handler:           handler,
 		ReadHeaderTimeout: 20 * time.Second,
 	}, nil
-}
-
-// getServiceEndpoint returns X-Ray service endpoint.
-// It is guaranteed that awsCfg config instance is non-nil and the region value is non nil or non empty in awsCfg object.
-// Currently, the caller takes care of it.
-func getServiceEndpoint(awsCfg *aws.Config, serviceName string) (string, error) {
-	if isEmpty(awsCfg.Endpoint) {
-		if isEmpty(awsCfg.Region) {
-			return "", errors.New("unable to generate endpoint from region with nil value")
-		}
-		resolved, err := endpoints.DefaultResolver().EndpointFor(serviceName, *awsCfg.Region, setResolverConfig())
-		return resolved.URL, err
-	}
-	return *awsCfg.Endpoint, nil
-}
-
-func isEmpty(val *string) bool {
-	return val == nil || *val == ""
 }
 
 // consume readsAll() the body and creates a new io.ReadSeeker from the content. v4.Signer
@@ -152,10 +186,4 @@ func consume(body io.ReadCloser) (io.ReadSeeker, error) {
 	}
 
 	return bytes.NewReader(buf), nil
-}
-
-func setResolverConfig() func(*endpoints.Options) {
-	return func(p *endpoints.Options) {
-		p.ResolveUnknownService = true
-	}
 }
