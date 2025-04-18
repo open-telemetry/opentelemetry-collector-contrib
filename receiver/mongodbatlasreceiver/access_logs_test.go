@@ -278,9 +278,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
 			rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
-			if e != nil {
-				t.Fatalf("failed to create receiver: %v", e)
-			}
+			require.NoError(t, e)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -318,9 +316,7 @@ func TestCheckpointing(t *testing.T) {
 
 	logSink := &consumertest.LogsSink{}
 	rcvr, e := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), config, logSink)
-	if e != nil {
-		t.Fatalf("failed to create receiver: %v", e)
-	}
+	require.NoError(t, e)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil

@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"net/url"
 	"strings"
 	"time"
 
@@ -134,6 +135,16 @@ var (
 
 func (c *Config) Validate() error {
 	var errs error
+	baseurl := c.BaseURL
+	if u, err := url.ParseRequestURI(baseurl); err != nil {
+		errs = multierr.Append(errs, fmt.Errorf("base_url is not valid: %w", err))
+		if u.Scheme == "" {
+			errs = multierr.Append(errs, fmt.Errorf("base_url must contain a scheme (http or https)"))
+		}
+		if u.Host == "" {
+			errs = multierr.Append(errs, fmt.Errorf("base_url must contain a host"))
+		}
+	}
 
 	for _, project := range c.Projects {
 		if len(project.ExcludeClusters) != 0 && len(project.IncludeClusters) != 0 {

@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -106,6 +107,7 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
+		BaseURL:              mongodbatlas.CloudURL,
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Granularity:          defaultGranularity,
 		BackOffConfig:        configretry.NewDefaultBackOffConfig(),

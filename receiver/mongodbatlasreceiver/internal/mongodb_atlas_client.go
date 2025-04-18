@@ -147,8 +147,7 @@ func NewMongoDBAtlasClient(
 
 	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL(baseURL))
 	if err != nil {
-		log.Error("Failed to create client", zap.Error(err))
-		return nil, fmt.Errorf("failed to create MongoDB Atlas client: %w", err) // Return nil and the error
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client: %w", err)
 	}
 
 	return &MongoDBAtlasClient{
