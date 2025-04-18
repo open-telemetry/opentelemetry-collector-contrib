@@ -101,13 +101,14 @@ func TestAsyncBulkIndexer_flush(t *testing.T) {
 
 			bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, &tt.config, false)
 			require.NoError(t, err)
-			session, err := bulkIndexer.StartSession(context.Background())
-			require.NoError(t, err)
 
+			session := bulkIndexer.StartSession(context.Background())
 			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
 			assert.Equal(t, int64(1), bulkIndexer.stats.docsIndexed.Load())
+			assert.NoError(t, session.Flush(context.Background()))
+			session.End()
 			assert.NoError(t, bulkIndexer.Close(context.Background()))
 		})
 	}
@@ -201,9 +202,7 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			require.NoError(t, err)
 			defer bulkIndexer.Close(context.Background())
 
-			session, err := bulkIndexer.StartSession(context.Background())
-			require.NoError(t, err)
-
+			session := bulkIndexer.StartSession(context.Background())
 			assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 			// should flush
 			time.Sleep(100 * time.Millisecond)
@@ -213,6 +212,8 @@ func TestAsyncBulkIndexer_flush_error(t *testing.T) {
 			for _, wantField := range tt.wantFields {
 				assert.Equal(t, 1, messages.FilterField(wantField).Len(), "message with field not found; observed.All()=%v", observed.All())
 			}
+			assert.NoError(t, session.Flush(context.Background()))
+			session.End()
 		})
 	}
 }
@@ -288,10 +289,11 @@ func TestAsyncBulkIndexer_logRoundTrip(t *testing.T) {
 func runBulkIndexerOnce(t *testing.T, config *Config, client *elasticsearch.Client) *asyncBulkIndexer {
 	bulkIndexer, err := newAsyncBulkIndexer(zap.NewNop(), client, config, false)
 	require.NoError(t, err)
-	session, err := bulkIndexer.StartSession(context.Background())
-	require.NoError(t, err)
 
+	session := bulkIndexer.StartSession(context.Background())
 	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
+	assert.NoError(t, session.Flush(context.Background()))
+	session.End()
 	assert.NoError(t, bulkIndexer.Close(context.Background()))
 
 	return bulkIndexer
@@ -315,10 +317,11 @@ func TestSyncBulkIndexer_flushBytes(t *testing.T) {
 	require.NoError(t, err)
 
 	bi := newSyncBulkIndexer(zap.NewNop(), client, &cfg, false)
-	session, err := bi.StartSession(context.Background())
-	require.NoError(t, err)
 
+	session := bi.StartSession(context.Background())
 	assert.NoError(t, session.Add(context.Background(), "foo", "", "", strings.NewReader(`{"foo": "bar"}`), nil, docappender.ActionCreate))
 	assert.Equal(t, int64(1), reqCnt.Load()) // flush due to flush::bytes
+	assert.NoError(t, session.Flush(context.Background()))
+	session.End()
 	assert.NoError(t, bi.Close(context.Background()))
 }
