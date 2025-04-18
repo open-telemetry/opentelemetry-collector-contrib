@@ -1,23 +1,28 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package truereset
+package testhelper // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor/internal/testhelper"
 
 import (
+	"context"
+	"fmt"
+	"testing"
+
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-func timestampFromMs(timeAtMs int64) pcommon.Timestamp {
+func TimestampFromMs(timeAtMs int64) pcommon.Timestamp {
 	return pcommon.Timestamp(timeAtMs * 1e6)
 }
 
-type kv struct {
+type KV struct {
 	Key, Value string
 }
 
-func metrics(metrics ...pmetric.Metric) pmetric.Metrics {
+func Metrics(metrics ...pmetric.Metric) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	ms := md.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics()
 	for _, metric := range metrics {
@@ -28,7 +33,7 @@ func metrics(metrics ...pmetric.Metric) pmetric.Metrics {
 	return md
 }
 
-func metricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metrics {
+func MetricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metrics {
 	md := pmetric.NewMetrics()
 	for _, metric := range metrics {
 		mr := md.ResourceMetrics().AppendEmpty()
@@ -37,7 +42,7 @@ func metricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metr
 	return md
 }
 
-func resourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
+func ResourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
 	mr := pmetric.NewResourceMetrics()
 	mr.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
 	mr.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
@@ -50,7 +55,7 @@ func resourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.Re
 	return mr
 }
 
-func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
+func HistogramPointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
 	hdp := pmetric.NewHistogramDataPoint()
 	hdp.SetStartTimestamp(startTimestamp)
 	hdp.SetTimestamp(timestamp)
@@ -63,8 +68,8 @@ func histogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Times
 	return hdp
 }
 
-func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) pmetric.HistogramDataPoint {
-	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
+func HistogramPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, bounds []float64, counts []uint64) pmetric.HistogramDataPoint {
+	hdp := HistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.ExplicitBounds().FromRaw(bounds)
 	hdp.BucketCounts().FromRaw(counts)
 
@@ -82,14 +87,14 @@ func histogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	return hdp
 }
 
-func histogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
-	hdp := histogramPointRaw(attributes, startTimestamp, timestamp)
+func HistogramPointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.HistogramDataPoint {
+	hdp := HistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 
 	return hdp
 }
 
-func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
+func HistogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.Metadata().PutStr("prometheus.type", "histogram")
@@ -106,7 +111,7 @@ func histogramMetric(name string, points ...pmetric.HistogramDataPoint) pmetric.
 	return metric
 }
 
-func exponentialHistogramMetric(name string, points ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
+func ExponentialHistogramMetric(name string, points ...pmetric.ExponentialHistogramDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.Metadata().PutStr("prometheus.type", "histogram")
@@ -123,7 +128,7 @@ func exponentialHistogramMetric(name string, points ...pmetric.ExponentialHistog
 	return metric
 }
 
-func exponentialHistogramPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
+func ExponentialHistogramPointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
 	hdp := pmetric.NewExponentialHistogramDataPoint()
 	hdp.SetStartTimestamp(startTimestamp)
 	hdp.SetTimestamp(timestamp)
@@ -136,8 +141,8 @@ func exponentialHistogramPointRaw(attributes []*kv, startTimestamp, timestamp pc
 	return hdp
 }
 
-func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
-	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+func ExponentialHistogramPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, scale int32, zeroCount uint64, negativeOffset int32, negativeBuckets []uint64, positiveOffset int32, positiveBuckets []uint64) pmetric.ExponentialHistogramDataPoint {
+	hdp := ExponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetScale(scale)
 	hdp.SetZeroCount(zeroCount)
 	hdp.Negative().SetOffset(negativeOffset)
@@ -160,14 +165,14 @@ func exponentialHistogramPoint(attributes []*kv, startTimestamp, timestamp pcomm
 	return hdp
 }
 
-func exponentialHistogramPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
-	hdp := exponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
+func ExponentialHistogramPointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.ExponentialHistogramDataPoint {
+	hdp := ExponentialHistogramPointRaw(attributes, startTimestamp, timestamp)
 	hdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 
 	return hdp
 }
 
-func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
+func DoublePointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
 	ndp := pmetric.NewNumberDataPoint()
 	ndp.SetStartTimestamp(startTimestamp)
 	ndp.SetTimestamp(timestamp)
@@ -179,19 +184,19 @@ func doublePointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestam
 	return ndp
 }
 
-func doublePoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
-	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
+func DoublePoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, value float64) pmetric.NumberDataPoint {
+	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetDoubleValue(value)
 	return ndp
 }
 
-func doublePointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
-	ndp := doublePointRaw(attributes, startTimestamp, timestamp)
+func DoublePointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.NumberDataPoint {
+	ndp := DoublePointRaw(attributes, startTimestamp, timestamp)
 	ndp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 	return ndp
 }
 
-func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
+func GaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.Metadata().PutStr("prometheus.type", "gauge")
@@ -204,7 +209,7 @@ func gaugeMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric 
 	return metric
 }
 
-func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
+func SumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.Metadata().PutStr("prometheus.type", "counter")
@@ -221,7 +226,7 @@ func sumMetric(name string, points ...pmetric.NumberDataPoint) pmetric.Metric {
 	return metric
 }
 
-func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
+func SummaryPointRaw(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
 	sdp := pmetric.NewSummaryDataPoint()
 	sdp.SetStartTimestamp(startTimestamp)
 	sdp.SetTimestamp(timestamp)
@@ -233,8 +238,8 @@ func summaryPointRaw(attributes []*kv, startTimestamp, timestamp pcommon.Timesta
 	return sdp
 }
 
-func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) pmetric.SummaryDataPoint {
-	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
+func SummaryPoint(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp, count uint64, sum float64, quantiles, values []float64) pmetric.SummaryDataPoint {
+	sdp := SummaryPointRaw(attributes, startTimestamp, timestamp)
 	sdp.SetCount(count)
 	sdp.SetSum(sum)
 
@@ -248,14 +253,14 @@ func summaryPoint(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp,
 	return sdp
 }
 
-func summaryPointNoValue(attributes []*kv, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
-	sdp := summaryPointRaw(attributes, startTimestamp, timestamp)
+func SummaryPointNoValue(attributes []*KV, startTimestamp, timestamp pcommon.Timestamp) pmetric.SummaryDataPoint {
+	sdp := SummaryPointRaw(attributes, startTimestamp, timestamp)
 	sdp.SetFlags(pmetric.DefaultDataPointFlags.WithNoRecordedValue(true))
 
 	return sdp
 }
 
-func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
+func SummaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName(name)
 	metric.Metadata().PutStr("prometheus.type", "summary")
@@ -266,4 +271,42 @@ func summaryMetric(name string, points ...pmetric.SummaryDataPoint) pmetric.Metr
 	}
 
 	return metric
+}
+
+type Adjuster interface {
+	AdjustMetrics(context.Context, pmetric.Metrics) (pmetric.Metrics, error)
+}
+
+type MetricsAdjusterTest struct {
+	Description string
+	Metrics     pmetric.Metrics
+	Adjusted    pmetric.Metrics
+}
+
+func RunScript(t *testing.T, ma Adjuster, tests []*MetricsAdjusterTest, additionalResourceAttrs ...string) {
+	for _, test := range tests {
+		t.Run(test.Description, func(t *testing.T) {
+			adjusted := pmetric.NewMetrics()
+			test.Metrics.CopyTo(adjusted)
+			// Add the instance/job to the input metrics if they aren't already present.
+			for i := 0; i < adjusted.ResourceMetrics().Len(); i++ {
+				rm := adjusted.ResourceMetrics().At(i)
+				for i, attr := range additionalResourceAttrs {
+					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
+				}
+			}
+			var err error
+			adjusted, err = ma.AdjustMetrics(context.Background(), adjusted)
+			assert.NoError(t, err)
+
+			// Add the instance/job to the expected metrics as well if they aren't already present.
+			for i := 0; i < test.Adjusted.ResourceMetrics().Len(); i++ {
+				rm := test.Adjusted.ResourceMetrics().At(i)
+				for i, attr := range additionalResourceAttrs {
+					rm.Resource().Attributes().PutStr(fmt.Sprintf("%d", i), attr)
+				}
+			}
+			assert.Equal(t, test.Adjusted, adjusted)
+		})
+	}
 }
