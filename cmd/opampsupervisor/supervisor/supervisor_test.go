@@ -27,6 +27,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
+	"go.opentelemetry.io/otel/trace/noop"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -130,7 +131,8 @@ func setupSupervisorConfig(t *testing.T, configuration string) config.Supervisor
 func newNopTelemetrySettings() telemetrySettings {
 	return telemetrySettings{
 		TelemetrySettings: component.TelemetrySettings{
-			Logger: zap.NewNop(),
+			Logger:         zap.NewNop(),
+			TracerProvider: noop.NewTracerProvider(),
 		},
 	}
 }
@@ -1250,35 +1252,38 @@ service:
 func TestSupervisor_createEffectiveConfigMsg(t *testing.T) {
 	t.Run("empty config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(context.Background())
 
 		assert.Empty(t, got.ConfigMap.ConfigMap[""].Body)
 	})
 	t.Run("effective and merged config set - prefer effective config", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.effectiveConfig.Store("effective")
 		s.cfgState.Store("merged")
 
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(context.Background())
 
 		assert.Equal(t, []byte("effective"), got.ConfigMap.ConfigMap[""].Body)
 	})
 	t.Run("only merged config set", func(t *testing.T) {
 		s := Supervisor{
-			effectiveConfig: &atomic.Value{},
-			cfgState:        &atomic.Value{},
+			effectiveConfig:   &atomic.Value{},
+			cfgState:          &atomic.Value{},
+			telemetrySettings: newNopTelemetrySettings(),
 		}
 
 		s.cfgState.Store(&configState{mergedConfig: "merged"})
 
-		got := s.createEffectiveConfigMsg()
+		got := s.createEffectiveConfigMsg(context.Background())
 
 		assert.Equal(t, []byte("merged"), got.ConfigMap.ConfigMap[""].Body)
 	})

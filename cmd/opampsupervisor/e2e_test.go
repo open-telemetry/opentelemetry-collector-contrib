@@ -29,10 +29,6 @@ import (
 	"text/template"
 	"time"
 
-	"go.opentelemetry.io/collector/pdata/ptrace"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
-
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/parsers/yaml"
 	"github.com/knadh/koanf/providers/file"
@@ -44,6 +40,7 @@ import (
 	"github.com/open-telemetry/opamp-go/server/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -52,6 +49,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/telemetry"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/testbed/testbed"
 )
 
 var _ clientTypes.Logger = testLogger{}
@@ -1714,9 +1712,17 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 			},
 		})
 
+	outputPath := filepath.Join(t.TempDir(), "output.txt")
+	backend := testbed.NewOTLPHTTPDataReceiver(4318)
+	mockBackend := testbed.NewMockBackend(outputPath, backend)
+	mockBackend.EnableRecording()
+	defer mockBackend.Stop()
+	require.NoError(t, mockBackend.Start())
+
 	s := newSupervisor(t, "report_status", map[string]string{
 		"url":                  server.addr,
 		"config_apply_timeout": "3s",
+		"telemetryUrl":         "localhost:4318",
 	})
 	require.Nil(t, s.Start())
 	defer s.Shutdown()
@@ -1825,6 +1831,20 @@ func TestSupervisorRemoteConfigApplyStatus(t *testing.T) {
 		status, ok := remoteConfigStatus.Load().(*protobufs.RemoteConfigStatus)
 		return ok && status.Status == protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED
 	}, 5*time.Second, 10*time.Millisecond, "Remote config status was not set to APPLIED for empty config")
+
+	gotSpans := []string{}
+	expectedSpans := []string{"Start", "getBootstrapInfo", "startOpAMPClient", "startOpAMPServer", "onMessage", "createEffectiveConfigMsg"}
+	require.EventuallyWithT(t, func(collect *assert.CollectT) {
+		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
+	}, 10*time.Second, 250*time.Millisecond)
+
+	for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+		gotSpans = append(gotSpans, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
+	}
+
+	for _, expectedSpan := range expectedSpans {
+		require.Contains(t, gotSpans, expectedSpan)
+	}
 }
 
 func TestSupervisorOpAmpServerPort(t *testing.T) {
@@ -1952,8 +1972,6 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		})
 
 	outputPath := filepath.Join(t.TempDir(), "output.txt")
-	_, err = findRandomPort()
-	require.Nil(t, err)
 	backend := testbed.NewOTLPHTTPDataReceiver(4318)
 	mockBackend := testbed.NewMockBackend(outputPath, backend)
 	mockBackend.EnableRecording()
@@ -1996,8 +2014,10 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 		return agentName == command && agentVersion == version
 	}, 5*time.Second, 250*time.Millisecond)
 
+	expectedSpans := []string{"Start", "getBootstrapInfo", "startOpAMPClient", "startOpAMPServer"}
+
 	require.EventuallyWithT(t, func(collect *assert.CollectT) {
-		require.Len(collect, mockBackend.ReceivedTraces, 1)
+		require.GreaterOrEqual(collect, len(mockBackend.ReceivedTraces), len(expectedSpans))
 	}, 10*time.Second, 250*time.Millisecond)
 
 	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().Len())
@@ -2005,8 +2025,17 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.True(t, ok)
 	require.Equal(t, "opamp-supervisor", gotServiceName.Str())
 
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().Len())
-	require.Equal(t, 1, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
-	require.Equal(t, "GetBootstrapInfo", mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name())
-	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+	for _, expectedSpan := range expectedSpans {
+		gotSpan := false
+		for i := 0; i < len(mockBackend.ReceivedTraces); i++ {
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().Len())
+			require.Equal(t, 1, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().Len())
+			if mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Name() != expectedSpan {
+				continue
+			}
+			gotSpan = true
+			require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[i].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
+		}
+		require.True(t, gotSpan)
+	}
 }
