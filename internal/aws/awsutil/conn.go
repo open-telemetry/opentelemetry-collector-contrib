@@ -13,40 +13,42 @@ import (
 	"os"
 	"time"
 
-	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/config"
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/aws/credentials"
-	"github.com/aws/aws-sdk-go/aws/credentials/stscreds"
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/aws/endpoints"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/aws/aws-sdk-go-v2/credentials"
+	"github.com/aws/aws-sdk-go-v2/credentials/stscreds"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/sts"
 	"go.uber.org/zap"
 	"golang.org/x/net/http2"
 )
 
+// ConnAttr는 AWS 연결 기능에 대한 인터페이스입니다.
 type ConnAttr interface {
-	newAWSSession(logger *zap.Logger, roleArn string, externalID string, region string) (*session.Session, error)
-	getEC2Region(s *session.Session) (string, error)
+	getEC2Region(ctx context.Context, cfg aws.Config) (string, error)
 }
 
-// Conn implements connAttr interface.
+// Conn은 ConnAttr 인터페이스를 구현합니다.
 type Conn struct{}
 
-func (c *Conn) getEC2Region(s *session.Session) (string, error) {
-	return ec2metadata.New(s).Region()
+// getEC2Region은 EC2 인스턴스의 리전을 가져옵니다.
+func (c *Conn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error) {
+	client := imds.NewFromConfig(cfg)
+	output, err := client.GetRegion(ctx, &imds.GetRegionInput{})
+	if err != nil {
+		return "", err
+	}
+	return output.Region, nil
 }
 
-// AWS STS endpoint constants
+// AWS STS 엔드포인트 상수
 const (
 	STSEndpointPrefix         = "https://sts."
 	STSEndpointSuffix         = ".amazonaws.com"
 	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
 )
 
-// newHTTPClient returns new HTTP client instance with provided configuration.
+// newHTTPClient는 제공된 설정으로 새 HTTP 클라이언트 인스턴스를 반환합니다.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
 	proxyAddress string,
 ) (*http.Client, error) {
@@ -69,8 +71,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 		Proxy:               http.ProxyURL(proxyURL),
 	}
 
-	// is not enabled by default as we configure TLSClientConfig for supporting SSL to data plane.
-	// http2.ConfigureTransport will setup transport layer to use HTTP2
+	// HTTP/2 지원 구성
 	if err = http2.ConfigureTransport(transport); err != nil {
 		logger.Error("unable to configure http2 transport", zap.Error(err))
 		return nil, err
@@ -109,91 +110,71 @@ func getProxyURL(finalProxyAddress string) (*url.URL, error) {
 	return proxyURL, err
 }
 
-// GetAWSConfigSession returns AWS config and session instances.
-func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSettings) (*aws.Config, *session.Session, error) {
-	var s *session.Session
-	var err error
-	var awsRegion string
-	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
-	if err != nil {
-		logger.Error("unable to obtain proxy URL", zap.Error(err))
-		return nil, nil, err
-	}
-	regionEnv := os.Getenv("AWS_REGION")
-
-	switch {
-	case cfg.Region == "" && regionEnv != "":
-		awsRegion = regionEnv
-		logger.Debug("Fetch region from environment variables", zap.String("region", awsRegion))
-	case cfg.Region != "":
-		awsRegion = cfg.Region
-		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
-	case !cfg.NoVerifySSL:
-		var es *session.Session
-		es, err = GetDefaultSession(logger)
-		if err != nil {
-			logger.Error("Unable to retrieve default session", zap.Error(err))
-		} else {
-			awsRegion, err = cn.getEC2Region(es)
-			if err != nil {
-				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
-			} else {
-				logger.Debug("Fetch region from ec2 metadata", zap.String("region", awsRegion))
-			}
-		}
-	}
-
-	if awsRegion == "" {
-		msg := "Cannot fetch region variable from config file, environment variables and ec2 metadata."
-		logger.Error(msg)
-		return nil, nil, awserr.New("NoAwsRegion", msg, nil)
-	}
-	s, err = cn.newAWSSession(logger, cfg.RoleARN, cfg.ExternalID, awsRegion)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	config := &aws.Config{
-		Region:                 aws.String(awsRegion),
-		DisableParamValidation: aws.Bool(true),
-		MaxRetries:             aws.Int(cfg.MaxRetries),
-		Endpoint:               aws.String(cfg.Endpoint),
-		HTTPClient:             http,
-	}
-	return config, s, nil
-}
-
-// GetAWSConfig returns AWS config and session instances.
-func GetAWSConfig(logger *zap.Logger, settings *AWSSessionSettings) (awsv2.Config, error) {
+func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionSettings) (aws.Config, error) {
 	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
-		return awsv2.Config{}, err
+		return aws.Config{}, err
 	}
 
-	cfg, err := config.LoadDefaultConfig(context.Background())
-	if err != nil {
-		return awsv2.Config{}, err
-	}
-
+	var options []func(*config.LoadOptions) error
 	if settings.Region != "" {
-		cfg.Region = settings.Region
+		options = append(options, config.WithRegion(settings.Region))
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))
 	}
 
-	if cfg.Region == "" {
-		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
-		return awsv2.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
+	if settings.RoleARN != "" {
+		options = append(options, config.WithAssumeRoleCredentialOptions(func(o *stscreds.AssumeRoleOptions) {
+			if settings.ExternalID != "" {
+				o.ExternalID = aws.String(settings.ExternalID)
+			}
+		}))
 	}
 
+	cfg, err := config.LoadDefaultConfig(ctx, options...)
+	if err != nil {
+		return aws.Config{}, err
+	}
+
+	// 리전이 설정되지 않은 경우 처리
+	if cfg.Region == "" {
+		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
+		return aws.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
+	}
+
+	// 추가 설정 구성
 	cfg.HTTPClient = http
 	cfg.RetryMaxAttempts = settings.MaxRetries
-	cfg.BaseEndpoint = aws.String(settings.Endpoint)
+	if settings.Endpoint != "" {
+		cfg.BaseEndpoint = aws.String(settings.Endpoint)
+	}
 
 	return cfg, nil
 }
 
-// ProxyServerTransport configures HTTP transport for TCP Proxy Server.
+// 정적 자격 증명 생성
+func CreateStaticCredentialProvider(accessKey, secretKey, sessionToken string) aws.CredentialsProvider {
+	return credentials.NewStaticCredentialsProvider(accessKey, secretKey, sessionToken)
+}
+
+// AssumeRole 자격 증명 생성
+func CreateAssumeRoleCredentialProvider(ctx context.Context, cfg aws.Config, roleARN, externalID string) (aws.CredentialsProvider, error) {
+	// STS 클라이언트 생성
+	stsClient := sts.NewFromConfig(cfg)
+	
+	// AssumeRole 옵션 설정
+	options := func(o *stscreds.AssumeRoleOptions) {
+		if externalID != "" {
+			o.ExternalID = aws.String(externalID)
+		}
+	}
+
+	// AssumeRole 자격 증명 공급자 생성 및 캐시 적용
+	provider := stscreds.NewAssumeRoleProvider(stsClient, roleARN, options)
+	return aws.NewCredentialsCache(provider), nil
+}
+
+// ProxyServerTransport는 TCP 프록시 서버에 대한 HTTP 전송을 구성합니다.
 func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http.Transport, error) {
 	tls := &tls.Config{
 		InsecureSkipVerify: config.NoVerifySSL,
@@ -206,7 +187,7 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 		return nil, err
 	}
 
-	// Connection timeout in seconds
+	// 초 단위의 연결 타임아웃
 	idleConnTimeout := time.Duration(config.RequestTimeoutSeconds) * time.Second
 
 	transport := &http.Transport{
@@ -216,129 +197,9 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 		Proxy:               http.ProxyURL(proxyURL),
 		TLSClientConfig:     tls,
 
-		// If not disabled the transport will add a gzip encoding header
-		// to requests with no `accept-encoding` header value. The header
-		// is added after we sign the request which invalidates the
-		// signature.
+		// 압축을 비활성화하여 요청 서명 무효화 방지
 		DisableCompression: true,
 	}
 
 	return transport, nil
-}
-
-func (c *Conn) newAWSSession(logger *zap.Logger, roleArn, externalID string, region string) (*session.Session, error) {
-	var s *session.Session
-	var err error
-	if roleArn == "" {
-		s, err = GetDefaultSession(logger)
-		if err != nil {
-			return s, err
-		}
-	} else {
-		stsCreds, _ := getSTSCreds(logger, region, roleArn, externalID)
-
-		s, err = session.NewSession(&aws.Config{
-			Credentials: stsCreds,
-		})
-		if err != nil {
-			logger.Error("Error in creating session object : ", zap.Error(err))
-			return s, err
-		}
-	}
-	return s, nil
-}
-
-// getSTSCreds gets STS credentials from regional endpoint. ErrCodeRegionDisabledException is received if the
-// STS regional endpoint is disabled. In this case STS credentials are fetched from STS primary regional endpoint
-// in the respective AWS partition.
-func getSTSCreds(logger *zap.Logger, region string, roleArn, externalID string) (*credentials.Credentials, error) {
-	t, err := GetDefaultSession(logger)
-	if err != nil {
-		return nil, err
-	}
-
-	stsCred := getSTSCredsFromRegionEndpoint(logger, t, region, roleArn, externalID)
-	// Make explicit call to fetch credentials.
-	_, err = stsCred.Get()
-	if err != nil {
-		var awsErr awserr.Error
-		if errors.As(err, &awsErr) {
-			err = nil
-
-			if awsErr.Code() == sts.ErrCodeRegionDisabledException {
-				logger.Error("Region ", zap.String("region", region), zap.Error(awsErr))
-				stsCred = getSTSCredsFromPrimaryRegionEndpoint(logger, t, roleArn, externalID, region)
-			}
-		}
-	}
-	return stsCred, err
-}
-
-// getSTSCredsFromRegionEndpoint fetches STS credentials for provided roleARN from regional endpoint.
-// AWS STS recommends that you provide both the Region and endpoint when you make calls to a Regional endpoint.
-// Reference: https://docs.aws.amazon.com/IAM/latest/UserGuide/id_credentials_temp_enable-regions.html#id_credentials_temp_enable-regions_writing_code
-func getSTSCredsFromRegionEndpoint(logger *zap.Logger, sess *session.Session, region string,
-	roleArn, externalID string,
-) *credentials.Credentials {
-	regionalEndpoint := getSTSRegionalEndpoint(region)
-	// if regionalEndpoint is "", the STS endpoint is Global endpoint for classic regions except ap-east-1 - (HKG)
-	// for other opt-in regions, region value will create STS regional endpoint.
-	// This will be only in the case, if provided region is not present in aws_regions.go
-	c := &aws.Config{Region: aws.String(region), Endpoint: &regionalEndpoint}
-	st := sts.New(sess, c)
-	logger.Info("STS Endpoint ", zap.String("endpoint", st.Endpoint))
-	options := []func(*stscreds.AssumeRoleProvider){}
-	if externalID != "" {
-		options = append(options, func(arp *stscreds.AssumeRoleProvider) {
-			arp.ExternalID = aws.String(externalID)
-		})
-	}
-	return stscreds.NewCredentialsWithClient(st, roleArn, options...)
-}
-
-// getSTSCredsFromPrimaryRegionEndpoint fetches STS credentials for provided roleARN from primary region endpoint in
-// the respective partition.
-func getSTSCredsFromPrimaryRegionEndpoint(logger *zap.Logger, t *session.Session, roleArn, externalID string,
-	region string,
-) *credentials.Credentials {
-	logger.Info("Credentials for provided RoleARN being fetched from STS primary region endpoint.")
-	partitionID := getPartition(region)
-	switch partitionID {
-	case endpoints.AwsPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsEast1RegionID, roleArn, externalID)
-	case endpoints.AwsCnPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.CnNorth1RegionID, roleArn, externalID)
-	case endpoints.AwsUsGovPartitionID:
-		return getSTSCredsFromRegionEndpoint(logger, t, endpoints.UsGovWest1RegionID, roleArn, externalID)
-	}
-
-	return nil
-}
-
-func getSTSRegionalEndpoint(r string) string {
-	p := getPartition(r)
-
-	var e string
-	switch p {
-	case endpoints.AwsPartitionID, endpoints.AwsUsGovPartitionID:
-		e = STSEndpointPrefix + r + STSEndpointSuffix
-	case endpoints.AwsCnPartitionID:
-		e = STSEndpointPrefix + r + STSAwsCnPartitionIDSuffix
-	}
-	return e
-}
-
-func GetDefaultSession(logger *zap.Logger) (*session.Session, error) {
-	result, serr := session.NewSession()
-	if serr != nil {
-		logger.Error("Error in creating session object ", zap.Error(serr))
-		return result, serr
-	}
-	return result, nil
-}
-
-// getPartition return AWS Partition for the provided region.
-func getPartition(region string) string {
-	p, _ := endpoints.PartitionForRegion(endpoints.DefaultPartitions(), region)
-	return p.ID()
 }
