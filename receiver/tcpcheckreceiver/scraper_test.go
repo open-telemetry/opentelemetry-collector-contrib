@@ -16,6 +16,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -289,63 +290,86 @@ func updateErrorCodeInMetrics(metrics pmetric.Metrics, errorCode string) pmetric
 	return metrics
 }
 
-func TestScraper_ErrorMetric_Increments(t *testing.T) {
-	// Invalid port to force connection error
-	endpoint := "localhost:0"
+func TestScraper_ErrorEnumCounts(t *testing.T) {
+	// Test multiple endpoints with different error types
+	endpoints := []string{
+		"localhost:0", // Invalid port for connection_refused
+		"1.2.3.4:80",  // Unreachable IP for connection_timeout
+		"localhost:0", // Another connection_refused
+		"1.2.3.4:80",  // Another connection_timeout
+		"1.2.3.4:80",  // Another connection_timeout
+	}
 
 	cfg := &Config{
-		Targets: []*confignet.TCPAddrConfig{
-			{
-				Endpoint: endpoint,
-				DialerConfig: confignet.DialerConfig{
-					Timeout: 1 * time.Second,
-				},
+		Targets: make([]*confignet.TCPAddrConfig, len(endpoints)),
+	}
+
+	for i, endpoint := range endpoints {
+		cfg.Targets[i] = &confignet.TCPAddrConfig{
+			Endpoint: endpoint,
+			DialerConfig: confignet.DialerConfig{
+				Timeout: 1 * time.Second,
 			},
-		},
+		}
 	}
 
 	settings := receivertest.NewNopSettings(metadata.Type)
 	scraper := newScraper(cfg, settings)
 
-	// Simulate 3 failed scrapes
-	for idx := 0; idx < 3; idx++ {
-		metrics, err := scraper.scrape(context.Background())
-		require.Error(t, err)
-		require.NotNil(t, metrics)
+	// Initialize metrics builder
+	scraper.mb = metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings)
 
-		// Check error count after each scrape
-		rmSlice := metrics.ResourceMetrics()
-		require.NotZero(t, rmSlice.Len(), "Expected non-zero metrics after scrape %d", idx+1)
+	// Run a single scrape to collect all errors
+	actualMetrics, err := scraper.scrape(context.Background())
+	require.Error(t, err, "expected errors from scrape")
 
-		var errorCount int64
-		found := false
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				fmt.Printf("Metric: %s\n", m.Name())
+				if m.Name() == "tcpcheck.error" {
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						fmt.Printf("  DataPoint %d:\n", l+1)
+						fmt.Printf("    Value: %d\n", dp.IntValue())
+						dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+							fmt.Printf("    Attribute: %s = %s\n", k, v.AsString())
+							return true
+						})
+					}
+				}
+			}
+		}
+	}
 
-		for i := 0; i < rmSlice.Len(); i++ {
-			rm := rmSlice.At(i)
-			smSlice := rm.ScopeMetrics()
-			for j := 0; j < smSlice.Len(); j++ {
-				sm := smSlice.At(j)
-				metrics := sm.Metrics()
-				for k := 0; k < metrics.Len(); k++ {
-					m := metrics.At(k)
-					if m.Name() == "tcpcheck.error" {
-						dps := m.Sum().DataPoints()
-						for l := 0; l < dps.Len(); l++ {
-							dp := dps.At(l)
-							if val, ok := dp.Attributes().Get("tcpcheck.endpoint"); ok && val.Str() == endpoint {
-								errorCount = dp.IntValue()
-								found = true
-								break
-							}
+	// Count errors by type
+	errorCounts := make(map[string]int64)
+	for i := 0; i < actualMetrics.ResourceMetrics().Len(); i++ {
+		rm := actualMetrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				m := sm.Metrics().At(k)
+				if m.Name() == "tcpcheck.error" {
+					dps := m.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						if val, ok := dp.Attributes().Get("error.code"); ok {
+							errorCounts[val.Str()] = dp.IntValue()
 						}
 					}
 				}
 			}
 		}
-
-		require.True(t, found, "Expected to find tcpcheck.error metric after scrape %d", idx+1)
-		require.Equal(t, int64(idx+1), errorCount, "Expected error count to be %d after %d failed scrapes", idx+1, idx+1)
 	}
+
+	// Verify specific error counts
+	require.Equal(t, int64(2), errorCounts["unknown_error"], "Expected 2 unknown_error")
+	require.Equal(t, int64(3), errorCounts["connection_timeout"], "Expected 3 connection_timeout errors")
 }
 
 func TestScraper_MultipleEndpoints_ErrorSum(t *testing.T) {
