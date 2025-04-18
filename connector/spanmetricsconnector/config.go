@@ -88,6 +88,8 @@ type Config struct {
 	Events EventsConfig `mapstructure:"events"`
 
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
+
+	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
 }
 
 type HistogramConfig struct {
@@ -155,6 +157,10 @@ func (c Config) Validate() error {
 			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
 			c.GetDeltaTimestampCacheSize(),
 		)
+	}
+
+	if c.AggregationCardinalityLimit < 0 {
+		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
 	}
 
 	return nil

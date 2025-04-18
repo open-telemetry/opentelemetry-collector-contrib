@@ -288,3 +288,126 @@ func TestValidateEventDimensions(t *testing.T) {
 		})
 	}
 }
+
+func TestConfigValidate(t *testing.T) {
+	tests := []struct {
+		name        string
+		config      Config
+		expectedErr string
+	}{
+		{
+			name: "valid config",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram: HistogramConfig{
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{10 * time.Millisecond},
+					},
+				},
+			},
+		},
+		{
+			name: "invalid dimensions cache size",
+			config: Config{
+				DimensionsCacheSize:      -1,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+			},
+			expectedErr: "invalid cache size: -1, the maximum number of the items in the cache should be positive",
+		},
+		{
+			name: "invalid metrics flush interval",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     -1 * time.Second,
+			},
+			expectedErr: "invalid metrics_flush_interval: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid metrics expiration",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				MetricsExpiration:        -1 * time.Second,
+			},
+			expectedErr: "invalid metrics_expiration: -1s, the duration should be positive",
+		},
+		{
+			name: "invalid delta timestamp cache size",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				AggregationTemporality:   delta,
+				TimestampCacheSize:       new(int), // zero value
+			},
+			expectedErr: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
+		},
+		{
+			name: "invalid aggregation cardinality limit",
+			config: Config{
+				DimensionsCacheSize:         1000,
+				ResourceMetricsCacheSize:    1000,
+				MetricsFlushInterval:        60 * time.Second,
+				AggregationCardinalityLimit: -1,
+			},
+			expectedErr: "invalid aggregation_cardinality_limit: -1, the limit should be positive",
+		},
+		{
+			name: "both explicit and exponential histogram",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Histogram: HistogramConfig{
+					Explicit: &ExplicitHistogramConfig{
+						Buckets: []time.Duration{10 * time.Millisecond},
+					},
+					Exponential: &ExponentialHistogramConfig{
+						MaxSize: 10,
+					},
+				},
+			},
+			expectedErr: "use either `explicit` or `exponential` buckets histogram",
+		},
+		{
+			name: "duplicate dimension name",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Dimensions: []Dimension{
+					{Name: "service.name"},
+				},
+			},
+			expectedErr: "failed validating dimensions: duplicate dimension name service.name",
+		},
+		{
+			name: "events enabled with no dimensions",
+			config: Config{
+				DimensionsCacheSize:      1000,
+				ResourceMetricsCacheSize: 1000,
+				MetricsFlushInterval:     60 * time.Second,
+				Events: EventsConfig{
+					Enabled: true,
+				},
+			},
+			expectedErr: "failed validating event dimensions: no dimensions configured for events",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := tt.config.Validate()
+			if tt.expectedErr != "" {
+				assert.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}

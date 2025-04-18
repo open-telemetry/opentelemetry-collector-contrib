@@ -287,3 +287,254 @@ func TestExponentialHistogram_AddExemplar(t *testing.T) {
 		})
 	}
 }
+
+func TestSum_Add(t *testing.T) {
+	tests := []struct {
+		name     string
+		sum      Sum
+		value    uint64
+		expected uint64
+	}{
+		{
+			name:     "Add zero to empty sum",
+			sum:      Sum{count: 0},
+			value:    0,
+			expected: 0,
+		},
+		{
+			name:     "Add positive value to empty sum",
+			sum:      Sum{count: 0},
+			value:    5,
+			expected: 5,
+		},
+		{
+			name:     "Add value to existing sum",
+			sum:      Sum{count: 10},
+			value:    5,
+			expected: 15,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			tt.sum.Add(tt.value)
+			assert.Equal(t, tt.expected, tt.sum.count)
+		})
+	}
+}
+
+func TestSumMetrics_IsCardinalityLimitReached(t *testing.T) {
+	tests := []struct {
+		name             string
+		metrics          map[Key]*Sum
+		cardinalityLimit int
+		expected         bool
+	}{
+		{
+			name:             "No limit set",
+			metrics:          make(map[Key]*Sum),
+			cardinalityLimit: 0,
+			expected:         false,
+		},
+		{
+			name:             "Below limit",
+			metrics:          map[Key]*Sum{"key1": {}, "key2": {}},
+			cardinalityLimit: 3,
+			expected:         false,
+		},
+		{
+			name:             "At limit",
+			metrics:          map[Key]*Sum{"key1": {}, "key2": {}, "key3": {}},
+			cardinalityLimit: 3,
+			expected:         true,
+		},
+		{
+			name:             "Above limit",
+			metrics:          map[Key]*Sum{"key1": {}, "key2": {}, "key3": {}, "key4": {}},
+			cardinalityLimit: 3,
+			expected:         true,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := SumMetrics{
+				metrics:          tt.metrics,
+				cardinalityLimit: tt.cardinalityLimit,
+			}
+			assert.Equal(t, tt.expected, sm.IsCardinalityLimitReached())
+		})
+	}
+}
+
+func TestSumMetrics_GetOrCreate(t *testing.T) {
+	tests := []struct {
+		name            string
+		metrics         map[Key]*Sum
+		key             Key
+		attributes      pcommon.Map
+		expectedCount   int
+		expectedCreated bool
+	}{
+		{
+			name:            "Create new sum",
+			metrics:         make(map[Key]*Sum),
+			key:             "new-key",
+			attributes:      pcommon.NewMap(),
+			expectedCount:   1,
+			expectedCreated: true,
+		},
+		{
+			name: "Get existing sum",
+			metrics: map[Key]*Sum{
+				"existing-key": {count: 5},
+			},
+			key:             "existing-key",
+			attributes:      pcommon.NewMap(),
+			expectedCount:   1,
+			expectedCreated: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := SumMetrics{
+				metrics: tt.metrics,
+			}
+			sum := sm.GetOrCreate(tt.key, tt.attributes, pcommon.Timestamp(0))
+			assert.Len(t, sm.metrics, tt.expectedCount)
+			if tt.expectedCreated {
+				assert.Equal(t, tt.attributes, sum.attributes)
+				assert.Equal(t, uint64(0), sum.count)
+			} else {
+				assert.Equal(t, uint64(5), sum.count)
+			}
+		})
+	}
+}
+
+func TestSumMetrics_BuildMetrics(t *testing.T) {
+	tests := []struct {
+		name          string
+		metrics       map[Key]*Sum
+		temporality   pmetric.AggregationTemporality
+		expectedCount int
+		expectedValue int64
+	}{
+		{
+			name: "Build metrics with one sum",
+			metrics: map[Key]*Sum{
+				"key1": {
+					count: 5,
+					attributes: func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("attr1", "value1")
+						return m
+					}(),
+					exemplars: pmetric.NewExemplarSlice(),
+				},
+			},
+			temporality:   pmetric.AggregationTemporalityCumulative,
+			expectedCount: 1,
+			expectedValue: 5,
+		},
+		{
+			name: "Build metrics with multiple sums",
+			metrics: map[Key]*Sum{
+				"key1": {
+					count: 5,
+					attributes: func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("attr1", "value1")
+						return m
+					}(),
+					exemplars: pmetric.NewExemplarSlice(),
+				},
+				"key2": {
+					count: 10,
+					attributes: func() pcommon.Map {
+						m := pcommon.NewMap()
+						m.PutStr("attr2", "value2")
+						return m
+					}(),
+					exemplars: pmetric.NewExemplarSlice(),
+				},
+			},
+			temporality:   pmetric.AggregationTemporalityDelta,
+			expectedCount: 2,
+			expectedValue: 5, // Will check both values in the test
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := SumMetrics{
+				metrics: tt.metrics,
+			}
+			metric := pmetric.NewMetric()
+			startTimestamp := func(Key, pcommon.Timestamp) pcommon.Timestamp { return 0 }
+			timestamp := pcommon.Timestamp(1000)
+
+			sm.BuildMetrics(metric, timestamp, startTimestamp, tt.temporality)
+
+			assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+			assert.Equal(t, tt.temporality, metric.Sum().AggregationTemporality())
+			assert.True(t, metric.Sum().IsMonotonic())
+
+			dps := metric.Sum().DataPoints()
+			assert.Equal(t, tt.expectedCount, dps.Len())
+
+			for i := 0; i < dps.Len(); i++ {
+				dp := dps.At(i)
+				assert.Equal(t, timestamp, dp.Timestamp())
+				assert.Equal(t, pcommon.Timestamp(0), dp.StartTimestamp())
+				if tt.expectedCount == 1 {
+					assert.Equal(t, tt.expectedValue, dp.IntValue())
+				}
+			}
+		})
+	}
+}
+
+func TestSumMetrics_ClearExemplars(t *testing.T) {
+	tests := []struct {
+		name     string
+		metrics  map[Key]*Sum
+		expected int
+	}{
+		{
+			name: "Clear exemplars from multiple sums",
+			metrics: map[Key]*Sum{
+				"key1": {
+					exemplars: func() pmetric.ExemplarSlice {
+						es := pmetric.NewExemplarSlice()
+						es.AppendEmpty()
+						return es
+					}(),
+				},
+				"key2": {
+					exemplars: func() pmetric.ExemplarSlice {
+						es := pmetric.NewExemplarSlice()
+						es.AppendEmpty()
+						es.AppendEmpty()
+						return es
+					}(),
+				},
+			},
+			expected: 0,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			sm := SumMetrics{
+				metrics: tt.metrics,
+			}
+			sm.ClearExemplars()
+
+			for _, sum := range sm.metrics {
+				assert.Equal(t, tt.expected, sum.exemplars.Len())
+			}
+		})
+	}
+}

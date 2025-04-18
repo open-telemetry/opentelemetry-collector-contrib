@@ -1965,20 +1965,14 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			// Create connector
-			p := &connectorImp{
-				config: tt.config,
-			}
+			p := &connectorImp{config: tt.config}
 
-			// Create basic span
 			span := ptrace.NewSpan()
 			span.SetName("test_span")
 			span.SetKind(ptrace.SpanKindInternal)
 
-			// Build attributes
 			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
 
-			// Verify results
 			assert.Equal(t, len(tt.want), attrs.Len())
 			for k, v := range tt.want {
 				val, ok := attrs.Get(k)
@@ -1987,4 +1981,202 @@ func TestBuildAttributes_InstrumentationScope(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestConnectorWithCardinalityLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationCardinalityLimit = 2
+	cfg.Dimensions = []Dimension{
+		{Name: "region"},
+	}
+
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+
+	require.NotNil(t, connector)
+
+	// Create two different resources
+	resource1 := pcommon.NewResource()
+	resource1.Attributes().PutStr("service.name", "service1")
+	resource1.Attributes().PutStr("region", "us-east-1")
+
+	resource2 := pcommon.NewResource()
+	resource2.Attributes().PutStr("service.name", "service2")
+	resource2.Attributes().PutStr("region", "us-west-1")
+
+	// Create spans for the resources
+	traces := ptrace.NewTraces()
+	rspan1 := traces.ResourceSpans().AppendEmpty()
+	resource1.CopyTo(rspan1.Resource())
+	ils := rspan1.ScopeSpans().AppendEmpty()
+
+	rspan2 := traces.ResourceSpans().AppendEmpty()
+	resource2.CopyTo(rspan2.Resource())
+	ils2 := rspan2.ScopeSpans().AppendEmpty()
+
+	// Add spans with different names to trigger overflow
+	for i := 0; i < 3; i++ {
+		span := ils.Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("operation%d", i))
+		span.SetKind(ptrace.SpanKindServer)
+		span.Attributes().PutStr("http.method", "GET")
+
+		span2 := ils2.Spans().AppendEmpty()
+		span2.SetName(fmt.Sprintf("operation%d", i))
+		span2.SetKind(ptrace.SpanKindServer)
+		span2.Attributes().PutStr("http.method", "GET")
+	}
+
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	metrics := connector.buildMetrics()
+
+	resourceMetrics := metrics.ResourceMetrics()
+	assert.Equal(t, 2, resourceMetrics.Len()) // 2 resources
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.At(i)
+		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+
+		// Each resource should have:
+		// - 2 normal metrics (under limit)
+		// - 1 overflow metric
+		metricCount := 0
+		overflowCount := 0
+
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for j := 0; j < metrics.Len(); j++ {
+			metric := metrics.At(j)
+			if metric.Name() == buildMetricName(DefaultNamespace, metricNameCalls) {
+				dps := metric.Sum().DataPoints()
+				for k := 0; k < dps.Len(); k++ {
+					dp := dps.At(k)
+					if _, exists := dp.Attributes().Get(overflowKey); exists {
+						overflowCount++
+						attrs := dp.Attributes()
+						overflowVal, exists := attrs.Get(overflowKey)
+						assert.True(t, exists)
+						assert.True(t, overflowVal.Bool())
+						_, exists = attrs.Get("region")
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanNameKey)
+						assert.False(t, exists)
+						_, exists = attrs.Get(spanKindKey)
+						assert.False(t, exists)
+						_, exists = attrs.Get(statusCodeKey)
+						assert.False(t, exists)
+					} else {
+						metricCount++
+						attrs := dp.Attributes()
+						_, exists := attrs.Get(serviceNameKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanNameKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanKindKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(statusCodeKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get("region")
+						assert.True(t, exists)
+					}
+				}
+			}
+		}
+
+		assert.Equal(t, 2, metricCount, "service %s: expected 2 normal metrics. Found: %d", serviceName.Str(), metricCount)
+		assert.Equal(t, 1, overflowCount, "service %s: expected 1 overflow metric. Found: %d", serviceName.Str(), overflowCount)
+	}
+}
+
+func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationCardinalityLimit = 2
+	cfg.Events.Enabled = true
+	cfg.Dimensions = []Dimension{
+		{Name: "event.name"},
+	}
+
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+	require.NotNil(t, connector)
+
+	// Create a resource
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("service.name", "service1")
+
+	// Create traces with events
+	traces := ptrace.NewTraces()
+	rspan := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(rspan.Resource())
+	ils := rspan.ScopeSpans().AppendEmpty()
+
+	// Add a span with multiple events that will trigger overflow
+	span := ils.Spans().AppendEmpty()
+	span.SetName("operation1")
+	span.SetKind(ptrace.SpanKindServer)
+
+	// Add 3 different events to trigger overflow
+	events := span.Events()
+	for i := 0; i < 3; i++ {
+		event := events.AppendEmpty()
+		event.SetName(fmt.Sprintf("event%d", i))
+		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
+	}
+
+	// First consume to reach the limit
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	// Second consume to trigger overflow
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	metrics := connector.buildMetrics()
+
+	resourceMetrics := metrics.ResourceMetrics()
+	assert.Equal(t, 1, resourceMetrics.Len())
+
+	rm := resourceMetrics.At(0)
+	serviceName, _ := rm.Resource().Attributes().Get("service.name")
+
+	// Check events metric
+	metricsSlice := rm.ScopeMetrics().At(0).Metrics()
+	var eventsMetric pmetric.Metric
+	for i := 0; i < metricsSlice.Len(); i++ {
+		if metricsSlice.At(i).Name() == buildMetricName(DefaultNamespace, metricNameEvents) {
+			eventsMetric = metricsSlice.At(i)
+			break
+		}
+	}
+	require.NotNil(t, eventsMetric, "events metric not found")
+
+	dps := eventsMetric.Sum().DataPoints()
+	normalCount := 0
+	overflowCount := 0
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if _, exists := dp.Attributes().Get(overflowKey); exists {
+			overflowCount++
+			// Verify overflow metric has service name
+			serviceNameAttr, ok := dp.Attributes().Get(serviceNameKey)
+			assert.True(t, ok)
+			assert.Equal(t, serviceName.Str(), serviceNameAttr.Str())
+		} else {
+			normalCount++
+			// Verify normal metric has event name
+			attrs := dp.Attributes()
+			_, exists = attrs.Get("event.name")
+			assert.True(t, exists)
+			_, exists = attrs.Get(serviceNameKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(spanNameKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(spanKindKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(statusCodeKey)
+			assert.True(t, exists)
+		}
+	}
+
+	assert.Equal(t, 2, normalCount, "expected 2 normal metrics")
+	assert.Equal(t, 1, overflowCount, "expected 1 overflow metric")
 }
