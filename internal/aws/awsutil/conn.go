@@ -23,16 +23,14 @@ import (
 	"golang.org/x/net/http2"
 )
 
-// ConnAttr는 AWS 연결 기능에 대한 인터페이스입니다.
 type ConnAttr interface {
 	getEC2Region(ctx context.Context, cfg aws.Config) (string, error)
 }
 
-// Conn은 ConnAttr 인터페이스를 구현합니다.
 type Conn struct{}
 
-// getEC2Region은 EC2 인스턴스의 리전을 가져옵니다.
 func (c *Conn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error) {
+	// get region from ec2 metadata service
 	client := imds.NewFromConfig(cfg)
 	output, err := client.GetRegion(ctx, &imds.GetRegionInput{})
 	if err != nil {
@@ -41,14 +39,12 @@ func (c *Conn) getEC2Region(ctx context.Context, cfg aws.Config) (string, error)
 	return output.Region, nil
 }
 
-// AWS STS 엔드포인트 상수
 const (
 	STSEndpointPrefix         = "https://sts."
 	STSEndpointSuffix         = ".amazonaws.com"
 	STSAwsCnPartitionIDSuffix = ".amazonaws.com.cn" // AWS China partition.
 )
 
-// newHTTPClient는 제공된 설정으로 새 HTTP 클라이언트 인스턴스를 반환합니다.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
 	proxyAddress string,
 ) (*http.Client, error) {
@@ -71,7 +67,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 		Proxy:               http.ProxyURL(proxyURL),
 	}
 
-	// HTTP/2 지원 구성
+	// HTTP/2 support
 	if err = http2.ConfigureTransport(transport); err != nil {
 		logger.Error("unable to configure http2 transport", zap.Error(err))
 		return nil, err
@@ -136,13 +132,11 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 		return aws.Config{}, err
 	}
 
-	// 리전이 설정되지 않은 경우 처리
 	if cfg.Region == "" {
 		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
 		return aws.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
 	}
 
-	// 추가 설정 구성
 	cfg.HTTPClient = http
 	cfg.RetryMaxAttempts = settings.MaxRetries
 	if settings.Endpoint != "" {
@@ -152,29 +146,22 @@ func GetAWSConfig(ctx context.Context, logger *zap.Logger, settings *AWSSessionS
 	return cfg, nil
 }
 
-// 정적 자격 증명 생성
 func CreateStaticCredentialProvider(accessKey, secretKey, sessionToken string) aws.CredentialsProvider {
 	return credentials.NewStaticCredentialsProvider(accessKey, secretKey, sessionToken)
 }
 
-// AssumeRole 자격 증명 생성
 func CreateAssumeRoleCredentialProvider(ctx context.Context, cfg aws.Config, roleARN, externalID string) (aws.CredentialsProvider, error) {
-	// STS 클라이언트 생성
 	stsClient := sts.NewFromConfig(cfg)
 	
-	// AssumeRole 옵션 설정
 	options := func(o *stscreds.AssumeRoleOptions) {
 		if externalID != "" {
 			o.ExternalID = aws.String(externalID)
 		}
 	}
-
-	// AssumeRole 자격 증명 공급자 생성 및 캐시 적용
 	provider := stscreds.NewAssumeRoleProvider(stsClient, roleARN, options)
 	return aws.NewCredentialsCache(provider), nil
 }
 
-// ProxyServerTransport는 TCP 프록시 서버에 대한 HTTP 전송을 구성합니다.
 func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http.Transport, error) {
 	tls := &tls.Config{
 		InsecureSkipVerify: config.NoVerifySSL,
@@ -187,7 +174,6 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 		return nil, err
 	}
 
-	// 초 단위의 연결 타임아웃
 	idleConnTimeout := time.Duration(config.RequestTimeoutSeconds) * time.Second
 
 	transport := &http.Transport{
@@ -196,8 +182,6 @@ func ProxyServerTransport(logger *zap.Logger, config *AWSSessionSettings) (*http
 		IdleConnTimeout:     idleConnTimeout,
 		Proxy:               http.ProxyURL(proxyURL),
 		TLSClientConfig:     tls,
-
-		// 압축을 비활성화하여 요청 서명 무효화 방지
 		DisableCompression: true,
 	}
 
