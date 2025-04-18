@@ -57,6 +57,31 @@ func newKubeletScraper(
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
 ) (scraper.Metrics, error) {
+	if EnableCPUUsageMetrics.IsEnabled() {
+		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
+			metricsConfig.Metrics.ContainerCPUUtilization.Enabled = false
+			metricsConfig.Metrics.ContainerCPUUsage.Enabled = true
+		}
+		if metricsConfig.Metrics.K8sPodCPUUtilization.Enabled {
+			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = false
+			metricsConfig.Metrics.K8sPodCPUUsage.Enabled = true
+		}
+		if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
+			metricsConfig.Metrics.K8sNodeCPUUsage.Enabled = true
+		}
+	} else {
+		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+		if metricsConfig.Metrics.K8sPodCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+		if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		}
+	}
+
 	ks := &kubeletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
 		metadataProvider:      kubelet.NewMetadataProvider(restClient),
