@@ -452,24 +452,24 @@ func TestHostInterfaces(t *testing.T) {
 	mdInterfaces.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdInterfaces.On("HostArch").Return("amd64", nil)
 	mdInterfaces.On("HostInterfaces").Return(testInterfaces, nil)
-	
+
 	// Create a configuration that enables the HostInterface attribute
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostInterface.Enabled = true
-	
+
 	detector := newTestDetector(mdInterfaces, []string{"os"}, cfg)
 	res, schemaURL, err := detector.Detect(context.Background())
 	require.NoError(t, err)
 	assert.Equal(t, conventions.SchemaURL, schemaURL)
 	mdInterfaces.AssertExpectations(t)
-	
-	fmt.Println("res.Attributes().AsRaw()",res.Attributes().AsRaw())
+
+	fmt.Println("res.Attributes().AsRaw()", res.Attributes().AsRaw())
 	expected := map[string]any{
 		conventions.AttributeHostName: "hostname",
 		conventions.AttributeOSType:   "linux",
 		"host.interface":              testInterfacesAttribute,
 	}
-	
+
 	assert.Equal(t, expected, res.Attributes().AsRaw())
 }
 
@@ -481,11 +481,11 @@ func TestHostInterfacesError(t *testing.T) {
 	mdInterfacesError.On("OSVersion").Return("22.04.2 LTS (Jammy Jellyfish)", nil)
 	mdInterfacesError.On("HostArch").Return("amd64", nil)
 	mdInterfacesError.On("HostInterfaces").Return([]net.Interface{}, errors.New("interface error"))
-	
+
 	// Create a configuration that enables the HostInterface attribute
 	cfg := metadata.DefaultResourceAttributesConfig()
 	cfg.HostInterface.Enabled = true
-	
+
 	detector := newTestDetector(mdInterfacesError, []string{"os"}, cfg)
 	res, schemaURL, err := detector.Detect(context.Background())
 	assert.Error(t, err)

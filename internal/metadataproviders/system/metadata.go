@@ -240,5 +240,5 @@ func (p systemMetadataProvider) CPUInfo(ctx context.Context) ([]cpu.InfoStat, er
 }
 
 func (p systemMetadataProvider) HostInterfaces() ([]net.Interface, error) {
-    return net.Interfaces()
+	return net.Interfaces()
 }
