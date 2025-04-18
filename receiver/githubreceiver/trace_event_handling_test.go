@@ -4,22 +4,22 @@
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
-    "os"
-    "path/filepath"
-    "encoding/json"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.uber.org/zap"
-    "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
-    "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
@@ -31,7 +31,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
-    testFilePath := filepath.Join("testdata", "workflow-run-completed.json")
+	testFilePath := filepath.Join("testdata", "workflow-run-completed.json")
 	data, err := os.ReadFile(testFilePath)
 	require.NoError(t, err, "Failed to read test data file")
 
@@ -39,7 +39,7 @@ func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
 	err = json.Unmarshal(data, &event)
 	require.NoError(t, err, "Failed to unmarshal workflow run event")
 
-    traces, err := receiver.handleWorkflowRun(&event)
+	traces, err := receiver.handleWorkflowRun(&event)
 	require.NoError(t, err, "Failed to handle workflow run event")
 
 	expectedFile := filepath.Join("testdata", "workflow-run-expected.yaml")
@@ -61,7 +61,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
 	require.NoError(t, err, "failed to create receiver")
 
-    testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
 	data, err := os.ReadFile(testFilePath)
 	require.NoError(t, err, "Failed to read test data file")
 
@@ -69,7 +69,7 @@ func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
 	err = json.Unmarshal(data, &event)
 	require.NoError(t, err, "Failed to unmarshal workflow job event")
 
-    traces, err := receiver.handleWorkflowJob(&event)
+	traces, err := receiver.handleWorkflowJob(&event)
 	require.NoError(t, err, "Failed to handle workflow job event")
 
 	expectedFile := filepath.Join("testdata", "workflow-job-expected.yaml")
@@ -655,37 +655,35 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 	}
 }
 
-
-
-	// Setup
-	// logger := zap.NewNop()
-	// receiver := &githubTracesReceiver{
-	// 	logger:   logger,
-	// 	cfg:      createDefaultConfig().(*Config),
-	// 	settings: receivertest.NewNopSettings(metadata.Type),
-	// }
-	//
-	// // Read and parse the workflow run event from the test data file
-	// data, err := os.ReadFile("testdata/workflow_run_completed.json")
-	// require.NoError(t, err, "Failed to read test data file")
-	//
-	// var event github.WorkflowRunEvent
-	// err = json.Unmarshal(data, &event)
-	// require.NoError(t, err, "Failed to unmarshal workflow run event")
-	//
-	// // Process the event
-	// traces, err := receiver.handleWorkflowRun(&event)
-	// require.NoError(t, err, "Failed to handle workflow run event")
-	// 
-	// // Validate the generated traces
-	// expectedFile := filepath.Join("testdata", "workflow_run_expected.yaml")
-	//
-	// // Uncomment the following line to update the golden file
-	// // golden.WriteTraces(t, expectedFile, traces)
-	//
-	// // Read and compare with golden file
-	// expectedTraces, err := golden.ReadTraces(expectedFile)
-	// require.NoError(t, err, "Failed to read expected traces")
-	// 
-	// // Compare actual and expected traces
-	// require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+// Setup
+// logger := zap.NewNop()
+// receiver := &githubTracesReceiver{
+// 	logger:   logger,
+// 	cfg:      createDefaultConfig().(*Config),
+// 	settings: receivertest.NewNopSettings(metadata.Type),
+// }
+//
+// // Read and parse the workflow run event from the test data file
+// data, err := os.ReadFile("testdata/workflow_run_completed.json")
+// require.NoError(t, err, "Failed to read test data file")
+//
+// var event github.WorkflowRunEvent
+// err = json.Unmarshal(data, &event)
+// require.NoError(t, err, "Failed to unmarshal workflow run event")
+//
+// // Process the event
+// traces, err := receiver.handleWorkflowRun(&event)
+// require.NoError(t, err, "Failed to handle workflow run event")
+//
+// // Validate the generated traces
+// expectedFile := filepath.Join("testdata", "workflow_run_expected.yaml")
+//
+// // Uncomment the following line to update the golden file
+// // golden.WriteTraces(t, expectedFile, traces)
+//
+// // Read and compare with golden file
+// expectedTraces, err := golden.ReadTraces(expectedFile)
+// require.NoError(t, err, "Failed to read expected traces")
+//
+// // Compare actual and expected traces
+// require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
