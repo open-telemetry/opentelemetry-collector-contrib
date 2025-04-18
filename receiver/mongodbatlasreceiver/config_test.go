@@ -361,7 +361,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
-	expected.BaseURL = "https://cloud.mongodb.com"
+	expected.BaseURL = "https://cloud.mongodb.com/"
 	expected.PrivateKey = "my-private-key"
 	expected.PublicKey = "my-public-key"
 	expected.Logs = LogConfig{

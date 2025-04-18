@@ -11,6 +11,7 @@ import (
 	"strings"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -133,14 +134,18 @@ var (
 	errMaxPageSize = errors.New("the maximum value for 'page_size' is 20000")
 
 	// Config Errors
-	errConfigEmptyEndpoint = errors.New("endpoint must not be empty")
+	errConfigEmptyEndpoint = errors.New("baseurl must not be empty")
 )
 
 func (c *Config) Validate() error {
 	var errs error
-	baseurl := c.BaseURL
-	if err := validateEndpoint(baseurl); err != nil {
-		return fmt.Errorf("invalid base_url %q: %w", baseurl, err)
+
+	if c.BaseURL == "" {
+        c.BaseURL = mongodbatlas.CloudURL
+    }
+
+	if err := validateEndpoint(c.BaseURL); err != nil {
+		return fmt.Errorf("invalid base_url %q: %w", c.BaseURL, err)
 	}
 
 	for _, project := range c.Projects {

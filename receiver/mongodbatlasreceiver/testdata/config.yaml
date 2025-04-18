@@ -1,5 +1,4 @@
 mongodbatlas:
-  base_url: "https://cloud.mongodb.com"
   public_key: "my-public-key"
   private_key: "my-private-key"
   alerts:
