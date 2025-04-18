@@ -14,6 +14,7 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
+	"github.com/golang/snappy"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -151,19 +152,26 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 
 	body, err := io.ReadAll(req.Body)
 	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		prw.settings.Logger.Warn("Error reading remote write request body", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	decompressedBody, err := snappy.Decode(nil, body)
+	if err != nil {
+		prw.settings.Logger.Warn("Error decoding remote write request to snappy", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	var prw2Req writev2.Request
-	if err = proto.Unmarshal(body, &prw2Req); err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
+	if err = proto.Unmarshal(decompressedBody, &prw2Req); err != nil {
+		prw.settings.Logger.Warn("Error unmarsahlling remote write request to protobuf", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	_, stats, err := prw.translateV2(req.Context(), &prw2Req)
+	m, stats, err := prw.translateV2(req.Context(), &prw2Req)
 	stats.SetHeaders(w)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest) // Following instructions at https://prometheus.io/docs/specs/remote_write_spec_2_0/#invalid-samples
@@ -171,6 +179,7 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 	}
 
 	w.WriteHeader(http.StatusNoContent)
+	_ = prw.nextConsumer.ConsumeMetrics(req.Context(), m)
 }
 
 // parseProto parses the content-type header and returns the version of the remote-write protocol.
