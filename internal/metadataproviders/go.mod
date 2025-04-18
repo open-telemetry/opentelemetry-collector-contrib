@@ -8,10 +8,10 @@ require (
 	github.com/aws/aws-sdk-go-v2/feature/ec2/imds v1.16.30
 	github.com/docker/docker v27.5.1+incompatible
 	github.com/hashicorp/consul/api v1.32.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.123.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.124.1
 	github.com/shirou/gopsutil/v4 v4.25.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/semconv v0.123.1-0.20250411074447-4fb7c24ebecc
+	go.opentelemetry.io/collector/semconv v0.124.0
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.uber.org/goleak v1.3.0
@@ -87,7 +87,7 @@ require (
 	go.opentelemetry.io/otel/metric v1.35.0 // indirect
 	go.opentelemetry.io/otel/trace v1.35.0 // indirect
 	golang.org/x/exp v0.0.0-20250106191152-7588d65b2ba8 // indirect
-	golang.org/x/net v0.37.0 // indirect
+	golang.org/x/net v0.38.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sys v0.31.0 // indirect
 	golang.org/x/term v0.30.0 // indirect
