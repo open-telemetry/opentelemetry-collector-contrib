@@ -84,6 +84,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUTimeDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUsageDataPoint(ts, 1)
 
@@ -152,6 +153,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeCPUTimeDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
 
@@ -213,6 +215,7 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodCPUTimeDataPoint(ts, 1)
 
+			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
 
