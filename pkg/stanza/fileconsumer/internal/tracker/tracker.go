@@ -4,6 +4,8 @@
 package tracker // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/tracker"
 
 import (
+	"context"
+
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 
@@ -11,6 +13,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fileset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
 // Interface for tracking files that are being consumed.
@@ -42,7 +45,7 @@ type fileTracker struct {
 	archive archive.Archive
 }
 
-func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, archive archive.Archive) Tracker {
+func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBatchFiles int, pollsToArchive int, persister operator.Persister) Tracker {
 	knownFiles := make([]*fileset.Fileset[*reader.Metadata], 3)
 	for i := 0; i < len(knownFiles); i++ {
 		knownFiles[i] = fileset.New[*reader.Metadata](maxBatchFiles)
@@ -55,7 +58,7 @@ func NewFileTracker(set component.TelemetrySettings, maxBatchFiles int, archive 
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
-		archive:           archive,
+		archive:           archive.NewArchive(ctx, set.Logger.Named("archive"), pollsToArchive, persister),
 	}
 	return t
 }
