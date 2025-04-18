@@ -204,21 +204,16 @@ func (m *Manager) makeFingerprint(path string) (*fingerprint.Fingerprint, *os.Fi
 // discarding any that have a duplicate fingerprint to other files that have already
 // been read this polling interval
 func (m *Manager) makeReaders(ctx context.Context, paths []string) {
+	var unmatchedFiles []*os.File
+	var unmatchedFingerprints []*fingerprint.Fingerprint
+
 	for _, path := range paths {
 		fp, file := m.makeFingerprint(path)
 		if fp == nil {
 			continue
 		}
 
-		// Exclude duplicate paths with the same content. This can happen when files are
-		// being rotated with copy/truncate strategy. (After copy, prior to truncate.)
-		if r := m.tracker.GetCurrentFile(fp); r != nil {
-			m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
-			// re-add the reader as Match() removes duplicates
-			m.tracker.Add(r)
-			if err := file.Close(); err != nil {
-				m.set.Logger.Debug("problem closing file", zap.Error(err))
-			}
+		if m.excludeDuplicate(fp, file) {
 			continue
 		}
 
@@ -228,8 +223,67 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 			continue
 		}
 
+		if r != nil {
+			m.tracker.Add(r)
+			continue
+		}
+		// aggregate unmatched fingerprint and file to match it against archive
+		unmatchedFingerprints = append(unmatchedFingerprints, fp)
+		unmatchedFiles = append(unmatchedFiles, file)
+	}
+
+	m.processUnmatchedFiles(ctx, unmatchedFiles, unmatchedFingerprints)
+}
+
+func (m *Manager) processUnmatchedFiles(ctx context.Context, files []*os.File, fingerprints []*fingerprint.Fingerprint) {
+	// processUnmatchedFiles accepts a list of unmatched files and their corresponding fingerprints
+	// and looks for a match in archive.
+	// If a match is found, it will create reader based on known metadata
+	// Else, it will create a new reader from scratch
+
+	metadataFromArchive := m.tracker.FindFiles(fingerprints)
+
+	for i, metadata := range metadataFromArchive {
+		file, fp := files[i], fingerprints[i]
+		if m.excludeDuplicate(fp, file) {
+			continue
+		}
+
+		var r *reader.Reader
+		var err error
+
+		if metadata != nil {
+			// matched metadata is found in archive, create a new reader from this metadata.
+			r, err = m.readerFactory.NewReaderFromMetadata(file, metadata)
+		} else {
+			// If we don't match any previously known files, create a new reader from scratch.
+			m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			r, err = m.readerFactory.NewReader(file, fp)
+		}
+
+		if err != nil {
+			m.set.Logger.Error("Failed to create reader", zap.Error(err))
+			continue
+		}
+
+		m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
 		m.tracker.Add(r)
 	}
+}
+
+func (m *Manager) excludeDuplicate(fp *fingerprint.Fingerprint, file *os.File) bool {
+	// excludeDuplicate return true if duplicate path is found with the same content and closes the duplicate.
+	// This can happen when files are being rotated with copy/truncate strategy. (After copy, prior to truncate.)
+	if r := m.tracker.GetCurrentFile(fp); r != nil {
+		m.set.Logger.Debug("Skipping duplicate file", zap.String("path", file.Name()))
+		// re-add the reader as Match() removes duplicates
+		m.tracker.Add(r)
+		if err := file.Close(); err != nil {
+			m.set.Logger.Debug("problem closing file", zap.Error(err))
+		}
+		return true
+	}
+	return false
 }
 
 func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.Fingerprint) (*reader.Reader, error) {
@@ -261,14 +315,9 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 		return r, nil
 	}
 
-	// If we don't match any previously known files, create a new reader from scratch
-	m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	r, err := m.readerFactory.NewReader(file, fp)
-	if err != nil {
-		return nil, err
-	}
-	m.telemetryBuilder.FileconsumerOpenFiles.Add(ctx, 1)
-	return r, nil
+	// the file is not found in tracker.
+	// we'll create readers for such files after matching against the archive, in processUnmatchedFiles()
+	return nil, nil
 }
 
 func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
