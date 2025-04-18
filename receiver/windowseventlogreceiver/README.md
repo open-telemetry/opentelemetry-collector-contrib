@@ -35,6 +35,7 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 | `retry_on_failure.max_interval`     | `30 seconds` | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                           |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`  | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                  |
 | `remote`                              | object       | Remote configuration for connecting to a remote machine to collect logs. Includes server (the address of the remote server), with username, password, and optional domain.                                                    |
+| `query`                             | none         | XML query used for filtering events. See [Query Schema](https://learn.microsoft.com/en-us/windows/win32/wes/queryschema-schema)                                                                                                                |
 
 ### Operators
 
@@ -110,4 +111,22 @@ receivers:
             username: "user"
             password: "password"
             domain:   "domain"
+```
+
+#### XML Queries
+
+You can use XML queries to filter events. The query is passed to the `query` field in the configuration. The provided query must be a valid XML string. See [XML Event Queries](https://learn.microsoft.com/en-us/previous-versions/aa385231(v=vs.85)#xml-event-queries)
+
+The following example only forwards logs from the `Application` from `foo` or `bar` providers.
+
+```yaml
+receivers:
+  windowseventlog/query:
+    query: |
+      <QueryList>
+        <Query Id="0">
+          <Select Path="Application">*[System[Provider[@Name='foo']]]</Select>
+          <Select Path="Application">*[System[Provider[@Name='bar']]]</Select>
+        </Query>
+      </QueryList>
 ```

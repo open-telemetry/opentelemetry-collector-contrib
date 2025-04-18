@@ -20,13 +20,14 @@ type Subscription struct {
 	startAt       string
 	sessionHandle uintptr
 	channel       string
+	query         *string
 	bookmark      Bookmark
 }
 
 // Open will open the subscription handle.
 // It returns an error if the subscription handle is already open or if any step in the process fails.
 // If the remote server is not reachable, it returns an error indicating the failure.
-func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, bookmark Bookmark) error {
+func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel string, query *string, bookmark Bookmark) error {
 	if s.handle != 0 {
 		return errors.New("subscription handle is already open")
 	}
@@ -39,13 +40,24 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 		_ = windows.CloseHandle(signalEvent)
 	}()
 
+	if channel != "" && query != nil {
+		return errors.New("can not supply both query and channel")
+	}
+
 	channelPtr, err := syscall.UTF16PtrFromString(channel)
 	if err != nil {
 		return fmt.Errorf("failed to convert channel to utf16: %w", err)
 	}
 
+	var queryPtr *uint16
+	if query != nil {
+		if queryPtr, err = syscall.UTF16PtrFromString(*query); err != nil {
+			return fmt.Errorf("failed to convert XML query to utf16: %w", err)
+		}
+	}
+
 	flags := s.createFlags(startAt, bookmark)
-	subscriptionHandle, err := evtSubscribeFunc(sessionHandle, signalEvent, channelPtr, nil, bookmark.handle, 0, 0, flags)
+	subscriptionHandle, err := evtSubscribeFunc(sessionHandle, signalEvent, channelPtr, queryPtr, bookmark.handle, 0, 0, flags)
 	if err != nil {
 		return fmt.Errorf("failed to subscribe to %s channel: %w", channel, err)
 	}
@@ -55,6 +67,7 @@ func (s *Subscription) Open(startAt string, sessionHandle uintptr, channel strin
 	s.sessionHandle = sessionHandle
 	s.channel = channel
 	s.bookmark = bookmark
+	s.query = query
 	return nil
 }
 
@@ -109,7 +122,7 @@ func (s *Subscription) readWithRetry(maxReads int) ([]Event, int, error) {
 		}
 
 		// reopen subscription with the same parameters
-		if openErr := s.Open(s.startAt, s.sessionHandle, s.channel, s.bookmark); openErr != nil {
+		if openErr := s.Open(s.startAt, s.sessionHandle, s.channel, s.query, s.bookmark); openErr != nil {
 			return nil, maxReads, fmt.Errorf("failed to reopen subscription during recovery: %w", openErr)
 		}
 
