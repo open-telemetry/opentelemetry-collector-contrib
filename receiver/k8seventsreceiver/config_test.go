@@ -39,6 +39,16 @@ func TestLoadConfig(t *testing.T) {
 				APIConfig: k8sconfig.APIConfig{
 					AuthType: k8sconfig.AuthTypeServiceAccount,
 				},
+				Extract: ExtractConfig{
+					Annotations: []FieldExtractConfig{
+						{TagName: "a1", Key: "annotation-one"},
+						{TagName: "a2", KeyRegex: "annotation-two"},
+					},
+					Labels: []FieldExtractConfig{
+						{TagName: "l1", Key: "label1"},
+						{TagName: "l2", KeyRegex: "label2"},
+					},
+				},
 			},
 		},
 	}

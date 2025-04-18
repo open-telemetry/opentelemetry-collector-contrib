@@ -40,3 +40,14 @@ func createLogsReceiver(
 
 	return newReceiver(params, rCfg, consumer)
 }
+
+func createReceiverOpts(cfg component.Config) []option {
+	oCfg := cfg.(*Config)
+	var opts []option
+
+	// extraction rules
+	opts = append(opts, withExtractLabels(oCfg.Extract.Labels...))
+	opts = append(opts, withExtractAnnotations(oCfg.Extract.Annotations...))
+
+	return opts
+}
