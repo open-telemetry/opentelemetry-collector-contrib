@@ -54,7 +54,7 @@ func TestRegionFromEnv(t *testing.T) {
 	cfg := aws.Config{
 		Region: region,
 	}
-	
+
 	f1 := setupMockConfig(cfg)
 	defer tearDownMock(f1)
 
@@ -66,7 +66,7 @@ func TestRegionFromEnv(t *testing.T) {
 	for i, entry := range logs {
 		t.Logf("Log entry %d: %s - Fields: %v", i, entry.Message, entry.Context)
 	}
-	
+
 	// Since we're using a mock, we'll just verify the region is set correctly
 	// and not worry about specific log messages that might be implementation-dependent
 	assert.Equal(t, region, awsCfg.Region, "region value should be set from environment variable")
@@ -76,33 +76,34 @@ func TestRegionFromEnv(t *testing.T) {
 func TestRegionFromConfig(t *testing.T) {
 	logger, recordedLogs := logSetup()
 
-	// Config 생성 및 설정
+	// Create and setup config
 	mockCfg := aws.Config{
 		Region: "ap-northeast-1",
 	}
-	
+
 	f1 := setupMockConfig(mockCfg)
 	defer tearDownMock(f1)
 
 	cfgWithRegion := DefaultConfig()
 	cfgWithRegion.Region = "ap-northeast-1"
 
-	// 테스트 대상 함수 호출
+	// Call function under test
 	awsCfg, err := getAWSConfig(cfgWithRegion, logger)
 	assert.NoError(t, err, "getAWSConfig should not error out")
 	assert.Equal(t, cfgWithRegion.Region, awsCfg.Region, "region value should match configuration")
 
-	// 로그 검증 - 로그에 항목이 있는지 확인
+	// Verify logs exist
 	logs := recordedLogs.All()
 	for i, entry := range logs {
 		t.Logf("Log entry %d: %s - Fields: %v", i, entry.Message, entry.Context)
 	}
-	
+
 	// Since we're using a mock, we'll just verify the region is set correctly
 	// and not worry about specific log messages that might be implementation-dependent
 	assert.Equal(t, cfgWithRegion.Region, awsCfg.Region, "region value should be set from config")
 }
 
+// TestRegionFromECS tests getting region from ECS metadata
 func TestRegionFromECS(t *testing.T) {
 	// Save original function and restore after test
 	originalFunc := getAWSConfig
@@ -121,6 +122,7 @@ func TestRegionFromECS(t *testing.T) {
 	assert.Equal(t, "us-west-50", awsCfg.Region, "should fetch region from ECS metadata")
 }
 
+// TestRegionFromECSInvalidArn tests handling invalid ARN in ECS metadata
 func TestRegionFromECSInvalidArn(t *testing.T) {
 	// Save original function and restore after test
 	originalFunc := getAWSConfig
@@ -138,42 +140,45 @@ func TestRegionFromECSInvalidArn(t *testing.T) {
 	assert.Contains(t, err.Error(), "could not fetch region")
 }
 
-// 테스트 - 프록시 URL 가져오기 테스트
+// TestGetProxyUrlProxyAddressNotValid tests handling invalid proxy URLs
 func TestGetProxyUrlProxyAddressNotValid(t *testing.T) {
 	errorAddress := [3]string{"http://[%10::1]", "http://%41:8080/", "http://a b.com/"}
 	for _, address := range errorAddress {
 		_, err := getProxyURL(address)
-		assert.Error(t, err, "expected error")
+		assert.Error(t, err, "expected error with invalid proxy address")
 	}
 }
 
-// 테스트 - 환경 변수에서 프록시 주소 가져오기
+// TestGetProxyAddressFromEnvVariable tests getting proxy from environment variable
 func TestGetProxyAddressFromEnvVariable(t *testing.T) {
 	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
 
-	assert.Equal(t, os.Getenv(httpsProxyEnvVar), getProxyAddress(""), "Expect function return value should be same with Environment value")
+	assert.Equal(t, os.Getenv(httpsProxyEnvVar), getProxyAddress(""),
+		"Function should return env variable value when no address provided")
 }
 
-// 테스트 - 설정에서 프록시 주소 가져오기
+// TestGetProxyAddressFromConfigFile tests getting proxy from config
 func TestGetProxyAddressFromConfigFile(t *testing.T) {
 	const expectedAddr = "https://127.0.0.1:8888"
 
-	assert.Equal(t, expectedAddr, getProxyAddress("https://127.0.0.1:8888"), "Expect function return value should be same with input value")
+	assert.Equal(t, expectedAddr, getProxyAddress(expectedAddr),
+		"Function should return input value when address is provided")
 }
 
-// 테스트 - 프록시 주소가 없는 경우
+// TestGetProxyAddressWhenNotExist tests behavior when no proxy is configured
 func TestGetProxyAddressWhenNotExist(t *testing.T) {
-	assert.Empty(t, getProxyAddress(""), "Expect function return value to be empty")
+	assert.Empty(t, getProxyAddress(""), "Function should return empty string when no proxy is configured")
 }
 
-// 테스트 - 프록시 주소 우선순위
+// TestGetProxyAddressPriority tests proxy source priority
 func TestGetProxyAddressPriority(t *testing.T) {
 	t.Setenv(httpsProxyEnvVar, "https://127.0.0.1:8888")
 
-	assert.Equal(t, "https://127.0.0.1:9999", getProxyAddress("https://127.0.0.1:9999"), "Expect function return value to be same with input")
+	assert.Equal(t, "https://127.0.0.1:9999", getProxyAddress("https://127.0.0.1:9999"),
+		"Explicitly provided address should take precedence over env var")
 }
 
-// 테스트 - 프록시 서버 전송 설정
+// TestProxyServerTransportInvalidProxyAddr tests handling invalid proxy address in transport config
 func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
 	_, err := proxyServerTransport(&Config{
 		ProxyAddress: "invalid\n",
@@ -182,14 +187,15 @@ func TestProxyServerTransportInvalidProxyAddr(t *testing.T) {
 	assert.Contains(t, err.Error(), "failed to parse proxy URL")
 }
 
-// 테스트 - 프록시 서버 전송 설정 (성공 케이스)
+// TestProxyServerTransportHappyCase tests successful proxy transport configuration
 func TestProxyServerTransportHappyCase(t *testing.T) {
 	_, err := proxyServerTransport(&Config{
 		ProxyAddress: "",
 	})
-	assert.NoError(t, err, "no expected error")
+	assert.NoError(t, err, "should successfully create transport with no proxy")
 }
 
+// TestNoRegion tests behavior when no region is available
 func TestNoRegion(t *testing.T) {
 	// Save original function and restore after test
 	originalFunc := getAWSConfig
@@ -207,13 +213,14 @@ func TestNoRegion(t *testing.T) {
 	assert.Contains(t, err.Error(), "could not fetch region")
 }
 
-// 테스트 - ECS 메타데이터 없음
+// TestNoECSMetadata tests behavior when ECS metadata is not available
 func TestNoECSMetadata(t *testing.T) {
 	_, err := getRegionFromECSMetadata()
-	assert.EqualError(t, err, "ECS metadata endpoint is inaccessible", "expected error")
+	assert.EqualError(t, err, "ECS metadata endpoint is inaccessible",
+		"should return specific error when ECS metadata is not available")
 }
 
-// 테스트 - 잘못된 ECS 메타데이터 
+// TestInvalidECSMetadata tests handling invalid ECS metadata content
 func TestInvalidECSMetadata(t *testing.T) {
 	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
 	t.Setenv(ecsMetadataFileEnvVar, "testdata/ecsmetadatafileinvalid.txt")
@@ -223,7 +230,7 @@ func TestInvalidECSMetadata(t *testing.T) {
 	assert.Contains(t, err.Error(), "invalid json in read ECS metadata file content")
 }
 
-// 테스트 - ECS 메타데이터 파일 누락
+// TestMissingECSMetadataFile tests handling missing ECS metadata file
 func TestMissingECSMetadataFile(t *testing.T) {
 	t.Setenv(ecsContainerMetadataEnabledEnvVar, "true")
 	t.Setenv(ecsMetadataFileEnvVar, "testdata/doesntExist.txt")
@@ -233,29 +240,29 @@ func TestMissingECSMetadataFile(t *testing.T) {
 	assert.Contains(t, err.Error(), "unable to open ECS metadata file")
 }
 
-// AWS Config 생성 테스트 (SDK v2)
+// TestNewAWSConfig tests AWS config creation with and without role assumption
 func TestNewAWSConfig(t *testing.T) {
 	logger := zap.NewNop()
-	
-	// 이 테스트에서는 실제로 LoadDefaultConfig를 호출하지 않고
-	// AWS SDK v2 호환 테스트 코드를 작성합니다
-	
-	// RoleARN 없는 케이스 테스트 - newAWSConfig 함수를 직접 사용하는 대신 모킹합니다
+
+	// Test without mocking the actual LoadDefaultConfig call
+	// by replacing newAWSConfig with a mock implementation
+
 	originalNewAWSConfig := newAWSConfig
 	defer func() {
 		newAWSConfig = originalNewAWSConfig
 	}()
-	
+
 	mockCfg := aws.Config{Region: "test-region"}
 	newAWSConfig = func(_, _ string, _ *zap.Logger) (aws.Config, error) {
 		return mockCfg, nil
 	}
-	
+
+	// Test without role ARN
 	cfg, err := newAWSConfig("", "test-region", logger)
 	assert.NoError(t, err)
 	assert.Equal(t, "test-region", cfg.Region)
-	
-	// RoleARN 있는 케이스 테스트 (여기서는 단순화를 위해 동일한 mock 사용)
+
+	// Test with role ARN
 	cfg, err = newAWSConfig("test-role-arn", "test-region", logger)
 	assert.NoError(t, err)
 	assert.Equal(t, "test-region", cfg.Region)
