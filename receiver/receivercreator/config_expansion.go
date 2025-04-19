@@ -42,8 +42,14 @@ func evalBackticksInConfigValue(configValue string, env observer.EndpointEnv) (a
 			if i+1 == len(configValue) {
 				return nil, errors.New(`encountered escape (\) without value at end of expression`)
 			}
-			output.WriteByte(configValue[i+1])
-			i++
+			if configValue[i+1] != '`' {
+				if exprStartIndex == -1 {
+					output.WriteByte(configValue[i])
+				}
+			} else {
+				output.WriteByte(configValue[i+1])
+				i++
+			}
 		case '`':
 			if exprStartIndex == -1 {
 				// Opening backtick encountered, expression starts one after current index.

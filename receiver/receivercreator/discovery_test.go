@@ -622,6 +622,14 @@ operators:
   id: container-parser
 - type: regex_parser
   regex: "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"`
+	configRegex := `
+include_file_name: true
+max_log_size: "2MiB"
+operators:
+- type: container
+  id: container-parser
+- type: regex_parser
+  regex: ^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`
 	tests := map[string]struct {
 		hintsAnn        map[string]string
 		expectedConf    userConfigMap
@@ -638,6 +646,19 @@ operators:
 				"operators": []any{
 					map[string]any{"id": "container-parser", "type": "container"},
 					map[string]any{"type": "regex_parser", "regex": "^(?P<time>\\d{4}-\\d{2}-\\d{2} \\d{2}:\\d{2}:\\d{2}) (?P<sev>[A-Z]*) (?P<msg>.*)$"},
+				},
+			}, defaultEndpoint: "1.2.3.4:8080",
+		}, "config_annotation_case": {
+			hintsAnn: map[string]string{
+				"io.opentelemetry.discovery.logs/config": configRegex,
+			}, expectedConf: userConfigMap{
+				"include":           []string{"/var/log/pods/my-ns_my-pod_my-uid/my-container/*.log"},
+				"include_file_name": true,
+				"include_file_path": true,
+				"max_log_size":      "2MiB",
+				"operators": []any{
+					map[string]any{"id": "container-parser", "type": "container"},
+					map[string]any{"type": "regex_parser", "regex": `^(?P<source_ip>\d+\.\d+.\d+\.\d+)\s+-\s+-\s+\[(?P<timestamp_log>\d+/\w+/\d+:\d+:\d+:\d+\s+\+\d+)\]\s"(?P<http_method>\w+)\s+(?P<http_path>.*)\s+(?P<http_version>.*)"\s+(?P<http_code>\d+)\s+(?P<http_size>\d+)$`},
 				},
 			}, defaultEndpoint: "1.2.3.4:8080",
 		},
