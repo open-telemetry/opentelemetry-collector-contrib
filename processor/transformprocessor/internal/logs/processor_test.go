@@ -448,6 +448,61 @@ func Test_ProcessLogs_LogContext(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_LogContextBodyMapReplaceKey(t *testing.T) {
+	tests := []struct {
+		statement string
+		input     plog.Logs
+		want      plog.Logs
+	}{
+		{
+			statement: `set(body["test"], "pass")`,
+			input: func() plog.Logs {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap().PutStr("test", "fail")
+				return ld
+			}(),
+			want: func() plog.Logs {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap().PutStr("test", "pass")
+				return ld
+			}(),
+		},
+		{
+			statement: `set(body["key_2"], "val_2")`,
+			input: func() plog.Logs {
+				ld := plog.NewLogs()
+				ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap().PutStr("key", "val")
+				return ld
+			}(),
+			want: func() plog.Logs {
+				ld := plog.NewLogs()
+				bm := ld.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetEmptyMap()
+				bm.PutStr("key", "val")
+				bm.PutStr("key_2", "val_2")
+				return ld
+			}(),
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.statement, func(t *testing.T) {
+			jm := plog.JSONMarshaler{}
+			js, err := jm.MarshalLogs(tt.input)
+			require.NoError(t, err)
+			t.Log(string(js))
+			processor, err := NewProcessor([]common.ContextStatements{{Context: "log", Statements: []string{tt.statement}}}, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			require.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), tt.input)
+			require.NoError(t, err)
+
+			js, err = jm.MarshalLogs(tt.input)
+			require.NoError(t, err)
+			t.Log(string(js))
+			assert.Equal(t, tt.want, tt.input)
+		})
+	}
+}
+
 func Test_ProcessLogs_InferredLogContext(t *testing.T) {
 	tests := []struct {
 		statement string
