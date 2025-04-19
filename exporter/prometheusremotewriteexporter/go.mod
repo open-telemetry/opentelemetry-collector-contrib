@@ -10,7 +10,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.124.1
-	github.com/prometheus/prometheus v0.300.1
+	github.com/prometheus/prometheus v0.303.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/wal v1.1.8
 	go.opentelemetry.io/collector/component v1.30.0
@@ -91,7 +91,7 @@ require (
 	golang.org/x/net v0.39.0 // indirect
 	golang.org/x/sys v0.32.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20250115164207-1a7da9e5054f // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e // indirect
 	google.golang.org/grpc v1.71.1 // indirect
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
