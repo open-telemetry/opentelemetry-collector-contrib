@@ -278,6 +278,14 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.slots_assigned
+
+Number of slots which are associated to some node
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {slots} | Gauge | Int |
+
 ### redis.cmd.calls
 
 Total number of calls for a command
