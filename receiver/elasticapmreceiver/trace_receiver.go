@@ -207,14 +207,6 @@ func (r *elasticapmReceiver) handleTraces(w http.ResponseWriter, req *http.Reque
 			translator.ConvertTransaction(event, spans.AppendEmpty())
 		case modelpb.SpanEventType:
 			translator.ConvertSpan(event, spans.AppendEmpty())
-		case modelpb.ErrorEventType:
-			fmt.Println("Ignoring error")
-		case modelpb.MetricEventType:
-			fmt.Println("Ignoring metricset")
-		case modelpb.LogEventType:
-			fmt.Println("Ignoring log")
-		default:
-			fmt.Println("Unknown event type")
 		}
 	}
 
