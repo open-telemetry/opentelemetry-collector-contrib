@@ -114,7 +114,6 @@ require (
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/googleapis/enterprise-certificate-proxy v0.3.5 // indirect
 	github.com/googleapis/gax-go/v2 v2.14.1 // indirect
-	github.com/gophercloud/gophercloud v1.14.1 // indirect
 	github.com/gophercloud/gophercloud/v2 v2.6.0 // indirect
 	github.com/gorilla/websocket v1.5.0 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 // indirect
@@ -132,7 +131,6 @@ require (
 	github.com/hashicorp/nomad/api v0.0.0-20241218080744-e3ac00f30eec // indirect
 	github.com/hashicorp/serf v0.10.1 // indirect
 	github.com/hetznercloud/hcloud-go/v2 v2.19.1 // indirect
-	github.com/imdario/mergo v0.3.16 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect
 	github.com/ionos-cloud/sdk-go/v6 v6.3.2 // indirect
 	github.com/jmespath/go-jmespath v0.4.0 // indirect
@@ -180,7 +178,6 @@ require (
 	github.com/prometheus/alertmanager v0.28.0 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/common/assets v0.2.0 // indirect
-	github.com/prometheus/common/sigv4 v0.1.0 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
 	github.com/prometheus/sigv4 v0.1.2 // indirect
 	github.com/rs/cors v1.11.1 // indirect
