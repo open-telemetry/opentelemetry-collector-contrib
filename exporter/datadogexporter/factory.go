@@ -36,6 +36,7 @@ import (
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry"
@@ -63,7 +64,7 @@ var noAPMStatsFeatureGate = featuregate.GlobalRegistry().MustRegister(
 
 var metricExportSerializerClientFeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.datadogexporter.metricexportserializerclient",
-	featuregate.StageAlpha,
+	featuregate.StageBeta,
 	featuregate.WithRegisterDescription("When enabled, metric export in datadogexporter uses the serializer exporter from the Datadog Agent."),
 )
 
@@ -82,11 +83,17 @@ func isMetricExportSerializerEnabled() bool {
 
 // enableNativeMetricExport switches metric export to call native Datadog APIs instead of Zorkian APIs.
 func enableNativeMetricExport() error {
+	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
+		return err
+	}
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), true)
 }
 
 // enableZorkianMetricExport switches metric export to call Zorkian APIs instead of native Datadog APIs.
 func enableZorkianMetricExport() error {
+	if err := featuregate.GlobalRegistry().Set(metricExportSerializerClientFeatureGate.ID(), false); err != nil {
+		return err
+	}
 	return featuregate.GlobalRegistry().Set(metricExportNativeClientFeatureGate.ID(), false)
 }
 
@@ -163,7 +170,7 @@ func (f *factory) StopReporter() {
 	})
 }
 
-func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
+func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
 	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
 	if err != nil {
 		return nil, err
@@ -205,10 +212,10 @@ func (f *factory) createDefaultConfig() component.Config {
 
 // checkAndCastConfig checks the configuration type and its warnings, and casts it to
 // the Datadog Config struct.
-func checkAndCastConfig(c component.Config, logger *zap.Logger) *Config {
-	cfg, ok := c.(*Config)
+func checkAndCastConfig(c component.Config, logger *zap.Logger) *datadogconfig.Config {
+	cfg, ok := c.(*datadogconfig.Config)
 	if !ok {
-		panic("programming error: config structure is not of type *datadogexporter.Config")
+		panic("programming error: config structure is not of type *datadogconfig.Config")
 	}
 	cfg.LogWarnings(logger)
 	return cfg
@@ -251,7 +258,7 @@ func (f *factory) createMetricsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Metrics, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 	hostProvider, err := f.SourceProvider(set.TelemetrySettings, cfg.Hostname, cfg.HostMetadata.GetSourceTimeout())
 	if err != nil {
 		return nil, fmt.Errorf("failed to build hostname provider: %w", err)
@@ -316,16 +323,33 @@ func (f *factory) createMetricsExporter(
 			return nil
 		}
 	case isMetricExportSerializerEnabled():
+		errchan := make(chan error)
+		apiClient := clientutil.CreateAPIClient(
+			set.BuildInfo,
+			cfg.Metrics.Endpoint,
+			cfg.ClientConfig)
+		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), set.Logger, apiClient) }()
+		if cfg.API.FailOnInvalidKey {
+			err = <-errchan
+			if err != nil {
+				cancel()  // first cancel context
+				wg.Wait() // then wait for shutdown
+				return nil, err
+			}
+		}
 		// Start the hostmetadata pusher once.
 		// It sends the hostmetadata for the host where the collector is running.
 		if cfg.HostMetadata.Enabled {
+			if cfg.HostMetadata.HostnameSource == datadogconfig.HostnameSourceFirstResource {
+				set.Logger.Warn("first_resource has no effect when serializer exporter is used for exporting metrics")
+			}
 			f.onceMetadata.Do(func() {
 				attrs := pcommon.NewMap()
 				go hostmetadata.RunPusher(ctx, set, pcfg, hostProvider, attrs, metadataReporter)
 			})
 		}
 		set.Logger.Info("Using Datadog serializerexporter for metric export")
-		sf := serializerexporter.NewFactoryWithType(metadata.Type.String())
+		sf := serializerexporter.NewFactoryForOSSExporter(metadata.Type, statsIn)
 		ex := &serializerexporter.ExporterConfig{
 			Metrics: serializerexporter.MetricsConfig{
 				Metrics: cfg.Metrics,
@@ -401,7 +425,7 @@ func (f *factory) createTracesExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Traces, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 	if noAPMStatsFeatureGate.IsEnabled() {
 		set.Logger.Info(
 			"Trace metrics are now disabled in the Datadog Exporter by default. To continue receiving Trace Metrics, configure the Datadog Connector or disable the feature gate.",
@@ -503,7 +527,7 @@ func (f *factory) createLogsExporter(
 	set exporter.Settings,
 	c component.Config,
 ) (exporter.Logs, error) {
-	cfg := checkAndCastConfig(c, set.TelemetrySettings.Logger)
+	cfg := checkAndCastConfig(c, set.Logger)
 
 	if cfg.Logs.DumpPayloads && isLogsAgentExporterEnabled() {
 		set.Logger.Warn("logs::dump_payloads is not valid when the exporter.datadogexporter.UseLogsAgentExporter feature gate is enabled")

@@ -153,13 +153,13 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 4, mpe1.EvaluationCount)
+	require.Equal(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -450,7 +450,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIDs {
 		trace := findTrace(t, receivedTraces, traceID)
-		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIDs[i]
 		got := collectSpanIDs(trace)
@@ -464,7 +464,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			return a < b
 		})
 
-		require.EqualValues(t, expected, got)
+		require.Equal(t, expected, got)
 	}
 }
 

@@ -44,10 +44,11 @@ func TestLoadConfig(t *testing.T) {
 				LogStreamName:      "testing",
 				Endpoint:           "",
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 			},
 		},
@@ -65,10 +66,11 @@ func TestLoadConfig(t *testing.T) {
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
 				LogGroupName:       "test-2",
 				LogStreamName:      "testing",
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    2,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 			},
 		},
@@ -119,7 +121,7 @@ func TestRetentionValidateCorrect(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       365,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:      true,
 			NumConsumers: 1,
 			QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -137,7 +139,7 @@ func TestRetentionValidateWrong(t *testing.T) {
 		Endpoint:           "",
 		LogRetention:       366,
 		AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-		QueueSettings: exporterhelper.QueueConfig{
+		QueueSettings: exporterhelper.QueueBatchConfig{
 			Enabled:   true,
 			QueueSize: exporterhelper.NewDefaultQueueConfig().QueueSize,
 		},
@@ -220,7 +222,7 @@ func TestValidateTags(t *testing.T) {
 				Endpoint:           "",
 				Tags:               tt.tags,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,

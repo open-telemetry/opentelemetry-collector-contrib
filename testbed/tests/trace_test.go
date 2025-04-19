@@ -316,7 +316,7 @@ func verifySingleSpan(
 			}
 		}
 	}
-	assert.EqualValues(t, 1, count, "must receive one span")
+	assert.Equal(t, 1, count, "must receive one span")
 }
 
 func TestTraceAttributesProcessor(t *testing.T) {
@@ -399,7 +399,7 @@ func TestTraceAttributesProcessor(t *testing.T) {
 				require.Equal(t, 1, span.Attributes().Len())
 				attrVal, ok := span.Attributes().Get("new_attr")
 				assert.True(t, ok)
-				assert.EqualValues(t, "string value", attrVal.Str())
+				assert.Equal(t, "string value", attrVal.Str())
 			}
 
 			verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)
@@ -493,7 +493,7 @@ func TestTraceAttributesProcessorJaegerGRPC(t *testing.T) {
 		require.Equal(t, 1, span.Attributes().Len())
 		attrVal, ok := span.Attributes().Get("new_attr")
 		assert.True(t, ok)
-		assert.EqualValues(t, "string value", attrVal.Str())
+		assert.Equal(t, "string value", attrVal.Str())
 	}
 
 	verifySingleSpan(t, tc, nodeToInclude, spanToInclude, verifySpan)

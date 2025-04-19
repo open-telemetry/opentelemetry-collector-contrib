@@ -64,18 +64,19 @@ func TestLoadConfig(t *testing.T) {
 					},
 				},
 			},
-			QueueSettings: exporterhelper.QueueConfig{
+			QueueSettings: exporterhelper.QueueBatchConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
 			},
 		},
 		sanitize(cfg.(*Config)))
 }
 
 func sanitize(cfg *Config) *Config {
-	cfg.Config.MetricConfig.MapMonitoredResource = nil
-	cfg.Config.LogConfig.MapMonitoredResource = nil
-	cfg.Config.MetricConfig.GetMetricName = nil
+	cfg.MetricConfig.MapMonitoredResource = nil
+	cfg.LogConfig.MapMonitoredResource = nil
+	cfg.MetricConfig.GetMetricName = nil
 	return cfg
 }

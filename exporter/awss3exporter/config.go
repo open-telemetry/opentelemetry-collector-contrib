@@ -53,10 +53,10 @@ const (
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings   exporterhelper.QueueConfig   `mapstructure:"sending_queue"`
-	TimeoutSettings exporterhelper.TimeoutConfig `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
-	S3Uploader      S3UploaderConfig             `mapstructure:"s3uploader"`
-	MarshalerName   MarshalerType                `mapstructure:"marshaler"`
+	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID `mapstructure:"encoding"`
@@ -95,7 +95,7 @@ func (c *Config) Validate() error {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
 	}
 
-	if !validACLs[c.S3Uploader.ACL] {
+	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
 		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 

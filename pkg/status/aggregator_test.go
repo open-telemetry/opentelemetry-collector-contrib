@@ -458,7 +458,7 @@ func assertEventsMatch(
 	expectedStatus componentstatus.Status,
 	statuses ...*status.AggregateStatus,
 ) {
-	err0 := statuses[0].Event.Err()
+	err0 := statuses[0].Err()
 	for _, st := range statuses {
 		ev := st.Event
 		assert.Equal(t, expectedStatus, ev.Status())

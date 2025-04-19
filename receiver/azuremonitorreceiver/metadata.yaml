@@ -15,6 +15,9 @@ resource_attributes:
   azuremonitor.subscription_id:
     description: Azure subscription ID
     type: string
+  azuremonitor.subscription:
+    description: Azure subscription name
+    type: string
 
 tests:
   config:

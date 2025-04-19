@@ -234,7 +234,7 @@ func TestTaskExporter(t *testing.T) {
 
 		zCore, logs := observer.New(zap.ErrorLevel)
 		printErrors(zap.New(zCore), err)
-		assert.Equal(t, len(merr), len(logs.All()))
+		assert.Len(t, logs.All(), len(merr))
 
 		taskScope := logs.FilterField(zap.String("ErrScope", "taskAnnotated"))
 		assert.Equal(t, 1, taskScope.Len())

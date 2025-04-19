@@ -1,18 +1,22 @@
 resourceLogs:
   - resource:
-      attributes: []
+      attributes:
+      - key: sqlserver.computer.name
+        value:
+          stringValue: DESKTOP-GHAEGRD
+      - key: sqlserver.instance.name
+        value:
+          stringValue: sqlserver
+      - key: host.name
+        value:
+          stringValue: "0.0.0.0"
     scopeLogs:
       - logRecords:
           - attributes:
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
-              - key: computer_name
-                value:
-                  stringValue: DESKTOP-GHAEGRD
-              - key: sql_instance
-                value:
-                  stringValue: sqlserver
+
               - key: server.address
                 value:
                   stringValue: 0.0.0.0
@@ -27,7 +31,7 @@ resourceLogs:
                   stringValue: "307844333131323930393432394131423530"
               - key: sqlserver.total_elapsed_time
                 value:
-                  intValue: "2"
+                  doubleValue: "0.003"
               - key: sqlserver.total_rows
                 value:
                   intValue: "1"
@@ -45,7 +49,7 @@ resourceLogs:
                   intValue: "5"
               - key: sqlserver.total_worker_time
                 value:
-                  intValue: "2"
+                  doubleValue: "0.003"
               - key: sqlserver.total_grant_kb
                 value:
                   intValue: "3095"
@@ -59,6 +63,7 @@ resourceLogs:
             spanId: ""
             timeUnixNano: "1739690452135336000"
             traceId: ""
+            eventName: "query event"
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
-          version: 0.0.1
+          version: latest

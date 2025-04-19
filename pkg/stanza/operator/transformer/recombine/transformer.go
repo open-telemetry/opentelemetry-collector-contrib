@@ -6,12 +6,12 @@ package recombine // import "github.com/open-telemetry/opentelemetry-collector-c
 import (
 	"bytes"
 	"context"
-	"errors"
 	"sync"
 	"time"
 
 	"github.com/expr-lang/expr"
 	"github.com/expr-lang/expr/vm"
+	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/entry"
@@ -196,14 +196,12 @@ func (t *Transformer) addToBatch(ctx context.Context, e *entry.Entry, source str
 
 // flushAllSources flushes all sources.
 func (t *Transformer) flushAllSources(ctx context.Context) {
-	var errs []error
+	var errs error
 	for source := range t.batchMap {
-		if err := t.flushSource(ctx, source); err != nil {
-			errs = append(errs, err)
-		}
+		errs = multierr.Append(errs, t.flushSource(ctx, source))
 	}
-	if len(errs) > 0 {
-		t.Logger().Error("there was error flushing combined logs %s", zap.Error(errors.Join(errs...)))
+	if errs != nil {
+		t.Logger().Error("there was error flushing combined logs %s", zap.Error(errs))
 	}
 }
 
