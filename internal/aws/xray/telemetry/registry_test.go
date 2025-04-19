@@ -21,7 +21,7 @@ func TestRegistry(t *testing.T) {
 			IncludeMetadata: false,
 			Contributors:    []component.ID{contribID},
 		},
-		&mockClient{},
+		&mockXRayClient{},
 	)
 	withSameID := r.Register(
 		newID,
@@ -29,7 +29,7 @@ func TestRegistry(t *testing.T) {
 			IncludeMetadata: true,
 			Contributors:    []component.ID{notCreatedID},
 		},
-		&mockClient{},
+		&mockXRayClient{},
 		WithResourceARN("arn"),
 	)
 	// still the same recorder

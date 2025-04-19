@@ -4,10 +4,10 @@
 package k8sclient
 
 import (
+	"encoding/json"
 	"log"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/awsutil"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	v1 "k8s.io/api/core/v1"
@@ -180,7 +180,10 @@ func TestPodClient_NamespaceToRunningPodNum(t *testing.T) {
 		"default":     7,
 	}
 	resultMap := client.NamespaceToRunningPodNum()
-	log.Printf("NamespaceToRunningPodNum (len=%v): %v", len(resultMap), awsutil.Prettify(resultMap))
+
+	prettyJSON, _ := json.MarshalIndent(resultMap, "", "  ")
+	log.Printf("NamespaceToRunningPodNum (len=%v): %s", len(resultMap), string(prettyJSON))
+
 	assert.Equal(t, expectedMap, resultMap)
 	client.shutdown()
 	assert.True(t, client.stopped)

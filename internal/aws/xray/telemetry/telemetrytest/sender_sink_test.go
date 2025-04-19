@@ -4,6 +4,7 @@
 package telemetrytest
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -11,7 +12,7 @@ import (
 
 func TestSink(t *testing.T) {
 	sink := NewSenderSink()
-	sink.Start()
+	sink.Start(context.Background())
 	sink.Stop()
 	assert.EqualValues(t, 1, sink.StartCount.Load())
 	assert.EqualValues(t, 1, sink.StopCount.Load())

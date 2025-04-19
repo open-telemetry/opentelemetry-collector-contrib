@@ -44,6 +44,16 @@ type Config struct {
 	// ServiceName determines which service the requests are sent to.
 	// will be default to `xray`. This is mandatory for SigV4
 	ServiceName string `mapstructure:"service_name"`
+
+	// MaxIdleConns controls the maximum number of idle connections
+	// in the connection pool
+	MaxIdleConns int `mapstructure:"max_idle_conns"`
+
+	// RequestTimeoutSeconds determines the timeout in seconds for requests
+	RequestTimeoutSeconds int `mapstructure:"request_timeout_seconds"`
+
+	// MaxRetries determines the maximum number of retries for requests
+	MaxRetries int `mapstructure:"max_retries"`
 }
 
 func DefaultConfig() *Config {
@@ -56,9 +66,12 @@ func DefaultConfig() *Config {
 			Insecure:   false,
 			ServerName: "",
 		},
-		Region:      "",
-		RoleARN:     "",
-		AWSEndpoint: "",
-		ServiceName: "xray",
+		Region:               "",
+		RoleARN:              "",
+		AWSEndpoint:          "",
+		ServiceName:          "xray",
+		MaxIdleConns:         8,
+		RequestTimeoutSeconds: 30,
+		MaxRetries:           2,
 	}
 }
