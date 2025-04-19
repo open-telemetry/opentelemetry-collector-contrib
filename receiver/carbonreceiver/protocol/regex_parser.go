@@ -168,10 +168,19 @@ func (rpp *regexPathParser) ParsePath(path string, parsedPath *ParsedPath) error
 			attributes := pcommon.NewMap()
 
 			for i := 1; i < len(ms); i++ {
-				if strings.HasPrefix(nms[i], metricNameCapturePrefix) {
-					metricNameLookup[nms[i]] = ms[i]
+				groupName, groupValue := nms[i], ms[i]
+				if groupName == "" {
+					// Skip unnamed groups.
+					continue
+				}
+				if groupValue == "" {
+					// Skip unmatched groups.
+					continue
+				}
+				if strings.HasPrefix(groupName, metricNameCapturePrefix) {
+					metricNameLookup[groupName] = groupValue
 				} else {
-					attributes.PutStr(nms[i][len(keyCapturePrefix):], ms[i])
+					attributes.PutStr(groupName[len(keyCapturePrefix):], groupValue)
 				}
 			}
 
