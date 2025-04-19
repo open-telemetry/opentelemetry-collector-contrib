@@ -47,6 +47,7 @@ The following settings can be optionally configured:
 - `min_fetch_size` (default = `1`): The minimum number of message bytes to fetch in a request, defaults to 1 byte.
 - `default_fetch_size` (default = `1048576`): The default number of message bytes to fetch in a request, defaults to 1MB.
 - `max_fetch_size` (default = `0`): The maximum number of message bytes to fetch in a request, defaults to unlimited.
+- `max_fetch_wait` (default = `250ms`): The maximum amount of time the broker should wait for `min_fetch_size` bytes to be available before returning anyway.
 - `tls`: see [TLS Configuration Settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md) for the full set of available options.
 - `auth`
   - `plain_text` (Deprecated in v0.123.0: use sasl with mechanism set to PLAIN instead.)
