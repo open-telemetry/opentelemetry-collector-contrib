@@ -311,6 +311,8 @@ type ResourceAttributesConfig struct {
 	GlusterfsPath                ResourceAttributeConfig `mapstructure:"glusterfs.path"`
 	K8sContainerName             ResourceAttributeConfig `mapstructure:"k8s.container.name"`
 	K8sNamespaceName             ResourceAttributeConfig `mapstructure:"k8s.namespace.name"`
+	K8sNodeAnnotations           ResourceAttributeConfig `mapstructure:"k8s.node.annotations"`
+	K8sNodeLabels                ResourceAttributeConfig `mapstructure:"k8s.node.labels"`
 	K8sNodeName                  ResourceAttributeConfig `mapstructure:"k8s.node.name"`
 	K8sPersistentvolumeclaimName ResourceAttributeConfig `mapstructure:"k8s.persistentvolumeclaim.name"`
 	K8sPodName                   ResourceAttributeConfig `mapstructure:"k8s.pod.name"`
@@ -345,6 +347,12 @@ func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 		},
 		K8sNamespaceName: ResourceAttributeConfig{
 			Enabled: true,
+		},
+		K8sNodeAnnotations: ResourceAttributeConfig{
+			Enabled: false,
+		},
+		K8sNodeLabels: ResourceAttributeConfig{
+			Enabled: false,
 		},
 		K8sNodeName: ResourceAttributeConfig{
 			Enabled: true,
