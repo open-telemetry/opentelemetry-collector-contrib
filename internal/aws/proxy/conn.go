@@ -41,8 +41,12 @@ const (
 
 var newAWSConfig = func(roleArn string, region string, log *zap.Logger) (aws.Config, error) {
 	ctx := context.Background()
+	options := []func(*config.LoadOptions) error{
+		config.WithRegion(region),
+	}
+
 	if roleArn == "" {
-		cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+		cfg, err := config.LoadDefaultConfig(ctx, options...)
 		if err != nil {
 			return aws.Config{}, err
 		}
@@ -50,7 +54,7 @@ var newAWSConfig = func(roleArn string, region string, log *zap.Logger) (aws.Con
 	}
 
 	// Create base config with default credentials
-	cfg, err := config.LoadDefaultConfig(ctx, config.WithRegion(region))
+	cfg, err := config.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return aws.Config{}, err
 	}
@@ -60,16 +64,14 @@ var newAWSConfig = func(roleArn string, region string, log *zap.Logger) (aws.Con
 
 	// Create STS credentials using AssumeRole
 	stsCreds := stscreds.NewAssumeRoleProvider(stsClient, roleArn)
-	
+
 	// Create new config with the STS credentials
-	cfgWithRole, err := config.LoadDefaultConfig(ctx,
-		config.WithRegion(region),
-		config.WithCredentialsProvider(stsCreds),
-	)
+	options = append(options, config.WithCredentialsProvider(stsCreds))
+	cfgWithRole, err := config.LoadDefaultConfig(ctx, options...)
 	if err != nil {
 		return aws.Config{}, fmt.Errorf("failed to create config with assumed role: %w", err)
 	}
-	
+
 	return cfgWithRole, nil
 }
 
@@ -174,18 +176,18 @@ var getRegionFromECSMetadata = func() (string, error) {
 			return "", fmt.Errorf("invalid json in read ECS metadata file content, path: %s, error: %w",
 				metadataFilePath, err)
 		}
-		
+
 		taskARNStr, ok := dat["TaskARN"].(string)
 		if !ok {
 			return "", errors.New("TaskARN not found in ECS metadata")
 		}
-		
+
 		// Parse ARN to get region
 		arnParts := strings.Split(taskARNStr, ":")
 		if len(arnParts) < 4 {
 			return "", fmt.Errorf("invalid ARN format: %s", taskARNStr)
 		}
-		
+
 		return arnParts[3], nil
 	}
 	return "", errors.New("ECS metadata endpoint is inaccessible")
