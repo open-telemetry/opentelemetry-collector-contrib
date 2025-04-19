@@ -71,7 +71,7 @@ type BaseConfig struct {
 	Encoding         string                  `mapstructure:"encoding,omitempty"`
 	SplitConfig      split.Config            `mapstructure:"multiline,omitempty"`
 	TrimConfig       trim.Config             `mapstructure:",squash"`
-	SplitFuncBuilder SplitFuncBuilder
+	SplitFuncBuilder SplitFuncBuilder        `mapstructure:"-"`
 }
 
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
