@@ -77,6 +77,7 @@ func TestURIs(t *testing.T) {
 		{"No bucket", "s3://s3.region.amazonaws.com/key", "", "", "", false},
 		{"No region", "s3://some-bucket.s3..amazonaws.com/key", "", "", "", false},
 		{"Test malformed uri", "s3://some-bucket.s3.us-west-2.amazonaws.com/key%", "", "", "", false},
+		{"Unsupported scheme", "https://google.com", "", "", "", false},
 		{"Valid bucket", "s3://bucket.name-here.s3.us-west-2.amazonaws.com/key", "bucket.name-here", "us-west-2", "key", true},
 	}
 
@@ -92,13 +93,6 @@ func TestURIs(t *testing.T) {
 			require.NoError(t, fp.Shutdown(context.Background()))
 		})
 	}
-}
-
-func TestUnsupportedScheme(t *testing.T) {
-	fp := newTestProvider("./testdata/otel-config.yaml")
-	_, err := fp.Retrieve(context.Background(), "https://google.com", nil)
-	assert.Error(t, err)
-	assert.NoError(t, fp.Shutdown(context.Background()))
 }
 
 func TestNonExistent(t *testing.T) {

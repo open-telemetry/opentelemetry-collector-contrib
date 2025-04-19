@@ -351,6 +351,7 @@ func (c *kafkaConsumer) Start(_ context.Context, host component.Host) error {
 	c.consumerGroup = consumerGroup
 
 	handler := &consumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		ready:             make(chan bool),
 		obsrecv:           obsrecv,
