@@ -130,22 +130,32 @@ type MongoDBAtlasClient struct {
 
 // NewMongoDBAtlasClient creates a new MongoDB Atlas client wrapper
 func NewMongoDBAtlasClient(
+	baseURL string,
 	publicKey string,
 	privateKey string,
 	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
-) *MongoDBAtlasClient {
+) (*MongoDBAtlasClient, error) {
 	defaultTransporter := http.DefaultTransport.(*http.Transport)
 	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
 	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}
-	client := mongodbatlas.NewClient(tc)
+
+	if baseURL == "" {
+		baseURL = mongodbatlas.CloudURL
+	}
+
+	client, err := mongodbatlas.New(tc, mongodbatlas.SetBaseURL(baseURL))
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client: %w", err)
+	}
+
 	return &MongoDBAtlasClient{
 		log,
 		client,
 		defaultTransporter,
 		roundTripper,
-	}
+	}, nil
 }
 
 func (s *MongoDBAtlasClient) Shutdown() error {

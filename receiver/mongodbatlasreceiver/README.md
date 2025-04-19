@@ -34,6 +34,7 @@ In order to collect access logs, the requesting API key needs the appropriate pe
 
 MongoDB Atlas [Documentation](https://www.mongodb.com/docs/atlas/reference/api/logs/#logs) recommends a polling interval of 5 minutes.
 
+- `base_url` (default https://cloud.mongodb.com/) set the base URL to connect to to Atlas Cloud
 - `public_key` (required for metrics, logs, or alerts in `poll` mode)
 - `private_key` (required for metrics, logs, or alerts in `poll` mode)
 - `granularity` (default `PT1M` - See [MongoDB Atlas Documentation](https://docs.atlas.mongodb.com/reference/api/process-measurements/))
