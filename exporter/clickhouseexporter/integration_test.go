@@ -26,19 +26,18 @@ func TestIntegration(t *testing.T) {
 		name  string
 		image string
 	}{
-		// TODO: Skipping due to https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32530
-		// {
-		//	name:  "test clickhouse 24-alpine",
-		//	image: "clickhouse/clickhouse-server:24-alpine",
-		// },
-		// {
-		//	name:  "test clickhouse 23-alpine",
-		//	image: "clickhouse/clickhouse-server:23-alpine",
-		// },
-		// {
-		//	name:  "test clickhouse 22-alpine",
-		//	image: "clickhouse/clickhouse-server:22-alpine",
-		// },
+		{
+			name:  "test clickhouse 24-alpine",
+			image: "clickhouse/clickhouse-server:24-alpine",
+		},
+		{
+			name:  "test clickhouse 23-alpine",
+			image: "clickhouse/clickhouse-server:23-alpine",
+		},
+		{
+			name:  "test clickhouse 22-alpine",
+			image: "clickhouse/clickhouse-server:22-alpine",
+		},
 	}
 
 	for _, c := range testCase {
@@ -91,7 +90,7 @@ func getContainer(t *testing.T, req testcontainers.ContainerRequest) testcontain
 
 func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 	mustPushLogsData(t, logExporter, simpleLogs(1))
-	db := sqlx.NewDb(logExporter.client, driverName)
+	db := sqlx.NewDb(logExporter.client, clickhouseDriverName)
 
 	type log struct {
 		Timestamp          string            `db:"Timestamp"`
@@ -145,7 +144,7 @@ func verifyExportLog(t *testing.T, logExporter *logsExporter) {
 
 func verifyExporterTrace(t *testing.T, traceExporter *tracesExporter) {
 	mustPushTracesData(t, traceExporter, simpleTraces(1))
-	db := sqlx.NewDb(traceExporter.client, driverName)
+	db := sqlx.NewDb(traceExporter.client, clickhouseDriverName)
 
 	type trace struct {
 		Timestamp          string              `db:"Timestamp"`
@@ -230,7 +229,7 @@ func verifyExporterMetric(t *testing.T, metricExporter *metricsExporter) {
 	simpleMetrics(1).ResourceMetrics().At(0).CopyTo(rm)
 
 	mustPushMetricsData(t, metricExporter, metric)
-	db := sqlx.NewDb(metricExporter.client, driverName)
+	db := sqlx.NewDb(metricExporter.client, clickhouseDriverName)
 
 	verifyGaugeMetric(t, db)
 	verifySumMetric(t, db)
@@ -301,7 +300,6 @@ func verifyGaugeMetric(t *testing.T, db *sqlx.DB) {
 		ExemplarsSpanID:   []string{"0102030000000000"},
 		ExemplarsValue:    []float64{54},
 	}
-
 	err := db.Get(&actualGauge, "select * from default.otel_metrics_gauge")
 	require.NoError(t, err)
 	require.Equal(t, expectGauge, actualGauge)

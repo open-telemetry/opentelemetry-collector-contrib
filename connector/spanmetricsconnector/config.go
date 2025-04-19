@@ -86,6 +86,8 @@ type Config struct {
 
 	// Events defines the configuration for events section of spans.
 	Events EventsConfig `mapstructure:"events"`
+
+	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
 }
 
 type HistogramConfig struct {
@@ -197,7 +199,7 @@ func validateEventDimensions(enabled bool, dimensions []Dimension) error {
 		return nil
 	}
 	if len(dimensions) == 0 {
-		return fmt.Errorf("no dimensions configured for events")
+		return errors.New("no dimensions configured for events")
 	}
 	return validateDimensions(dimensions)
 }

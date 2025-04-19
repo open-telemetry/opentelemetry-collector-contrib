@@ -94,7 +94,7 @@ func (e *logsExporter) pushLogs(ctx context.Context, ld plog.Logs) error {
 	}
 
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedLogRecords() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedLogRecords() != 0 {
 		e.settings.Logger.Error("Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_log_records", partialSuccess.RejectedLogRecords()),

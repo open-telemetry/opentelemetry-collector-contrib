@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
 	"strconv"
@@ -36,7 +37,7 @@ func createFlattenFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) 
 	args, ok := oArgs.(*FlattenArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("FlattenFactory args must be of type *FlattenArguments[K]")
+		return nil, errors.New("FlattenFactory args must be of type *FlattenArguments[K]")
 	}
 
 	return flatten(args.Target, args.Prefix, args.Depth, args.ResolveConflicts)
@@ -88,9 +89,9 @@ func (f *flattenData) flattenMap(m pcommon.Map, prefix string, currentDepth int6
 	if len(prefix) > 0 {
 		prefix += "."
 	}
-	m.Range(func(k string, v pcommon.Value) bool {
-		return f.flattenValue(k, v, currentDepth, prefix)
-	})
+	for k, v := range m.All() {
+		f.flattenValue(k, v, currentDepth, prefix)
+	}
 }
 
 func (f *flattenData) flattenSlice(s pcommon.Slice, prefix string, currentDepth int64) {
@@ -99,7 +100,7 @@ func (f *flattenData) flattenSlice(s pcommon.Slice, prefix string, currentDepth 
 	}
 }
 
-func (f *flattenData) flattenValue(k string, v pcommon.Value, currentDepth int64, prefix string) bool {
+func (f *flattenData) flattenValue(k string, v pcommon.Value, currentDepth int64, prefix string) {
 	switch {
 	case v.Type() == pcommon.ValueTypeMap && currentDepth < f.maxDepth:
 		f.flattenMap(v.Map(), prefix+k, currentDepth+1)
@@ -127,7 +128,6 @@ func (f *flattenData) flattenValue(k string, v pcommon.Value, currentDepth int64
 			v.CopyTo(f.result.PutEmpty(key))
 		}
 	}
-	return true
 }
 
 func (f *flattenData) handleConflict(key string, v pcommon.Value) {

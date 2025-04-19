@@ -11,7 +11,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/splunkhecexporter/internal/metadata"
@@ -25,7 +25,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 
 func TestCreateMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -35,7 +35,7 @@ func TestCreateMetrics(t *testing.T) {
 
 func TestCreateTraces(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -45,7 +45,7 @@ func TestCreateTraces(t *testing.T) {
 
 func TestCreateLogs(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -57,7 +57,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	factory := NewFactory()
 
 	cfg := factory.CreateDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = "https://example.com:8088/services/collector"
+	cfg.Endpoint = "https://example.com:8088/services/collector"
 	cfg.Token = "1234-1234"
 	params := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(
@@ -68,7 +68,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	// Set values that don't have a valid default.
 	cfg.Token = "testToken"
-	cfg.ClientConfig.Endpoint = "https://example.com"
+	cfg.Endpoint = "https://example.com"
 	exp, err = factory.CreateMetrics(
 		context.Background(), params,
 		cfg)
@@ -111,7 +111,7 @@ func TestFactory_EnabledBatchingMakesExporterMutable(t *testing.T) {
 	require.NoError(t, err)
 	assert.False(t, le.Capabilities().MutatesData)
 
-	config.BatcherConfig = exporterbatcher.NewDefaultConfig()
+	config.BatcherConfig = exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 
 	me, err = createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)

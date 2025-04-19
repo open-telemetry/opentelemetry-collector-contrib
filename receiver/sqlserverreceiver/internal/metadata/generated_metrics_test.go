@@ -62,14 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.resAttrsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.address`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.resAttrsSet == testDataSetDefault {
-				assert.Equal(t, "[WARNING] Please set `enabled` field explicitly for `server.port`: This attribute will be enabled by default starting in release v0.121.0.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -321,7 +313,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("database.status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "online", attrVal.Str())
+					assert.Equal(t, "online", attrVal.Str())
 				case "sqlserver.database.execution.errors":
 					assert.False(t, validatedMetrics["sqlserver.database.execution.errors"], "Found a duplicate in the metrics slice: sqlserver.database.execution.errors")
 					validatedMetrics["sqlserver.database.execution.errors"] = true
@@ -344,8 +336,8 @@ func TestMetricsBuilder(t *testing.T) {
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "sqlserver.database.io":
 					assert.False(t, validatedMetrics["sqlserver.database.io"], "Found a duplicate in the metrics slice: sqlserver.database.io")
 					validatedMetrics["sqlserver.database.io"] = true
@@ -362,16 +354,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("physical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "physical_filename-val", attrVal.Str())
+					assert.Equal(t, "physical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("logical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "logical_filename-val", attrVal.Str())
+					assert.Equal(t, "logical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("file_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "file_type-val", attrVal.Str())
+					assert.Equal(t, "file_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "sqlserver.database.latency":
 					assert.False(t, validatedMetrics["sqlserver.database.latency"], "Found a duplicate in the metrics slice: sqlserver.database.latency")
 					validatedMetrics["sqlserver.database.latency"] = true
@@ -388,16 +380,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("physical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "physical_filename-val", attrVal.Str())
+					assert.Equal(t, "physical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("logical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "logical_filename-val", attrVal.Str())
+					assert.Equal(t, "logical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("file_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "file_type-val", attrVal.Str())
+					assert.Equal(t, "file_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "sqlserver.database.operations":
 					assert.False(t, validatedMetrics["sqlserver.database.operations"], "Found a duplicate in the metrics slice: sqlserver.database.operations")
 					validatedMetrics["sqlserver.database.operations"] = true
@@ -414,16 +406,16 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("physical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "physical_filename-val", attrVal.Str())
+					assert.Equal(t, "physical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("logical_filename")
 					assert.True(t, ok)
-					assert.EqualValues(t, "logical_filename-val", attrVal.Str())
+					assert.Equal(t, "logical_filename-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("file_type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "file_type-val", attrVal.Str())
+					assert.Equal(t, "file_type-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "sqlserver.database.tempdb.space":
 					assert.False(t, validatedMetrics["sqlserver.database.tempdb.space"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.space")
 					validatedMetrics["sqlserver.database.tempdb.space"] = true
@@ -440,7 +432,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("tempdb.state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "free", attrVal.Str())
+					assert.Equal(t, "free", attrVal.Str())
 				case "sqlserver.database.tempdb.version_store.size":
 					assert.False(t, validatedMetrics["sqlserver.database.tempdb.version_store.size"], "Found a duplicate in the metrics slice: sqlserver.database.tempdb.version_store.size")
 					validatedMetrics["sqlserver.database.tempdb.version_store.size"] = true
@@ -651,7 +643,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("type")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "sqlserver.page.split.rate":
 					assert.False(t, validatedMetrics["sqlserver.page.split.rate"], "Found a duplicate in the metrics slice: sqlserver.page.split.rate")
 					validatedMetrics["sqlserver.page.split.rate"] = true
@@ -690,7 +682,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("replica.direction")
 					assert.True(t, ok)
-					assert.EqualValues(t, "transmit", attrVal.Str())
+					assert.Equal(t, "transmit", attrVal.Str())
 				case "sqlserver.resource_pool.disk.throttled.read.rate":
 					assert.False(t, validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"], "Found a duplicate in the metrics slice: sqlserver.resource_pool.disk.throttled.read.rate")
 					validatedMetrics["sqlserver.resource_pool.disk.throttled.read.rate"] = true
@@ -731,10 +723,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("table.state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "active", attrVal.Str())
+					assert.Equal(t, "active", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("table.status")
 					assert.True(t, ok)
-					assert.EqualValues(t, "temporary", attrVal.Str())
+					assert.Equal(t, "temporary", attrVal.Str())
 				case "sqlserver.transaction.delay":
 					assert.False(t, validatedMetrics["sqlserver.transaction.delay"], "Found a duplicate in the metrics slice: sqlserver.transaction.delay")
 					validatedMetrics["sqlserver.transaction.delay"] = true

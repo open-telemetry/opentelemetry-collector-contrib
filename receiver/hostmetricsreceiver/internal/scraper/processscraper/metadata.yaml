@@ -170,7 +170,10 @@ metrics:
   process.open_file_descriptors:
     enabled: false
     description: Number of file descriptors in use by the process.
-    extended_documentation: This metric is only available on Linux.
+    extended_documentation: >-
+      On Windows this metric captures the number of open handles currently held
+      by the process. If you want to capture this data on Windows use the
+      `process.handles` metric instead to avoid any confusion.
     unit: '{count}'
     sum:
       value_type: int
@@ -179,7 +182,7 @@ metrics:
 
   process.handles:
     enabled: false
-    description: Number of handles held by the process.
+    description: Number of open handles held by the process.
     extended_documentation: This metric is only available on Windows.
     unit: '{count}'
     sum:

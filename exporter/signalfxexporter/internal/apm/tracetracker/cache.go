@@ -110,11 +110,7 @@ func (t *TimeoutCache) GetPurgeable(now time.Time) []*CacheKey {
 
 	var candidates []*CacheKey
 	elm := t.keysByTime.Back()
-	for {
-		if elm == nil {
-			break
-		}
-
+	for elm != nil {
 		e := elm.Value.(*cacheElem)
 		// If this one isn't timed out, nothing else in the list is either.
 		if now.Sub(e.LastSeen) < t.timeout {

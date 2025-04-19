@@ -39,6 +39,12 @@ type ClientConfig struct {
 	// Authentication holds Kafka authentication details.
 	Authentication AuthenticationConfig `mapstructure:"auth"`
 
+	// TLS holds TLS-related configuration for connecting to Kafka brokers.
+	//
+	// By default the client will use an insecure connection unless
+	// SASL/AWS_MSK_IAM_OAUTHBEARER auth is configured.
+	TLS *configtls.ClientConfig `mapstructure:"tls"`
+
 	// Metadata holds metadata-related configuration for producers and consumers.
 	Metadata MetadataConfig `mapstructure:"metadata"`
 }
@@ -99,7 +105,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		SessionTimeout:    10 * time.Second,
 		HeartbeatInterval: 3 * time.Second,
 		GroupID:           "otel-collector",
-		InitialOffset:     "latest",
+		InitialOffset:     LatestOffset,
 		AutoCommit: AutoCommitConfig{
 			Enable:   true,
 			Interval: time.Second,
@@ -227,6 +233,10 @@ type MetadataConfig struct {
 	// memory if you have many topics and partitions. Defaults to true.
 	Full bool `mapstructure:"full"`
 
+	// RefreshInterval controls the frequency at which cluster metadata is
+	// refreshed. Defaults to 10 minutes.
+	RefreshInterval time.Duration `mapstructure:"refresh_interval"`
+
 	// Retry configuration for metadata.
 	// This configuration is useful to avoid race conditions when broker
 	// is starting at the same time as collector.
@@ -245,7 +255,8 @@ type MetadataRetryConfig struct {
 
 func NewDefaultMetadataConfig() MetadataConfig {
 	return MetadataConfig{
-		Full: true,
+		Full:            true,
+		RefreshInterval: 10 * time.Minute,
 		Retry: MetadataRetryConfig{
 			Max:     3,
 			Backoff: time.Millisecond * 250,
@@ -255,10 +266,22 @@ func NewDefaultMetadataConfig() MetadataConfig {
 
 // AuthenticationConfig defines authentication-related configuration.
 type AuthenticationConfig struct {
-	PlainText *PlainTextConfig        `mapstructure:"plain_text"`
-	SASL      *SASLConfig             `mapstructure:"sasl"`
-	TLS       *configtls.ClientConfig `mapstructure:"tls"`
-	Kerberos  *KerberosConfig         `mapstructure:"kerberos"`
+	// PlainText is an alias for SASL/PLAIN authentication.
+	//
+	// Deprecated [v0.123.0]: use SASL with Mechanism set to PLAIN instead.
+	PlainText *PlainTextConfig `mapstructure:"plain_text"`
+
+	// SASL holds SASL authentication configuration.
+	SASL *SASLConfig `mapstructure:"sasl"`
+
+	// Kerberos holds Kerberos authentication configuration.
+	Kerberos *KerberosConfig `mapstructure:"kerberos"`
+
+	// TLS holds TLS configuration for connecting to Kafka brokers.
+	//
+	// Deprecated [v0.124.0]: use ClientConfig.TLS instead. This will
+	// be used only if ClientConfig.TLS is not set.
+	TLS *configtls.ClientConfig `mapstructure:"tls"`
 }
 
 // PlainTextConfig defines plaintext authentication.
@@ -288,10 +311,10 @@ func (c SASLConfig) Validate() error {
 	case "PLAIN", "SCRAM-SHA-256", "SCRAM-SHA-512":
 		// Do nothing, valid mechanism
 		if c.Username == "" {
-			return fmt.Errorf("username is required")
+			return errors.New("username is required")
 		}
 		if c.Password == "" {
-			return fmt.Errorf("password is required")
+			return errors.New("password is required")
 		}
 	default:
 		return fmt.Errorf(
