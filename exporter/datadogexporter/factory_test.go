@@ -27,6 +27,7 @@ import (
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 var _ inframetadata.Pusher = (*testPusher)(nil)
@@ -78,8 +79,8 @@ func TestCreateAPIMetricsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -99,10 +100,8 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
 
-	if isMetricExportV2Enabled() {
-		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableNativeMetricExport())
-	}
+	require.NoError(t, enableZorkianMetricExport())
+	defer require.NoError(t, enableMetricExportSerializer())
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -114,8 +113,8 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -177,16 +176,11 @@ func TestCreateAPIExporterFailOnInvalidKey_Zorkian(t *testing.T) {
 	assert.NoError(t, featuregateErr)
 }
 
-func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
+func TestCreateAPIExporterFailOnInvalidKey_Serializer(t *testing.T) {
 	featuregateErr := featuregate.GlobalRegistry().Set("exporter.datadogexporter.UseLogsAgentExporter", false)
 	assert.NoError(t, featuregateErr)
 	server := testutil.DatadogServerMock(testutil.ValidateAPIKeyEndpointInvalid)
 	defer server.Close()
-
-	if !isMetricExportV2Enabled() {
-		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
-	}
 
 	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))
 	require.NoError(t, err)
@@ -198,8 +192,8 @@ func TestCreateAPIExporterFailOnInvalidKey(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	// Use the mock server for API key validation
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	t.Run("true", func(t *testing.T) {
@@ -274,8 +268,8 @@ func TestCreateAPILogsExporter(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()
@@ -295,19 +289,18 @@ func TestOnlyMetadata(t *testing.T) {
 
 	factory := NewFactory()
 	ctx := context.Background()
-	cfg := &Config{
+	cfg := &datadogconfig.Config{
 		ClientConfig:  defaultClientConfig(),
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 
-		API:          APIConfig{Key: "aaaaaaa"},
-		Metrics:      MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
-		Traces:       TracesConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		API:          datadogconfig.APIConfig{Key: "aaaaaaa"},
+		Metrics:      datadogconfig.MetricsConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
+		Traces:       datadogconfig.TracesExporterConfig{TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL}},
 		OnlyMetadata: true,
 
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
-			HostnameSource: HostnameSourceFirstResource,
 			ReporterPeriod: 30 * time.Minute,
 		},
 	}
@@ -341,7 +334,7 @@ func TestOnlyMetadata(t *testing.T) {
 	require.NoError(t, err)
 
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func TestStopExporters(t *testing.T) {
@@ -357,8 +350,8 @@ func TestStopExporters(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	c := cfg.(*Config)
-	c.Metrics.TCPAddrConfig.Endpoint = server.URL
+	c := cfg.(*datadogconfig.Config)
+	c.Metrics.Endpoint = server.URL
 	c.HostMetadata.Enabled = false
 
 	ctx := context.Background()

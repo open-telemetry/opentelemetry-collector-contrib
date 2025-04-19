@@ -118,11 +118,45 @@ func TestSvcAcctClient(t *testing.T) {
 	defer server.Close()
 
 	p := &saClientProvider{
-		endpoint:           server.Listener.Addr().String(),
-		caCertPath:         certPath,
-		tokenPath:          "./testdata/token",
-		insecureSkipVerify: false,
-		logger:             zap.NewNop(),
+		endpoint:   server.Listener.Addr().String(),
+		caCertPath: certPath,
+		tokenPath:  "./testdata/token",
+		cfg: &ClientConfig{
+			InsecureSkipVerify: false,
+		},
+		logger: zap.NewNop(),
+	}
+	client, err := p.BuildClient()
+	require.NoError(t, err)
+	resp, err := client.Get("/")
+	require.NoError(t, err)
+	require.Equal(t, []byte(`OK`), resp)
+}
+
+func TestSAClientCustomCA(t *testing.T) {
+	server := httptest.NewUnstartedServer(http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
+		// Check if call is authenticated using token from test file
+		assert.Equal(t, "Bearer s3cr3t", req.Header.Get("Authorization"))
+		_, err := rw.Write([]byte(`OK`))
+		assert.NoError(t, err)
+	}))
+	cert, err := tls.LoadX509KeyPair(certPath, keyFile)
+	require.NoError(t, err)
+	server.TLS = &tls.Config{Certificates: []tls.Certificate{cert}}
+	server.StartTLS()
+	defer server.Close()
+
+	p := &saClientProvider{
+		endpoint:   server.Listener.Addr().String(),
+		caCertPath: certPath,
+		tokenPath:  "./testdata/token",
+		cfg: &ClientConfig{
+			InsecureSkipVerify: false,
+			Config: configtls.Config{
+				CAFile: certPath,
+			},
+		},
+		logger: zap.NewNop(),
 	}
 	client, err := p.BuildClient()
 	require.NoError(t, err)
@@ -142,11 +176,13 @@ func TestSAClientBadTLS(t *testing.T) {
 	defer server.Close()
 
 	p := &saClientProvider{
-		endpoint:           server.Listener.Addr().String(),
-		caCertPath:         "./testdata/mismatch.crt",
-		tokenPath:          "./testdata/token",
-		insecureSkipVerify: false,
-		logger:             zap.NewNop(),
+		endpoint:   server.Listener.Addr().String(),
+		caCertPath: "./testdata/mismatch.crt",
+		tokenPath:  "./testdata/token",
+		cfg: &ClientConfig{
+			InsecureSkipVerify: false,
+		},
+		logger: zap.NewNop(),
 	}
 	client, err := p.BuildClient()
 	require.NoError(t, err)
@@ -294,6 +330,7 @@ func TestSABadCertPath(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "foo",
 		caCertPath: "bar",
+		cfg:        &ClientConfig{},
 		tokenPath:  "baz",
 		logger:     zap.NewNop(),
 	}
@@ -305,6 +342,7 @@ func TestSABadTokenPath(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "foo",
 		caCertPath: certPath,
+		cfg:        &ClientConfig{},
 		tokenPath:  "bar",
 		logger:     zap.NewNop(),
 	}
@@ -323,6 +361,7 @@ func TestBuildReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "localhost:9876",
 		caCertPath: certPath,
+		cfg:        &ClientConfig{},
 		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}
@@ -337,6 +376,7 @@ func TestBuildBadReq(t *testing.T) {
 	p := &saClientProvider{
 		endpoint:   "[]localhost:9876",
 		caCertPath: certPath,
+		cfg:        &ClientConfig{},
 		tokenPath:  "./testdata/token",
 		logger:     zap.NewNop(),
 	}

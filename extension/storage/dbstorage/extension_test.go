@@ -5,6 +5,7 @@ package dbstorage
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -190,7 +191,7 @@ func newSqliteTestExtension(dbPath string) (storage.Extension, error) {
 
 	se, ok := extension.(storage.Extension)
 	if !ok {
-		return nil, fmt.Errorf("created extension is not a storage extension")
+		return nil, errors.New("created extension is not a storage extension")
 	}
 
 	return se, nil
@@ -237,7 +238,7 @@ func newPostgresTestExtension() (storage.Extension, testcontainers.Container, er
 
 	se, ok := extension.(storage.Extension)
 	if !ok {
-		return nil, nil, fmt.Errorf("created extension is not a storage extension")
+		return nil, nil, errors.New("created extension is not a storage extension")
 	}
 
 	return se, ctr, nil

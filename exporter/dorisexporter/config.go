@@ -19,7 +19,7 @@ type Config struct {
 	// confighttp.ClientConfig.Headers is the headers of doris stream load.
 	confighttp.ClientConfig   `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// TableNames is the table name for logs, traces and metrics.
 	Table `mapstructure:"table"`
@@ -94,13 +94,13 @@ func (cfg *Config) Validate() (err error) {
 	if !re.MatchString(cfg.Database) {
 		err = errors.Join(err, errors.New("database name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Logs) {
+	if !re.MatchString(cfg.Logs) {
 		err = errors.Join(err, errors.New("logs table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Traces) {
+	if !re.MatchString(cfg.Traces) {
 		err = errors.Join(err, errors.New("traces table name must be alphanumeric and underscore"))
 	}
-	if !re.MatchString(cfg.Table.Metrics) {
+	if !re.MatchString(cfg.Metrics) {
 		err = errors.Join(err, errors.New("metrics table name must be alphanumeric and underscore"))
 	}
 

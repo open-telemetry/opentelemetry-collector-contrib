@@ -13,7 +13,7 @@ import (
 
 func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
-	assert.EqualValues(t, metadata.Type, factory.Type())
+	assert.Equal(t, metadata.Type, factory.Type())
 	config := factory.CreateDefaultConfig()
 	assert.NotNil(t, config)
 }

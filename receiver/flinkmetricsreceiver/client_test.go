@@ -179,7 +179,7 @@ func TestGetJobmanagerMetrics(t *testing.T) {
 
 				hostname, err := os.Hostname()
 				require.NoError(t, err)
-				require.EqualValues(t, hostname, actual.Host)
+				require.Equal(t, hostname, actual.Host)
 			},
 		},
 	}
@@ -279,8 +279,8 @@ func TestGetTaskmanagersMetrics(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, actual, 1)
 				require.Equal(t, expected, &actual[0].Metrics)
-				require.EqualValues(t, "172.26.0.3", actual[0].Host)
-				require.EqualValues(t, "172.26.0.3:34457-7b2520", actual[0].TaskmanagerID)
+				require.Equal(t, "172.26.0.3", actual[0].Host)
+				require.Equal(t, "172.26.0.3:34457-7b2520", actual[0].TaskmanagerID)
 			},
 		},
 	}
@@ -378,11 +378,11 @@ func TestGetJobsMetrics(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, actual, 1)
 				require.Equal(t, expected, &actual[0].Metrics)
-				require.EqualValues(t, "State machine job", actual[0].JobName)
+				require.Equal(t, "State machine job", actual[0].JobName)
 
 				hostname, err := os.Hostname()
 				require.NoError(t, err)
-				require.EqualValues(t, hostname, actual[0].Host)
+				require.Equal(t, hostname, actual[0].Host)
 			},
 		},
 	}
@@ -547,7 +547,7 @@ func TestGetSubtasksMetrics(t *testing.T) {
 
 				var e *models.JobsResponse
 				_ = json.Unmarshal(jobsData, &e)
-				require.EqualValues(t, "54a5c6e527e00e1bb861272a39fe13e4", e.Jobs[0].ID)
+				require.Equal(t, "54a5c6e527e00e1bb861272a39fe13e4", e.Jobs[0].ID)
 
 				// Load the valid data into a struct to compare
 				var expected *models.MetricsResponse
@@ -558,12 +558,12 @@ func TestGetSubtasksMetrics(t *testing.T) {
 				require.NoError(t, err)
 				require.Len(t, actual, 2)
 				require.Equal(t, expected, &actual[0].Metrics)
-				require.EqualValues(t, "State machine job", actual[0].JobName)
-				require.EqualValues(t, "172.26.0.3", actual[0].Host)
+				require.Equal(t, "State machine job", actual[0].JobName)
+				require.Equal(t, "172.26.0.3", actual[0].Host)
 				// require.EqualValues(t, "flink-worker", actual[0].Host)
-				require.EqualValues(t, "172.26.0.3:34457-7b2520", actual[0].TaskmanagerID)
-				require.EqualValues(t, "Source: Custom Source", actual[0].TaskName)
-				require.EqualValues(t, "0", actual[0].SubtaskIndex)
+				require.Equal(t, "172.26.0.3:34457-7b2520", actual[0].TaskmanagerID)
+				require.Equal(t, "Source: Custom Source", actual[0].TaskName)
+				require.Equal(t, "0", actual[0].SubtaskIndex)
 			},
 		},
 	}
