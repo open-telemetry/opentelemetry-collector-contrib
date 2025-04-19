@@ -354,6 +354,22 @@ func TestConfig(t *testing.T) {
 				cfg.Batcher.MaxSize = 200
 			}),
 		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "include_source_on_error"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.IncludeSourceOnError = true
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "discard_error_reason"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+				cfg.DiscardErrorReason = true
+			}),
+		},
 	}
 
 	for _, tt := range tests {

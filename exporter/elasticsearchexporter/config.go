@@ -74,9 +74,29 @@ type Config struct {
 	Mapping                 MappingsSettings       `mapstructure:"mapping"`
 	LogstashFormat          LogstashFormatSettings `mapstructure:"logstash_format"`
 
-	// TelemetrySettings contains settings useful for testing/debugging purposes
+	// TelemetrySettings contains settings useful for testing/debugging purposes.
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
+
+	// DiscardErrorReason discards the error reason on bulk index error responses.
+	// Defaults to false.
+	//
+	// This setting has a higher precedence than IncludeSourceOnError, i.e. if
+	// this is enabled, IncludeSourceOnError will be ignored.
+	DiscardErrorReason bool `mapstructure:"discard_error_reason"`
+
+	// IncludeSourceOnError configures whether the bulk index responses include
+	// a part of the source document on error.
+	// Defaults to false.
+	//
+	// This setting requires Elasticsearch 8.18+. Using it in prior versions
+	// have no effect.
+	// This setting is overridden by DiscardErrorReason if DiscardErrorReason
+	// is true.
+	//
+	// WARNING: if set to true, the user is responsible for sanitizing the
+	// error as it may contain sensitive data from the source.
+	IncludeSourceOnError bool `mapstructure:"include_source_on_error"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
