@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"strings"
 	"time"
 
 	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
@@ -89,8 +90,28 @@ func getProxyAddress(proxyAddress string) string {
 	case proxyAddress != "":
 		finalProxyAddress = proxyAddress
 
-	case proxyAddress == "" && os.Getenv("HTTPS_PROXY") != "":
-		finalProxyAddress = os.Getenv("HTTPS_PROXY")
+	case proxyAddress == "":
+		if os.Getenv("HTTPS_PROXY") != "" {
+			finalProxyAddress = os.Getenv("HTTPS_PROXY")
+
+			if os.Getenv("NO_PROXY") != "" {
+				noProxys := strings.Split(os.Getenv("NO_PROXY"), ",")
+				excludeMap := make(map[string]bool)
+				for _, v := range noProxys {
+					excludeMap[v] = true
+				}
+
+				var result []string
+				for _, v := range strings.Split(finalProxyAddress, ",") {
+					if !excludeMap[v] {
+						result = append(result, v)
+					}
+				}
+
+				finalProxyAddress = strings.Join(result, ",")
+			}
+		}
+
 	default:
 		finalProxyAddress = ""
 	}
