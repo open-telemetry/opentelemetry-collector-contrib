@@ -65,7 +65,7 @@ func TestReceiver(t *testing.T) {
 
 	// Wait for message to be consumed.
 	received := make(chan consumerArgs[ptrace.Traces], 1)
-	_, _, _ = mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+	mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
 	args := <-received
 	assert.NoError(t, ptracetest.CompareTraces(traces, args.data))
 }
@@ -122,7 +122,7 @@ func TestReceiver_Headers_Metadata(t *testing.T) {
 
 			// Wait for message to be consumed.
 			received := make(chan consumerArgs[ptrace.Traces], 1)
-			_, _, _ = mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+			mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
 			args := <-received
 			info := client.FromContext(args.ctx)
 			for key, values := range testcase.expected {
@@ -167,7 +167,7 @@ func TestReceiver_Headers_HeaderExtraction(t *testing.T) {
 			received := make(chan consumerArgs[ptrace.Traces], 1)
 			receiverConfig.HeaderExtraction.ExtractHeaders = enabled
 			receiverConfig.HeaderExtraction.Headers = []string{"extracted"}
-			_, _, _ = mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+			mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
 			args := <-received
 
 			resource := args.data.ResourceSpans().At(0).Resource()
@@ -224,7 +224,7 @@ func TestReceiver_ConsumeError(t *testing.T) {
 			receiverConfig.ErrorBackOff.InitialInterval = 10 * time.Millisecond
 			receiverConfig.ErrorBackOff.MaxInterval = 10 * time.Millisecond
 			receiverConfig.ErrorBackOff.MaxElapsedTime = 500 * time.Millisecond
-			_, _, _ = mustNewTracesReceiver(t, receiverConfig, consumer)
+			mustNewTracesReceiver(t, receiverConfig, consumer)
 
 			if testcase.shouldRetry {
 				assert.Eventually(
@@ -263,7 +263,14 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 
 	// Wait for messages to be consumed.
 	received := make(chan consumerArgs[ptrace.Traces], 1)
-	r, tel, observedLogs := mustNewTracesReceiver(t, receiverConfig, newChannelTracesConsumer(received))
+	set, tel, observedLogs := mustNewSettings(t)
+	f := NewFactory()
+	r, err := f.CreateTraces(context.Background(), set, receiverConfig, newChannelTracesConsumer(received))
+	require.NoError(t, err)
+	require.NoError(t, r.Start(context.Background(), componenttest.NewNopHost()))
+	t.Cleanup(func() {
+		assert.NoError(t, r.Shutdown(context.Background()))
+	})
 	for range 4 {
 		<-received
 	}
@@ -277,7 +284,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 1,
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -287,13 +294,13 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		//  - the initial open
 		//  - the invalid message causes the consumer to restart, closing the partition
 		Value:      2,
-		Attributes: attribute.NewSet(attribute.String("name", "")),
+		Attributes: attribute.NewSet(attribute.String("name", set.ID.Name())),
 	}}, metricdatatest.IgnoreTimestamp())
 
 	metadatatest.AssertEqualKafkaReceiverMessages(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 5,
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -305,8 +312,10 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		// 2 because:
 		//  - the invalid message causes the consumer to restart, closing the partition
 		//  - it re-acquires the partition, but then shutting down closes the partition again
-		Value:      2,
-		Attributes: attribute.NewSet(attribute.String("name", "")),
+		Value: 2,
+		Attributes: attribute.NewSet(
+			attribute.String("name", set.ID.Name()),
+		),
 	}}, metricdatatest.IgnoreTimestamp())
 
 	observedErrorLogs := observedLogs.FilterLevelExact(zapcore.ErrorLevel)
@@ -317,7 +326,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 	metadatatest.AssertEqualKafkaReceiverCurrentOffset(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 4, // offset of the final message
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -325,7 +334,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 	metadatatest.AssertEqualKafkaReceiverOffsetLag(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 0,
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -373,7 +382,7 @@ func TestNewLogsReceiver(t *testing.T) {
 	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedLogRecords(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 1,
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -425,7 +434,7 @@ func TestNewMetricsReceiver(t *testing.T) {
 	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{{
 		Value: 1,
 		Attributes: attribute.NewSet(
-			attribute.String("name", ""),
+			attribute.String("name", set.ID.String()),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -435,19 +444,16 @@ func TestNewMetricsReceiver(t *testing.T) {
 	require.True(t, ok)
 }
 
-func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Traces) (receiver.Traces, *componenttest.Telemetry, *observer.ObservedLogs) {
+func mustNewTracesReceiver(tb testing.TB, cfg *Config, nextConsumer consumer.Traces) {
 	tb.Helper()
 
-	set, tel, observedLogs := mustNewSettings(tb)
-
 	f := NewFactory()
-	r, err := f.CreateTraces(context.Background(), set, cfg, nextConsumer)
+	r, err := f.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, nextConsumer)
 	require.NoError(tb, err)
 	require.NoError(tb, r.Start(context.Background(), componenttest.NewNopHost()))
 	tb.Cleanup(func() {
 		assert.NoError(tb, r.Shutdown(context.Background()))
 	})
-	return r, tel, observedLogs
 }
 
 func mustNewSettings(tb testing.TB) (receiver.Settings, *componenttest.Telemetry, *observer.ObservedLogs) {
