@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
 
@@ -322,4 +323,86 @@ func TestSortAndNormalizeMetrics(t *testing.T) {
 	normalizeTimestamps(before)
 
 	require.Equal(t, before, after)
+}
+
+func TestReadProfiles(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	actualProfiles, err := ReadProfiles(expectedFile)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func TestWriteProfiles(t *testing.T) {
+	profiles := CreateTestProfiles()
+
+	actualFile := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, writeProfiles(actualFile, profiles))
+
+	actualBytes, err := os.ReadFile(actualFile)
+	require.NoError(t, err)
+
+	expectedFile := filepath.Join("testdata", "profiles-roundtrip", "expected.yaml")
+	expectedBytes, err := os.ReadFile(expectedFile)
+	require.NoError(t, err)
+
+	if runtime.GOOS == "windows" {
+		// os.ReadFile adds a '\r' that we don't actually expect
+		expectedBytes = bytes.ReplaceAll(expectedBytes, []byte("\r\n"), []byte("\n"))
+	}
+
+	require.Equal(t, expectedBytes, actualBytes)
+}
+
+func TestProfilesRoundTrip(t *testing.T) {
+	expectedProfiles := CreateTestProfiles()
+
+	tempDir := filepath.Join(t.TempDir(), "profiles.yaml")
+	require.NoError(t, writeProfiles(tempDir, expectedProfiles))
+
+	actualProfiles, err := ReadProfiles(tempDir)
+	require.NoError(t, err)
+	require.Equal(t, expectedProfiles, actualProfiles)
+}
+
+func CreateTestProfiles() pprofile.Profiles {
+	profiles := pprofile.NewProfiles()
+	resource := profiles.ResourceProfiles().AppendEmpty()
+	scope := resource.ScopeProfiles().AppendEmpty()
+	profile := scope.Profiles().AppendEmpty()
+
+	profile.StringTable().Append("samples", "count", "cpu", "nanoseconds")
+	st := profile.SampleType().AppendEmpty()
+	st.SetTypeStrindex(0)
+	st.SetUnitStrindex(1)
+	pt := profile.PeriodType()
+	pt.SetTypeStrindex(2)
+	pt.SetUnitStrindex(3)
+
+	a := profile.AttributeTable().AppendEmpty()
+	a.SetKey("process.executable.build_id.htlhash")
+	a.Value().SetStr("600DCAFE4A110000F2BF38C493F5FB92")
+	a = profile.AttributeTable().AppendEmpty()
+	a.SetKey("profile.frame.type")
+	a.Value().SetStr("native")
+	a = profile.AttributeTable().AppendEmpty()
+	a.SetKey("host.id")
+	a.Value().SetStr("localhost")
+
+	profile.AttributeIndices().Append(2)
+
+	sample := profile.Sample().AppendEmpty()
+	sample.TimestampsUnixNano().Append(0)
+	sample.SetLocationsLength(1)
+
+	m := profile.MappingTable().AppendEmpty()
+	m.AttributeIndices().Append(0)
+
+	l := profile.LocationTable().AppendEmpty()
+	l.SetMappingIndex(0)
+	l.SetAddress(111)
+	l.AttributeIndices().Append(1)
+
+	return profiles
 }
