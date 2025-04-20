@@ -207,8 +207,10 @@ receiver/chronyreceiver receiver/chrony
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
+receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
 receiver/dockerstatsreceiver receiver/dockerstats
+receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
 receiver/expvarreceiver receiver/expvar
 receiver/faroreceiver receiver/faro
@@ -249,8 +251,10 @@ receiver/kafkareceiver receiver/kafka
 receiver/kubeletstatsreceiver receiver/kubeletstats
 receiver/libhoneyreceiver receiver/libhoney
 receiver/lokireceiver receiver/loki
+receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
+receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
@@ -262,6 +266,7 @@ receiver/osqueryreceiver receiver/osquery
 receiver/otelarrowreceiver receiver/otelarrow
 receiver/otlpjsonfilereceiver receiver/otlpjsonfile
 receiver/podmanreceiver receiver/podman
+receiver/postgresqlreceiver receiver/postgresql
 receiver/pprofreceiver receiver/pprof
 receiver/prometheusreceiver receiver/prometheus
 receiver/prometheusremotewritereceiver receiver/prometheusremotewrite
@@ -300,6 +305,8 @@ receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
 receiver/zipkinreceiver receiver/zipkin
+receiver/zookeeperreceiver receiver/zookeeper
+scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
@@ -312,10 +319,3 @@ exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon
-receiver/couchdbreceiver receiver/couchdb
-receiver/elasticsearchreceiver receiver/elasticsearch
-receiver/memcachedreceiver receiver/memcached
-receiver/mysqlreceiver receiver/mysql
-receiver/postgresqlreceiver receiver/postgresql
-receiver/zookeeperreceiver receiver/zookeeper
-scraper/zookeeperscraper scraper/zookeeper

@@ -226,8 +226,10 @@ receiver/chronyreceiver/                                         @open-telemetry
 receiver/cloudflarereceiver/                                     @open-telemetry/collector-contrib-approvers @dehaansa
 receiver/cloudfoundryreceiver/                                   @open-telemetry/collector-contrib-approvers @crobert-1
 receiver/collectdreceiver/                                       @open-telemetry/collector-contrib-approvers @atoulme
+receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
 receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
+receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni
 receiver/envoyalsreceiver/                                       @open-telemetry/collector-contrib-approvers @evan-bradley @zirain
 receiver/expvarreceiver/                                         @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/faroreceiver/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
@@ -268,8 +270,10 @@ receiver/kafkareceiver/                                          @open-telemetry
 receiver/kubeletstatsreceiver/                                   @open-telemetry/collector-contrib-approvers @dmitryax @TylerHelmuth @ChrsMark
 receiver/libhoneyreceiver/                                       @open-telemetry/collector-contrib-approvers @TylerHelmuth @mterhar
 receiver/lokireceiver/                                           @open-telemetry/collector-contrib-approvers @mar4uk
+receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers @jsirianni
 receiver/mongodbatlasreceiver/                                   @open-telemetry/collector-contrib-approvers @schmikei
 receiver/mongodbreceiver/                                        @open-telemetry/collector-contrib-approvers @schmikei
+receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers @antonblock
 receiver/namedpipereceiver/                                      @open-telemetry/collector-contrib-approvers @sinkingpoint @djaglowski
 receiver/netflowreceiver/                                        @open-telemetry/collector-contrib-approvers @evan-bradley @dlopes7
 receiver/nginxreceiver/                                          @open-telemetry/collector-contrib-approvers @djaglowski
@@ -281,6 +285,7 @@ receiver/osqueryreceiver/                                        @open-telemetry
 receiver/otelarrowreceiver/                                      @open-telemetry/collector-contrib-approvers @jmacd @moh-osman3
 receiver/otlpjsonfilereceiver/                                   @open-telemetry/collector-contrib-approvers @atoulme
 receiver/podmanreceiver/                                         @open-telemetry/collector-contrib-approvers @rogercoll
+receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers @antonblock
 receiver/pprofreceiver/                                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
 receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
 receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
@@ -319,6 +324,8 @@ receiver/windowseventlogreceiver/                                @open-telemetry
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
+receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
+scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock
 testbed/                                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry/collector-contrib-approvers @boostchicken
 
@@ -353,12 +360,5 @@ exporter/opensearchexporter/                                     @open-telemetry
 extension/observer/ecstaskobserver/                              @open-telemetry/collector-contrib-approvers
 receiver/awscloudwatchmetricsreceiver/                           @open-telemetry/collector-contrib-approvers
 receiver/carbonreceiver/                                         @open-telemetry/collector-contrib-approvers
-receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers
-receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers
-receiver/memcachedreceiver/                                      @open-telemetry/collector-contrib-approvers
-receiver/mysqlreceiver/                                          @open-telemetry/collector-contrib-approvers
-receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers
-receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers
-scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers
 
 # End unmaintained components list
