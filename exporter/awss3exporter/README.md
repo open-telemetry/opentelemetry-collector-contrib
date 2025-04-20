@@ -38,7 +38,9 @@ The following exporter configuration parameters are supported.
 | `compression`             | should the file be compressed                                                                                                              | none                                        |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled                                    |
 | `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s                                          |
-
+| `retry_mode`              | The retryer implementation, the supported values are "standard"(default) and "adaptive"(experimental)                                      | none                                        |
+| `retry_max_attempts`      | The max number of attempts for retrying a request if the `retry_mode` is set                                                               | 3                                           |
+| `retry_max_backoff`       | the max backoff delay that can occur before retrying a request if `retry_mode` is set                                                      | 20s                                         |
 
 ### Marshaler
 
@@ -108,6 +110,24 @@ In this case, logs and traces would be stored in the following path format.
 
 ```console
 metric/YYYY/MM/DD/HH/mm
+```
+
+## Retry
+
+Standard is the default retryer implementation used by service clients. See the [retry](https://pkg.go.dev/github.com/aws/aws-sdk-go-v2/aws/retry) package documentation for details on what errors are considered as retryable by the standard retryer implementation.
+
+See also the [aws-sdk-go reference](https://docs.aws.amazon.com/sdk-for-go/v2/developer-guide/configure-retries-timeouts.html) for more information.
+
+```yaml
+exporters:
+  awss3:
+    s3uploader:
+      region: 'eu-central-1'
+      s3_bucket: 'databucket'
+      s3_prefix: 'metric'
+      retry_mode: "standard"
+      retry_max_attempts: 5
+      retry_max_backoff: "30s"
 ```
 
 ## AWS Credential Configuration

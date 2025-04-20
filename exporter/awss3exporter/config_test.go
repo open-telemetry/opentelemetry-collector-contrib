@@ -7,6 +7,7 @@ import (
 	"errors"
 	"path/filepath"
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -405,6 +406,43 @@ func TestCompressionName(t *testing.T) {
 			StorageClass:      "STANDARD",
 		},
 		MarshalerName: "otlp_proto",
+	}, e,
+	)
+}
+
+func TestRetry(t *testing.T) {
+	factories, err := otelcoltest.NopFactories()
+	assert.NoError(t, err)
+
+	factory := NewFactory()
+	factories.Exporters[factory.Type()] = factory
+	cfg, err := otelcoltest.LoadConfigAndValidate(
+		filepath.Join("testdata", "retry.yaml"), factories)
+
+	require.NoError(t, err)
+	require.NotNil(t, cfg)
+
+	queueCfg := exporterhelper.NewDefaultQueueConfig()
+	queueCfg.Enabled = false
+	timeoutCfg := exporterhelper.NewDefaultTimeoutConfig()
+
+	e := cfg.Exporters[component.MustNewID("awss3")].(*Config)
+
+	assert.Equal(t, &Config{
+		QueueSettings:   queueCfg,
+		TimeoutSettings: timeoutCfg,
+		S3Uploader: S3UploaderConfig{
+			Region:            "us-east-1",
+			S3Bucket:          "foo",
+			S3Prefix:          "bar",
+			S3PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+			Endpoint:          "http://endpoint.com",
+			StorageClass:      "STANDARD_IA",
+			RetryMode:         "standard",
+			RetryMaxAttempts:  5,
+			RetryMaxBackoff:   30 * time.Second,
+		},
+		MarshalerName: "otlp_json",
 	}, e,
 	)
 }
