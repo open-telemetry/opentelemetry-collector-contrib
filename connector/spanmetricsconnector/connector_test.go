@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -163,9 +164,10 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
 		require.True(tb, ok)
 		serviceName := val.AsString()
-		if serviceName == "service-a" {
+		switch serviceName {
+		case "service-a":
 			numDataPoints = 2
-		} else if serviceName == "service-b" {
+		case "service-b":
 			numDataPoints = 1
 		}
 
@@ -187,8 +189,13 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
+			expectIntValue := numCumulativeConsumptions
+			// this calls init value is 0 for the first Consumption.
+			if numCumulativeConsumptions == 1 {
+				expectIntValue = 0
+			}
 			assert.Equal(tb,
-				int64(numCumulativeConsumptions),
+				int64(expectIntValue),
 				dp.IntValue(),
 				"There should only be one metric per Service/name/kind combination",
 			)
@@ -711,7 +718,7 @@ func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error
 
 func TestConsumeMetricsErrors(t *testing.T) {
 	// Prepare
-	fakeErr := fmt.Errorf("consume metrics error")
+	fakeErr := errors.New("consume metrics error")
 
 	core, observedLogs := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(core)
@@ -1873,4 +1880,111 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 func (c alwaysIncreasingClock) Now() time.Time {
 	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
+}
+
+func TestBuildAttributes_InstrumentationScope(t *testing.T) {
+	tests := []struct {
+		name                 string
+		instrumentationScope pcommon.InstrumentationScope
+		config               Config
+		want                 map[string]string
+	}{
+		{
+			name: "with instrumentation scope name and version",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "express",
+				instrumentationScopeVersionKey: "1.0.0",
+			},
+		},
+		{
+			name: "with instrumentation scope but not included",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+		{
+			name: "without instrumentation scope but version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+
+		{
+			name: "with instrumentation scope and instrumentation scope name but no version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:              "test_service",
+				spanNameKey:                 "test_span",
+				spanKindKey:                 "SPAN_KIND_INTERNAL",
+				statusCodeKey:               "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey: "express",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Create connector
+			p := &connectorImp{
+				config: tt.config,
+			}
+
+			// Create basic span
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			// Build attributes
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+
+			// Verify results
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.Str())
+			}
+		})
+	}
 }

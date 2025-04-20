@@ -20,6 +20,8 @@ jobs.
 
 ## Configuration
 
+**By default the Splunk Enterprise receiver is not configured to gather any metrics other than `splunk.health`**
+
 The following settings are required, omitting them will either cause your receiver to fail to compile or result in 4/5xx return codes during scraping. 
 
 **NOTE:** These must be set for each Splunk instance type (indexer, search head, or cluster master) from which you wish to pull metrics. At present, only one of each type is accepted, per configured receiver instance. This means, for example, that if you have three different "indexer" type instances that you would like to pull metrics from you will need to configure three different `splunkenterprise` receivers for each indexer node you wish to monitor.
@@ -32,6 +34,7 @@ The following settings are optional:
 
 * `collection_interval` (default: 10m): The time between scrape attempts.
 * `timeout` (default: 60s): The time the scrape function will wait for a response before returning empty.
+* `build_version_info` (default: false): Elect to run an additional scrape which will retrieve build and version info for the configured endpoints and attach this as attributes to the selected metrics. A value of false will report an empty string as the attribute value but will speed up the receiver slightly.
 
 Example:
 

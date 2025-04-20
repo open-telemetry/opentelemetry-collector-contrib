@@ -26,11 +26,11 @@ type Config struct {
 
 // Validate verifies that the endpoint is valid and the configured port is not 0
 func (rCfg *Config) Validate() error {
-	if rCfg.ServerConfig.Endpoint == "" {
+	if rCfg.Endpoint == "" {
 		return errEmptyEndpoint
 	}
 
-	_, err := extractPortFromEndpoint(rCfg.ServerConfig.Endpoint)
+	_, err := extractPortFromEndpoint(rCfg.Endpoint)
 	if err != nil {
 		return err
 	}

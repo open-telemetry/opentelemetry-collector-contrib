@@ -16,6 +16,7 @@ import (
 	"golang.org/x/net/http/httpproxy"
 
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func newLogComponent(set component.TelemetrySettings) corelog.Component {
@@ -25,7 +26,7 @@ func newLogComponent(set component.TelemetrySettings) corelog.Component {
 	return zlog
 }
 
-func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig.Component {
+func newConfigComponent(set component.TelemetrySettings, cfg *datadogconfig.Config) coreconfig.Component {
 	pkgconfig := viperconfig.NewConfig("DD", "DD", strings.NewReplacer(".", "_"))
 
 	// Set the API Key
@@ -36,7 +37,7 @@ func newConfigComponent(set component.TelemetrySettings, cfg *Config) coreconfig
 	pkgconfig.Set("logs_config.batch_wait", cfg.Logs.BatchWait, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.use_compression", cfg.Logs.UseCompression, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.compression_level", cfg.Logs.CompressionLevel, pkgconfigmodel.SourceFile)
-	pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.TCPAddrConfig.Endpoint, pkgconfigmodel.SourceFile)
+	pkgconfig.Set("logs_config.logs_dd_url", cfg.Logs.Endpoint, pkgconfigmodel.SourceFile)
 	pkgconfig.Set("logs_config.auditor_ttl", pkgconfigsetup.DefaultAuditorTTL, pkgconfigmodel.SourceDefault)
 	pkgconfig.Set("logs_config.batch_max_content_size", pkgconfigsetup.DefaultBatchMaxContentSize, pkgconfigmodel.SourceDefault)
 	pkgconfig.Set("logs_config.batch_max_size", pkgconfigsetup.DefaultBatchMaxSize, pkgconfigmodel.SourceDefault)

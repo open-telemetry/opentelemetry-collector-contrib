@@ -60,6 +60,20 @@ func TestCompareProfiles(t *testing.T) {
 			actual:   basicProfiles().Transform(),
 		},
 		{
+			name: "attribute value string is not bool",
+			expected: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", "true"}
+				return p.Transform()
+			}(),
+			actual: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].Resource.Attributes[0] = Attribute{"key1", true}
+				return p.Transform()
+			}(),
+			withoutOptions: errors.New(`missing expected resource: map[key1:true]; unexpected resource: map[key1:true]`),
+		},
+		{
 			name: "resource order",
 			expected: func() pprofile.Profiles {
 				p := basicProfiles()
@@ -709,10 +723,10 @@ func TestCompareProfile(t *testing.T) {
 				errors.New(`attributes don't match expected: map[key:val], actual: map[key1:val1]`),
 				errors.New(`stringTable '[ cpu1 nanoseconds1 samples count samples1 count1 cpu2 nanoseconds2]' does not match expected '[ cpu nanoseconds samples count]'`),
 				errors.New(`period does not match expected '1', actual '2'`),
-				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`missing expected valueType "unit: 4, type: 3, aggregationTemporality: 1"`)),
-				fmt.Errorf(`sampleType: %w`, fmt.Errorf(`unexpected valueType "unit: 6, type: 5, aggregationTemporality: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, fmt.Errorf(`missing expected attributeUnit "attributeKey: 1"`)),
-				fmt.Errorf(`attributeUnits: %w`, fmt.Errorf(`unexpected profile attributeUnit "attributeKey: 7"`)),
+				fmt.Errorf(`sampleType: %w`, errors.New(`missing expected valueType "unit: 4, type: 3, aggregationTemporality: 1"`)),
+				fmt.Errorf(`sampleType: %w`, errors.New(`unexpected valueType "unit: 6, type: 5, aggregationTemporality: 1"`)),
+				fmt.Errorf(`attributeUnits: %w`, errors.New(`missing expected attributeUnit "attributeKey: 1"`)),
+				fmt.Errorf(`attributeUnits: %w`, errors.New(`unexpected profile attributeUnit "attributeKey: 7"`)),
 			),
 		},
 	}
@@ -1008,7 +1022,7 @@ func TestCompareProfileSampleSlice(t *testing.T) {
 				return l
 			}(),
 			err: multierr.Combine(
-				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, fmt.Errorf(`expected locationLenght '2', got '3'`)),
+				fmt.Errorf(`sample "attributes: [1 2 3]": %w`, errors.New(`expected locationLenght '2', got '3'`)),
 			),
 		},
 		{
@@ -1528,7 +1542,7 @@ func TestCompareProfileLocationSlice(t *testing.T) {
 				return l
 			}(),
 			err: multierr.Combine(
-				fmt.Errorf(`location "attributes: [1 2 3]": %w`, fmt.Errorf(`expected mappingIndex '2', got '3'`)),
+				fmt.Errorf(`location "attributes: [1 2 3]": %w`, errors.New(`expected mappingIndex '2', got '3'`)),
 			),
 		},
 		{
@@ -1630,8 +1644,8 @@ func TestCompareProfileLocation(t *testing.T) {
 				errors.New(`expected address '3', got '2'`),
 				errors.New(`expected isFolded 'false', got 'true'`),
 				errors.New(`expected attributes '[1 2 3 4]', got '[1 2 3]'`),
-				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, fmt.Errorf(`missing expected line "functionIndex: 3"`)),
-				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, fmt.Errorf(`unexpected profile line "functionIndex: 0"`)),
+				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, errors.New(`missing expected line "functionIndex: 3"`)),
+				fmt.Errorf(`line of location with "attributes: [1 2 3 4]": %w`, errors.New(`unexpected profile line "functionIndex: 0"`)),
 			),
 		},
 	}

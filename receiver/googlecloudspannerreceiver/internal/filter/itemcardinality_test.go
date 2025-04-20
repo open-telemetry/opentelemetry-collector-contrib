@@ -250,7 +250,7 @@ func TestSortedKeys(t *testing.T) {
 
 	keys := sortedKeys(data)
 
-	assert.Equal(t, len(data), len(keys))
+	assert.Len(t, keys, len(data))
 	assert.Equal(t, timestamp1, keys[0])
 	assert.Equal(t, timestamp2, keys[1])
 	assert.Equal(t, timestamp3, keys[2])

@@ -1,0 +1,34 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: cloud.account.id
+          value:
+            stringValue: "123456789012"
+        - key: aws.log.group.names
+          value:
+            stringValue: CloudTrail
+        - key: aws.log.stream.names
+          value:
+            stringValue: 123456789012_CloudTrail_us-east-1
+    scopeLogs:
+      - logRecords:
+          - body:
+              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
+            spanId: ""
+            timeUnixNano: "1432826855000000000"
+            traceId: ""
+          - body:
+              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
+            spanId: ""
+            timeUnixNano: "1432826855000000000"
+            traceId: ""
+          - body:
+              stringValue: '{"eventVersion":"1.03","userIdentity":{"type":"Root"}'
+            spanId: ""
+            timeUnixNano: "1432826855000000000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

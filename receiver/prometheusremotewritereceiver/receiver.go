@@ -25,6 +25,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap/zapcore"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics/identity"
 )
 
 func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsumer consumer.Metrics) (receiver.Metrics, error) {
@@ -45,6 +47,46 @@ type prometheusRemoteWriteReceiver struct {
 	config *Config
 	server *http.Server
 	wg     sync.WaitGroup
+}
+
+// MetricIdentity contains all the components that uniquely identify a metric
+// according to the OpenTelemetry Protocol data model.
+// The definition of the metric uniqueness is based on the following document. Ref: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model
+type MetricIdentity struct {
+	ResourceID   string
+	ScopeName    string
+	ScopeVersion string
+	MetricName   string
+	Unit         string
+	Type         writev2.Metadata_MetricType
+}
+
+// createMetricIdentity creates a MetricIdentity struct from the required components
+func createMetricIdentity(resourceID, scopeName, scopeVersion, metricName, unit string, metricType writev2.Metadata_MetricType) MetricIdentity {
+	return MetricIdentity{
+		ResourceID:   resourceID,
+		ScopeName:    scopeName,
+		ScopeVersion: scopeVersion,
+		MetricName:   metricName,
+		Unit:         unit,
+		Type:         metricType,
+	}
+}
+
+// Hash generates a unique hash for the metric identity
+func (mi MetricIdentity) Hash() uint64 {
+	const separator = "\xff"
+
+	combined := strings.Join([]string{
+		mi.ResourceID,
+		mi.ScopeName,
+		mi.ScopeVersion,
+		mi.MetricName,
+		mi.Unit,
+		fmt.Sprintf("%d", mi.Type),
+	}, separator)
+
+	return xxhash.Sum64String(combined)
 }
 
 func (prw *prometheusRemoteWriteReceiver) Start(ctx context.Context, host component.Host) error {
@@ -176,13 +218,14 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
 		// between requests based on the metric "target_info".
 		intraRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
+		metricCache = make(map[uint64]pmetric.Metric)
 	)
 
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-
 		if !ls.Has(labels.MetricName) {
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
+			badRequestErrors = errors.Join(badRequestErrors, errors.New("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("duplicate label %q in labels", duplicateLabel))
@@ -201,17 +244,92 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			intraRequestCache[hashedLabels] = rm
 		}
 
+		scopeName, scopeVersion := prw.extractScopeInfo(ls)
+		metricName := ls.Get(labels.MetricName)
+		if ts.Metadata.UnitRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unit ref %d is out of bounds of symbolsTable", ts.Metadata.UnitRef))
+			continue
+		}
+
+		if ts.Metadata.HelpRef >= uint32(len(req.Symbols)) {
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("help ref %d is out of bounds of symbolsTable", ts.Metadata.HelpRef))
+			continue
+		}
+
+		unit := req.Symbols[ts.Metadata.UnitRef]
+		description := req.Symbols[ts.Metadata.HelpRef]
+
+		resourceID := identity.OfResource(rm.Resource())
+
+		metricIdentity := createMetricIdentity(
+			resourceID.String(), // Resource identity
+			scopeName,           // Scope name
+			scopeVersion,        // Scope version
+			metricName,          // Metric name
+			unit,                // Unit
+			ts.Metadata.Type,    // Metric type
+		)
+
+		metricKey := metricIdentity.Hash()
+
+		var scope pmetric.ScopeMetrics
+		var foundScope bool
+		for i := 0; i < rm.ScopeMetrics().Len(); i++ {
+			s := rm.ScopeMetrics().At(i)
+			if s.Scope().Name() == scopeName && s.Scope().Version() == scopeVersion {
+				scope = s
+				foundScope = true
+				break
+			}
+		}
+		if !foundScope {
+			scope = rm.ScopeMetrics().AppendEmpty()
+			scope.Scope().SetName(scopeName)
+			scope.Scope().SetVersion(scopeVersion)
+		}
+
+		metric, exists := metricCache[metricKey]
+		// If the metric does not exist, we create an empty metric and add it to the cache.
+		if !exists {
+			metric = scope.Metrics().AppendEmpty()
+			metric.SetName(metricName)
+			metric.SetUnit(unit)
+			metric.SetDescription(description)
+
+			switch ts.Metadata.Type {
+			case writev2.Metadata_METRIC_TYPE_GAUGE:
+				metric.SetEmptyGauge()
+			case writev2.Metadata_METRIC_TYPE_COUNTER:
+				sum := metric.SetEmptySum()
+				sum.SetIsMonotonic(true)
+				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
+				metric.SetEmptyHistogram()
+			case writev2.Metadata_METRIC_TYPE_SUMMARY:
+				metric.SetEmptySummary()
+			}
+
+			metricCache[metricKey] = metric
+		}
+
+		// When the new description is longer than the existing one, we should update the metric description.
+		// Reference to this behavior: https://opentelemetry.io/docs/specs/otel/metrics/data-model/#opentelemetry-protocol-data-model-producer-recommendations
+		if len(metric.Description()) < len(description) {
+			metric.SetDescription(description)
+		}
+
+		// Otherwise, we append the samples to the existing metric.
 		switch ts.Metadata.Type {
-		case writev2.Metadata_METRIC_TYPE_COUNTER:
-			prw.addCounterDatapoints(rm, ls, ts)
 		case writev2.Metadata_METRIC_TYPE_GAUGE:
-			prw.addGaugeDatapoints(rm, ls, ts)
-		case writev2.Metadata_METRIC_TYPE_SUMMARY:
-			prw.addSummaryDatapoints(rm, ls, ts)
+			addNumberDatapoints(metric.Gauge().DataPoints(), ls, ts)
+		case writev2.Metadata_METRIC_TYPE_COUNTER:
+			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			prw.addHistogramDatapoints(rm, ls, ts)
+			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
+		case writev2.Metadata_METRIC_TYPE_SUMMARY:
+			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
-			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, ls.Get(labels.MetricName)))
+			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("unsupported metric type %q for metric %q", ts.Metadata.Type, metricName))
 		}
 	}
 
@@ -235,50 +353,12 @@ func parseJobAndInstance(dest pcommon.Map, job, instance string) {
 	}
 }
 
-func (prw *prometheusRemoteWriteReceiver) addCounterDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-func (prw *prometheusRemoteWriteReceiver) addGaugeDatapoints(rm pmetric.ResourceMetrics, ls labels.Labels, ts writev2.TimeSeries) {
-	// TODO: Cache metric name+type+unit and look up cache before creating new empty metric.
-	// In OTel name+type+unit is the unique identifier of a metric and we should not create
-	// a new metric if it already exists.
-
-	scopeName, scopeVersion := prw.extractScopeInfo(ls)
-
-	// Check if the name and version present in the labels are already present in the ResourceMetrics.
-	// If it is not present, we should create a new ScopeMetrics.
-	// Otherwise, we should append to the existing ScopeMetrics.
-	for j := 0; j < rm.ScopeMetrics().Len(); j++ {
-		scope := rm.ScopeMetrics().At(j)
-		if scopeName == scope.Scope().Name() && scopeVersion == scope.Scope().Version() {
-			addDatapoints(scope.Metrics().AppendEmpty().SetEmptyGauge().DataPoints(), ls, ts)
-			return
-		}
-	}
-
-	scope := rm.ScopeMetrics().AppendEmpty()
-	scope.Scope().SetName(scopeName)
-	scope.Scope().SetVersion(scopeVersion)
-	m := scope.Metrics().AppendEmpty().SetEmptyGauge()
-	addDatapoints(m.DataPoints(), ls, ts)
-}
-
-func (prw *prometheusRemoteWriteReceiver) addSummaryDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-func (prw *prometheusRemoteWriteReceiver) addHistogramDatapoints(_ pmetric.ResourceMetrics, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
-}
-
-// addDatapoints adds the labels to the datapoints attributes.
-// TODO: We're still not handling the StartTimestamp.
-func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+// addNumberDatapoints adds the labels to the datapoints attributes.
+func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
 	// Add samples from the timeseries
 	for _, sample := range ts.Samples {
 		dp := datapoints.AppendEmpty()
-
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
 		// Set timestamp in nanoseconds (Prometheus uses milliseconds)
 		dp.SetTimestamp(pcommon.Timestamp(sample.Timestamp * int64(time.Millisecond)))
 		dp.SetDoubleValue(sample.Value)
@@ -293,6 +373,14 @@ func addDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labels, ts
 			attributes.PutStr(l.Name, l.Value)
 		}
 	}
+}
+
+func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
+}
+
+func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
+	// TODO: Implement this function
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
