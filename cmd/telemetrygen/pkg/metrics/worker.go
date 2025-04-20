@@ -29,50 +29,55 @@ type worker struct {
 	wg                     *sync.WaitGroup              // notify when done
 	logger                 *zap.Logger                  // logger
 	index                  int                          // worker index
+	clock                  Clock                        // clock
 }
 
+// We use a 15-element bounds slice for histograms below, so there must be 16 buckets here.
+// From metrics.proto:
+// The number of elements in bucket_counts array must be by one greater than
+// the number of elements in explicit_bounds array.
 var histogramBucketSamples = []struct {
 	bucketCounts []uint64
 	sum          int64
 }{
 	{
-		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 0, 0, 3, 4, 1, 1, 0, 0, 0, 0, 0, 0},
 		3940,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 2, 4, 4, 0, 0, 0, 0, 0, 0, 0},
 		4455,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 4, 3, 2, 0, 0, 0, 0, 0, 0},
 		5337,
 	},
 	{
-		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 1, 0, 2, 2, 1, 3, 0, 0, 0, 0, 0, 0},
 		4477,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 1, 3, 2, 2, 2, 0, 0, 0, 0, 0, 0},
 		4670,
 	},
 	{
-		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 1, 1, 0, 1, 1, 1, 5, 0, 0, 0, 0, 0, 0},
 		5670,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 2, 1, 1, 4, 2, 0, 0, 0, 0, 0, 0},
 		5091,
 	},
 	{
-		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 2, 0, 0, 0, 2, 4, 1, 1, 0, 0, 0, 0, 0, 0},
 		3420,
 	},
 	{
-		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 0, 0, 0, 0, 1, 3, 2, 4, 0, 0, 0, 0, 0, 0},
 		5917,
 	},
 	{
-		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0},
+		[]uint64{0, 0, 1, 0, 1, 0, 0, 4, 4, 0, 0, 0, 0, 0, 0, 0},
 		3988,
 	},
 }
@@ -80,10 +85,15 @@ var histogramBucketSamples = []struct {
 func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
+	startTime := w.clock.Now()
+
 	var i int64
 	for w.running.Load() {
 		var metrics []metricdata.Metrics
-
+		now := w.clock.Now()
+		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {
+			startTime = now.Add(-1 * time.Second)
+		}
 		switch w.metricType {
 		case MetricTypeGauge:
 			metrics = append(metrics, metricdata.Metrics{
@@ -91,7 +101,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				Data: metricdata.Gauge[int64]{
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							Time:       time.Now(),
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -107,8 +117,8 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 					Temporality: w.aggregationTemporality.AsTemporality(),
 					DataPoints: []metricdata.DataPoint[int64]{
 						{
-							StartTime:  time.Now().Add(-1 * time.Second),
-							Time:       time.Now(),
+							StartTime:  startTime,
+							Time:       now,
 							Value:      i,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
@@ -117,20 +127,24 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 				},
 			})
 		case MetricTypeHistogram:
+			var totalCount uint64
 			iteration := uint64(i) % 10
 			sum := histogramBucketSamples[iteration].sum
 			bucketCounts := histogramBucketSamples[iteration].bucketCounts
+			for _, count := range bucketCounts {
+				totalCount += count
+			}
 			metrics = append(metrics, metricdata.Metrics{
 				Name: w.metricName,
 				Data: metricdata.Histogram[int64]{
 					Temporality: w.aggregationTemporality.AsTemporality(),
 					DataPoints: []metricdata.HistogramDataPoint[int64]{
 						{
-							StartTime:  time.Now().Add(-1 * time.Second),
-							Time:       time.Now(),
+							StartTime:  startTime,
+							Time:       now,
 							Attributes: attribute.NewSet(signalAttrs...),
 							Exemplars:  w.exemplars,
-							Count:      iteration,
+							Count:      totalCount,
 							Sum:        sum,
 							// Bounds from https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/metrics/sdk.md#explicit-bucket-histogram-aggregation
 							Bounds:       []float64{0, 5, 10, 25, 50, 75, 100, 250, 500, 750, 1000, 2500, 5000, 7500, 10000},

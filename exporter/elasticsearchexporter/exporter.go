@@ -22,6 +22,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metricgroup"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/pool"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/serializer/otelserializer"
 )
@@ -35,11 +36,22 @@ type elasticsearchExporter struct {
 	allowedMappingModes map[string]MappingMode
 	bulkIndexers        bulkIndexers
 	bufferPool          *pool.BufferPool
+	encoders            map[MappingMode]documentEncoder
 }
 
-func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearchExporter {
+func newExporter(cfg *Config, set exporter.Settings, index string) (*elasticsearchExporter, error) {
 	allowedMappingModes := cfg.allowedMappingModes()
 	defaultMappingMode := allowedMappingModes[canonicalMappingModeName(cfg.Mapping.Mode)]
+
+	encoders := map[MappingMode]documentEncoder{}
+	for i := range NumMappingModes {
+		enc, err := newEncoder(i)
+		if err != nil {
+			return nil, err
+		}
+		encoders[i] = enc
+	}
+
 	return &elasticsearchExporter{
 		set:                 set,
 		config:              cfg,
@@ -48,7 +60,8 @@ func newExporter(cfg *Config, set exporter.Settings, index string) *elasticsearc
 		allowedMappingModes: allowedMappingModes,
 		defaultMappingMode:  defaultMappingMode,
 		bufferPool:          pool.NewBufferPool(),
-	}
+		encoders:            encoders,
+	}, nil
 }
 
 func (e *elasticsearchExporter) Start(ctx context.Context, host component.Host) error {
@@ -65,13 +78,21 @@ func (e *elasticsearchExporter) Shutdown(ctx context.Context) error {
 	return nil
 }
 
+func (e *elasticsearchExporter) getEncoder(m MappingMode) (documentEncoder, error) {
+	if enc, ok := e.encoders[m]; ok {
+		return enc, nil
+	}
+
+	return nil, fmt.Errorf("no encoder setup for mapping mode %s", m)
+}
+
 func (e *elasticsearchExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	mappingMode, err := e.getMappingMode(ctx)
 	if err != nil {
 		return err
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -172,7 +193,7 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	hasher := newDataPointHasher(mappingMode)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -183,20 +204,23 @@ func (e *elasticsearchExporter) pushMetricsData(
 	}
 	defer session.End()
 
-	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[uint32]*dataPointsGroup)
+	// Maintain a 2 layer map to avoid storing lots of copies of index strings
+	groupedDataPointsByIndex := make(map[elasticsearch.Index]map[metricgroup.HashKey]*dataPointsGroup)
 	var validationErrs []error // log instead of returning these so that upstream does not retry
 	var errs []error
 	resourceMetrics := metrics.ResourceMetrics()
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		resourceMetric := resourceMetrics.At(i)
 		resource := resourceMetric.Resource()
+		hasher.UpdateResource(resource)
 		scopeMetrics := resourceMetric.ScopeMetrics()
 
 		for j := 0; j < scopeMetrics.Len(); j++ {
-			scopeMetrics := scopeMetrics.At(j)
-			scope := scopeMetrics.Scope()
-			for k := 0; k < scopeMetrics.Metrics().Len(); k++ {
-				metric := scopeMetrics.Metrics().At(k)
+			scopeMetric := scopeMetrics.At(j)
+			scope := scopeMetric.Scope()
+			hasher.UpdateScope(scope)
+			for k := 0; k < scopeMetric.Metrics().Len(); k++ {
+				metric := scopeMetric.Metrics().At(k)
 
 				upsertDataPoint := func(dp datapoints.DataPoint) error {
 					index, err := router.routeDataPoint(resource, scope, dp.Attributes())
@@ -205,17 +229,18 @@ func (e *elasticsearchExporter) pushMetricsData(
 					}
 					groupedDataPoints, ok := groupedDataPointsByIndex[index]
 					if !ok {
-						groupedDataPoints = make(map[uint32]*dataPointsGroup)
+						groupedDataPoints = make(map[metricgroup.HashKey]*dataPointsGroup)
 						groupedDataPointsByIndex[index] = groupedDataPoints
 					}
-					dpHash := hasher.hashDataPoint(resource, scope, dp)
-					dpGroup, ok := groupedDataPoints[dpHash]
-					if !ok {
-						groupedDataPoints[dpHash] = &dataPointsGroup{
+					hasher.UpdateDataPoint(dp)
+					key := hasher.HashKey()
+
+					if dpGroup, ok := groupedDataPoints[key]; !ok {
+						groupedDataPoints[key] = &dataPointsGroup{
 							resource:          resource,
 							resourceSchemaURL: resourceMetric.SchemaUrl(),
 							scope:             scope,
-							scopeSchemaURL:    scopeMetrics.SchemaUrl(),
+							scopeSchemaURL:    scopeMetric.SchemaUrl(),
 							dataPoints:        []datapoints.DataPoint{dp},
 						}
 					} else {
@@ -335,7 +360,7 @@ func (e *elasticsearchExporter) pushTraceData(
 	}
 	router := newDocumentRouter(mappingMode, e.index, e.config)
 	spanEventRouter := newDocumentRouter(mappingMode, e.config.LogsIndex, e.config)
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -465,7 +490,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	if err != nil {
 		return err
 	}
-	encoder, err := newEncoder(mappingMode)
+	encoder, err := e.getEncoder(mappingMode)
 	if err != nil {
 		return err
 	}
@@ -611,5 +636,15 @@ func (e *elasticsearchExporter) getMappingMode(ctx context.Context) (MappingMode
 		return mode, nil
 	default:
 		return -1, fmt.Errorf("expected one value for %s, got %d", metadataKey, n)
+	}
+}
+
+func newDataPointHasher(mode MappingMode) metricgroup.DataPointHasher {
+	switch mode {
+	case MappingOTel:
+		return &metricgroup.OTelDataPointHasher{}
+	default:
+		// Defaults to ECS for backward compatibility
+		return &metricgroup.ECSDataPointHasher{}
 	}
 }

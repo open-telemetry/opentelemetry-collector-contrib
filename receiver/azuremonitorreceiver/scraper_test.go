@@ -8,24 +8,18 @@ import (
 	"fmt"
 	"net/http"
 	"path/filepath"
-	"reflect"
 	"strings"
 	"sync"
 	"testing"
 	"time"
 
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/arm"
-	"github.com/Azure/azure-sdk-for-go/sdk/azcore/cloud"
 	azfake "github.com/Azure/azure-sdk-for-go/sdk/azcore/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore/to"
 	"github.com/Azure/azure-sdk-for-go/sdk/azidentity"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor"
-	armmonitorfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/monitor/armmonitor/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2"
-	armresourcesfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armresources/v2/fake"
 	"github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions"
-	armsubscriptionsfake "github.com/Azure/azure-sdk-for-go/sdk/resourcemanager/resources/armsubscriptions/fake"
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
@@ -34,83 +28,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver/internal/metadata"
 )
-
-type mockClientOptionsResolver struct {
-	armResourcesClientOptions     map[string]*arm.ClientOptions
-	armSubscriptionsClientOptions *arm.ClientOptions
-	armMonitorClientOptions       *arm.ClientOptions
-}
-
-// newMockClientOptionsResolver is an options resolver that will generate mocking client options for each Azure API.
-// Indeed, the way to mock Azure API is to provide a fake server that will return the expected data.
-// The fake server is built with "fake" package from Azure SDK for Go, and is set in the client options, via the transport.
-// This ctor takes the mock data in that order:
-// - subscriptions
-// - resources stored by subscription ID
-// - metrics definitions stored by resource URI
-// - metrics values stored by resource URI and metric name
-func newMockClientOptionsResolver(
-	subscriptions []armsubscriptions.ClientListResponse,
-	resources map[string][]armresources.ClientListResponse,
-	metricsDefinitions map[string][]armmonitor.MetricDefinitionsClientListResponse,
-	metrics map[string]map[string]armmonitor.MetricsClientListResponse,
-) ClientOptionsResolver {
-	// Init resources client options from resources mock data
-	armResourcesClientOptions := make(map[string]*arm.ClientOptions)
-	for subID, pages := range resources {
-		resourceServer := armresourcesfake.Server{
-			NewListPager: newMockResourcesListPager(pages),
-		}
-		armResourcesClientOptions[subID] = &arm.ClientOptions{
-			ClientOptions: azcore.ClientOptions{
-				Transport: armresourcesfake.NewServerTransport(&resourceServer),
-			},
-		}
-	}
-
-	// Init subscriptions client options from subscriptions mock data
-	subscriptionsServer := armsubscriptionsfake.Server{
-		NewListPager: newMockSubscriptionsListPager(subscriptions),
-	}
-	armSubscriptionsClientOptions := &arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Transport: armsubscriptionsfake.NewServerTransport(&subscriptionsServer),
-		},
-	}
-
-	// Init arm monitor client options from subscriptions mock data
-	armMonitorServerFactory := armmonitorfake.ServerFactory{
-		MetricDefinitionsServer: armmonitorfake.MetricDefinitionsServer{
-			NewListPager: newMockMetricsDefinitionListPager(metricsDefinitions),
-		},
-		MetricsServer: armmonitorfake.MetricsServer{
-			List: newMockMetricList(metrics),
-		},
-	}
-	armMonitorClientOptions := &arm.ClientOptions{
-		ClientOptions: azcore.ClientOptions{
-			Transport: armmonitorfake.NewServerFactoryTransport(&armMonitorServerFactory),
-		},
-	}
-
-	return &mockClientOptionsResolver{
-		armResourcesClientOptions:     armResourcesClientOptions,
-		armSubscriptionsClientOptions: armSubscriptionsClientOptions,
-		armMonitorClientOptions:       armMonitorClientOptions,
-	}
-}
-
-func (m mockClientOptionsResolver) GetArmResourceClientOptions(subscriptionID string) *arm.ClientOptions {
-	return m.armResourcesClientOptions[subscriptionID]
-}
-
-func (m mockClientOptionsResolver) GetArmSubscriptionsClientOptions() *arm.ClientOptions {
-	return m.armSubscriptionsClientOptions
-}
-
-func (m mockClientOptionsResolver) GetArmMonitorClientOptions() *arm.ClientOptions {
-	return m.armMonitorClientOptions
-}
 
 func TestNewScraper(t *testing.T) {
 	f := NewFactory()
@@ -139,6 +56,7 @@ func azDefaultCredentialsFuncMock(*azidentity.DefaultAzureCredentialOptions) (*a
 func createDefaultTestConfig() *Config {
 	cfg := createDefaultConfig().(*Config)
 	cfg.TenantID = "fake-tenant-id"
+	cfg.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
 	return cfg
 }
 
@@ -259,6 +177,13 @@ func newMockSubscriptionsListPager(subscriptionsPages []armsubscriptions.ClientL
 	}
 }
 
+func newMockSubscriptionGet(subscriptionsByID map[string]armsubscriptions.ClientGetResponse) func(ctx context.Context, subscriptionID string, options *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
+	return func(_ context.Context, subscriptionID string, _ *armsubscriptions.ClientGetOptions) (resp azfake.Responder[armsubscriptions.ClientGetResponse], errResp azfake.ErrorResponder) {
+		resp.SetResponse(http.StatusOK, subscriptionsByID[subscriptionID], nil)
+		return
+	}
+}
+
 func newMockResourcesListPager(resourcesPages []armresources.ClientListResponse) func(options *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
 	return func(_ *armresources.ClientListOptions) (resp azfake.PagerResponder[armresources.ClientListResponse]) {
 		for _, page := range resourcesPages {
@@ -300,6 +225,11 @@ func TestAzureScraperScrape(t *testing.T) {
 	cfgTagsEnabled := createDefaultTestConfig()
 	cfgTagsEnabled.AppendTagsAsAttributes = true
 	cfgTagsEnabled.MaximumNumberOfMetricsInACall = 2
+	cfgTagsEnabled.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+
+	cfgSubNameAttr := createDefaultTestConfig()
+	cfgSubNameAttr.SubscriptionIDs = []string{"subscriptionId1", "subscriptionId3"}
+	cfgSubNameAttr.MetricsBuilderConfig.ResourceAttributes.AzuremonitorSubscription.Enabled = true
 
 	tests := []struct {
 		name    string
@@ -325,6 +255,15 @@ func TestAzureScraperScrape(t *testing.T) {
 				ctx: context.Background(),
 			},
 		},
+		{
+			name: "metrics_subname_golden",
+			fields: fields{
+				cfg: cfgSubNameAttr,
+			},
+			args: args{
+				ctx: context.Background(),
+			},
+		},
 	}
 
 	for _, tt := range tests {
@@ -332,28 +271,24 @@ func TestAzureScraperScrape(t *testing.T) {
 			settings := receivertest.NewNopSettings(metadata.Type)
 
 			optionsResolver := newMockClientOptionsResolver(
+				getSubscriptionByIDMockData(),
 				getSubscriptionsMockData(),
 				getResourcesMockData(tt.fields.cfg.AppendTagsAsAttributes),
 				getMetricsDefinitionsMockData(),
 				getMetricsValuesMockData(),
+				nil,
 			)
 
 			s := &azureScraper{
 				cfg:                   tt.fields.cfg,
-				mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+				mb:                    metadata.NewMetricsBuilder(tt.fields.cfg.MetricsBuilderConfig, settings),
 				mutex:                 &sync.Mutex{},
 				time:                  getTimeMock(),
 				clientOptionsResolver: optionsResolver,
 
 				// From there, initialize everything that is normally initialized in start() func
-				subscriptions: map[string]*azureSubscription{
-					"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-					"subscriptionId3": {SubscriptionID: "subscriptionId3"},
-				},
-				resources: map[string]map[string]*azureResource{
-					"subscriptionId1": {},
-					"subscriptionId3": {},
-				},
+				subscriptions: map[string]*azureSubscription{},
+				resources:     map[string]map[string]*azureResource{},
 			}
 
 			metrics, err := s.scrape(tt.args.ctx)
@@ -383,6 +318,7 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	metricName1, metricName2, metricName3 := "ConnectionsTotal", "IncommingMessages", "TransferedBytes"
 	metricAggregation1, metricAggregation2, metricAggregation3 := "Count", "Maximum", "Minimum"
 	cfgLimitedMertics := createDefaultTestConfig()
+	cfgLimitedMertics.SubscriptionIDs = []string{fakeSubID}
 	cfgLimitedMertics.Metrics = NestedListAlias{
 		metricNamespace1: {
 			metricName1: {metricAggregation1},
@@ -404,6 +340,13 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		valueMaximum := 123.45
 		valueMinimum := 0.1
 
+		subscriptionsByIDMockData := map[string]armsubscriptions.ClientGetResponse{
+			fakeSubID: {
+				Subscription: armsubscriptions.Subscription{
+					SubscriptionID: to.Ptr(fakeSubID), DisplayName: to.Ptr("displayname"),
+				},
+			},
+		}
 		resourceMockData := map[string][]armresources.ClientListResponse{
 			fakeSubID: {
 				{
@@ -561,10 +504,12 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 		}
 
 		optionsResolver := newMockClientOptionsResolver(
+			subscriptionsByIDMockData,
 			getSubscriptionsMockData(),
 			resourceMockData,
 			metricsDefinitionMockData,
 			metricsMockData,
+			nil,
 		)
 
 		settings := receivertest.NewNopSettings(metadata.Type)
@@ -576,12 +521,8 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 			clientOptionsResolver: optionsResolver,
 
 			// From there, initialize everything that is normally initialized in start() func
-			subscriptions: map[string]*azureSubscription{
-				fakeSubID: {SubscriptionID: fakeSubID},
-			},
-			resources: map[string]map[string]*azureResource{
-				fakeSubID: {},
-			},
+			subscriptions: map[string]*azureSubscription{},
+			resources:     map[string]map[string]*azureResource{},
 		}
 
 		metrics, err := s.scrape(context.Background())
@@ -601,59 +542,105 @@ func TestAzureScraperScrapeFilterMetrics(t *testing.T) {
 	})
 }
 
+func getSubscriptionByIDMockData() map[string]armsubscriptions.ClientGetResponse {
+	return map[string]armsubscriptions.ClientGetResponse{
+		"subscriptionId1": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId1"), DisplayName: to.Ptr("subscriptionDisplayName1"),
+			},
+		},
+		"subscriptionId2": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId2"), DisplayName: to.Ptr("subscriptionDisplayName2"),
+			},
+		},
+		"subscriptionId3": {
+			Subscription: armsubscriptions.Subscription{
+				SubscriptionID: to.Ptr("subscriptionId3"), DisplayName: to.Ptr("subscriptionDisplayName3"),
+			},
+		},
+	}
+}
+
 func getSubscriptionsMockData() []armsubscriptions.ClientListResponse {
 	return []armsubscriptions.ClientListResponse{
 		{
 			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
 				Value: []*armsubscriptions.Subscription{
-					{ID: to.Ptr("subscriptionId1")},
-					{ID: to.Ptr("subscriptionId2")},
+					{SubscriptionID: to.Ptr("subscriptionId1")},
+					{SubscriptionID: to.Ptr("subscriptionId2")},
 				},
 			},
 		},
 		{
 			SubscriptionListResult: armsubscriptions.SubscriptionListResult{
 				Value: []*armsubscriptions.Subscription{
-					{ID: to.Ptr("subscriptionId3")},
+					{SubscriptionID: to.Ptr("subscriptionId3")},
 				},
 			},
 		},
 	}
 }
 
-func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
-	getTestScraper := func() *azureScraper {
-		optionsResolver := newMockClientOptionsResolver(
-			getSubscriptionsMockData(),
-			getResourcesMockData(false),
-			getMetricsDefinitionsMockData(),
-			getMetricsValuesMockData(),
-		)
+func getNominalTestScraper() *azureScraper {
+	optionsResolver := newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		getResourcesMockData(false),
+		getMetricsDefinitionsMockData(),
+		getMetricsValuesMockData(),
+		nil,
+	)
 
-		return &azureScraper{
-			cfg: createDefaultTestConfig(),
-			mb: metadata.NewMetricsBuilder(
-				metadata.DefaultMetricsBuilderConfig(),
-				receivertest.NewNopSettings(receivertest.NopType),
-			),
-			mutex:                 &sync.Mutex{},
-			time:                  getTimeMock(),
-			clientOptionsResolver: optionsResolver,
+	settings := receivertest.NewNopSettings(metadata.Type)
 
-			// From there, initialize everything that is normally initialized in start() func
-			subscriptions: map[string]*azureSubscription{
-				"subscriptionId1": {SubscriptionID: "subscriptionId1"},
-			},
-			resources: map[string]map[string]*azureResource{
-				"subscriptionId1": {},
-			},
-		}
+	return &azureScraper{
+		cfg:                   createDefaultTestConfig(),
+		settings:              settings.TelemetrySettings,
+		mb:                    metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), settings),
+		mutex:                 &sync.Mutex{},
+		time:                  getTimeMock(),
+		clientOptionsResolver: optionsResolver,
+
+		// From there, initialize everything that is normally initialized in start() func
+		subscriptions: map[string]*azureSubscription{},
+		resources:     map[string]map[string]*azureResource{},
 	}
+}
 
+func TestAzureScraperGetResources(t *testing.T) {
+	s := getNominalTestScraper()
+	s.resources["subscriptionId1"] = map[string]*azureResource{}
+	s.subscriptions["subscriptionId1"] = &azureSubscription{}
+	s.cfg.CacheResources = 0
+	s.getResources(context.Background(), "subscriptionId1")
+	assert.Contains(t, s.resources, "subscriptionId1")
+	assert.Len(t, s.resources["subscriptionId1"], 3)
+
+	s.clientOptionsResolver = newMockClientOptionsResolver(
+		getSubscriptionByIDMockData(),
+		getSubscriptionsMockData(),
+		map[string][]armresources.ClientListResponse{
+			"subscriptionId1": {{
+				ResourceListResult: armresources.ResourceListResult{
+					Value: nil, // Simulate resources disappear
+				},
+			}},
+		},
+		getMetricsDefinitionsMockData(),
+		getMetricsValuesMockData(),
+		nil,
+	)
+	s.getResources(context.Background(), "subscriptionId1")
+	assert.Contains(t, s.resources, "subscriptionId1")
+	assert.Empty(t, s.resources["subscriptionId1"])
+}
+
+func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 	ctx := context.Background()
 
 	t.Run("do_not_fetch_in_same_interval", func(t *testing.T) {
-		s := getTestScraper()
+		s := getNominalTestScraper()
 
 		metrics, err := s.scrape(ctx)
 
@@ -676,7 +663,7 @@ func TestAzureScraperScrapeHonorTimeGrain(t *testing.T) {
 			time.Now().Add(time.Minute + 3*timeInterval - timeJitter),
 			time.Now().Add(time.Minute + 4*timeInterval + timeJitter),
 		}
-		s := getTestScraper()
+		s := getNominalTestScraper()
 		mockedTime := s.time.(*timeMock)
 
 		for _, timeNowNew := range timeIntervals {
@@ -1160,65 +1147,6 @@ func getMetricsValuesMockData() map[string]map[string]armmonitor.MetricsClientLi
 				},
 			},
 		},
-	}
-}
-
-func TestAzureScraperClientOptions(t *testing.T) {
-	type fields struct {
-		Cloud string
-	}
-	tests := []struct {
-		name   string
-		fields fields
-		want   *arm.ClientOptions
-	}{
-		{
-			name: "AzureCloud_options",
-			fields: fields{
-				Cloud: azureCloud,
-			},
-			want: &arm.ClientOptions{
-				ClientOptions: azcore.ClientOptions{
-					Cloud: cloud.AzurePublic,
-				},
-			},
-		},
-		{
-			name: "AzureGovernmentCloud_options",
-			fields: fields{
-				Cloud: azureGovernmentCloud,
-			},
-			want: &arm.ClientOptions{
-				ClientOptions: azcore.ClientOptions{
-					Cloud: cloud.AzureGovernment,
-				},
-			},
-		},
-		{
-			name: "AzureChinaCloud_options",
-			fields: fields{
-				Cloud: azureChinaCloud,
-			},
-			want: &arm.ClientOptions{
-				ClientOptions: azcore.ClientOptions{
-					Cloud: cloud.AzureChina,
-				},
-			},
-		},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			s := newClientOptionsResolver(tt.fields.Cloud)
-			if got := s.GetArmResourceClientOptions("anything"); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
-			}
-			if got := s.GetArmSubscriptionsClientOptions(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
-			}
-			if got := s.GetArmMonitorClientOptions(); !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("getArmClientOptions() = %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
 

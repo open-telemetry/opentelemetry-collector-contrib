@@ -1,0 +1,495 @@
+{
+    "events": [
+      {
+        "name": "faro.performanceEntry",
+        "domain": "browser",
+        "attributes": {
+          "name": "https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css.map",
+          "entryType": "resource",
+          "startTime": "331",
+          "duration": "3371",
+          "initiatorType": "other",
+          "nextHopProtocol": "h2",
+          "workerStart": "0",
+          "redirectStart": "0",
+          "redirectEnd": "0",
+          "fetchStart": "331",
+          "domainLookupStart": "588",
+          "domainLookupEnd": "590",
+          "connectStart": "337",
+          "connectEnd": "3656",
+          "secureConnectionStart": "3638",
+          "requestStart": "3656",
+          "responseStart": "3690",
+          "responseEnd": "3702",
+          "transferSize": "0",
+          "encodedBodySize": "0",
+          "decodedBodySize": "0",
+          "serverTiming": "[]"
+        },
+        "timestamp": "2023-11-16T10:00:55.995Z"
+      }
+    ],
+    "logs": [
+      {
+        "message": "opened pricing page",
+        "level": "info",
+        "context": {
+          "component": "AppRoot",
+          "page": "Pricing"
+        },
+        "timestamp": "2021-09-30T10:46:17.680Z",
+        "trace": {
+          "trace_id": "abcd",
+          "span_id": "def"
+        }
+      },
+      {
+        "message": "loading price list",
+        "level": "trace",
+        "context": {
+          "component": "AppRoot",
+          "page": "Pricing"
+        },
+        "timestamp": "2021-09-30T10:46:17.680Z",
+        "trace": {
+          "trace_id": "abcd",
+          "span_id": "ghj"
+        }
+      }
+    ],
+    "exceptions": [
+      {
+        "type": "Error",
+        "value": "Cannot read property 'find' of undefined",
+        "stacktrace": {
+          "frames": [
+            {
+              "colno": 42,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "?",
+              "in_app": true,
+              "lineno": 8639
+            },
+            {
+              "colno": 9,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "dispatchAction",
+              "in_app": true,
+              "lineno": 268095
+            },
+            {
+              "colno": 13,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "scheduleUpdateOnFiber",
+              "in_app": true,
+              "lineno": 273726
+            },
+            {
+              "colno": 7,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "flushSyncCallbackQueue",
+              "in_app": true,
+              "lineno": 263362
+            },
+            {
+              "colno": 13,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "flushSyncCallbackQueueImpl",
+              "in_app": true,
+              "lineno": 263374
+            },
+            {
+              "colno": 14,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "runWithPriority$1",
+              "lineno": 263325
+            },
+            {
+              "colno": 16,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "unstable_runWithPriority",
+              "lineno": 291265
+            },
+            {
+              "colno": 30,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "?",
+              "lineno": 263379
+            },
+            {
+              "colno": 22,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "performSyncWorkOnRoot",
+              "lineno": 274126
+            },
+            {
+              "colno": 11,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "renderRootSync",
+              "lineno": 274509
+            },
+            {
+              "colno": 9,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "workLoopSync",
+              "lineno": 274543
+            },
+            {
+              "colno": 16,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "performUnitOfWork",
+              "lineno": 274606
+            },
+            {
+              "colno": 18,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "beginWork$1",
+              "in_app": true,
+              "lineno": 275746
+            },
+            {
+              "colno": 20,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "beginWork",
+              "lineno": 270944
+            },
+            {
+              "colno": 24,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "updateFunctionComponent",
+              "lineno": 269291
+            },
+            {
+              "colno": 22,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "renderWithHooks",
+              "lineno": 266969
+            },
+            {
+              "colno": 74,
+              "filename": "http://fe:3002/static/js/main.chunk.js",
+              "function": "?",
+              "in_app": true,
+              "lineno": 2600
+            },
+            {
+              "colno": 65,
+              "filename": "http://fe:3002/static/js/main.chunk.js",
+              "function": "useGetBooksQuery",
+              "lineno": 1299
+            },
+            {
+              "colno": 85,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "Module.useQuery",
+              "lineno": 8495
+            },
+            {
+              "colno": 83,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "useBaseQuery",
+              "in_app": true,
+              "lineno": 8656
+            },
+            {
+              "colno": 14,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "useDeepMemo",
+              "lineno": 8696
+            },
+            {
+              "colno": 55,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "?",
+              "lineno": 8657
+            },
+            {
+              "colno": 47,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "QueryData.execute",
+              "in_app": true,
+              "lineno": 7883
+            },
+            {
+              "colno": 23,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "QueryData.getExecuteResult",
+              "lineno": 7944
+            },
+            {
+              "colno": 19,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "QueryData._this.getQueryResult",
+              "lineno": 7790
+            },
+            {
+              "colno": 24,
+              "filename": "http://fe:3002/static/js/vendors~main.chunk.js",
+              "function": "new ApolloError",
+              "in_app": true,
+              "lineno": 5164
+            }
+          ]
+        },
+        "timestamp": "2021-09-30T10:46:17.680Z",
+        "trace": {
+          "trace_id": "abcd",
+          "span_id": "def"
+        },
+        "context": {
+          "component": "ReactErrorBoundary",
+          "ReactError": "Annoying Error"
+        }
+      }
+    ],
+    "measurements": [
+      {
+        "values": {
+          "ttfp": 20.12,
+          "ttfcp": 22.12,
+          "ttfb": 14
+        },
+        "type": "page load",
+        "timestamp": "2021-09-30T10:46:17.680Z",
+        "trace": {
+          "trace_id": "abcd",
+          "span_id": "def"
+        },
+        "context": {
+          "hello": "world"
+        }
+      }
+    ],
+    "meta": {
+      "sdk": {
+        "name": "grafana-frontend-agent",
+        "version": "1.3.5"
+      },
+      "app": {
+        "name": "testapp",
+        "namespace": "testnamespace",
+        "release": "0.8.2",
+        "version": "abcdefg",
+        "environment": "production",
+        "bundleId": "testBundleId"
+      },
+      "user": {
+        "username": "testuser",
+        "id": "123",
+        "email": "geralt@kaermorhen.org",
+        "attributes": {
+          "foo": "bar"
+        }
+      },
+      "session": {
+        "id": "abcd",
+        "attributes": {
+          "time_elapsed": "100s"
+        }
+      },
+      "page": {
+        "url": "https://example.com/page"
+      },
+      "browser": {
+        "name": "chrome",
+        "version": "88.12.1",
+        "os": "linux",
+        "mobile": false
+      },
+      "view": {
+        "name": "foobar"
+      }
+    },
+    "traces": {
+      "resourceSpans": [
+        {
+          "resource": {
+            "attributes": [
+              {
+                "key": "service.name",
+                "value": {
+                  "stringValue": "testapp"
+                }
+              },
+              {
+                "key": "telemetry.sdk.language",
+                "value": {
+                  "stringValue": "webjs"
+                }
+              },
+              {
+                "key": "telemetry.sdk.name",
+                "value": {
+                  "stringValue": "opentelemetry"
+                }
+              },
+              {
+                "key": "telemetry.sdk.version",
+                "value": {
+                  "stringValue": "1.21.0"
+                }
+              },
+              {
+                "key": "service.version",
+                "value": {
+                  "stringValue": "abcdefg"
+                }
+              },
+              {
+                "key": "deployment.environment",
+                "value": {
+                  "stringValue": "production"
+                }
+              },
+              {
+                "key": "service.namespace",
+                "value": {
+                  "stringValue": "testnamespace"
+                }
+              }
+            ],
+            "droppedAttributesCount": 0
+          },
+          "scopeSpans": [
+            {
+              "scope": {
+                "name": "@opentelemetry/instrumentation-fetch",
+                "version": "0.48.0"
+              },
+              "spans": [
+                {
+                  "traceId": "bac44bf5d6d040fc5fdf9bc22442c6f2",
+                  "spanId": "f71b2cc42962650f",
+                  "name": "HTTP GET",
+                  "kind": 3,
+                  "startTimeUnixNano": "1718700770771000000",
+                  "endTimeUnixNano": "1718700770800000000",
+                  "attributes": [
+                    {
+                      "key": "component",
+                      "value": {
+                        "stringValue": "fetch"
+                      }
+                    },
+                    {
+                      "key": "http.method",
+                      "value": {
+                        "stringValue": "GET"
+                      }
+                    },
+                    {
+                      "key": "http.url",
+                      "value": {
+                        "stringValue": "http://localhost:5173/"
+                      }
+                    },
+                    {
+                      "key": "session_id",
+                      "value": {
+                        "stringValue": "cD3am6QTPa"
+                      }
+                    },
+                    {
+                      "key": "http.status_code",
+                      "value": {
+                        "intValue": 200
+                      }
+                    },
+                    {
+                      "key": "http.status_text",
+                      "value": {
+                        "stringValue": "OK"
+                      }
+                    },
+                    {
+                      "key": "http.host",
+                      "value": {
+                        "stringValue": "localhost:5173"
+                      }
+                    },
+                    {
+                      "key": "http.scheme",
+                      "value": {
+                        "stringValue": "http"
+                      }
+                    },
+                    {
+                      "key": "http.user_agent",
+                      "value": {
+                        "stringValue": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10.15; rv:128.0) Gecko/20100101 Firefox/128.0"
+                      }
+                    },
+                    {
+                      "key": "http.response_content_length",
+                      "value": {
+                        "intValue": 2819
+                      }
+                    }
+                  ],
+                  "droppedAttributesCount": 0,
+                  "events": [
+                    {
+                      "attributes": [],
+                      "name": "fetchStart",
+                      "timeUnixNano": "1718700770771000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "domainLookupStart",
+                      "timeUnixNano": "1718700770775000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "domainLookupEnd",
+                      "timeUnixNano": "1718700770775000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "connectStart",
+                      "timeUnixNano": "1718700770775000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "connectEnd",
+                      "timeUnixNano": "1718700770775000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "requestStart",
+                      "timeUnixNano": "1718700770775000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "responseStart",
+                      "timeUnixNano": "1718700770797000000",
+                      "droppedAttributesCount": 0
+                    },
+                    {
+                      "attributes": [],
+                      "name": "responseEnd",
+                      "timeUnixNano": "1718700770797000000",
+                      "droppedAttributesCount": 0
+                    }
+                  ],
+                  "droppedEventsCount": 0,
+                  "status": {
+                    "code": 0
+                  },
+                  "links": [],
+                  "droppedLinksCount": 0
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  }
+  

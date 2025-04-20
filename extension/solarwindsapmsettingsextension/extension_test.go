@@ -249,7 +249,7 @@ func TestRefresh(t *testing.T) {
 			mockTraceCollectorClient.On("GetSettings", mock.Anything, mock.Anything).Return(tt.reply, nil)
 			observedZapCore, observedLogs := observer.New(zap.InfoLevel)
 			settings := newNopSettings()
-			settings.TelemetrySettings.Logger = zap.New(observedZapCore)
+			settings.Logger = zap.New(observedZapCore)
 			settingsExtension := &solarwindsapmSettingsExtension{
 				config:            tt.cfg,
 				telemetrySettings: settings.TelemetrySettings,

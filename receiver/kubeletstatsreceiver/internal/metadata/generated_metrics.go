@@ -38,6 +38,256 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"transmit": AttributeDirectionTransmit,
 }
 
+var MetricsInfo = metricsInfo{
+	ContainerCPUTime: metricInfo{
+		Name: "container.cpu.time",
+	},
+	ContainerCPUUsage: metricInfo{
+		Name: "container.cpu.usage",
+	},
+	ContainerCPUUtilization: metricInfo{
+		Name: "container.cpu.utilization",
+	},
+	ContainerFilesystemAvailable: metricInfo{
+		Name: "container.filesystem.available",
+	},
+	ContainerFilesystemCapacity: metricInfo{
+		Name: "container.filesystem.capacity",
+	},
+	ContainerFilesystemUsage: metricInfo{
+		Name: "container.filesystem.usage",
+	},
+	ContainerMemoryAvailable: metricInfo{
+		Name: "container.memory.available",
+	},
+	ContainerMemoryMajorPageFaults: metricInfo{
+		Name: "container.memory.major_page_faults",
+	},
+	ContainerMemoryPageFaults: metricInfo{
+		Name: "container.memory.page_faults",
+	},
+	ContainerMemoryRss: metricInfo{
+		Name: "container.memory.rss",
+	},
+	ContainerMemoryUsage: metricInfo{
+		Name: "container.memory.usage",
+	},
+	ContainerMemoryWorkingSet: metricInfo{
+		Name: "container.memory.working_set",
+	},
+	ContainerUptime: metricInfo{
+		Name: "container.uptime",
+	},
+	K8sContainerCPUNodeUtilization: metricInfo{
+		Name: "k8s.container.cpu.node.utilization",
+	},
+	K8sContainerCPULimitUtilization: metricInfo{
+		Name: "k8s.container.cpu_limit_utilization",
+	},
+	K8sContainerCPURequestUtilization: metricInfo{
+		Name: "k8s.container.cpu_request_utilization",
+	},
+	K8sContainerMemoryNodeUtilization: metricInfo{
+		Name: "k8s.container.memory.node.utilization",
+	},
+	K8sContainerMemoryLimitUtilization: metricInfo{
+		Name: "k8s.container.memory_limit_utilization",
+	},
+	K8sContainerMemoryRequestUtilization: metricInfo{
+		Name: "k8s.container.memory_request_utilization",
+	},
+	K8sNodeCPUTime: metricInfo{
+		Name: "k8s.node.cpu.time",
+	},
+	K8sNodeCPUUsage: metricInfo{
+		Name: "k8s.node.cpu.usage",
+	},
+	K8sNodeCPUUtilization: metricInfo{
+		Name: "k8s.node.cpu.utilization",
+	},
+	K8sNodeFilesystemAvailable: metricInfo{
+		Name: "k8s.node.filesystem.available",
+	},
+	K8sNodeFilesystemCapacity: metricInfo{
+		Name: "k8s.node.filesystem.capacity",
+	},
+	K8sNodeFilesystemUsage: metricInfo{
+		Name: "k8s.node.filesystem.usage",
+	},
+	K8sNodeMemoryAvailable: metricInfo{
+		Name: "k8s.node.memory.available",
+	},
+	K8sNodeMemoryMajorPageFaults: metricInfo{
+		Name: "k8s.node.memory.major_page_faults",
+	},
+	K8sNodeMemoryPageFaults: metricInfo{
+		Name: "k8s.node.memory.page_faults",
+	},
+	K8sNodeMemoryRss: metricInfo{
+		Name: "k8s.node.memory.rss",
+	},
+	K8sNodeMemoryUsage: metricInfo{
+		Name: "k8s.node.memory.usage",
+	},
+	K8sNodeMemoryWorkingSet: metricInfo{
+		Name: "k8s.node.memory.working_set",
+	},
+	K8sNodeNetworkErrors: metricInfo{
+		Name: "k8s.node.network.errors",
+	},
+	K8sNodeNetworkIo: metricInfo{
+		Name: "k8s.node.network.io",
+	},
+	K8sNodeUptime: metricInfo{
+		Name: "k8s.node.uptime",
+	},
+	K8sPodCPUNodeUtilization: metricInfo{
+		Name: "k8s.pod.cpu.node.utilization",
+	},
+	K8sPodCPUTime: metricInfo{
+		Name: "k8s.pod.cpu.time",
+	},
+	K8sPodCPUUsage: metricInfo{
+		Name: "k8s.pod.cpu.usage",
+	},
+	K8sPodCPUUtilization: metricInfo{
+		Name: "k8s.pod.cpu.utilization",
+	},
+	K8sPodCPULimitUtilization: metricInfo{
+		Name: "k8s.pod.cpu_limit_utilization",
+	},
+	K8sPodCPURequestUtilization: metricInfo{
+		Name: "k8s.pod.cpu_request_utilization",
+	},
+	K8sPodFilesystemAvailable: metricInfo{
+		Name: "k8s.pod.filesystem.available",
+	},
+	K8sPodFilesystemCapacity: metricInfo{
+		Name: "k8s.pod.filesystem.capacity",
+	},
+	K8sPodFilesystemUsage: metricInfo{
+		Name: "k8s.pod.filesystem.usage",
+	},
+	K8sPodMemoryAvailable: metricInfo{
+		Name: "k8s.pod.memory.available",
+	},
+	K8sPodMemoryMajorPageFaults: metricInfo{
+		Name: "k8s.pod.memory.major_page_faults",
+	},
+	K8sPodMemoryNodeUtilization: metricInfo{
+		Name: "k8s.pod.memory.node.utilization",
+	},
+	K8sPodMemoryPageFaults: metricInfo{
+		Name: "k8s.pod.memory.page_faults",
+	},
+	K8sPodMemoryRss: metricInfo{
+		Name: "k8s.pod.memory.rss",
+	},
+	K8sPodMemoryUsage: metricInfo{
+		Name: "k8s.pod.memory.usage",
+	},
+	K8sPodMemoryWorkingSet: metricInfo{
+		Name: "k8s.pod.memory.working_set",
+	},
+	K8sPodMemoryLimitUtilization: metricInfo{
+		Name: "k8s.pod.memory_limit_utilization",
+	},
+	K8sPodMemoryRequestUtilization: metricInfo{
+		Name: "k8s.pod.memory_request_utilization",
+	},
+	K8sPodNetworkErrors: metricInfo{
+		Name: "k8s.pod.network.errors",
+	},
+	K8sPodNetworkIo: metricInfo{
+		Name: "k8s.pod.network.io",
+	},
+	K8sPodUptime: metricInfo{
+		Name: "k8s.pod.uptime",
+	},
+	K8sVolumeAvailable: metricInfo{
+		Name: "k8s.volume.available",
+	},
+	K8sVolumeCapacity: metricInfo{
+		Name: "k8s.volume.capacity",
+	},
+	K8sVolumeInodes: metricInfo{
+		Name: "k8s.volume.inodes",
+	},
+	K8sVolumeInodesFree: metricInfo{
+		Name: "k8s.volume.inodes.free",
+	},
+	K8sVolumeInodesUsed: metricInfo{
+		Name: "k8s.volume.inodes.used",
+	},
+}
+
+type metricsInfo struct {
+	ContainerCPUTime                     metricInfo
+	ContainerCPUUsage                    metricInfo
+	ContainerCPUUtilization              metricInfo
+	ContainerFilesystemAvailable         metricInfo
+	ContainerFilesystemCapacity          metricInfo
+	ContainerFilesystemUsage             metricInfo
+	ContainerMemoryAvailable             metricInfo
+	ContainerMemoryMajorPageFaults       metricInfo
+	ContainerMemoryPageFaults            metricInfo
+	ContainerMemoryRss                   metricInfo
+	ContainerMemoryUsage                 metricInfo
+	ContainerMemoryWorkingSet            metricInfo
+	ContainerUptime                      metricInfo
+	K8sContainerCPUNodeUtilization       metricInfo
+	K8sContainerCPULimitUtilization      metricInfo
+	K8sContainerCPURequestUtilization    metricInfo
+	K8sContainerMemoryNodeUtilization    metricInfo
+	K8sContainerMemoryLimitUtilization   metricInfo
+	K8sContainerMemoryRequestUtilization metricInfo
+	K8sNodeCPUTime                       metricInfo
+	K8sNodeCPUUsage                      metricInfo
+	K8sNodeCPUUtilization                metricInfo
+	K8sNodeFilesystemAvailable           metricInfo
+	K8sNodeFilesystemCapacity            metricInfo
+	K8sNodeFilesystemUsage               metricInfo
+	K8sNodeMemoryAvailable               metricInfo
+	K8sNodeMemoryMajorPageFaults         metricInfo
+	K8sNodeMemoryPageFaults              metricInfo
+	K8sNodeMemoryRss                     metricInfo
+	K8sNodeMemoryUsage                   metricInfo
+	K8sNodeMemoryWorkingSet              metricInfo
+	K8sNodeNetworkErrors                 metricInfo
+	K8sNodeNetworkIo                     metricInfo
+	K8sNodeUptime                        metricInfo
+	K8sPodCPUNodeUtilization             metricInfo
+	K8sPodCPUTime                        metricInfo
+	K8sPodCPUUsage                       metricInfo
+	K8sPodCPUUtilization                 metricInfo
+	K8sPodCPULimitUtilization            metricInfo
+	K8sPodCPURequestUtilization          metricInfo
+	K8sPodFilesystemAvailable            metricInfo
+	K8sPodFilesystemCapacity             metricInfo
+	K8sPodFilesystemUsage                metricInfo
+	K8sPodMemoryAvailable                metricInfo
+	K8sPodMemoryMajorPageFaults          metricInfo
+	K8sPodMemoryNodeUtilization          metricInfo
+	K8sPodMemoryPageFaults               metricInfo
+	K8sPodMemoryRss                      metricInfo
+	K8sPodMemoryUsage                    metricInfo
+	K8sPodMemoryWorkingSet               metricInfo
+	K8sPodMemoryLimitUtilization         metricInfo
+	K8sPodMemoryRequestUtilization       metricInfo
+	K8sPodNetworkErrors                  metricInfo
+	K8sPodNetworkIo                      metricInfo
+	K8sPodUptime                         metricInfo
+	K8sVolumeAvailable                   metricInfo
+	K8sVolumeCapacity                    metricInfo
+	K8sVolumeInodes                      metricInfo
+	K8sVolumeInodesFree                  metricInfo
+	K8sVolumeInodesUsed                  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricContainerCPUTime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

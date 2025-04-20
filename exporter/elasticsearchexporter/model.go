@@ -125,7 +125,11 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
 		}, nil
 	case MappingOTel:
-		return otelModeEncoder{}, nil
+		ser, err := otelserializer.New()
+		if err != nil {
+			return nil, err
+		}
+		return otelModeEncoder{serializer: ser}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }
@@ -150,7 +154,9 @@ type bodymapModeEncoder struct {
 	profilesUnsupportedEncoder
 }
 
-type otelModeEncoder struct{}
+type otelModeEncoder struct {
+	serializer *otelserializer.Serializer
+}
 
 const (
 	traceIDField   = "traceID"
@@ -234,34 +240,34 @@ func (e otelModeEncoder) encodeLog(
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) error {
-	return otelserializer.SerializeLog(
+	return e.serializer.SerializeLog(
 		ec.resource, ec.resourceSchemaURL,
 		ec.scope, ec.scopeSchemaURL,
 		record, idx, buf,
 	)
 }
 
-func (otelModeEncoder) encodeSpan(
+func (e otelModeEncoder) encodeSpan(
 	ec encodingContext,
 	span ptrace.Span,
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) error {
-	return otelserializer.SerializeSpan(
+	return e.serializer.SerializeSpan(
 		ec.resource, ec.resourceSchemaURL,
 		ec.scope, ec.scopeSchemaURL,
 		span, idx, buf,
 	)
 }
 
-func (otelModeEncoder) encodeSpanEvent(
+func (e otelModeEncoder) encodeSpanEvent(
 	ec encodingContext,
 	span ptrace.Span,
 	spanEvent ptrace.SpanEvent,
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) error {
-	otelserializer.SerializeSpanEvent(
+	e.serializer.SerializeSpanEvent(
 		ec.resource, ec.resourceSchemaURL,
 		ec.scope, ec.scopeSchemaURL,
 		span, spanEvent, idx, buf,
@@ -269,26 +275,26 @@ func (otelModeEncoder) encodeSpanEvent(
 	return nil
 }
 
-func (otelModeEncoder) encodeMetrics(
+func (e otelModeEncoder) encodeMetrics(
 	ec encodingContext,
 	dataPoints []datapoints.DataPoint,
 	validationErrors *[]error,
 	idx elasticsearch.Index,
 	buf *bytes.Buffer,
 ) (map[string]string, error) {
-	return otelserializer.SerializeMetrics(
+	return e.serializer.SerializeMetrics(
 		ec.resource, ec.resourceSchemaURL,
 		ec.scope, ec.scopeSchemaURL,
 		dataPoints, validationErrors, idx, buf,
 	)
 }
 
-func (otelModeEncoder) encodeProfile(
+func (e otelModeEncoder) encodeProfile(
 	ec encodingContext,
 	profile pprofile.Profile,
 	pushData func(*bytes.Buffer, string, string) error,
 ) error {
-	return otelserializer.SerializeProfile(ec.resource, ec.scope, profile, pushData)
+	return e.serializer.SerializeProfile(ec.resource, ec.scope, profile, pushData)
 }
 
 func (e bodymapModeEncoder) encodeLog(
@@ -306,11 +312,11 @@ func (e bodymapModeEncoder) encodeLog(
 }
 
 func (bodymapModeEncoder) encodeSpan(encodingContext, ptrace.Span, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding spans")
+	return errors.New("bodymap mode does not support encoding spans")
 }
 
 func (bodymapModeEncoder) encodeSpanEvent(encodingContext, ptrace.Span, ptrace.SpanEvent, elasticsearch.Index, *bytes.Buffer) error {
-	return fmt.Errorf("bodymap mode does not support encoding span events")
+	return errors.New("bodymap mode does not support encoding span events")
 }
 
 type metricsUnsupportedEncoder struct {
