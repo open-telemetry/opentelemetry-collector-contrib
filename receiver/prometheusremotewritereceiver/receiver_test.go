@@ -7,6 +7,7 @@ import (
 	"bytes"
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -19,6 +20,7 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -482,4 +484,69 @@ func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 	m.metrics = append(m.metrics, md)
 	m.dataPoints += md.DataPointCount()
 	return nil
+}
+
+// TestSnappyCompression instantiates the http server and sends a compressed request to it. This is a required
+// test to ensure that the httpContentDecompressor inside of confighttp package is dealing with snappy compression correctly.
+// The unit test alternative is not a good idea because the decompressor is a middleware and it is not possible to test it without
+// instantiating the whole server.
+// Wating https://github.com/open-telemetry/opentelemetry-collector/pull/12825 to be merged, then this test will work properly.
+func TestSnappyCompression(t *testing.T) {
+	// Create a test server using the same configuration as in Start()
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	cfg.(*Config).Endpoint = "localhost:9090" // Use a random port
+
+	// Create the receiver
+	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NoError(t, err)
+	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
+
+	// Start the server
+	host := componenttest.NewNopHost()
+	err = prwReceiver.Start(context.Background(), host)
+	assert.NoError(t, err)
+	defer func() {
+		assert.NoError(t, prwReceiver.Shutdown(context.Background()))
+	}()
+
+	body := writev2.Request{
+		Symbols: []string{
+			"",
+			"__name__", "test_metric1", // 1, 2
+			"job", "service-x/test", // 3, 4
+			"instance", "107cn001", // 5, 6
+			"d", "e", // 7, 8
+		},
+		Timeseries: []writev2.TimeSeries{
+			{
+				Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+				LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8},
+				Samples:    []writev2.Sample{{Value: 1, Timestamp: 1}},
+			},
+		},
+	}
+
+	pBuf := proto.NewBuffer(nil)
+	err = pBuf.Marshal(&body)
+	assert.NoError(t, err)
+
+	compressedBody := snappy.Encode(nil, pBuf.Bytes())
+
+	httpReq, err := http.NewRequest("POST", "http://0.0.0.0:9090/api/v1/write", bytes.NewBuffer(compressedBody))
+	assert.NoError(t, err)
+
+	httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+	httpReq.Header.Set("Content-Encoding", "snappy")
+
+	client := &http.Client{}
+	resp, err := client.Do(httpReq)
+	assert.NoError(t, err)
+	defer resp.Body.Close()
+
+	bodyBytes, err := io.ReadAll(resp.Body)
+	assert.NoError(t, err)
+	bodyString := string(bodyBytes)
+
+	assert.Equal(t, http.StatusNoContent, resp.StatusCode, bodyString)
 }

@@ -14,7 +14,6 @@ import (
 
 	"github.com/cespare/xxhash/v2"
 	"github.com/gogo/protobuf/proto"
-	"github.com/golang/snappy"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/model/labels"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
@@ -157,15 +156,8 @@ func (prw *prometheusRemoteWriteReceiver) handlePRW(w http.ResponseWriter, req *
 		return
 	}
 
-	decompressedBody, err := snappy.Decode(nil, body)
-	if err != nil {
-		prw.settings.Logger.Warn("Error decoding remote write request to snappy", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
-		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
-	}
-
 	var prw2Req writev2.Request
-	if err = proto.Unmarshal(decompressedBody, &prw2Req); err != nil {
+	if err = proto.Unmarshal(body, &prw2Req); err != nil {
 		prw.settings.Logger.Warn("Error unmarsahlling remote write request to protobuf", zapcore.Field{Key: "error", Type: zapcore.ErrorType, Interface: err})
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
