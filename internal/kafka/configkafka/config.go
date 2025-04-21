@@ -304,7 +304,7 @@ type SASLConfig struct {
 	// AWSMSK holds configuration specific to AWS MSK.
 	AWSMSK AWSMSKConfig `mapstructure:"aws_msk"`
 	// Name of the OAUTH extension to use
-	TokenSourceExtension component.ID `mapstructure:"token_source_extension,omitempty"`
+	TokenSourceExtension *component.ID `mapstructure:"token_source_extension,omitempty"`
 }
 
 func (c SASLConfig) Validate() error {
