@@ -87,8 +87,8 @@ func testArchive(t *testing.T, pollsToArchive int) {
 
 	// sub-test 2: newer fingerprints should be part of archive
 	for index, fp := range m {
-		new, err := archive.readArchive(index)
-		require.Equalf(t, new.Len(), 1, "index %d should have exactly one item", index)
+		oldArchive, err := archive.readArchive(index)
+		require.Equalf(t, 1, oldArchive.Len(), "index %d should have exactly one item", index)
 		require.NoError(t, err)
 
 		// FindFiles removes the data from persister.
@@ -97,8 +97,8 @@ func testArchive(t *testing.T, pollsToArchive int) {
 		require.True(t, fp.Equal(matchedData[0].GetFingerprint()), "expected fingerprints to match")
 
 		// archive should no longer contain data (as FindFiles removed the data)
-		new, err = archive.readArchive(index)
-		require.Equalf(t, new.Len(), 0, "index %d should no longer have any items", index)
+		newArchive, err := archive.readArchive(index)
+		require.Equalf(t, 0, newArchive.Len(), "index %d should no longer have any items", index)
 		require.NoError(t, err)
 	}
 }
