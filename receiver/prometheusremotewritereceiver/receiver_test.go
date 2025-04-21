@@ -567,34 +567,31 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 	client := &http.Client{}
 
 	// Send both requests
-	for i, req := range requests {
-		t.Run(fmt.Sprintf("request_%d", i), func(t *testing.T) {
-			// Marshal and compress
-			pBuf := proto.NewBuffer(nil)
-			err := pBuf.Marshal(req)
-			assert.NoError(t, err)
-			compressedBody := snappy.Encode(nil, pBuf.Bytes())
+	for _, req := range requests {
+		// Marshal and compress
+		pBuf := proto.NewBuffer(nil)
+		err := pBuf.Marshal(req)
+		assert.NoError(t, err)
+		compressedBody := snappy.Encode(nil, pBuf.Bytes())
 
-			// Create and send request
-			httpReq, err := http.NewRequest(
-				http.MethodPost,
-				"http://0.0.0.0:9090/api/v1/write",
-				bytes.NewBuffer(compressedBody),
-			)
-			assert.NoError(t, err)
+		// Create and send request
+		httpReq, err := http.NewRequest(
+			http.MethodPost,
+			"http://0.0.0.0:9090/api/v1/write",
+			bytes.NewBuffer(compressedBody),
+		)
+		assert.NoError(t, err)
 
-			httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
-			httpReq.Header.Set("Content-Encoding", "snappy")
+		httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+		httpReq.Header.Set("Content-Encoding", "snappy")
 
-			resp, err := client.Do(httpReq)
-			assert.NoError(t, err)
-			defer resp.Body.Close()
+		resp, err := client.Do(httpReq)
+		assert.NoError(t, err)
+		defer resp.Body.Close()
 
-			body, err := io.ReadAll(resp.Body)
-			assert.NoError(t, err)
-
-			assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
-		})
+		body, err := io.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 	}
 
 	// Verify final metrics
