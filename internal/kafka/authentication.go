@@ -7,10 +7,10 @@ import (
 	"context"
 	"crypto/sha256"
 	"crypto/sha512"
-	"google.golang.org/grpc/credentials/oauth"
 
 	"github.com/IBM/sarama"
 	"github.com/aws/aws-msk-iam-sasl-signer-go/signer"
+	"google.golang.org/grpc/credentials/oauth"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/awsmsk"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"

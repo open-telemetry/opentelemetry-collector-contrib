@@ -6,10 +6,10 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/component"
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -310,7 +310,7 @@ type SASLConfig struct {
 func (c SASLConfig) Validate() error {
 	switch c.Mechanism {
 	case "OAUTHBEARER":
-		if c.TokenSourceExtension.String() == "" {
+		if c.TokenSourceExtension == nil {
 			return errors.New("token_source_extension is required")
 		}
 	case "AWS_MSK_IAM", "AWS_MSK_IAM_OAUTHBEARER":
