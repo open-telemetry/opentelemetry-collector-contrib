@@ -32,7 +32,7 @@ func TestMetricAccumulator(t *testing.T) {
 	summary, _ := statsProvider.StatsSummary()
 	metadataProvider := NewMetadataProvider(rc)
 	podsMetadata, _ := metadataProvider.Pods()
-	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeCapacity{}, nil)
+	k8sMetadata := NewMetadata([]MetadataLabel{MetadataLabelContainerID}, podsMetadata, NodeInfo{}, nil)
 	mbs := &metadata.MetricsBuilders{
 		NodeMetricsBuilder:      metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
 		PodMetricsBuilder:       metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type)),
@@ -64,7 +64,7 @@ func requireMetricsOk(t *testing.T, mds []pmetric.Metrics) {
 }
 
 func requireMetricOk(t *testing.T, m pmetric.Metric) {
-	require.NotZero(t, m.Name())
+	require.NotEmpty(t, m.Name())
 	require.NotEqual(t, pmetric.MetricTypeEmpty, m.Type())
 	switch m.Type() {
 	case pmetric.MetricTypeGauge:

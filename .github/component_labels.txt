@@ -1,5 +1,4 @@
 # This file is auto-generated. Do not edit manually.
-cmd/checkapi cmd/checkapi
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
@@ -166,6 +165,7 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/datadogsemanticsprocessor processor/datadogsemantics
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
+processor/dnslookupprocessor processor/dnslookup
 processor/filterprocessor processor/filter
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs

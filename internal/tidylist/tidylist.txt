@@ -1,8 +1,3 @@
-cmd/checkapi
-cmd/checkapi/internal/altpkg/receiver/altreceiver
-cmd/checkapi/internal/altpkg/receiver/badreceiver
-cmd/checkapi/internal/badpkg/receiver/badreceiver
-cmd/checkapi/internal/testpkg/receiver/validreceiver
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
@@ -108,6 +103,7 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+pkg/translator/faro
 exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
@@ -201,7 +197,6 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
-pkg/translator/faro
 pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
@@ -209,6 +204,7 @@ processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
 processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
+processor/dnslookupprocessor
 processor/filterprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor

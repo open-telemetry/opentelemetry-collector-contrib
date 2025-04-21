@@ -30,7 +30,7 @@ func TestFactory(t *testing.T) {
 			desc: "creates a new factory with correct type",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, metadata.Type, factory.Type())
+				require.Equal(t, metadata.Type, factory.Type())
 			},
 		},
 		{
@@ -102,7 +102,7 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, cfg.Validate())
 				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
@@ -190,7 +190,7 @@ func TestFactory(t *testing.T) {
 				require.NoError(t, cfg.Validate())
 				cfg.Metrics.SqlserverDatabaseLatency.Enabled = true
 
-				require.True(t, directDBConnectionEnabled(cfg))
+				require.True(t, cfg.isDirectDBConnectionEnabled)
 				require.Equal(t, "server=0.0.0.0;user id=sa;password=password;port=1433", getDBConnectionString(cfg))
 
 				params := receivertest.NewNopSettings(metadata.Type)
@@ -210,8 +210,7 @@ func TestFactory(t *testing.T) {
 				sqlScrapers = setupSQLServerLogsScrapers(params, cfg)
 				require.NotEmpty(t, sqlScrapers)
 
-				q, err := getSQLServerQueryTextAndPlanQuery(cfg.InstanceName, cfg.MaxQuerySampleCount, cfg.LookbackTime)
-				require.NoError(t, err)
+				q := getSQLServerQueryTextAndPlanQuery()
 
 				databaseTopQueryScraperFound := false
 				for _, scraper := range sqlScrapers {

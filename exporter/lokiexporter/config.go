@@ -4,6 +4,7 @@
 package lokiexporter // import "github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter"
 
 import (
+	"errors"
 	"fmt"
 	"net/url"
 
@@ -27,7 +28,7 @@ func (c *Config) Validate() error {
 	}
 
 	if _, err := url.Parse(c.Endpoint); c.Endpoint == "" || err != nil {
-		return fmt.Errorf("\"endpoint\" must be a valid URL")
+		return errors.New("\"endpoint\" must be a valid URL")
 	}
 	return nil
 }

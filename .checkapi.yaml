@@ -1,0 +1,67 @@
+ignored_paths:
+  - cmd/telemetrygen
+  - cmd/opampsupervisor
+  - exporter/datadogexporter/integrationtest
+  - extension/observer
+  - extension/encoding
+  - extension/opampcustommessages
+  - pkg/batchperresourceattr
+  - pkg/batchpersignal
+  - pkg/core/xidutils
+  - pkg/datadog
+  - pkg/experimentalmetricmetadata
+  - pkg/golden
+  - pkg/kafka/topic
+  - pkg/ottl
+  - pkg/pdatautil
+  - pkg/resourcetotelemetry
+  - pkg/sampling
+  - pkg/status
+  - pkg/translator/azure
+  - pkg/translator/azurelogs
+  - pkg/translator/faro
+  - pkg/translator/jaeger
+  - pkg/translator/loki
+  - pkg/translator/opencensus
+  - pkg/translator/prometheus
+  - pkg/translator/prometheusremotewrite
+  - pkg/translator/signalfx
+  - pkg/translator/skywalking
+  - pkg/winperfcounters
+  - pkg/xk8stest
+  - processor/tailsamplingprocessor
+  - receiver/pulsarreceiver # 38930
+  - exporter/pulsarexporter # 38929
+  - exporter/elasticsearchexporter/integrationtest
+  - scraper/zookeeperscraper
+  - testbed/mockdatasenders/mockdatadogagentexporter
+allowed_functions:
+  - name: NewFactory
+    classes:
+      - provider
+    return_types: [confmap.ProviderFactory]
+  - name: NewFactory
+    classes:
+      - connector
+    return_types: [connector.Factory]
+  - name: NewFactory
+    classes:
+      - exporter
+    return_types: [exporter.Factory]
+  - name: NewFactory
+    classes:
+      - extension
+    return_types: [extension.Factory]
+  - name: NewFactory
+    classes:
+      - processor
+    return_types: [processor.Factory]
+  - name: NewFactory
+    classes:
+      - receiver
+    return_types: [receiver.Factory]
+
+ignored_functions:
+  - ^Test.*
+  - ^Benchmark.*
+  - ^Fuzz.*

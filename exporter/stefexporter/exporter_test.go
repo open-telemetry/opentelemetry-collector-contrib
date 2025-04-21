@@ -141,7 +141,7 @@ func runTest(
 	if cfg == nil {
 		cfg = factory.CreateDefaultConfig().(*Config)
 	}
-	cfg.ClientConfig.Endpoint = mockSrv.endpoint
+	cfg.Endpoint = mockSrv.endpoint
 	// Use insecure mode for tests so that we don't bother with certificates.
 	cfg.TLSSetting.Insecure = true
 
@@ -149,7 +149,7 @@ func runTest(
 	cfg.RetryConfig.InitialInterval = 10 * time.Millisecond
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
@@ -212,7 +212,7 @@ func TestReconnect(t *testing.T) {
 	// Shorten max ack waiting time so that the attempt to send on a failed
 	// connection times out quickly and attempt to send again is tried
 	// until the broken connection is detected and reconnection happens.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -261,7 +261,7 @@ func TestAckTimeout(t *testing.T) {
 
 	// Shorten max ack waiting time so that tests run fast.
 	// Increase this if the second eventually() below fails sporadically.
-	cfg.TimeoutConfig.Timeout = 300 * time.Millisecond
+	cfg.Timeout = 300 * time.Millisecond
 
 	runTest(
 		t,
@@ -294,7 +294,7 @@ func TestAckTimeout(t *testing.T) {
 
 			mockSrv.logger.Debug("Second set of data received after reconnection. Should be acknowledged.")
 			// Verify that acks were sent.
-			assert.EqualValues(t, pointCount, mockSrv.acksSent.Load())
+			assert.Equal(t, pointCount, mockSrv.acksSent.Load())
 		},
 	)
 }
@@ -316,7 +316,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -349,7 +349,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	)
 
 	// Ensure data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }
 
 func TestCancelBlockedExport(t *testing.T) {
@@ -372,7 +372,7 @@ func TestCancelBlockedExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -405,7 +405,7 @@ func TestCancelBlockedExport(t *testing.T) {
 		require.Error(t, err)
 		stat, ok := status.FromError(err)
 		assert.True(t, ok)
-		assert.EqualValues(t, codes.Canceled, stat.Code())
+		assert.Equal(t, codes.Canceled, stat.Code())
 	}
 }
 
@@ -426,7 +426,7 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(exportertest.NopType)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)
@@ -461,5 +461,5 @@ func TestCancelAfterExport(t *testing.T) {
 	}
 
 	// Ensure all data is received.
-	assert.EqualValues(t, pointCount, mockSrv.recordsReceived.Load())
+	assert.Equal(t, pointCount, mockSrv.recordsReceived.Load())
 }

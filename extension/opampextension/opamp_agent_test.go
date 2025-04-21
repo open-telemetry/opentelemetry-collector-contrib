@@ -5,7 +5,7 @@ package opampextension
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -473,14 +473,14 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	statusUpdateChannel <- &status.AggregateStatus{
 		Event: &mockStatusEvent{
 			status:    componentstatus.StatusPermanentError,
-			err:       fmt.Errorf("unexpected error"),
+			err:       errors.New("unexpected error"),
 			timestamp: now,
 		},
 		ComponentStatusMap: map[string]*status.AggregateStatus{
 			"test-receiver": {
 				Event: &mockStatusEvent{
 					status:    componentstatus.StatusPermanentError,
-					err:       fmt.Errorf("unexpected error"),
+					err:       errors.New("unexpected error"),
 					timestamp: now,
 				},
 			},
