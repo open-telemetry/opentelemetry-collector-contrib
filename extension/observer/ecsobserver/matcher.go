@@ -131,7 +131,7 @@ func newMatchers(c Config, mOpt matcherOptions) (map[matcherType][]targetMatcher
 		}
 	}
 	if matcherCount == 0 {
-		return nil, fmt.Errorf("no matcher specified in config")
+		return nil, errors.New("no matcher specified in config")
 	}
 	return matchers, nil
 }
@@ -139,7 +139,7 @@ func newMatchers(c Config, mOpt matcherOptions) (map[matcherType][]targetMatcher
 // a global instance because it's expected and we don't care about why the container didn't match (for now).
 // In the future we might add a debug flag for each matcher config and return typed error with more detail
 // to help user debug. e.g. type ^ngix-*$ does not match nginx-service.
-var errNotMatched = fmt.Errorf("container not matched")
+var errNotMatched = errors.New("container not matched")
 
 // matchContainers apply one matcher to a list of tasks and returns matchResult.
 // It does not modify the task in place, the attaching match result logic is
