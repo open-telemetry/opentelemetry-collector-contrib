@@ -5,7 +5,6 @@ package opampextension
 
 import (
 	"errors"
-	"fmt"
 	"testing"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
@@ -173,7 +172,7 @@ func TestCustomCapability_SendMessage(t *testing.T) {
 
 		channel, err := sender.SendMessage(messageType, messageBytes)
 		require.NoError(t, err)
-		require.Nil(t, channel, nil)
+		require.Nil(t, channel)
 	})
 }
 
@@ -226,7 +225,7 @@ func TestCustomCapability_Unregister(t *testing.T) {
 		require.NoError(t, err)
 
 		client.setCustomCapabilities = func(_ *protobufs.CustomCapabilities) error {
-			return fmt.Errorf("failed to set capabilities")
+			return errors.New("failed to set capabilities")
 		}
 
 		unregisteredSender.Unregister()

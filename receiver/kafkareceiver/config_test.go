@@ -16,7 +16,6 @@ import (
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/kafkaexporter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkareceiver/internal/metadata"
 )
@@ -35,38 +34,77 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, ""),
 			expected: &Config{
-				Topic:                                "spans",
-				Encoding:                             "otlp_proto",
-				Brokers:                              []string{"foo:123", "bar:456"},
-				ResolveCanonicalBootstrapServersOnly: true,
-				ClientID:                             "otel-collector",
-				GroupID:                              "otel-collector",
-				InitialOffset:                        "latest",
-				SessionTimeout:                       10 * time.Second,
-				HeartbeatInterval:                    3 * time.Second,
-				Authentication: configkafka.AuthenticationConfig{
-					TLS: &configtls.ClientConfig{
-						Config: configtls.Config{
-							CAFile:   "ca.pem",
-							CertFile: "cert.pem",
-							KeyFile:  "key.pem",
-						},
-					},
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"foo:123", "bar:456"}
+					config.ResolveCanonicalBootstrapServersOnly = true
+					config.ClientID = "the_client_id"
+					return config
+				}(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.GroupID = "the_group_id"
+					return config
+				}(),
+				Logs: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
 				},
-				Metadata: kafkaexporter.Metadata{
-					Full: true,
-					Retry: kafkaexporter.MetadataRetry{
-						Max:     10,
-						Backoff: time.Second * 5,
-					},
+				Metrics: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
 				},
-				AutoCommit: AutoCommit{
-					Enable:   true,
-					Interval: 1 * time.Second,
+				Traces: TopicEncodingConfig{
+					Topic:    "spans",
+					Encoding: "otlp_proto",
 				},
-				MinFetchSize:     1,
-				DefaultFetchSize: 1048576,
-				MaxFetchSize:     0,
+				Topic: "spans",
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_topic"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "metrics_topic",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "legacy_topic",
+					Encoding: "otlp_proto",
+				},
+				Topic: "legacy_topic",
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "legacy_encoding"),
+			expected: &Config{
+				ClientConfig:   configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: configkafka.NewDefaultConsumerConfig(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "legacy_encoding",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "metrics_encoding",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "legacy_encoding",
+				},
+				Encoding: "legacy_encoding",
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled: false,
 				},
@@ -75,37 +113,44 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "logs"),
 			expected: &Config{
-				Topic:             "logs",
-				Encoding:          "direct",
-				Brokers:           []string{"coffee:123", "foobar:456"},
-				ClientID:          "otel-collector",
-				GroupID:           "otel-collector",
-				InitialOffset:     "earliest",
-				SessionTimeout:    45 * time.Second,
-				HeartbeatInterval: 15 * time.Second,
-				Authentication: configkafka.AuthenticationConfig{
-					TLS: &configtls.ClientConfig{
+				ClientConfig: func() configkafka.ClientConfig {
+					config := configkafka.NewDefaultClientConfig()
+					config.Brokers = []string{"coffee:123", "foobar:456"}
+					config.Metadata.Retry.Max = 10
+					config.Metadata.Retry.Backoff = 5 * time.Second
+					config.Authentication.SASL = &configkafka.SASLConfig{
+						Mechanism: "PLAIN",
+						Username:  "user",
+						Password:  "password",
+					}
+					config.TLS = &configtls.ClientConfig{
 						Config: configtls.Config{
 							CAFile:   "ca.pem",
 							CertFile: "cert.pem",
 							KeyFile:  "key.pem",
 						},
-					},
+					}
+					return config
+				}(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.InitialOffset = configkafka.EarliestOffset
+					config.SessionTimeout = 45 * time.Second
+					config.HeartbeatInterval = 15 * time.Second
+					return config
+				}(),
+				Logs: TopicEncodingConfig{
+					Topic:    "logs",
+					Encoding: "direct",
 				},
-				Metadata: kafkaexporter.Metadata{
-					Full: true,
-					Retry: kafkaexporter.MetadataRetry{
-						Max:     10,
-						Backoff: time.Second * 5,
-					},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
 				},
-				AutoCommit: AutoCommit{
-					Enable:   true,
-					Interval: 1 * time.Second,
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
 				},
-				MinFetchSize:     1,
-				DefaultFetchSize: 1048576,
-				MaxFetchSize:     0,
 				ErrorBackOff: configretry.BackOffConfig{
 					Enabled:         true,
 					InitialInterval: 1 * time.Second,

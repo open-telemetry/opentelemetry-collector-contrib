@@ -144,7 +144,7 @@ func TestGrpcGateway_endToEnd(t *testing.T) {
 	assert.True(t, proto.Equal(wantResource, gotResource))
 	require.Len(t, wantSpans, 1)
 	require.Len(t, gotSpans, 1)
-	assert.EqualValues(t, wantSpans[0], gotSpans[0])
+	assert.Equal(t, wantSpans[0], gotSpans[0])
 }
 
 func TestTraceGrpcGatewayCors_endToEnd(t *testing.T) {
@@ -389,7 +389,7 @@ func TestStartListenerClosed(t *testing.T) {
 }
 
 func tempSocketName(t *testing.T) string {
-	tmpfile, err := os.CreateTemp("", "sock")
+	tmpfile, err := os.CreateTemp(t.TempDir(), "sock")
 	require.NoError(t, err)
 	require.NoError(t, tmpfile.Close())
 	socket := tmpfile.Name()

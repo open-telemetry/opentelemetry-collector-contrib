@@ -10,6 +10,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/client"
+	"go.opentelemetry.io/collector/config/configopaque"
 )
 
 type mockRoundTripper struct{}
@@ -225,7 +226,7 @@ var (
 						Key:          &header,
 						Action:       INSERT,
 						FromContext:  stringp("tenant"),
-						DefaultValue: stringp("default_tenant"),
+						DefaultValue: opaquep("default_tenant"),
 					},
 				},
 			},
@@ -243,7 +244,7 @@ var (
 						Key:          &header,
 						Action:       INSERT,
 						FromContext:  stringp("tenant"),
-						DefaultValue: stringp("default_tenant"),
+						DefaultValue: opaquep("default_tenant"),
 					},
 				},
 			},
@@ -259,4 +260,8 @@ var (
 
 func stringp(str string) *string {
 	return &str
+}
+
+func opaquep(stro configopaque.String) *configopaque.String {
+	return &stro
 }

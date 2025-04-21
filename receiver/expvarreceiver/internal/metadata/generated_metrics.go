@@ -11,6 +11,120 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	ProcessRuntimeMemstatsBuckHashSys: metricInfo{
+		Name: "process.runtime.memstats.buck_hash_sys",
+	},
+	ProcessRuntimeMemstatsFrees: metricInfo{
+		Name: "process.runtime.memstats.frees",
+	},
+	ProcessRuntimeMemstatsGcCPUFraction: metricInfo{
+		Name: "process.runtime.memstats.gc_cpu_fraction",
+	},
+	ProcessRuntimeMemstatsGcSys: metricInfo{
+		Name: "process.runtime.memstats.gc_sys",
+	},
+	ProcessRuntimeMemstatsHeapAlloc: metricInfo{
+		Name: "process.runtime.memstats.heap_alloc",
+	},
+	ProcessRuntimeMemstatsHeapIdle: metricInfo{
+		Name: "process.runtime.memstats.heap_idle",
+	},
+	ProcessRuntimeMemstatsHeapInuse: metricInfo{
+		Name: "process.runtime.memstats.heap_inuse",
+	},
+	ProcessRuntimeMemstatsHeapObjects: metricInfo{
+		Name: "process.runtime.memstats.heap_objects",
+	},
+	ProcessRuntimeMemstatsHeapReleased: metricInfo{
+		Name: "process.runtime.memstats.heap_released",
+	},
+	ProcessRuntimeMemstatsHeapSys: metricInfo{
+		Name: "process.runtime.memstats.heap_sys",
+	},
+	ProcessRuntimeMemstatsLastPause: metricInfo{
+		Name: "process.runtime.memstats.last_pause",
+	},
+	ProcessRuntimeMemstatsLookups: metricInfo{
+		Name: "process.runtime.memstats.lookups",
+	},
+	ProcessRuntimeMemstatsMallocs: metricInfo{
+		Name: "process.runtime.memstats.mallocs",
+	},
+	ProcessRuntimeMemstatsMcacheInuse: metricInfo{
+		Name: "process.runtime.memstats.mcache_inuse",
+	},
+	ProcessRuntimeMemstatsMcacheSys: metricInfo{
+		Name: "process.runtime.memstats.mcache_sys",
+	},
+	ProcessRuntimeMemstatsMspanInuse: metricInfo{
+		Name: "process.runtime.memstats.mspan_inuse",
+	},
+	ProcessRuntimeMemstatsMspanSys: metricInfo{
+		Name: "process.runtime.memstats.mspan_sys",
+	},
+	ProcessRuntimeMemstatsNextGc: metricInfo{
+		Name: "process.runtime.memstats.next_gc",
+	},
+	ProcessRuntimeMemstatsNumForcedGc: metricInfo{
+		Name: "process.runtime.memstats.num_forced_gc",
+	},
+	ProcessRuntimeMemstatsNumGc: metricInfo{
+		Name: "process.runtime.memstats.num_gc",
+	},
+	ProcessRuntimeMemstatsOtherSys: metricInfo{
+		Name: "process.runtime.memstats.other_sys",
+	},
+	ProcessRuntimeMemstatsPauseTotal: metricInfo{
+		Name: "process.runtime.memstats.pause_total",
+	},
+	ProcessRuntimeMemstatsStackInuse: metricInfo{
+		Name: "process.runtime.memstats.stack_inuse",
+	},
+	ProcessRuntimeMemstatsStackSys: metricInfo{
+		Name: "process.runtime.memstats.stack_sys",
+	},
+	ProcessRuntimeMemstatsSys: metricInfo{
+		Name: "process.runtime.memstats.sys",
+	},
+	ProcessRuntimeMemstatsTotalAlloc: metricInfo{
+		Name: "process.runtime.memstats.total_alloc",
+	},
+}
+
+type metricsInfo struct {
+	ProcessRuntimeMemstatsBuckHashSys   metricInfo
+	ProcessRuntimeMemstatsFrees         metricInfo
+	ProcessRuntimeMemstatsGcCPUFraction metricInfo
+	ProcessRuntimeMemstatsGcSys         metricInfo
+	ProcessRuntimeMemstatsHeapAlloc     metricInfo
+	ProcessRuntimeMemstatsHeapIdle      metricInfo
+	ProcessRuntimeMemstatsHeapInuse     metricInfo
+	ProcessRuntimeMemstatsHeapObjects   metricInfo
+	ProcessRuntimeMemstatsHeapReleased  metricInfo
+	ProcessRuntimeMemstatsHeapSys       metricInfo
+	ProcessRuntimeMemstatsLastPause     metricInfo
+	ProcessRuntimeMemstatsLookups       metricInfo
+	ProcessRuntimeMemstatsMallocs       metricInfo
+	ProcessRuntimeMemstatsMcacheInuse   metricInfo
+	ProcessRuntimeMemstatsMcacheSys     metricInfo
+	ProcessRuntimeMemstatsMspanInuse    metricInfo
+	ProcessRuntimeMemstatsMspanSys      metricInfo
+	ProcessRuntimeMemstatsNextGc        metricInfo
+	ProcessRuntimeMemstatsNumForcedGc   metricInfo
+	ProcessRuntimeMemstatsNumGc         metricInfo
+	ProcessRuntimeMemstatsOtherSys      metricInfo
+	ProcessRuntimeMemstatsPauseTotal    metricInfo
+	ProcessRuntimeMemstatsStackInuse    metricInfo
+	ProcessRuntimeMemstatsStackSys      metricInfo
+	ProcessRuntimeMemstatsSys           metricInfo
+	ProcessRuntimeMemstatsTotalAlloc    metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricProcessRuntimeMemstatsBuckHashSys struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.

@@ -1473,7 +1473,7 @@ func TestStatsDParser_AggregateTimerWithSummary(t *testing.T) {
 			if tt.err != nil {
 				assert.Equal(t, tt.err, err)
 			} else {
-				assert.EqualValues(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].summaries)
+				assert.Equal(t, tt.expectedSummaries, p.instrumentsByAddress[addrKey].summaries)
 			}
 		})
 	}

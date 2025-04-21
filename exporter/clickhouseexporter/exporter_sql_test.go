@@ -22,6 +22,12 @@ type (
 	}
 )
 
+func withDriverName(driverName string) func(*Config) {
+	return func(c *Config) {
+		c.driverName = driverName
+	}
+}
+
 func (test clusterTestConfig) verifyConfig(t *testing.T, cfg *Config) {
 	if test.cluster == "" {
 		require.Empty(t, cfg.clusterString())

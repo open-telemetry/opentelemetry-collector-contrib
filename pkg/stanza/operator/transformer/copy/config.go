@@ -4,7 +4,7 @@
 package copy // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/copy"
 
 import (
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/component"
 
@@ -46,11 +46,11 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	if c.From == entry.NewNilField() {
-		return nil, fmt.Errorf("copy: missing from field")
+		return nil, errors.New("copy: missing from field")
 	}
 
 	if c.To == entry.NewNilField() {
-		return nil, fmt.Errorf("copy: missing to field")
+		return nil, errors.New("copy: missing to field")
 	}
 
 	return &Transformer{

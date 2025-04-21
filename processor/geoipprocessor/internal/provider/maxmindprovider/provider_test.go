@@ -105,10 +105,12 @@ func TestProviderLocation(t *testing.T) {
 			actualAttributes, err := provider.Location(context.Background(), tt.sourceIP)
 			if tt.expectedErrMsg != "" {
 				assert.EqualError(t, err, tt.expectedErrMsg)
+				assert.NoError(t, provider.Close(context.Background()))
 				return
 			}
 
 			assert.True(t, tt.expectedAttributes.Equals(&actualAttributes))
+			assert.NoError(t, provider.Close(context.Background()))
 		})
 	}
 }

@@ -4,7 +4,7 @@
 package retain // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/transformer/retain"
 
 import (
-	"fmt"
+	"errors"
 	"strings"
 
 	"go.opentelemetry.io/collector/component"
@@ -45,7 +45,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 		return nil, err
 	}
 	if len(c.Fields) == 0 {
-		return nil, fmt.Errorf("retain: 'fields' is empty")
+		return nil, errors.New("retain: 'fields' is empty")
 	}
 
 	retainOp := &Transformer{

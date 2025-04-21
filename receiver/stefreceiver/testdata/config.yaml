@@ -1,0 +1,5 @@
+stef/endpoint:
+  endpoint: 0.0.0.0:3456
+stef/tls:
+  tls:
+    key_file: server.key
