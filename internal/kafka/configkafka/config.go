@@ -98,6 +98,14 @@ type ConsumerConfig struct {
 
 	// The maximum bytes per fetch from Kafka (default "0", no limit)
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
+
+	// RebalanceStrategy specifies the strategy to use for partition assignment.
+	// Possible values are "range", "roundrobin", and "sticky".
+	// Defaults to "range".
+	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy" validate:"omitempty,oneof=range roundrobin sticky"`
+
+	// GroupInstanceID specifies the ID of the consumer
+	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
 }
 
 func NewDefaultConsumerConfig() ConsumerConfig {
@@ -125,6 +133,18 @@ func (c ConsumerConfig) Validate() error {
 			"initial_offset should be one of 'latest' or 'earliest'. configured value %v",
 			c.InitialOffset,
 		)
+	}
+
+	if len(c.GroupRebalanceStrategy) != 0 {
+		switch c.GroupRebalanceStrategy {
+		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
+			// Valid
+		default:
+			return fmt.Errorf(
+				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
+				c.GroupRebalanceStrategy,
+			)
+		}
 	}
 	return nil
 }
