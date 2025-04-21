@@ -7,7 +7,7 @@ change_type: enhancement
 component: fileconsumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support fileconsumer to read from  compressed and uncompressed files at the same time 
+note: Support "`compression:auto`" which automatically detects file compression type and ingests data. Currently, only gzip compressed files are auto detected.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37772]

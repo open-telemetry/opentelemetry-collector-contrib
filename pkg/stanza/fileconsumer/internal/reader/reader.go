@@ -70,18 +70,33 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		r.readGzipFiles()
+		currentEOF, err := r.readGzipFiles()
+		if err != nil {
+			return
+		}
+		// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+		// we need to set the offset to the end of the file.
+		defer func() {
+			r.Offset = currentEOF
+		}()
 	case "auto":
 		// TODO: Find a better solution
 		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
 		if filepath.Ext(r.fileName) == ".gz" {
-			r.readGzipFiles()
+			currentEOF, err := r.readGzipFiles()
+			if err != nil {
+				return
+			}
+			// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
+			// we need to set the offset to the end of the file.
+			defer func() {
+				r.Offset = currentEOF
+			}()
 		} else {
 			r.reader = r.file
 		}
 	default:
 		r.reader = r.file
-
 	}
 
 	if _, err := r.file.Seek(r.Offset, 0); err != nil {
@@ -104,14 +119,14 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	r.readContents(ctx)
 }
 
-// readGzipFiles reads content from gzip compressed files
-func (r *Reader) readGzipFiles() {
+// readGzipFiles reads gzip files and returns the current file offset
+func (r *Reader) readGzipFiles() (int64, error) {
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
 	if err != nil {
 		r.set.Logger.Error("failed to stat", zap.Error(err))
-		return
+		return 0, err
 	}
 	currentEOF := info.Size()
 	// use a gzip Reader with an underlying SectionReader to pick up at the last
@@ -120,17 +135,12 @@ func (r *Reader) readGzipFiles() {
 	if err != nil {
 		if !errors.Is(err, io.EOF) {
 			r.set.Logger.Error("failed to create gzip reader", zap.Error(err))
-			return
 		}
+		return 0, err
 	}
 	r.reader = gzipReader
-	// Offset tracking in an uncompressed file is based on the length of emitted tokens, but in this case
-	// we need to set the offset to the end of the file.
-	defer func() {
-		r.Offset = currentEOF
-	}()
+	return currentEOF, nil
 }
-
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	bufPtr := r.getBufPtrFromPool()
 	defer r.bufPool.Put(bufPtr)
