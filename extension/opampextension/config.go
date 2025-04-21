@@ -4,7 +4,10 @@
 package opampextension // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/opampextension"
 
 import (
+	"context"
+	"crypto/tls"
 	"errors"
+	"fmt"
 	"net/url"
 	"time"
 
@@ -146,7 +149,21 @@ func (s OpAMPServer) GetHeaders() map[string]configopaque.String {
 	return map[string]configopaque.String{}
 }
 
-func (s OpAMPServer) GetTLSSetting() configtls.ClientConfig {
+// GetTLSConfig returns a TLS config if the endpoint is secure (wss or https)
+func (s OpAMPServer) GetTLSConfig(ctx context.Context) (*tls.Config, error) {
+	parsedURL, err := url.Parse(s.GetEndpoint())
+	if err != nil {
+		return nil, fmt.Errorf("parse server endpoint: %w", err)
+	}
+
+	if parsedURL.Scheme != "wss" && parsedURL.Scheme != "https" {
+		return nil, nil
+	}
+
+	return s.getTLSSetting().LoadTLSConfig(ctx)
+}
+
+func (s OpAMPServer) getTLSSetting() configtls.ClientConfig {
 	if s.WS != nil {
 		return s.WS.TLSSetting
 	} else if s.HTTP != nil {
