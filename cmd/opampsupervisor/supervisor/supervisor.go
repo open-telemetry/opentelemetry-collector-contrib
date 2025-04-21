@@ -728,9 +728,12 @@ func (s *Supervisor) startOpAMPServer() error {
 	s.telemetrySettings.Logger.Debug("Starting OpAMP server...")
 
 	connected := &atomic.Bool{}
-
+	opampEndpoint, err := url.Parse(s.config.Server.Endpoint)
+	if err != nil {
+		return err
+	}
 	err = s.opampServer.Start(flattenedSettings{
-		endpoint: fmt.Sprintf("localhost:%d", s.opampServerPort),
+		endpoint: opampEndpoint.Host,
 		onConnecting: func(_ *http.Request) (bool, int) {
 			// Only allow one agent to be connected the this server at a time.
 			alreadyConnected := connected.Swap(true)
