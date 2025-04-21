@@ -99,6 +99,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 						Endpoint:  defaultBindEndpoint,
 						Transport: confignet.TransportTypeUDP,
 					},
+					SocketPermissions:   defaultSocketPermissions,
 					AggregationInterval: 4 * time.Second,
 				}
 			},
@@ -117,6 +118,7 @@ func Test_statsdreceiver_EndToEnd(t *testing.T) {
 						Endpoint:  "/tmp/statsd_test.sock",
 						Transport: confignet.TransportTypeUnixgram,
 					},
+					SocketPermissions:   defaultSocketPermissions,
 					AggregationInterval: 4 * time.Second,
 				}
 			},
