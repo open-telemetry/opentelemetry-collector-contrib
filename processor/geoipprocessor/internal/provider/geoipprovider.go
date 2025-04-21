@@ -25,6 +25,9 @@ type Config interface {
 type GeoIPProvider interface {
 	// Location returns a set of attributes representing the geographical location for the given IP address. It requires a context for managing request lifetime.
 	Location(context.Context, net.IP) (attribute.Set, error)
+	// Close releases any resources held by the provider. It should be called when the
+	// provider is no longer needed to ensure proper cleanup.
+	Close(context.Context) error
 }
 
 // GeoIPProviderFactory can create GeoIPProvider instances.

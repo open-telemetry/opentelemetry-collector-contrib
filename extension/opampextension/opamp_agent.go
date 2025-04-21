@@ -26,6 +26,7 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
@@ -52,8 +53,9 @@ type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
 
-	agentType    string
-	agentVersion string
+	agentType     string
+	agentVersion  string
+	resourceAttrs map[string]string
 
 	instanceID uuid.UUID
 
@@ -89,6 +91,14 @@ var (
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+
+	// identifyingAttributes is the list of semantic convention keys that are used
+	// for the agent description's identifying attributes.
+	identifyingAttributes = map[string]struct{}{
+		semconv.AttributeServiceName:       {},
+		semconv.AttributeServiceVersion:    {},
+		semconv.AttributeServiceInstanceID: {},
+	}
 )
 
 // moduleInfo exposes the internal collector moduleInfo interface
@@ -303,6 +313,11 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 			}
 		}
 	}
+	resourceAttrs := make(map[string]string, set.Resource.Attributes().Len())
+	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		resourceAttrs[k] = v.Str()
+		return true
+	})
 
 	opampClient := cfg.Server.GetClient(set.Logger)
 	agent := &opampAgent{
@@ -313,6 +328,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
+		resourceAttrs:            resourceAttrs,
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
@@ -374,6 +390,15 @@ func (o *opampAgent) createAgentDescription() error {
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
+	}
+	if o.cfg.AgentDescription.IncludeResourceAttributes {
+		for k, v := range o.resourceAttrs {
+			// skip the attributes that are being used in the identifying attributes.
+			if _, ok := identifyingAttributes[k]; ok {
+				continue
+			}
+			nonIdentifyingAttributeMap[k] = v
+		}
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests

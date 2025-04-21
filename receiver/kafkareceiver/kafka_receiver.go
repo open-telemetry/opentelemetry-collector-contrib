@@ -162,6 +162,7 @@ func (c *kafkaTracesConsumer) Start(_ context.Context, host component.Host) erro
 		}
 	}
 	consumerGroup := &tracesConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		encoding:          c.config.Traces.Encoding,
 		unmarshaler:       c.unmarshaler,
@@ -263,6 +264,7 @@ func (c *kafkaMetricsConsumer) Start(_ context.Context, host component.Host) err
 		}
 	}
 	metricsConsumerGroup := &metricsConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		encoding:          c.config.Metrics.Encoding,
 		unmarshaler:       c.unmarshaler,
@@ -364,6 +366,7 @@ func (c *kafkaLogsConsumer) Start(_ context.Context, host component.Host) error 
 		}
 	}
 	logsConsumerGroup := &logsConsumerGroupHandler{
+		id:                c.settings.ID,
 		logger:            c.settings.Logger,
 		encoding:          c.config.Logs.Encoding,
 		unmarshaler:       c.unmarshaler,
