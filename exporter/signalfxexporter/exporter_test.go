@@ -234,7 +234,7 @@ func TestConsumeMetrics(t *testing.T) {
 			if tt.wantThrottleErr {
 				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 
@@ -546,11 +546,11 @@ func TestConsumeMetricsWithAccessTokenPassthrough(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -669,11 +669,11 @@ func TestConsumeMetricsAccessTokenPassthroughPriorityToContext(t *testing.T) {
 			cfg := factory.CreateDefaultConfig().(*Config)
 			cfg.IngestURL = server.URL
 			cfg.APIURL = server.URL
-			cfg.ClientConfig.Headers = make(map[string]configopaque.String)
+			cfg.Headers = make(map[string]configopaque.String)
 			for k, v := range tt.additionalHeaders {
-				cfg.ClientConfig.Headers[k] = configopaque.String(v)
+				cfg.Headers[k] = configopaque.String(v)
 			}
-			cfg.ClientConfig.Headers["test_header_"] = configopaque.String(tt.name)
+			cfg.Headers["test_header_"] = configopaque.String(tt.name)
 			cfg.AccessToken = configopaque.String(fromHeaders)
 			cfg.AccessTokenPassthrough = tt.accessTokenPassthrough
 			cfg.SendOTLPHistograms = tt.sendOTLPHistograms
@@ -2103,13 +2103,13 @@ func TestConsumeMixedMetrics(t *testing.T) {
 					throttleErr := errors.New(errMsg)
 					throttleErr = exporterhelper.NewThrottleRetry(throttleErr, time.Duration(tt.retryAfter)*time.Second)
 					testErr := consumererror.NewMetrics(throttleErr, partialMetrics)
-					assert.EqualValues(t, testErr, err)
+					assert.Equal(t, testErr, err)
 					return
 				}
 
 				expected := errors.New(errMsg)
 				expected = exporterhelper.NewThrottleRetry(expected, time.Duration(tt.retryAfter)*time.Second)
-				assert.EqualValues(t, expected, err)
+				assert.Equal(t, expected, err)
 				return
 			}
 

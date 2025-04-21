@@ -112,7 +112,9 @@ transform:
     - set(log.body, log.attributes["http.route"])
 ```
 
-If you're interested in how OTTL parses these statements, see [Context Inference](#context-inference).
+In some situations a combination of Paths, functions, or enums is not allowed, and the solution 
+might require multiple [Advanced Config](#advanced-config) configuration groups. 
+See [Context Inference](#context-inference) for more details.
 
 ### Advanced Config
 
@@ -171,37 +173,8 @@ transform:
 ```
 
 The Transform Processor will enforce that all the Paths, functions, and enums used in a group's `statements` are parsable.
-In some situations a combination of Paths, functions, or enums is not allowed. For example:
-
-```yaml
-metric_statements:
-  - statements:
-    - convert_sum_to_gauge() where metric.name == "system.processes.count"
-    - limit(datapoint.attributes, 100, ["host.name"])
-```
-
-In this configuration, the `datapoint` Path prefixed is used in the same group of statements as the `convert_sum_to_gauge`
-function. Since `convert_sum_to_gauge` can only be used with the metrics, not datapoints, but the list
-statements contains a reference to the datapoints via the `datapoint` Path prefix, the group of statements cannot
-be parsed.
-
-The solution is to separate the statements into separate groups:
-
-```yaml
-metric_statements:
-  - statements:
-    - limit(datapoint.attributes, 100, ["host.name"])
-  - statements:
-    - convert_sum_to_gauge() where metric.name == "system.processes.count" 
-```
-
-Alternatively, for simplicity, you can use the [basic configuration](#basic-config) style:
-
-```yaml
-metric_statements:
-  - limit(datapoint.attributes, 100, ["host.name"])
-  - convert_sum_to_gauge() where metric.name == "system.processes.count" 
-```
+In some situations a combination of Paths, functions, or enums is not allowed, and it might require multiple configuration groups. 
+See [Context Inference](#context-inference) for more details.
 
 ### Context inference
 
@@ -238,6 +211,29 @@ by linking them to the most suitable context. This optimization ensures that dat
 are both accurate and performant, leveraging the hierarchical structure of contexts to avoid unnecessary
 iterations and improve overall processing efficiency.
 All of this happens automatically, leaving you to write OTTL statements without worrying about Context.
+
+In some situations a combination of Paths, functions, or enums is not allowed. For example:
+
+```yaml
+metric_statements:
+  - convert_sum_to_gauge() where metric.name == "system.processes.count"
+  - limit(datapoint.attributes, 100, ["host.name"])
+```
+
+In this configuration, the `datapoint` Path prefixed is used in the same group of statements as the `convert_sum_to_gauge`
+function. Since `convert_sum_to_gauge` can only be used with the metrics, not datapoints, but the list
+statements contains a reference to the datapoints via the `datapoint` Path prefix, the group of statements cannot
+be parsed.
+
+The solution is to separate the statements into separate [Advanced Config](#advanced-config) groups:
+
+```yaml
+metric_statements:
+  - statements:
+    - convert_sum_to_gauge() where metric.name == "system.processes.count"
+  - statements:
+      - limit(datapoint.attributes, 100, ["host.name"])
+```
 
 ## Grammar
 

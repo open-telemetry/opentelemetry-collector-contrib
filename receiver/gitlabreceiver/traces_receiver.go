@@ -92,7 +92,7 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	}
 
 	// create listener from config
-	ln, err := gtr.cfg.WebHook.ServerConfig.ToListener(ctx)
+	ln, err := gtr.cfg.WebHook.ToListener(ctx)
 	if err != nil {
 		return err
 	}
@@ -107,7 +107,7 @@ func (gtr *gitlabTracesReceiver) Start(ctx context.Context, host component.Host)
 	router.HandleFunc(gtr.cfg.WebHook.Path, gtr.handleWebhook)
 
 	// webhook server standup and configuration
-	gtr.server, err = gtr.cfg.WebHook.ServerConfig.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
+	gtr.server, err = gtr.cfg.WebHook.ToServer(ctx, host, gtr.settings.TelemetrySettings, router)
 	if err != nil {
 		return err
 	}

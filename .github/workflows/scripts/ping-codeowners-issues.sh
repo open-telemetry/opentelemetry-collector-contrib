@@ -13,7 +13,7 @@ if [[ -z "${COMPONENT:-}" || -z "${ISSUE:-}" ]]; then
 fi
 
 CUR_DIRECTORY=$(dirname "$0")
-COMPONENT=$(awk -v path="${COMPONENT}" 'index($1, path) > 0 || index($2, path) > 0 {print $1}' .github/component_labels.txt | head -n 1)
+COMPONENT=$(COMPONENT="${COMPONENT}" "${CUR_DIRECTORY}/get-label-from-component.sh" || true)
 # Some labels are unrelated to components. These labels do not have code owners,
 # e.g "os:windows", "priority:p1", and "chore"
 if [[ -z "${COMPONENT}" ]]; then

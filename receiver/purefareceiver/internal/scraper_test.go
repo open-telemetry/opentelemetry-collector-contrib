@@ -62,7 +62,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	assert.NoError(t, err)
 	assert.Len(t, scCfgs, 1)
 	assert.NotNil(t, scCfgs[0].ScrapeProtocols)
-	assert.EqualValues(t, "purefa", scCfgs[0].Params.Get("namespace"))
+	assert.Equal(t, "purefa", scCfgs[0].Params.Get("namespace"))
 	assert.EqualValues(t, "the-token", scCfgs[0].HTTPClientConfig.BearerToken)
 	assert.True(t, scCfgs[0].HTTPClientConfig.TLSConfig.InsecureSkipVerify)
 	assert.Equal(t, "TestThisServerName", scCfgs[0].HTTPClientConfig.TLSConfig.ServerName)
