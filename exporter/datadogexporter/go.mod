@@ -3,7 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datado
 go 1.23.0
 
 require (
-	github.com/DataDog/agent-payload/v5 v5.0.146
+	github.com/DataDog/agent-payload/v5 v5.0.147
 	github.com/DataDog/datadog-agent/comp/core/config v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/comp/core/hostname/hostnameinterface v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/comp/core/log/def v0.66.0-devel.0.20250407180930-ebfcfa2817ce
@@ -11,7 +11,7 @@ require (
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter v0.66.0-devel.0.20250407180930-ebfcfa2817ce
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.66.0-devel.0.20250407180930-ebfcfa2817ce
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/metricsclient v0.67.0-devel.0.20250421161610-e24fa4531cf3
 	github.com/DataDog/datadog-agent/comp/otelcol/otlp/testutil v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/comp/trace/compression/impl-gzip v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/pkg/config/model v0.66.0-devel.0.20250407180930-ebfcfa2817ce
@@ -89,7 +89,7 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.66.0-devel.0.20250408165132-d86502cae975
+	github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/serializerexporter v0.67.0-devel.0.20250421161610-e24fa4531cf3
 	github.com/DataDog/datadog-agent/comp/serializer/logscompression v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/open-telemetry/opentelemetry-collector-contrib/connector/datadogconnector v0.124.1
@@ -322,7 +322,7 @@ require (
 	github.com/moby/docker-image-spec v1.3.1 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.2 // indirect
+	github.com/modern-go/reflect2 v1.0.3-0.20250322232337-35a7c28c31ee // indirect
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/munnerz/goautoneg v0.0.0-20191010083416-a7dc8b61c822 // indirect
@@ -460,7 +460,7 @@ require (
 	go.uber.org/multierr v1.11.0 // indirect
 	go.uber.org/zap/exp v0.3.0 // indirect
 	golang.org/x/crypto v0.37.0 // indirect
-	golang.org/x/exp v0.0.0-20250305212735-054e65f0b394 // indirect
+	golang.org/x/exp v0.0.0-20250408133849-7e4ce0ab07d0 // indirect
 	golang.org/x/mod v0.24.0 // indirect
 	golang.org/x/oauth2 v0.28.0 // indirect
 	golang.org/x/sync v0.13.0 // indirect
@@ -468,7 +468,7 @@ require (
 	golang.org/x/term v0.31.0 // indirect
 	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/time v0.11.0 // indirect
-	golang.org/x/tools v0.31.0 // indirect
+	golang.org/x/tools v0.32.0 // indirect
 	gonum.org/v1/gonum v0.16.0 // indirect
 	google.golang.org/api v0.226.0 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20250218202821-56aae31c358a // indirect
