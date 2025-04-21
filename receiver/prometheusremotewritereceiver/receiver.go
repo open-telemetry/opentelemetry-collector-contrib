@@ -188,7 +188,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 
 	for _, ts := range req.Timeseries {
 		ls := ts.ToLabels(&labelsBuilder, req.Symbols)
-		if !ls.Has(labels.MetricName) && ts.Metadata.Type != writev2.Metadata_METRIC_TYPE_INFO {
+		if !ls.Has(labels.MetricName) {
 			badRequestErrors = errors.Join(badRequestErrors, fmt.Errorf("missing metric name in labels"))
 			continue
 		} else if duplicateLabel, hasDuplicate := ls.HasDuplicateLabelNames(); hasDuplicate {
@@ -196,9 +196,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
-		// If it is a metric of type INFO, we use its labels as attributes of the resource
+		// If the metric name is equal to target_info, we use its labels as attributes of the resource
 		// Ref: https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#resource-attributes-1
-		if ts.Metadata.Type == writev2.Metadata_METRIC_TYPE_INFO {
+		if ls.Has(labels.MetricName) && ls.Get(labels.MetricName) == "target_info" {
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
@@ -225,7 +225,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			continue
 		}
 
-		// For the rest of the metrics, continue with the normal processing
+		// For metrics other than target_info, we need to follow the standard process of creating a metric.
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 		existingRM, ok := prw.interRequestCache[hashedLabels]
