@@ -122,9 +122,9 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 
 	var hostInterfaceAttribute []any
 	if d.cfg.ResourceAttributes.HostInterface.Enabled {
-		interfaces, err := d.provider.HostInterfaces()
-		if err != nil {
-			return pcommon.NewResource(), "", fmt.Errorf("failed to get host interfaces: %w", err)
+		interfaces, errInterfaces := d.provider.HostInterfaces()
+		if errInterfaces != nil {
+			return pcommon.NewResource(), "", fmt.Errorf("failed to get host interfaces: %w", errInterfaces)
 		}
 		for _, iface := range interfaces {
 			hostInterfaceAttribute = append(hostInterfaceAttribute, iface.Name)
