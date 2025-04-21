@@ -141,6 +141,7 @@ func (r *Reader) readGzipFiles() (int64, error) {
 	r.reader = gzipReader
 	return currentEOF, nil
 }
+
 func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 	bufPtr := r.getBufPtrFromPool()
 	defer r.bufPool.Put(bufPtr)
