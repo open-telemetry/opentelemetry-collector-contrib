@@ -12,17 +12,17 @@ require (
 	github.com/shirou/gopsutil/v4 v4.25.3
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
-	go.opentelemetry.io/collector/component v1.30.0
+	go.opentelemetry.io/collector/component v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/component/componenttest v0.124.0
-	go.opentelemetry.io/collector/confmap v1.30.0
+	go.opentelemetry.io/collector/confmap v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/confmap/xconfmap v0.124.0
-	go.opentelemetry.io/collector/consumer v1.30.0
+	go.opentelemetry.io/collector/consumer v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/consumer/consumertest v0.124.0
-	go.opentelemetry.io/collector/featuregate v1.30.0
+	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/filter v0.124.0
-	go.opentelemetry.io/collector/pdata v1.30.0
+	go.opentelemetry.io/collector/pdata v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/pipeline v0.124.0
-	go.opentelemetry.io/collector/receiver v1.30.0
+	go.opentelemetry.io/collector/receiver v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/receiver/receivertest v0.124.0
 	go.opentelemetry.io/collector/scraper v0.124.0
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.124.0
