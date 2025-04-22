@@ -102,7 +102,7 @@ type ConsumerConfig struct {
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
 	// Possible values are "range", "roundrobin", and "sticky".
 	// Defaults to "range".
-	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy" validate:"omitempty,oneof=range roundrobin sticky"`
+	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
 
 	// GroupInstanceID specifies the ID of the consumer
 	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`

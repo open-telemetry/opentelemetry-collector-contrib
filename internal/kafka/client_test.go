@@ -385,3 +385,106 @@ func TestNewSaramaConsumerGroup_RebalanceAndInstanceId(t *testing.T) {
 		})
 	}
 }
+
+func TestNewSaramaConsumerGroup_GroupInstanceID(t *testing.T) {
+	cluster, clientConfig := kafkatest.NewCluster(t)
+	defer cluster.Close()
+	clientConfig.ProtocolVersion = "3.7.1"
+
+	tests := []struct {
+		name            string
+		groupInstanceID string
+	}{
+		{
+			name:            "No GroupInstanceID",
+			groupInstanceID: "",
+		},
+		{
+			name:            "With GroupInstanceID",
+			groupInstanceID: "test-instance-id",
+		},
+		{
+			name:            "With Another GroupInstanceID",
+			groupInstanceID: "another-test-instance-id",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumerConfig := configkafka.NewDefaultConsumerConfig()
+			consumerConfig.GroupID = "test-group"
+			consumerConfig.GroupInstanceID = tt.groupInstanceID
+
+			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			require.NoError(t, err)
+
+			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+
+			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+			require.NoError(t, err)
+			assert.NotNil(t, consumerGroup)
+
+			if tt.groupInstanceID == "" {
+				assert.Empty(t, saramaConfig.Consumer.Group.InstanceId)
+			} else {
+				assert.Equal(t, tt.groupInstanceID, saramaConfig.Consumer.Group.InstanceId)
+			}
+
+			err = consumerGroup.Close()
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testing.T) {
+	cluster, clientConfig := kafkatest.NewCluster(t)
+	defer cluster.Close()
+
+	tests := []struct {
+		name            string
+		groupInstanceID string
+		protocolVersion string
+		expectedErr     string
+	}{
+		{
+			name:            "GroupInstanceID with Invalid Protocol Version",
+			groupInstanceID: "test-instance-id",
+			protocolVersion: "2.2.0",
+			expectedErr:     "Consumer.Group.InstanceId need Version >= 2.3",
+		},
+		{
+			name:            "No GroupInstanceID with Invalid Protocol Version",
+			groupInstanceID: "",
+			protocolVersion: "2.2.0",
+			expectedErr:     "",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			consumerConfig := configkafka.NewDefaultConsumerConfig()
+			consumerConfig.GroupID = "test-group"
+			consumerConfig.GroupInstanceID = tt.groupInstanceID
+			clientConfig.ProtocolVersion = tt.protocolVersion
+
+			saramaConfig, err := newSaramaClientConfig(context.Background(), clientConfig)
+			require.NoError(t, err)
+			saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+			consumerGroup, err := NewSaramaConsumerGroup(context.Background(), clientConfig, consumerConfig)
+
+			if tt.expectedErr != "" {
+				require.Error(t, err)
+				require.ErrorContains(t, err, tt.expectedErr)
+			} else {
+				require.NoError(t, err)
+				assert.NotNil(t, consumerGroup)
+			}
+
+			if consumerGroup != nil {
+				err = consumerGroup.Close()
+				require.NoError(t, err)
+			}
+
+		})
+	}
+}
