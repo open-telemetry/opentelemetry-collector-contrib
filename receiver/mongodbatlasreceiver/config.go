@@ -141,8 +141,8 @@ func (c *Config) Validate() error {
 	var errs error
 
 	if c.BaseURL == "" {
-        c.BaseURL = mongodbatlas.CloudURL
-    }
+		c.BaseURL = mongodbatlas.CloudURL
+	}
 
 	if err := validateEndpoint(c.BaseURL); err != nil {
 		return fmt.Errorf("invalid base_url %q: %w", c.BaseURL, err)
