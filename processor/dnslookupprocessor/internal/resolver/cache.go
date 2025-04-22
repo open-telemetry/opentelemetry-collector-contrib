@@ -83,15 +83,15 @@ func (r *CacheResolver) resolveWithCache(
 
 	if r.missCache != nil {
 		if _, found := r.missCache.Get(target); found {
-			r.logger.Debug(logKey+" lookup succeeded from miss cache",
+			r.logger.Debug("DNS lookup from miss cache",
 				zap.String(logKey, target))
-			return "", ErrNoResolution
+			return "", nil
 		}
 	}
 
 	if r.hitCache != nil {
 		if result, found := r.hitCache.Get(target); found {
-			r.logger.Debug(logKey+" lookup succeeded from hit cache",
+			r.logger.Debug("DNS lookup from hit cache",
 				zap.String(logKey, target),
 				zap.String(Flip(logKey), result))
 			return result, nil
@@ -101,7 +101,7 @@ func (r *CacheResolver) resolveWithCache(
 	// Call the underlying chain resolver
 	result, err := resolveFunc(ctx, target)
 
-	// Add to cache
+	// Add failure case to miss cache
 	if err != nil {
 		if r.missCache != nil {
 			r.missCache.Add(target, struct{}{})
@@ -112,6 +112,7 @@ func (r *CacheResolver) resolveWithCache(
 		return "", err
 	}
 
+	// Add success case including no resolution to hit cache
 	if r.hitCache != nil {
 		r.hitCache.Add(target, result)
 		r.logger.Debug("Add to hit cache",

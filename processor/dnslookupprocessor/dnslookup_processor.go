@@ -15,7 +15,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/resolver"
 )
 
-var errUnknownContextID = errors.New("unknown attribute context")
+var (
+	errUnknownContextID     = errors.New("unknown attribute context")
+	errHostnameOrIPNotFound = errors.New("no hostname or IP found in the attributes")
+)
 
 type dnsLookupProcessor struct {
 	config       *Config
@@ -55,7 +58,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	var resolvers []resolver.Resolver
 
 	if len(config.Hostfiles) > 0 {
-		hostfileResolver, err := resolver.NewHostFileResolver(
+		hostFileResolver, err := resolver.NewHostFileResolver(
 			config.Hostfiles,
 			logger,
 		)
@@ -63,13 +66,14 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 			return nil, fmt.Errorf("failed to create hostfile resolver: %w", err)
 		}
 
-		resolvers = append(resolvers, hostfileResolver)
+		resolvers = append(resolvers, hostFileResolver)
 	}
 
 	if len(config.Nameservers) > 0 {
 		nameserverResolver, err := resolver.NewNameserverResolver(
 			config.Nameservers,
 			time.Duration(config.Timeout*float64(time.Second)),
+			config.MaxRetries,
 			logger,
 		)
 		if err != nil {
@@ -82,6 +86,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	if config.EnableSystemResolver {
 		systemResolver := resolver.NewSystemResolver(
 			time.Duration(config.Timeout*float64(time.Second)),
+			config.MaxRetries,
 			logger,
 		)
 		resolvers = append(resolvers, systemResolver)
@@ -91,7 +96,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 		return nil, fmt.Errorf("no DNS resolver configuration available: either hostfile, nameserver, or system resolver must be enabled")
 	}
 
-	chainResolver = resolver.NewChainResolver(config.MaxRetries, resolvers, logger)
+	chainResolver = resolver.NewChainResolver(resolvers, logger)
 
 	if config.HitCacheSize > 0 || config.MissCacheSize > 0 {
 		cacheResolver, err := resolver.NewCacheResolver(
@@ -142,7 +147,7 @@ func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 	return processPairs
 }
 
-// processDNSLookup performs DNS lookups on a set of attributes
+// processDNSLookup performs both DNS forward and reverse lookups on a set of attributes
 func (dp *dnsLookupProcessor) processDNSLookup(ctx context.Context, pMap pcommon.Map) error {
 	resolveErr := dp.processResolveLookup(ctx, pMap)
 	reverseErr := dp.processReverseLookup(ctx, pMap)
@@ -152,70 +157,65 @@ func (dp *dnsLookupProcessor) processDNSLookup(ctx context.Context, pMap pcommon
 
 // processResolveLookup finds the hostname from attributes and resolves it to an IP address
 func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pcommon.Map) error {
-	hostname, err := targetStrFromAttributes(dp.config.Resolve.Attributes, pMap, resolver.ParseHostname)
-	if err != nil {
-		dp.logger.Debug("Failed to find hostname from attributes", zap.Error(err))
-		if errors.Is(err, resolver.ErrInvalidHostname) {
-			return nil
-		}
-		return err
-	}
-
-	// Found a hostname. Try to resolve it
-	ip, err := dp.resolver.Resolve(ctx, hostname)
-	if err == nil {
-		// Success resolution. Save the result to attribute
-		if len(ip) > 0 {
-			pMap.PutStr(dp.config.Resolve.ResolvedAttribute, ip)
-		}
-		return nil
-	} else if errors.Is(err, resolver.ErrNoResolution) {
-		return nil
-	} else {
-		return err
-	}
+	return dp.processLookup(
+		ctx,
+		pMap,
+		dp.config.Resolve,
+		resolver.ParseHostname,
+		dp.resolver.Resolve,
+		resolver.LogKeyHostname,
+	)
 }
 
 // processReverseLookup finds the IP from attributes and resolves it to a hostname
 func (dp *dnsLookupProcessor) processReverseLookup(ctx context.Context, pMap pcommon.Map) error {
-	ip, err := targetStrFromAttributes(dp.config.Reverse.Attributes, pMap, resolver.ParseIP)
+	return dp.processLookup(
+		ctx,
+		pMap,
+		dp.config.Reverse,
+		resolver.ParseIP,
+		dp.resolver.Reverse,
+		resolver.LogKeyIP,
+	)
+}
+
+func (dp *dnsLookupProcessor) processLookup(
+	ctx context.Context,
+	pMap pcommon.Map,
+	config LookupConfig,
+	parseFn func(string) (string, error),
+	lookupFn func(context.Context, string) (string, error),
+	logKey string,
+) error {
+	target, err := targetStrFromAttributes(config.Attributes, pMap, parseFn)
+	if target == "" || err != nil {
+		dp.logger.Debug(fmt.Sprintf("Failed to find %s from attributes", logKey), zap.Error(err))
+		return nil
+	}
+
+	// Found a valid target. Try to resolve it
+	result, err := lookupFn(ctx, target)
 	if err != nil {
-		dp.logger.Debug("Failed to find IP from attributes", zap.Error(err))
-		if errors.Is(err, resolver.ErrInvalidIP) {
-			return nil
-		}
 		return err
 	}
 
-	// Found an IP. Try to resolve it
-	hostname, err := dp.resolver.Reverse(ctx, ip)
-	if err == nil {
-		// Success resolution. Save the result to attribute
-		if len(hostname) > 0 {
-			pMap.PutStr(dp.config.Reverse.ResolvedAttribute, hostname)
-		}
-		return nil
-	} else if errors.Is(err, resolver.ErrNoResolution) {
-		return nil
-	} else {
-		return err
+	// Successfully resolved with content. Save the result to attribute
+	if len(result) > 0 {
+		pMap.PutStr(config.ResolvedAttribute, result)
 	}
+	return nil
 }
 
 // targetStrFromAttributes returns the first IP/hostname from the given attributes.
 // It uses the provided validation function to check if the value is valid.
 func targetStrFromAttributes(attributes []string, pMap pcommon.Map, validateFn func(string) (string, error)) (string, error) {
-	var lastErr error
-
 	for _, attr := range attributes {
 		if val, found := pMap.Get(attr); found {
-			if validStr, err := validateFn(val.Str()); err != nil {
-				lastErr = err
-			} else {
+			if validStr, err := validateFn(val.Str()); err == nil {
 				return validStr, nil
 			}
 		}
 	}
 
-	return "", lastErr
+	return "", errHostnameOrIPNotFound
 }

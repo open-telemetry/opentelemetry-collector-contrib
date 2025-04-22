@@ -131,7 +131,7 @@ func (r *HostFileResolver) Resolve(ctx context.Context, hostname string) (string
 		return ip, nil
 	}
 
-	return "", ErrNoResolution
+	return "", ErrNotInHostFiles
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the loaded host files
@@ -140,5 +140,5 @@ func (r *HostFileResolver) Reverse(ctx context.Context, ip string) (string, erro
 		return hostname, nil
 	}
 
-	return "", ErrNoResolution
+	return "", ErrNotInHostFiles
 }

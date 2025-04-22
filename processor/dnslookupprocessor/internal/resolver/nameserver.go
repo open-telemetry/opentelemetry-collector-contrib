@@ -11,19 +11,21 @@ import (
 	"strings"
 	"time"
 
+	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
 
 // NameserverResolver uses specified DNS servers for resolution
 type NameserverResolver struct {
 	nameservers []string
+	maxRetries  int
 	resolvers   []*net.Resolver
 	timeout     time.Duration
 	logger      *zap.Logger
 }
 
 // NewNameserverResolver creates a new NameserverResolver with the provided nameservers
-func NewNameserverResolver(nameservers []string, timeout time.Duration, logger *zap.Logger) (*NameserverResolver, error) {
+func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetries int, logger *zap.Logger) (*NameserverResolver, error) {
 	if len(nameservers) == 0 {
 		return nil, errors.New("at least one nameserver must be provided")
 	}
@@ -47,6 +49,7 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, logger *
 
 	r := &NameserverResolver{
 		nameservers: normalizeNameservers,
+		maxRetries:  maxRetries,
 		resolvers:   resolvers,
 		timeout:     timeout,
 		logger:      logger,
@@ -55,9 +58,10 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, logger *
 	return r, nil
 }
 
-func NewSystemResolver(timeout time.Duration, logger *zap.Logger) *NameserverResolver {
+func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger) *NameserverResolver {
 	return &NameserverResolver{
 		nameservers: []string{"system_resolver"},
+		maxRetries:  maxRetries,
 		resolvers:   []*net.Resolver{net.DefaultResolver},
 		timeout:     timeout,
 		logger:      logger,
@@ -82,12 +86,15 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (stri
 func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, error) {
 	return r.lookupWithNameservers(ctx, ip, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
 		hostnames, err := resolver.LookupAddr(fnCtx, ip)
-		if err != nil {
+		if err != nil && hostnames == nil {
 			return "", err
 		}
+
+		// hostname(s) was found but be filtered because of malformed DNS records
 		if len(hostnames) == 0 {
 			return "", ErrNoResolution
 		}
+
 		return standardizeHostname(hostnames[0]), nil
 	})
 }
@@ -96,26 +103,71 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, er
 // It returns the first successful result or the last error encountered.
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
-	query string,
+	target string,
 	lookupFn func(resolver *net.Resolver, fnCtx context.Context) (string, error),
 ) (string, error) {
-	lookupCtx, cancel := context.WithTimeout(ctx, r.timeout)
-	defer cancel()
-
-	lastErr := ErrNoResolution
+	var lastErr error
 
 	for i, resolver := range r.resolvers {
-		result, err := lookupFn(resolver, lookupCtx)
-		if err == nil {
+		expBackOff := NewExponentialBackOff()
+
+		for attempt := 0; attempt <= r.maxRetries; attempt++ {
+
+			result, err := func() (string, error) {
+				lookupCtx, cancel := context.WithTimeout(ctx, r.timeout)
+				defer cancel()
+				return lookupFn(resolver, lookupCtx)
+			}()
+
 			// Successful resolution
-			return result, nil
-		} else {
-			r.logger.Debug("DNS lookup failed with nameserver",
-				zap.String("query", query),
-				zap.String("nameserver", r.nameservers[i]),
-				zap.Error(err))
+			if err == nil {
+				return result, nil
+			}
+
+			// No resolution is a valid result
+			if errors.Is(err, ErrNoResolution) {
+				return "", err
+			}
+
 			lastErr = err
+
+			var e *net.DNSError
+			if errors.As(err, &e) {
+				// The hostname was not found (NXDOMAIN), we can skip retrying
+				if e.IsNotFound {
+					return "", ErrNoResolution
+				}
+
+				// If the error is not a retryable error, try next nameserver
+				if !e.IsNotFound && !e.IsTimeout && !e.IsTemporary {
+					r.logger.Debug("Non retryable DNS error",
+						zap.String("lookup", target),
+						zap.String("nameserver", r.nameservers[i]),
+						zap.Error(err))
+					break
+				}
+			}
+
+			sleepDuration := expBackOff.NextBackOff()
+			r.logger.Debug("DNS lookup failed with nameserver. Will retry after backoff.",
+				zap.String("lookup", target),
+				zap.String("nameserver", r.nameservers[i]),
+				zap.String("sleep", sleepDuration.String()),
+				zap.Error(err))
+
+			// Sleep for retry
+			if attempt < r.maxRetries {
+				select {
+				case <-time.After(sleepDuration):
+				case <-ctx.Done():
+					r.logger.Warn("Context cancelled during lookup retry",
+						zap.String("lookup", target),
+						zap.Error(ctx.Err()))
+					return "", ctx.Err()
+				}
+			}
 		}
+
 	}
 
 	return "", lastErr
@@ -160,4 +212,15 @@ func standardizeHostname(hostname string) string {
 	hostname = strings.ToLower(hostname)
 
 	return hostname
+}
+
+func NewExponentialBackOff() *backoff.ExponentialBackOff {
+	expBackOff := backoff.ExponentialBackOff{
+		InitialInterval:     50 * time.Millisecond,
+		RandomizationFactor: 0.5,
+		Multiplier:          1.5,
+		MaxInterval:         200 * time.Millisecond,
+	}
+	expBackOff.Reset()
+	return &expBackOff
 }
