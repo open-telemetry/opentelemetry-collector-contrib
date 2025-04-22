@@ -217,10 +217,6 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		otelMetrics      = pmetric.NewMetrics()
 		labelsBuilder    = labels.NewScratchBuilder(0)
 		stats            = promremote.WriteResponseStats{}
-		// Prometheus Remote-Write can send multiple time series with the same labels in the same request.
-		// Instead of creating a whole new OTLP metric, we just append the new sample to the existing OTLP metric.
-		// This cache is called "intra" because in the future we'll have a "interRequestCache" to cache resourceAttributes
-		// between requests based on the metric "target_info".
 		// The key is composed by: resource_hash:scope_name:scope_version:metric_name:unit:type
 		metricCache = make(map[uint64]pmetric.Metric)
 	)
