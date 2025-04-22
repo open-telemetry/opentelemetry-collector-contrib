@@ -662,6 +662,8 @@ jobs:
     env:
       RELEASE_NOTES: release-notes.md
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - run: npm install simple-git@^3.27.0

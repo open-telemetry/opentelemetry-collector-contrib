@@ -1,5 +1,7 @@
 [
   {
+    "computer_name": "DESKTOP-GHAEGRD",
+    "sql_instance": "sqlserver",
     "db_name": "master",
     "client_address": "172.19.0.1",
     "client_port": "a59286",
