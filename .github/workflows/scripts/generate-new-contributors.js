@@ -65,8 +65,8 @@ function generateNewContributorText(newContributors) {
     return firstTimeContributorText + annotatedUsernames.join(", ") + " ! 🎉"
 }
 
-export const main = async ({ github }) => {
-    const newContributorsAndHashes = await getFirstTimeContributors('v0.121.0', 'v0.122.0')
+export const main = async (github, tag, previous_tag) => {
+    const newContributorsAndHashes = await getFirstTimeContributors(previous_tag, tag)
 
     const usernames = [];
     for (const contributor of newContributorsAndHashes) {
@@ -86,6 +86,6 @@ export const main = async ({ github }) => {
     return generateNewContributorText(usernames)
 }
 
-export default async function ({github}) {
-    return await main({ github })
+export default async function (github, tag, previous_tag) {
+    return await main( github, tag, previous_tag)
 }
