@@ -66,6 +66,7 @@ jobs:
         run: |
           if [[ 1 -gt $(git diff --diff-filter=A --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen | grep -c \\.yaml) ]]
           then
+            git merge-base main $PR_HEAD
             echo "No changelog entry was added to the ./.chloggen/ directory."
             echo "Please add a .yaml file to the ./.chloggen/ directory."
             echo "See CONTRIBUTING.md file for more details."
