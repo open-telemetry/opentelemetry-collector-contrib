@@ -81,7 +81,7 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.NamedError("reason", clientErr),
 		)
 		zl.Debug("Request failed.", fields...)
-		err := fmt.Errorf("Elasticsearch request failed: %v", clientErr.Error())
+		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
 		componentstatus.ReportStatus(
 			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
 
