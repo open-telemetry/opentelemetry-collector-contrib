@@ -1,5 +1,5 @@
-github.com/DataDog/agent-payload/v5 v5.0.147 h1:ieIA7y7/zz/SFiczaVbmRRqpxi9PFyJM8/OFQnehWbA=
-github.com/DataDog/agent-payload/v5 v5.0.147/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
+github.com/DataDog/agent-payload/v5 v5.0.148 h1:nvUkO6v7LBdAbxLLIz44azEFqldvI82XaMCNqFWemq8=
+github.com/DataDog/agent-payload/v5 v5.0.148/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.3 h1:FNklG6UnKVA6uSWoMcNPsJJMfhlbp6iJxMFj7zZZYuM=
 github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.64.3/go.mod h1:lzCtnMSGZm/3RMk5RBRW/6IuK1TNbDXx1ttHTxN5Ykc=
 github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.3 h1:hgf4Yp2MRnNnlstRh+He2pixCOwLKGQmrWLRHwM7LGI=
