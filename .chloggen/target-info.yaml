@@ -7,7 +7,7 @@ change_type: 'enhancement'
 component: prometheusremotewritereceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Create a cache approach to deal with desyncronization between requests that will be processed.
+note: Cache `target_info` metrics so it can be used to populate metrics' Resource Attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [37277]
