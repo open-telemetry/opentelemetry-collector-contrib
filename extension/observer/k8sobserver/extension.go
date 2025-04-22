@@ -5,7 +5,7 @@ package k8sobserver // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"sync"
 	"time"
 
@@ -43,10 +43,10 @@ type k8sObserver struct {
 // Start will populate the cache.SharedInformers for pods and nodes as configured and run them as goroutines.
 func (k *k8sObserver) Start(_ context.Context, _ component.Host) error {
 	if k.once == nil {
-		return fmt.Errorf("cannot Start() partial k8sObserver (nil *sync.Once)")
+		return errors.New("cannot Start() partial k8sObserver (nil *sync.Once)")
 	}
 	if k.handler == nil {
-		return fmt.Errorf("cannot Start() partial k8sObserver (nil *handler)")
+		return errors.New("cannot Start() partial k8sObserver (nil *handler)")
 	}
 
 	k.once.Do(func() {
@@ -137,9 +137,9 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		set.Logger.Debug("observing ingresses")
 		ingressListerWatcher = cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)
 	}
-	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.TelemetrySettings.Logger}
+	h := &handler{idNamespace: set.ID.String(), endpoints: &sync.Map{}, logger: set.Logger}
 	obs := &k8sObserver{
-		EndpointsWatcher:     endpointswatcher.New(h, time.Second, set.TelemetrySettings.Logger),
+		EndpointsWatcher:     endpointswatcher.New(h, time.Second, set.Logger),
 		telemetry:            set.TelemetrySettings,
 		podListerWatcher:     podListerWatcher,
 		serviceListerWatcher: serviceListerWatcher,

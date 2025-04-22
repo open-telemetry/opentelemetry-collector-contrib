@@ -1,0 +1,40 @@
+exporters:
+  file/2:
+    path: ./foo
+  nop:
+extensions:
+  health_check:
+    endpoint: localhost:8000
+  opamp:
+    capabilities:
+      reports_available_components: false
+    instance_uid: 00000000-0000-0000-0000-000000000000
+    ppid: 1234
+    ppid_poll_interval: 5s
+    server:
+      ws:
+        endpoint: ws://127.0.0.1:0/v1/opamp
+        tls:
+          insecure: true
+receivers:
+  journald:
+    directory: /run/log/journal
+    priority: info
+    units:
+      - ssh
+  nop:
+service:
+  extensions:
+    - health_check
+    - opamp
+  pipelines:
+    traces:
+      exporters:
+        - nop
+      receivers:
+        - nop
+  telemetry:
+    logs:
+      encoding: json
+    resource:
+      service.name: otelcol

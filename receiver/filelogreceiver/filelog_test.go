@@ -224,7 +224,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		_, err := fmt.Fprintf(file, "2020-08-25 %s\n", msg)
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}

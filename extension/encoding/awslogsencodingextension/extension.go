@@ -12,6 +12,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
+	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
+	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
 
 var _ encoding.LogsUnmarshalerExtension = (*encodingExtension)(nil)
@@ -21,12 +24,30 @@ type encodingExtension struct {
 	format      string
 }
 
-func newExtension(cfg *Config, _ extension.Settings) (*encodingExtension, error) {
+func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension, error) {
 	switch cfg.Format {
 	case formatCloudWatchLogsSubscriptionFilter:
 		return &encodingExtension{
-			unmarshaler: cloudWatchLogsSubscriptionFilterUnmarshaler{},
-			format:      cfg.Format,
+			unmarshaler: subscriptionfilter.NewSubscriptionFilterUnmarshaler(settings.BuildInfo),
+			format:      formatCloudWatchLogsSubscriptionFilter,
+		}, nil
+	case formatVPCFlowLog:
+		unmarshaler, err := vpcflowlog.NewVPCFlowLogUnmarshaler(
+			cfg.VPCFlowLogConfig.FileFormat,
+			settings.BuildInfo,
+			settings.Logger,
+		)
+		if err != nil {
+			return nil, fmt.Errorf("failed to create encoding extension for %q format: %w", formatVPCFlowLog, err)
+		}
+		return &encodingExtension{
+			unmarshaler: unmarshaler,
+			format:      formatVPCFlowLog,
+		}, nil
+	case formatS3AccessLog:
+		return &encodingExtension{
+			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
+			format:      formatS3AccessLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,
@@ -44,10 +65,10 @@ func (*encodingExtension) Shutdown(_ context.Context) error {
 	return nil
 }
 
-func (e *encodingExtension) UnmarshalLogs(record []byte) (plog.Logs, error) {
-	logs, err := e.unmarshaler.UnmarshalLogs(record)
+func (e *encodingExtension) UnmarshalLogs(buf []byte) (plog.Logs, error) {
+	logs, err := e.unmarshaler.UnmarshalLogs(buf)
 	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as '%s' format: %w", e.format, err)
+		return plog.Logs{}, fmt.Errorf("failed to unmarshal logs as %q format: %w", e.format, err)
 	}
 	return logs, nil
 }

@@ -1,5 +1,4 @@
 # This file is auto-generated. Do not edit manually.
-cmd/checkapi cmd/checkapi
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
@@ -69,6 +68,7 @@ exporter/zipkinexporter exporter/zipkin
 extension/ackextension extension/ack
 extension/asapauthextension extension/asapauth
 extension/awsproxy extension/awsproxy
+extension/azureauthextension extension/azureauth
 extension/basicauthextension extension/basicauth
 extension/bearertokenauthextension extension/bearertokenauth
 extension/cgroupruntimeextension extension/cgroupruntime
@@ -110,6 +110,7 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
+extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd
 internal/common internal/common
@@ -147,6 +148,7 @@ pkg/stanza/fileconsumer pkg/stanza/fileconsumer
 pkg/status pkg/status
 pkg/translator/azure pkg/translator/azure
 pkg/translator/azurelogs pkg/translator/azurelogs
+pkg/translator/faro pkg/translator/faro
 pkg/translator/jaeger pkg/translator/jaeger
 pkg/translator/loki pkg/translator/loki
 pkg/translator/opencensus pkg/translator/opencensus
@@ -163,6 +165,7 @@ processor/cumulativetodeltaprocessor processor/cumulativetodelta
 processor/datadogsemanticsprocessor processor/datadogsemantics
 processor/deltatocumulativeprocessor processor/deltatocumulative
 processor/deltatorateprocessor processor/deltatorate
+processor/dnslookupprocessor processor/dnslookup
 processor/filterprocessor processor/filter
 processor/geoipprocessor processor/geoip
 processor/groupbyattrsprocessor processor/groupbyattrs
@@ -204,8 +207,10 @@ receiver/chronyreceiver receiver/chrony
 receiver/cloudflarereceiver receiver/cloudflare
 receiver/cloudfoundryreceiver receiver/cloudfoundry
 receiver/collectdreceiver receiver/collectd
+receiver/couchdbreceiver receiver/couchdb
 receiver/datadogreceiver receiver/datadog
 receiver/dockerstatsreceiver receiver/dockerstats
+receiver/elasticsearchreceiver receiver/elasticsearch
 receiver/envoyalsreceiver receiver/envoyals
 receiver/expvarreceiver receiver/expvar
 receiver/faroreceiver receiver/faro
@@ -246,8 +251,10 @@ receiver/kafkareceiver receiver/kafka
 receiver/kubeletstatsreceiver receiver/kubeletstats
 receiver/libhoneyreceiver receiver/libhoney
 receiver/lokireceiver receiver/loki
+receiver/memcachedreceiver receiver/memcached
 receiver/mongodbatlasreceiver receiver/mongodbatlas
 receiver/mongodbreceiver receiver/mongodb
+receiver/mysqlreceiver receiver/mysql
 receiver/namedpipereceiver receiver/namedpipe
 receiver/netflowreceiver receiver/netflow
 receiver/nginxreceiver receiver/nginx
@@ -259,6 +266,7 @@ receiver/osqueryreceiver receiver/osquery
 receiver/otelarrowreceiver receiver/otelarrow
 receiver/otlpjsonfilereceiver receiver/otlpjsonfile
 receiver/podmanreceiver receiver/podman
+receiver/postgresqlreceiver receiver/postgresql
 receiver/pprofreceiver receiver/pprof
 receiver/prometheusreceiver receiver/prometheus
 receiver/prometheusremotewritereceiver receiver/prometheusremotewrite
@@ -283,6 +291,7 @@ receiver/sqlqueryreceiver receiver/sqlquery
 receiver/sqlserverreceiver receiver/sqlserver
 receiver/sshcheckreceiver receiver/sshcheck
 receiver/statsdreceiver receiver/statsd
+receiver/stefreceiver receiver/stef
 receiver/syslogreceiver receiver/syslog
 receiver/systemdreceiver receiver/systemd
 receiver/tcpcheckreceiver receiver/tcpcheck
@@ -296,6 +305,8 @@ receiver/windowseventlogreceiver receiver/windowseventlog
 receiver/windowsperfcountersreceiver receiver/windowsperfcounters
 receiver/windowsservicereceiver receiver/windowsservice
 receiver/zipkinreceiver receiver/zipkin
+receiver/zookeeperreceiver receiver/zookeeper
+scraper/zookeeperscraper scraper/zookeeper
 testbed testbed
 testbed/mockdatasenders/mockdatadogagentexporter testbed/mockdatasenders/mockdatadogagentexporter
 reports/distributions/core.yaml reports/distributions/core.yaml
@@ -308,10 +319,3 @@ exporter/opensearchexporter exporter/opensearch
 extension/observer/ecstaskobserver extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver receiver/awscloudwatchmetrics
 receiver/carbonreceiver receiver/carbon
-receiver/couchdbreceiver receiver/couchdb
-receiver/elasticsearchreceiver receiver/elasticsearch
-receiver/memcachedreceiver receiver/memcached
-receiver/mysqlreceiver receiver/mysql
-receiver/postgresqlreceiver receiver/postgresql
-receiver/zookeeperreceiver receiver/zookeeper
-scraper/zookeeperscraper scraper/zookeeper

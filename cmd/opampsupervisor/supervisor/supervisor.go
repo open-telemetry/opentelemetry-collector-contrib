@@ -4,6 +4,7 @@
 package supervisor
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"crypto/tls"
@@ -15,7 +16,9 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
+	"strings"
 	"sync"
 	"sync/atomic"
 	"text/template"
@@ -36,6 +39,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.21.0"
 	"go.opentelemetry.io/contrib/bridges/otelzap"
@@ -73,8 +77,9 @@ var (
 )
 
 const (
-	persistentStateFileName = "persistent_state.yaml"
-	agentConfigFileName     = "effective.yaml"
+	persistentStateFileName     = "persistent_state.yaml"
+	agentConfigFileName         = "effective.yaml"
+	AllowNoPipelinesFeatureGate = "service.AllowNoPipelines"
 )
 
 const maxBufferedCustomMessages = 10
@@ -142,7 +147,7 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Internal config state for agent use. See the configState struct for more details.
+	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
@@ -182,6 +187,8 @@ type Supervisor struct {
 	opampServerPort int
 
 	telemetrySettings telemetrySettings
+
+	featureGates map[string]struct{}
 }
 
 func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, error) {
@@ -196,6 +203,7 @@ func NewSupervisor(logger *zap.Logger, cfg config.Supervisor) (*Supervisor, erro
 		doneChan:                     make(chan struct{}),
 		customMessageToServer:        make(chan *protobufs.CustomMessage, maxBufferedCustomMessages),
 		agentConn:                    &atomic.Value{},
+		featureGates:                 map[string]struct{}{},
 	}
 	if err := s.createTemplates(); err != nil {
 		return nil, err
@@ -312,6 +320,10 @@ func (s *Supervisor) Start() error {
 		return err
 	}
 
+	if err = s.getFeatureGates(); err != nil {
+		return fmt.Errorf("could not get feature gates from the Collector: %w", err)
+	}
+
 	if err = s.getBootstrapInfo(); err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
@@ -361,6 +373,41 @@ func (s *Supervisor) Start() error {
 		defer s.customMessageWG.Done()
 		s.forwardCustomMessagesToServerLoop()
 	}()
+
+	return nil
+}
+
+func (s *Supervisor) getFeatureGates() error {
+	cmd, err := commander.NewCommander(
+		s.telemetrySettings.Logger,
+		s.config.Storage.Directory,
+		s.config.Agent,
+		"featuregate",
+	)
+	if err != nil {
+		return err
+	}
+
+	stdout, _, err := cmd.StartOneShot()
+	if err != nil {
+		return err
+	}
+	scanner := bufio.NewScanner(bytes.NewBuffer(stdout))
+
+	// First line only contains headers, discard it.
+	_ = scanner.Scan()
+	for scanner.Scan() {
+		line := scanner.Text()
+		i := strings.Index(line, " ")
+		flag := line[0:i]
+
+		if flag == AllowNoPipelinesFeatureGate {
+			s.featureGates[AllowNoPipelinesFeatureGate] = struct{}{}
+		}
+	}
+	if err := scanner.Err(); err != nil {
+		fmt.Fprintln(os.Stderr, "reading standard input:", err)
+	}
 
 	return nil
 }
@@ -498,11 +545,18 @@ func (s *Supervisor) getBootstrapInfo() (err error) {
 		}
 	}()
 
+	flags := []string{
+		"--config", s.agentConfigFilePath(),
+	}
+	featuregateFlag := s.getFeatureGateFlag()
+	if len(featuregateFlag) > 0 {
+		flags = append(flags, featuregateFlag...)
+	}
 	cmd, err := commander.NewCommander(
 		s.telemetrySettings.Logger,
 		s.config.Storage.Directory,
 		s.config.Agent,
-		"--config", s.agentConfigFilePath(),
+		flags...,
 	)
 	if err != nil {
 		span.SetStatus(codes.Error, fmt.Sprintf("Could not start Agent: %v", err))
@@ -902,12 +956,12 @@ func (s *Supervisor) onOpampConnectionSettings(_ context.Context, settings *prot
 
 func (s *Supervisor) composeNoopPipeline() ([]byte, error) {
 	var cfg bytes.Buffer
-	err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{
-		"InstanceUid":    s.persistentState.InstanceID.String(),
-		"SupervisorPort": s.opampServerPort,
-	})
-	if err != nil {
-		return nil, err
+
+	if !s.isFeatureGateSupported(AllowNoPipelinesFeatureGate) {
+		err := s.noopPipelineTemplate.Execute(&cfg, map[string]any{})
+		if err != nil {
+			return nil, err
+		}
 	}
 
 	return cfg.Bytes(), nil
@@ -981,6 +1035,36 @@ func (s *Supervisor) composeOpAMPExtensionConfig() []byte {
 	}
 
 	return cfg.Bytes()
+}
+
+func (s *Supervisor) composeAgentConfigFiles() []byte {
+	conf := confmap.New()
+
+	for _, file := range s.config.Agent.ConfigFiles {
+		cfgBytes, err := os.ReadFile(file)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not read local config file", zap.Error(err))
+			continue
+		}
+
+		cfgMap, err := yaml.Parser().Unmarshal(cfgBytes)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not unmarshal local config file", zap.Error(err))
+			continue
+		}
+		err = conf.Merge(confmap.NewFromStringMap(cfgMap))
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not merge local config file: "+file, zap.Error(err))
+			continue
+		}
+	}
+
+	b, err := yaml.Parser().Marshal(conf.ToStringMap())
+	if err != nil {
+		s.telemetrySettings.Logger.Error("Could not marshal merged local config files", zap.Error(err))
+		return []byte("")
+	}
+	return b
 }
 
 func (s *Supervisor) loadAndWriteInitialMergedConfig() error {
@@ -1107,13 +1191,13 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 1) the remote config from OpAMP Server
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
-func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 
-	if !configMapIsEmpty {
-		c := config.GetConfig()
+	if hasIncomingConfigMap {
+		c := incomingConfig.GetConfig()
 
 		// Sort to make sure the order of merging is stable.
 		var names []string
@@ -1176,6 +1260,10 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 		return false, err
 	}
 
+	if err = k.Load(rawbytes.Provider(s.composeAgentConfigFiles()), yaml.Parser(), koanf.WithMergeFunc(configMergeFunc)); err != nil {
+		return false, err
+	}
+
 	// The merged final result is our new merged config.
 	newMergedConfigBytes, err := k.Marshal(yaml.Parser())
 	if err != nil {
@@ -1186,7 +1274,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapIsEmpty,
+		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
 	}
 
 	configChanged = false
@@ -1664,6 +1752,24 @@ func (s *Supervisor) getSupervisorOpAMPServerPort() (int, error) {
 	return s.findRandomPort()
 }
 
+func (s *Supervisor) getFeatureGateFlag() []string {
+	flags := []string{}
+	for k := range s.featureGates {
+		flags = append(flags, k)
+	}
+
+	if len(flags) == 0 {
+		return []string{}
+	}
+
+	return []string{"--feature-gates", strings.Join(flags, ",")}
+}
+
+func (s *Supervisor) isFeatureGateSupported(gate string) bool {
+	_, ok := s.featureGates[gate]
+	return ok
+}
+
 func (s *Supervisor) findRandomPort() (int, error) {
 	l, err := net.Listen("tcp", "localhost:0")
 	if err != nil {
@@ -1698,7 +1804,21 @@ func configMergeFunc(src, dest map[string]any) error {
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
-				service["extensions"] = append(destExt, srcExt...)
+				allExt := slices.Concat(destExt, srcExt)
+				// This is a small hack to ensure that the order is consitent and
+				// follows this simple rule: extensions from [src], then from [dest],
+				// in the order that they appear.
+				// We cannot use other simpler methods, like [sort.Strings], because
+				// we work with a `[]any` that cannot be cast to `[]string`.
+				seenExt := make(map[any]struct{}, len(allExt))
+				var uniqueExts []any
+				for _, ext := range allExt {
+					if _, ok := seenExt[ext]; !ok {
+						seenExt[ext] = struct{}{}
+						uniqueExts = append(uniqueExts, ext)
+					}
+				}
+				service["extensions"] = uniqueExts
 			}
 		}
 	}

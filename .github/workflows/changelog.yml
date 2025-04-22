@@ -11,6 +11,8 @@ on:
     branches:
       - main
 
+permissions: read-all
+
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
@@ -33,7 +35,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache

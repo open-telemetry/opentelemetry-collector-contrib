@@ -142,11 +142,11 @@ func TestZipkinSpansToInternalTraces(t *testing.T) {
 	for _, test := range tests {
 		t.Run(test.name, func(t *testing.T) {
 			td, err := ToTranslator{}.ToTraces(test.zs)
-			assert.EqualValues(t, test.err, err)
+			assert.Equal(t, test.err, err)
 			if test.name != "nilSpan" {
 				assert.Equal(t, len(test.zs), td.SpanCount())
 			}
-			assert.EqualValues(t, test.td, td)
+			assert.Equal(t, test.td, td)
 		})
 	}
 }

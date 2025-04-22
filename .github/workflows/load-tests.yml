@@ -18,6 +18,8 @@ env:
   # We limit cache download as a whole to 5 minutes.
   SEGMENT_DOWNLOAD_TIMEOUT_MINS: 2
 
+permissions: read-all
+
 jobs:
   setup-environment:
     timeout-minutes: 30
@@ -29,7 +31,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -68,7 +70,7 @@ jobs:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
       - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.7"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -122,6 +124,11 @@ jobs:
   update-benchmarks:
     runs-on: ubuntu-24.04
     needs: [loadtest]
+    permissions:
+      # deployments permission to deploy GitHub pages website
+      deployments: write
+      # contents permission to update benchmark contents in gh-pages branch
+      contents: write
     if: github.event_name != 'pull_request'
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4

@@ -1,4 +1,3 @@
-cmd/checkapi
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
@@ -104,6 +103,7 @@ exporter/dorisexporter
 exporter/elasticsearchexporter
 extension/storage/filestorage
 exporter/elasticsearchexporter/integrationtest
+pkg/translator/faro
 exporter/faroexporter
 extension/encoding
 extension/encoding/otlpencodingextension
@@ -145,6 +145,7 @@ exporter/tencentcloudlogserviceexporter
 extension/asapauthextension
 internal/aws/proxy
 extension/awsproxy
+extension/azureauthextension
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
@@ -184,6 +185,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/tpmextension
 .
 internal/aws/containerinsight
 internal/aws/k8s
@@ -202,6 +204,7 @@ processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
 processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
+processor/dnslookupprocessor
 processor/filterprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
@@ -302,6 +305,7 @@ receiver/sqlqueryreceiver
 receiver/sqlserverreceiver
 receiver/sshcheckreceiver
 receiver/statsdreceiver
+receiver/stefreceiver
 receiver/systemdreceiver
 receiver/tcpcheckreceiver
 receiver/tcplogreceiver
