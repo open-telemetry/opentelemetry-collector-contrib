@@ -68,6 +68,10 @@ function generateNewContributorText(newContributors) {
 export const main = async (github, tag, previous_tag) => {
     const newContributorsAndHashes = await getFirstTimeContributors(previous_tag, tag)
 
+    if(newContributorsAndHashes.length === 0) {
+        return ""
+    }
+
     const usernames = [];
     for (const contributor of newContributorsAndHashes) {
         const response = await github.request('GET /repos/{owner}/{repo}/commits/{ref}', {
