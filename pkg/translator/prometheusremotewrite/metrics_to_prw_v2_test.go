@@ -45,3 +45,36 @@ func TestFromMetricsV2(t *testing.T) {
 	require.ElementsMatch(t, want, slices.Collect(maps.Values(tsMap)))
 	require.ElementsMatch(t, wantedSymbols, symbolsTable.Symbols())
 }
+
+func TestIsSameMetricV2(t *testing.T) {
+	tests := []struct {
+		name string
+		ts1  *writev2.TimeSeries
+		ts2  *writev2.TimeSeries
+		same bool
+	}{
+		{
+			name: "same",
+			same: true,
+			ts1: &writev2.TimeSeries{
+				LabelsRefs: []uint32{1, 2, 3, 4},
+			},
+			ts2: &writev2.TimeSeries{
+				LabelsRefs: []uint32{1, 2, 3, 4},
+			},
+		},
+		{
+			name: "different",
+			same: false,
+			ts1: &writev2.TimeSeries{
+				LabelsRefs: []uint32{1, 2, 3, 4},
+			},
+			ts2: &writev2.TimeSeries{
+				LabelsRefs: []uint32{1, 2, 3, 5},
+			},
+		},
+	}
+	for _, test := range tests {
+		require.Equal(t, test.same, isSameMetricV2(test.ts1, test.ts2))
+	}
+}
