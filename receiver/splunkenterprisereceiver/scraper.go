@@ -13,6 +13,7 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"strings"
 	"sync"
 	"time"
 
@@ -1854,11 +1855,11 @@ func (s *splunkScraper) scrapeInfo(_ context.Context, _ pcommon.Timestamp, errs 
 }
 
 // Scrape Search Metrics
-func (s *splunkScraper) scrapeSearch(ctx context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkSearchDuration.Enabled &&
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkSearchInitiation.Enabled &&
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkSearchStatus.Enabled &&
-		!s.conf.MetricsBuilderConfig.Metrics.SplunkSearchSuccess.Enabled {
+func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
+	if !s.conf.Metrics.SplunkSearchDuration.Enabled &&
+		!s.conf.Metrics.SplunkSearchInitiation.Enabled &&
+		!s.conf.Metrics.SplunkSearchStatus.Enabled &&
+		!s.conf.Metrics.SplunkSearchSuccess.Enabled {
 		return
 	}
 
@@ -1904,7 +1905,10 @@ func (s *splunkScraper) scrapeSearch(ctx context.Context, now pcommon.Timestamp,
 
 		if sr.Jobid != nil {
 			s.recordSplunkSearchInitiationDataPoint(now, 1, i)
-			s.setSearchJobTTLById(*sr.Jobid, errs) // set search TTL once we know the sid
+			err = s.setSearchJobTTLById(*sr.Jobid) // set search TTL once we know the sid
+			if err != nil {
+				errs <- err // log the error but it doesn't need to fail
+			}
 		} else {
 			s.recordSplunkSearchInitiationDataPoint(now, 0, i)
 		}
@@ -1940,7 +1944,7 @@ func (s *splunkScraper) scrapeSearch(ctx context.Context, now pcommon.Timestamp,
 	entry := metaEntries.Entries[0]
 
 	for entry.Content.DispatchState != StateDone || time.Since(start) < s.conf.ControllerConfig.Timeout {
-		if s.conf.MetricsBuilderConfig.Metrics.SplunkSearchStatus.Enabled {
+		if s.conf.Metrics.SplunkSearchStatus.Enabled {
 			// record for all possible search states
 			var value int64
 			for _, state := range searchStates {
@@ -1977,25 +1981,25 @@ func (s *splunkScraper) scrapeSearch(ctx context.Context, now pcommon.Timestamp,
 }
 
 func (s *splunkScraper) recordSplunkSearchInitiationDataPoint(now pcommon.Timestamp, value int64, i InfoContent) {
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkSearchInitiation.Enabled {
+	if s.conf.Metrics.SplunkSearchInitiation.Enabled {
 		s.mb.RecordSplunkSearchInitiationDataPoint(now, value, i.Build, i.Version)
 	}
 }
 
 func (s *splunkScraper) recordSplunkSearchStatusDataPoint(now pcommon.Timestamp, value int64, state string, i InfoContent) {
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkSearchStatus.Enabled {
+	if s.conf.Metrics.SplunkSearchStatus.Enabled {
 		s.mb.RecordSplunkSearchStatusDataPoint(now, value, state, i.Build, i.Version)
 	}
 }
 
 func (s *splunkScraper) recordSplunkSearchDurationDataPoint(now pcommon.Timestamp, value float64, i InfoContent) {
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkSearchDuration.Enabled {
+	if s.conf.Metrics.SplunkSearchDuration.Enabled {
 		s.mb.RecordSplunkSearchDurationDataPoint(now, value, i.Build, i.Version)
 	}
 }
 
 func (s *splunkScraper) recordSplunkSearchSuccessDataPoint(now pcommon.Timestamp, value int64, i InfoContent) {
-	if s.conf.MetricsBuilderConfig.Metrics.SplunkSearchInitiation.Enabled {
+	if s.conf.Metrics.SplunkSearchInitiation.Enabled {
 		s.mb.RecordSplunkSearchSuccessDataPoint(now, value, i.Build, i.Version)
 	}
 }
@@ -2024,38 +2028,35 @@ func (s *splunkScraper) getSearchEntries(sid string) (searchMetaEntries, error) 
 }
 
 // setSearchJobTTLById sets the SearchJob's TTL on the remote Splunk server to Timeout and returns a ControlResponse.
-func (s *splunkScraper) setSearchJobTTLById(sid string, errs chan error) (*ControlResponse, error) {
+func (s *splunkScraper) setSearchJobTTLById(sid string) error {
 	ept := fmt.Sprintf("/services/search/jobs/%s/control", sid)
 
 	req, err := s.splunkClient.createAPIRequest(typeSh, ept)
 	if err != nil {
-		errs <- err
-		return nil, err
+		return err
 	}
 
-	req.Form = url.Values{
+	form := url.Values{
 		"action": []string{"setttl"},
 		"ttl":    []string{fmt.Sprintf("%d", s.conf.Timeout)},
 	}
+	req.Body = io.NopCloser(strings.NewReader(form.Encode()))
+	req.Method = http.MethodPost
 
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
-		errs <- err
-		return nil, err
+		return err
 	}
 
-	controlResponse := &ControlResponse{}
-	body, err := io.ReadAll(res.Body)
-	if err != nil {
-		errs <- err
-		return nil, err
-	}
-	defer res.Body.Close()
+	if res.StatusCode != 200 {
+		body, err := io.ReadAll(res.Body)
+		if err != nil {
+			return err
+		}
+		defer res.Body.Close()
 
-	err = json.Unmarshal(body, controlResponse)
-	if err != nil {
-		errs <- err
-		return nil, err
+		return fmt.Errorf("failed to set TTL for search: %s", body)
 	}
-	return controlResponse, nil
+
+	return nil
 }

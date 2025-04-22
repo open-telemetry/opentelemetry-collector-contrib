@@ -223,15 +223,3 @@ type searchMeta struct {
 	Duration      float64 `json:"runDuration"`
 	DispatchState string  `json:"dispatchState"`
 }
-
-// ControlResponse represents a control response returned by an action.
-type ControlResponse struct {
-	Messages []ControlMessage `json:"messages"`
-}
-
-// ControlMessage represents a specific message returned by an action.
-type ControlMessage struct {
-	Type string `json:"type"`
-	Code string `json:"code"`
-	Text string `json:"text"`
-}
