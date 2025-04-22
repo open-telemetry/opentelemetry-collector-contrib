@@ -703,9 +703,9 @@ func TestExtractionRules(t *testing.T) {
 	}
 
 	automaticRules := ExtractionRules{
-		Service:     true,
-		Labels:      AutomaticLabelRules,
-		Annotations: []FieldExtractionRule{OtelAnnotations()},
+		ServiceAttributes: true,
+		Labels:            AutomaticLabelRules,
+		Annotations:       []FieldExtractionRule{OtelAnnotations()},
 	}
 
 	testCases := []struct {
@@ -1639,7 +1639,7 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 		{
 			name: "automatic-container-level-attributes",
 			rules: ExtractionRules{
-				Service: true,
+				ServiceAttributes: true,
 			},
 			pod: &pod,
 			want: PodContainers{
