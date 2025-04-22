@@ -512,85 +512,86 @@ func (m *MockConsumer) ConsumeMetrics(_ context.Context, md pmetric.Metrics) err
 }
 
 func TestTargetInfoWithMultipleRequests(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	cfg.(*Config).Endpoint = "localhost:9090"
-
-	mockConsumer := new(MockConsumer)
-	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockConsumer)
-	assert.NoError(t, err)
-	assert.NotNil(t, prwReceiver)
-
-	host := componenttest.NewNopHost()
-	err = prwReceiver.Start(context.Background(), host)
-	assert.NoError(t, err)
-	defer func() {
-		assert.NoError(t, prwReceiver.Shutdown(context.Background()))
-	}()
-
-	// Define two different metrics, one is target_info and the other is a normal metric.
-	// In the end, we expect that we have 1 final metric. All labels from the target_info metric should be translated to resource attributes and
-	// the normal metric should be translated as usual.
-	requests := []*writev2.Request{
+	tests := []struct {
+		name     string
+		requests []*writev2.Request
+	}{
 		{
-			Symbols: []string{
-				"",
-				"job", "production/service_a", // 1, 2
-				"instance", "host1", // 3, 4
-				"machine_type", "n1-standard-1", // 5, 6
-				"cloud_provider", "gcp", // 7, 8
-				"region", "us-central1", // 9, 10
-				"__name__", "target_info", // 11, 12
-			},
-			Timeseries: []writev2.TimeSeries{
+			name: "target_info first, normal metric second",
+			requests: []*writev2.Request{
 				{
-					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					Symbols: []string{
+						"",
+						"job", "production/service_a", // 1, 2
+						"instance", "host1", // 3, 4
+						"machine_type", "n1-standard-1", // 5, 6
+						"cloud_provider", "gcp", // 7, 8
+						"region", "us-central1", // 9, 10
+						"__name__", "target_info", // 11, 12
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						},
+					},
+				},
+				{
+					Symbols: []string{
+						"",
+						"job", "production/service_a", // 1, 2
+						"instance", "host1", // 3, 4
+						"__name__", "normal_metric", // 5, 6
+						"foo", "bar", // 7, 8
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
 				},
 			},
 		},
 		{
-			Symbols: []string{
-				"",
-				"job", "production/service_a", // 1, 2
-				"instance", "host1", // 3, 4
-				"__name__", "normal_metric", // 5, 6
-				"foo", "bar", // 7, 8
-			},
-			Timeseries: []writev2.TimeSeries{
+			name: "normal metric first, target_info second",
+			requests: []*writev2.Request{
 				{
-					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
-					LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
-					Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+					Symbols: []string{
+						"",
+						"job", "production/service_a", // 1, 2
+						"instance", "host1", // 3, 4
+						"__name__", "normal_metric", // 5, 6
+						"foo", "bar", // 7, 8
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{5, 6, 1, 2, 3, 4, 7, 8},
+							Samples:    []writev2.Sample{{Value: 2, Timestamp: 2}},
+						},
+					},
+				},
+				{
+					Symbols: []string{
+						"",
+						"job", "production/service_a", // 1, 2
+						"instance", "host1", // 3, 4
+						"machine_type", "n1-standard-1", // 5, 6
+						"cloud_provider", "gcp", // 7, 8
+						"region", "us-central1", // 9, 10
+						"__name__", "target_info", // 11, 12
+					},
+					Timeseries: []writev2.TimeSeries{
+						{
+							Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
+							LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+						},
+					},
 				},
 			},
 		},
-	}
-
-	client := &http.Client{}
-	for _, req := range requests {
-		pBuf := proto.NewBuffer(nil)
-		err := pBuf.Marshal(req)
-		assert.NoError(t, err)
-		compressedBody := snappy.Encode(nil, pBuf.Bytes())
-
-		httpReq, err := http.NewRequest(
-			http.MethodPost,
-			"http://0.0.0.0:9090/api/v1/write",
-			bytes.NewBuffer(compressedBody),
-		)
-		assert.NoError(t, err)
-
-		httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
-		httpReq.Header.Set("Content-Encoding", "snappy")
-
-		resp, err := client.Do(httpReq)
-		assert.NoError(t, err)
-		defer resp.Body.Close()
-
-		body, err := io.ReadAll(resp.Body)
-		assert.NoError(t, err)
-		assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
 	}
 
 	expectedMetrics := func() pmetric.Metrics {
@@ -619,5 +620,51 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		return metrics
 	}()
 
-	assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory()
+			cfg := factory.CreateDefaultConfig()
+			cfg.(*Config).Endpoint = "localhost:9090"
+
+			mockConsumer := new(MockConsumer)
+			prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockConsumer)
+			assert.NoError(t, err)
+			assert.NotNil(t, prwReceiver)
+
+			host := componenttest.NewNopHost()
+			err = prwReceiver.Start(context.Background(), host)
+			assert.NoError(t, err)
+			defer func() {
+				assert.NoError(t, prwReceiver.Shutdown(context.Background()))
+			}()
+
+			client := &http.Client{}
+			for _, req := range tt.requests {
+				pBuf := proto.NewBuffer(nil)
+				err := pBuf.Marshal(req)
+				assert.NoError(t, err)
+				compressedBody := snappy.Encode(nil, pBuf.Bytes())
+
+				httpReq, err := http.NewRequest(
+					http.MethodPost,
+					"http://0.0.0.0:9090/api/v1/write",
+					bytes.NewBuffer(compressedBody),
+				)
+				assert.NoError(t, err)
+
+				httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
+				httpReq.Header.Set("Content-Encoding", "snappy")
+
+				resp, err := client.Do(httpReq)
+				assert.NoError(t, err)
+				defer resp.Body.Close()
+
+				body, err := io.ReadAll(resp.Body)
+				assert.NoError(t, err)
+				assert.Equal(t, http.StatusNoContent, resp.StatusCode, string(body))
+			}
+
+			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
+		})
+	}
 }
