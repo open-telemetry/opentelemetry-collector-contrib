@@ -7,8 +7,9 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 	"strings"
+
+	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes/source"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/traceutil"
 	"go.opentelemetry.io/collector/pdata/pcommon"

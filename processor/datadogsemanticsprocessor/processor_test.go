@@ -5,8 +5,9 @@ package datadogsemanticsprocessor
 
 import (
 	"context"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"testing"
+
+	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/DataDog/datadog-agent/pkg/trace/testutil"
 	"github.com/stretchr/testify/assert"
