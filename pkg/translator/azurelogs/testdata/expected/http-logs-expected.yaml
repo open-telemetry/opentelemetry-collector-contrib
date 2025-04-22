@@ -1,84 +1,81 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /SUBSCRIPTIONS/DA2DD5CC-E7BC-4DB6-94D9-0AFB3BD30577/RESOURCEGROUPS/FRETBADGER/PROVIDERS/MICROSOFT.WEB/SITES/FBEHTESTAPP
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
-                  - key: network.protocol.version
-                    value:
-                      stringValue: "1.1"
-                  - key: host.name
-                    value:
-                      stringValue: COMPUTER_NAME
-                  - key: user_agent.original
-                    value:
-                      stringValue: Mozilla/5.0
-                  - key: http.request.header.referer
-                    value:
-                      stringValue: REFERER
-                  - key: http.response.body.size
-                    value:
-                      intValue: "42"
-                  - key: category
-                    value:
-                      stringValue: AppServiceHTTPLogs
-                  - key: url.domain
-                    value:
-                      stringValue: test.com
                   - key: server.port
                     value:
                       intValue: "80"
                   - key: url.query
                     value:
                       stringValue: foo=42
-                  - key: url.path
+                  - key: url.domain
                     value:
-                      stringValue: /api/test/
-                  - key: http.response.status_code
+                      stringValue: test.com
+                  - key: category
                     value:
-                      intValue: "200"
-                  - key: operation.name
+                      stringValue: AppServiceHTTPLogs
+                  - key: http.request.header.referer
                     value:
-                      stringValue: ""
+                      stringValue: REFERER
+                  - key: host.name
+                    value:
+                      stringValue: COMPUTER_NAME
                   - key: http.request.method
                     value:
                       stringValue: GET
-                  - key: network.protocol.name
-                    value:
-                      stringValue: http
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
                   - key: http.server.request.duration
                     value:
                       doubleValue: 0.42
+                  - key: network.protocol.name
+                    value:
+                      stringValue: http
+                  - key: network.protocol.version
+                    value:
+                      stringValue: "1.1"
+                  - key: http.response.status_code
+                    value:
+                      intValue: "200"
                   - key: http.request.body.size
                     value:
                       intValue: "4242"
+                  - key: url.path
+                    value:
+                      stringValue: /api/test/
+                  - key: user_agent.original
+                    value:
+                      stringValue: Mozilla/5.0
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
+                  - key: http.response.body.size
+                    value:
+                      intValue: "42"
                   - key: properties
                     value:
                       kvlistValue:
                         values:
-                          - key: CsUsername
-                            value:
-                              stringValue: user@test.com
                           - key: Result
                             value:
                               stringValue: Success
                           - key: Cookie
                             value:
                               stringValue: ""
+                          - key: CsUsername
+                            value:
+                              stringValue: user@test.com
+                  - key: operation.name
+                    value:
+                      stringValue: ""
             spanId: ""
             timeUnixNano: "1713959980989337000"
             traceId: ""

@@ -1,29 +1,20 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /RESOURCE_ID
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
-                  - key: category
+                  - key: http.response.status_code
                     value:
-                      stringValue: FrontDoorHealthProbeLog
-                  - key: operation.name
-                    value:
-                      stringValue: WAF/FirewallLog
-                  - key: http.request.method
-                    value:
-                      stringValue: GET
+                      intValue: "200"
                   - key: url.full
                     value:
                       stringValue: https://probe.net/health
@@ -31,30 +22,36 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: POP
-                            value:
-                              stringValue: ""
                           - key: result
                             value:
                               stringValue: ""
-                          - key: healthProbeId
-                            value:
-                              stringValue: AAAA
                           - key: originName
                             value:
                               stringValue: https://probe.net/
-                  - key: http.response.status_code
+                          - key: healthProbeId
+                            value:
+                              stringValue: AAAA
+                          - key: POP
+                            value:
+                              stringValue: ""
+                  - key: category
                     value:
-                      intValue: "200"
-                  - key: server.address
+                      stringValue: FrontDoorHealthProbeLog
+                  - key: operation.name
                     value:
-                      stringValue: 42.42.42.42
+                      stringValue: WAF/FirewallLog
                   - key: http.request.duration
                     value:
                       doubleValue: 0.042
                   - key: dns.lookup.duration
                     value:
                       doubleValue: 0.00023
+                  - key: http.request.method
+                    value:
+                      stringValue: GET
+                  - key: server.address
+                    value:
+                      stringValue: 42.42.42.42
             spanId: ""
             timeUnixNano: "1713960372000000000"
             traceId: ""
