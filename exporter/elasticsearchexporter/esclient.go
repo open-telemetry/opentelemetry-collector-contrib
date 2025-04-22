@@ -6,6 +6,7 @@ package elasticsearchexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"context"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"time"
@@ -15,6 +16,7 @@ import (
 	"github.com/elastic/go-elasticsearch/v8/esapi"
 	"github.com/klauspost/compress/gzip"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/sanitize"
@@ -26,6 +28,7 @@ type clientLogger struct {
 	*zap.Logger
 	logRequestBody  bool
 	logResponseBody bool
+	componentHost   component.Host
 }
 
 // LogRoundTrip should not modify the request or response, except for consuming and closing the body.
@@ -62,6 +65,15 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.String("status", resp.Status),
 		)
 		zl.Debug("Request roundtrip completed.", fields...)
+		if resp.StatusCode == 200 {
+			// Success
+			componentstatus.ReportStatus(cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+		} else if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
+			// Error results
+			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+		}
 
 	case clientErr != nil:
 		fields = append(
@@ -69,6 +81,10 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.NamedError("reason", clientErr),
 		)
 		zl.Debug("Request failed.", fields...)
+		err := fmt.Errorf("Elasticsearch request failed: %v", clientErr.Error())
+		componentstatus.ReportStatus(
+			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
+
 	}
 
 	return nil
@@ -111,6 +127,7 @@ func newElasticsearchClient(
 		Logger:          telemetry.Logger,
 		logRequestBody:  config.LogRequestBody,
 		logResponseBody: config.LogResponseBody,
+		componentHost:   host,
 	}
 
 	return elasticsearchv8.NewClient(elasticsearchv8.Config{
