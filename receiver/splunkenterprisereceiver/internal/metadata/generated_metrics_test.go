@@ -151,16 +151,16 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordSplunkSchedulerCompletionRatioDataPoint(ts, 1, "splunk.host-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkSearchDurationDataPoint(ts, 1)
+			mb.RecordSplunkSearchDurationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkSearchInitiationDataPoint(ts, 1)
+			mb.RecordSplunkSearchInitiationDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkSearchStatusDataPoint(ts, 1, "splunk.search.state-val")
+			mb.RecordSplunkSearchStatusDataPoint(ts, 1, "splunk.search.state-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
-			mb.RecordSplunkSearchSuccessDataPoint(ts, 1)
+			mb.RecordSplunkSearchSuccessDataPoint(ts, 1, "splunk.splunkd.build-val", "splunk.splunkd.version-val")
 
 			allMetricsCount++
 			mb.RecordSplunkServerIntrospectionQueuesCurrentDataPoint(ts, 1, "splunk.queue.name-val", "splunk.splunkd.build-val", "splunk.splunkd.version-val")
@@ -880,6 +880,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
+					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.search.initiation":
 					assert.False(t, validatedMetrics["splunk.search.initiation"], "Found a duplicate in the metrics slice: splunk.search.initiation")
 					validatedMetrics["splunk.search.initiation"] = true
@@ -892,6 +898,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.search.status":
 					assert.False(t, validatedMetrics["splunk.search.status"], "Found a duplicate in the metrics slice: splunk.search.status")
 					validatedMetrics["splunk.search.status"] = true
@@ -907,6 +919,12 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("splunk.search.state")
 					assert.True(t, ok)
 					assert.Equal(t, "splunk.search.state-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.search.success":
 					assert.False(t, validatedMetrics["splunk.search.success"], "Found a duplicate in the metrics slice: splunk.search.success")
 					validatedMetrics["splunk.search.success"] = true
@@ -919,6 +937,12 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+					attrVal, ok := dp.Attributes().Get("splunk.splunkd.build")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.build-val", attrVal.Str())
+					attrVal, ok = dp.Attributes().Get("splunk.splunkd.version")
+					assert.True(t, ok)
+					assert.Equal(t, "splunk.splunkd.version-val", attrVal.Str())
 				case "splunk.server.introspection.queues.current":
 					assert.False(t, validatedMetrics["splunk.server.introspection.queues.current"], "Found a duplicate in the metrics slice: splunk.server.introspection.queues.current")
 					validatedMetrics["splunk.server.introspection.queues.current"] = true
