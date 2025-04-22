@@ -670,6 +670,8 @@ jobs:
 
       - name: Set current and previous tags
         id: github_tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/workflows/scripts/set_release_tag.sh
 
       - name: Prepare release notes
