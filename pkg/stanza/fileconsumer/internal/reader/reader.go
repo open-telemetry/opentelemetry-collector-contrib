@@ -70,7 +70,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 
 	switch r.compression {
 	case "gzip":
-		currentEOF, err := r.readGzipFiles()
+		currentEOF, err := r.createGzipReader()
 		if err != nil {
 			return
 		}
@@ -83,7 +83,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		// TODO: Find a better solution
 		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
 		if filepath.Ext(r.fileName) == ".gz" {
-			currentEOF, err := r.readGzipFiles()
+			currentEOF, err := r.createGzipReader()
 			if err != nil {
 				return
 			}
@@ -119,8 +119,8 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	r.readContents(ctx)
 }
 
-// readGzipFiles reads gzip files and returns the current file offset
-func (r *Reader) readGzipFiles() (int64, error) {
+// createGzipReader creates gzip reader and returns the current file offset
+func (r *Reader) createGzipReader() (int64, error) {
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
 	info, err := r.file.Stat()
