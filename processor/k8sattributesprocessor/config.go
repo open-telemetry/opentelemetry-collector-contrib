@@ -173,11 +173,11 @@ type ExtractConfig struct {
 	OtelAnnotations bool `mapstructure:"otel_annotations"`
 
 	// ServiceAttributes allows to extract service attributes based on kubernetes metadata.
-	ServiceAttributes ServiceAttributeConfig `mapstructure:"service_attributes"`
+	ServiceAttributes ServiceAttributesConfig `mapstructure:"service_attributes"`
 }
 
-// ServiceAttributeConfig allows to extract service attributes based on kubernetes metadata.
-type ServiceAttributeConfig struct {
+// ServiceAttributesConfig allows to extract service attributes based on kubernetes metadata.
+type ServiceAttributesConfig struct {
 	// Enabled enables the extraction of service attributes based on kubernetes metadata.
 	Enabled bool `mapstructure:"enabled"`
 	// WellKnownLabels enables the extraction of well-known labels as service attributes.

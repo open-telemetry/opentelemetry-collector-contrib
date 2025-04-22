@@ -457,7 +457,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 	if c.Rules.PodName {
 		tags[string(conventions.K8SPodNameKey)] = pod.Name
 	}
-	if c.Rules.Service {
+	if c.Rules.ServiceAttributes {
 		serviceNames[conventions.AttributeK8SPodName] = pod.Name
 	}
 
@@ -494,7 +494,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 		c.Rules.JobUID || c.Rules.JobName ||
 		c.Rules.StatefulSetUID || c.Rules.StatefulSetName ||
 		c.Rules.DeploymentName || c.Rules.DeploymentUID ||
-		c.Rules.CronJobName || c.Rules.Service {
+		c.Rules.CronJobName || c.Rules.ServiceAttributes {
 		for _, ref := range pod.OwnerReferences {
 			switch ref.Kind {
 			case "ReplicaSet":
@@ -504,17 +504,17 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.ReplicaSetName {
 					tags[string(conventions.K8SReplicaSetNameKey)] = ref.Name
 				}
-				if c.Rules.Service {
+				if c.Rules.ServiceAttributes {
 					serviceNames[conventions.AttributeK8SReplicaSetName] = ref.Name
 				}
-				if c.Rules.DeploymentName || c.Rules.Service {
+				if c.Rules.DeploymentName || c.Rules.ServiceAttributes {
 					if replicaset, ok := c.getReplicaSet(string(ref.UID)); ok {
 						name := replicaset.Deployment.Name
 						if name != "" {
 							if c.Rules.DeploymentName {
 								tags[string(conventions.K8SDeploymentNameKey)] = name
 							}
-							if c.Rules.Service {
+							if c.Rules.ServiceAttributes {
 								serviceNames[conventions.AttributeK8SDeploymentName] = name
 							}
 						}
@@ -534,7 +534,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.DaemonSetName {
 					tags[string(conventions.K8SDaemonSetNameKey)] = ref.Name
 				}
-				if c.Rules.Service {
+				if c.Rules.ServiceAttributes {
 					serviceNames[conventions.AttributeK8SDaemonSetName] = ref.Name
 				}
 			case "StatefulSet":
@@ -544,18 +544,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.StatefulSetName {
 					tags[string(conventions.K8SStatefulSetNameKey)] = ref.Name
 				}
-				if c.Rules.Service {
+				if c.Rules.ServiceAttributes {
 					serviceNames[conventions.AttributeK8SStatefulSetName] = ref.Name
 				}
 			case "Job":
-				if c.Rules.CronJobName || c.Rules.Service {
+				if c.Rules.CronJobName || c.Rules.ServiceAttributes {
 					parts := c.cronJobRegex.FindStringSubmatch(ref.Name)
 					if len(parts) == 2 {
 						name := parts[1]
 						if c.Rules.CronJobName {
 							tags[string(conventions.K8SCronJobNameKey)] = name
 						}
-						if c.Rules.Service {
+						if c.Rules.ServiceAttributes {
 							serviceNames[conventions.AttributeK8SCronJobName] = name
 						}
 					}
@@ -566,7 +566,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) (map[string]string, 
 				if c.Rules.JobName {
 					tags[string(conventions.K8SJobNameKey)] = ref.Name
 				}
-				if c.Rules.Service {
+				if c.Rules.ServiceAttributes {
 					serviceNames[conventions.AttributeK8SJobName] = ref.Name
 				}
 			}
@@ -657,7 +657,7 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 		removeUnnecessaryContainerData := func(c api_v1.Container) api_v1.Container {
 			transformedContainer := api_v1.Container{}
 			transformedContainer.Name = c.Name // we always need the name, it's used for identification
-			if rules.ContainerImageName || rules.ContainerImageTag || rules.Service {
+			if rules.ContainerImageName || rules.ContainerImageTag || rules.ServiceAttributes {
 				transformedContainer.Image = c.Image
 			}
 			return transformedContainer
@@ -730,7 +730,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if !needContainerAttributes(c.Rules) {
 		return containers
 	}
-	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.Service {
+	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag || c.Rules.ServiceAttributes {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
 			imageRef, err := dcommon.ParseImageName(spec.Image)
@@ -743,7 +743,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 				}
 				serviceVersion, err := parseServiceVersionFromImage(spec.Image)
 				if err == nil {
-					if c.Rules.Service {
+					if c.Rules.ServiceAttributes {
 						container.ServiceVersion = serviceVersion
 					}
 				}
@@ -761,7 +761,7 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 		if c.Rules.ContainerName {
 			container.Name = containerName
 		}
-		if c.Rules.Service {
+		if c.Rules.ServiceAttributes {
 			container.ServiceInstanceID = automaticServiceInstanceID(pod, containerName)
 			container.ServiceName = containerName
 		}
@@ -1097,7 +1097,7 @@ func needContainerAttributes(rules ExtractionRules) bool {
 		rules.ContainerImageTag ||
 		rules.ContainerImageRepoDigests ||
 		rules.ContainerID ||
-		rules.Service
+		rules.ServiceAttributes
 }
 
 func (c *WatchClient) handleReplicaSetAdd(obj any) {
