@@ -25,7 +25,7 @@ require (
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 	golang.org/x/sync v0.13.0
-	google.golang.org/grpc v1.71.1
+	google.golang.org/grpc v1.72.0
 )
 
 require (
@@ -50,7 +50,7 @@ require (
 	github.com/modern-go/reflect2 v1.0.2 // indirect
 	github.com/mostynb/go-grpc-compression v1.2.3 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
-	github.com/splunk/stef/go/pkg v0.0.5-0.20250328192643-20ae67012e0c // indirect
+	github.com/splunk/stef/go/pkg v0.0.5 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.30.0 // indirect
 	go.opentelemetry.io/collector/config/configauth v0.124.0 // indirect
