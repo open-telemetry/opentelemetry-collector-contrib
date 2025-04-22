@@ -339,15 +339,6 @@ func getTestSeverityMapping() pcommon.Map {
 	return m
 }
 
-func getTestSeverityMappingWithHttpRanges() pcommon.Map {
-	m := pcommon.NewMap()
-
-	infoMapping := m.PutEmptySlice("info")
-	infoMapping.AppendEmpty().SetStr("2xx")
-
-	return m
-}
-
 func Test_parseValueRangePlaceholder(t *testing.T) {
 	type args struct {
 		crit any
