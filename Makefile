@@ -43,7 +43,7 @@ CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CMD_MODS_0 := $(shell find ./cmd/[a-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
-CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
+CMD_MODS := $(CMD_MODS_0)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
 
@@ -186,6 +186,7 @@ gotest-with-junit:
 .PHONY: gotest-with-junit-and-cover
 gotest-with-junit-and-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
+	@go tool covdata textfmt -i=$(COVER_DIR_ABS) -o $(GROUP)-coverage.txt
 
 .PHONY: gobuildtest
 gobuildtest:
@@ -199,6 +200,10 @@ gorunbuilttest:
 gointegration-test:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-test"
 
+.PHONY: gointegration-sudo-test
+gointegration-sudo-test:
+	$(MAKE) $(FOR_GROUP_TARGET) TARGET="mod-integration-sudo-test"
+
 .PHONY: gofmt
 gofmt:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="fmt"
@@ -210,14 +215,6 @@ golint:
 .PHONY: gogovulncheck
 gogovulncheck:
 	$(MAKE) $(FOR_GROUP_TARGET) TARGET="govulncheck"
-
-.PHONY: gotestifylint
-gotestifylint:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint"
-
-.PHONY: gotestifylint-fix
-gotestifylint-fix:
-	$(MAKE) $(FOR_GROUP_TARGET) TARGET="testifylint-fix"
 
 .PHONY: goporto
 goporto: $(PORTO)
@@ -538,7 +535,7 @@ checkmetadata: $(CHECKFILE)
 
 .PHONY: checkapi
 checkapi: $(CHECKAPI)
-	$(CHECKAPI) -folder .
+	$(CHECKAPI) -folder . -config .checkapi.yaml
 
 .PHONY: kind-ready
 kind-ready:

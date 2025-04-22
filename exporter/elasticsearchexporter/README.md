@@ -90,7 +90,7 @@ The Elasticsearch exporter supports the common [`sending_queue` settings][export
 > [!WARNING]
 > The `batcher` config is experimental and may change without notice.
 
-The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterbatcher/config.go).
+The Elasticsearch exporter supports the [common `batcher` settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/internal/queue_sender.go).
 
 - `batcher`:
   - `enabled` (default=unset): Enable batching of requests into 1 or more bulk requests. On a batcher flush, it is possible for a batched request to be translated to more than 1 bulk request due to `flush::bytes`.
@@ -338,6 +338,8 @@ The Elasticsearch Exporter's own telemetry settings for testing and debugging pu
 - `telemetry`:
   - `log_request_body` (default=false): Logs Elasticsearch client request body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
   - `log_response_body` (default=false): Logs Elasticsearch client response body as a field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_failed_docs_input` (default=false): Include the input (action line and document line) causing indexing error under `input` field in a log line at DEBUG level. It requires `service::telemetry::logs::level` to be set to `debug`. WARNING: Enabling this config may expose sensitive data.
+  - `log_failed_docs_input_rate_limit` (default="1s"): Rate limiting of logs emitted by `log_failed_docs_input` config, e.g. "1s" means roughly 1 log line per second. A zero or negative value disables rate limiting.
 
 ## Exporting metrics
 
@@ -511,7 +513,7 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
-Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.16.5, 8.17.3, 8.19.0, 9.0.0.
+Note that this functionality requires a minimum Elasticsearch version of 8.17.6, 8.18.1, 8.19.0, 9.0.1, or 9.1.0.
 If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
 
 ```shell
@@ -529,6 +531,8 @@ PUT _component_template/metrics-otel@custom
   }
 }
 ```
+
+After installing this component template, if you've previously ingested data, you'll need to wait until the old index of the time series data stream reaches its `end_time`. This can take up to 30 minutes by default. See [time series index look-ahead time](https://www.elastic.co/docs/reference/elasticsearch/index-settings/time-series) for more information.
 
 While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.

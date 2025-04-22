@@ -92,7 +92,7 @@ func (e *metricsExporter) pushMetrics(ctx context.Context, md pmetric.Metrics) e
 	}
 
 	partialSuccess := resp.PartialSuccess()
-	if !(partialSuccess.ErrorMessage() == "" && partialSuccess.RejectedDataPoints() == 0) {
+	if partialSuccess.ErrorMessage() != "" || partialSuccess.RejectedDataPoints() != 0 {
 		e.settings.Logger.Error("Partial success response from Coralogix",
 			zap.String("message", partialSuccess.ErrorMessage()),
 			zap.Int64("rejected_data_points", partialSuccess.RejectedDataPoints()),

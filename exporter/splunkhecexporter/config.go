@@ -145,7 +145,7 @@ type Config struct {
 }
 
 func (cfg *Config) getURL() (out *url.URL, err error) {
-	out, err = url.Parse(cfg.ClientConfig.Endpoint)
+	out, err = url.Parse(cfg.Endpoint)
 	if err != nil {
 		return out, err
 	}
@@ -161,7 +161,7 @@ func (cfg *Config) Validate() error {
 	if !cfg.LogDataEnabled && !cfg.ProfilingDataEnabled {
 		return errors.New(`either "log_data_enabled" or "profiling_data_enabled" has to be true`)
 	}
-	if cfg.ClientConfig.Endpoint == "" {
+	if cfg.Endpoint == "" {
 		return errors.New(`requires a non-empty "endpoint"`)
 	}
 	_, err := cfg.getURL()

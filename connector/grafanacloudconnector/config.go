@@ -4,6 +4,7 @@
 package grafanacloudconnector // import "github.com/open-telemetry/opentelemetry-collector-contrib/connector/grafanacloudconnector"
 
 import (
+	"errors"
 	"fmt"
 	"time"
 
@@ -25,7 +26,7 @@ var _ xconfmap.Validator = (*Config)(nil)
 // Validate checks if the configuration is valid
 func (c Config) Validate() error {
 	if len(c.HostIdentifiers) == 0 {
-		return fmt.Errorf("at least one host identifier is required")
+		return errors.New("at least one host identifier is required")
 	}
 
 	if c.MetricsFlushInterval > 5*time.Minute || c.MetricsFlushInterval < 15*time.Second {

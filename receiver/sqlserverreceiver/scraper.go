@@ -46,6 +46,7 @@ type sqlServerScraperHelper struct {
 	client             sqlquery.DbClient
 	db                 *sql.DB
 	mb                 *metadata.MetricsBuilder
+	lb                 *metadata.LogsBuilder
 	cache              *lru.Cache[string, int64]
 }
 
@@ -72,6 +73,7 @@ func newSQLServerScraper(id component.ID,
 		dbProviderFunc:     dbProviderFunc,
 		clientProviderFunc: clientProviderFunc,
 		mb:                 metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, params),
+		lb:                 metadata.NewLogsBuilder(params),
 		cache:              cache,
 	}
 }
@@ -113,19 +115,18 @@ func (s *sqlServerScraperHelper) ScrapeMetrics(ctx context.Context) (pmetric.Met
 }
 
 func (s *sqlServerScraperHelper) ScrapeLogs(ctx context.Context) (plog.Logs, error) {
-	queryTextAndPlanQuery, err := getSQLServerQueryTextAndPlanQuery(s.config.InstanceName, s.config.MaxQuerySampleCount, s.config.LookbackTime)
-	if err != nil {
-		return plog.Logs{}, fmt.Errorf("failed to template needed queries: %w", err)
-	}
-
+	var err error
+	var resources pcommon.Resource
 	switch s.sqlQuery {
-	case queryTextAndPlanQuery:
-		return s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
-	case getSQLServerQuerySamplesQuery(s.config.MaxRowsPerQuery):
-		return s.recordDatabaseSampleQuery(ctx)
+	case getSQLServerQueryTextAndPlanQuery():
+		resources, err = s.recordDatabaseQueryTextAndPlan(ctx, s.config.TopQueryCount)
+	case getSQLServerQuerySamplesQuery():
+		resources, err = s.recordDatabaseSampleQuery(ctx)
 	default:
 		return plog.Logs{}, fmt.Errorf("Attempted to get logs from unsupported query: %s", s.sqlQuery)
 	}
+
+	return s.lb.Emit(metadata.WithLogsResource(resources)), err
 }
 
 func (s *sqlServerScraperHelper) Shutdown(_ context.Context) error {
@@ -502,7 +503,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 	return errors.Join(errs...)
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (plog.Logs, error) {
+func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
 		dbPrefix       = "sqlserver."
@@ -521,10 +522,18 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		// the time returned from mssql is in microsecond
 		totalWorkerTime = "total_worker_time"
 	)
-	rows, err := s.client.QueryRows(ctx)
+
+	resources := pcommon.NewResource()
+
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("lookbackTime", -s.config.LookbackTime),
+		sql.Named("topNValue", s.config.TopQueryCount),
+		sql.Named("instanceName", s.config.InstanceName),
+	)
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
-			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
+			return resources, fmt.Errorf("sqlServerScraperHelper failed getting rows: %w", err)
 		}
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
@@ -542,7 +551,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 			errs = append(errs, err)
 		} else {
 			// we're trying to get the queries that used the most time.
-			// caching the total elapsed time (in millisecond) and compare in the next scrape.
+			// caching the total elapsed time (in microsecond) and compare in the next scrape.
 			if cached, diff := s.cacheAndDiff(queryHashVal, queryPlanHashVal, totalElapsedTime, elapsedTimeMicrosecond); cached && diff > 0 {
 				totalElapsedTimeDiffsMicrosecond[i] = diff
 			}
@@ -556,13 +565,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 	// sort the totalElapsedTimeDiffs in descending order as well
 	sort.Slice(totalElapsedTimeDiffsMicrosecond, func(i, j int) bool { return totalElapsedTimeDiffsMicrosecond[i] > totalElapsedTimeDiffsMicrosecond[j] })
 
-	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-
-	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("0.0.1")
-
+	resourcesAdded := false
 	timestamp := pcommon.NewTimestampFromTime(time.Now())
 	for i, row := range rows {
 		// skipping the rest of the rows as totalElapsedTimeDiffs is sorted in descending order
@@ -574,17 +577,11 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 
-		record := scopedLog.LogRecords().AppendEmpty()
+		record := plog.NewLogRecord()
 		record.SetTimestamp(timestamp)
 		record.SetEventName("top query")
 
 		attributes := []internalAttribute{
-			{
-				key:            computerNameKey,
-				columnName:     computerNameKey,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
 			{
 				key:        "db.query.text",
 				columnName: queryText,
@@ -658,12 +655,6 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 				valueSetter:    setString,
 			},
 			{
-				key:            instanceNameKey,
-				columnName:     instanceNameKey,
-				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
 				key:            serverAddressKey,
 				valueRetriever: defaultValueRetriever(s.config.Server),
 				valueSetter:    setString,
@@ -714,9 +705,17 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 				attr.valueSetter(record.Attributes(), attr.key, value)
 			}
 		}
-	}
+		if !resourcesAdded {
+			resourceAttributes := resources.Attributes()
+			resourceAttributes.PutStr("host.name", s.config.Server)
+			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
+			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
 
-	return logs, errors.Join(errs...)
+			resourcesAdded = true
+		}
+		s.lb.AppendLogRecord(record)
+	}
+	return resources, errors.Join(errs...)
 }
 
 // cacheAndDiff store row(in int) with query hash and query plan hash variables
@@ -866,7 +865,7 @@ func setDouble(attributes pcommon.Map, key string, value any) {
 	attributes.PutDouble(key, value.(float64))
 }
 
-func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (plog.Logs, error) {
+func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -900,29 +899,28 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	const waitType = "wait_type"
 	const writes = "writes"
 
-	rows, err := s.client.QueryRows(ctx)
+	rows, err := s.client.QueryRows(
+		ctx,
+		sql.Named("top", s.config.TopQueryCount),
+	)
+	resources := pcommon.NewResource()
 	if err != nil {
 		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
-			return plog.Logs{}, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
+			return resources, fmt.Errorf("sqlServerScraperHelper failed getting log rows: %w", err)
 		}
 		// in case the sql returned rows contains null value, we just log a warning and continue
 		s.logger.Warn("problems encountered getting log rows", zap.Error(err))
 	}
 
 	var errs []error
-	logs := plog.NewLogs()
 
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-
-	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopedLog.Scope().SetName(metadata.ScopeName)
-	scopedLog.Scope().SetVersion("v0.0.1")
+	resourcesAdded := false
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
 		contextInfoVal := hex.EncodeToString([]byte(row[contextInfo]))
 
-		record := scopedLog.LogRecords().AppendEmpty()
+		record := plog.NewLogRecord()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
 
 		// Attributes sorted alphabetically by key
@@ -1152,6 +1150,16 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 		record.SetEventName("query sample")
 
 		record.Body().SetStr("sample")
+		s.lb.AppendLogRecord(record)
+
+		if !resourcesAdded {
+			resourceAttributes := resources.Attributes()
+			resourceAttributes.PutStr("host.name", s.config.Server)
+			resourceAttributes.PutStr("sqlserver.computer.name", row[computerNameKey])
+			resourceAttributes.PutStr("sqlserver.instance.name", row[instanceNameKey])
+
+			resourcesAdded = true
+		}
 	}
-	return logs, errors.Join(errs...)
+	return resources, errors.Join(errs...)
 }

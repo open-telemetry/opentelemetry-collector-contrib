@@ -66,7 +66,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 			return nil, fmt.Errorf("failed to compile expression '%s': %w", routeConfig.Expression, err)
 		}
 
-		attributer, err := routeConfig.AttributerConfig.Build()
+		attributer, err := routeConfig.Build()
 		if err != nil {
 			return nil, fmt.Errorf("failed to build attributer for route '%s': %w", routeConfig.Expression, err)
 		}

@@ -102,7 +102,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 		return nil, err
 	}
 	if emit == nil {
-		return nil, fmt.Errorf("must provide emit function")
+		return nil, errors.New("must provide emit function")
 	}
 
 	o := new(options)
@@ -152,7 +152,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
-	readerFactory := reader.Factory{
+	readerFactory := &reader.Factory{
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
@@ -197,11 +197,11 @@ func (c Config) validate() error {
 	}
 
 	if c.MaxLogSize <= 0 {
-		return fmt.Errorf("'max_log_size' must be positive")
+		return errors.New("'max_log_size' must be positive")
 	}
 
 	if c.MaxConcurrentFiles < 1 {
-		return fmt.Errorf("'max_concurrent_files' must be positive")
+		return errors.New("'max_concurrent_files' must be positive")
 	}
 
 	if c.MaxBatches < 0 {
@@ -218,7 +218,7 @@ func (c Config) validate() error {
 			return fmt.Errorf("'delete_after_read' requires feature gate '%s'", allowFileDeletion.ID())
 		}
 		if c.StartAt == "end" {
-			return fmt.Errorf("'delete_after_read' cannot be used with 'start_at: end'")
+			return errors.New("'delete_after_read' cannot be used with 'start_at: end'")
 		}
 	}
 
@@ -227,7 +227,7 @@ func (c Config) validate() error {
 			return fmt.Errorf("'header' requires feature gate '%s'", AllowHeaderMetadataParsing.ID())
 		}
 		if c.StartAt == "end" {
-			return fmt.Errorf("'header' cannot be specified with 'start_at: end'")
+			return errors.New("'header' cannot be specified with 'start_at: end'")
 		}
 		set := component.TelemetrySettings{Logger: zap.NewNop()}
 		if _, errConfig := header.NewConfig(set, c.Header.Pattern, c.Header.MetadataOperators, enc); errConfig != nil {
@@ -235,7 +235,7 @@ func (c Config) validate() error {
 		}
 	}
 
-	if runtime.GOOS == "windows" && (c.Resolver.IncludeFileOwnerName || c.Resolver.IncludeFileOwnerGroupName) {
+	if runtime.GOOS == "windows" && (c.IncludeFileOwnerName || c.IncludeFileOwnerGroupName) {
 		return fmt.Errorf("'include_file_owner_name' or 'include_file_owner_group_name' it's not supported for windows: %w", err)
 	}
 
