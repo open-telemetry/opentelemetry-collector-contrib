@@ -275,6 +275,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 3,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -284,6 +285,7 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 0,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -293,14 +295,19 @@ func TestTracesConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedSpans(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", "")),
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
+				attribute.String("partition", "5"),
+			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 }
@@ -619,6 +626,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 3,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -628,6 +636,7 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 0,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -637,14 +646,19 @@ func TestMetricsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 	metadatatest.AssertEqualKafkaReceiverUnmarshalFailedMetricPoints(t, tel, []metricdata.DataPoint[int64]{
 		{
-			Value:      1,
-			Attributes: attribute.NewSet(attribute.String("name", "")),
+			Value: 1,
+			Attributes: attribute.NewSet(
+				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
+				attribute.String("partition", "5"),
+			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
 }
@@ -978,6 +992,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 3,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -987,6 +1002,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 0,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -996,6 +1012,7 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
 				attribute.String("partition", "5"),
 			),
 		},
@@ -1005,6 +1022,8 @@ func TestLogsConsumerGroupHandler_error_unmarshal(t *testing.T) {
 			Value: 1,
 			Attributes: attribute.NewSet(
 				attribute.String("name", ""),
+				attribute.String("topic", "otlp_spans"),
+				attribute.String("partition", "5"),
 			),
 		},
 	}, metricdatatest.IgnoreTimestamp())
