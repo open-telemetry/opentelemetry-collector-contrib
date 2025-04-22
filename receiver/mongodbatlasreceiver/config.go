@@ -11,7 +11,6 @@ import (
 	"strings"
 	"time"
 
-	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
@@ -139,10 +138,6 @@ var (
 
 func (c *Config) Validate() error {
 	var errs error
-
-	if c.BaseURL == "" {
-		c.BaseURL = mongodbatlas.CloudURL
-	}
 
 	if err := validateEndpoint(c.BaseURL); err != nil {
 		return fmt.Errorf("invalid base_url %q: %w", c.BaseURL, err)
