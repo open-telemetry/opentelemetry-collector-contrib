@@ -181,7 +181,7 @@ func (s *redaction) processLogBody(ctx context.Context, body pcommon.Value, attr
 			s.redactLogBodyRecursive(ctx, fmt.Sprintf("[%d]", i), body.Slice().At(i), &redactedKeys, &maskedKeys, &allowedKeys, &ignoredKeys)
 		}
 	default:
-		strVal := body.Str()
+		strVal := body.AsString()
 		if s.shouldAllowValue(strVal) {
 			allowedKeys = append(allowedKeys, "body")
 			return
@@ -228,10 +228,11 @@ func (s *redaction) redactLogBodyRecursive(ctx context.Context, key string, valu
 		}
 	case pcommon.ValueTypeSlice:
 		for i := 0; i < value.Slice().Len(); i++ {
-			s.redactLogBodyRecursive(ctx, fmt.Sprintf("%s.[%d]", key, i), value.Slice().At(i), redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
+			keyWithPath := fmt.Sprintf("%s.[%d]", key, i)
+			s.redactLogBodyRecursive(ctx, keyWithPath, value.Slice().At(i), redactedKeys, maskedKeys, allowedKeys, ignoredKeys)
 		}
 	default:
-		strVal := value.Str()
+		strVal := value.AsString()
 		if s.shouldAllowValue(strVal) {
 			*allowedKeys = append(*allowedKeys, key)
 			return
