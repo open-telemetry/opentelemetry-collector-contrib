@@ -431,7 +431,7 @@ func TestTranslateV2(t *testing.T) {
 					// The normal_metric should be translated as usual.
 					{
 						// target_info metric
-						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+						Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 17, 18},
 					},
 					{
@@ -543,7 +543,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 			},
 			Timeseries: []writev2.TimeSeries{
 				{
-					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_INFO},
+					Metadata:   writev2.Metadata{Type: writev2.Metadata_METRIC_TYPE_GAUGE},
 					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
 				},
 			},
