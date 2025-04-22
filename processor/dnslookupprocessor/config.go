@@ -56,10 +56,10 @@ type Config struct {
 	Timeout float64 `mapstructure:"timeout"`
 
 	// Hostfiles specifies the path to custom host files.
-	Hostfiles []string `mapstructure:"hostfile"`
+	Hostfiles []string `mapstructure:"hostfiles"`
 
 	// Nameservers specifies the addresses of custom DNS servers.
-	Nameservers []string `mapstructure:"nameserver"`
+	Nameservers []string `mapstructure:"nameservers"`
 
 	// EnableSystemResolver determines whether to use the system's default resolver.
 	EnableSystemResolver bool `mapstructure:"enable_system_resolver"`
