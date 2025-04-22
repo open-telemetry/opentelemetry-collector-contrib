@@ -83,6 +83,20 @@ func Test_parseSeverity(t *testing.T) {
 			expected: "info",
 		},
 		{
+			name: "map from code that matches http status range",
+			target: ottl.StandardGetSetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return int64(200), nil
+				},
+			},
+			mapping: ottl.StandardPMapGetter[any]{
+				Getter: func(_ context.Context, _ any) (any, error) {
+					return getTestSeverityMapping(), nil
+				},
+			},
+			expected: "info",
+		},
+		{
 			name: "map from log level string, multiple criteria of mixed types defined",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
@@ -310,9 +324,7 @@ func getTestSeverityMapping() pcommon.Map {
 	infoMapping := m.PutEmptySlice("info")
 	infoMapping.AppendEmpty().SetStr("inf")
 	infoMapping.AppendEmpty().SetStr("info")
-	rangeMap3 := infoMapping.AppendEmpty().SetEmptyMap()
-	rangeMap3.PutInt("min", 200)
-	rangeMap3.PutInt("max", 299)
+	infoMapping.AppendEmpty().SetStr(http2xx)
 
 	warnMapping := m.PutEmptySlice("warn")
 	rangeMap4 := warnMapping.AppendEmpty().SetEmptyMap()
@@ -323,6 +335,15 @@ func getTestSeverityMapping() pcommon.Map {
 	rangeMap5 := fatalMapping.AppendEmpty().SetEmptyMap()
 	rangeMap5.PutInt("min", 500)
 	rangeMap5.PutInt("max", 599)
+
+	return m
+}
+
+func getTestSeverityMappingWithHttpRanges() pcommon.Map {
+	m := pcommon.NewMap()
+
+	infoMapping := m.PutEmptySlice("info")
+	infoMapping.AppendEmpty().SetStr("2xx")
 
 	return m
 }
@@ -340,7 +361,7 @@ func Test_parseValueRangePlaceholder(t *testing.T) {
 		{
 			name: "2xx",
 			args: args{
-				crit: hTTP2xx,
+				crit: http2xx,
 			},
 			wantMapping: map[string]any{
 				"min": int64(200),
@@ -351,7 +372,7 @@ func Test_parseValueRangePlaceholder(t *testing.T) {
 		{
 			name: "3xx",
 			args: args{
-				crit: hTTP3xx,
+				crit: http3xx,
 			},
 			wantMapping: map[string]any{
 				"min": int64(300),
@@ -362,7 +383,7 @@ func Test_parseValueRangePlaceholder(t *testing.T) {
 		{
 			name: "4xx",
 			args: args{
-				crit: hTTP4xx,
+				crit: http4xx,
 			},
 			wantMapping: map[string]any{
 				"min": int64(400),
@@ -373,7 +394,7 @@ func Test_parseValueRangePlaceholder(t *testing.T) {
 		{
 			name: "5xx",
 			args: args{
-				crit: hTTP5xx,
+				crit: http5xx,
 			},
 			wantMapping: map[string]any{
 				"min": int64(500),

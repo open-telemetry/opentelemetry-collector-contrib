@@ -12,17 +12,17 @@ import (
 )
 
 const (
-	// hTTP2xx is a special key that is represents a range from 200 to 299
-	hTTP2xx = "2xx"
+	// http2xx is a special key that is represents a range from 200 to 299
+	http2xx = "2xx"
 
-	// hTTP3xx is a special key that is represents a range from 300 to 399
-	hTTP3xx = "3xx"
+	// http3xx is a special key that is represents a range from 300 to 399
+	http3xx = "3xx"
 
-	// hTTP4xx is a special key that is represents a range from 400 to 499
-	hTTP4xx = "4xx"
+	// http4xx is a special key that is represents a range from 400 to 499
+	http4xx = "4xx"
 
-	// hTTP5xx is a special key that is represents a range from 500 to 599
-	hTTP5xx = "5xx"
+	// http5xx is a special key that is represents a range from 500 to 599
+	http5xx = "5xx"
 
 	minKey = "min"
 	maxKey = "max"
@@ -134,22 +134,22 @@ func parseValueRangePlaceholder(crit any) (map[string]any, bool) {
 	}
 
 	switch placeholder {
-	case hTTP2xx:
+	case http2xx:
 		return map[string]any{
 			"min": int64(200),
 			"max": int64(299),
 		}, true
-	case hTTP3xx:
+	case http3xx:
 		return map[string]any{
 			"min": int64(300),
 			"max": int64(399),
 		}, true
-	case hTTP4xx:
+	case http4xx:
 		return map[string]any{
 			"min": int64(400),
 			"max": int64(499),
 		}, true
-	case hTTP5xx:
+	case http5xx:
 		return map[string]any{
 			"min": int64(500),
 			"max": int64(599),
