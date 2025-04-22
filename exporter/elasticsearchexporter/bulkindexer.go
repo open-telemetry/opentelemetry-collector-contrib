@@ -20,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/exporter"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/logging"
 )
 
 type bulkIndexer interface {
@@ -33,7 +35,7 @@ type bulkIndexer interface {
 
 type bulkIndexerSession interface {
 	// Add adds a document to the bulk indexing session.
-	Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
+	Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error
 
 	// End must be called on the session object once it is no longer
 	// needed, in order to release any associated resources.
@@ -77,31 +79,34 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		compressionLevel = int(config.CompressionParams.Level)
 	}
 	return docappender.BulkIndexerConfig{
-		Client:                client,
-		MaxDocumentRetries:    maxDocRetries,
-		Pipeline:              config.Pipeline,
-		RetryOnDocumentStatus: config.Retry.RetryOnStatus,
-		RequireDataStream:     requireDataStream,
-		CompressionLevel:      compressionLevel,
+		Client:                  client,
+		MaxDocumentRetries:      maxDocRetries,
+		Pipeline:                config.Pipeline,
+		RetryOnDocumentStatus:   config.Retry.RetryOnStatus,
+		RequireDataStream:       requireDataStream,
+		CompressionLevel:        compressionLevel,
+		PopulateFailedDocsInput: config.LogFailedDocsInput,
 	}
 }
 
 func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {
 	return &syncBulkIndexer{
-		config:       bulkIndexerConfig(client, config, requireDataStream),
-		flushTimeout: config.Timeout,
-		flushBytes:   config.Flush.Bytes,
-		retryConfig:  config.Retry,
-		logger:       logger,
+		config:                bulkIndexerConfig(client, config, requireDataStream),
+		flushTimeout:          config.Timeout,
+		flushBytes:            config.Flush.Bytes,
+		retryConfig:           config.Retry,
+		logger:                logger,
+		failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
 	}
 }
 
 type syncBulkIndexer struct {
-	config       docappender.BulkIndexerConfig
-	flushTimeout time.Duration
-	flushBytes   int
-	retryConfig  RetrySettings
-	logger       *zap.Logger
+	config                docappender.BulkIndexerConfig
+	flushTimeout          time.Duration
+	flushBytes            int
+	retryConfig           RetrySettings
+	logger                *zap.Logger
+	failedDocsInputLogger *zap.Logger
 }
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
@@ -128,13 +133,14 @@ type syncBulkIndexerSession struct {
 }
 
 // Add adds an item to the sync bulk indexer session.
-func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+func (s *syncBulkIndexerSession) Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	doc := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
 		DocumentID:       docID,
 		DynamicTemplates: dynamicTemplates,
 		Action:           action,
+		Pipeline:         pipeline,
 	}
 	err := s.bi.Add(doc)
 	if err != nil {
@@ -157,7 +163,7 @@ func (s *syncBulkIndexerSession) End() {
 func (s *syncBulkIndexerSession) Flush(ctx context.Context) error {
 	var retryBackoff func(int) time.Duration
 	for attempts := 0; ; attempts++ {
-		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger); err != nil {
+		if _, err := flushBulkIndexer(ctx, s.bi, s.s.flushTimeout, s.s.logger, s.s.failedDocsInputLogger); err != nil {
 			return err
 		}
 		if s.bi.Items() == 0 {
@@ -203,13 +209,14 @@ func newAsyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Con
 			return nil, err
 		}
 		w := asyncBulkIndexerWorker{
-			indexer:       bi,
-			items:         pool.items,
-			flushInterval: config.Flush.Interval,
-			flushTimeout:  config.Timeout,
-			flushBytes:    config.Flush.Bytes,
-			logger:        logger,
-			stats:         &pool.stats,
+			indexer:               bi,
+			items:                 pool.items,
+			flushInterval:         config.Flush.Interval,
+			flushTimeout:          config.Timeout,
+			flushBytes:            config.Flush.Bytes,
+			logger:                logger,
+			failedDocsInputLogger: newFailedDocsInputLogger(logger, config),
+			stats:                 &pool.stats,
 		}
 		go func() {
 			defer pool.wg.Done()
@@ -257,13 +264,14 @@ func (a *asyncBulkIndexer) Close(ctx context.Context) error {
 // Add adds an item to the async bulk indexer session.
 //
 // Adding an item after a call to Close() will panic.
-func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
+func (s asyncBulkIndexerSession) Add(ctx context.Context, index string, docID string, pipeline string, document io.WriterTo, dynamicTemplates map[string]string, action string) error {
 	item := docappender.BulkIndexerItem{
 		Index:            index,
 		Body:             document,
 		DocumentID:       docID,
 		DynamicTemplates: dynamicTemplates,
 		Action:           action,
+		Pipeline:         pipeline,
 	}
 	select {
 	case <-ctx.Done():
@@ -291,7 +299,8 @@ type asyncBulkIndexerWorker struct {
 
 	stats *bulkIndexerStats
 
-	logger *zap.Logger
+	logger                *zap.Logger
+	failedDocsInputLogger *zap.Logger
 }
 
 func (w *asyncBulkIndexerWorker) run() {
@@ -326,7 +335,7 @@ func (w *asyncBulkIndexerWorker) run() {
 
 func (w *asyncBulkIndexerWorker) flush() {
 	ctx := context.Background()
-	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger)
+	stat, _ := flushBulkIndexer(ctx, w.indexer, w.flushTimeout, w.logger, w.failedDocsInputLogger)
 	w.stats.docsIndexed.Add(stat.Indexed)
 }
 
@@ -335,6 +344,7 @@ func flushBulkIndexer(
 	bi *docappender.BulkIndexer,
 	timeout time.Duration,
 	logger *zap.Logger,
+	failedDocsInputLogger *zap.Logger,
 ) (docappender.BulkIndexerResponseStat, error) {
 	if timeout > 0 {
 		var cancel context.CancelFunc
@@ -355,6 +365,11 @@ func flushBulkIndexer(
 			fields = append(fields, zap.String("hint", hint))
 		}
 		logger.Error("failed to index document", fields...)
+
+		if resp.Input != "" {
+			fields = append(fields, zap.String("input", resp.Input))
+		}
+		failedDocsInputLogger.Debug("failed to index document; input may contain sensitive data", fields...)
 	}
 	return stat, err
 }
@@ -364,6 +379,13 @@ func getErrorHint(index, errorType string) string {
 		return "check the \"Known issues\" section of Elasticsearch Exporter docs"
 	}
 	return ""
+}
+
+func newFailedDocsInputLogger(logger *zap.Logger, config *Config) *zap.Logger {
+	if !config.LogFailedDocsInput {
+		return zap.NewNop()
+	}
+	return logger.WithOptions(logging.WithRateLimit(config.LogFailedDocsInputRateLimit))
 }
 
 type bulkIndexers struct {
@@ -405,7 +427,7 @@ func (b *bulkIndexers) start(
 
 	for _, mode := range allowedMappingModes {
 		var bi bulkIndexer
-		bi, err = newBulkIndexer(set.TelemetrySettings.Logger, esClient, cfg, mode == MappingOTel)
+		bi, err = newBulkIndexer(set.Logger, esClient, cfg, mode == MappingOTel)
 		if err != nil {
 			return err
 		}

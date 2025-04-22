@@ -13,7 +13,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -375,19 +374,15 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			testCache := pcommon.NewMap()
 			cacheGetter := func(tCtx TransformContext) pcommon.Map {
 				return tCtx.cache
 			}
-			pep := pathExpressionParser{
-				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
-			}
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			resource := createTelemetry()
 
-			tCtx := NewTransformContext(resource, pmetric.NewResourceMetrics(), WithCache(&testCache))
+			tCtx := NewTransformContext(resource, pmetric.NewResourceMetrics())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
@@ -400,22 +395,8 @@ func Test_newPathGetSetter(t *testing.T) {
 			tt.modified(exRes, exCache)
 
 			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exCache, testCache)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	tCtx := NewTransformContext(
-		pcommon.NewResource(),
-		pmetric.NewResourceMetrics(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry() pcommon.Resource {

@@ -90,7 +90,7 @@ func TestLoadConfig(t *testing.T) {
 
 	expected := factory.CreateDefaultConfig().(*Config)
 	expected.MetricsBuilderConfig = metadata.DefaultMetricsBuilderConfig()
-	expected.MetricsBuilderConfig.Metrics.SaphanaCPUUsed.Enabled = false
+	expected.Metrics.SaphanaCPUUsed.Enabled = false
 	expected.Endpoint = "example.com:30015"
 	expected.Username = "otel"
 	expected.Password = "password"

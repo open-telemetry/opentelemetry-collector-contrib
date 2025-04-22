@@ -4,6 +4,7 @@
 package azuremonitorexporter
 
 import (
+	"encoding/json"
 	"fmt"
 	"net/http"
 	"strconv"
@@ -139,7 +140,7 @@ func TestHTTPServerSpanToRequestDataAttributeSet1(t *testing.T) {
 
 	assert.Equal(t, "400", data.ResponseCode)
 	assert.False(t, data.Success)
-	assert.Equal(t, "", data.Source)
+	assert.Empty(t, data.Source)
 	assert.Equal(t, "GET /bizzle", data.Name)
 	assert.Equal(t, "https://foo/bar?biz=baz", data.Url)
 	assert.Equal(t, span.Status().Message(), data.Properties[attributeOtelStatusDescription])
@@ -559,6 +560,53 @@ func TestSanitize(t *testing.T) {
 	assert.Equal(t, 4, warningCounter)
 }
 
+// Tests proper conversion of span links to envelope tags
+func TestApplyLinksToEnvelope(t *testing.T) {
+	properties := make(map[string]string)
+
+	span := ptrace.NewSpan()
+
+	link := span.Links().AppendEmpty()
+	link.SetTraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16})
+	link.SetSpanID([8]byte{1, 2, 3, 4, 5, 6, 7, 8})
+
+	link2 := span.Links().AppendEmpty()
+	link2.SetTraceID([16]byte{16, 15, 14, 13, 12, 11, 10, 9, 8, 7, 6, 5, 4, 3, 2, 1})
+	link2.SetSpanID([8]byte{8, 7, 6, 5, 4, 3, 2, 1})
+
+	applyLinksToDataProperties(properties, span.Links(), zap.NewNop())
+
+	expectedLinks := []msLink{
+		{
+			OperationID: "0102030405060708090a0b0c0d0e0f10",
+			ID:          "0102030405060708",
+		},
+		{
+			OperationID: "100f0e0d0c0b0a090807060504030201",
+			ID:          "0807060504030201",
+		},
+	}
+
+	linksJSON := properties[msLinks]
+	assert.NotEmpty(t, linksJSON)
+
+	var actualLinks []msLink
+	err := json.Unmarshal([]byte(linksJSON), &actualLinks)
+	assert.NoError(t, err)
+	assert.Equal(t, expectedLinks, actualLinks)
+}
+
+// Tests handling of empty span links
+func TestApplyLinksToEnvelopeWithNoLinks(t *testing.T) {
+	properties := make(map[string]string)
+
+	span := ptrace.NewSpan()
+	applyLinksToDataProperties(properties, span.Links(), zap.NewNop())
+
+	_, exists := properties[msLinks]
+	assert.False(t, exists)
+}
+
 /*
 These methods are for handling some common validations
 */
@@ -722,7 +770,7 @@ func assertAttributesCopiedToProperties(
 	attributeMap pcommon.Map,
 	properties map[string]string,
 ) {
-	attributeMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributeMap.All() {
 		p, exists := properties[k]
 		assert.True(t, exists)
 
@@ -736,8 +784,7 @@ func assertAttributesCopiedToProperties(
 		case pcommon.ValueTypeDouble:
 			assert.Equal(t, strconv.FormatFloat(v.Double(), 'f', -1, 64), p)
 		}
-		return true
-	})
+	}
 }
 
 /*

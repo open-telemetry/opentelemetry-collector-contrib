@@ -14,7 +14,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -402,15 +401,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			cacheGetter := func(_ TransformContext) pcommon.Map {
 				return testCache
 			}
-			pep := pathExpressionParser{
-				cacheGetSetter: ctxcache.PathExpressionParser(cacheGetter),
-			}
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			is, res := createTelemetry()
 
-			tCtx := NewTransformContext(is, res, pmetric.NewResourceMetrics(), WithCache(&testCache))
+			tCtx := NewTransformContext(is, res, pmetric.NewResourceMetrics())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
@@ -466,10 +462,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -477,20 +472,6 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	tCtx := NewTransformContext(
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		pmetric.NewResourceMetrics(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, getCache(tCtx))
 }
 
 func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {

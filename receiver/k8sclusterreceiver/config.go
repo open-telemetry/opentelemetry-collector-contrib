@@ -7,6 +7,8 @@ import (
 	"fmt"
 	"time"
 
+	"go.opentelemetry.io/collector/component"
+
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -44,6 +46,10 @@ type Config struct {
 	// will not be able to be observed. Setting this option is recommended in environments where due to security restrictions
 	// the collector cannot be granted cluster-wide permissions.
 	Namespace string `mapstructure:"namespace"`
+
+	// K8sLeaderElector defines the reference to the k8s leader elector extension
+	// use this when k8s cluster receiver needs to be deployed in HA mode
+	K8sLeaderElector *component.ID `mapstructure:"k8s_leader_elector"`
 }
 
 func (cfg *Config) Validate() error {

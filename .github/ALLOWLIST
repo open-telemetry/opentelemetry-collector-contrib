@@ -21,6 +21,7 @@ internal/common
 
 # Start deprecated components list
 
+processor/routingprocessor/
 
 
 # End deprecated components list
@@ -29,17 +30,11 @@ internal/common
 
 # Start unmaintained components list
 
+exporter/carbonexporter
 exporter/kineticaexporter
 exporter/opensearchexporter
 extension/observer/ecstaskobserver
 receiver/awscloudwatchmetricsreceiver
-receiver/couchdbreceiver
-receiver/elasticsearchreceiver
-receiver/memcachedreceiver
-receiver/mysqlreceiver
-receiver/postgresqlreceiver
-receiver/rabbitmqreceiver
-receiver/zookeeperreceiver
-scraper/zookeeperscraper
+receiver/carbonreceiver
 
 # End unmaintained components list

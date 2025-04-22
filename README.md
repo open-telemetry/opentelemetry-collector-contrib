@@ -72,9 +72,11 @@ Triagers ([@open-telemetry/collector-contrib-triagers](https://github.com/orgs/o
 - [Benedikt Bongartz](https://github.com/frzifus), Red Hat
 - [Braydon Kains](https://github.com/braydonk), Google
 - [Florian Bacher](https://github.com/bacherfl), Dynatrace
+- [Israel Blancas](https://github.com/iblancasa), Coralogix
 - [James Moessis](https://github.com/jamesmoessis), Atlassian
 - [Jared Tan](https://github.com/JaredTan95), DaoCloud
 - [Murphy Chen](https://github.com/Frapschen), DaoCloud
+- [Ondrej Dubaj](https://github.com/odubajDT), Dynatrace
 - [Paulo Janotti](https://github.com/pjanotti), Splunk
 - [Vihas Makwana](https://github.com/VihasMakwana), Elastic
 - Actively seeking contributors to triage issues
@@ -90,7 +92,7 @@ Emeritus Triagers:
 Approvers ([@open-telemetry/collector-contrib-approvers](https://github.com/orgs/open-telemetry/teams/collector-contrib-approvers)):
 
 - [Arthur Silva Sens](https://github.com/ArthurSens), Grafana Labs
-- [Christos Markou](https://github.com/ChrsMark), Elastic (on leave)
+- [Christos Markou](https://github.com/ChrsMark), Elastic
 - [Curtis Robert](https://github.com/crobert-1), Splunk
 - [David Ashpole](https://github.com/dashpole), Google (on leave)
 - [Edmo Vamerlatti Costa](https://github.com/edmocosta), Elastic
@@ -114,7 +116,6 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 - [Daniel Jaglowski](https://github.com/djaglowski), observIQ
 - [Dmitrii Anoshin](https://github.com/dmitryax), Splunk
 - [Evan Bradley](https://github.com/evan-bradley), Dynatrace
-- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Pablo Baeyens](https://github.com/mx-psi), DataDog
 - [Sean Marciniak](https://github.com/MovieStoreGuy), Splunk
 - [Tyler Helmuth](https://github.com/TylerHelmuth), Honeycomb
@@ -122,6 +123,7 @@ Maintainers ([@open-telemetry/collector-contrib-maintainer](https://github.com/o
 
 Emeritus Maintainers
 
+- [Juraci Paixão Kröhling](https://github.com/jpkrohling), OllyGarden
 - [Tigran Najaryan](https://github.com/tigrannajaryan)
 
 Learn more about roles in the [community repository](https://github.com/open-telemetry/community/blob/main/guides/contributor/membership.md).

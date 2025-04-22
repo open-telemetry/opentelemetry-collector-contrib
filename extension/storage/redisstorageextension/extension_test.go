@@ -8,6 +8,7 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/go-redis/redismock/v9"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -182,6 +183,56 @@ func TestTwoClientsWithDifferentNames(t *testing.T) {
 	data, err = client2.Get(ctx, "key")
 	require.NoError(t, err)
 	require.Equal(t, myBytes2, data)
+}
+
+func TestRedisKey(t *testing.T) {
+	t.Run("batch operations", func(t *testing.T) {
+		mockedClient, mock := redismock.NewClientMock()
+		ctx := context.Background()
+		client := redisClient{
+			client: mockedClient,
+			prefix: "test_",
+		}
+
+		ops := []*storage.Operation{
+			{Type: storage.Set, Key: "key1", Value: []byte("val1")},
+			{Type: storage.Get, Key: "key1"},
+			{Type: storage.Delete, Key: "key1"},
+		}
+
+		mock.ExpectSet(client.prefix+"key1", []byte("val1"), 0).SetVal("OK")
+		mock.ExpectGet(client.prefix + "key1").SetVal("val1")
+		mock.ExpectDel(client.prefix + "key1").SetVal(1)
+
+		err := client.Batch(ctx, ops...)
+		require.NoError(t, err)
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
+
+	t.Run("single operations", func(t *testing.T) {
+		mockedClient, mock := redismock.NewClientMock()
+		ctx := context.Background()
+		client := redisClient{
+			client: mockedClient,
+			prefix: "test_",
+		}
+
+		mock.ExpectSet(client.prefix+"key1", []byte("val1"), 0).SetVal("OK")
+		mock.ExpectGet(client.prefix + "key1").SetVal("val1")
+		mock.ExpectDel(client.prefix + "key1").SetVal(1)
+
+		err := client.Set(ctx, "key1", []byte("val1"))
+		require.NoError(t, err)
+
+		val, err := client.Get(ctx, "key1")
+		require.Equal(t, []byte("val1"), val)
+		require.NoError(t, err)
+
+		err = client.Delete(ctx, "key1")
+		require.NoError(t, err)
+
+		require.NoError(t, mock.ExpectationsWereMet())
+	})
 }
 
 func TestGetPrefix(t *testing.T) {

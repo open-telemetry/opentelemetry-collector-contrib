@@ -26,9 +26,10 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/exporter/xexporter"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensionauth"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -40,13 +41,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
 )
-
-func build[T any, O any](t *testing.T, f func(...O) (T, error), opts ...O) T {
-	t.Helper()
-	v, err := f(opts...)
-	require.NoError(t, err)
-	return v
-}
 
 func TestExporterLogs(t *testing.T) {
 	t.Run("publish with success", func(t *testing.T) {
@@ -68,9 +62,9 @@ func TestExporterLogs(t *testing.T) {
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
+			expected := `{"@timestamp":"1970-01-01T00:00:00.000000000Z","agent":{"name":"otlp"},"application":"myapp","attrKey1":"abc","attrKey2":"def","data_stream":{"dataset":"generic","namespace":"default","type":"logs"},"error":{"stacktrace":"no no no no"},"message":"hello world","service":{"name":"myservice"}}`
 			actual := string(docs[0].Document)
-			assert.Equal(t, expected, actual)
+			assert.JSONEq(t, expected, actual)
 
 			return itemsAllOK(docs)
 		})
@@ -235,6 +229,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "ecs"
+			cfg.LogsIndex = "index"
 			// deduplication is always performed except in otel mapping mode -
 			// there is no other configuration that controls it
 		})
@@ -257,6 +252,7 @@ func TestExporterLogs(t *testing.T) {
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
 			cfg.Mapping.Mode = "raw"
+			cfg.LogsIndex = "index"
 			// deduplication is always performed - there is no configuration that controls it
 		})
 		logs := newLogsWithAttributes(
@@ -314,41 +310,36 @@ func TestExporterLogs(t *testing.T) {
 		<-done
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+		index := "someindex"
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				"elasticsearch.index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch.index": "ignored",
 			},
 		)
 		logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
 		mustSendLogs(t, exporter, logs)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -363,7 +354,7 @@ func TestExporterLogs(t *testing.T) {
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "none"
 		})
 		logs := newLogsWithAttributes(
 			map[string]any{
@@ -381,55 +372,26 @@ func TestExporterLogs(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash index format enabled and dynamic index disabled", func(t *testing.T) {
+	t.Run("publish with logstash index format enabled", func(t *testing.T) {
+		index := "someindex"
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), "not-used-index")
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), index)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogstashFormat.Enabled = true
-			cfg.LogsIndex = "not-used-index"
-		})
-		mustSendLogs(t, exporter, newLogsWithAttributes(nil, nil, nil))
-
-		rec.WaitItems(1)
-	})
-
-	t.Run("publish with logstash index format enabled and dynamic index enabled", func(t *testing.T) {
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
-
-			return itemsAllOK(docs)
-		})
-
-		exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-			cfg.LogsIndex = index
-			cfg.LogsDynamicIndex.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 		mustSendLogs(t, exporter, newLogsWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
 			nil,
-			map[string]any{
-				indexPrefix: prefix,
-			},
+			nil,
 		))
 		rec.WaitItems(1)
 	})
@@ -500,7 +462,6 @@ func TestExporterLogs(t *testing.T) {
 			})
 
 			exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
-				cfg.LogsDynamicIndex.Enabled = true
 				cfg.Mapping.Mode = "otel"
 			})
 			recordAttrs := map[string]any{
@@ -829,6 +790,82 @@ func TestExporterLogs(t *testing.T) {
 			}
 		}
 	})
+
+	t.Run("publish with dynamic pipeline", func(t *testing.T) {
+		t.Parallel()
+		examplePipeline := "abc123"
+		tableTests := []struct {
+			name             string
+			expectedPipeline string // "" means the pipeline will not be set
+			recordAttrs      map[string]any
+		}{
+			{
+				name:             "missing document pipeline attribute should not set pipeline",
+				expectedPipeline: "",
+			},
+			{
+				name:             "empty document pipeline attribute should not set pipeline",
+				expectedPipeline: "",
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentPipelineAttributeName: "",
+				},
+			},
+			{
+				name:             "record attributes",
+				expectedPipeline: examplePipeline,
+				recordAttrs: map[string]any{
+					elasticsearch.DocumentPipelineAttributeName: examplePipeline,
+				},
+			},
+		}
+
+		cfgs := map[string]func(*Config){
+			"async": func(cfg *Config) {
+				cfg.Batcher.Enabled = false
+			},
+			"sync": func(cfg *Config) {
+				cfg.Batcher.Enabled = true
+				cfg.Batcher.FlushTimeout = 10 * time.Millisecond
+			},
+		}
+		for _, tt := range tableTests {
+			for cfgName, cfgFn := range cfgs {
+				t.Run(tt.name+"/"+cfgName, func(t *testing.T) {
+					t.Parallel()
+					rec := newBulkRecorder()
+					server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+						rec.Record(docs)
+
+						if tt.expectedPipeline == "" {
+							assert.NotContainsf(t, string(docs[0].Action), "pipeline", "%s: expected pipeline to not be set", tt.name)
+						} else {
+							assert.Equalf(t, tt.expectedPipeline, actionJSONToPipeline(t, docs[0].Action), "%s: expected pipeline to be set in action: %s", tt.name, docs[0].Action)
+						}
+
+						// Ensure the document id attribute is removed from the final document.
+						assert.NotContainsf(t, string(docs[0].Document), elasticsearch.DocumentPipelineAttributeName, "%s: expected document pipeline attribute to be removed", tt.name)
+						return itemsAllOK(docs)
+					})
+
+					exporter := newTestLogsExporter(t, server.URL, func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+						cfg.LogsDynamicPipeline.Enabled = true
+						cfgFn(cfg)
+					})
+					logs := newLogsWithAttributes(
+						tt.recordAttrs,
+						map[string]any{},
+						map[string]any{},
+					)
+					logs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Body().SetStr("hello world")
+					mustSendLogs(t, exporter, logs)
+
+					rec.WaitItems(1)
+				})
+			}
+		}
+	})
+
 	t.Run("otel mode attribute complex value", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
@@ -880,36 +917,34 @@ func TestExporterMetrics(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
+		index := "someindex"
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			expected := "resource.prefix-metrics.index-resource.suffix"
-			assert.Equal(t, expected, actionJSONToIndex(t, docs[0].Action))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
-			cfg.Mapping.Mode = "ecs"
+			cfg.Mapping.Mode = "otel"
 		})
 		metrics := newMetricsWithAttributes(
 			map[string]any{
-				indexSuffix: "-data.point.suffix",
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: "resource.prefix-",
-				indexSuffix: "-resource.suffix",
+				"elasticsearch.index": "ignored",
+			},
+			map[string]any{
+				"elasticsearch.index": "ignored",
 			},
 		)
-		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetName("my.metric")
-		metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).SetEmptySum().DataPoints().AppendEmpty().SetIntValue(0)
 		mustSendMetrics(t, exporter, metrics)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(1)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -924,7 +959,6 @@ func TestExporterMetrics(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 		metrics := newMetricsWithAttributes(
@@ -1441,101 +1475,224 @@ func TestExporterMetrics(t *testing.T) {
 }
 
 func TestExporterMetrics_Grouping(t *testing.T) {
-	addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
-		fooMetric := metricSlice.AppendEmpty()
-		fooMetric.SetName("metric.foo")
-		fooDps := fooMetric.SetEmptyGauge().DataPoints()
-		fooDp := fooDps.AppendEmpty()
-		fooDp.SetIntValue(1)
-		fooOtherDp := fooDps.AppendEmpty()
-		fillAttributeMap(fooOtherDp.Attributes(), map[string]any{
-			"dp.attribute": "dp.attribute.value",
-		})
-		fooOtherDp.SetDoubleValue(1.0)
+	{
+		addToMetricSlice := func(metricSlice pmetric.MetricSlice) {
+			fooMetric := metricSlice.AppendEmpty()
+			fooMetric.SetName("metric.foo")
+			fooDps := fooMetric.SetEmptyGauge().DataPoints()
+			fooDp := fooDps.AppendEmpty()
+			fooDp.SetIntValue(1)
+			fooOtherDp := fooDps.AppendEmpty()
+			fillAttributeMap(fooOtherDp.Attributes(), map[string]any{
+				"dp.attribute": "dp.attribute.value",
+			})
+			fooOtherDp.SetDoubleValue(1.0)
 
-		barMetric := metricSlice.AppendEmpty()
-		barMetric.SetName("metric.bar")
-		barDps := barMetric.SetEmptyGauge().DataPoints()
-		barDp := barDps.AppendEmpty() // dp without attribute
-		barDp.SetDoubleValue(1.0)
-		barOtherDp := barDps.AppendEmpty()
-		fillAttributeMap(barOtherDp.Attributes(), map[string]any{
-			"dp.attribute": "dp.attribute.value",
-		})
-		barOtherDp.SetDoubleValue(1.0)
-		barOtherIndexDp := barDps.AppendEmpty()
-		fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
-			"dp.attribute":                    "dp.attribute.value",
-			elasticsearch.DataStreamNamespace: "bar",
-		})
-		barOtherIndexDp.SetDoubleValue(1.0)
+			barMetric := metricSlice.AppendEmpty()
+			barMetric.SetName("metric.bar")
+			barDps := barMetric.SetEmptyGauge().DataPoints()
+			barDp := barDps.AppendEmpty() // dp without attribute
+			barDp.SetDoubleValue(1.0)
+			barOtherDp := barDps.AppendEmpty()
+			fillAttributeMap(barOtherDp.Attributes(), map[string]any{
+				"dp.attribute": "dp.attribute.value",
+			})
+			barOtherDp.SetDoubleValue(1.0)
+			barOtherIndexDp := barDps.AppendEmpty()
+			fillAttributeMap(barOtherIndexDp.Attributes(), map[string]any{
+				"dp.attribute":                    "dp.attribute.value",
+				elasticsearch.DataStreamNamespace: "bar",
+			})
+			barOtherIndexDp.SetDoubleValue(1.0)
 
-		bazMetric := metricSlice.AppendEmpty()
-		bazMetric.SetName("metric.baz")
-		bazDps := bazMetric.SetEmptyGauge().DataPoints()
-		bazDp := bazDps.AppendEmpty()
-		bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
-		bazDp.SetDoubleValue(1.0)
+			bazMetric := metricSlice.AppendEmpty()
+			bazMetric.SetName("metric.baz")
+			bazDps := bazMetric.SetEmptyGauge().DataPoints()
+			bazDp := bazDps.AppendEmpty()
+			bazDp.SetTimestamp(pcommon.NewTimestampFromTime(time.Unix(3600, 0))) // dp with different timestamp
+			bazDp.SetDoubleValue(1.0)
+		}
+
+		metrics := pmetric.NewMetrics()
+		resourceA := metrics.ResourceMetrics().AppendEmpty()
+		resourceA.SetSchemaUrl("http://example.com/resource_schema")
+		fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
+			elasticsearch.DataStreamNamespace: "resource.namespace",
+		})
+		scopeAA := resourceA.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeAA.Metrics())
+
+		scopeAB := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
+			elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
+		})
+		scopeAB.SetSchemaUrl("http://example.com/scope_schema")
+		addToMetricSlice(scopeAB.Metrics())
+
+		scopeAC := resourceA.ScopeMetrics().AppendEmpty()
+		fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
+			// ecs: scope attributes are ignored, and duplicates are dropped silently.
+			// otel: scope attributes are dimensions and should result in a separate group.
+			"some.scope.attribute": "scope.ac",
+		})
+		addToMetricSlice(scopeAC.Metrics())
+
+		resourceB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		scopeBA := resourceB.ScopeMetrics().AppendEmpty()
+		addToMetricSlice(scopeBA.Metrics())
+
+		scopeBB := resourceB.ScopeMetrics().AppendEmpty()
+		scopeBB.Scope().SetName("scope.bb")
+		addToMetricSlice(scopeBB.Metrics())
+
+		// identical resource
+		resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
+		fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
+			"my.resource": "resource.b",
+		})
+		addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
+
+		assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
+			var sum int
+			for _, v := range wantDocsPerIndex {
+				sum += v
+			}
+			rec.WaitItems(sum)
+
+			actualDocsPerIndex := make(map[string]int)
+			for _, item := range rec.Items() {
+				idx := gjson.GetBytes(item.Action, "create._index")
+				actualDocsPerIndex[idx.String()]++
+			}
+			assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
+		}
+
+		t.Run("ecs", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "ecs"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic-bar":                 2, // AA, BA
+				"metrics-generic-resource.namespace":  3,
+				"metrics-scope.ab-bar":                1,
+				"metrics-scope.ab-resource.namespace": 3,
+				"metrics-generic-default":             3,
+			}, rec)
+		})
+
+		t.Run("otel", func(t *testing.T) {
+			rec := newBulkRecorder()
+			server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+				rec.Record(docs)
+				return itemsAllOK(docs)
+			})
+
+			exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+				cfg.Mapping.Mode = "otel"
+			})
+
+			mustSendMetrics(t, exporter, metrics)
+
+			assertDocsInIndices(t, map[string]int{
+				"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
+				"metrics-generic.otel-resource.namespace":  6, // AA, AC
+				"metrics-scope.ab.otel-bar":                1, // AB->bar
+				"metrics-scope.ab.otel-resource.namespace": 3, // AB
+				"metrics-generic.otel-default":             6, // BA, BB
+			}, rec)
+
+			type resourceScope struct {
+				resource attribute.Distinct
+				scope    attribute.Distinct
+			}
+
+			resourceScopeGroupings := make(map[resourceScope]int)
+			for _, item := range rec.Items() {
+				resource := gjson.GetBytes(item.Document, "resource")
+				require.True(t, resource.Exists())
+				scope := gjson.GetBytes(item.Document, "scope")
+				require.True(t, scope.Exists())
+				rs := resourceScope{
+					resource: mapToDistinct(resource.Value().(map[string]any)),
+					scope:    mapToDistinct(scope.Value().(map[string]any)),
+				}
+				resourceScopeGroupings[rs]++
+			}
+
+			assert.Equal(t, map[resourceScope]int{
+				{
+					// AA
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(nil),
+				}: 4,
+				{
+					// AB
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/scope_schema",
+					}),
+				}: 4,
+				{
+					// AC
+					resource: mapToDistinct(map[string]any{
+						"schema_url": "http://example.com/resource_schema",
+					}),
+					scope: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"some.scope.attribute": "scope.ac"},
+					}),
+				}: 4,
+				{
+					// BA
+					resource: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"my.resource": "resource.b"},
+					}),
+					scope: mapToDistinct(nil),
+				}: 4,
+				{
+					// BB
+					resource: mapToDistinct(map[string]any{
+						"attributes": map[string]any{"my.resource": "resource.b"},
+					}),
+					scope: mapToDistinct(map[string]any{
+						"name": "scope.bb",
+					}),
+				}: 4,
+			}, resourceScopeGroupings)
+		})
 	}
 
-	metrics := pmetric.NewMetrics()
-	resourceA := metrics.ResourceMetrics().AppendEmpty()
-	resourceA.SetSchemaUrl("http://example.com/resource_schema")
-	fillAttributeMap(resourceA.Resource().Attributes(), map[string]any{
-		elasticsearch.DataStreamNamespace: "resource.namespace",
-	})
-	scopeAA := resourceA.ScopeMetrics().AppendEmpty()
-	addToMetricSlice(scopeAA.Metrics())
-
-	scopeAB := resourceA.ScopeMetrics().AppendEmpty()
-	fillAttributeMap(scopeAB.Scope().Attributes(), map[string]any{
-		elasticsearch.DataStreamDataset: "scope.ab", // routes to a different index and should not be grouped together
-	})
-	scopeAB.SetSchemaUrl("http://example.com/scope_schema")
-	addToMetricSlice(scopeAB.Metrics())
-
-	scopeAC := resourceA.ScopeMetrics().AppendEmpty()
-	fillAttributeMap(scopeAC.Scope().Attributes(), map[string]any{
-		// ecs: scope attributes are ignored, and duplicates are dropped silently.
-		// otel: scope attributes are dimensions and should result in a separate group.
-		"some.scope.attribute": "scope.ac",
-	})
-	addToMetricSlice(scopeAC.Metrics())
-
-	resourceB := metrics.ResourceMetrics().AppendEmpty()
-	fillAttributeMap(resourceB.Resource().Attributes(), map[string]any{
-		"my.resource": "resource.b",
-	})
-	scopeBA := resourceB.ScopeMetrics().AppendEmpty()
-	addToMetricSlice(scopeBA.Metrics())
-
-	scopeBB := resourceB.ScopeMetrics().AppendEmpty()
-	scopeBB.Scope().SetName("scope.bb")
-	addToMetricSlice(scopeBB.Metrics())
-
-	// identical resource
-	resourceAnotherB := metrics.ResourceMetrics().AppendEmpty()
-	fillAttributeMap(resourceAnotherB.Resource().Attributes(), map[string]any{
-		"my.resource": "resource.b",
-	})
-	addToMetricSlice(resourceAnotherB.ScopeMetrics().AppendEmpty().Metrics())
-
-	assertDocsInIndices := func(t *testing.T, wantDocsPerIndex map[string]int, rec *bulkRecorder) {
-		var sum int
-		for _, v := range wantDocsPerIndex {
-			sum += v
-		}
-		rec.WaitItems(sum)
-
-		actualDocsPerIndex := make(map[string]int)
-		for _, item := range rec.Items() {
-			idx := gjson.GetBytes(item.Action, "create._index")
-			actualDocsPerIndex[idx.String()]++
-		}
-		assert.Equal(t, wantDocsPerIndex, actualDocsPerIndex)
+	type kv struct {
+		k, v string
 	}
 
-	t.Run("ecs", func(t *testing.T) {
+	// addMetric adds a new metric with name `name` and data point attributes `dpAttrs` to MetricSlice `slice`.
+	addMetric := func(slice pmetric.MetricSlice, name string, dpAttrs []kv) {
+		metric := slice.AppendEmpty()
+		metric.SetName(name)
+		dp := metric.SetEmptySum().DataPoints().AppendEmpty()
+		dp.SetDoubleValue(1)
+		for _, kv := range dpAttrs {
+			dp.Attributes().PutStr(kv.k, kv.v)
+		}
+	}
+
+	t.Run("ecs dp attribute overwrites resource attribute", func(t *testing.T) {
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
@@ -1543,103 +1700,98 @@ func TestExporterMetrics_Grouping(t *testing.T) {
 		})
 
 		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.MetricsIndex = "metrics.index"
 			cfg.Mapping.Mode = "ecs"
 		})
 
-		mustSendMetrics(t, exporter, metrics)
+		metrics := pmetric.NewMetrics()
+		resource := metrics.ResourceMetrics().AppendEmpty()
+		resource.Resource().Attributes().PutStr("a", "b")
+		scope := resource.ScopeMetrics().AppendEmpty()
 
-		assertDocsInIndices(t, map[string]int{
-			"metrics-generic-bar":                 2, // AA, BA
-			"metrics-generic-resource.namespace":  3,
-			"metrics-scope.ab-bar":                1,
-			"metrics-scope.ab-resource.namespace": 3,
-			"metrics-generic-default":             3,
-		}, rec)
+		// a=c overwrites a=b in resource attribute
+		addMetric(scope.Metrics(), "foo", []kv{{k: "a", v: "c"}})
+
+		// no attribute, should still serialize as a=b
+		addMetric(scope.Metrics(), "bar", nil)
+
+		// a=b overwrites a=b in resource attribute
+		addMetric(scope.Metrics(), "baz", []kv{{k: "a", v: "b"}})
+
+		mustSendMetrics(t, exporter, metrics)
+		expected := []itemRequest{
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"foo":1.0,"a":"c"}`),
+			},
+			{
+				Action:   []byte(`{"create":{"_index":"metrics-generic-default"}}`),
+				Document: []byte(`{"@timestamp":"1970-01-01T00:00:00.000000000Z","data_stream":{"dataset":"generic","namespace":"default","type":"metrics"},"bar":1.0,"baz":1.0,"a":"b"}`),
+			},
+		}
+
+		assertRecordedItems(t, expected, rec, false)
 	})
 
-	t.Run("otel", func(t *testing.T) {
-		rec := newBulkRecorder()
-		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
-			rec.Record(docs)
-			return itemsAllOK(docs)
-		})
+	t.Run("unordered attributes", func(t *testing.T) {
+		// Test equal attributes but in a different order. Metrics should be grouped together.
+		for _, mode := range []string{"ecs", "otel"} {
+			t.Run(mode, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
 
-		exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
-			cfg.Mapping.Mode = "otel"
-		})
+				exporter := newTestMetricsExporter(t, server.URL, func(cfg *Config) {
+					cfg.Mapping.Mode = mode
+				})
 
-		mustSendMetrics(t, exporter, metrics)
+				metrics := pmetric.NewMetrics()
+				resourceA := metrics.ResourceMetrics().AppendEmpty()
+				resourceA.Resource().Attributes().PutStr("a", "a")
+				resourceA.Resource().Attributes().PutStr("b", "b")
+				scopeA := resourceA.ScopeMetrics().AppendEmpty()
+				scopeA.Scope().Attributes().PutStr("c", "c")
+				scopeA.Scope().Attributes().PutStr("d", "d")
 
-		assertDocsInIndices(t, map[string]int{
-			"metrics-generic.otel-bar":                 4, // AA->bar, AC->bar, BA->bar, BB->bar
-			"metrics-generic.otel-resource.namespace":  6, // AA, AC
-			"metrics-scope.ab.otel-bar":                1, // AB->bar
-			"metrics-scope.ab.otel-resource.namespace": 3, // AB
-			"metrics-generic.otel-default":             6, // BA, BB
-		}, rec)
+				addMetric(scopeA.Metrics(), "a_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
 
-		type resourceScope struct {
-			resource attribute.Distinct
-			scope    attribute.Distinct
+				addMetric(scopeA.Metrics(), "a_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				resourceB := metrics.ResourceMetrics().AppendEmpty()
+				resourceB.Resource().Attributes().PutStr("b", "b")
+				resourceB.Resource().Attributes().PutStr("a", "a")
+				scopeB := resourceB.ScopeMetrics().AppendEmpty()
+				scopeB.Scope().Attributes().PutStr("d", "d")
+				scopeB.Scope().Attributes().PutStr("c", "c")
+
+				addMetric(scopeB.Metrics(), "b_foo", []kv{
+					{"e", "e"},
+					{"f", "f"},
+				})
+
+				addMetric(scopeB.Metrics(), "b_bar", []kv{
+					{"f", "f"},
+					{"e", "e"},
+				})
+
+				mustSendMetrics(t, exporter, metrics)
+
+				rec.WaitItems(1)
+				assert.Len(t, rec.Items(), 1)
+				// Sanity check that all metrics are included
+				assert.Contains(t, string(rec.Items()[0].Document), "a_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "a_bar")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_foo")
+				assert.Contains(t, string(rec.Items()[0].Document), "b_bar")
+			})
 		}
-
-		resourceScopeGroupings := make(map[resourceScope]int)
-		for _, item := range rec.Items() {
-			resource := gjson.GetBytes(item.Document, "resource")
-			require.True(t, resource.Exists())
-			scope := gjson.GetBytes(item.Document, "scope")
-			require.True(t, scope.Exists())
-			rs := resourceScope{
-				resource: mapToDistinct(resource.Value().(map[string]any)),
-				scope:    mapToDistinct(scope.Value().(map[string]any)),
-			}
-			resourceScopeGroupings[rs]++
-		}
-
-		assert.Equal(t, map[resourceScope]int{
-			{
-				// AA
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(nil),
-			}: 4,
-			{
-				// AB
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/scope_schema",
-				}),
-			}: 4,
-			{
-				// AC
-				resource: mapToDistinct(map[string]any{
-					"schema_url": "http://example.com/resource_schema",
-				}),
-				scope: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"some.scope.attribute": "scope.ac"},
-				}),
-			}: 4,
-			{
-				// BA
-				resource: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"my.resource": "resource.b"},
-				}),
-				scope: mapToDistinct(nil),
-			}: 4,
-			{
-				// BB
-				resource: mapToDistinct(map[string]any{
-					"attributes": map[string]any{"my.resource": "resource.b"},
-				}),
-				scope: mapToDistinct(map[string]any{
-					"name": "scope.bb",
-				}),
-			}: 4,
-		}, resourceScopeGroupings)
 	})
 }
 
@@ -1676,49 +1828,42 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(2)
 	})
 
-	t.Run("publish with dynamic index, prefix_suffix", func(t *testing.T) {
+	t.Run("publish with elasticsearch.index", func(t *testing.T) {
 		rec := newBulkRecorder()
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+		index := "someindex"
+		eventIndex := "some-event-index"
 
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
-
-			data, err := docs[0].Action.MarshalJSON()
-			assert.NoError(t, err)
-
-			jsonVal := map[string]any{}
-			err = json.Unmarshal(data, &jsonVal)
-			assert.NoError(t, err)
-
-			create := jsonVal["create"].(map[string]any)
-
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Equal(t, expected, create["_index"].(string))
-
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "otel"
 		})
 
-		mustSendTraces(t, exporter, newTracesWithAttributes(
+		traces := newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
-			nil,
 			map[string]any{
-				indexPrefix: prefix,
+				"elasticsearch.index": "ignored",
 			},
-		))
+			map[string]any{
+				"elasticsearch.index": "ignored",
+			},
+		)
+		event := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+		event.Attributes().PutStr("elasticsearch.index", eventIndex)
+		mustSendTraces(t, exporter, traces)
 
-		rec.WaitItems(1)
+		docs := rec.WaitItems(2)
+		doc := docs[0]
+		assert.Equal(t, index, actionJSONToIndex(t, doc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(doc.Document, `attributes`).Raw)
+		eventDoc := docs[1]
+		assert.Equal(t, eventIndex, actionJSONToIndex(t, eventDoc.Action))
+		assert.JSONEq(t, `{}`, gjson.GetBytes(eventDoc.Document, `attributes`).Raw)
 	})
 
 	t.Run("publish with dynamic index, data_stream", func(t *testing.T) {
@@ -1734,7 +1879,7 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesDynamicIndex.Enabled = true
+			cfg.Mapping.Mode = "none"
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
@@ -1750,7 +1895,7 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash format index", func(t *testing.T) {
+	t.Run("publish with logstash format index, default traces index", func(t *testing.T) {
 		var defaultCfg Config
 
 		rec := newBulkRecorder()
@@ -1764,7 +1909,6 @@ func TestExporterTraces(t *testing.T) {
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
 			cfg.LogstashFormat.Enabled = true
-			cfg.TracesIndex = "not-used-index"
 			defaultCfg = *cfg
 		})
 
@@ -1773,38 +1917,28 @@ func TestExporterTraces(t *testing.T) {
 		rec.WaitItems(1)
 	})
 
-	t.Run("publish with logstash format index and dynamic index enabled", func(t *testing.T) {
-		var (
-			prefix = "resprefix-"
-			suffix = "-attrsuffix"
-			index  = "someindex"
-		)
+	t.Run("publish with logstash format index", func(t *testing.T) {
+		index := "someindex"
 
 		rec := newBulkRecorder()
 		server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
 			rec.Record(docs)
 
-			expected := fmt.Sprintf("%s%s%s", prefix, index, suffix)
-			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), expected)
+			assert.Contains(t, actionJSONToIndex(t, docs[0].Action), index)
 
 			return itemsAllOK(docs)
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesIndex = index
-			cfg.TracesDynamicIndex.Enabled = true
 			cfg.LogstashFormat.Enabled = true
 		})
 
 		mustSendTraces(t, exporter, newTracesWithAttributes(
 			map[string]any{
-				indexPrefix: "attrprefix-",
-				indexSuffix: suffix,
+				"elasticsearch.index": index,
 			},
 			nil,
-			map[string]any{
-				indexPrefix: prefix,
-			},
+			nil,
 		))
 		rec.WaitItems(1)
 	})
@@ -1817,7 +1951,6 @@ func TestExporterTraces(t *testing.T) {
 		})
 
 		exporter := newTestTracesExporter(t, server.URL, func(cfg *Config) {
-			cfg.TracesDynamicIndex.Enabled = true
 			cfg.Mapping.Mode = "otel"
 		})
 
@@ -1876,6 +2009,79 @@ func TestExporterTraces(t *testing.T) {
 		}
 
 		assertRecordedItems(t, expected, rec, false)
+	})
+
+	t.Run("otel mode span event routing", func(t *testing.T) {
+		for _, tc := range []struct {
+			name           string
+			config         func(cfg *Config)
+			spanEventAttrs map[string]any
+			wantIndex      string
+		}{
+			{
+				name:      "default",
+				wantIndex: "logs-generic.otel-default",
+			},
+			{
+				name: "static index config",
+				config: func(cfg *Config) {
+					cfg.LogsIndex = "someindex"
+					cfg.MetricsIndex = "ignored"
+					cfg.TracesIndex = "ignored"
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic elasticsearch.index",
+				spanEventAttrs: map[string]any{
+					"elasticsearch.index": "someindex",
+				},
+				wantIndex: "someindex",
+			},
+			{
+				name: "dynamic data_stream.*",
+				spanEventAttrs: map[string]any{
+					"data_stream.dataset":   "foo",
+					"data_stream.namespace": "bar",
+				},
+				wantIndex: "logs-foo.otel-bar",
+			},
+		} {
+			t.Run(tc.name, func(t *testing.T) {
+				rec := newBulkRecorder()
+				server := newESTestServer(t, func(docs []itemRequest) ([]itemResponse, error) {
+					rec.Record(docs)
+					return itemsAllOK(docs)
+				})
+
+				configs := []func(cfg *Config){
+					func(cfg *Config) {
+						cfg.Mapping.Mode = "otel"
+					},
+				}
+				if tc.config != nil {
+					configs = append(configs, tc.config)
+				}
+
+				exporter := newTestTracesExporter(t, server.URL, configs...)
+
+				traces := newTracesWithAttributes(nil, nil, nil)
+				spanEvent := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Events().AppendEmpty()
+				spanEvent.SetName("some_event_name")
+				fillAttributeMap(spanEvent.Attributes(), tc.spanEventAttrs)
+				mustSendTraces(t, exporter, traces)
+
+				rec.WaitItems(2)
+				var spanEventDocs []itemRequest
+				for _, doc := range rec.Items() {
+					if result := gjson.GetBytes(doc.Document, "event_name"); result.Raw != "" {
+						spanEventDocs = append(spanEventDocs, doc)
+					}
+				}
+				require.Len(t, spanEventDocs, 1)
+				assert.Equal(t, tc.wantIndex, gjson.GetBytes(spanEventDocs[0].Action, "create._index").Str)
+			})
+		}
 	})
 
 	t.Run("otel mode attribute array value", func(t *testing.T) {
@@ -2095,17 +2301,13 @@ func TestExporterAuth(t *testing.T) {
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: build(t, extensionauth.NewClient,
-				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
-					return roundTripperFunc(func(*http.Request) (*http.Response, error) {
-						select {
-						case done <- struct{}{}:
-						default:
-						}
-						return nil, errors.New("nope")
-					}), nil
-				}),
-			),
+			testauthID: newMockAuthClient(func(*http.Request) (*http.Response, error) {
+				select {
+				case done <- struct{}{}:
+				default:
+				}
+				return nil, errors.New("nope")
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -2121,26 +2323,22 @@ func TestExporterBatcher(t *testing.T) {
 	var requests []*http.Request
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		batcherCfg := exporterbatcher.NewDefaultConfig()
+		batcherCfg := exporterhelper.NewDefaultBatcherConfig() //nolint:staticcheck
 		batcherCfg.Enabled = false
 		cfg.Batcher = BatcherConfig{
 			// sync bulk indexer is used without batching
-			Config:     batcherCfg,
-			enabledSet: true,
+			BatcherConfig: batcherCfg,
+			enabledSet:    true,
 		}
 		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
-			testauthID: build(t, extensionauth.NewClient,
-				extensionauth.WithClientRoundTripper(func(http.RoundTripper) (http.RoundTripper, error) {
-					return roundTripperFunc(func(req *http.Request) (*http.Response, error) {
-						requests = append(requests, req)
-						return nil, errors.New("nope")
-					}), nil
-				}),
-			),
+			testauthID: newMockAuthClient(func(req *http.Request) (*http.Response, error) {
+				requests = append(requests, req)
+				return nil, errors.New("nope")
+			}),
 		},
 	})
 	require.NoError(t, err)
@@ -2318,24 +2516,58 @@ func (f roundTripperFunc) RoundTrip(r *http.Request) (*http.Response, error) {
 	return f(r)
 }
 
+var (
+	_ extension.Extension      = (*mockAuthClient)(nil)
+	_ extensionauth.HTTPClient = (*mockAuthClient)(nil)
+)
+
+type mockAuthClient struct {
+	component.StartFunc
+	component.ShutdownFunc
+	extensionauth.ClientRoundTripperFunc
+}
+
+func newMockAuthClient(f func(*http.Request) (*http.Response, error)) *mockAuthClient {
+	return &mockAuthClient{ClientRoundTripperFunc: func(http.RoundTripper) (http.RoundTripper, error) {
+		return roundTripperFunc(f), nil
+	}}
+}
+
 func actionJSONToIndex(t *testing.T, actionJSON json.RawMessage) string {
-	action := struct {
-		Create struct {
-			Index string `json:"_index"`
-		} `json:"create"`
-	}{}
-	err := json.Unmarshal(actionJSON, &action)
-	require.NoError(t, err)
-	return action.Create.Index
+	t.Helper()
+	return actionGetValue(t, actionJSON, "_index")
 }
 
 func actionJSONToID(t *testing.T, actionJSON json.RawMessage) string {
-	action := struct {
-		Create struct {
-			ID string `json:"_id"`
-		} `json:"create"`
-	}{}
-	err := json.Unmarshal(actionJSON, &action)
-	require.NoError(t, err)
-	return action.Create.ID
+	t.Helper()
+	return actionGetValue(t, actionJSON, "_id")
+}
+
+func actionJSONToPipeline(t *testing.T, actionJSON json.RawMessage) string {
+	t.Helper()
+	return actionGetValue(t, actionJSON, "pipeline")
+}
+
+// actionGetValue assumes the actionJSON is an object that has a key
+// of create whose value is another object and target represents one
+// of the inner keys.  The value of the inner key must be a string.
+func actionGetValue(t *testing.T, actionJSON json.RawMessage, target string) string {
+	t.Helper()
+	a := map[string]any{}
+
+	err := json.Unmarshal(actionJSON, &a)
+	require.NoErrorf(t, err, "error unmarshalling action: %s", err)
+
+	create, prs := a["create"]
+	require.Truef(t, prs, "create was not present in action")
+
+	createMap, ok := create.(map[string]any)
+	require.True(t, ok, "create was not a map[string]interface{}")
+
+	v, prs := createMap[target]
+	require.Truef(t, prs, "%s was not present in action.create", target)
+
+	vString, ok := v.(string)
+	require.True(t, ok, "the type of action.create.%s was not string", target)
+	return vString
 }

@@ -86,7 +86,7 @@ func newStefExporter(set component.TelemetrySettings, cfg *Config) *stefExporter
 func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	// Prepare gRPC connection.
 	var err error
-	s.grpcConn, err = s.cfg.ClientConfig.ToClientConn(ctx, host, s.set)
+	s.grpcConn, err = s.cfg.ToClientConn(ctx, host, s.set)
 	if err != nil {
 		return err
 	}

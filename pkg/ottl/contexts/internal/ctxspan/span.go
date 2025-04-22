@@ -6,6 +6,7 @@ package ctxspan // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"time"
 
@@ -15,13 +16,12 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxcommon"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxerror"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxutil"
 )
 
-func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetSetter[K], error) {
+func PathGetSetter[K Context](path ottl.Path[K]) (ottl.GetSetter[K], error) {
 	if path == nil {
 		return nil, ctxerror.New("nil", "nil", Name, DocRef)
 	}
@@ -111,8 +111,6 @@ func PathGetSetter[K Context](lowerContext string, path ottl.Path[K]) (ottl.GetS
 			}
 		}
 		return accessStatus[K](), nil
-	case "cache":
-		return nil, ctxcache.NewError(lowerContext, path.Context(), path.String())
 	default:
 		return nil, ctxerror.New(path.Name(), path.String(), Name, DocRef)
 	}
@@ -200,7 +198,7 @@ func accessTraceState[K Context]() ottl.StandardGetSetter[K] {
 
 func accessTraceStateKey[K Context](keys []ottl.Key[K]) (ottl.StandardGetSetter[K], error) {
 	if len(keys) != 1 {
-		return ottl.StandardGetSetter[K]{}, fmt.Errorf("must provide exactly 1 key when accessing trace_state")
+		return ottl.StandardGetSetter[K]{}, errors.New("must provide exactly 1 key when accessing trace_state")
 	}
 	return ottl.StandardGetSetter[K]{
 		Getter: func(ctx context.Context, tCtx K) (any, error) {
@@ -210,7 +208,7 @@ func accessTraceStateKey[K Context](keys []ottl.Key[K]) (ottl.StandardGetSetter[
 					return nil, err
 				}
 				if s == nil {
-					return nil, fmt.Errorf("trace_state indexing type must be a string")
+					return nil, errors.New("trace_state indexing type must be a string")
 				}
 				return ts.Get(*s), nil
 			}
@@ -224,7 +222,7 @@ func accessTraceStateKey[K Context](keys []ottl.Key[K]) (ottl.StandardGetSetter[
 						return err
 					}
 					if s == nil {
-						return fmt.Errorf("trace_state indexing type must be a string")
+						return errors.New("trace_state indexing type must be a string")
 					}
 					if updated, err := ts.Insert(*s, str); err == nil {
 						tCtx.GetSpan().TraceState().FromRaw(updated.String())

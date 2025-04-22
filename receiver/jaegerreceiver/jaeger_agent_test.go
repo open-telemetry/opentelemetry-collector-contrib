@@ -13,7 +13,6 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"github.com/jaegertracing/jaeger-idl/thrift-gen/agent"
 	jaegerthrift "github.com/jaegertracing/jaeger-idl/thrift-gen/jaeger"
-	"github.com/jaegertracing/jaeger/cmd/agent/app/servers/thriftudp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
@@ -27,6 +26,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 	jaegerconvert "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger/jaegerthriftcoverter"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/jaegerreceiver/internal/udpserver/thriftudp"
 )
 
 var jaegerAgent = component.NewIDWithName(metadata.Type, "agent_test")
@@ -143,7 +143,7 @@ func testJaegerAgent(t *testing.T, agentEndpoint string, receiverConfig Protocol
 
 	gotTraces := sink.AllTraces()
 	require.Len(t, gotTraces, 1)
-	assert.EqualValues(t, td, gotTraces[0])
+	assert.Equal(t, td, gotTraces[0])
 }
 
 func newClientUDP(hostPort string, binary bool) (*agent.AgentClient, error) {
