@@ -70,7 +70,7 @@ jobs:
             echo "Please add a .yaml file to the ./.chloggen/ directory."
             echo "See CONTRIBUTING.md file for more details."
             echo "Alternately, add either \"[chore]\" to the title of the pull request or add the \"Skip Changelog\" label if this job should be skipped."
-            git diff --diff-filter=A --name-only $(git merge-base origin/main $PR_HEAD) $PR_HEAD ./.chloggen | grep \\.yaml
+            git diff --diff-filter=A --name-only $(git merge-base main $PR_HEAD) $PR_HEAD ./.chloggen | grep \\.yaml
             false
           else
             echo "A changelog entry was added to the ./.chloggen/ directory."
