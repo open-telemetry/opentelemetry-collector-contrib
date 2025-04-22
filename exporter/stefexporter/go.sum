@@ -64,8 +64,8 @@ github.com/splunk/stef/go/otel v0.0.4 h1:qQ+5/8dpRE1YZSQzKBIgnesHJAGOu+R/193XMC0
 github.com/splunk/stef/go/otel v0.0.4/go.mod h1:gg/SPmWqVfbyBmR5KthHzTJYy1N+WNBME7sd1RYccdk=
 github.com/splunk/stef/go/pdata v0.0.4 h1:Vtq+97JPAo16jj/ku4r/bCXGFQBP71E4vtS/e9M2voQ=
 github.com/splunk/stef/go/pdata v0.0.4/go.mod h1:o0PLyw0emG3JSfXpUklU2DuizAC2AHpJpLc6sgQkzd8=
-github.com/splunk/stef/go/pkg v0.0.4 h1:48j8BE8i6qtcKJY9TVJYveynBlJwxnk+jRdVK40pPrc=
-github.com/splunk/stef/go/pkg v0.0.4/go.mod h1:eDMc/KOCPUv5ClCiF6Jcw8sDueYouDujMKhQoDbDtPw=
+github.com/splunk/stef/go/pkg v0.0.5 h1:fGHgpT1DVso8hbQP6rGCRzY9+ZO7DBFdxmoMKpe5z8o=
+github.com/splunk/stef/go/pkg v0.0.5/go.mod h1:eDMc/KOCPUv5ClCiF6Jcw8sDueYouDujMKhQoDbDtPw=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
 github.com/stretchr/testify v1.3.0/go.mod h1:M5WIy9Dh21IEIfnGCwXGc5bZfKNJtfHm1UVUgZn+9EI=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
