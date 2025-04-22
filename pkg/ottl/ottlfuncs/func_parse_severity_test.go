@@ -5,7 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -185,7 +185,7 @@ func Test_parseSeverity(t *testing.T) {
 			name: "error in acquiring target, no match",
 			target: ottl.StandardGetSetter[any]{
 				Getter: func(_ context.Context, _ any) (any, error) {
-					return nil, fmt.Errorf("oops")
+					return nil, errors.New("oops")
 				},
 			},
 			mapping: ottl.StandardPMapGetter[any]{

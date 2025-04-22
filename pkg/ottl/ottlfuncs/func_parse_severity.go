@@ -5,6 +5,7 @@ package ottlfuncs // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"context"
+	"errors"
 	"fmt"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -40,7 +41,7 @@ func createParseSeverityFunction[K any](_ ottl.FunctionContext, oArgs ottl.Argum
 	args, ok := oArgs.(*ParseSeverityArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("ParseSeverityFactory args must be of type *ParseSeverityArguments[K")
+		return nil, errors.New("ParseSeverityFactory args must be of type *ParseSeverityArguments[K")
 	}
 
 	return parseSeverity[K](args.Target, args.Mapping), nil
@@ -71,7 +72,7 @@ func evaluateSeverity(value any, severities map[string]any) (string, error) {
 	for level, criteria := range severities {
 		criteriaList, ok := criteria.([]any)
 		if !ok {
-			return "", fmt.Errorf("criteria for mapping log level must be []any")
+			return "", errors.New("criteria for mapping log level must be []any")
 		}
 		match, err := evaluateSeverityMapping(value, criteriaList)
 		if err != nil {
