@@ -5,6 +5,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -58,25 +59,19 @@ func newKubeletScraper(
 	nodeName string,
 ) (scraper.Metrics, error) {
 	if EnableCPUUsageMetrics.IsEnabled() {
-		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
-			metricsConfig.Metrics.ContainerCPUUtilization.Enabled = false
-		}
-		if metricsConfig.Metrics.K8sPodCPUUtilization.Enabled {
-			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = false
-		}
-		if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
-			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = false
+		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			return nil, errors.New("container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics cannot be enabled when receiver.kubeletstats.enableCPUUsageMetrics feature gate is enabled")
 		}
 	} else {
-		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
-		if metricsConfig.Metrics.K8sPodCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
-		if metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
-			set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
-		}
+		set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+
+		metricsConfig.Metrics.ContainerCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = true
 	}
 
 	ks := &kubeletScraper{

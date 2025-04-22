@@ -28,14 +28,6 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 | ---- | ----------- | ---------- |
 | {cpu} | Gauge | Double |
 
-### container.cpu.utilization
-
-Container CPU utilization
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### container.filesystem.available
 
 Container filesystem available
@@ -123,14 +115,6 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {cpu} | Gauge | Double |
-
-### k8s.node.cpu.utilization
-
-Node CPU utilization
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
 
 ### k8s.node.filesystem.available
 
@@ -249,14 +233,6 @@ Total CPU usage (sum of all cores per second) averaged over the sample window
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | {cpu} | Gauge | Double |
-
-### k8s.pod.cpu.utilization
-
-Pod CPU utilization
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
 
 ### k8s.pod.filesystem.available
 
@@ -410,6 +386,14 @@ metrics:
     enabled: true
 ```
 
+### container.cpu.utilization
+
+Container CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### container.uptime
 
 The time since the container started
@@ -466,6 +450,14 @@ Container memory utilization as a ratio of the container's requests
 | ---- | ----------- | ---------- |
 | 1 | Gauge | Double |
 
+### k8s.node.cpu.utilization
+
+Node CPU utilization
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### k8s.node.uptime
 
 The time since the node started
@@ -477,6 +469,14 @@ The time since the node started
 ### k8s.pod.cpu.node.utilization
 
 Pod cpu utilization as a ratio of the node's capacity
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### k8s.pod.cpu.utilization
+
+Pod CPU utilization
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |

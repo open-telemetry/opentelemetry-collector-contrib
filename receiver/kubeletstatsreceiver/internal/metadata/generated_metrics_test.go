@@ -62,18 +62,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
 			expectedWarnings := 0
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `container.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric container.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `k8s.node.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.node.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
-			if tt.metricsSet == testDataSetDefault || tt.metricsSet == testDataSetAll {
-				assert.Equal(t, "[WARNING] `k8s.pod.cpu.utilization` should not be enabled: This metric will be disabled in a future release. Use metric k8s.pod.cpu.usage instead.", observedLogs.All()[expectedWarnings].Message)
-				expectedWarnings++
-			}
 
 			assert.Equal(t, expectedWarnings, observedLogs.Len())
 
@@ -88,7 +76,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordContainerCPUUsageDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordContainerCPUUtilizationDataPoint(ts, 1)
 
@@ -157,7 +144,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sNodeCPUUsageDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sNodeCPUUtilizationDataPoint(ts, 1)
 
@@ -219,7 +205,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordK8sPodCPUUsageDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordK8sPodCPUUtilizationDataPoint(ts, 1)
 

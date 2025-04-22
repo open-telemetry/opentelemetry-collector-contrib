@@ -99,7 +99,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		ContainerCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		ContainerFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -156,7 +156,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sNodeCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sNodeFilesystemAvailable: MetricConfig{
 			Enabled: true,
@@ -204,7 +204,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		K8sPodCPUUtilization: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		K8sPodCPULimitUtilization: MetricConfig{
 			Enabled: false,
