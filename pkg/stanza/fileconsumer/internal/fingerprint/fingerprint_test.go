@@ -327,7 +327,7 @@ func TestCompressionFingerprint(t *testing.T) {
 	require.NoError(t, gzipWriter.Close())
 	require.NotZero(t, n, "gzip file should not be empty")
 
-	// set seek to the start of the file``
+	// set seek to the start of the file
 	_, err = compressedFile.Seek(0, io.SeekStart)
 	require.NoError(t, err)
 
