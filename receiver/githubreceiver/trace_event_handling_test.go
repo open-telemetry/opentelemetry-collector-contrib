@@ -4,143 +4,83 @@
 package githubreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver"
 
 import (
+	"encoding/json"
+	"os"
+	"path/filepath"
 	"testing"
 	"time"
 
 	"github.com/google/go-github/v71/github"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/ptracetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver/internal/metadata"
 )
 
-func TestHandleWorkflowRun(t *testing.T) {
-	// Helper function to create a test workflow run event
-	createTestWorkflowRunEvent := func(id int64, runAttempt int, name, conclusion string, startTime, updateTime time.Time) *github.WorkflowRunEvent {
-		return &github.WorkflowRunEvent{
-			WorkflowRun: &github.WorkflowRun{
-				ID:           &id,
-				Name:         &name,
-				RunAttempt:   &runAttempt,
-				RunStartedAt: &github.Timestamp{Time: startTime},
-				UpdatedAt:    &github.Timestamp{Time: updateTime},
-				Conclusion:   &conclusion,
-			},
-			Repo: &github.Repository{
-				Name:          github.Ptr("test-repo"),
-				Organization:  &github.Organization{Login: github.Ptr("test-org")},
-				DefaultBranch: github.Ptr("main"),
-				CustomProperties: map[string]any{
-					"service_name": "test-service",
-				},
-			},
-			Workflow: &github.Workflow{
-				Name: github.Ptr("test-workflow"),
-				Path: github.Ptr(".github/workflows/test.yml"),
-			},
-		}
-	}
+func TestHandleWorkflowRunWithGoldenFile(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
 
-	tests := []struct {
-		name     string
-		event    *github.WorkflowRunEvent
-		wantErr  bool
-		validate func(t *testing.T, traces ptrace.Traces)
-	}{
-		{
-			name: "successful workflow run",
-			event: createTestWorkflowRunEvent(
-				123,
-				1,
-				"Test Workflow",
-				"success",
-				time.Now().Add(-time.Hour),
-				time.Now(),
-			),
-			wantErr: false,
-			validate: func(t *testing.T, traces ptrace.Traces) {
-				require.Equal(t, 1, traces.ResourceSpans().Len())
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
 
-				rs := traces.ResourceSpans().At(0)
-				require.Equal(t, 1, rs.ScopeSpans().Len())
+	testFilePath := filepath.Join("testdata", "workflow-run-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
 
-				spans := rs.ScopeSpans().At(0).Spans()
-				require.Equal(t, 1, spans.Len())
+	var event github.WorkflowRunEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow run event")
 
-				span := spans.At(0)
-				require.Equal(t, "Test Workflow", span.Name())
-				require.Equal(t, ptrace.SpanKindServer, span.Kind())
-				require.Equal(t, ptrace.StatusCodeOk, span.Status().Code())
-				require.Equal(t, "success", span.Status().Message())
-			},
-		},
-		{
-			name: "failed workflow run",
-			event: createTestWorkflowRunEvent(
-				124,
-				1,
-				"Test Workflow",
-				"failure",
-				time.Now().Add(-time.Hour),
-				time.Now(),
-			),
-			wantErr: false,
-			validate: func(t *testing.T, traces ptrace.Traces) {
-				spans := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-				span := spans.At(0)
-				require.Equal(t, ptrace.StatusCodeError, span.Status().Code())
-				require.Equal(t, "failure", span.Status().Message())
-			},
-		},
-		{
-			name: "workflow run with retry",
-			event: func() *github.WorkflowRunEvent {
-				e := createTestWorkflowRunEvent(
-					125,
-					2,
-					"Test Workflow",
-					"success",
-					time.Now().Add(-time.Hour),
-					time.Now(),
-				)
-				previousURL := "https://api.github.com/repos/test-org/test-repo/actions/runs/125/attempts/1"
-				e.WorkflowRun.PreviousAttemptURL = &previousURL
-				return e
-			}(),
-			wantErr: false,
-			validate: func(t *testing.T, traces ptrace.Traces) {
-				spans := traces.ResourceSpans().At(0).ScopeSpans().At(0).Spans()
-				span := spans.At(0)
-				require.Equal(t, 1, span.Links().Len())
-			},
-		},
-	}
+	traces, err := receiver.handleWorkflowRun(&event)
+	require.NoError(t, err, "Failed to handle workflow run event")
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			// Create a new receiver with a test logger
-			logger := zap.NewNop()
-			receiver := &githubTracesReceiver{
-				logger:   logger,
-				cfg:      createDefaultConfig().(*Config),
-				settings: receivertest.NewNopSettings(metadata.Type),
-			}
+	expectedFile := filepath.Join("testdata", "workflow-run-expected.yaml")
 
-			// Handle the workflow run event
-			traces, err := receiver.handleWorkflowRun(tt.event)
+	// Uncomment the following line to update the golden file
+	// golden.WriteTraces(t, expectedFile, traces)
 
-			if tt.wantErr {
-				require.Error(t, err)
-				return
-			}
+	expectedTraces, err := golden.ReadTraces(expectedFile)
+	require.NoError(t, err, "Failed to read expected traces")
 
-			require.NoError(t, err)
-			tt.validate(t, traces)
-		})
-	}
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
+}
+
+func TestHandleWorkflowJobWithGoldenFile(t *testing.T) {
+	defaultConfig := createDefaultConfig().(*Config)
+	defaultConfig.WebHook.Endpoint = "localhost:0"
+	consumer := consumertest.NewNop()
+
+	receiver, err := newTracesReceiver(receivertest.NewNopSettings(metadata.Type), defaultConfig, consumer)
+	require.NoError(t, err, "failed to create receiver")
+
+	testFilePath := filepath.Join("testdata", "workflow-job-completed.json")
+	data, err := os.ReadFile(testFilePath)
+	require.NoError(t, err, "Failed to read test data file")
+
+	var event github.WorkflowJobEvent
+	err = json.Unmarshal(data, &event)
+	require.NoError(t, err, "Failed to unmarshal workflow job event")
+
+	traces, err := receiver.handleWorkflowJob(&event)
+	require.NoError(t, err, "Failed to handle workflow job event")
+
+	expectedFile := filepath.Join("testdata", "workflow-job-expected.yaml")
+
+	// Uncomment the following line to update the golden file
+	// golden.WriteTraces(t, expectedFile, traces)
+
+	expectedTraces, err := golden.ReadTraces(expectedFile)
+	require.NoError(t, err, "Failed to read expected traces")
+
+	require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
 }
 
 func TestNewParentSpanID(t *testing.T) {
@@ -714,3 +654,36 @@ func TestNewJobSpanID_Consistency(t *testing.T) {
 		require.Equal(t, spanID1, spanID2, "span ID should be consistent across multiple calls")
 	}
 }
+
+// Setup
+// logger := zap.NewNop()
+// receiver := &githubTracesReceiver{
+// 	logger:   logger,
+// 	cfg:      createDefaultConfig().(*Config),
+// 	settings: receivertest.NewNopSettings(metadata.Type),
+// }
+//
+// // Read and parse the workflow run event from the test data file
+// data, err := os.ReadFile("testdata/workflow_run_completed.json")
+// require.NoError(t, err, "Failed to read test data file")
+//
+// var event github.WorkflowRunEvent
+// err = json.Unmarshal(data, &event)
+// require.NoError(t, err, "Failed to unmarshal workflow run event")
+//
+// // Process the event
+// traces, err := receiver.handleWorkflowRun(&event)
+// require.NoError(t, err, "Failed to handle workflow run event")
+//
+// // Validate the generated traces
+// expectedFile := filepath.Join("testdata", "workflow_run_expected.yaml")
+//
+// // Uncomment the following line to update the golden file
+// // golden.WriteTraces(t, expectedFile, traces)
+//
+// // Read and compare with golden file
+// expectedTraces, err := golden.ReadTraces(expectedFile)
+// require.NoError(t, err, "Failed to read expected traces")
+//
+// // Compare actual and expected traces
+// require.NoError(t, ptracetest.CompareTraces(expectedTraces, traces))
