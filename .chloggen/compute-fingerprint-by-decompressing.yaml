@@ -4,7 +4,7 @@
 change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
-component: filelogreceiver
+component: fileconsumer
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: The fingerprint of gzip compressed files is created by decompressing and reading the first `fingerprint_size` bytes.
