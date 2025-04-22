@@ -6,7 +6,7 @@ require (
 	github.com/google/go-cmp v0.7.0
 	github.com/google/uuid v1.6.0
 	github.com/iancoleman/strcase v0.3.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.0.0-00010101000000-000000000000
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.124.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.124.1
