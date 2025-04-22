@@ -84,16 +84,15 @@ var (
 )
 
 func (cfg *Config) Validate() error {
-	if !cfg.Resolve.Enabled && !cfg.Reverse.Enabled {
-		return fmt.Errorf("either forward (resolve) or reverse DNS lookup must be enabled")
-	}
-
 	validateLookupConfig := func(lc LookupConfig) error {
+		if !lc.Enabled {
+			return nil
+		}
 		if len(lc.Attributes) == 0 {
 			return fmt.Errorf("at least one attribute must be specified for DNS resolution")
 		}
 		if lc.ResolvedAttribute == "" {
-			return fmt.Errorf("resovled_attribute must be specified for DNS resolution")
+			return fmt.Errorf("resolved_attribute must be specified for DNS resolution")
 		}
 		if lc.Context != resource && lc.Context != record {
 			return fmt.Errorf("context must be either 'resource' or 'record', got: %s", lc.Context)

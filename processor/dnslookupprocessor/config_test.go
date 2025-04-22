@@ -47,15 +47,6 @@ func TestConfig_Validate(t *testing.T) {
 			expectError:      false,
 		},
 		{
-			name: "No enabled lookups",
-			mutateConfigFunc: func(cfg *Config) {
-				cfg.Resolve.Enabled = false
-				cfg.Reverse.Enabled = false
-			},
-			expectError: true,
-			errorMsg:    "either forward (resolve) or reverse DNS lookup must be enabled",
-		},
-		{
 			name: "Empty resolve attribute list",
 			mutateConfigFunc: func(cfg *Config) {
 				cfg.Resolve.Attributes = []string{}
