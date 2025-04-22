@@ -1,18 +1,22 @@
 resourceLogs:
   - resource:
-      attributes: []
+      attributes:
+      - key: sqlserver.computer.name
+        value:
+          stringValue: DESKTOP-GHAEGRD
+      - key: sqlserver.instance.name
+        value:
+          stringValue: sqlserver
+      - key: host.name
+        value:
+          stringValue: "0.0.0.0"
     scopeLogs:
       - logRecords:
           - attributes:
               - key: db.system.name
                 value:
                   stringValue: microsoft.sql_server
-              - key: computer_name
-                value:
-                  stringValue: DESKTOP-GHAEGRD
-              - key: sql_instance
-                value:
-                  stringValue: sqlserver
+
               - key: server.address
                 value:
                   stringValue: 0.0.0.0
