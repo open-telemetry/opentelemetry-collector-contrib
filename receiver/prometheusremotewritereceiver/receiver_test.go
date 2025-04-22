@@ -450,8 +450,8 @@ func TestTranslateV2(t *testing.T) {
 				attrs.PutStr("service.namespace", "production")
 				attrs.PutStr("service.name", "service_a")
 				attrs.PutStr("service.instance.id", "host1")
-				attrs.PutStr("machine.type", "n1-standard-1")
-				attrs.PutStr("cloud.provider", "gcp")
+				attrs.PutStr("machine_type", "n1-standard-1")
+				attrs.PutStr("cloud_provider", "gcp")
 				attrs.PutStr("region", "us-central1")
 				attrs.PutStr("datacenter", "sdc")
 
@@ -599,8 +599,8 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		attrs.PutStr("service.namespace", "production")
 		attrs.PutStr("service.name", "service_a")
 		attrs.PutStr("service.instance.id", "host1")
-		attrs.PutStr("machine.type", "n1-standard-1")
-		attrs.PutStr("cloud.provider", "gcp")
+		attrs.PutStr("machine_type", "n1-standard-1")
+		attrs.PutStr("cloud_provider", "gcp")
 		attrs.PutStr("region", "us-central1")
 
 		sm := rm.ScopeMetrics().AppendEmpty()

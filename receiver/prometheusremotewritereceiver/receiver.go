@@ -253,8 +253,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			// Add the remaining labels as resource attributes
 			for _, l := range ls {
 				if l.Name != "job" && l.Name != "instance" && l.Name != labels.MetricName {
-					attrKey := strings.ReplaceAll(l.Name, "_", ".")
-					attrs.PutStr(attrKey, l.Value)
+					attrs.PutStr(l.Name, l.Value)
 				}
 			}
 			prw.interRequestCache[hashedLabels] = rm
