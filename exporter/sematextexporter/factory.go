@@ -49,16 +49,11 @@ func createDefaultConfig() component.Config {
 		},
 		QueueSettings: exporterhelper.NewDefaultQueueConfig(),
 		MetricsConfig: MetricsConfig{
-			MetricsEndpoint: usMetricsEndpoint,
 			MetricsSchema:   common.MetricsSchemaTelegrafPrometheusV2.String(),
 			PayloadMaxLines: 1_000,
 			PayloadMaxBytes: 300_000,
 		},
-		LogsConfig: LogsConfig{
-			LogsEndpoint: usLogsEndpoint,
-		},
 		BackOffConfig: configretry.NewDefaultBackOffConfig(),
-		Region:        usRegion,
 	}
 	return cfg
 }
