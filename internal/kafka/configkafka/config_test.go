@@ -141,7 +141,7 @@ func TestConsumerConfig(t *testing.T) {
 				MinFetchSize:     10,
 				DefaultFetchSize: 1024,
 				MaxFetchSize:     4096,
-				MaxFetchWait:     time.Second,
+				MaxFetchWait: 1 * time.Second,
 			},
 		},
 
