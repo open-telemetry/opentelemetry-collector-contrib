@@ -243,7 +243,7 @@ func addComponentList(config *CodecovConfig) error {
 
 	oldContent := matchComponentSection.FindSubmatch(codecovCfg)
 	if len(oldContent) == 0 {
-		return fmt.Errorf("failed to find start and end markers in .codecov.yaml")
+		return fmt.Errorf("failed to find start and end markers in %q", codecovFileName)
 	}
 
 	codecovCfg = bytes.ReplaceAll(codecovCfg, oldContent[0], replacement)
