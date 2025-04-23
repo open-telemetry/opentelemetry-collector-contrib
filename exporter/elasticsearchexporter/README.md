@@ -193,6 +193,7 @@ processors or exporter configurations will maintain client metadata.
 
 Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
 If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+This attribute will be excluded from the final document.
 
 See below for a description of each mapping mode.
 
