@@ -204,8 +204,8 @@ func TestExportWithWALEnabled(t *testing.T) {
 	require.NoError(t, err)
 	assert.NotNil(t, prwe.client)
 
-	metrics := map[string]*prompb.TimeSeries{
-		"test_metric": {
+	metrics := []prompb.TimeSeries{
+		{
 			Labels:  []prompb.Label{{Name: "__name__", Value: "test_metric"}},
 			Samples: []prompb.Sample{{Value: 1, Timestamp: 100}},
 		},
