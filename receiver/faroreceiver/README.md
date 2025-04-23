@@ -14,8 +14,7 @@
 
 # Faro Receiver
 
-This receiver can receive telemetry data from the [Grafana Faro Web SDK](https://github.com/grafana/faro-web-sdk).
-The telemetry data must be in JSON format and adhere to the [Faro OpenAPI schema](https://github.com/grafana/faro/blob/main/spec/gen/faro.gen.yaml).
+This receiver can receive telemetry data in [Faro format](https://github.com/grafana/faro) that adhere to the [Faro OpenAPI schema](https://github.com/grafana/faro/blob/main/spec/gen/faro.gen.yaml).
 
 ## Receiver Configuration
 
