@@ -59,6 +59,7 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
 	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
 	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
+	saramaConfig.Consumer.MaxWaitTime = consumerConfig.MaxFetchWait
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
