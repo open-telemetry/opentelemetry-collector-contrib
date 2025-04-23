@@ -138,7 +138,7 @@ func generateComponentID(moduleName string, cli Args) (string, error) {
 	return componentID, nil
 }
 
-// walkTree recursively traverses the base directory looking for go.mod files
+// walkTree uses filepath.Walk to recursively traverse the base directory looking for go.mod files
 func walkTree(cli Args) (*CodecovConfig, error) {
 	config := &CodecovConfig{}
 
