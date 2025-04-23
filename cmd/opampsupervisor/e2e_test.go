@@ -273,7 +273,61 @@ func TestSupervisorStartsCollectorWithRemoteConfig(t *testing.T) {
 	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
-func TestSupervisorStartsCollectorWithNoOpAMPServer(t *testing.T) {
+func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
+	storageDir := t.TempDir()
+	t.Log("Storage dir:", storageDir)
+	t.Cleanup(func() {
+		content, _ := os.ReadFile(filepath.Join(storageDir, "effective_config.yaml"))
+		t.Logf("EffectiveConfig:\n%s", string(content))
+
+		content, _ = os.ReadFile(filepath.Join(storageDir, "agent.log"))
+		t.Logf("Agent logs:\n%s", string(content))
+	})
+
+	connected := atomic.Bool{}
+	server := newUnstartedOpAMPServer(t, defaultConnectingHandler, types.ConnectionCallbacks{
+		OnConnected: func(ctx context.Context, conn types.Connection) {
+			connected.Store(true)
+		},
+	})
+
+	healthcheckPort, err := findRandomPort()
+	require.NoError(t, err)
+
+	s := newSupervisor(t, "healthcheck_port", map[string]string{
+		"url":              server.addr,
+		"storage_dir":      storageDir,
+		"healthcheck_port": fmt.Sprintf("%d", healthcheckPort),
+		"local_config":     filepath.Join("testdata", "collector", "nop_config.yaml"),
+	})
+	t.Cleanup(s.Shutdown)
+	require.Nil(t, s.Start())
+
+	// Verify the collector runs eventually by pinging the healthcheck extension
+	require.Eventually(t, func() bool {
+		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		if err != nil {
+			t.Logf("Failed healthcheck: %s", err)
+			return false
+		}
+		require.NoError(t, resp.Body.Close())
+		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+			return false
+		}
+		return true
+	}, 3*time.Second, 100*time.Millisecond)
+
+	// Start the server and wait for the supervisor to connect
+	server.start()
+
+	// Verify supervisor connects to server
+	waitForSupervisorConnection(server.supervisorConnected, true)
+
+	require.True(t, connected.Load(), "Supervisor failed to connect")
+}
+
+func TestSupervisorStartsCollectorWithNoOpAMPServerUsingLastRemoteConfig(t *testing.T) {
 	storageDir := t.TempDir()
 	remoteConfigFilePath := filepath.Join(storageDir, "last_recv_remote_config.dat")
 

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding"
+	s3accesslog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 	subscriptionfilter "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/subscription-filter"
 	vpcflowlog "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/vpc-flow-log"
 )
@@ -42,6 +43,11 @@ func newExtension(cfg *Config, settings extension.Settings) (*encodingExtension,
 		return &encodingExtension{
 			unmarshaler: unmarshaler,
 			format:      formatVPCFlowLog,
+		}, nil
+	case formatS3AccessLog:
+		return &encodingExtension{
+			unmarshaler: s3accesslog.NewS3AccessLogUnmarshaler(settings.BuildInfo),
+			format:      formatS3AccessLog,
 		}, nil
 	default:
 		// Format will have been validated by Config.Validate,

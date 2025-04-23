@@ -1,0 +1,84 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: aws
+        - key: aws.s3.bucket
+          value:
+            stringValue: amzn-s3-demo-bucket1
+        - key: aws.s3.owner
+          value:
+            stringValue: 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: source.address
+                value:
+                  stringValue: 192.0.2.3
+              - key: user.id
+                value:
+                  stringValue: 79a59df900b949e55d96a1e698fbacedfd6e09d98eacf8f8d5218e7cd47ef2be
+              - key: aws.request_id
+                value:
+                  stringValue: 3E57427F3EXAMPLE
+              - key: rpc.method
+                value:
+                  stringValue: REST.GET.VERSIONING
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: url.path
+                value:
+                  stringValue: /amzn-s3-demo-bucket1
+              - key: url.query
+                value:
+                  stringValue: versioning
+              - key: network.protocol.name
+                value:
+                  stringValue: http
+              - key: network.protocol.version
+                value:
+                  stringValue: "1.1"
+              - key: http.response.status_code
+                value:
+                  intValue: "200"
+              - key: http.response.body.size
+                value:
+                  intValue: "113"
+              - key: duration
+                value:
+                  intValue: "7"
+              - key: user_agent.original
+                value:
+                  stringValue: S3Console/0.4
+              - key: aws.extended_request_id
+                value:
+                  stringValue: s9lzHYrFp76ZVxRcpX9+5cjAnEH2ROuNkd2BHfIa6UkFVdtjf5mKR3/eTPFvsiP/XV/VLi31234=
+              - key: aws.signature.version
+                value:
+                  stringValue: SigV4
+              - key: tls.cipher
+                value:
+                  stringValue: ECDHE-RSA-AES128-GCM-SHA256
+              - key: aws.s3.auth_type
+                value:
+                  stringValue: AuthHeader
+              - key: http.request.header.host
+                value:
+                  stringValue: amzn-s3-demo-bucket1.s3.us-west-1.amazonaws.com
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.2"
+              - key: aws.s3.access_point.arn
+                value:
+                  stringValue: arn:aws:s3:us-west-1:123456789012:accesspoint/example-AP
+              - key: aws.s3.acl_required
+                value:
+                  boolValue: true
+            body: {}
+            spanId: ""
+            timeUnixNano: "1549411238000000000"
+            traceId: ""
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension

@@ -137,6 +137,11 @@ action][run] and [otel-cli][otcli]. The key is generating IDs in the same way
 that this GitHub receiver does. The [trace_event_handling.go][tr] file contains
 the `new*ID` functions that generate deterministic IDs.
 
+**IMPORTANT** - Workflow Job names MUST be unique in each workflow for
+deterministic span IDs to not conflict with eachother. GitHub does not enforce
+this behavior, but when linting a workflow, warns that there are duplicate job
+names.
+
 ### Receiver Configuration
 
 **IMPORTANT** - Ensure your WebHook endpoint is secured with a secret and a Web

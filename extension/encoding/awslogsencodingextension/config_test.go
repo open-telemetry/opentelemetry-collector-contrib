@@ -67,6 +67,15 @@ func TestLoadConfig(t *testing.T) {
 				supportedVPCFlowLogFileFormat,
 			),
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "s3_access_log"),
+			expected: &Config{
+				Format: formatS3AccessLog,
+				VPCFlowLogConfig: VPCFlowLogConfig{
+					fileFormatPlainText,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

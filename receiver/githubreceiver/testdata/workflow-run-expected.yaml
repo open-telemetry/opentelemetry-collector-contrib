@@ -1,0 +1,61 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: otel-collector
+        - key: vcs.repository.name
+          value:
+            stringValue: open-telemetry-otel-collector
+        - key: vcs.vendor.name
+          value:
+            stringValue: github
+        - key: vcs.ref.head
+          value:
+            stringValue: renovate/major-tool-deps
+        - key: vcs.ref.head.type
+          value:
+            stringValue: branch
+        - key: vcs.ref.head.revision
+          value:
+            stringValue: 6077d805b0fc49f65e6dbaefc2d1fc9b4f92aa4e
+        - key: vcs.ref.head.revision.author.name
+          value:
+            stringValue: GitHub
+        - key: vcs.ref.head.revision.author.email
+          value:
+            stringValue: noreply@github.com
+        - key: cicd.pipeline.name
+          value:
+            stringValue: build-and-test
+        - key: cicd.pipeline.run.sender.login
+          value:
+            stringValue: renovate[bot]
+        - key: cicd.pipeline.run.url.full
+          value:
+            stringValue: https://github.com/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260
+        - key: cicd.pipeline.run.id
+          value:
+            intValue: "14460881260"
+        - key: cicd.pipeline.run.status
+          value:
+            stringValue: failure
+        - key: cicd.pipeline.run.previous_attempt.url.full
+          value:
+            stringValue: https://github.com/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260/attempts/12
+    scopeSpans:
+      - scope: {}
+        spans:
+          - endTimeUnixNano: "1744837827000000000"
+            kind: 2
+            links:
+              - spanId: ""
+                traceId: 3ab150c94bf95169f4958bc860bddc3b
+            name: build-and-test
+            parentSpanId: ""
+            spanId: aba151af7cfbcf0f
+            startTimeUnixNano: "1744837733000000000"
+            status:
+              code: 2
+              message: failure
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0

@@ -14,6 +14,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlscope"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
@@ -281,6 +282,59 @@ func Test_NewBoolExprForLogWithOptions(t *testing.T) {
 		ottl.PropagateError,
 		componenttest.NewNopTelemetrySettings(),
 		[]ottl.Option[ottllog.TransformContext]{ottllog.EnablePathContextNames()},
+	)
+	assert.NoError(t, err)
+}
+
+func Test_NewBoolExprForProfile(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []string
+		expectedResult bool
+	}{
+		{
+			name: "basic",
+			conditions: []string{
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "multiple",
+			conditions: []string{
+				"false == true",
+				"true == true",
+			},
+			expectedResult: true,
+		},
+		{
+			name: "With Converter",
+			conditions: []string{
+				`IsMatch("test", "pass")`,
+			},
+			expectedResult: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			profileBoolExpr, err := NewBoolExprForProfile(tt.conditions, StandardProfileFuncs(), ottl.PropagateError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+			assert.NotNil(t, profileBoolExpr)
+			result, err := profileBoolExpr.Eval(context.Background(), ottlprofile.TransformContext{})
+			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedResult, result)
+		})
+	}
+}
+
+func Test_NewBoolExprForProfileWithOptions(t *testing.T) {
+	_, err := NewBoolExprForProfileWithOptions(
+		[]string{`profile.duration_unix_nano > 0`},
+		StandardProfileFuncs(),
+		ottl.PropagateError,
+		componenttest.NewNopTelemetrySettings(),
+		[]ottl.Option[ottlprofile.TransformContext]{ottlprofile.EnablePathContextNames()},
 	)
 	assert.NoError(t, err)
 }

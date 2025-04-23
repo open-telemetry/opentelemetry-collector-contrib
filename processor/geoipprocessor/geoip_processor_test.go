@@ -5,10 +5,12 @@ package geoipprocessor
 
 import (
 	"context"
+	"errors"
 	"net"
 	"path/filepath"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
@@ -36,10 +38,10 @@ type providerFactoryMock struct {
 
 type providerMock struct {
 	LocationF func(context.Context, net.IP) (attribute.Set, error)
+	CloseF    func(context.Context) error
 }
 
 var (
-	_ provider.GeoIPProvider        = (*providerMock)(nil)
 	_ provider.GeoIPProvider        = (*providerMock)(nil)
 	_ provider.GeoIPProviderFactory = (*providerFactoryMock)(nil)
 )
@@ -60,9 +62,16 @@ func (pm *providerMock) Location(ctx context.Context, ip net.IP) (attribute.Set,
 	return pm.LocationF(ctx, ip)
 }
 
+func (pm *providerMock) Close(ctx context.Context) error {
+	return pm.CloseF(ctx)
+}
+
 var baseMockProvider = providerMock{
 	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -78,6 +87,9 @@ var baseMockFactory = providerFactoryMock{
 var baseProviderMock = providerMock{
 	LocationF: func(context.Context, net.IP) (attribute.Set, error) {
 		return attribute.Set{}, nil
+	},
+	CloseF: func(context.Context) error {
+		return nil
 	},
 }
 
@@ -148,6 +160,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = metricsProcessor.ConsumeMetrics(context.Background(), inputMetrics)
 		require.NoError(t, err)
+		require.NoError(t, metricsProcessor.Shutdown(context.Background()))
 
 		actualMetrics := nextMetrics.AllMetrics()
 		require.Len(t, actualMetrics, 1)
@@ -167,6 +180,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 
 		err = tracesProcessor.ConsumeTraces(context.Background(), inputTraces)
 		require.NoError(t, err)
+		require.NoError(t, tracesProcessor.Shutdown(context.Background()))
 
 		actualTraces := nextTraces.AllTraces()
 		require.Len(t, actualTraces, 1)
@@ -191,6 +205,7 @@ func compareAllSignals(cfg component.Config, goldenDir string) func(t *testing.T
 		require.Len(t, actualLogs, 1)
 		// golden.WriteLogs(t, filepath.Join(dir, "output-logs.yaml"), actualLogs[0])
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs[0]))
+		require.NoError(t, logsProcessor.Shutdown(context.Background()))
 	}
 }
 
@@ -232,4 +247,24 @@ func TestProcessor(t *testing.T) {
 			compareAllSignals(cfg, tt.goldenDir)(t)
 		})
 	}
+}
+
+func TestProcessorShutdownError(t *testing.T) {
+	// processor with two mocked providers that return error on close
+	processor := geoIPProcessor{
+		providers: []provider.GeoIPProvider{
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 1")
+				},
+			},
+			&providerMock{
+				CloseF: func(context.Context) error {
+					return errors.New("test error 2")
+				},
+			},
+		},
+	}
+
+	assert.EqualError(t, processor.shutdown(context.Background()), "test error 1; test error 2")
 }

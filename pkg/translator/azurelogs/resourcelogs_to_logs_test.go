@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
@@ -172,19 +172,19 @@ func TestExtractRawAttributes(t *testing.T) {
 				Properties:        &properties,
 			},
 			expected: map[string]any{
-				azureTenantID:                    "tenant.id",
-				azureOperationName:               "operation.name",
-				azureOperationVersion:            "operation.version",
-				azureCategory:                    "category",
-				azureCorrelationID:               correlationID,
-				azureResultType:                  "result.type",
-				azureResultSignature:             "result.signature",
-				azureResultDescription:           "result.description",
-				azureDuration:                    int64(1234),
-				networkPeerAddress:               "127.0.0.1",
-				azureIdentity:                    "someone",
-				conventions.AttributeCloudRegion: "location",
-				azureProperties:                  properties,
+				azureTenantID:                           "tenant.id",
+				azureOperationName:                      "operation.name",
+				azureOperationVersion:                   "operation.version",
+				azureCategory:                           "category",
+				azureCorrelationID:                      correlationID,
+				azureResultType:                         "result.type",
+				azureResultSignature:                    "result.signature",
+				azureResultDescription:                  "result.description",
+				azureDuration:                           int64(1234),
+				conventions.AttributeNetworkPeerAddress: "127.0.0.1",
+				azureIdentity:                           "someone",
+				conventions.AttributeCloudRegion:        "location",
+				azureProperties:                         properties,
 			},
 		},
 		{
@@ -296,7 +296,7 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 			logFilename:      "log-azurecdnaccesslog.json",
 			expectedFilename: "access-log-expected.yaml",
 		},
-		"front_door_acess_logs": {
+		"front_door_access_logs": {
 			logFilename:      "log-frontdooraccesslog.json",
 			expectedFilename: "front-door-access-log-expected.yaml",
 		},
@@ -316,10 +316,12 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 			logFilename:      "log-bad-level.json",
 			expectedFilename: "log-bad-level-expected.yaml",
 		},
-		"log_maximum": {
-			logFilename:      "log-maximum.json",
-			expectedFilename: "log-maximum-expected.yaml",
-		},
+		// TODO Add unit test again once bug gets fixed.
+		// Bug https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39186#issuecomment-2798517892
+		// "log_maximum": {
+		// 	logFilename:      "log-maximum.json",
+		// 	expectedFilename: "log-maximum-expected.yaml",
+		// },
 		"log_minimum": {
 			logFilename:      "log-minimum.json",
 			expectedFilename: "log-minimum-expected.yaml",

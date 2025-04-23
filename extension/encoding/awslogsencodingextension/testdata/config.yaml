@@ -17,3 +17,6 @@ awslogs_encoding/invalid_vpc_flow_log:
   format: vpc_flow_log
   vpc_flow_log:
     file_format: invalid
+
+awslogs_encoding/s3_access_log:
+  format: s3_access_log

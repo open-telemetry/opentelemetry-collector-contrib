@@ -1267,6 +1267,63 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessTraces_InferredContextFromConditions(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td ptrace.Traces)
+	}{
+		{
+			name: "inferring from statements",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`resource.attributes["test"] == nil`},
+					Statements: []string{`set(span.name, Concat([span.name, "pass"], "-"))`},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				for _, v := range td.ResourceSpans().All() {
+					for _, m := range v.ScopeSpans().All() {
+						for _, mm := range m.Spans().All() {
+							mm.SetName(mm.Name() + "-pass")
+						}
+					}
+				}
+			},
+		},
+		{
+			name: "inferring from conditions",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`span.name != nil`},
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td ptrace.Traces) {
+				for _, v := range td.ResourceSpans().All() {
+					v.Resource().Attributes().PutStr("test", "pass")
+				}
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructTraces()
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessTraces(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructTraces()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string

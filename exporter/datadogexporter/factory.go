@@ -171,7 +171,11 @@ func (f *factory) StopReporter() {
 }
 
 func (f *factory) TraceAgent(ctx context.Context, wg *sync.WaitGroup, params exporter.Settings, cfg *datadogconfig.Config, sourceProvider source.Provider, attrsTranslator *attributes.Translator) (*agent.Agent, error) {
-	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag), attrsTranslator)
+	mc, err := metricsclient.InitializeMetricClient(params.MeterProvider, metricsclient.ExporterSourceTag)
+	if err != nil {
+		return nil, err
+	}
+	agnt, err := newTraceAgent(ctx, params, cfg, sourceProvider, mc, attrsTranslator)
 	if err != nil {
 		return nil, err
 	}
@@ -279,7 +283,11 @@ func (f *factory) createMetricsExporter(
 		cancel()
 		return nil, err
 	}
-	metricsClient := metricsclient.InitializeMetricClient(set.MeterProvider, metricsclient.ExporterSourceTag)
+	metricsClient, err := metricsclient.InitializeMetricClient(set.MeterProvider, metricsclient.ExporterSourceTag)
+	if err != nil {
+		cancel()
+		return nil, err
+	}
 	timingReporter := timing.New(metricsClient)
 	statsWriter := writer.NewStatsWriter(acfg, telemetry.NewNoopCollector(), metricsClient, timingReporter)
 

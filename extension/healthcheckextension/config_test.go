@@ -60,6 +60,17 @@ func TestLoadConfig(t *testing.T) {
 			id:          component.NewIDWithName(metadata.Type, "invalidpath"),
 			expectedErr: errInvalidPath,
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "response-body"),
+			expected: func() component.Config {
+				cfg := NewFactory().CreateDefaultConfig().(*Config)
+				cfg.ResponseBody = &ResponseBodySettings{
+					Healthy:   "I'm OK",
+					Unhealthy: "I'm not well",
+				}
+				return cfg
+			}(),
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {

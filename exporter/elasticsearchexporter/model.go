@@ -125,7 +125,11 @@ func newEncoder(mode MappingMode) (documentEncoder, error) {
 			profilesUnsupportedEncoder: profilesUnsupportedEncoder{mode: mode},
 		}, nil
 	case MappingOTel:
-		return otelModeEncoder{serializer: otelserializer.New()}, nil
+		ser, err := otelserializer.New()
+		if err != nil {
+			return nil, err
+		}
+		return otelModeEncoder{serializer: ser}, nil
 	}
 	return nil, fmt.Errorf("unknown mapping mode %q (%d)", mode, int(mode))
 }

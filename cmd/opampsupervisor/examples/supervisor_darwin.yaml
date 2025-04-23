@@ -1,11 +1,10 @@
 server:
-  endpoint: ws://127.0.0.1:4320/v1/opamp
+  endpoint: wss://127.0.0.1:4320/v1/opamp
   tls:
     # Disable verification to test locally.
     # Don't do this in production.
     insecure_skip_verify: true
     # For more TLS settings see config/configtls.ClientConfig
-    insecure: true
 
 capabilities:
   reports_effective_config: true
@@ -21,20 +20,3 @@ agent:
 
 storage:
   directory: .
-
-telemetry:
-  traces:
-    processors:
-      - simple:
-          exporter:
-            otlp:
-              protocol: http/protobuf
-              endpoint: http://localhost:4318
-  logs:
-    level: debug
-    processors:
-      - simple:
-          exporter:
-            otlp:
-              protocol: http/protobuf
-              endpoint: http://localhost:4318

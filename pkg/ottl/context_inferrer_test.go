@@ -279,7 +279,14 @@ func Test_NewPriorityContextInferrer_InvalidStatement(t *testing.T) {
 	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{})
 	statements := []string{"set(foo.field,"}
 	_, err := inferrer.inferFromStatements(statements)
-	require.ErrorContains(t, err, "unexpected token")
+	require.ErrorContains(t, err, "statement has invalid syntax")
+}
+
+func Test_NewPriorityContextInferrer_InvalidCondition(t *testing.T) {
+	inferrer := newPriorityContextInferrer(componenttest.NewNopTelemetrySettings(), map[string]*priorityContextInferrerCandidate{})
+	conditions := []string{"foo.field,"}
+	_, err := inferrer.inferFromConditions(conditions)
+	require.ErrorContains(t, err, "condition has invalid syntax")
 }
 
 func Test_NewPriorityContextInferrer_DefaultPriorityList(t *testing.T) {
@@ -484,6 +491,63 @@ func Test_NewPriorityContextInferrer_InferConditions_DefaultContextsOrder(t *tes
 			inferred, err := inferrer.inferFromConditions([]string{tt.condition})
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected, inferred)
+		})
+	}
+}
+
+func Test_NewPriorityContextInferrer_Infer(t *testing.T) {
+	tests := []struct {
+		name       string
+		candidates map[string]*priorityContextInferrerCandidate
+		statements []string
+		conditions []string
+		expected   string
+	}{
+		{
+			name: "with statements",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			expected:   "resource",
+		},
+		{
+			name: "with conditions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			conditions: []string{
+				`IsMatch(metric.name, "^bar.*")`,
+				`IsMatch(metric.name, "^foo.*")`,
+			},
+			expected: "metric",
+		},
+		{
+			name: "with statements and conditions",
+			candidates: map[string]*priorityContextInferrerCandidate{
+				"metric":   defaultDummyPriorityContextInferrerCandidate,
+				"resource": defaultDummyPriorityContextInferrerCandidate,
+			},
+			statements: []string{`set(resource.attributes["foo"], "bar")`},
+			conditions: []string{
+				`IsMatch(metric.name, "^bar.*")`,
+				`IsMatch(metric.name, "^foo.*")`,
+			},
+			expected: "metric",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			inferrer := newPriorityContextInferrer(
+				componenttest.NewNopTelemetrySettings(),
+				tt.candidates,
+			)
+			inferredContext, err := inferrer.infer(tt.statements, tt.conditions)
+			require.NoError(t, err)
+			assert.Equal(t, tt.expected, inferredContext)
 		})
 	}
 }

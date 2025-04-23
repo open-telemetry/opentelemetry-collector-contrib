@@ -31,7 +31,9 @@ The following settings are available:
 
 - `endpoint` (default = localhost:13133): Address to publish the health check status. You can review the [full list of `ServerConfig`](https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confighttp). See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 - `path` (default = "/"): Specifies the path to be configured for the health check server.
-- `response_body` (default = ""): Specifies a static body that overrides the default response returned by the health check service. 
+- `response_body` (default = `{}`): Specifies a static body that overrides the default response returned by the health check service.
+  - `response_body::healthy`: Specifies the body returned when service is healthy.
+  - `response_body::unhealthy`: Specifies the body returned when service is unhealthy.
 
 Example:
 
@@ -45,6 +47,9 @@ extensions:
       cert_file: "/path/to/cert.crt"
       key_file: "/path/to/key.key"
     path: "/health/status"
+    response_body:
+      healthy: I'm good
+      unhealthy: I'm bad!
 ```
 
 The full list of settings exposed for this exporter is documented in [config.go](./config.go)

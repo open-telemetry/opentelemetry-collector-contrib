@@ -1,0 +1,221 @@
+resourceSpans:
+  - resource:
+      attributes:
+        - key: service.name
+          value:
+            stringValue: otel-collector
+        - key: vcs.repository.name
+          value:
+            stringValue: open-telemetry-otel-collector
+        - key: vcs.vendor.name
+          value:
+            stringValue: github
+        - key: vcs.ref.head
+          value:
+            stringValue: renovate/major-tool-deps
+        - key: vcs.ref.head.type
+          value:
+            stringValue: branch
+        - key: vcs.ref.head.revision
+          value:
+            stringValue: 6077d805b0fc49f65e6dbaefc2d1fc9b4f92aa4e
+        - key: cicd.pipeline.worker.id
+          value:
+            intValue: "346"
+        - key: cicd.pipeline.worker.group.id
+          value:
+            intValue: "2"
+        - key: cicd.pipeline.worker.name
+          value:
+            stringValue: GitHub Actions 320
+        - key: cicd.pipeline.worker.group.name
+          value:
+            stringValue: GitHub Actions
+        - key: cicd.pipeline.worker.node.id
+          value:
+            stringValue: CR_kwDOJKXdfM8AAAAJeQ3FOg
+        - key: cicd.pipeline.worker.labels
+          value:
+            arrayValue:
+              values:
+                - stringValue: ubuntu-latest
+        - key: cicd.pipeline.name
+          value:
+            stringValue: test (1.23)
+        - key: cicd.pipeline.task.run.sender.login
+          value:
+            stringValue: renovate[bot]
+        - key: cicd.pipeline.task.run.url.full
+          value:
+            stringValue: https://github.com/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260/job/40685651258
+        - key: cicd.pipeline.task.run.id
+          value:
+            intValue: "40685651258"
+        - key: cicd.pipeline.run.task.status
+          value:
+            stringValue: success
+    scopeSpans:
+      - scope: {}
+        spans:
+          - endTimeUnixNano: "1744837823000000000"
+            kind: 2
+            name: test (1.23)
+            parentSpanId: aba151af7cfbcf0f
+            spanId: e68a36b3514c8634
+            startTimeUnixNano: "1744837742000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Set up job
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837744000000000"
+            kind: 2
+            name: Set up job
+            parentSpanId: e68a36b3514c8634
+            spanId: 103b52e85d34ae1c
+            startTimeUnixNano: "1744837742000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Run actions/checkout@v4
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837745000000000"
+            kind: 2
+            name: Run actions/checkout@v4
+            parentSpanId: e68a36b3514c8634
+            spanId: b0a2cdd89199b9a5
+            startTimeUnixNano: "1744837744000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Set up Go
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837745000000000"
+            kind: 2
+            name: Set up Go
+            parentSpanId: e68a36b3514c8634
+            spanId: c04460ffd6bf3917
+            startTimeUnixNano: "1744837745000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Make test-all
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837820000000000"
+            kind: 2
+            name: Make test-all
+            parentSpanId: e68a36b3514c8634
+            spanId: 1684627ec86a096c
+            startTimeUnixNano: "1744837746000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Upload coverage to Codecov
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837823000000000"
+            kind: 2
+            name: Upload coverage to Codecov
+            parentSpanId: e68a36b3514c8634
+            spanId: 25aeeca484f9f7e5
+            startTimeUnixNano: "1744837820000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Post Set up Go
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837823000000000"
+            kind: 2
+            name: Post Set up Go
+            parentSpanId: e68a36b3514c8634
+            spanId: 0715a13bb338e46e
+            startTimeUnixNano: "1744837823000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Post Run actions/checkout@v4
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837825000000000"
+            kind: 2
+            name: Post Run actions/checkout@v4
+            parentSpanId: e68a36b3514c8634
+            spanId: e231dce10420723b
+            startTimeUnixNano: "1744837825000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0
+      - scope: {}
+        spans:
+          - attributes:
+              - key: cicd.pipeline.task.name
+                value:
+                  stringValue: Complete job
+              - key: cicd.pipeline.run.task.status
+                value:
+                  stringValue: success
+            endTimeUnixNano: "1744837823000000000"
+            kind: 2
+            name: Complete job
+            parentSpanId: e68a36b3514c8634
+            spanId: bb94c07ba3717632
+            startTimeUnixNano: "1744837823000000000"
+            status:
+              code: 1
+              message: success
+            traceId: 731ec8a47fd7450f753a812a4a8aa5a0

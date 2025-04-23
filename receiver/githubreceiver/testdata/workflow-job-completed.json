@@ -1,0 +1,178 @@
+{
+  "action": "completed",
+  "workflow_job": {
+    "id": 40685651258,
+    "run_id": 14460881260,
+    "workflow_name": "build-and-test",
+    "head_branch": "renovate/major-tool-deps",
+    "run_url": "https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260",
+    "run_attempt": 13,
+    "node_id": "CR_kwDOJKXdfM8AAAAJeQ3FOg",
+    "head_sha": "6077d805b0fc49f65e6dbaefc2d1fc9b4f92aa4e",
+    "url": "https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector/actions/jobs/40685651258",
+    "html_url": "https://github.com/open-telemetry/open-telemetry-otel-collector/actions/runs/14460881260/job/40685651258",
+    "status": "completed",
+    "conclusion": "success",
+    "created_at": "2025-04-16T21:08:58Z",
+    "started_at": "2025-04-16T21:09:03Z",
+    "completed_at": "2025-04-16T21:10:25Z",
+    "name": "test (1.23)",
+    "steps": [
+      {
+        "name": "Set up job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 1,
+        "started_at": "2025-04-16T21:09:02Z",
+        "completed_at": "2025-04-16T21:09:04Z"
+      },
+      {
+        "name": "Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 2,
+        "started_at": "2025-04-16T21:09:04Z",
+        "completed_at": "2025-04-16T21:09:05Z"
+      },
+      {
+        "name": "Set up Go",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 3,
+        "started_at": "2025-04-16T21:09:05Z",
+        "completed_at": "2025-04-16T21:09:05Z"
+      },
+      {
+        "name": "Make test-all",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 4,
+        "started_at": "2025-04-16T21:09:06Z",
+        "completed_at": "2025-04-16T21:10:20Z"
+      },
+      {
+        "name": "Upload coverage to Codecov",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 5,
+        "started_at": "2025-04-16T21:10:20Z",
+        "completed_at": "2025-04-16T21:10:23Z"
+      },
+      {
+        "name": "Post Set up Go",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 9,
+        "started_at": "2025-04-16T21:10:23Z",
+        "completed_at": "2025-04-16T21:10:23Z"
+      },
+      {
+        "name": "Post Run actions/checkout@v4",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 10,
+        "started_at": "2025-04-16T21:10:25Z",
+        "completed_at": "2025-04-16T21:10:25Z"
+      },
+      {
+        "name": "Complete job",
+        "status": "completed",
+        "conclusion": "success",
+        "number": 11,
+        "started_at": "2025-04-16T21:10:23Z",
+        "completed_at": "2025-04-16T21:10:23Z"
+      }
+    ],
+    "check_run_url": "https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector/check-runs/40685651258",
+    "labels": [
+      "ubuntu-latest"
+    ],
+    "runner_id": 346,
+    "runner_name": "GitHub Actions 320",
+    "runner_group_id": 2,
+    "runner_group_name": "GitHub Actions"
+  },
+  "repository": {
+    "id": 614849916,
+    "node_id": "R_kgDOJKXdfA",
+    "name": "open-telemetry-otel-collector",
+    "full_name": "open-telemetry/open-telemetry-otel-collector",
+    "private": false,
+    "owner": {
+      "login": "open-telemetry",
+      "id": 5726618,
+      "node_id": "MDEyOk9yZ2FuaXphdGlvbjU3MjY2MTg=",
+      "url": "https://api.github.com/users/open-telemetry",
+      "html_url": "https://github.com/open-telemetry",
+      "site_admin": false
+    },
+    "html_url": "https://github.com/open-telemetry/open-telemetry-otel-collector",
+    "description": "The open-telemetry distribution of the OpenTelemetry Collector",
+    "fork": false,
+    "url": "https://api.github.com/repos/open-telemetry/open-telemetry-otel-collector",
+    "created_at": "2023-03-16T12:57:24Z",
+    "updated_at": "2025-04-15T09:53:13Z",
+    "pushed_at": "2025-04-15T21:09:34Z",
+    "git_url": "git://github.com/open-telemetry/open-telemetry-otel-collector.git",
+    "ssh_url": "git@github.com:open-telemetry/open-telemetry-otel-collector.git",
+    "clone_url": "https://github.com/open-telemetry/open-telemetry-otel-collector.git",
+    "svn_url": "https://github.com/open-telemetry/open-telemetry-otel-collector",
+    "size": 3386,
+    "stargazers_count": 42,
+    "watchers_count": 42,
+    "language": "Go",
+    "has_issues": true,
+    "has_projects": true,
+    "has_downloads": true,
+    "has_wiki": true,
+    "has_pages": false,
+    "has_discussions": false,
+    "forks_count": 7,
+    "mirror_url": null,
+    "archived": false,
+    "disabled": false,
+    "open_issues_count": 13,
+    "license": {
+      "key": "apache-2.0",
+      "name": "Apache License 2.0",
+      "spdx_id": "Apache-2.0",
+      "url": "https://api.github.com/licenses/apache-2.0",
+      "node_id": "MDc6TGljZW5zZTI="
+    },
+    "allow_forking": true,
+    "is_template": false,
+    "web_commit_signoff_required": true,
+    "topics": [
+      "backstage"
+    ],
+    "visibility": "public",
+    "forks": 7,
+    "open_issues": 13,
+    "watchers": 42,
+    "default_branch": "main",
+    "custom_properties": {
+      "service_name": "otel-collector",
+      "team_name": "open-telemetry"
+    }
+  },
+  "organization": {
+    "login": "open-telemetry",
+    "id": 5726618,
+    "node_id": "MDEyOk9yZ2FuaXphdGlvbjU3MjY2MTg=",
+    "url": "https://api.github.com/orgs/open-telemetry"
+  },
+  "sender": {
+    "login": "renovate[bot]",
+    "id": 29139614,
+    "node_id": "MDM6Qm90MjkxMzk2MTQ=",
+    "avatar_url": "https://avatars.githubusercontent.com/in/2740?v=4",
+    "gravatar_id": "",
+    "url": "https://api.github.com/users/renovate%5Bbot%5D",
+    "html_url": "https://github.com/apps/renovate",
+    "site_admin": false
+  },
+  "installation": {
+    "id": 46591444,
+    "node_id": "MDIzOkludGVncmF0aW9uSW5zdGFsbGF0aW9uNDY1OTE0NDQ="
+  }
+}

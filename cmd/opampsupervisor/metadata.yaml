@@ -2,5 +2,7 @@ type: opampsupervisor
 
 status:
   class: cmd
+  stability:
+    alpha: [metrics]
   codeowners:
     active: [evan-bradley, atoulme, tigrannajaryan]

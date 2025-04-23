@@ -3,10 +3,11 @@ type: postgresql
 status:
   class: receiver
   stability:
-    unmaintained: [metrics]
+    beta: [metrics]
     development: [logs]
   distributions: [contrib]
   codeowners:
+    active: [antonblock]
     seeking_new: true
     emeritus: [djaglowski]
 

@@ -200,7 +200,7 @@ func (gtr *githubTracesReceiver) createParentSpan(
 		span.SetEndTimestamp(pcommon.NewTimestampFromTime(steps[len(steps)-1].GetCompletedAt().Time))
 	} else {
 		span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time))
-		span.SetStartTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time))
+		span.SetEndTimestamp(pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCompletedAt().Time))
 	}
 
 	switch strings.ToLower(event.WorkflowJob.GetConclusion()) {

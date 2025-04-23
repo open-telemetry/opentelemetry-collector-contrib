@@ -31,6 +31,15 @@ func TestNew_VPCFlowLog(t *testing.T) {
 	require.ErrorContains(t, err, `failed to unmarshal logs as "vpc_flow_log" format`)
 }
 
+func TestNew_S3AccessLog(t *testing.T) {
+	e, err := newExtension(&Config{Format: formatS3AccessLog}, extensiontest.NewNopSettings(extensiontest.NopType))
+	require.NoError(t, err)
+	require.NotNil(t, e)
+
+	_, err = e.UnmarshalLogs([]byte("invalid"))
+	require.ErrorContains(t, err, `failed to unmarshal logs as "s3_access_log" format`)
+}
+
 func TestNew_Unimplemented(t *testing.T) {
 	e, err := newExtension(&Config{Format: "invalid"}, extensiontest.NewNopSettings(extensiontest.NopType))
 	require.Error(t, err)
