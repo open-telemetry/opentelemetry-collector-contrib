@@ -148,12 +148,12 @@ func generateComponentID(moduleName string, cli Args) (string, error) {
 func walkTree(cli Args) (*CodecovConfig, error) {
 	config := &CodecovConfig{}
 
-	err := filepath.Walk(cli.Dir, func(path string, info fs.FileInfo, err error) error {
+	err := filepath.WalkDir(cli.Dir, func(path string, entry fs.DirEntry, err error) error {
 		if err != nil {
 			return err
 		}
 
-		if info.IsDir() && path != cli.Dir {
+		if entry.IsDir() && path != cli.Dir {
 			goModPath := filepath.Join(path, "go.mod")
 			if _, err := os.Stat(goModPath); os.IsNotExist(err) {
 				return nil
