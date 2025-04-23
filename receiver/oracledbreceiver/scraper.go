@@ -568,7 +568,6 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 			s.logger.Error(fmt.Sprintf("oracleScraper failed getting metric row: %s", err))
 		} else {
 			record.Attributes().PutStr(strings.ToLower("db.query.text"), obfuscatedSQL)
-			record.Attributes().PutStr(strings.ToLower("db.query.text"), obfuscatedSQL)
 		}
 
 		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+osUser), row[osUser])
@@ -579,7 +578,6 @@ func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for Duration, value was %s: %w", row[duration], err))
 
 		}
-		record.Attributes().PutInt(dbPrefix+queryPrefix+"duration", i)
 		record.Attributes().PutInt(dbPrefix+queryPrefix+"duration", i)
 	}
 
