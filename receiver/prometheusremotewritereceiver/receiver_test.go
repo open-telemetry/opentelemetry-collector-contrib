@@ -20,7 +20,6 @@ import (
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"github.com/prometheus/prometheus/storage/remote"
 	"github.com/stretchr/testify/assert"
-	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -622,40 +621,26 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			factory := NewFactory()
-			cfg := factory.CreateDefaultConfig()
-			cfg.(*Config).Endpoint = "localhost:9090"
-
 			mockConsumer := new(MockConsumer)
-			prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, mockConsumer)
-			assert.NoError(t, err)
-			assert.NotNil(t, prwReceiver)
+			prwReceiver := setupMetricsReceiver(t)
+			prwReceiver.nextConsumer = mockConsumer
 
-			host := componenttest.NewNopHost()
-			err = prwReceiver.Start(context.Background(), host)
-			assert.NoError(t, err)
-			defer func() {
-				assert.NoError(t, prwReceiver.Shutdown(context.Background()))
-			}()
+			ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
+			defer ts.Close()
 
-			client := &http.Client{}
 			for _, req := range tt.requests {
 				pBuf := proto.NewBuffer(nil)
+				// we don't need to compress the body to use the snappy compression in the unit test
+				// because the encoder is just initialized when we initialize the http server.
+				// so we can just use the uncompressed body.
 				err := pBuf.Marshal(req)
 				assert.NoError(t, err)
-				compressedBody := snappy.Encode(nil, pBuf.Bytes())
 
-				httpReq, err := http.NewRequest(
-					http.MethodPost,
-					"http://0.0.0.0:9090/api/v1/write",
-					bytes.NewBuffer(compressedBody),
+				resp, err := http.Post(
+					ts.URL,
+					fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2),
+					bytes.NewBuffer(pBuf.Bytes()),
 				)
-				assert.NoError(t, err)
-
-				httpReq.Header.Set("Content-Type", fmt.Sprintf("application/x-protobuf;proto=%s", promconfig.RemoteWriteProtoMsgV2))
-				httpReq.Header.Set("Content-Encoding", "snappy")
-
-				resp, err := client.Do(httpReq)
 				assert.NoError(t, err)
 				defer resp.Body.Close()
 
