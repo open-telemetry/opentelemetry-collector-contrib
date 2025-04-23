@@ -690,9 +690,7 @@ jobs:
           result-encoding: 'string'
           script: |
             const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
-            const text = await script(github, '${{ steps.github_tag.outputs.tag }}', '${{ steps.github_tag.outputs.previous_tag }}')
-            console.log(text)
-            return text
+            return await script(github, '${{ steps.github_tag.outputs.tag }}', '${{ steps.github_tag.outputs.previous_tag }}')
 
       - name: Prepare full release notes
         run: |
