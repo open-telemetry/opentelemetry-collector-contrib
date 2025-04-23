@@ -51,15 +51,13 @@ The following settings are optional:
   - `time_limit` - maximum time from since the statements have been observed last time (default=`24h`)
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 
-- `query_metrics_as_logs` (default = true): Some query metrics are emitted along with the full query text as logs. As described above with statement_events, there is a limit to teh length of attribute values in Metrics, but that limit does not apply to Logs. If this is enabled, the metric values are emitted as Log attribute values. Note that because of this, other Metric datapoint data, such as attributes, will not be communicated.
-  - if false, the same metrics will be reported as regular metrics and the query digest added as an attribute.
-  - metrics that can be emitted as logs are:
-    - mysql.query.time.lock
-    - mysql.query.time.cpu
-    - mysql.query.rows.total
-    - mysql.query.rows.returned
-    - mysql.query.time.total
-    - mysql.query.calls
+- metrics that will be emitted as both metrics and logs with query qnd plan text are:
+  - mysql.query.time.lock
+  - mysql.query.time.cpu
+  - mysql.query.rows.total
+  - mysql.query.rows.returned
+  - mysql.query.time.total
+  - mysql.query.calls
 - `top_query_metrics_max: (default = 200): The maximum number of top queries to be collected. The receiver will collect the top queries based on the `mysql.statement_events.count` metric. The value must be a positive integer. If set to 0, no top queries will be collected.
 ### Example Configuration
 
