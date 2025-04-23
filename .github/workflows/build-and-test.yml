@@ -694,7 +694,7 @@ jobs:
 
       - name: Prepare full release notes
         run: |
-          echo "" >> release-notes.md
+          echo "" >> ${{ env.RELEASE_NOTES }}
           echo "${{ steps.new-contributor-text.outputs.result }}" >> ${{ env.RELEASE_NOTES }}
 
       - name: Create Github Release
