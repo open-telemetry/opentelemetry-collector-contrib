@@ -1018,200 +1018,6 @@ var MapAttributeWriteLockType = map[string]AttributeWriteLockType{
 	"external":          AttributeWriteLockTypeExternal,
 }
 
-var MetricsInfo = metricsInfo{
-	MysqlBufferPoolDataPages: metricInfo{
-		Name: "mysql.buffer_pool.data_pages",
-	},
-	MysqlBufferPoolLimit: metricInfo{
-		Name: "mysql.buffer_pool.limit",
-	},
-	MysqlBufferPoolOperations: metricInfo{
-		Name: "mysql.buffer_pool.operations",
-	},
-	MysqlBufferPoolPageFlushes: metricInfo{
-		Name: "mysql.buffer_pool.page_flushes",
-	},
-	MysqlBufferPoolPages: metricInfo{
-		Name: "mysql.buffer_pool.pages",
-	},
-	MysqlBufferPoolUsage: metricInfo{
-		Name: "mysql.buffer_pool.usage",
-	},
-	MysqlClientNetworkIo: metricInfo{
-		Name: "mysql.client.network.io",
-	},
-	MysqlCommands: metricInfo{
-		Name: "mysql.commands",
-	},
-	MysqlConnectionCount: metricInfo{
-		Name: "mysql.connection.count",
-	},
-	MysqlConnectionErrors: metricInfo{
-		Name: "mysql.connection.errors",
-	},
-	MysqlDoubleWrites: metricInfo{
-		Name: "mysql.double_writes",
-	},
-	MysqlHandlers: metricInfo{
-		Name: "mysql.handlers",
-	},
-	MysqlIndexIoWaitCount: metricInfo{
-		Name: "mysql.index.io.wait.count",
-	},
-	MysqlIndexIoWaitTime: metricInfo{
-		Name: "mysql.index.io.wait.time",
-	},
-	MysqlJoins: metricInfo{
-		Name: "mysql.joins",
-	},
-	MysqlLocks: metricInfo{
-		Name: "mysql.locks",
-	},
-	MysqlLogOperations: metricInfo{
-		Name: "mysql.log_operations",
-	},
-	MysqlMysqlxConnections: metricInfo{
-		Name: "mysql.mysqlx_connections",
-	},
-	MysqlMysqlxWorkerThreads: metricInfo{
-		Name: "mysql.mysqlx_worker_threads",
-	},
-	MysqlOpenedResources: metricInfo{
-		Name: "mysql.opened_resources",
-	},
-	MysqlOperations: metricInfo{
-		Name: "mysql.operations",
-	},
-	MysqlPageOperations: metricInfo{
-		Name: "mysql.page_operations",
-	},
-	MysqlPreparedStatements: metricInfo{
-		Name: "mysql.prepared_statements",
-	},
-	MysqlQueryClientCount: metricInfo{
-		Name: "mysql.query.client.count",
-	},
-	MysqlQueryCount: metricInfo{
-		Name: "mysql.query.count",
-	},
-	MysqlQuerySlowCount: metricInfo{
-		Name: "mysql.query.slow.count",
-	},
-	MysqlReplicaSQLDelay: metricInfo{
-		Name: "mysql.replica.sql_delay",
-	},
-	MysqlReplicaTimeBehindSource: metricInfo{
-		Name: "mysql.replica.time_behind_source",
-	},
-	MysqlRowLocks: metricInfo{
-		Name: "mysql.row_locks",
-	},
-	MysqlRowOperations: metricInfo{
-		Name: "mysql.row_operations",
-	},
-	MysqlSorts: metricInfo{
-		Name: "mysql.sorts",
-	},
-	MysqlStatementEventCount: metricInfo{
-		Name: "mysql.statement_event.count",
-	},
-	MysqlStatementEventWaitTime: metricInfo{
-		Name: "mysql.statement_event.wait.time",
-	},
-	MysqlTableAverageRowLength: metricInfo{
-		Name: "mysql.table.average_row_length",
-	},
-	MysqlTableIoWaitCount: metricInfo{
-		Name: "mysql.table.io.wait.count",
-	},
-	MysqlTableIoWaitTime: metricInfo{
-		Name: "mysql.table.io.wait.time",
-	},
-	MysqlTableLockWaitReadCount: metricInfo{
-		Name: "mysql.table.lock_wait.read.count",
-	},
-	MysqlTableLockWaitReadTime: metricInfo{
-		Name: "mysql.table.lock_wait.read.time",
-	},
-	MysqlTableLockWaitWriteCount: metricInfo{
-		Name: "mysql.table.lock_wait.write.count",
-	},
-	MysqlTableLockWaitWriteTime: metricInfo{
-		Name: "mysql.table.lock_wait.write.time",
-	},
-	MysqlTableRows: metricInfo{
-		Name: "mysql.table.rows",
-	},
-	MysqlTableSize: metricInfo{
-		Name: "mysql.table.size",
-	},
-	MysqlTableOpenCache: metricInfo{
-		Name: "mysql.table_open_cache",
-	},
-	MysqlThreads: metricInfo{
-		Name: "mysql.threads",
-	},
-	MysqlTmpResources: metricInfo{
-		Name: "mysql.tmp_resources",
-	},
-	MysqlUptime: metricInfo{
-		Name: "mysql.uptime",
-	},
-}
-
-type metricsInfo struct {
-	MysqlBufferPoolDataPages     metricInfo
-	MysqlBufferPoolLimit         metricInfo
-	MysqlBufferPoolOperations    metricInfo
-	MysqlBufferPoolPageFlushes   metricInfo
-	MysqlBufferPoolPages         metricInfo
-	MysqlBufferPoolUsage         metricInfo
-	MysqlClientNetworkIo         metricInfo
-	MysqlCommands                metricInfo
-	MysqlConnectionCount         metricInfo
-	MysqlConnectionErrors        metricInfo
-	MysqlDoubleWrites            metricInfo
-	MysqlHandlers                metricInfo
-	MysqlIndexIoWaitCount        metricInfo
-	MysqlIndexIoWaitTime         metricInfo
-	MysqlJoins                   metricInfo
-	MysqlLocks                   metricInfo
-	MysqlLogOperations           metricInfo
-	MysqlMysqlxConnections       metricInfo
-	MysqlMysqlxWorkerThreads     metricInfo
-	MysqlOpenedResources         metricInfo
-	MysqlOperations              metricInfo
-	MysqlPageOperations          metricInfo
-	MysqlPreparedStatements      metricInfo
-	MysqlQueryClientCount        metricInfo
-	MysqlQueryCount              metricInfo
-	MysqlQuerySlowCount          metricInfo
-	MysqlReplicaSQLDelay         metricInfo
-	MysqlReplicaTimeBehindSource metricInfo
-	MysqlRowLocks                metricInfo
-	MysqlRowOperations           metricInfo
-	MysqlSorts                   metricInfo
-	MysqlStatementEventCount     metricInfo
-	MysqlStatementEventWaitTime  metricInfo
-	MysqlTableAverageRowLength   metricInfo
-	MysqlTableIoWaitCount        metricInfo
-	MysqlTableIoWaitTime         metricInfo
-	MysqlTableLockWaitReadCount  metricInfo
-	MysqlTableLockWaitReadTime   metricInfo
-	MysqlTableLockWaitWriteCount metricInfo
-	MysqlTableLockWaitWriteTime  metricInfo
-	MysqlTableRows               metricInfo
-	MysqlTableSize               metricInfo
-	MysqlTableOpenCache          metricInfo
-	MysqlThreads                 metricInfo
-	MysqlTmpResources            metricInfo
-	MysqlUptime                  metricInfo
-}
-
-type metricInfo struct {
-	Name string
-}
-
 type metricMysqlBufferPoolDataPages struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2431,6 +2237,59 @@ func newMetricMysqlPreparedStatements(cfg MetricConfig) metricMysqlPreparedState
 	return m
 }
 
+type metricMysqlQueryCalls struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.calls metric with initial data.
+func (m *metricMysqlQueryCalls) init() {
+	m.data.SetName("mysql.query.calls")
+	m.data.SetDescription("The total number of times the query was executed.")
+	m.data.SetUnit("count")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryCalls) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryCalls) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryCalls) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryCalls(cfg MetricConfig) metricMysqlQueryCalls {
+	m := metricMysqlQueryCalls{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlQueryClientCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2533,6 +2392,112 @@ func newMetricMysqlQueryCount(cfg MetricConfig) metricMysqlQueryCount {
 	return m
 }
 
+type metricMysqlQueryRowsReturned struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.rows.returned metric with initial data.
+func (m *metricMysqlQueryRowsReturned) init() {
+	m.data.SetName("mysql.query.rows.returned")
+	m.data.SetDescription("The total number of rows returned by the query.")
+	m.data.SetUnit("count")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryRowsReturned) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryRowsReturned) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryRowsReturned) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryRowsReturned(cfg MetricConfig) metricMysqlQueryRowsReturned {
+	m := metricMysqlQueryRowsReturned{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQueryRowsTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.rows.total metric with initial data.
+func (m *metricMysqlQueryRowsTotal) init() {
+	m.data.SetName("mysql.query.rows.total")
+	m.data.SetDescription("The total number of rows examined by the query.")
+	m.data.SetUnit("count")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryRowsTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetIntValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryRowsTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryRowsTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryRowsTotal(cfg MetricConfig) metricMysqlQueryRowsTotal {
+	m := metricMysqlQueryRowsTotal{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
 type metricMysqlQuerySlowCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -2577,6 +2542,165 @@ func (m *metricMysqlQuerySlowCount) emit(metrics pmetric.MetricSlice) {
 
 func newMetricMysqlQuerySlowCount(cfg MetricConfig) metricMysqlQuerySlowCount {
 	m := metricMysqlQuerySlowCount{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQueryTimeCPU struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.time.cpu metric with initial data.
+func (m *metricMysqlQueryTimeCPU) init() {
+	m.data.SetName("mysql.query.time.cpu")
+	m.data.SetDescription("The total CPU time for the query.")
+	m.data.SetUnit("seconds")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryTimeCPU) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryTimeCPU) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryTimeCPU) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryTimeCPU(cfg MetricConfig) metricMysqlQueryTimeCPU {
+	m := metricMysqlQueryTimeCPU{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQueryTimeLock struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.time.lock metric with initial data.
+func (m *metricMysqlQueryTimeLock) init() {
+	m.data.SetName("mysql.query.time.lock")
+	m.data.SetDescription("The total lock time for the query.")
+	m.data.SetUnit("seconds")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryTimeLock) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryTimeLock) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryTimeLock) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryTimeLock(cfg MetricConfig) metricMysqlQueryTimeLock {
+	m := metricMysqlQueryTimeLock{config: cfg}
+	if cfg.Enabled {
+		m.data = pmetric.NewMetric()
+		m.init()
+	}
+	return m
+}
+
+type metricMysqlQueryTimeTotal struct {
+	data     pmetric.Metric // data buffer for generated metric.
+	config   MetricConfig   // metric config provided by user.
+	capacity int            // max observed number of data points added to the metric.
+}
+
+// init fills mysql.query.time.total metric with initial data.
+func (m *metricMysqlQueryTimeTotal) init() {
+	m.data.SetName("mysql.query.time.total")
+	m.data.SetDescription("The total duration of the query.")
+	m.data.SetUnit("seconds")
+	m.data.SetEmptySum()
+	m.data.Sum().SetIsMonotonic(false)
+	m.data.Sum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
+	m.data.Sum().DataPoints().EnsureCapacity(m.capacity)
+}
+
+func (m *metricMysqlQueryTimeTotal) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	if !m.config.Enabled {
+		return
+	}
+	dp := m.data.Sum().DataPoints().AppendEmpty()
+	dp.SetStartTimestamp(start)
+	dp.SetTimestamp(ts)
+	dp.SetDoubleValue(val)
+	dp.Attributes().PutStr("schema", schemaAttributeValue)
+}
+
+// updateCapacity saves max length of data point slices that will be used for the slice capacity.
+func (m *metricMysqlQueryTimeTotal) updateCapacity() {
+	if m.data.Sum().DataPoints().Len() > m.capacity {
+		m.capacity = m.data.Sum().DataPoints().Len()
+	}
+}
+
+// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
+func (m *metricMysqlQueryTimeTotal) emit(metrics pmetric.MetricSlice) {
+	if m.config.Enabled && m.data.Sum().DataPoints().Len() > 0 {
+		m.updateCapacity()
+		m.data.MoveTo(metrics.AppendEmpty())
+		m.init()
+	}
+}
+
+func newMetricMysqlQueryTimeTotal(cfg MetricConfig) metricMysqlQueryTimeTotal {
+	m := metricMysqlQueryTimeTotal{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -3692,9 +3816,15 @@ type MetricsBuilder struct {
 	metricMysqlOperations              metricMysqlOperations
 	metricMysqlPageOperations          metricMysqlPageOperations
 	metricMysqlPreparedStatements      metricMysqlPreparedStatements
+	metricMysqlQueryCalls              metricMysqlQueryCalls
 	metricMysqlQueryClientCount        metricMysqlQueryClientCount
 	metricMysqlQueryCount              metricMysqlQueryCount
+	metricMysqlQueryRowsReturned       metricMysqlQueryRowsReturned
+	metricMysqlQueryRowsTotal          metricMysqlQueryRowsTotal
 	metricMysqlQuerySlowCount          metricMysqlQuerySlowCount
+	metricMysqlQueryTimeCPU            metricMysqlQueryTimeCPU
+	metricMysqlQueryTimeLock           metricMysqlQueryTimeLock
+	metricMysqlQueryTimeTotal          metricMysqlQueryTimeTotal
 	metricMysqlReplicaSQLDelay         metricMysqlReplicaSQLDelay
 	metricMysqlReplicaTimeBehindSource metricMysqlReplicaTimeBehindSource
 	metricMysqlRowLocks                metricMysqlRowLocks
@@ -3763,9 +3893,15 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricMysqlOperations:              newMetricMysqlOperations(mbc.Metrics.MysqlOperations),
 		metricMysqlPageOperations:          newMetricMysqlPageOperations(mbc.Metrics.MysqlPageOperations),
 		metricMysqlPreparedStatements:      newMetricMysqlPreparedStatements(mbc.Metrics.MysqlPreparedStatements),
+		metricMysqlQueryCalls:              newMetricMysqlQueryCalls(mbc.Metrics.MysqlQueryCalls),
 		metricMysqlQueryClientCount:        newMetricMysqlQueryClientCount(mbc.Metrics.MysqlQueryClientCount),
 		metricMysqlQueryCount:              newMetricMysqlQueryCount(mbc.Metrics.MysqlQueryCount),
+		metricMysqlQueryRowsReturned:       newMetricMysqlQueryRowsReturned(mbc.Metrics.MysqlQueryRowsReturned),
+		metricMysqlQueryRowsTotal:          newMetricMysqlQueryRowsTotal(mbc.Metrics.MysqlQueryRowsTotal),
 		metricMysqlQuerySlowCount:          newMetricMysqlQuerySlowCount(mbc.Metrics.MysqlQuerySlowCount),
+		metricMysqlQueryTimeCPU:            newMetricMysqlQueryTimeCPU(mbc.Metrics.MysqlQueryTimeCPU),
+		metricMysqlQueryTimeLock:           newMetricMysqlQueryTimeLock(mbc.Metrics.MysqlQueryTimeLock),
+		metricMysqlQueryTimeTotal:          newMetricMysqlQueryTimeTotal(mbc.Metrics.MysqlQueryTimeTotal),
 		metricMysqlReplicaSQLDelay:         newMetricMysqlReplicaSQLDelay(mbc.Metrics.MysqlReplicaSQLDelay),
 		metricMysqlReplicaTimeBehindSource: newMetricMysqlReplicaTimeBehindSource(mbc.Metrics.MysqlReplicaTimeBehindSource),
 		metricMysqlRowLocks:                newMetricMysqlRowLocks(mbc.Metrics.MysqlRowLocks),
@@ -3887,9 +4023,15 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricMysqlOperations.emit(ils.Metrics())
 	mb.metricMysqlPageOperations.emit(ils.Metrics())
 	mb.metricMysqlPreparedStatements.emit(ils.Metrics())
+	mb.metricMysqlQueryCalls.emit(ils.Metrics())
 	mb.metricMysqlQueryClientCount.emit(ils.Metrics())
 	mb.metricMysqlQueryCount.emit(ils.Metrics())
+	mb.metricMysqlQueryRowsReturned.emit(ils.Metrics())
+	mb.metricMysqlQueryRowsTotal.emit(ils.Metrics())
 	mb.metricMysqlQuerySlowCount.emit(ils.Metrics())
+	mb.metricMysqlQueryTimeCPU.emit(ils.Metrics())
+	mb.metricMysqlQueryTimeLock.emit(ils.Metrics())
+	mb.metricMysqlQueryTimeTotal.emit(ils.Metrics())
 	mb.metricMysqlReplicaSQLDelay.emit(ils.Metrics())
 	mb.metricMysqlReplicaTimeBehindSource.emit(ils.Metrics())
 	mb.metricMysqlRowLocks.emit(ils.Metrics())
@@ -4151,6 +4293,11 @@ func (mb *MetricsBuilder) RecordMysqlPreparedStatementsDataPoint(ts pcommon.Time
 	return nil
 }
 
+// RecordMysqlQueryCallsDataPoint adds a data point to mysql.query.calls metric.
+func (mb *MetricsBuilder) RecordMysqlQueryCallsDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	mb.metricMysqlQueryCalls.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+}
+
 // RecordMysqlQueryClientCountDataPoint adds a data point to mysql.query.client.count metric.
 func (mb *MetricsBuilder) RecordMysqlQueryClientCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -4171,6 +4318,16 @@ func (mb *MetricsBuilder) RecordMysqlQueryCountDataPoint(ts pcommon.Timestamp, i
 	return nil
 }
 
+// RecordMysqlQueryRowsReturnedDataPoint adds a data point to mysql.query.rows.returned metric.
+func (mb *MetricsBuilder) RecordMysqlQueryRowsReturnedDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	mb.metricMysqlQueryRowsReturned.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+}
+
+// RecordMysqlQueryRowsTotalDataPoint adds a data point to mysql.query.rows.total metric.
+func (mb *MetricsBuilder) RecordMysqlQueryRowsTotalDataPoint(ts pcommon.Timestamp, val int64, schemaAttributeValue string) {
+	mb.metricMysqlQueryRowsTotal.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+}
+
 // RecordMysqlQuerySlowCountDataPoint adds a data point to mysql.query.slow.count metric.
 func (mb *MetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestamp, inputVal string) error {
 	val, err := strconv.ParseInt(inputVal, 10, 64)
@@ -4179,6 +4336,21 @@ func (mb *MetricsBuilder) RecordMysqlQuerySlowCountDataPoint(ts pcommon.Timestam
 	}
 	mb.metricMysqlQuerySlowCount.recordDataPoint(mb.startTime, ts, val)
 	return nil
+}
+
+// RecordMysqlQueryTimeCPUDataPoint adds a data point to mysql.query.time.cpu metric.
+func (mb *MetricsBuilder) RecordMysqlQueryTimeCPUDataPoint(ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	mb.metricMysqlQueryTimeCPU.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+}
+
+// RecordMysqlQueryTimeLockDataPoint adds a data point to mysql.query.time.lock metric.
+func (mb *MetricsBuilder) RecordMysqlQueryTimeLockDataPoint(ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	mb.metricMysqlQueryTimeLock.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
+}
+
+// RecordMysqlQueryTimeTotalDataPoint adds a data point to mysql.query.time.total metric.
+func (mb *MetricsBuilder) RecordMysqlQueryTimeTotalDataPoint(ts pcommon.Timestamp, val float64, schemaAttributeValue string) {
+	mb.metricMysqlQueryTimeTotal.recordDataPoint(mb.startTime, ts, val, schemaAttributeValue)
 }
 
 // RecordMysqlReplicaSQLDelayDataPoint adds a data point to mysql.replica.sql_delay metric.

@@ -9,6 +9,7 @@ import (
 	"database/sql"
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"testing"
 
@@ -25,7 +26,7 @@ import (
 )
 
 func TestScrape(t *testing.T) {
-	t.Run("successful scrape", func(t *testing.T) {
+	t.Run("successful scrapeMetrics", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Username = "otel"
 		cfg.Password = "otel"
@@ -58,6 +59,13 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryCalls.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryRowsReturned.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryRowsTotal.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeCPU.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeLock.Enabled = true
+		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeTotal.Enabled = true
+
 		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",
@@ -68,22 +76,33 @@ func TestScrape(t *testing.T) {
 			statementEventsFile:         "statement_events",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
+			queryStatsFile:              "query_stats",
 		}
 
 		scraper.renameCommands = true
 
-		actualMetrics, err := scraper.scrape(context.Background())
+		actualMetrics, err := scraper.scrapeMetrics(context.Background())
 		require.NoError(t, err)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
 
-		require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
+		//expectedNames := make([]string, expectedMetrics.MetricCount())
+		//for _, nm := range expectedMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
+		//	expectedNames = append(expectedNames, nm.Name())
+		//}
+		//for _, nm := range actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
+		//	if !slices.Contains(expectedNames, nm.Name()) {
+		//		t.Errorf("Unexpected metric name: %s", nm.Name())
+		//	}
+		//}
+
+		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 	})
 
-	t.Run("scrape has partial failure", func(t *testing.T) {
+	t.Run("scrapeMetrics has partial failure", func(t *testing.T) {
 		cfg := createDefaultConfig().(*Config)
 		cfg.Username = "otel"
 		cfg.Password = "otel"
@@ -106,9 +125,10 @@ func TestScrape(t *testing.T) {
 			statementEventsFile:         "statement_events_empty",
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 			replicaStatusFile:           "replica_stats_empty",
+			queryStatsFile:              "query_stats_empty",
 		}
 
-		actualMetrics, scrapeErr := scraper.scrape(context.Background())
+		actualMetrics, scrapeErr := scraper.scrapeMetrics(context.Background())
 		require.Error(t, scrapeErr)
 
 		expectedFile := filepath.Join("testdata", "scraper", "expected_partial.yaml")
@@ -146,11 +166,12 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 		statementEventsFile:         "statement_events_empty",
 		tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 		replicaStatusFile:           "replica_stats_empty",
+		queryStatsFile:              "query_stats_empty",
 	}
 
 	scraper.renameCommands = true
 
-	actualMetrics, err := scraper.scrape(context.Background())
+	actualMetrics, err := scraper.scrapeMetrics(context.Background())
 	require.NoError(t, err)
 	require.NoError(t, pmetrictest.CompareMetrics(actualMetrics, expectedMetrics,
 		pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
@@ -167,6 +188,7 @@ type mockClient struct {
 	statementEventsFile         string
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
+	queryStatsFile              string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -439,6 +461,40 @@ func (c *mockClient) getReplicaStatusStats() ([]ReplicaStatusStats, error) {
 	}
 	return stats, nil
 }
+
+func (c *mockClient) getQueryStats(since int64, topCount int) ([]QueryStats, error) {
+	var stats []QueryStats
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.queryStatsFile+".txt"))
+	if err != nil {
+		return nil, err
+	}
+	defer file.Close()
+
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		var qs QueryStats
+		text := strings.Split(scanner.Text(), "\t")
+
+		qs.queryText = text[0]
+		qs.queryDigest = text[1]
+		qs.count, _ = strconv.ParseInt(text[2], 10, 64)
+		qs.schema = text[3]
+		qs.lockTime, _ = strconv.ParseFloat(text[4], 64)
+		qs.rowsExamined, _ = strconv.ParseInt(text[5], 10, 64)
+		qs.cpuTime, _ = strconv.ParseFloat(text[6], 64)
+		qs.totalDuration, _ = strconv.ParseFloat(text[7], 64)
+		qs.rowsReturned, _ = strconv.ParseInt(text[8], 10, 64)
+		qs.totalWait, _ = strconv.ParseInt(text[9], 10, 64)
+		stats = append(stats, qs)
+	}
+	return stats, nil
+}
+
+func (c *mockClient) getExplainPlanAsJsonForDigestQuery(query string) (string, error) {
+	return "query plan", nil
+}
+
+func (c *mockClient) checkPerformanceCollectionSettings() {}
 
 func (c *mockClient) Close() error {
 	return nil

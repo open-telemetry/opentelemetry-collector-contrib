@@ -21,7 +21,8 @@ func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
 		metadata.Type,
 		createDefaultConfig,
-		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability))
+		receiver.WithMetrics(createMetricsReceiver, metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiver, metadata.LogsStability))
 }
 
 func createDefaultConfig() component.Config {
@@ -41,6 +42,8 @@ func createDefaultConfig() component.Config {
 			Limit:           defaultStatementEventsLimit,
 			TimeLimit:       defaultStatementEventsTimeLimit,
 		},
+		QueryMetricsAsLogs: false,
+		TopQueryMetricsMax: 200,
 	}
 }
 
@@ -53,7 +56,7 @@ func createMetricsReceiver(
 	cfg := rConf.(*Config)
 
 	ns := newMySQLScraper(params, cfg)
-	s, err := scraper.NewMetrics(ns.scrape, scraper.WithStart(ns.start),
+	s, err := scraper.NewMetrics(ns.scrapeMetrics, scraper.WithStart(ns.start),
 		scraper.WithShutdown(ns.shutdown))
 	if err != nil {
 		return nil, err
@@ -63,4 +66,27 @@ func createMetricsReceiver(
 		&cfg.ControllerConfig, params, consumer,
 		scraperhelper.AddScraper(metadata.Type, s),
 	)
+}
+
+func createLogsReceiver(
+	_ context.Context,
+	params receiver.Settings,
+	rConf component.Config,
+	consumer consumer.Logs,
+) (receiver.Logs, error) {
+	cfg := rConf.(*Config)
+	ns := newMySQLScraper(params, cfg)
+	s, err := scraper.NewLogs(ns.scrapeLogs, scraper.WithStart(ns.start), scraper.WithShutdown(ns.shutdown))
+	if err != nil {
+		return nil, err
+	}
+
+	// needed because controller does not support Logs in AddScraper
+	f := scraper.NewFactory(metadata.Type, nil,
+		scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+			return s, nil
+		}, component.StabilityLevelAlpha))
+
+	return scraperhelper.NewLogsController(
+		&cfg.ControllerConfig, params, consumer, scraperhelper.AddFactoryWithConfig(f, nil))
 }
