@@ -227,6 +227,10 @@ jobs:
         run: |
           make genlabels
           git diff -s --exit-code || (echo '.github/component_labels.txt is out of date, please run "make genlabels" and commit the changes in this PR.' && exit 1)
+      - name: Gen CodeCov
+        run: |
+          make gencodecov
+          git diff -s --exit-code || (echo '.codecov.yml is out of date, please run "make gencodecov" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
           make generate
