@@ -6,7 +6,7 @@ status:
     development: [extension]
   distributions: []
   codeowners:
-    active: [jackgopack4, dineshg13, mx-psi]
+    active: [jackgopack4, dineshg13, mx-psi, songy23]
 
 tests:
   goleak:
