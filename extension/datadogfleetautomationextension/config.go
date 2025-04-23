@@ -16,12 +16,6 @@ import (
 
 var _ component.Config = (*Config)(nil)
 
-// defaultReporterPeriod will be used or removed in future commits
-// const (
-// defaultReporterPeriod is the default amount of time between sending fleet automation payloads to Datadog.
-// defaultReporterPeriod = 20 * time.Minute
-// )
-
 // Config contains the information necessary for enabling the Datadog Fleet
 // Automation Extension.
 type Config struct {
