@@ -6,12 +6,16 @@ package oracledbreceiver // import "github.com/open-telemetry/opentelemetry-coll
 import (
 	"context"
 	"database/sql"
+	"encoding/hex"
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
@@ -57,6 +61,23 @@ const (
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
+	samplesQuery = `
+	    SELECT /* collector-query */  S.MACHINE, S.USERNAME, S.SCHEMANAME, S.SQL_ID, 
+		S.SQL_CHILD_NUMBER, S.SID, S.SERIAL#, Q.SQL_FULLTEXT, S.OSUSER, S.PROCESS, 
+		S.PORT, S.PROGRAM, S.MODULE, S.STATUS, S.STATE, Q.PLAN_HASH_VALUE, 
+		ROUND((SYSDATE - SQL_EXEC_START) * 86400) AS DURATION_SEC, 
+		CASE WHEN S.TIME_REMAINING_MICRO IS NOT NULL 
+		      THEN S.WAIT_CLASS END AS WAIT_CLASS, 
+		CASE WHEN S.TIME_REMAINING_MICRO IS NOT NULL 
+		      THEN S.EVENT END AS EVENT, 
+		CASE WHEN S.PLSQL_ENTRY_OBJECT_ID IS NOT NULL 
+		      THEN CASE WHEN P.PROCEDURE_NAME IS NULL 
+			             THEN P.OWNER || '.' || P.OBJECT_NAME ELSE P.OWNER || '.' || P.OBJECT_NAME || '.' || P.PROCEDURE_NAME END 
+			  END AS OBJECT_NAME, P.OBJECT_TYPE 
+		FROM V$SESSION S LEFT JOIN DBA_PROCEDURES P ON S.PLSQL_ENTRY_OBJECT_ID = P.OBJECT_ID 
+		      AND S.PLSQL_ENTRY_SUBPROGRAM_ID = P.SUBPROGRAM_ID 
+			  LEFT JOIN V$SQL Q ON S.SQL_ID = Q.SQL_ID 
+			  WHERE S.SQL_ID IS NOT NULL AND S.STATUS = 'ACTIVE'`
 )
 
 type dbProviderFunc func() (*sql.DB, error)
@@ -68,6 +89,7 @@ type oracleScraper struct {
 	tablespaceUsageClient      dbClient
 	systemResourceLimitsClient dbClient
 	sessionCountClient         dbClient
+	samplesQueryClient         dbClient
 	db                         *sql.DB
 	clientProviderFunc         clientProviderFunc
 	mb                         *metadata.MetricsBuilder
@@ -93,6 +115,18 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
+func newLogsScraper(scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraper.Logs, error) {
+	s := &oracleScraper{
+		scrapeCfg:          scrapeCfg,
+		logger:             logger,
+		dbProviderFunc:     providerFunc,
+		clientProviderFunc: clientProviderFunc,
+		instanceName:       instanceName,
+	}
+	return scraper.NewLogs(s.scrapeLogs, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
+
+}
+
 func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
@@ -104,6 +138,7 @@ func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.sessionCountClient = s.clientProviderFunc(s.db, sessionCountSQL, s.logger)
 	s.systemResourceLimitsClient = s.clientProviderFunc(s.db, systemResourceLimitsSQL, s.logger)
 	s.tablespaceUsageClient = s.clientProviderFunc(s.db, tablespaceUsageSQL, s.logger)
+	s.samplesQueryClient = s.clientProviderFunc(s.db, samplesQuery, s.logger)
 	return nil
 }
 
@@ -428,6 +463,128 @@ func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return out, scrapererror.NewPartialScrapeError(multierr.Combine(scrapeErrors...), len(scrapeErrors))
 	}
 	return out, nil
+}
+
+func (s *oracleScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
+	const dbPrefix = "oracledb."
+	const queryPrefix = "query."
+	const duration = "DURATION_SEC"
+	const event = "EVENT"
+	const hostName = "MACHINE"
+	const module = "MODULE"
+	const osUser = "OSUSER"
+	const objectName = "OBJECT_NAME"
+	const objectType = "OBJECT_TYPE"
+	const process = "PROCESS"
+	const port = "PORT"
+	const program = "PROGRAM"
+	const planHashValue = "PLAN_HASH_VALUE"
+	const sqlID = "SQL_ID"
+	const schemaName = "SCHEMANAME"
+	const sqlChildNumber = "SQL_CHILD_NUMBER"
+	const sid = "SID"
+	const serialNumber = "SERIAL"
+	const status = "STATUS"
+	const state = "STATE"
+	const sqlText = "SQL_FULLTEXT"
+	const username = "USERNAME"
+	const waitclass = "WAIT_CLASS"
+
+	var scrapeErrors []error
+
+	dbClients := s.samplesQueryClient
+
+	rows, err := dbClients.metricRows(ctx)
+	if err != nil {
+		scrapeErrors = append(scrapeErrors, fmt.Errorf("error executing %s: %w", samplesQuery, err))
+	}
+
+	logs := plog.NewLogs()
+
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+	resourceAttributes := resourceLog.Resource().Attributes()
+
+	resourceAttributes.PutStr(dbPrefix+"instance.name", s.instanceName)
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName(metadata.ScopeName)
+	scopedLog.Scope().SetVersion("0.0.1")
+
+	for _, row := range rows {
+
+		queryPlanHashVal := hex.EncodeToString([]byte(row[planHashValue]))
+		record := scopedLog.LogRecords().AppendEmpty()
+		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+
+		record.Attributes().PutStr("db.system.name", "oracle")
+		// reporting human-readable query  hash plan
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+planHashValue), queryPlanHashVal)
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+hostName), row[hostName])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"id"), row[sqlID])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"child_number"), row[sqlChildNumber])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+sid), row[sid])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"serial_number"), row[serialNumber])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+process), row[process])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"id"), row[sqlID])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"child_number"), row[sqlChildNumber])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+sid), row[sid])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+"serial_number"), row[serialNumber])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+process), row[process])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+username), row[username])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+schemaName), row[schemaName])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+program), row[program])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+module), row[module])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+status), row[status])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+state), row[state])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+waitclass), row[waitclass])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+event), row[event])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+objectName), row[objectName])
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+objectType), row[objectType])
+
+		obfuscatedSQL, err := ObfuscateSQL(row[sqlText])
+
+		if err != nil {
+			s.logger.Error(fmt.Sprintf("oracleScraper failed getting metric row: %s", err))
+		} else {
+			record.Attributes().PutStr(strings.ToLower("db.query.text"), obfuscatedSQL)
+			record.Attributes().PutStr(strings.ToLower("db.query.text"), obfuscatedSQL)
+		}
+
+		record.Attributes().PutStr(strings.ToLower(dbPrefix+queryPrefix+osUser), row[osUser])
+
+		i, err := strconv.ParseInt(row[duration], 10, 64)
+
+		if err != nil {
+			scrapeErrors = append(scrapeErrors, fmt.Errorf("failed to parse int64 for Duration, value was %s: %w", row[duration], err))
+
+		}
+		record.Attributes().PutInt(dbPrefix+queryPrefix+"duration", i)
+		record.Attributes().PutInt(dbPrefix+queryPrefix+"duration", i)
+	}
+
+	return logs, errors.Join(scrapeErrors...)
+
 }
 
 func (s *oracleScraper) shutdown(_ context.Context) error {
