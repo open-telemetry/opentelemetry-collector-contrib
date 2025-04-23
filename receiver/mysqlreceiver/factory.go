@@ -42,7 +42,6 @@ func createDefaultConfig() component.Config {
 			Limit:           defaultStatementEventsLimit,
 			TimeLimit:       defaultStatementEventsTimeLimit,
 		},
-		QueryMetricsAsLogs: false,
 		TopQueryMetricsMax: 200,
 	}
 }
