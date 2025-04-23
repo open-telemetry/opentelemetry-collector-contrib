@@ -614,7 +614,7 @@ metrics:
       aggregation_temporality: cumulative
 # Query metrics
   mysql.query.time.lock:
-    enabled: true
+    enabled: false
     description: The total lock time for the query.
     unit: seconds
     sum:
@@ -623,7 +623,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema]
   mysql.query.time.cpu:
-    enabled: true
+    enabled: false
     description: The total CPU time for the query.
     unit: seconds
     sum:
@@ -632,7 +632,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema]
   mysql.query.rows.total:
-    enabled: true
+    enabled: false
     description: The total number of rows examined by the query.
     unit: count
     sum:
@@ -641,7 +641,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema]
   mysql.query.rows.returned:
-    enabled: true
+    enabled: false
     description: The total number of rows returned by the query.
     unit: count
     sum:
@@ -650,7 +650,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema]
   mysql.query.time.total:
-    enabled: true
+    enabled: false
     description: The total duration of the query.
     unit: seconds
     sum:
@@ -659,7 +659,7 @@ metrics:
       aggregation_temporality: cumulative
     attributes: [schema]
   mysql.query.calls:
-    enabled: true
+    enabled: false
     description: The total number of times the query was executed.
     unit: count
     sum:
