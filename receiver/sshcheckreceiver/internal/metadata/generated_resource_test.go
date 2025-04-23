@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("ssh.endpoint")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "ssh.endpoint-val", val.Str())
+				assert.Equal(t, "ssh.endpoint-val", val.Str())
 			}
 		})
 	}

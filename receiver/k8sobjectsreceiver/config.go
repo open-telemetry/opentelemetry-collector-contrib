@@ -74,10 +74,26 @@ func (c *Config) SetLogger(logger *zap.Logger) {
 func (c *Config) Validate() error {
 	switch c.ErrorMode {
 	case PropagateError, IgnoreError, SilentError:
-		return nil
 	default:
 		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
 	}
+
+	for _, object := range c.Objects {
+		if object.Mode == "" {
+			object.Mode = defaultMode
+		} else if _, ok := modeMap[object.Mode]; !ok {
+			return fmt.Errorf("invalid mode: %v", object.Mode)
+		}
+
+		if object.Mode == PullMode && object.Interval == 0 {
+			object.Interval = defaultPullInterval
+		}
+
+		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
+			return fmt.Errorf("the Exclude config can only be used with watch mode")
+		}
+	}
+	return nil
 }
 
 func (c *Config) getDiscoveryClient() (discovery.ServerResourcesInterface, error) {

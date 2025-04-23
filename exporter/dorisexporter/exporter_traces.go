@@ -97,19 +97,19 @@ func (e *tracesExporter) start(ctx context.Context, host component.Host) error {
 			return err
 		}
 
-		ddl := fmt.Sprintf(tracesDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
+		ddl := fmt.Sprintf(tracesDDL, e.cfg.Traces, e.cfg.propertiesStr())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
 		}
 
-		view := fmt.Sprintf(tracesView, e.cfg.Table.Traces, e.cfg.Table.Traces)
+		view := fmt.Sprintf(tracesView, e.cfg.Traces, e.cfg.Traces)
 		_, err = conn.ExecContext(ctx, view)
 		if err != nil {
 			e.logger.Warn("failed to create materialized view", zap.Error(err))
 		}
 
-		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Table.Traces, e.cfg.propertiesStr())
+		ddl = fmt.Sprintf(tracesGraphDDL, e.cfg.Traces, e.cfg.propertiesStr())
 		_, err = conn.ExecContext(ctx, ddl)
 		if err != nil {
 			return err
@@ -140,7 +140,7 @@ func (e *tracesExporter) shutdown(_ context.Context) error {
 }
 
 func (e *tracesExporter) pushTraceData(ctx context.Context, td ptrace.Traces) error {
-	label := generateLabel(e.cfg, e.cfg.Table.Traces)
+	label := generateLabel(e.cfg, e.cfg.Traces)
 	traces := make([]*dTrace, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
@@ -229,7 +229,7 @@ func (e *tracesExporter) pushTraceDataInternal(ctx context.Context, traces []*dT
 		return err
 	}
 
-	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Table.Traces, marshal, label)
+	req, err := streamLoadRequest(ctx, e.cfg, e.cfg.Traces, marshal, label)
 	if err != nil {
 		return err
 	}
@@ -274,7 +274,7 @@ func (e *tracesExporter) formatDropTraceGraphJob() string {
 	return fmt.Sprintf(
 		"DROP JOB where jobName = '%s:%s_graph_job';",
 		e.cfg.Database,
-		e.cfg.Table.Traces,
+		e.cfg.Traces,
 	)
 }
 
@@ -282,9 +282,9 @@ func (e *tracesExporter) formatTraceGraphJob() string {
 	return fmt.Sprintf(
 		tracesGraphJob,
 		e.cfg.Database,
-		e.cfg.Table.Traces,
-		e.cfg.Table.Traces,
-		e.cfg.Table.Traces,
-		e.cfg.Table.Traces,
+		e.cfg.Traces,
+		e.cfg.Traces,
+		e.cfg.Traces,
+		e.cfg.Traces,
 	)
 }

@@ -115,7 +115,7 @@ func TestBatchLogs_ConsumeLogs(t *testing.T) {
 			err = consumer.ConsumeLogs(context.Background(), logs)
 			assert.NoError(t, err)
 
-			require.Equal(t, len(tt.out), len(sink.AllLogs()))
+			require.Len(t, tt.out, len(sink.AllLogs()))
 			for i, out := range tt.out {
 				expected, err := golden.ReadLogs("testdata/batchperscope/" + out)
 				require.NoError(t, err)

@@ -55,6 +55,7 @@ func GetGenericMetadata(om *v1.ObjectMeta, resourceType string) *KubernetesMetad
 	metadata[constants.K8sKeyWorkLoadKind] = resourceType
 	metadata[constants.K8sKeyWorkLoadName] = om.Name
 	metadata[rType+".creation_timestamp"] = om.GetCreationTimestamp().Format(time.RFC3339)
+	metadata[constants.K8sKeyNamespaceName] = om.Namespace
 
 	for _, or := range om.OwnerReferences {
 		kind := strings.ToLower(or.Kind)

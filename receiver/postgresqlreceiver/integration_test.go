@@ -6,15 +6,24 @@
 package postgresqlreceiver
 
 import (
+	"context"
+	"database/sql"
 	"fmt"
 	"net"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	"github.com/tj/assert"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/confignet"
+	"go.opentelemetry.io/collector/config/configtls"
+	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/scraperinttest"
@@ -107,4 +116,86 @@ func integrationTest(name string, databases []string, pgVersion string) func(*te
 			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run
+}
+
+func TestScrapeLogsFromContainer(t *testing.T) {
+	ci, err := testcontainers.GenericContainer(
+		context.Background(),
+		testcontainers.GenericContainerRequest{
+			ProviderType: testcontainers.ProviderPodman,
+			ContainerRequest: testcontainers.ContainerRequest{
+				Image: fmt.Sprintf("postgres:%s", post17TestVersion),
+				Env: map[string]string{
+					"POSTGRES_USER":     "root",
+					"POSTGRES_PASSWORD": "otel",
+					"POSTGRES_DB":       "otel",
+				},
+				Files: []testcontainers.ContainerFile{{
+					HostFilePath:      filepath.Join("testdata", "integration", "init.sql"),
+					ContainerFilePath: "/docker-entrypoint-initdb.d/init.sql",
+					FileMode:          700,
+				}},
+				ExposedPorts: []string{postgresqlPort},
+				WaitingFor: wait.ForListeningPort(postgresqlPort).
+					WithStartupTimeout(2 * time.Minute),
+			},
+		})
+	assert.NoError(t, err)
+
+	err = ci.Start(context.Background())
+	assert.NoError(t, err)
+	defer testcontainers.CleanupContainer(t, ci)
+	p, err := ci.MappedPort(context.Background(), postgresqlPort)
+	assert.NoError(t, err)
+	connStr := fmt.Sprintf("postgres://root:otel@localhost:%s/otel2?sslmode=disable", p.Port())
+	db, err := sql.Open("postgres", connStr)
+	assert.NoError(t, err)
+
+	_, err = db.Query("Select * from test2 where id = 67")
+	assert.NoError(t, err)
+	db.Close()
+
+	cfg := Config{
+		Databases: []string{"postgres"},
+		Username:  "otelu",
+		Password:  "otelp",
+		ControllerConfig: scraperhelper.ControllerConfig{
+			CollectionInterval: 1 * time.Second,
+		},
+		ClientConfig: configtls.ClientConfig{
+			Insecure: true,
+		},
+		AddrConfig: confignet.AddrConfig{
+			Endpoint: net.JoinHostPort("localhost", p.Port()),
+		},
+		QuerySampleCollection: QuerySampleCollection{
+			Enabled: true,
+		},
+	}
+	clientFactory := newDefaultClientFactory(&cfg)
+
+	ns := newPostgreSQLScraper(receiver.Settings{
+		TelemetrySettings: component.TelemetrySettings{
+			Logger: zap.Must(zap.NewProduction()),
+		},
+	}, &cfg, clientFactory)
+	plogs, err := ns.scrapeQuerySamples(context.Background(), 30)
+	assert.NoError(t, err)
+	logRecords := plogs.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	found := false
+	for _, record := range logRecords.All() {
+		attributes := record.Attributes().AsRaw()
+		queryAttribute, ok := attributes["db.query.text"]
+		query := strings.ToLower(queryAttribute.(string))
+		assert.True(t, ok)
+		if !strings.HasPrefix(query, "select * from test2") {
+			continue
+		}
+		assert.Equal(t, "select * from test2 where id = ?", query)
+		databaseAttribute, ok := attributes["db.namespace"]
+		assert.True(t, ok)
+		assert.Equal(t, "otel2", databaseAttribute.(string))
+		found = true
+	}
+	assert.True(t, found, "Expected to find a log record with the query text")
 }

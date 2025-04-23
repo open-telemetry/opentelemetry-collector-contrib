@@ -5,6 +5,7 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 
 import (
 	"context"
+	"crypto/tls"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -20,9 +21,14 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"zstd":   sarama.CompressionZSTD,
 }
 
+var saramaInitialOffsets = map[string]int64{
+	configkafka.EarliestOffset: sarama.OffsetOldest,
+	configkafka.LatestOffset:   sarama.OffsetNewest,
+}
+
 // NewSaramaClient returns a new Kafka client with the given configuration.
 func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sarama.Client, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, config)
+	saramaConfig, err := newSaramaClientConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
@@ -31,14 +37,34 @@ func NewSaramaClient(ctx context.Context, config configkafka.ClientConfig) (sara
 
 // NewSaramaClusterAdminClient returns a new Kafka cluster admin client with the given configuration.
 func NewSaramaClusterAdminClient(ctx context.Context, config configkafka.ClientConfig) (sarama.ClusterAdmin, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, config)
+	saramaConfig, err := newSaramaClientConfig(ctx, config)
 	if err != nil {
 		return nil, err
 	}
 	return sarama.NewClusterAdmin(config.Brokers, saramaConfig)
 }
 
-// TODO add NewSaramaConsumerGroup, extracted from receiver/kafkareceiver
+// NewSaramaConsumerGroup returns a new Kafka consumer group with the given configuration.
+func NewSaramaConsumerGroup(
+	ctx context.Context,
+	clientConfig configkafka.ClientConfig,
+	consumerConfig configkafka.ConsumerConfig,
+) (sarama.ConsumerGroup, error) {
+	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
+	if err != nil {
+		return nil, err
+	}
+	saramaConfig.Consumer.Group.Session.Timeout = consumerConfig.SessionTimeout
+	saramaConfig.Consumer.Group.Heartbeat.Interval = consumerConfig.HeartbeatInterval
+	saramaConfig.Consumer.Fetch.Min = consumerConfig.MinFetchSize
+	saramaConfig.Consumer.Fetch.Default = consumerConfig.DefaultFetchSize
+	saramaConfig.Consumer.Fetch.Max = consumerConfig.MaxFetchSize
+	saramaConfig.Consumer.MaxWaitTime = consumerConfig.MaxFetchWait
+	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
+	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
+	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
+}
 
 // NewSaramaSyncProducer returns a new synchronous Kafka producer with the given configuration.
 //
@@ -51,7 +77,7 @@ func NewSaramaSyncProducer(
 	producerConfig configkafka.ProducerConfig,
 	producerTimeout time.Duration,
 ) (sarama.SyncProducer, error) {
-	saramaConfig, err := NewSaramaClientConfig(ctx, clientConfig)
+	saramaConfig, err := newSaramaClientConfig(ctx, clientConfig)
 	if err != nil {
 		return nil, err
 	}
@@ -65,8 +91,8 @@ func NewSaramaSyncProducer(
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
 }
 
-// NewSaramaClientConfig returns a Sarama client config, based on the given config.
-func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
+// newSaramaClientConfig returns a Sarama client config, based on the given config.
+func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig) (*sarama.Config, error) {
 	saramaConfig := sarama.NewConfig()
 	saramaConfig.Metadata.Full = config.Metadata.Full
 	saramaConfig.Metadata.RefreshFrequency = config.Metadata.RefreshInterval
@@ -81,8 +107,22 @@ func NewSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 			return nil, err
 		}
 	}
-	if err := ConfigureSaramaAuthentication(ctx, config.Authentication, saramaConfig); err != nil {
-		return nil, err
+
+	tlsConfig := config.TLS
+	if tlsConfig == nil {
+		tlsConfig = config.Authentication.TLS
 	}
+	if tlsConfig != nil {
+		if tlsConfig, err := tlsConfig.LoadTLSConfig(ctx); err != nil {
+			return nil, err
+		} else if tlsConfig != nil {
+			saramaConfig.Net.TLS.Config = tlsConfig
+			saramaConfig.Net.TLS.Enable = true
+		}
+	} else if config.Authentication.SASL != nil && config.Authentication.SASL.Mechanism == "AWS_MSK_IAM_OAUTHBEARER" {
+		saramaConfig.Net.TLS.Config = &tls.Config{}
+		saramaConfig.Net.SASL.Enable = true
+	}
+	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
 }

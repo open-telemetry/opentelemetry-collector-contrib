@@ -21,8 +21,11 @@ import (
 func TestNewReceiver(t *testing.T) {
 	t.Parallel()
 
+	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
 		rCfg,

@@ -4,6 +4,7 @@
 package probabilisticsamplerprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor"
 
 import (
+	"errors"
 	"fmt"
 	"math"
 
@@ -122,7 +123,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.SamplingPrecision == 0 {
-		return fmt.Errorf("invalid sampling precision: 0")
+		return errors.New("invalid sampling precision: 0")
 	} else if cfg.SamplingPrecision > sampling.NumHexDigits {
 		return fmt.Errorf("sampling precision is too great, should be <= 14: %d", cfg.SamplingPrecision)
 	}
