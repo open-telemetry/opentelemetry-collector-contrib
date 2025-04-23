@@ -86,16 +86,15 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
-		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.DiscardErrorReason, config.IncludeSourceOnError),
+		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 	}
 }
 
-func bulkIndexerIncludeSourceOnError(discardErrorReason, includeSourceOnError bool) docappender.Value {
-	if discardErrorReason {
-		// Unset means to discard error reason.
+func bulkIndexerIncludeSourceOnError(includeSourceOnError IncludeSourceOnErrorSettings) docappender.Value {
+	if includeSourceOnError.CompatibilityMode == nil || *includeSourceOnError.CompatibilityMode == true {
 		return docappender.Unset
 	}
-	if includeSourceOnError {
+	if includeSourceOnError.Enabled {
 		return docappender.True
 	}
 	return docappender.False

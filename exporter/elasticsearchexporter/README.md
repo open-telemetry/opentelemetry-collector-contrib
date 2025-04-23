@@ -316,18 +316,16 @@ The behaviour of this bulk indexing can be configured with the following setting
 > [!NOTE]
 > The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
 
-#### Bulk indexing error response handling
+#### Bulk indexing error response
 
 With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
 This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
 
 In this exporter, the equivalent configuration is also named `include_source_on_error`.
-It is disabled by default. Set it to `true` for bulk index error responses to include source document.
-However, note that users are responsible for sanitizing the error responses themselves as they may contain sensitive information.
 
-Aside from `include_source_on_error`, the exporter also exposes the `discard_error_reason` configuration.
-It is disabled by default. Set it to `true` to discard the bulk index responses' error reason entirely (for security reasons).
-If set to `true`, this will override the `include_source_on_error` configuration.
+- `enabled` (default=false): Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: if enabled, users are responsible for sanitizing the error responses themselves as they may contain sensitive information.
+- `compatibility_mode` (default=true): Backward compatible option for older Elasticsearch versions, to avoid logging sensitive data. If set to true, `enabled` is ignored and the error reason is discarded from bulk index responses entirely.
+
 
 ### Elasticsearch node discovery
 

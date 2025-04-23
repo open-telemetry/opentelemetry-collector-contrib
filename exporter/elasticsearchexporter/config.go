@@ -78,25 +78,8 @@ type Config struct {
 	// This is experimental and may change at any time.
 	TelemetrySettings `mapstructure:"telemetry"`
 
-	// DiscardErrorReason discards the error reason on bulk index error responses.
-	// Defaults to false.
-	//
-	// This setting has a higher precedence than IncludeSourceOnError, i.e. if
-	// this is enabled, IncludeSourceOnError will be ignored.
-	DiscardErrorReason bool `mapstructure:"discard_error_reason"`
-
-	// IncludeSourceOnError configures whether the bulk index responses include
-	// a part of the source document on error.
-	// Defaults to false.
-	//
-	// This setting requires Elasticsearch 8.18+. Using it in prior versions
-	// have no effect.
-	// This setting is overridden by DiscardErrorReason if DiscardErrorReason
-	// is true.
-	//
-	// WARNING: if set to true, the user is responsible for sanitizing the
-	// error as it may contain sensitive data from the source.
-	IncludeSourceOnError bool `mapstructure:"include_source_on_error"`
+	// IncludeSourceOnError configures bulk index error response handling.
+	IncludeSourceOnError IncludeSourceOnErrorSettings `mapstructure:"include_source_on_error"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
@@ -126,6 +109,32 @@ func (c *BatcherConfig) Unmarshal(conf *confmap.Conf) error {
 	}
 	c.enabledSet = conf.IsSet("enabled")
 	return nil
+}
+
+type IncludeSourceOnErrorSettings struct {
+	// Enabled configures whether the bulk index responses include
+	// a part of the source document on error.
+	// Defaults to false.
+	//
+	// This setting requires Elasticsearch 8.18+. Using it in prior versions
+	// have no effect.
+	// This setting is overridden by CompatibilityMode if CompatibilityMode
+	// is true.
+	//
+	// WARNING: if set to true, the user is responsible for sanitizing the
+	// error as it may contain sensitive data from the source.
+	Enabled bool `mapstructure:"enabled"`
+
+	// CompatibilityMode exists as a backward compatible option for older
+	// versions of Elasticsearch, to avoid logging sensitive data.
+	// Defaults to true.
+	//
+	// If set to true, the bulk indexer discards the error reason from the
+	// bulk index responses entirely.
+	//
+	// This setting has a higher precedence than Enabled, i.e. if this is
+	// true, Enabled will be ignored.
+	CompatibilityMode *bool `mapstructure:"compatibility_mode"`
 }
 
 type TelemetrySettings struct {

@@ -81,6 +81,10 @@ func createDefaultConfig() component.Config {
 			LogFailedDocsInput:          false,
 			LogFailedDocsInputRateLimit: time.Second,
 		},
+		IncludeSourceOnError: IncludeSourceOnErrorSettings{
+			Enabled:           false,
+			CompatibilityMode: nil,
+		},
 		Batcher: BatcherConfig{
 			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 				FlushTimeout: 30 * time.Second,
