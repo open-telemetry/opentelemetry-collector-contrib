@@ -1,4 +1,4 @@
-type: datadogfleetautomation
+type: datadog
 
 status:
   class: extension
