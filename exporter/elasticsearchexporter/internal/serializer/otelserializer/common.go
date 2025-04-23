@@ -58,6 +58,8 @@ func writeAttributes(v *json.Visitor, attributes pcommon.Map, stringifyMapValues
 	_ = v.OnKey("attributes")
 	_ = v.OnObjectStart(-1, structform.AnyType)
 	for k, val := range attributes.All() {
+		// Exclude well-known, Elastic-specific attributes
+		// from the document. These are handled elsewhere.
 		switch k {
 		case elasticsearch.DataStreamType,
 			elasticsearch.DataStreamDataset,
