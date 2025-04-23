@@ -54,13 +54,17 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 // parseHostFile parses a host file and builds resolver maps
 func (r *HostFileResolver) parseHostFile(path string) error {
 	file, err := os.Open(path)
+	defer file.Close()
 	if err != nil {
+		if os.IsNotExist(err) {
+			return ErrInvalidHostFilePath
+		}
+
 		r.logger.Error("Failed to open host file",
 			zap.String("path", path),
 			zap.Error(err))
 		return err
 	}
-	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
