@@ -1151,6 +1151,56 @@ func Test_ProcessLogs_CacheAccess(t *testing.T) {
 	}
 }
 
+func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
+	tests := []struct {
+		name              string
+		contextStatements []common.ContextStatements
+		want              func(td plog.Logs)
+	}{
+		{
+			name: "inferring from statements",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`resource.attributes["test"] == nil`},
+					Statements: []string{`set(log.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().PutStr("test", "pass")
+				td.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(1).Attributes().PutStr("test", "pass")
+			},
+		},
+		{
+			name: "inferring from conditions",
+			contextStatements: []common.ContextStatements{
+				{
+					Conditions: []string{`log.attributes["test"] == nil`},
+					Statements: []string{`set(resource.attributes["test"], "pass")`},
+				},
+			},
+			want: func(td plog.Logs) {
+				td.ResourceLogs().At(0).Resource().Attributes().PutStr("test", "pass")
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			td := constructLogs()
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			assert.NoError(t, err)
+
+			_, err = processor.ProcessLogs(context.Background(), td)
+			assert.NoError(t, err)
+
+			exTd := constructLogs()
+			tt.want(exTd)
+
+			assert.Equal(t, exTd, td)
+		})
+	}
+}
+
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
 		name          string
