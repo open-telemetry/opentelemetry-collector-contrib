@@ -156,44 +156,47 @@ func walkTree(cli Args) (*CodecovConfig, error) {
 			return err
 		}
 
-		if entry.IsDir() && path != cli.Dir {
-			goModPath := filepath.Join(path, "go.mod")
-			if _, err := os.Stat(goModPath); os.IsNotExist(err) {
+		// Skip non-directories
+		if !entry.IsDir() || path == cli.Dir {
+			return nil
+		}
+
+		goModPath := filepath.Join(path, "go.mod")
+		if _, err := os.Stat(goModPath); os.IsNotExist(err) {
+			return nil
+		}
+
+		moduleName, err := readModuleName(goModPath)
+		if err != nil {
+			return err
+		}
+
+		// Skip if the module is in the skipped list
+		relModName := strings.Replace(moduleName, cli.BasePrefix+"/", "", 1)
+		for pattern := range cli.SkippedModules {
+			if doublestar.MatchUnvalidated(pattern, relModName) {
+				fmt.Printf("Skipping module %q\n", relModName)
 				return nil
 			}
-
-			moduleName, err := readModuleName(goModPath)
-			if err != nil {
-				return err
-			}
-
-			// Skip if the module is in the skipped list
-			relModName := strings.Replace(moduleName, cli.BasePrefix+"/", "", 1)
-			for pattern := range cli.SkippedModules {
-				if doublestar.MatchUnvalidated(pattern, relModName) {
-					fmt.Printf("Skipping module %q\n", relModName)
-					return nil
-				}
-			}
-
-			// Create component and add it to the config
-			relativePath, err := filepath.Rel(cli.Dir, path)
-			if err != nil {
-				return err
-			}
-
-			componentID, err := generateComponentID(moduleName, cli)
-			if err != nil {
-				return err
-			}
-			component := Component{
-				ComponentID: componentID,
-				Name:        componentID,
-				Paths:       []string{relativePath + "/**"},
-			}
-
-			config.ComponentManagement.IndividualComponents = append(config.ComponentManagement.IndividualComponents, component)
 		}
+
+		// Create component and add it to the config
+		relativePath, err := filepath.Rel(cli.Dir, path)
+		if err != nil {
+			return err
+		}
+
+		componentID, err := generateComponentID(moduleName, cli)
+		if err != nil {
+			return err
+		}
+		component := Component{
+			ComponentID: componentID,
+			Name:        componentID,
+			Paths:       []string{relativePath + "/**"},
+		}
+
+		config.ComponentManagement.IndividualComponents = append(config.ComponentManagement.IndividualComponents, component)
 
 		return nil
 	})
