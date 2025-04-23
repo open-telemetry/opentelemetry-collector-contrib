@@ -45,11 +45,10 @@ func (c *CommaSeparatedSet) UnmarshalText(text []byte) error {
 	*c = make(map[string]struct{})
 	for _, key := range strings.Split(string(text), ",") {
 		key = strings.TrimSpace(key)
-		if key != "" {
-			(*c)[key] = struct{}{}
-		} else {
+		if key == "" {
 			return fmt.Errorf("empty key in comma-separated list")
 		}
+		(*c)[key] = struct{}{}
 	}
 	return nil
 }
