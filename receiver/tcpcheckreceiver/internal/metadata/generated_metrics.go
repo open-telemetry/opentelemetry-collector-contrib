@@ -11,6 +11,44 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+// AttributeErrorCode specifies the value error.code attribute.
+type AttributeErrorCode int
+
+const (
+	_ AttributeErrorCode = iota
+	AttributeErrorCodeConnectionRefused
+	AttributeErrorCodeConnectionTimeout
+	AttributeErrorCodeInvalidEndpoint
+	AttributeErrorCodeNetworkUnreachable
+	AttributeErrorCodeUnknownError
+)
+
+// String returns the string representation of the AttributeErrorCode.
+func (av AttributeErrorCode) String() string {
+	switch av {
+	case AttributeErrorCodeConnectionRefused:
+		return "connection_refused"
+	case AttributeErrorCodeConnectionTimeout:
+		return "connection_timeout"
+	case AttributeErrorCodeInvalidEndpoint:
+		return "invalid_endpoint"
+	case AttributeErrorCodeNetworkUnreachable:
+		return "network_unreachable"
+	case AttributeErrorCodeUnknownError:
+		return "unknown_error"
+	}
+	return ""
+}
+
+// MapAttributeErrorCode is a helper map of string to AttributeErrorCode attribute value.
+var MapAttributeErrorCode = map[string]AttributeErrorCode{
+	"connection_refused":  AttributeErrorCodeConnectionRefused,
+	"connection_timeout":  AttributeErrorCodeConnectionTimeout,
+	"invalid_endpoint":    AttributeErrorCodeInvalidEndpoint,
+	"network_unreachable": AttributeErrorCodeNetworkUnreachable,
+	"unknown_error":       AttributeErrorCodeUnknownError,
+}
+
 var MetricsInfo = metricsInfo{
 	TcpcheckDuration: metricInfo{
 		Name: "tcpcheck.duration",
@@ -323,8 +361,8 @@ func (mb *MetricsBuilder) RecordTcpcheckDurationDataPoint(ts pcommon.Timestamp, 
 }
 
 // RecordTcpcheckErrorDataPoint adds a data point to tcpcheck.error metric.
-func (mb *MetricsBuilder) RecordTcpcheckErrorDataPoint(ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string, errorCodeAttributeValue string) {
-	mb.metricTcpcheckError.recordDataPoint(mb.startTime, ts, val, tcpcheckEndpointAttributeValue, errorCodeAttributeValue)
+func (mb *MetricsBuilder) RecordTcpcheckErrorDataPoint(ts pcommon.Timestamp, val int64, tcpcheckEndpointAttributeValue string, errorCodeAttributeValue AttributeErrorCode) {
+	mb.metricTcpcheckError.recordDataPoint(mb.startTime, ts, val, tcpcheckEndpointAttributeValue, errorCodeAttributeValue.String())
 }
 
 // RecordTcpcheckStatusDataPoint adds a data point to tcpcheck.status metric.
