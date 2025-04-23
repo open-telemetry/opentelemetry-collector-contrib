@@ -6,6 +6,7 @@ package main
 import (
 	"bytes"
 	"encoding"
+	"errors"
 	"flag"
 	"fmt"
 	"io/fs"
@@ -46,7 +47,7 @@ func (c *CommaSeparatedSet) UnmarshalText(text []byte) error {
 	for _, key := range strings.Split(string(text), ",") {
 		key = strings.TrimSpace(key)
 		if key == "" {
-			return fmt.Errorf("empty key in comma-separated list")
+			return errors.New("empty key in comma-separated list")
 		}
 		(*c)[key] = struct{}{}
 	}
@@ -61,10 +62,10 @@ func setupCLI() (Args, error) {
 	flag.Parse()
 
 	if cli.BasePrefix == "" {
-		return cli, fmt.Errorf("base-prefix is required")
+		return cli, errors.New("'--base-prefix' is required")
 	}
 	if cli.Dir == "" {
-		return cli, fmt.Errorf("dir is required")
+		return cli, errors.New("'--dir' is required")
 	}
 
 	for pattern := range cli.SkippedModules {
@@ -138,7 +139,7 @@ func generateComponentID(moduleName string, cli Args) (string, error) {
 	for _, suffix := range defaultSuffixList {
 		componentID = strings.TrimSuffix(componentID, suffix)
 	}
-	componentID = strings.Replace(componentID, "/", "_", -1)
+	componentID = strings.ReplaceAll(componentID, "/", "_")
 
 	if !validFlagRegexp.MatchString(componentID) {
 		return "", fmt.Errorf("component ID %q does not match the required pattern", componentID)
@@ -196,7 +197,6 @@ func walkTree(cli Args) (*CodecovConfig, error) {
 
 		return nil
 	})
-
 	if err != nil {
 		return nil, err
 	}
@@ -223,9 +223,11 @@ func readModuleName(goModPath string) (string, error) {
 	return modFile.Module.Mod.Path, nil
 }
 
-const codecovFileName = ".codecov.yml"
-const startComponentList = `# Start components list`
-const endComponentList = `# End components list`
+const (
+	codecovFileName    = ".codecov.yml"
+	startComponentList = `# Start components list`
+	endComponentList   = `# End components list`
+)
 
 var matchComponentSection = regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
 
