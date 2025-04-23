@@ -13,6 +13,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogfleetautomationextension/internal/httpserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogfleetautomationextension/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 // NewFactory creates a factory for the Datadog Fleet Automation extension.
@@ -28,8 +29,8 @@ func NewFactory() extension.Factory {
 func createDefaultConfig() component.Config {
 	return &Config{
 		ClientConfig: confighttp.NewDefaultClientConfig(),
-		API: APIConfig{
-			Site: defaultSite,
+		API: datadogconfig.APIConfig{
+			Site: datadogconfig.DefaultSite,
 		},
 		HTTPConfig: &httpserver.Config{
 			ServerConfig: confighttp.ServerConfig{
