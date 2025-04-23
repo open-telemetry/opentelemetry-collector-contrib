@@ -3,7 +3,8 @@ type: mysql
 status:
   class: receiver
   stability:
-    beta: [metrics, logs]
+    beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [antonblock]
