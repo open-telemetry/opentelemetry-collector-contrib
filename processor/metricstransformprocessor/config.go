@@ -18,7 +18,7 @@ const (
 	// newNameFieldName is the mapstructure field name for NewName field
 	newNameFieldName = "new_name"
 
-	// groupResourceLabelsFieldName is the mapstructure field name for GroupResouceLabels field
+	// groupResourceLabelsFieldName is the mapstructure field name for GroupResourceLabels field
 	groupResourceLabelsFieldName = "group_resource_labels"
 
 	// aggregationTypeFieldName is the mapstructure field name for aggregationType field
@@ -69,7 +69,7 @@ type transform struct {
 	// REQUIRED only if Action is INSERT.
 	NewName string `mapstructure:"new_name"`
 
-	// GroupResourceLabels specifes resource labels that will be appended to this group's new ResourceMetrics message
+	// GroupResourceLabels specifies resource labels that will be appended to this group's new ResourceMetrics message
 	// REQUIRED only if Action is GROUP
 	GroupResourceLabels map[string]string `mapstructure:"group_resource_labels"`
 
@@ -152,7 +152,7 @@ const (
 	// Combine combines multiple metrics into a single metric.
 	Combine ConfigAction = "combine"
 
-	// Group groups mutiple metrics matching the predicate into multiple ResourceMetrics messages
+	// Group groups multiple metrics matching the predicate into multiple ResourceMetrics messages
 	Group ConfigAction = "group"
 )
 
@@ -168,7 +168,7 @@ func (ca ConfigAction) isValid() bool {
 	return false
 }
 
-// operationAction is the enum to capture the thress types of actions to perform for an operation.
+// operationAction is the enum to capture the types of actions to perform for an operation.
 type operationAction string
 
 const (

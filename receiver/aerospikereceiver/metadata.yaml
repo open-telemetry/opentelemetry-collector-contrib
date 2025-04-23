@@ -6,7 +6,7 @@ status:
     alpha: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski, antonblock]
+    active: [antonblock]
     seeking_new: true
 
 tests:
@@ -220,7 +220,7 @@ metrics:
     enabled: true
     description: Number of points outside the region.
     unit: '{points}'
-    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_regio_query_falspos.
+    extended_documentation: Total query result points is geo_region_query_points + geo_region_query_falsepos. Aerospike metric geo_region_query_falsepos.
     sum:
       value_type: int
       input_type: string

@@ -6,7 +6,7 @@
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -98,7 +98,9 @@ are then also available for the use within association rules. Available attribut
 Not all the attributes are guaranteed to be added. Only attribute names from `metadata` should be used for 
 pod_association's `resource_attribute`, because empty or non-existing values will be ignored.
 
-Additional container level attributes can be extracted provided that certain resource attributes are provided:
+Additional container level attributes can be extracted. If a pod contains more than one container,
+either the `container.id`, or the `k8s.container.name` attribute must be provided in the incoming resource attributes to
+correctly associate the matching container to the resource:
 
 1. If the `container.id` resource attribute is provided, the following additional attributes will be available:
    - k8s.container.name
@@ -170,7 +172,7 @@ spec:
     - --duration=10s
     - --rate=1
     - --otlp-attributes=k8s.container.name="telemetrygen"
-    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:latest
+    image: ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen:0.112.0@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096
     name: telemetrygen
 status:
   podIP: 10.244.0.11
@@ -193,7 +195,8 @@ the processor associates the received trace to the pod, based on the connection 
     "k8s.pod.name": "telemetrygen-pod",
     "k8s.pod.uid": "038e2267-b473-489b-b48c-46bafdb852eb",
     "container.image.name": "telemetrygen",
-    "container.image.tag": "latest"
+    "container.image.tag": "0.112.0", 
+    "container.image.repo_digests": ["ghcr.io/open-telemetry/opentelemetry-collector-contrib/telemetrygen@sha256:b248ef911f93ae27cbbc85056d1ffacc87fd941bbdc2ffd951b6df8df72b8096"]
   }
 }
 ```
@@ -230,25 +233,34 @@ extract:
     - tag_name: a1 # extracts value of annotation from pods with key `annotation-one` and inserts it as a tag with key `a1`
       key: annotation-one
       from: pod
-    - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` with regexp and inserts it as a tag with key `a2`
+    - tag_name: a2 # extracts value of annotation from namespaces with key `annotation-two` and inserts it as a tag with key `a2`
       key: annotation-two
-      regex: field=(?P<value>.+)
       from: namespace
-    - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` with regexp and inserts it as a tag with key `a3`
+    - tag_name: a3 # extracts value of annotation from nodes with key `annotation-three` and inserts it as a tag with key `a3`
       key: annotation-three
-      regex: field=(?P<value>.+)
       from: node
   labels:
     - tag_name: l1 # extracts value of label from namespaces with key `label1` and inserts it as a tag with key `l1`
       key: label1
       from: namespace
-    - tag_name: l2 # extracts value of label from pods with key `label2` with regexp and inserts it as a tag with key `l2`
+    - tag_name: l2 # extracts value of label from pods with key `label2` and inserts it as a tag with key `l2`
       key: label2
-      regex: field=(?P<value>.+)
       from: pod
     - tag_name: l3 # extracts value of label from nodes with key `label3` and inserts it as a tag with key `l3`
       key: label3
       from: node
+```
+
+## Configuring recommended resource attributes 
+
+The processor can be configured to set the 
+[recommended resource attributes](https://opentelemetry.io/docs/specs/semconv/non-normative/k8s-attributes/):
+
+- `otel_annotations` will translate `resource.opentelemetry.io/foo` to the `foo` resource attribute, etc.
+
+```yaml
+  extract:
+    otel_annotations: true 
 ```
 
 ### Config example
@@ -271,10 +283,11 @@ k8sattributes/2:
       - k8s.node.name
       - k8s.pod.start_time
     labels:
-     # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
-     - tag_name: app.label.component
-       key: app.kubernetes.io/component
-       from: pod
+      # This label extraction rule takes the value 'app.kubernetes.io/component' label and maps it to the 'app.label.component' attribute which will be added to the associated resources
+      - tag_name: app.label.component
+        key: app.kubernetes.io/component
+        from: pod
+    otel_annotations: true 
   pod_association:
     - sources:
         # This rule associates all resources containing the 'k8s.pod.ip' attribute with the matching pods. If this attribute is not present in the resource, this rule will not be able to find the matching pod.
@@ -340,7 +353,7 @@ k8sattributes:
   filter:
     namespace: <WORKLOAD_NAMESPACE>
 ```
-With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor can not query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor can not set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
+With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
 Example `Role` and `RoleBinding` to create in the namespace being watched.
 ```yaml
@@ -388,7 +401,7 @@ When running as an agent, the processor detects IP addresses of pods sending spa
 and uses this information to extract metadata from pods. When running as an agent, it is important to apply
 a discovery filter so that the processor only discovers pods from the same host that it is running on. Not using
 such a filter can result in unnecessary resource usage especially on very large clusters. Once the filter is applied,
-each processor will only query the k8s API for pods running on it's own node.
+each processor will only query the k8s API for pods running on its own node.
 
 Node filter can be applied by setting the `filter.node` config option to the name of a k8s node. While this works
 as expected, it cannot be used to automatically filter pods by the same node that the processor is running on in
@@ -477,27 +490,11 @@ timestamp value as an RFC3339 compliant timestamp.
 ### `k8sattr.fieldExtractConfigRegex.disallow`
 
 The `k8sattr.fieldExtractConfigRegex.disallow` [feature gate](https://github.com/open-telemetry/opentelemetry-collector/blob/main/featuregate/README.md#collector-feature-gates) disallows the usage of the `extract.annotations.regex` and `extract.labels.regex` fields.
-The validation performed on the configuration will fail, if at least one of the parameters is set (non-empty) and `k8sattr.fieldExtractConfigRegex.disallow` is set to `true` (default `false`).
-
-#### Example Usage
-
-The following config with the feature gate set will lead to validation error:
-
-`config.yaml`:
-
-  ```yaml
-  extract:
-    labels:
-      regex: <my-regex1>
-    annotations:
-      regex: <my-regex2>
-  ```
-
-  Run collector: `./otelcol --config config.yaml --feature-gates=k8sattr.fieldExtractConfigRegex.disallow`
+The feature gate is in `stable` stage, which means it can no longer be disabled and is therefore enabled by default.
 
 #### Migration
 
-Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the the `extract.annotations.regex` and `extract.labels.regex` fields.
+Deprecation of the `extract.annotations.regex` and `extract.labels.regex` fields means that it is recommended to use the `ExtractPatterns` function from the transform processor instead. To convert your current configuration please check the `ExtractPatterns` function [documentation](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/pkg/ottl/ottlfuncs#extractpatterns). You should use the `pattern` parameter of `ExtractPatterns` instead of using the `extract.annotations.regex` and `extract.labels.regex` fields.
 
 ##### Example
 

@@ -7,13 +7,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 type Config struct {
 	sqlquery.Config `mapstructure:",squash"`
+	// The maximumn number of open connections to the sql server. <= 0 means unlimited
+	MaxOpenConn int `mapstructure:"max_open_conn"`
 }
 
 func createDefaultConfig() component.Config {

@@ -5,3 +5,4 @@ redis_storage/all_settings:
   password: passwd
   db: 1
   expiration: 3h
+  prefix: test_

@@ -28,7 +28,7 @@ The following settings are required:
 
 - `endpoint` (default = `localhost:9943`): Address and port that the SignalFx
   receiver should bind to.
-  You can temporarily disable the `component.UseLocalHostAsDefaultHost` feature gate to change this to `0.0.0.0:9943`. This feature gate will be removed in a future release.
+  See our [security best practices doc](https://opentelemetry.io/docs/security/config-best-practices/#protect-against-denial-of-service-attacks) to understand how to set the endpoint in different environments.
 
 The following settings are optional:
 
@@ -57,8 +57,8 @@ receivers:
       key_file: /test.key
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 > :warning: When enabling the SignalFx receiver or exporter, configure both the `metrics` and `logs` pipelines.
 

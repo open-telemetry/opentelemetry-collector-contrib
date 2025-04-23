@@ -29,14 +29,14 @@ func extractPodID(ctx context.Context, attrs pcommon.Map, associations []kube.As
 		ret := kube.PodIdentifier{}
 		for i, source := range asso.Sources {
 			// If association configured to take IP address from connection
-			switch {
-			case source.From == kube.ConnectionSource:
+			switch source.From {
+			case kube.ConnectionSource:
 				if connectionIP == "" {
 					skip = true
 					break
 				}
 				ret[i] = kube.PodIdentifierAttributeFromConnection(connectionIP)
-			case source.From == kube.ResourceSource:
+			case kube.ResourceSource:
 				// Extract values based on configured resource_attribute.
 				attributeValue := stringAttributeFromMap(attrs, source.Name)
 				if attributeValue == "" {

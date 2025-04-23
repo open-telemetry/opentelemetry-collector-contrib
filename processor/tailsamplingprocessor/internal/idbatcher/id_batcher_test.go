@@ -50,9 +50,7 @@ func BenchmarkConcurrentEnqueue(b *testing.B) {
 	ids := generateSequentialIDs(1)
 	batcher, err := New(10, 100, uint64(4*runtime.NumCPU()))
 	defer batcher.Stop()
-	if err != nil {
-		b.Fatalf("Failed to create Batcher: %v", err)
-	}
+	require.NoError(b, err, "Failed to create Batcher")
 
 	ticker := time.NewTicker(100 * time.Millisecond)
 	defer ticker.Stop()
@@ -131,7 +129,7 @@ func concurrencyTest(t *testing.T, numBatches, newBatchesInitialCapacity, batchC
 		}
 	}
 
-	require.Equal(t, len(ids), len(got), "Batcher got incorrect count of traces from batches")
+	require.Len(t, got, len(ids), "Batcher got incorrect count of traces from batches")
 
 	idSeen := make(map[[16]byte]bool, len(ids))
 	for _, id := range got {

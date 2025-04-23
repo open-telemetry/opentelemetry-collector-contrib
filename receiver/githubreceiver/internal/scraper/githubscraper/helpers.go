@@ -12,7 +12,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v66/github"
+	"github.com/google/go-github/v71/github"
 )
 
 const (
@@ -127,10 +127,10 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 	rClient = github.NewClient(ghs.client)
 	gClient = graphql.NewClient(defaultGraphURL, ghs.client)
 
-	if ghs.cfg.ClientConfig.Endpoint != "" {
+	if ghs.cfg.Endpoint != "" {
 		// Given endpoint set as `https://myGHEserver.com` we need to join the path
 		// with `api/graphql`
-		gu, err := url.JoinPath(ghs.cfg.ClientConfig.Endpoint, "api/graphql")
+		gu, err := url.JoinPath(ghs.cfg.Endpoint, "api/graphql")
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error joining graphql endpoint: %v", err)
 			return nil, nil, err
@@ -138,7 +138,7 @@ func (ghs *githubScraper) createClients() (gClient graphql.Client, rClient *gith
 		gClient = graphql.NewClient(gu, ghs.client)
 
 		// The rest client needs the endpoint to be the root of the server
-		ru := ghs.cfg.ClientConfig.Endpoint
+		ru := ghs.cfg.Endpoint
 		rClient, err = github.NewClient(ghs.client).WithEnterpriseURLs(ru, ru)
 		if err != nil {
 			ghs.logger.Sugar().Errorf("error creating enterprise client: %v", err)
@@ -289,9 +289,9 @@ func (ghs *githubScraper) getCommitData(
 	tar := data.Repository.Refs.Nodes[0].GetTarget()
 
 	// We do a sanity type check just to make sure the GraphQL response was
-	// indead for commits. This is a byproduct of the `... on Commit` syntax
+	// indeed for commits. This is a byproduct of the `... on Commit` syntax
 	// within the GraphQL query and then return the actual history if the
-	// returned Target is inded of type Commit.
+	// returned Target is indeed of type Commit.
 	if ct, ok := tar.(*BranchHistoryTargetCommit); ok {
 		return &ct.History, nil
 	}

@@ -14,7 +14,8 @@ import (
 	"github.com/aws/aws-sdk-go/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
@@ -25,7 +26,6 @@ const (
 	ExceptionEventName              = "exception"
 	AwsIndividualHTTPEventName      = "HTTP request failure"
 	AwsIndividualHTTPErrorEventType = "aws.http.error.event"
-	AwsIndividualHTTPErrorCodeAttr  = "http.response.status_code"
 	AwsIndividualHTTPErrorMsgAttr   = "aws.http.error_message"
 )
 
@@ -60,7 +60,7 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 	switch {
 	case hasExceptions:
 		language := ""
-		if val, ok := resource.Attributes().Get(conventions.AttributeTelemetrySDKLanguage); ok {
+		if val, ok := resource.Attributes().Get(conventionsv112.AttributeTelemetrySDKLanguage); ok {
 			language = val.Str()
 		}
 		isRemote := false
@@ -76,22 +76,22 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 				message = ""
 				stacktrace := ""
 
-				if val, ok := event.Attributes().Get(conventions.AttributeExceptionType); ok {
+				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionType); ok {
 					exceptionType = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(conventions.AttributeExceptionMessage); ok {
+				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionMessage); ok {
 					message = val.Str()
 				}
 
-				if val, ok := event.Attributes().Get(conventions.AttributeExceptionStacktrace); ok {
+				if val, ok := event.Attributes().Get(conventionsv112.AttributeExceptionStacktrace); ok {
 					stacktrace = val.Str()
 				}
 
 				parsed := parseException(exceptionType, message, stacktrace, isRemote, language)
 				exceptions = append(exceptions, parsed...)
 			} else if isAwsSdkSpan && event.Name() == AwsIndividualHTTPEventName {
-				errorCode, ok1 := event.Attributes().Get(AwsIndividualHTTPErrorCodeAttr)
+				errorCode, ok1 := event.Attributes().Get(conventions.AttributeHTTPResponseStatusCode)
 				errorMessage, ok2 := event.Attributes().Get(AwsIndividualHTTPErrorMsgAttr)
 				if ok1 && ok2 {
 					eventEpochTime := event.Timestamp().AsTime().UnixMicro()
@@ -154,7 +154,10 @@ func makeCause(span ptrace.Span, attributes map[string]pcommon.Value, resource p
 		}
 	}
 
-	val, ok := span.Attributes().Get(conventions.AttributeHTTPStatusCode)
+	val, ok := span.Attributes().Get(conventionsv112.AttributeHTTPStatusCode)
+	if !ok {
+		val, ok = span.Attributes().Get(conventions.AttributeHTTPResponseStatusCode)
+	}
 
 	// The segment status for http spans will be based on their http.statuscode as we found some http
 	// spans does not fill with status.Code() but always filled with http.statuscode
@@ -298,7 +301,7 @@ func fillJavaStacktrace(stacktrace string, exceptions []awsxray.Exception) []aws
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
 			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
-			// consequently, we can not write `exception.Cause = newException.ID`
+			// consequently, we cannot write `exception.Cause = newException.ID`
 			// below.
 			newException := &exceptions[len(exceptions)-1]
 			exceptions[len(exceptions)-2].Cause = newException.ID
@@ -395,7 +398,7 @@ func fillPythonStacktrace(stacktrace string, exceptions []awsxray.Exception) []a
 			// when append causes `exceptions` to outgrow its existing
 			// capacity, re-allocation will happen so the place
 			// `exception` points to is no longer `exceptions[len(exceptions)-2]`,
-			// consequently, we can not write `exception.Cause = newException.ID`
+			// consequently, we cannot write `exception.Cause = newException.ID`
 			// below.
 			newException := &exceptions[len(exceptions)-1]
 			exceptions[len(exceptions)-2].Cause = newException.ID

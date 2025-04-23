@@ -38,7 +38,7 @@ The following exporter configuration parameters are supported.
 
 ### Time format for `starttime` and `endtime`
 The `starttime` and `endtime` fields are used to specify the time range for which to retrieve data. 
-The time format is either `YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
+The time format is either RFC3339,`YYYY-MM-DD HH:MM` or simply `YYYY-MM-DD`, in which case the time is assumed to be `00:00`.
 
 ### Encodings
 By default, the receiver understands the following encodings:

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
 )
@@ -57,15 +57,15 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			return nil, err
 		}
 
-		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+		mp, err := newScraper(metricsBuilder, sqlCfg.MetricsBuilderConfig, sqlCfg.ControllerConfig, settings.Logger, func() (*sql.DB, error) {
 			return sqlOpenerFunc(getDataSource(*sqlCfg))
 		}, clientProviderFunc, instanceName)
 		if err != nil {
 			return nil, err
 		}
-		opt := scraperhelper.AddScraperWithType(metadata.Type, mp)
+		opt := scraperhelper.AddScraper(metadata.Type, mp)
 
-		return scraperhelper.NewScraperControllerReceiver(
+		return scraperhelper.NewMetricsController(
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,

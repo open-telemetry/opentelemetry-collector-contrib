@@ -31,7 +31,7 @@ func (p *persistentState) writeState() error {
 		return err
 	}
 
-	return os.WriteFile(p.configPath, by, 0600)
+	return os.WriteFile(p.configPath, by, 0o600)
 }
 
 // loadOrCreatePersistentState attempts to load the persistent state from disk. If it doesn't

@@ -5,7 +5,7 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
-	"fmt"
+	"errors"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -27,7 +27,7 @@ func createExtractCountMetricFunction(_ ottl.FunctionContext, oArgs ottl.Argumen
 	args, ok := oArgs.(*extractCountMetricArguments)
 
 	if !ok {
-		return nil, fmt.Errorf("extractCountMetricFactory args must be of type *extractCountMetricArguments")
+		return nil, errors.New("extractCountMetricFactory args must be of type *extractCountMetricArguments")
 	}
 
 	return extractCountMetric(args.Monotonic)

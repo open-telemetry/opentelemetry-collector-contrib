@@ -16,8 +16,10 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/podmanreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
@@ -28,12 +30,12 @@ func TestNewReceiver(t *testing.T) {
 			InitialDelay:       time.Second,
 		},
 	}
-	mr := newMetricsReceiver(receivertest.NewNopSettings(), config, nil)
+	mr := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), config, nil)
 	assert.NotNil(t, mr)
 }
 
 func TestErrorsInStart(t *testing.T) {
-	recv := newMetricsReceiver(receivertest.NewNopSettings(), &Config{}, nil)
+	recv := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, nil)
 	assert.NotNil(t, recv)
 	err := recv.start(context.Background(), componenttest.NewNopHost())
 	require.Error(t, err)
@@ -49,7 +51,7 @@ func TestScraperLoop(t *testing.T) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	r := newMetricsReceiver(receivertest.NewNopSettings(), cfg, client.factory)
+	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, client.factory)
 	assert.NotNil(t, r)
 
 	go func() {

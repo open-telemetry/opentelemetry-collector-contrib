@@ -18,6 +18,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"golang.org/x/net/websocket"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor/internal/metadata"
 )
 
 func TestSocketConnectionLogs(t *testing.T) {
@@ -28,7 +30,7 @@ func TestSocketConnectionLogs(t *testing.T) {
 		Limit: 1,
 	}
 	logSink := &consumertest.LogsSink{}
-	processor, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateLogs(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		logSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
@@ -66,7 +68,7 @@ func TestSocketConnectionMetrics(t *testing.T) {
 		Limit: 1,
 	}
 	metricsSink := &consumertest.MetricsSink{}
-	processor, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateMetrics(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		metricsSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())
@@ -102,7 +104,7 @@ func TestSocketConnectionTraces(t *testing.T) {
 		Limit: 1,
 	}
 	tracesSink := &consumertest.TracesSink{}
-	processor, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(), cfg,
+	processor, err := NewFactory().CreateTraces(context.Background(), processortest.NewNopSettings(metadata.Type), cfg,
 		tracesSink)
 	require.NoError(t, err)
 	err = processor.Start(context.Background(), componenttest.NewNopHost())

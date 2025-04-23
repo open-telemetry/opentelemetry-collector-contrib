@@ -51,9 +51,9 @@ func NewTracker(cfg *Config, accessToken configopaque.String, params exporter.Se
 func newCorrelationClient(ctx context.Context, cfg *Config, accessToken configopaque.String, params exporter.Settings, host component.Host) (
 	*correlationContext, error,
 ) {
-	corrURL, err := url.Parse(cfg.ClientConfig.Endpoint)
+	corrURL, err := url.Parse(cfg.Endpoint)
 	if err != nil {
-		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.ClientConfig.Endpoint, err)
+		return nil, fmt.Errorf("failed to parse correlation endpoint URL %q: %w", cfg.Endpoint, err)
 	}
 
 	httpClient, err := cfg.ToClient(ctx, host, params.TelemetrySettings)
@@ -90,12 +90,11 @@ func (cor *Tracker) ProcessTraces(ctx context.Context, traces ptrace.Traces) err
 		res := traces.ResourceSpans().At(0).Resource()
 		hostID, ok := splunk.ResourceToHostID(res)
 
-		if ok {
-			cor.log.Info("Detected host resource ID for correlation", zap.Any("hostID", hostID))
-		} else {
+		if !ok {
 			cor.log.Warn("Unable to determine host resource ID for correlation syncing")
 			return
 		}
+		cor.log.Info("Detected host resource ID for correlation", zap.Any("hostID", hostID))
 
 		hostDimension := string(hostID.Key)
 
@@ -136,7 +135,7 @@ func (cor *Tracker) Shutdown(_ context.Context) error {
 	if cor != nil {
 		if cor.correlation != nil {
 			cor.correlation.cancel()
-			cor.correlation.CorrelationClient.Shutdown()
+			cor.correlation.Shutdown()
 		}
 
 		if cor.pTicker != nil {

@@ -51,6 +51,15 @@ func (s *StatsD) connect() error {
 		if err != nil {
 			return err
 		}
+	case "unixgram":
+		unixAddr, err := net.ResolveUnixAddr(s.transport, s.address)
+		if err != nil {
+			return err
+		}
+		s.conn, err = net.DialUnix(s.transport, nil, unixAddr)
+		if err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf("unknown/unsupported transport: %s", s.transport)
 	}

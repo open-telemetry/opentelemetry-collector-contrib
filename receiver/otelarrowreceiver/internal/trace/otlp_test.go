@@ -31,6 +31,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/admission2"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/otelarrow/testdata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/otelarrowreceiver/internal/metadata"
 )
 
 const (
@@ -57,7 +58,7 @@ func (ts *testSink) unblock() {
 }
 
 func (ts *testSink) ConsumeTraces(ctx context.Context, td ptrace.Traces) error {
-	<-ts.Context.Done()
+	<-ts.Done()
 	return ts.TracesSink.ConsumeTraces(ctx, td)
 }
 
@@ -74,7 +75,7 @@ func TestExport_Success(t *testing.T) {
 	require.NotNil(t, resp, "The response is missing")
 
 	require.Len(t, traceSink.AllTraces(), 1)
-	assert.EqualValues(t, td, traceSink.AllTraces()[0])
+	assert.Equal(t, td, traceSink.AllTraces()[0])
 
 	// One self-tracing spans is issued.
 	require.NoError(t, selfProv.ForceFlush(context.Background()))
@@ -196,7 +197,7 @@ func otlpReceiverOnGRPCServer(t *testing.T, tc consumer.Traces) (net.Addr, *trac
 	telset := componenttest.NewNopTelemetrySettings()
 	telset.TracerProvider = tp
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.TelemetrySettings = telset
 
 	set.ID = component.NewIDWithName(component.MustNewType("otlp"), "trace")

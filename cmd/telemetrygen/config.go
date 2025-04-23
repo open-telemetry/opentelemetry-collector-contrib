@@ -7,15 +7,13 @@
 package main // import "github.com/open-telemetry/opentelemetry-collector-contrib/telemetrygen/internal/telemetrygen"
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/logs"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/metrics"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/internal/traces"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/logs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/metrics"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen/pkg/traces"
 )
 
 var (
@@ -34,7 +32,7 @@ var rootCmd = &cobra.Command{
 // tracesCmd is the command responsible for sending traces
 var tracesCmd = &cobra.Command{
 	Use:     "traces",
-	Short:   fmt.Sprintf("Simulates a client generating traces. (Stability level: %s)", metadata.TracesStability),
+	Short:   "Simulates a client generating traces. (Stability level: alpha)",
 	Example: "telemetrygen traces",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		return traces.Start(tracesCfg)
@@ -44,7 +42,7 @@ var tracesCmd = &cobra.Command{
 // metricsCmd is the command responsible for sending metrics
 var metricsCmd = &cobra.Command{
 	Use:     "metrics",
-	Short:   fmt.Sprintf("Simulates a client generating metrics. (Stability level: %s)", metadata.MetricsStability),
+	Short:   "Simulates a client generating metrics. (Stability level: development)",
 	Example: "telemetrygen metrics",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		return metrics.Start(metricsCfg)
@@ -54,7 +52,7 @@ var metricsCmd = &cobra.Command{
 // logsCmd is the command responsible for sending logs
 var logsCmd = &cobra.Command{
 	Use:     "logs",
-	Short:   fmt.Sprintf("Simulates a client generating logs. (Stability level: %s)", metadata.LogsStability),
+	Short:   "Simulates a client generating metrics. (Stability level: development)",
 	Example: "telemetrygen logs",
 	RunE: func(_ *cobra.Command, _ []string) error {
 		return logs.Start(logsCfg)
@@ -64,13 +62,13 @@ var logsCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(tracesCmd, metricsCmd, logsCmd)
 
-	tracesCfg = new(traces.Config)
+	tracesCfg = traces.NewConfig()
 	tracesCfg.Flags(tracesCmd.Flags())
 
-	metricsCfg = new(metrics.Config)
+	metricsCfg = metrics.NewConfig()
 	metricsCfg.Flags(metricsCmd.Flags())
 
-	logsCfg = new(logs.Config)
+	logsCfg = logs.NewConfig()
 	logsCfg.Flags(logsCmd.Flags())
 
 	// Disabling completion command for end user
@@ -81,7 +79,7 @@ func init() {
 // Execute tries to run the input command
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		// TODO: Uncomment the line below when using Run instead of RunE in the xxxCmd functions
+		// TODO: Uncomment the line below when using run instead of RunE in the xxxCmd functions
 		// fmt.Fprintln(os.Stderr, err)
 		os.Exit(1)
 	}

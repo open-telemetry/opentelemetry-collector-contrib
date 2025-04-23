@@ -22,6 +22,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/signalfxexporter/internal/translation"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 )
@@ -38,7 +39,7 @@ func TestCreateMetrics(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -48,7 +49,7 @@ func TestCreateTraces(t *testing.T) {
 	c.AccessToken = "access_token"
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 }
 
@@ -57,7 +58,7 @@ func TestCreateTracesNoAccessToken(t *testing.T) {
 	c := cfg.(*Config)
 	c.Realm = "us0"
 
-	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(), cfg)
+	_, err := createTracesExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.EqualError(t, err, "access_token is required")
 }
 
@@ -71,7 +72,7 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 
 	exp, err := factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exp)
@@ -82,14 +83,14 @@ func TestCreateInstanceViaFactory(t *testing.T) {
 	expCfg.Realm = "us1"
 	exp, err = factory.CreateMetrics(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
 
 	logExp, err := factory.CreateLogs(
 		context.Background(),
-		exportertest.NewNopSettings(),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, logExp)
@@ -110,7 +111,7 @@ func TestCreateMetrics_CustomConfig(t *testing.T) {
 		},
 	}
 
-	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(), config)
+	te, err := createMetricsExporter(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

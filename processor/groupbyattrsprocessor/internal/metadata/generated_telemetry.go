@@ -4,22 +4,16 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor")
-}
-
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/processor/groupbyattrsprocessor")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -30,6 +24,8 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                                     metric.Meter
+	mu                                        sync.Mutex
+	registrations                             []metric.Registration
 	ProcessorGroupbyattrsLogGroups            metric.Int64Histogram
 	ProcessorGroupbyattrsMetricGroups         metric.Int64Histogram
 	ProcessorGroupbyattrsNumGroupedLogs       metric.Int64Counter
@@ -52,6 +48,15 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
@@ -61,66 +66,59 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.ProcessorGroupbyattrsLogGroups, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
+	builder.ProcessorGroupbyattrsLogGroups, err = builder.meter.Int64Histogram(
 		"otelcol_processor_groupbyattrs_log_groups",
 		metric.WithDescription("Distribution of groups extracted for logs"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsMetricGroups, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
+	builder.ProcessorGroupbyattrsMetricGroups, err = builder.meter.Int64Histogram(
 		"otelcol_processor_groupbyattrs_metric_groups",
 		metric.WithDescription("Distribution of groups extracted for metrics"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedLogs, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedLogs, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_grouped_logs",
 		metric.WithDescription("Number of logs that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedMetrics, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedMetrics, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_grouped_metrics",
 		metric.WithDescription("Number of metrics that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumGroupedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumGroupedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_grouped_spans",
 		metric.WithDescription("Number of spans that had attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedLogs, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedLogs, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_non_grouped_logs",
 		metric.WithDescription("Number of logs that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedMetrics, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedMetrics, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_non_grouped_metrics",
 		metric.WithDescription("Number of metrics that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsNumNonGroupedSpans, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.ProcessorGroupbyattrsNumNonGroupedSpans, err = builder.meter.Int64Counter(
 		"otelcol_processor_groupbyattrs_num_non_grouped_spans",
 		metric.WithDescription("Number of spans that did not have attributes grouped"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
-	builder.ProcessorGroupbyattrsSpanGroups, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
+	builder.ProcessorGroupbyattrsSpanGroups, err = builder.meter.Int64Histogram(
 		"otelcol_processor_groupbyattrs_span_groups",
 		metric.WithDescription("Distribution of groups extracted for spans"),
 		metric.WithUnit("1"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noop.Meter{}
 }

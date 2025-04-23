@@ -9,6 +9,8 @@ var errNoSchema = errors.New("no schema provided")
 
 type Config struct {
 	Schema string `mapstructure:"schema"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

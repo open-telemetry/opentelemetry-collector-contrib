@@ -9,7 +9,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	rcvr "go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/multierr"
@@ -25,7 +25,7 @@ type receiver struct {
 	id  component.ID
 
 	pipe     pipeline.Pipeline
-	emitter  *helper.LogEmitter
+	emitter  helper.LogEmitter
 	consumer consumer.Logs
 	obsrecv  *receiverhelper.ObsReport
 

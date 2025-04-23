@@ -38,6 +38,7 @@ coralogix/all:
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
 
+
 coralogix/domain:
   domain: "coralogix.com"
   application_name_attributes:
@@ -49,7 +50,7 @@ coralogix/domain:
   subsystem_name: "SUBSYSTEM_NAME"
   timeout: 5s
 
-coralogix/domain_endoints:
+coralogix/domain_endpoints:
   domain: "coralogix.com"
   traces:
     endpoint: "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"

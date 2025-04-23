@@ -5,7 +5,7 @@ status:
   stability:
     development: [logs]
   codeowners:
-    active: [codeboten, nslaughter, smithclay]
+    active: [nslaughter, smithclay]
 
 # TODO: Update the receiver to pass the tests
 tests:

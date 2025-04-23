@@ -11,7 +11,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachesparkreceiver/internal/metadata"
 )
@@ -52,12 +53,12 @@ func createMetricsReceiver(
 	}
 
 	sparkScraper := newSparkScraper(params.Logger, sparkConfig, params)
-	scraper, err := scraperhelper.NewScraperWithoutType(sparkScraper.scrape,
-		scraperhelper.WithStart(sparkScraper.start))
+	s, err := scraper.NewMetrics(sparkScraper.scrape,
+		scraper.WithStart(sparkScraper.start))
 	if err != nil {
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&sparkConfig.ControllerConfig, params,
-		consumer, scraperhelper.AddScraperWithType(metadata.Type, scraper))
+	return scraperhelper.NewMetricsController(&sparkConfig.ControllerConfig, params,
+		consumer, scraperhelper.AddScraper(metadata.Type, s))
 }

@@ -4,18 +4,18 @@
 package azurelogs // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/azurelogs"
 
 import (
-	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.22.0"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
-	"golang.org/x/exp/slices"
 )
 
 const (
@@ -24,9 +24,7 @@ const (
 
 	// Constants for Azure Log Record Attributes
 	// TODO: Remove once these are available in semconv
-	eventName          = "event.name"
-	eventNameValue     = "az.resource.log"
-	networkPeerAddress = "network.peer.address"
+	eventNameValue = "az.resource.log"
 
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
@@ -44,7 +42,6 @@ const (
 
 var errMissingTimestamp = errors.New("missing timestamp")
 
-// azureRecords represents an array of Azure log records
 // as exported via an Azure Event Hub
 type azureRecords struct {
 	Records []azureLogRecord `json:"records"`
@@ -76,72 +73,70 @@ type azureLogRecord struct {
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
 
 type ResourceLogsUnmarshaler struct {
-	Version string
-	Logger  *zap.Logger
+	Version     string
+	Logger      *zap.Logger
+	TimeFormats []string
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
-	l := plog.NewLogs()
+	iter := jsoniter.ConfigFastest.BorrowIterator(buf)
+	defer jsoniter.ConfigFastest.ReturnIterator(iter)
 
 	var azureLogs azureRecords
-	decoder := jsoniter.NewDecoder(bytes.NewReader(buf))
-	if err := decoder.Decode(&azureLogs); err != nil {
-		return l, err
+	iter.ReadVal(&azureLogs)
+
+	if iter.Error != nil {
+		return plog.Logs{}, fmt.Errorf("JSON parse failed: %w", iter.Error)
 	}
 
-	var resourceIDs []string
-	azureResourceLogs := make(map[string][]azureLogRecord)
-	for _, azureLog := range azureLogs.Records {
-		azureResourceLogs[azureLog.ResourceID] = append(azureResourceLogs[azureLog.ResourceID], azureLog)
-		keyExists := slices.Contains(resourceIDs, azureLog.ResourceID)
-		if !keyExists {
-			resourceIDs = append(resourceIDs, azureLog.ResourceID)
+	allResourceScopeLogs := map[string]plog.ScopeLogs{}
+	for _, log := range azureLogs.Records {
+		scopeLogs, found := allResourceScopeLogs[log.ResourceID]
+		if !found {
+			scopeLogs = plog.NewScopeLogs()
+			scopeLogs.Scope().SetName(scopeName)
+			scopeLogs.Scope().SetVersion(r.Version)
+			allResourceScopeLogs[log.ResourceID] = scopeLogs
+		}
+
+		nanos, err := getTimestamp(log, r.TimeFormats...)
+		if err != nil {
+			r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
+			continue
+		}
+
+		lr := scopeLogs.LogRecords().AppendEmpty()
+		lr.SetTimestamp(nanos)
+
+		if log.Level != nil {
+			severity := asSeverity(*log.Level)
+			lr.SetSeverityNumber(severity)
+			lr.SetSeverityText(log.Level.String())
+		}
+
+		lr.Attributes().PutStr(conventions.AttributeCloudResourceID, log.ResourceID)
+		lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		lr.Attributes().PutStr(conventions.AttributeEventName, eventNameValue)
+
+		if err := lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
+			return plog.Logs{}, err
 		}
 	}
 
-	for _, resourceID := range resourceIDs {
-		logs := azureResourceLogs[resourceID]
-		resourceLogs := l.ResourceLogs().AppendEmpty()
-		scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()
-		scopeLogs.Scope().SetName(scopeName)
-		scopeLogs.Scope().SetVersion(r.Version)
-		logRecords := scopeLogs.LogRecords()
-
-		for i := 0; i < len(logs); i++ {
-			log := logs[i]
-			nanos, err := getTimestamp(log)
-			if err != nil {
-				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
-				continue
-			}
-
-			lr := logRecords.AppendEmpty()
-			lr.SetTimestamp(nanos)
-
-			if log.Level != nil {
-				severity := asSeverity(*log.Level)
-				lr.SetSeverityNumber(severity)
-				lr.SetSeverityText(log.Level.String())
-			}
-
-			lr.Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
-			lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-			lr.Attributes().PutStr(eventName, eventNameValue)
-
-			if err := lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
-				return l, err
-			}
-		}
+	l := plog.NewLogs()
+	for _, scopeLogs := range allResourceScopeLogs {
+		rl := l.ResourceLogs().AppendEmpty()
+		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 
 	return l, nil
 }
 
-func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
+func getTimestamp(record azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
 	if record.Time != "" {
-		return asTimestamp(record.Time)
+		return asTimestamp(record.Time, formats...)
 	} else if record.Timestamp != "" {
-		return asTimestamp(record.Timestamp)
+		return asTimestamp(record.Timestamp, formats...)
 	}
 
 	return 0, errMissingTimestamp
@@ -150,13 +145,22 @@ func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string) (pcommon.Timestamp, error) {
-	t, err := iso8601.ParseString(s)
-	if err != nil {
-		return 0, err
+func asTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
+	var err error
+	var t time.Time
+
+	// Try parsing with provided formats first
+	for _, format := range formats {
+		if t, err = time.Parse(format, s); err == nil {
+			return pcommon.Timestamp(t.UnixNano()), nil
+		}
 	}
 
-	return pcommon.Timestamp(t.UnixNano()), nil
+	// Fallback to ISO 8601 parsing if no format matches
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
+	return 0, err
 }
 
 // asSeverity converts the Azure log level to equivalent
@@ -209,7 +213,7 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureTenantID, log.TenantID)
 
 	setIf(attrs, conventions.AttributeCloudRegion, log.Location)
-	setIf(attrs, networkPeerAddress, log.CallerIPAddress)
+	setIf(attrs, conventions.AttributeNetworkPeerAddress, log.CallerIPAddress)
 	return attrs
 }
 
@@ -218,26 +222,42 @@ func copyPropertiesAndApplySemanticConventions(category string, properties *any,
 		return
 	}
 
-	// TODO: check if this is a valid JSON string and parse it?
+	var handleFunc func(string, any, map[string]any, map[string]any)
+	switch category {
+	case categoryAzureCdnAccessLog:
+		handleFunc = handleAzureCDNAccessLog
+	case categoryFrontDoorAccessLog:
+		handleFunc = handleFrontDoorAccessLog
+	case categoryFrontDoorHealthProbeLog:
+		handleFunc = handleFrontDoorHealthProbeLog
+	case categoryFrontdoorWebApplicationFirewallLog:
+		handleFunc = handleFrontdoorWebApplicationFirewallLog
+	case categoryAppServiceAppLogs:
+		handleFunc = handleAppServiceAppLogs
+	case categoryAppServiceAuditLogs:
+		handleFunc = handleAppServiceAuditLogs
+	case categoryAppServiceAuthenticationLogs:
+		handleFunc = handleAppServiceAuthenticationLogs
+	case categoryAppServiceConsoleLogs:
+		handleFunc = handleAppServiceConsoleLogs
+	case categoryAppServiceHTTPLogs:
+		handleFunc = handleAppServiceHTTPLogs
+	case categoryAppServiceIPSecAuditLogs:
+		handleFunc = handleAppServiceIPSecAuditLogs
+	case categoryAppServicePlatformLogs:
+		handleFunc = handleAppServicePlatformLogs
+	default:
+		handleFunc = func(field string, value any, _ map[string]any, attrsProps map[string]any) {
+			attrsProps[field] = value
+		}
+	}
+
 	switch p := (*properties).(type) {
 	case map[string]any:
 		attrsProps := map[string]any{}
-
-		for k, v := range p {
-			// Check for a complex conversion, e.g. AppServiceHTTPLogs.Protocol
-			if complexConversion, ok := tryGetComplexConversion(category, k); ok {
-				if complexConversion(k, v, attrs) {
-					continue
-				}
-			}
-			// Check for an equivalent Semantic Convention key
-			if otelKey, ok := resourceLogKeyToSemConvKey(k, category); ok {
-				attrs[otelKey] = normalizeValue(otelKey, v)
-			} else {
-				attrsProps[k] = v
-			}
+		for field, value := range p {
+			handleFunc(field, value, attrs, attrsProps)
 		}
-
 		if len(attrsProps) > 0 {
 			attrs[azureProperties] = attrsProps
 		}

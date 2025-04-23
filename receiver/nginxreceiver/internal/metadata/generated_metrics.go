@@ -11,7 +11,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeState specifies the a value state attribute.
+// AttributeState specifies the value state attribute.
 type AttributeState int
 
 const (
@@ -43,6 +43,32 @@ var MapAttributeState = map[string]AttributeState{
 	"reading": AttributeStateReading,
 	"writing": AttributeStateWriting,
 	"waiting": AttributeStateWaiting,
+}
+
+var MetricsInfo = metricsInfo{
+	NginxConnectionsAccepted: metricInfo{
+		Name: "nginx.connections_accepted",
+	},
+	NginxConnectionsCurrent: metricInfo{
+		Name: "nginx.connections_current",
+	},
+	NginxConnectionsHandled: metricInfo{
+		Name: "nginx.connections_handled",
+	},
+	NginxRequests: metricInfo{
+		Name: "nginx.requests",
+	},
+}
+
+type metricsInfo struct {
+	NginxConnectionsAccepted metricInfo
+	NginxConnectionsCurrent  metricInfo
+	NginxConnectionsHandled  metricInfo
+	NginxRequests            metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricNginxConnectionsAccepted struct {
@@ -282,7 +308,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
@@ -355,7 +380,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/nginxreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricNginxConnectionsAccepted.emit(ils.Metrics())

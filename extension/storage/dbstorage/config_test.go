@@ -5,6 +5,7 @@ package dbstorage // import "github.com/open-telemetry/opentelemetry-collector-c
 
 import (
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -27,8 +28,13 @@ func TestConfigValidate(t *testing.T) {
 			errors.New("missing datasource"),
 		},
 		{
-			"valid",
+			"Unknown driver",
 			Config{DriverName: "foo", DataSource: "bar"},
+			fmt.Errorf("unsupported driver %s", "foo"),
+		},
+		{
+			"Valid",
+			Config{DriverName: driverSQLite, DataSource: "bar"},
 			nil,
 		},
 	}

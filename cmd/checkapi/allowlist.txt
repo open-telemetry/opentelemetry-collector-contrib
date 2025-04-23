@@ -1,2 +1,0 @@
-extension/observer
-extension/opampcustommessages

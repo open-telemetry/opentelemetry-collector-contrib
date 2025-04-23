@@ -74,14 +74,10 @@ func TestSketchSeriesListMarshal(t *testing.T) {
 	}
 
 	b, err := sl.Marshal()
-	if err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, err)
 
 	pl := new(gogen.SketchPayload)
-	if err := pl.Unmarshal(b); err != nil {
-		t.Fatal(err)
-	}
+	require.NoError(t, pl.Unmarshal(b))
 
 	require.Len(t, pl.Sketches, len(sl))
 

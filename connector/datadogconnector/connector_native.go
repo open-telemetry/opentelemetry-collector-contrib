@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/statsprocessor"
+	"github.com/DataDog/datadog-agent/pkg/obfuscate"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/DataDog/datadog-agent/pkg/trace/config"
 	"github.com/DataDog/datadog-agent/pkg/trace/stats"
@@ -48,6 +49,10 @@ type traceToMetricConnectorNative struct {
 	// resulting from ingested traces.
 	statsout chan *pb.StatsPayload
 
+	// obfuscator is used to obfuscate sensitive data from various span
+	// tags based on their type.
+	obfuscator *obfuscate.Obfuscator
+
 	// exit specifies the exit channel, which will be closed upon shutdown.
 	exit chan struct{}
 
@@ -73,6 +78,10 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 	}
 
 	tcfg := getTraceAgentCfg(set.Logger, cfg.(*Config).Traces, attributesTranslator)
+	oconf := tcfg.Obfuscation.Export(tcfg)
+	oconf.Statsd = metricsClient
+	oconf.Redis.Enabled = true
+
 	return &traceToMetricConnectorNative{
 		logger:          set.Logger,
 		translator:      trans,
@@ -82,6 +91,7 @@ func newTraceToMetricConnectorNative(set component.TelemetrySettings, cfg compon
 		concentrator:    stats.NewConcentrator(tcfg, statsWriter, time.Now(), metricsClient),
 		statsout:        statsout,
 		metricsConsumer: metricsConsumer,
+		obfuscator:      obfuscate.NewObfuscator(oconf),
 		exit:            make(chan struct{}),
 	}, nil
 }
@@ -103,8 +113,9 @@ func (c *traceToMetricConnectorNative) Shutdown(context.Context) error {
 		return nil
 	}
 	c.logger.Info("Shutting down datadog connector")
-	c.logger.Info("Stopping concentrator")
-	// stop the concentrator and wait for the run loop to exit
+	c.logger.Info("Stopping obfuscator and concentrator")
+	// stop the obfuscator and concentrator and wait for the run loop to exit
+	c.obfuscator.Stop()
 	c.concentrator.Stop()
 	c.exit <- struct{}{} // signal exit
 	<-c.exit             // wait for close
@@ -118,7 +129,7 @@ func (c *traceToMetricConnectorNative) Capabilities() consumer.Capabilities {
 }
 
 func (c *traceToMetricConnectorNative) ConsumeTraces(_ context.Context, traces ptrace.Traces) error {
-	inputs := stats.OTLPTracesToConcentratorInputs(traces, c.tcfg, c.ctagKeys, c.peerTagKeys)
+	inputs := stats.OTLPTracesToConcentratorInputsWithObfuscation(traces, c.tcfg, c.ctagKeys, c.peerTagKeys, c.obfuscator)
 	for _, input := range inputs {
 		c.concentrator.Add(input)
 	}

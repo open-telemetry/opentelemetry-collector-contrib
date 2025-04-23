@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/redisreceiver/internal/metadata"
 )
@@ -53,5 +53,5 @@ func createMetricsReceiver(
 		return nil, err
 	}
 
-	return scraperhelper.NewScraperControllerReceiver(&oCfg.ControllerConfig, set, consumer, scraperhelper.AddScraperWithType(metadata.Type, scrp))
+	return scraperhelper.NewMetricsController(&oCfg.ControllerConfig, set, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }

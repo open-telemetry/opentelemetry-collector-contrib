@@ -8,44 +8,38 @@ import (
 	"errors"
 	"runtime"
 
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/scraper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper/internal/metadata"
 )
 
-// This file implements Factory for System scraper.
+// NewFactory for System scraper.
+func NewFactory() scraper.Factory {
+	return scraper.NewFactory(metadata.Type, createDefaultConfig, scraper.WithMetrics(createMetricsScraper, metadata.MetricsStability))
+}
 
-const (
-	// TypeStr the value of "type" key in configuration.
-	TypeStr = "system"
-)
-
-// Factory is the Factory for scraper.
-type Factory struct{}
-
-// CreateDefaultConfig creates the default configuration for the Scraper.
-func (f *Factory) CreateDefaultConfig() internal.Config {
+// createDefaultConfig creates the default configuration for the Scraper.
+func createDefaultConfig() component.Config {
 	return &Config{
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 	}
 }
 
-// CreateMetricsScraper creates a resource scraper based on provided config.
-func (f *Factory) CreateMetricsScraper(
+// createMetricsScraper creates a resource scraper based on provided config.
+func createMetricsScraper(
 	ctx context.Context,
-	settings receiver.Settings,
-	cfg internal.Config,
-) (scraperhelper.Scraper, error) {
+	settings scraper.Settings,
+	cfg component.Config,
+) (scraper.Metrics, error) {
 	if runtime.GOOS != "linux" && runtime.GOOS != "windows" && runtime.GOOS != "darwin" {
-		return nil, errors.New("uptime scraper only available on Linux, Windows, or MacOS")
+		return nil, errors.New("uptime scraper only available on Linux, Windows, or macOS")
 	}
 
 	uptimeScraper := newUptimeScraper(ctx, settings, cfg.(*Config))
 
-	return scraperhelper.NewScraperWithoutType(
+	return scraper.NewMetrics(
 		uptimeScraper.scrape,
-		scraperhelper.WithStart(uptimeScraper.start),
+		scraper.WithStart(uptimeScraper.start),
 	)
 }

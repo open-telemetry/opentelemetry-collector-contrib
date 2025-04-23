@@ -17,7 +17,7 @@ import (
 )
 
 func TestExporter(t *testing.T) {
-	for _, eventType := range []string{"logs", "traces"} {
+	for _, eventType := range []string{"logs", "metrics", "traces"} {
 		for _, tc := range []struct {
 			name string
 
@@ -68,6 +68,8 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	switch eventType {
 	case "logs":
 		sender = testbed.NewOTLPLogsDataSender(host, port)
+	case "metrics":
+		sender = testbed.NewOTLPMetricDataSender(host, port)
 	case "traces":
 		sender = testbed.NewOTLPTraceDataSender(host, port)
 	default:
@@ -84,7 +86,7 @@ func runner(t *testing.T, eventType string, restartCollector, mockESFailure bool
 	cfg := createConfigYaml(t, sender, receiver, nil, nil, eventType, getDebugFlag(t))
 	t.Log("test otel collector configuration:", cfg)
 	collector := newRecreatableOtelCol(t)
-	cleanup, err := collector.PrepareConfig(cfg)
+	cleanup, err := collector.PrepareConfig(t, cfg)
 	require.NoError(t, err)
 	defer cleanup()
 

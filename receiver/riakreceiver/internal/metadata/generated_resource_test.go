@@ -33,7 +33,7 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("riak.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "riak.node.name-val", val.Str())
+				assert.Equal(t, "riak.node.name-val", val.Str())
 			}
 		})
 	}

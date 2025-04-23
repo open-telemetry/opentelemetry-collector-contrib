@@ -1,0 +1,664 @@
+resourceMetrics:
+  - resource:
+      attributes:
+        - key: mysql.instance.endpoint
+          value:
+            stringValue: localhost:3306
+    scopeMetrics:
+      - metrics:
+          - description: The number of data pages in the InnoDB buffer pool.
+            name: mysql.buffer_pool.data_pages
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: clean
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "228"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: dirty
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: The number of operations on the InnoDB buffer pool.
+            name: mysql.buffer_pool.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "237"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "238"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead_evicted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "236"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_ahead_rnd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "239"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read_requests
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "240"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "241"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: wait_free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "242"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: write_requests
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of requests to flush pages from the InnoDB buffer pool.
+            name: mysql.buffer_pool.page_flushes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "232"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of pages in the InnoDB buffer pool.
+            name: mysql.buffer_pool.pages
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "230"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "233"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: free
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: The number of bytes in the InnoDB buffer pool.
+            name: mysql.buffer_pool.usage
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "2"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: clean
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "229"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: dirty
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: By
+          - description: The number of writes to the InnoDB doublewrite buffer.
+            name: mysql.double_writes
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "251"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: pages_written
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "252"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of requests to various MySQL handlers.
+            name: mysql.handlers
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "200"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: commit
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "211"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: delete
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "212"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: discover
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "213"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: external_lock
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "214"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: mrr_init
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "215"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: prepare
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "216"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_first
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "217"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_key
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "218"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_last
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "219"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_next
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "220"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_prev
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "221"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_rnd
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "222"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: read_rnd_next
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "223"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: rollback
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "224"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: savepoint
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "225"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: savepoint_rollback
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "226"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: update
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "227"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: write
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of MySQL locks.
+            name: mysql.locks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "440"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: immediate
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "441"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: waited
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of InnoDB log operations.
+            name: mysql.log_operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "253"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: waits
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "254"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: write_requests
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "255"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of mysqlx connections.
+            name: mysql.mysqlx_connections
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "307"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: accepted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "308"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: closed
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "309"
+                  attributes:
+                    - key: status
+                      value:
+                        stringValue: rejected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of opened resources.
+            name: mysql.opened_resources
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "371"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: file
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "373"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: table
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "372"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: table_definition
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of InnoDB operations.
+            name: mysql.operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "243"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: fsyncs
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "248"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: reads
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "249"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: writes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of InnoDB page operations.
+            name: mysql.page_operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "261"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: created
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "262"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "263"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: written
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of times each type of prepared statement command has been issued.
+            name: mysql.prepared_statements
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "163"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: close
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "162"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: execute
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "164"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: fetch
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "165"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: prepare
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "166"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: reset
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "167"
+                  attributes:
+                    - key: command
+                      value:
+                        stringValue: send_long_data
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of InnoDB row locks.
+            name: mysql.row_locks
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "266"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: time
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "269"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: waits
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of InnoDB row operations.
+            name: mysql.row_operations
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "270"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: deleted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "271"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: inserted
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "272"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: read
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "273"
+                  attributes:
+                    - key: operation
+                      value:
+                        stringValue: updated
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of MySQL sorts.
+            name: mysql.sorts
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "416"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: merge_passes
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "417"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: range
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "418"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: rows
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "419"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: scan
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The state of MySQL threads.
+            name: mysql.threads
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "448"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: cached
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "449"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: connected
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "450"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: created
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "451"
+                  attributes:
+                    - key: kind
+                      value:
+                        stringValue: running
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            unit: "1"
+          - description: The number of created temporary resources.
+            name: mysql.tmp_resources
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "189"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: disk_tables
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "190"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: files
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+                - asInt: "191"
+                  attributes:
+                    - key: resource
+                      value:
+                        stringValue: tables
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: "1"
+          - description: The number of seconds that the server has been up.
+            name: mysql.uptime
+            sum:
+              aggregationTemporality: 2
+              dataPoints:
+                - asInt: "452"
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+              isMonotonic: true
+            unit: s
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
+          version: latest

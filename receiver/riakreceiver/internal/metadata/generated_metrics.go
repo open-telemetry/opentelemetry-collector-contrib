@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeOperation specifies the a value operation attribute.
+// AttributeOperation specifies the value operation attribute.
 type AttributeOperation int
 
 const (
@@ -42,7 +42,7 @@ var MapAttributeOperation = map[string]AttributeOperation{
 	"delete": AttributeOperationDelete,
 }
 
-// AttributeRequest specifies the a value request attribute.
+// AttributeRequest specifies the value request attribute.
 type AttributeRequest int
 
 const (
@@ -66,6 +66,40 @@ func (av AttributeRequest) String() string {
 var MapAttributeRequest = map[string]AttributeRequest{
 	"put": AttributeRequestPut,
 	"get": AttributeRequestGet,
+}
+
+var MetricsInfo = metricsInfo{
+	RiakMemoryLimit: metricInfo{
+		Name: "riak.memory.limit",
+	},
+	RiakNodeOperationCount: metricInfo{
+		Name: "riak.node.operation.count",
+	},
+	RiakNodeOperationTimeMean: metricInfo{
+		Name: "riak.node.operation.time.mean",
+	},
+	RiakNodeReadRepairCount: metricInfo{
+		Name: "riak.node.read_repair.count",
+	},
+	RiakVnodeIndexOperationCount: metricInfo{
+		Name: "riak.vnode.index.operation.count",
+	},
+	RiakVnodeOperationCount: metricInfo{
+		Name: "riak.vnode.operation.count",
+	},
+}
+
+type metricsInfo struct {
+	RiakMemoryLimit              metricInfo
+	RiakNodeOperationCount       metricInfo
+	RiakNodeOperationTimeMean    metricInfo
+	RiakNodeReadRepairCount      metricInfo
+	RiakVnodeIndexOperationCount metricInfo
+	RiakVnodeOperationCount      metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricRiakMemoryLimit struct {
@@ -415,7 +449,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                             mbc,
@@ -503,7 +536,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/riakreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricRiakMemoryLimit.emit(ils.Metrics())

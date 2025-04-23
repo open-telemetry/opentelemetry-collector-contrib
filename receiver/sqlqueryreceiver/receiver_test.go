@@ -13,10 +13,11 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlqueryreceiver/internal/metadata"
 )
 
 func TestCreateLogs(t *testing.T) {
@@ -24,7 +25,7 @@ func TestCreateLogs(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
@@ -53,7 +54,7 @@ func TestCreateMetrics(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{

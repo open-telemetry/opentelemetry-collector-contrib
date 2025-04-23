@@ -4,7 +4,7 @@
 package kube
 
 import (
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 	"time"
@@ -64,7 +64,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got := c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podA", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podB"
@@ -74,7 +74,7 @@ func podAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got = c.Pods[newPodIdentifier("connection", "k8s.pod.ip", "1.1.1.1")]
 	assert.Equal(t, "1.1.1.1", got.Address)
 	assert.Equal(t, "podB", got.Name)
-	assert.Equal(t, "", got.PodUID)
+	assert.Empty(t, got.PodUID)
 
 	pod = &api_v1.Pod{}
 	pod.Name = "podC"
@@ -105,7 +105,7 @@ func namespaceAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj an
 	assert.Len(t, c.Namespaces, 1)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	assert.Equal(t, "", got.NamespaceUID)
+	assert.Empty(t, got.NamespaceUID)
 
 	namespace = &api_v1.Namespace{}
 	namespace.Name = "namespaceB"
@@ -131,7 +131,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 	got, ok := c.GetNode("nodeA")
 	assert.True(t, ok)
 	assert.Equal(t, "nodeA", got.Name)
-	assert.Equal(t, "", got.NodeUID)
+	assert.Empty(t, got.NodeUID)
 
 	node = &api_v1.Node{}
 	node.Name = "nodeB"
@@ -146,8 +146,7 @@ func nodeAddAndUpdateTest(t *testing.T, c *WatchClient, handler func(obj any)) {
 
 func TestDefaultClientset(t *testing.T) {
 	c, err := New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, nil, nil, nil, nil, false, 10*time.Second)
-	assert.Error(t, err)
-	assert.Equal(t, "invalid authType for kubernetes: ", err.Error())
+	require.EqualError(t, err, "invalid authType for kubernetes: ")
 	assert.Nil(t, c)
 
 	c, err = New(componenttest.NewNopTelemetrySettings(), k8sconfig.APIConfig{}, ExtractionRules{}, Filters{}, []Association{}, Excludes{}, newFakeAPIClientset, nil, nil, nil, false, 10*time.Second)
@@ -190,12 +189,11 @@ func TestConstructorErrors(t *testing.T) {
 		}
 		clientProvider := func(c k8sconfig.APIConfig) (kubernetes.Interface, error) {
 			gotAPIConfig = c
-			return nil, fmt.Errorf("error creating k8s client")
+			return nil, errors.New("error creating k8s client")
 		}
 		c, err := New(componenttest.NewNopTelemetrySettings(), apiCfg, er, ff, []Association{}, Excludes{}, clientProvider, NewFakeInformer, NewFakeNamespaceInformer, nil, false, 10*time.Second)
 		assert.Nil(t, c)
-		assert.Error(t, err)
-		assert.Equal(t, "error creating k8s client", err.Error())
+		require.EqualError(t, err, "error creating k8s client")
 		assert.Equal(t, apiCfg, gotAPIConfig)
 	})
 }
@@ -321,7 +319,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodAdd(pod)
 	assert.Len(t, c.Pods, 1)
 	got := c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -332,7 +330,7 @@ func TestPodCreate(t *testing.T) {
 	c.handlePodUpdate(&api_v1.Pod{}, pod)
 	assert.Len(t, c.Pods, 1)
 	got = c.Pods[newPodIdentifier("resource_attribute", "k8s.pod.uid", "11111111-2222-3333-4444-555555555555")]
-	assert.Equal(t, "", got.Address)
+	assert.Empty(t, got.Address)
 	assert.Equal(t, "podD", got.Name)
 	assert.Equal(t, "11111111-2222-3333-4444-555555555555", got.PodUID)
 
@@ -430,7 +428,7 @@ func TestPodDelete(t *testing.T) {
 	// delete empty IP pod
 	c.handlePodDelete(&api_v1.Pod{})
 
-	// delete non-existent IP
+	// delete nonexistent IP
 	c.deleteQueue = c.deleteQueue[:0]
 	pod := &api_v1.Pod{}
 	pod.Status.PodIP = "9.9.9.9"
@@ -496,14 +494,14 @@ func TestNamespaceDelete(t *testing.T) {
 	// delete empty namespace
 	c.handleNamespaceDelete(&api_v1.Namespace{})
 
-	// delete non-existent namespace
+	// delete nonexistent namespace
 	namespace := &api_v1.Namespace{}
 	namespace.Name = "namespaceC"
 	c.handleNamespaceDelete(namespace)
 	assert.Len(t, c.Namespaces, 2)
 	got := c.Namespaces["namespaceA"]
 	assert.Equal(t, "namespaceA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNamespaceDelete(cache.DeletedFinalStateUnknown{Obj: namespace})
 	assert.Len(t, c.Namespaces, 2)
 	got = c.Namespaces["namespaceA"]
@@ -531,14 +529,14 @@ func TestNodeDelete(t *testing.T) {
 	// delete empty node
 	c.handleNodeDelete(&api_v1.Node{})
 
-	// delete non-existent node
+	// delete nonexistent node
 	node := &api_v1.Node{}
 	node.Name = "nodeC"
 	c.handleNodeDelete(node)
 	assert.Len(t, c.Nodes, 2)
 	got := c.Nodes["nodeA"]
 	assert.Equal(t, "nodeA", got.Name)
-	// delete non-existent namespace when DeletedFinalStateUnknown
+	// delete nonexistent namespace when DeletedFinalStateUnknown
 	c.handleNodeDelete(cache.DeletedFinalStateUnknown{Obj: node})
 	assert.Len(t, c.Nodes, 2)
 	got = c.Nodes["nodeA"]
@@ -978,7 +976,7 @@ func TestExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1134,7 +1132,7 @@ func TestReplicaSetExtractionRules(t *testing.T) {
 			p, ok := c.GetPod(newPodIdentifier("connection", "", pod.Status.PodIP))
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1230,7 +1228,7 @@ func TestNamespaceExtractionRules(t *testing.T) {
 			p, ok := c.GetNamespace(namespace.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(p.Attributes))
+			assert.Len(t, p.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := p.Attributes[k]
 				assert.True(t, ok)
@@ -1326,7 +1324,7 @@ func TestNodeExtractionRules(t *testing.T) {
 			n, ok := c.GetNode(node.Name)
 			require.True(t, ok)
 
-			assert.Equal(t, len(tc.attributes), len(n.Attributes))
+			assert.Len(t, n.Attributes, len(tc.attributes))
 			for k, v := range tc.attributes {
 				got, ok := n.Attributes[k]
 				assert.True(t, ok)
@@ -1360,7 +1358,7 @@ func TestFilters(t *testing.T) {
 		}, {
 			name: "labels-and-fields",
 			filters: Filters{
-				Labels: []FieldFilter{
+				Labels: []LabelFilter{
 					{
 						Key:   "k1",
 						Value: "v1",
@@ -1495,17 +1493,21 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			Containers: []api_v1.Container{
 				{
 					Name:  "container1",
-					Image: "test/image1:0.1.0",
+					Image: "example.com:5000/test/image1:0.1.0",
 				},
 				{
 					Name:  "container2",
-					Image: "example.com:port1/image2:0.2.0",
+					Image: "example.com:81/image2@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+				},
+				{
+					Name:  "container3",
+					Image: "example-website.com/image3:1.0@sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d",
 				},
 			},
 			InitContainers: []api_v1.Container{
 				{
 					Name:  "init_container",
-					Image: "test/init-image:1.0.2",
+					Image: "test/init-image",
 				},
 			},
 		},
@@ -1520,7 +1522,13 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				{
 					Name:         "container2",
 					ContainerID:  "docker://container2-id-456",
-					ImageID:      "sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
+					ImageID:      "sha256:4b0b1b6f6cdd3e5b9e55f74a1e8d19ed93a3f5a04c6b6c3c57c4e6d19f6b7c4d",
+					RestartCount: 2,
+				},
+				{
+					Name:         "container3",
+					ContainerID:  "docker://container3-id-abc",
+					ImageID:      "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9",
 					RestartCount: 2,
 				},
 			},
@@ -1564,13 +1572,15 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			pod: &pod,
 			want: PodContainers{
 				ByID: map[string]*Container{
-					"container1-id-123":     {ImageName: "test/image1"},
-					"container2-id-456":     {ImageName: "example.com:port1/image2"},
+					"container1-id-123":     {ImageName: "example.com:5000/test/image1"},
+					"container2-id-456":     {ImageName: "example.com:81/image2"},
+					"container3-id-abc":     {ImageName: "example-website.com/image3"},
 					"init-container-id-789": {ImageName: "test/init-image"},
 				},
 				ByName: map[string]*Container{
-					"container1":     {ImageName: "test/image1"},
-					"container2":     {ImageName: "example.com:port1/image2"},
+					"container1":     {ImageName: "example.com:5000/test/image1"},
+					"container2":     {ImageName: "example.com:81/image2"},
+					"container3":     {ImageName: "example-website.com/image3"},
 					"init_container": {ImageName: "test/init-image"},
 				},
 			},
@@ -1615,6 +1625,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3-id-abc": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc"},
+						},
+					},
 					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789"},
@@ -1630,6 +1645,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					"container2": {
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
+						},
+					},
+					"container3": {
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc"},
 						},
 					},
 					"init_container": {
@@ -1658,6 +1678,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 							2: {},
 						},
 					},
+					"container3-id-abc": {
+						Statuses: map[int]ContainerStatus{
+							2: {ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init-container-id-789": {
 						Statuses: map[int]ContainerStatus{
 							0: {ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
@@ -1673,6 +1698,11 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 					"container2": {
 						Statuses: map[int]ContainerStatus{
 							2: {},
+						},
+					},
+					"container3": {
+						Statuses: map[int]ContainerStatus{
+							2: {ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
 						},
 					},
 					"init_container": {
@@ -1695,22 +1725,29 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 			want: PodContainers{
 				ByID: map[string]*Container{
 					"container1-id-123": {
-						ImageName: "test/image1",
+						ImageName: "example.com:5000/test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2-id-456": {
-						ImageName: "example.com:port1/image2",
-						ImageTag:  "0.2.0",
+						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3-id-abc": {
+						ImageName: "example-website.com/image3",
+						ImageTag:  "1.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc", ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init-container-id-789": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
@@ -1718,22 +1755,29 @@ func Test_extractPodContainersAttributes(t *testing.T) {
 				},
 				ByName: map[string]*Container{
 					"container1": {
-						ImageName: "test/image1",
+						ImageName: "example.com:5000/test/image1",
 						ImageTag:  "0.1.0",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "container1-id-123", ImageRepoDigest: "docker.io/otel/collector@sha256:55d008bc28344c3178645d40e7d07df30f9d90abe4b53c3fc4e5e9c0295533da"},
 						},
 					},
 					"container2": {
-						ImageName: "example.com:port1/image2",
-						ImageTag:  "0.2.0",
+						ImageName: "example.com:81/image2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							2: {ContainerID: "container2-id-456"},
 						},
 					},
+					"container3": {
+						ImageName: "example-website.com/image3",
+						ImageTag:  "1.0",
+						Statuses: map[int]ContainerStatus{
+							2: {ContainerID: "container3-id-abc", ImageRepoDigest: "docker.io/otel/collector:2.0.0@sha256:430ac608abaa332de4ce45d68534447c7a206edc5e98aaff9923ecc12f8a80d9"},
+						},
+					},
 					"init_container": {
 						ImageName: "test/init-image",
-						ImageTag:  "1.0.2",
+						ImageTag:  "latest",
 						Statuses: map[int]ContainerStatus{
 							0: {ContainerID: "init-container-id-789", ImageRepoDigest: "ghcr.io/initimage1@sha256:42e8ba40f9f70d604684c3a2a0ed321206b7e2e3509fdb2c8836d34f2edfb57b"},
 						},
@@ -1790,9 +1834,7 @@ func Test_extractField(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := tt.args.r.extractField(tt.args.v); got != tt.want {
-				t.Errorf("extractField() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, tt.args.r.extractField(tt.args.v), "extractField()")
 		})
 	}
 }
@@ -1801,24 +1843,69 @@ func TestErrorSelectorsFromFilters(t *testing.T) {
 	tests := []struct {
 		name    string
 		filters Filters
+		wantErr bool
 	}{
 		{
 			name: "label/invalid-op",
 			filters: Filters{
-				Labels: []FieldFilter{{Op: "invalid-op"}},
+				Labels: []LabelFilter{{Op: "invalid-op"}},
 			},
+			wantErr: true,
+		},
+		{
+			name: "label/equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Equals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/not-equals",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotEquals, Value: "test"}},
+			},
+		},
+		{
+			name: "label/exists",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.Exists}},
+			},
+		},
+		{
+			name: "label/does-not-exist",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.DoesNotExist}},
+			},
+		},
+		{
+			name: "label/in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.In}},
+			},
+			wantErr: true,
+		},
+		{
+			name: "label/not-in",
+			filters: Filters{
+				Labels: []LabelFilter{{Key: "app", Op: selection.NotIn}},
+			},
+			wantErr: true,
 		},
 		{
 			name: "fields/invalid-op",
 			filters: Filters{
 				Fields: []FieldFilter{{Op: selection.Exists}},
 			},
+			wantErr: true,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, _, err := selectorsFromFilters(tt.filters)
-			assert.Error(t, err)
+			if tt.wantErr {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }

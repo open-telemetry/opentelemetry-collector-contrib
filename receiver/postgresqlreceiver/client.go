@@ -4,11 +4,15 @@
 package postgresqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver"
 
 import (
+	"bytes"
 	"context"
 	"database/sql"
+	_ "embed"
 	"errors"
 	"fmt"
+	"html/template"
 	"net"
+	"strconv"
 	"strings"
 	"time"
 
@@ -16,6 +20,9 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
 )
 
 const lagMetricsInSecondsFeatureGateID = "postgresqlreceiver.preciselagmetrics"
@@ -56,6 +63,8 @@ type client interface {
 	getMaxConnections(ctx context.Context) (int64, error)
 	getIndexStats(ctx context.Context, database string) (map[indexIdentifer]indexStat, error)
 	listDatabases(ctx context.Context) ([]string, error)
+	getVersion(ctx context.Context) (string, error)
+	getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error)
 }
 
 type postgreSQLClient struct {
@@ -134,20 +143,34 @@ type databaseStats struct {
 	transactionRollback  int64
 	deadlocks            int64
 	tempFiles            int64
+	tupUpdated           int64
+	tupReturned          int64
+	tupFetched           int64
+	tupInserted          int64
+	tupDeleted           int64
+	blksHit              int64
+	blksRead             int64
 }
 
 func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []string) (map[databaseName]databaseStats, error) {
-	query := filterQueryByDatabases("SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files FROM pg_stat_database", databases, false)
+	query := filterQueryByDatabases(
+		"SELECT datname, xact_commit, xact_rollback, deadlocks, temp_files, tup_updated, tup_returned, tup_fetched, tup_inserted, tup_deleted, blks_hit, blks_read FROM pg_stat_database",
+		databases,
+		false,
+	)
+
 	rows, err := c.client.QueryContext(ctx, query)
 	if err != nil {
 		return nil, err
 	}
+
 	var errs error
 	dbStats := map[databaseName]databaseStats{}
+
 	for rows.Next() {
 		var datname string
-		var transactionCommitted, transactionRollback, deadlocks, tempFiles int64
-		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles)
+		var transactionCommitted, transactionRollback, deadlocks, tempFiles, tupUpdated, tupReturned, tupFetched, tupInserted, tupDeleted, blksHit, blksRead int64
+		err = rows.Scan(&datname, &transactionCommitted, &transactionRollback, &deadlocks, &tempFiles, &tupUpdated, &tupReturned, &tupFetched, &tupInserted, &tupDeleted, &blksHit, &blksRead)
 		if err != nil {
 			errs = multierr.Append(errs, err)
 			continue
@@ -158,6 +181,13 @@ func (c *postgreSQLClient) getDatabaseStats(ctx context.Context, databases []str
 				transactionRollback:  transactionRollback,
 				deadlocks:            deadlocks,
 				tempFiles:            tempFiles,
+				tupUpdated:           tupUpdated,
+				tupReturned:          tupReturned,
+				tupFetched:           tupFetched,
+				tupInserted:          tupInserted,
+				tupDeleted:           tupDeleted,
+				blksHit:              blksHit,
+				blksRead:             blksRead,
 			}
 		}
 	}
@@ -421,7 +451,6 @@ type bgStat struct {
 	checkpointWriteTime  float64
 	checkpointSyncTime   float64
 	bgWrites             int64
-	backendWrites        int64
 	bufferBackendWrites  int64
 	bufferFsyncWrites    int64
 	bufferCheckpoints    int64
@@ -430,50 +459,100 @@ type bgStat struct {
 }
 
 func (c *postgreSQLClient) getBGWriterStats(ctx context.Context) (*bgStat, error) {
-	query := `SELECT
-	checkpoints_req AS checkpoint_req,
-	checkpoints_timed AS checkpoint_scheduled,
-	checkpoint_write_time AS checkpoint_duration_write,
-	checkpoint_sync_time AS checkpoint_duration_sync,
-	buffers_clean AS bg_writes,
-	buffers_backend AS backend_writes,
-	buffers_backend_fsync AS buffers_written_fsync,
-	buffers_checkpoint AS buffers_checkpoints,
-	buffers_alloc AS buffers_allocated,
-	maxwritten_clean AS maxwritten_count
-	FROM pg_stat_bgwriter;`
+	version, err := c.getVersion(ctx)
+	if err != nil {
+		return nil, err
+	}
 
-	row := c.client.QueryRowContext(ctx, query)
+	major, err := parseMajorVersion(version)
+	if err != nil {
+		return nil, err
+	}
+
 	var (
 		checkpointsReq, checkpointsScheduled               int64
 		checkpointSyncTime, checkpointWriteTime            float64
 		bgWrites, bufferCheckpoints, bufferAllocated       int64
 		bufferBackendWrites, bufferFsyncWrites, maxWritten int64
 	)
-	err := row.Scan(
+
+	if major < 17 {
+		query := `SELECT
+		checkpoints_req AS checkpoint_req,
+		checkpoints_timed AS checkpoint_scheduled,
+		checkpoint_write_time AS checkpoint_duration_write,
+		checkpoint_sync_time AS checkpoint_duration_sync,
+		buffers_clean AS bg_writes,
+		buffers_backend AS backend_writes,
+		buffers_backend_fsync AS buffers_written_fsync,
+		buffers_checkpoint AS buffers_checkpoints,
+		buffers_alloc AS buffers_allocated,
+		maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter;`
+
+		row := c.client.QueryRowContext(ctx, query)
+
+		if err = row.Scan(
+			&checkpointsReq,
+			&checkpointsScheduled,
+			&checkpointWriteTime,
+			&checkpointSyncTime,
+			&bgWrites,
+			&bufferBackendWrites,
+			&bufferFsyncWrites,
+			&bufferCheckpoints,
+			&bufferAllocated,
+			&maxWritten,
+		); err != nil {
+			return nil, err
+		}
+		return &bgStat{
+			checkpointsReq:       checkpointsReq,
+			checkpointsScheduled: checkpointsScheduled,
+			checkpointWriteTime:  checkpointWriteTime,
+			checkpointSyncTime:   checkpointSyncTime,
+			bgWrites:             bgWrites,
+			bufferBackendWrites:  bufferBackendWrites,
+			bufferFsyncWrites:    bufferFsyncWrites,
+			bufferCheckpoints:    bufferCheckpoints,
+			buffersAllocated:     bufferAllocated,
+			maxWritten:           maxWritten,
+		}, nil
+	}
+	query := `SELECT
+		cp.num_requested AS checkpoint_req,
+		cp.num_timed AS checkpoint_scheduled,
+		cp.write_time AS checkpoint_duration_write,
+		cp.sync_time AS checkpoint_duration_sync,
+		cp.buffers_written AS buffers_checkpoints,
+		bg.buffers_clean AS bg_writes,
+		bg.buffers_alloc AS buffers_allocated,
+		bg.maxwritten_clean AS maxwritten_count
+		FROM pg_stat_bgwriter bg, pg_stat_checkpointer cp;`
+
+	row := c.client.QueryRowContext(ctx, query)
+
+	if err = row.Scan(
 		&checkpointsReq,
 		&checkpointsScheduled,
 		&checkpointWriteTime,
 		&checkpointSyncTime,
-		&bgWrites,
-		&bufferBackendWrites,
-		&bufferFsyncWrites,
 		&bufferCheckpoints,
+		&bgWrites,
 		&bufferAllocated,
 		&maxWritten,
-	)
-	if err != nil {
+	); err != nil {
 		return nil, err
 	}
+
 	return &bgStat{
 		checkpointsReq:       checkpointsReq,
 		checkpointsScheduled: checkpointsScheduled,
 		checkpointWriteTime:  checkpointWriteTime,
 		checkpointSyncTime:   checkpointSyncTime,
 		bgWrites:             bgWrites,
-		backendWrites:        bufferBackendWrites,
-		bufferBackendWrites:  bufferBackendWrites,
-		bufferFsyncWrites:    bufferFsyncWrites,
+		bufferBackendWrites:  -1, // Not found in pg17+ tables
+		bufferFsyncWrites:    -1, // Not found in pg17+ tables
 		bufferCheckpoints:    bufferCheckpoints,
 		buffersAllocated:     bufferAllocated,
 		maxWritten:           maxWritten,
@@ -620,6 +699,23 @@ func (c *postgreSQLClient) listDatabases(ctx context.Context) ([]string, error) 
 	return databases, nil
 }
 
+func (c *postgreSQLClient) getVersion(ctx context.Context) (string, error) {
+	query := "SHOW server_version;"
+	row := c.client.QueryRowContext(ctx, query)
+	var version string
+	err := row.Scan(&version)
+	return version, err
+}
+
+func parseMajorVersion(ver string) (int, error) {
+	parts := strings.Split(ver, ".")
+	if len(parts) < 2 {
+		return 0, fmt.Errorf("unexpected version string: %s", ver)
+	}
+
+	return strconv.Atoi(parts[0])
+}
+
 func filterQueryByDatabases(baseQuery string, databases []string, groupBy bool) string {
 	if len(databases) > 0 {
 		var queryDatabases []string
@@ -645,4 +741,92 @@ func tableKey(database, schema, table string) tableIdentifier {
 
 func indexKey(database, schema, table, index string) indexIdentifer {
 	return indexIdentifer(fmt.Sprintf("%s|%s|%s|%s", database, schema, table, index))
+}
+
+//go:embed templates/querySampleTemplate.tmpl
+var querySampleTemplate string
+
+func (c *postgreSQLClient) getQuerySamples(ctx context.Context, limit int64, logger *zap.Logger) ([]map[string]any, error) {
+	tmpl := template.Must(template.New("querySample").Option("missingkey=error").Parse(querySampleTemplate))
+	buf := bytes.Buffer{}
+
+	// TODO: Only get query after the oldest query we got from the previous sample query colelction.
+	// For instance, if from the last sample query we got queries executed between 8:00 ~ 8:15,
+	// in this query, we should only gather query after 8:15
+	if err := tmpl.Execute(&buf, map[string]any{
+		"limit": limit,
+	}); err != nil {
+		logger.Error("failed to execute template", zap.Error(err))
+		return []map[string]any{}, fmt.Errorf("failed executing template: %w", err)
+	}
+
+	wrappedDb := sqlquery.NewDbClient(sqlquery.DbWrapper{Db: c.client}, buf.String(), logger, sqlquery.TelemetryConfig{})
+
+	rows, err := wrappedDb.QueryRows(ctx)
+	if err != nil {
+		if !errors.Is(err, sqlquery.ErrNullValueWarning) {
+			logger.Error("failed getting log rows", zap.Error(err))
+			return []map[string]any{}, fmt.Errorf("getQuerySamples failed getting log rows: %w", err)
+		}
+		// in case the sql returned rows contains null value, we just log a warning and continue
+		logger.Warn("problems encountered getting log rows", zap.Error(err))
+	}
+
+	errs := make([]error, 0)
+	finalAttributes := make([]map[string]any, 0)
+	dbPrefix := "postgresql."
+	for _, row := range rows {
+		if row["query"] == "<insufficient privilege>" {
+			logger.Warn("skipping query sample due to insufficient privileges")
+			errs = append(errs, errors.New("skipping query sample due to insufficient privileges"))
+			continue
+		}
+		currentAttributes := make(map[string]any)
+		simpleColumns := []string{
+			"client_hostname",
+			"query_start",
+			"wait_event_type",
+			"wait_event",
+			"query_id",
+			"state",
+			"application_name",
+		}
+
+		for _, col := range simpleColumns {
+			currentAttributes[dbPrefix+col] = row[col]
+		}
+
+		clientPort := 0
+		if row["client_port"] != "" {
+			clientPort, err = strconv.Atoi(row["client_port"])
+			if err != nil {
+				logger.Warn("failed to convert client_port to int", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		pid := 0
+		if row["pid"] != "" {
+			pid, err = strconv.Atoi(row["pid"])
+			if err != nil {
+				logger.Warn("failed to convert pid to int", zap.Error(err))
+				errs = append(errs, err)
+			}
+		}
+		// TODO: check if the query is truncated.
+		obfuscated, err := obfuscateSQL(row["query"])
+		if err != nil {
+			logger.Warn("failed to obfuscate query", zap.String("query", row["query"]))
+			obfuscated = ""
+		}
+		currentAttributes[dbPrefix+"pid"] = pid
+		currentAttributes["network.peer.port"] = clientPort
+		currentAttributes["network.peer.address"] = row["client_addrs"]
+		currentAttributes["db.query.text"] = obfuscated
+		currentAttributes["db.namespace"] = row["datname"]
+		currentAttributes["user.name"] = row["usename"]
+		currentAttributes["db.system.name"] = "postgresql"
+		finalAttributes = append(finalAttributes, currentAttributes)
+	}
+
+	return finalAttributes, errors.Join(errs...)
 }

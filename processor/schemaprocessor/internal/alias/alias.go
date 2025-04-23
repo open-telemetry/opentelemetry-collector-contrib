@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-// Package Alias is a subset of the interfaces defined by pdata and family
+// Package alias is a subset of the interfaces defined by pdata and family
 // package to allow for higher code reuse without using generics.
 package alias // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/alias"
 
@@ -28,6 +28,10 @@ type NamedSignal interface {
 	Name() string
 
 	SetName(name string)
+}
+
+type Attributed interface {
+	Attributes() pcommon.Map
 }
 
 var (

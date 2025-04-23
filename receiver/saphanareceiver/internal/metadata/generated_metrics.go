@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeActivePendingRequestState specifies the a value active_pending_request_state attribute.
+// AttributeActivePendingRequestState specifies the value active_pending_request_state attribute.
 type AttributeActivePendingRequestState int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeActivePendingRequestState = map[string]AttributeActivePendingReq
 	"pending": AttributeActivePendingRequestStatePending,
 }
 
-// AttributeColumnMemorySubtype specifies the a value column_memory_subtype attribute.
+// AttributeColumnMemorySubtype specifies the value column_memory_subtype attribute.
 type AttributeColumnMemorySubtype int
 
 const (
@@ -74,7 +74,7 @@ var MapAttributeColumnMemorySubtype = map[string]AttributeColumnMemorySubtype{
 	"misc":  AttributeColumnMemorySubtypeMisc,
 }
 
-// AttributeColumnMemoryType specifies the a value column_memory_type attribute.
+// AttributeColumnMemoryType specifies the value column_memory_type attribute.
 type AttributeColumnMemoryType int
 
 const (
@@ -100,7 +100,7 @@ var MapAttributeColumnMemoryType = map[string]AttributeColumnMemoryType{
 	"delta": AttributeColumnMemoryTypeDelta,
 }
 
-// AttributeConnectionStatus specifies the a value connection_status attribute.
+// AttributeConnectionStatus specifies the value connection_status attribute.
 type AttributeConnectionStatus int
 
 const (
@@ -130,7 +130,7 @@ var MapAttributeConnectionStatus = map[string]AttributeConnectionStatus{
 	"queueing": AttributeConnectionStatusQueueing,
 }
 
-// AttributeCPUType specifies the a value cpu_type attribute.
+// AttributeCPUType specifies the value cpu_type attribute.
 type AttributeCPUType int
 
 const (
@@ -164,7 +164,7 @@ var MapAttributeCPUType = map[string]AttributeCPUType{
 	"idle":    AttributeCPUTypeIdle,
 }
 
-// AttributeDiskStateUsedFree specifies the a value disk_state_used_free attribute.
+// AttributeDiskStateUsedFree specifies the value disk_state_used_free attribute.
 type AttributeDiskStateUsedFree int
 
 const (
@@ -190,7 +190,7 @@ var MapAttributeDiskStateUsedFree = map[string]AttributeDiskStateUsedFree{
 	"free": AttributeDiskStateUsedFreeFree,
 }
 
-// AttributeHostSwapState specifies the a value host_swap_state attribute.
+// AttributeHostSwapState specifies the value host_swap_state attribute.
 type AttributeHostSwapState int
 
 const (
@@ -216,7 +216,7 @@ var MapAttributeHostSwapState = map[string]AttributeHostSwapState{
 	"free": AttributeHostSwapStateFree,
 }
 
-// AttributeInternalExternalRequestType specifies the a value internal_external_request_type attribute.
+// AttributeInternalExternalRequestType specifies the value internal_external_request_type attribute.
 type AttributeInternalExternalRequestType int
 
 const (
@@ -242,7 +242,7 @@ var MapAttributeInternalExternalRequestType = map[string]AttributeInternalExtern
 	"external": AttributeInternalExternalRequestTypeExternal,
 }
 
-// AttributeMemoryStateUsedFree specifies the a value memory_state_used_free attribute.
+// AttributeMemoryStateUsedFree specifies the value memory_state_used_free attribute.
 type AttributeMemoryStateUsedFree int
 
 const (
@@ -268,7 +268,7 @@ var MapAttributeMemoryStateUsedFree = map[string]AttributeMemoryStateUsedFree{
 	"free": AttributeMemoryStateUsedFreeFree,
 }
 
-// AttributeRowMemoryType specifies the a value row_memory_type attribute.
+// AttributeRowMemoryType specifies the value row_memory_type attribute.
 type AttributeRowMemoryType int
 
 const (
@@ -294,7 +294,7 @@ var MapAttributeRowMemoryType = map[string]AttributeRowMemoryType{
 	"variable": AttributeRowMemoryTypeVariable,
 }
 
-// AttributeSchemaMemoryType specifies the a value schema_memory_type attribute.
+// AttributeSchemaMemoryType specifies the value schema_memory_type attribute.
 type AttributeSchemaMemoryType int
 
 const (
@@ -328,7 +328,7 @@ var MapAttributeSchemaMemoryType = map[string]AttributeSchemaMemoryType{
 	"history_delta": AttributeSchemaMemoryTypeHistoryDelta,
 }
 
-// AttributeSchemaOperationType specifies the a value schema_operation_type attribute.
+// AttributeSchemaOperationType specifies the value schema_operation_type attribute.
 type AttributeSchemaOperationType int
 
 const (
@@ -358,7 +358,7 @@ var MapAttributeSchemaOperationType = map[string]AttributeSchemaOperationType{
 	"merge": AttributeSchemaOperationTypeMerge,
 }
 
-// AttributeSchemaRecordType specifies the a value schema_record_type attribute.
+// AttributeSchemaRecordType specifies the value schema_record_type attribute.
 type AttributeSchemaRecordType int
 
 const (
@@ -392,7 +392,7 @@ var MapAttributeSchemaRecordType = map[string]AttributeSchemaRecordType{
 	"history_delta": AttributeSchemaRecordTypeHistoryDelta,
 }
 
-// AttributeServiceMemoryUsedType specifies the a value service_memory_used_type attribute.
+// AttributeServiceMemoryUsedType specifies the value service_memory_used_type attribute.
 type AttributeServiceMemoryUsedType int
 
 const (
@@ -418,7 +418,7 @@ var MapAttributeServiceMemoryUsedType = map[string]AttributeServiceMemoryUsedTyp
 	"physical": AttributeServiceMemoryUsedTypePhysical,
 }
 
-// AttributeServiceStatus specifies the a value service_status attribute.
+// AttributeServiceStatus specifies the value service_status attribute.
 type AttributeServiceStatus int
 
 const (
@@ -444,7 +444,7 @@ var MapAttributeServiceStatus = map[string]AttributeServiceStatus{
 	"inactive": AttributeServiceStatusInactive,
 }
 
-// AttributeThreadStatus specifies the a value thread_status attribute.
+// AttributeThreadStatus specifies the value thread_status attribute.
 type AttributeThreadStatus int
 
 const (
@@ -470,7 +470,7 @@ var MapAttributeThreadStatus = map[string]AttributeThreadStatus{
 	"inactive": AttributeThreadStatusInactive,
 }
 
-// AttributeTransactionType specifies the a value transaction_type attribute.
+// AttributeTransactionType specifies the value transaction_type attribute.
 type AttributeTransactionType int
 
 const (
@@ -500,7 +500,7 @@ var MapAttributeTransactionType = map[string]AttributeTransactionType{
 	"rollback": AttributeTransactionTypeRollback,
 }
 
-// AttributeVolumeOperationType specifies the a value volume_operation_type attribute.
+// AttributeVolumeOperationType specifies the value volume_operation_type attribute.
 type AttributeVolumeOperationType int
 
 const (
@@ -524,6 +524,196 @@ func (av AttributeVolumeOperationType) String() string {
 var MapAttributeVolumeOperationType = map[string]AttributeVolumeOperationType{
 	"read":  AttributeVolumeOperationTypeRead,
 	"write": AttributeVolumeOperationTypeWrite,
+}
+
+var MetricsInfo = metricsInfo{
+	SaphanaAlertCount: metricInfo{
+		Name: "saphana.alert.count",
+	},
+	SaphanaBackupLatest: metricInfo{
+		Name: "saphana.backup.latest",
+	},
+	SaphanaColumnMemoryUsed: metricInfo{
+		Name: "saphana.column.memory.used",
+	},
+	SaphanaComponentMemoryUsed: metricInfo{
+		Name: "saphana.component.memory.used",
+	},
+	SaphanaConnectionCount: metricInfo{
+		Name: "saphana.connection.count",
+	},
+	SaphanaCPUUsed: metricInfo{
+		Name: "saphana.cpu.used",
+	},
+	SaphanaDiskSizeCurrent: metricInfo{
+		Name: "saphana.disk.size.current",
+	},
+	SaphanaHostMemoryCurrent: metricInfo{
+		Name: "saphana.host.memory.current",
+	},
+	SaphanaHostSwapCurrent: metricInfo{
+		Name: "saphana.host.swap.current",
+	},
+	SaphanaInstanceCodeSize: metricInfo{
+		Name: "saphana.instance.code_size",
+	},
+	SaphanaInstanceMemoryCurrent: metricInfo{
+		Name: "saphana.instance.memory.current",
+	},
+	SaphanaInstanceMemorySharedAllocated: metricInfo{
+		Name: "saphana.instance.memory.shared.allocated",
+	},
+	SaphanaInstanceMemoryUsedPeak: metricInfo{
+		Name: "saphana.instance.memory.used.peak",
+	},
+	SaphanaLicenseExpirationTime: metricInfo{
+		Name: "saphana.license.expiration.time",
+	},
+	SaphanaLicenseLimit: metricInfo{
+		Name: "saphana.license.limit",
+	},
+	SaphanaLicensePeak: metricInfo{
+		Name: "saphana.license.peak",
+	},
+	SaphanaNetworkRequestAverageTime: metricInfo{
+		Name: "saphana.network.request.average_time",
+	},
+	SaphanaNetworkRequestCount: metricInfo{
+		Name: "saphana.network.request.count",
+	},
+	SaphanaNetworkRequestFinishedCount: metricInfo{
+		Name: "saphana.network.request.finished.count",
+	},
+	SaphanaReplicationAverageTime: metricInfo{
+		Name: "saphana.replication.average_time",
+	},
+	SaphanaReplicationBacklogSize: metricInfo{
+		Name: "saphana.replication.backlog.size",
+	},
+	SaphanaReplicationBacklogTime: metricInfo{
+		Name: "saphana.replication.backlog.time",
+	},
+	SaphanaRowStoreMemoryUsed: metricInfo{
+		Name: "saphana.row_store.memory.used",
+	},
+	SaphanaSchemaMemoryUsedCurrent: metricInfo{
+		Name: "saphana.schema.memory.used.current",
+	},
+	SaphanaSchemaMemoryUsedMax: metricInfo{
+		Name: "saphana.schema.memory.used.max",
+	},
+	SaphanaSchemaOperationCount: metricInfo{
+		Name: "saphana.schema.operation.count",
+	},
+	SaphanaSchemaRecordCompressedCount: metricInfo{
+		Name: "saphana.schema.record.compressed.count",
+	},
+	SaphanaSchemaRecordCount: metricInfo{
+		Name: "saphana.schema.record.count",
+	},
+	SaphanaServiceCodeSize: metricInfo{
+		Name: "saphana.service.code_size",
+	},
+	SaphanaServiceCount: metricInfo{
+		Name: "saphana.service.count",
+	},
+	SaphanaServiceMemoryCompactorsAllocated: metricInfo{
+		Name: "saphana.service.memory.compactors.allocated",
+	},
+	SaphanaServiceMemoryCompactorsFreeable: metricInfo{
+		Name: "saphana.service.memory.compactors.freeable",
+	},
+	SaphanaServiceMemoryEffectiveLimit: metricInfo{
+		Name: "saphana.service.memory.effective_limit",
+	},
+	SaphanaServiceMemoryHeapCurrent: metricInfo{
+		Name: "saphana.service.memory.heap.current",
+	},
+	SaphanaServiceMemoryLimit: metricInfo{
+		Name: "saphana.service.memory.limit",
+	},
+	SaphanaServiceMemorySharedCurrent: metricInfo{
+		Name: "saphana.service.memory.shared.current",
+	},
+	SaphanaServiceMemoryUsed: metricInfo{
+		Name: "saphana.service.memory.used",
+	},
+	SaphanaServiceStackSize: metricInfo{
+		Name: "saphana.service.stack_size",
+	},
+	SaphanaServiceThreadCount: metricInfo{
+		Name: "saphana.service.thread.count",
+	},
+	SaphanaTransactionBlocked: metricInfo{
+		Name: "saphana.transaction.blocked",
+	},
+	SaphanaTransactionCount: metricInfo{
+		Name: "saphana.transaction.count",
+	},
+	SaphanaUptime: metricInfo{
+		Name: "saphana.uptime",
+	},
+	SaphanaVolumeOperationCount: metricInfo{
+		Name: "saphana.volume.operation.count",
+	},
+	SaphanaVolumeOperationSize: metricInfo{
+		Name: "saphana.volume.operation.size",
+	},
+	SaphanaVolumeOperationTime: metricInfo{
+		Name: "saphana.volume.operation.time",
+	},
+}
+
+type metricsInfo struct {
+	SaphanaAlertCount                       metricInfo
+	SaphanaBackupLatest                     metricInfo
+	SaphanaColumnMemoryUsed                 metricInfo
+	SaphanaComponentMemoryUsed              metricInfo
+	SaphanaConnectionCount                  metricInfo
+	SaphanaCPUUsed                          metricInfo
+	SaphanaDiskSizeCurrent                  metricInfo
+	SaphanaHostMemoryCurrent                metricInfo
+	SaphanaHostSwapCurrent                  metricInfo
+	SaphanaInstanceCodeSize                 metricInfo
+	SaphanaInstanceMemoryCurrent            metricInfo
+	SaphanaInstanceMemorySharedAllocated    metricInfo
+	SaphanaInstanceMemoryUsedPeak           metricInfo
+	SaphanaLicenseExpirationTime            metricInfo
+	SaphanaLicenseLimit                     metricInfo
+	SaphanaLicensePeak                      metricInfo
+	SaphanaNetworkRequestAverageTime        metricInfo
+	SaphanaNetworkRequestCount              metricInfo
+	SaphanaNetworkRequestFinishedCount      metricInfo
+	SaphanaReplicationAverageTime           metricInfo
+	SaphanaReplicationBacklogSize           metricInfo
+	SaphanaReplicationBacklogTime           metricInfo
+	SaphanaRowStoreMemoryUsed               metricInfo
+	SaphanaSchemaMemoryUsedCurrent          metricInfo
+	SaphanaSchemaMemoryUsedMax              metricInfo
+	SaphanaSchemaOperationCount             metricInfo
+	SaphanaSchemaRecordCompressedCount      metricInfo
+	SaphanaSchemaRecordCount                metricInfo
+	SaphanaServiceCodeSize                  metricInfo
+	SaphanaServiceCount                     metricInfo
+	SaphanaServiceMemoryCompactorsAllocated metricInfo
+	SaphanaServiceMemoryCompactorsFreeable  metricInfo
+	SaphanaServiceMemoryEffectiveLimit      metricInfo
+	SaphanaServiceMemoryHeapCurrent         metricInfo
+	SaphanaServiceMemoryLimit               metricInfo
+	SaphanaServiceMemorySharedCurrent       metricInfo
+	SaphanaServiceMemoryUsed                metricInfo
+	SaphanaServiceStackSize                 metricInfo
+	SaphanaServiceThreadCount               metricInfo
+	SaphanaTransactionBlocked               metricInfo
+	SaphanaTransactionCount                 metricInfo
+	SaphanaUptime                           metricInfo
+	SaphanaVolumeOperationCount             metricInfo
+	SaphanaVolumeOperationSize              metricInfo
+	SaphanaVolumeOperationTime              metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricSaphanaAlertCount struct {
@@ -2993,7 +3183,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                                        mbc,
@@ -3126,7 +3315,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/saphanareceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSaphanaAlertCount.emit(ils.Metrics())

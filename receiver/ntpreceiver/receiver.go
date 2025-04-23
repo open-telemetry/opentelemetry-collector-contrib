@@ -16,7 +16,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ntpreceiver/internal/metadata"
 )
 
-type scraper struct {
+type ntpScraper struct {
 	logger   *zap.Logger
 	mb       *metadata.MetricsBuilder
 	version  int
@@ -24,7 +24,7 @@ type scraper struct {
 	endpoint string
 }
 
-func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
+func (s *ntpScraper) scrape(context.Context) (pmetric.Metrics, error) {
 	options := ntp.QueryOptions{Version: s.version, Timeout: s.timeout}
 	response, err := ntp.QueryWithOptions(s.endpoint, options)
 	if err != nil {
@@ -35,12 +35,12 @@ func (s *scraper) scrape(context.Context) (pmetric.Metrics, error) {
 	return s.mb.Emit(), nil
 }
 
-func newScraper(cfg *Config, settings receiver.Settings) *scraper {
-	return &scraper{
-		logger:   settings.TelemetrySettings.Logger,
+func newScraper(cfg *Config, settings receiver.Settings) *ntpScraper {
+	return &ntpScraper{
+		logger:   settings.Logger,
 		mb:       metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		version:  cfg.Version,
-		timeout:  cfg.ControllerConfig.Timeout,
+		timeout:  cfg.Timeout,
 		endpoint: cfg.Endpoint,
 	}
 }

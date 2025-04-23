@@ -1,0 +1,9 @@
+type: libhoney
+
+status:
+  class: receiver
+  stability:
+    alpha: [traces, logs]
+  distributions: [contrib]
+  codeowners:
+    active: [TylerHelmuth, mterhar]

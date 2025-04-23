@@ -11,6 +11,8 @@ on:
     branches:
       - main
 
+permissions: read-all
+
 env:
   # Make sure to exit early if cache segment download times out after 2 minutes.
   # We limit cache download as a whole to 5 minutes.
@@ -22,23 +24,23 @@ concurrency:
 
 jobs:
   changelog:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     if: ${{ github.actor != 'dependabot[bot]' }}
     env:
       PR_HEAD: ${{ github.event.pull_request.head.sha }}
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
-      - uses: actions/setup-go@v5
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.22.8"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/go/bin
@@ -82,14 +84,10 @@ jobs:
       - name: Render .chloggen changelog entries
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
         run: make chlog-preview > changelog_preview.md
-      - name: Install markdown-link-check
+      - name: Link Checker
         if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: npm install -g markdown-link-check@3.12.2
-      - name: Run markdown-link-check
-        if: ${{ !contains(github.event.pull_request.labels.*.name, 'dependencies') && !contains(github.event.pull_request.labels.*.name, 'Skip Changelog') && !contains(github.event.pull_request.title, '[chore]')}}
-        run: |
-          markdown-link-check \
-            --verbose \
-            --config .github/workflows/check_links_config.json \
-            changelog_preview.md \
-            || { echo "Check that anchor links are lowercase"; exit 1; }
+        id: lychee
+        uses: lycheeverse/lychee-action@f613c4a64e50d792e0b31ec34bbcbba12263c6a6 # f613c4a64e50d792e0b31ec34bbcbba12263c6a6
+        with:
+          args: "--verbose --no-progress ./changelog_preview.md --config .github/lychee.toml"
+          failIfEmpty: false

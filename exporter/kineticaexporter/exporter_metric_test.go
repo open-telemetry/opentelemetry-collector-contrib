@@ -424,7 +424,7 @@ func handleInsertRecords(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 	_, err := w.Write([]byte("\x04OK\x00.insert_records_response\x08\x00\x06\x00\x00\x00"))
 	if err != nil {
-		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -439,7 +439,7 @@ func handleExecuteSQL(w http.ResponseWriter, r *http.Request) {
 	responseBytes := []byte("\x04OK\x00(execute_sql_response\xd4\x05\x02\xf6\x03{\"type\":\"record\",\"name\":\"generic_response\",\"fields\":[{\"name\":\"column_1\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"column_headers\",\"type\":{\"type\":\"array\",\"items\":\"string\"}},{\"name\":\"column_datatypes\",\"type\":{\"type\":\"array\",\"items\":\"string\"}}]}$\x00\x02\ndummy\x00\x02\fstring\x00\x00\x01\x00\x00\b X-Kinetica-Group\x06DDL\ncount\x020\x1alast_endpoint\x1a/create/table.total_number_of_records\x020\x00\x00")
 	_, err := w.Write(responseBytes)
 	if err != nil {
-		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
 		return
 	}
 }
@@ -467,7 +467,7 @@ func handleShowTable(w http.ResponseWriter, r *http.Request) {
 
 	_, err = w.Write(finalResponseBytes)
 	if err != nil {
-		http.Error(w, "Error wrting reesponse", http.StatusInternalServerError)
+		http.Error(w, "Error writing response", http.StatusInternalServerError)
 		return
 	}
 }

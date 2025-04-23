@@ -12,6 +12,8 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/purefbreceiver/internal/metadata"
 )
 
 func TestStartAndShutdown(t *testing.T) {
@@ -20,7 +22,7 @@ func TestStartAndShutdown(t *testing.T) {
 	require.True(t, ok)
 
 	sink := &consumertest.MetricsSink{}
-	recv := newReceiver(cfg, receivertest.NewNopSettings(), sink)
+	recv := newReceiver(cfg, receivertest.NewNopSettings(metadata.Type), sink)
 
 	// verify
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))

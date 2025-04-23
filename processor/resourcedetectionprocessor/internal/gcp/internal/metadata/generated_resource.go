@@ -112,6 +112,27 @@ func (rb *ResourceBuilder) SetGcpGceInstanceName(val string) {
 	}
 }
 
+// SetGcpGceInstanceGroupManagerName sets provided value as "gcp.gce.instance_group_manager.name" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerName(val string) {
+	if rb.config.GcpGceInstanceGroupManagerName.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance_group_manager.name", val)
+	}
+}
+
+// SetGcpGceInstanceGroupManagerRegion sets provided value as "gcp.gce.instance_group_manager.region" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerRegion(val string) {
+	if rb.config.GcpGceInstanceGroupManagerRegion.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance_group_manager.region", val)
+	}
+}
+
+// SetGcpGceInstanceGroupManagerZone sets provided value as "gcp.gce.instance_group_manager.zone" attribute.
+func (rb *ResourceBuilder) SetGcpGceInstanceGroupManagerZone(val string) {
+	if rb.config.GcpGceInstanceGroupManagerZone.Enabled {
+		rb.res.Attributes().PutStr("gcp.gce.instance_group_manager.zone", val)
+	}
+}
+
 // SetHostID sets provided value as "host.id" attribute.
 func (rb *ResourceBuilder) SetHostID(val string) {
 	if rb.config.HostID.Enabled {

@@ -13,12 +13,12 @@ import (
 )
 
 func TestExtension_Start_Shutdown(t *testing.T) {
-	avroExtention := &avroLogExtension{}
+	avroExtension := &avroLogExtension{}
 
-	err := avroExtention.Start(context.Background(), componenttest.NewNopHost())
+	err := avroExtension.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
 
-	err = avroExtention.Shutdown(context.Background())
+	err = avroExtension.Shutdown(context.Background())
 	require.NoError(t, err)
 }
 
@@ -41,9 +41,8 @@ func TestInvalidUnmarshal(t *testing.T) {
 	t.Parallel()
 
 	schema, err := loadAVROSchemaFromFile("testdata/schema1.avro")
-	if err != nil {
-		t.Fatalf("Failed to read avro schema file: %q", err.Error())
-	}
+
+	require.NoError(t, err, "Failed to read avro schema file")
 
 	e, err := newExtension(&Config{Schema: string(schema)})
 	assert.NoError(t, err)

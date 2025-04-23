@@ -198,6 +198,20 @@ func withExtractMetadata(fields ...string) option {
 	}
 }
 
+func withOtelAnnotations(enabled bool) option {
+	return func(p *kubernetesprocessor) error {
+		if enabled {
+			p.rules.Annotations = append(p.rules.Annotations, kube.FieldExtractionRule{
+				Name:                 "$1",
+				KeyRegex:             regexp.MustCompile(`^resource\.opentelemetry\.io/(.+)$`),
+				HasKeyRegexReference: true,
+				From:                 kube.MetadataFromPod,
+			})
+		}
+		return nil
+	}
+}
+
 // withExtractLabels allows specifying options to control extraction of pod labels.
 func withExtractLabels(labels ...FieldExtractConfig) option {
 	return func(p *kubernetesprocessor) error {
@@ -236,15 +250,6 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 			name = fmt.Sprintf("k8s.%v.%v.%v", a.From, fieldType, a.Key)
 		}
 
-		var r *regexp.Regexp
-		if a.Regex != "" {
-			var err error
-			r, err = regexp.Compile(a.Regex)
-			if err != nil {
-				return rules, err
-			}
-		}
-
 		var keyRegex *regexp.Regexp
 		var hasKeyRegexReference bool
 		if a.KeyRegex != "" {
@@ -260,7 +265,7 @@ func extractFieldRules(fieldType string, fields ...FieldExtractConfig) ([]kube.F
 		}
 
 		rules = append(rules, kube.FieldExtractionRule{
-			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, Regex: r, From: a.From,
+			Name: name, Key: a.Key, KeyRegex: keyRegex, HasKeyRegexReference: hasKeyRegexReference, From: a.From,
 		})
 	}
 	return rules, nil
@@ -289,7 +294,7 @@ func withFilterNamespace(ns string) option {
 // withFilterLabels allows specifying options to control filtering pods by pod labels.
 func withFilterLabels(filters ...FieldFilterConfig) option {
 	return func(p *kubernetesprocessor) error {
-		var labels []kube.FieldFilter
+		var labels []kube.LabelFilter
 		for _, f := range filters {
 			var op selection.Operator
 			switch f.Op {
@@ -302,7 +307,7 @@ func withFilterLabels(filters ...FieldFilterConfig) option {
 			default:
 				op = selection.Equals
 			}
-			labels = append(labels, kube.FieldFilter{
+			labels = append(labels, kube.LabelFilter{
 				Key:   f.Key,
 				Value: f.Value,
 				Op:    op,

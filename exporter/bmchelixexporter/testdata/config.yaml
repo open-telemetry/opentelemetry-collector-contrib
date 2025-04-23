@@ -1,0 +1,12 @@
+bmchelix/helix1:
+  endpoint: https://helix1:8080
+  api_key: api_key
+bmchelix/helix2:
+  endpoint: https://helix2:8080
+  api_key: api_key
+  timeout: 20s
+  retry_on_failure:
+    enabled: true
+    initial_interval: 5s
+    max_interval: 1m
+    max_elapsed_time: 8m

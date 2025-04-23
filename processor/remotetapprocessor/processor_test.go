@@ -5,6 +5,7 @@ package remotetapprocessor
 
 import (
 	"context"
+	"runtime"
 	"sync"
 	"testing"
 
@@ -14,9 +15,14 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
 	"golang.org/x/time/rate"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/remotetapprocessor/internal/metadata"
 )
 
 func TestConsumeMetrics(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
 	metric := pmetric.NewMetrics()
 	metric.ResourceMetrics().AppendEmpty().ScopeMetrics().AppendEmpty().Metrics().AppendEmpty().SetName("foo")
 
@@ -36,7 +42,7 @@ func TestConsumeMetrics(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -65,6 +71,9 @@ func TestConsumeMetrics(t *testing.T) {
 }
 
 func TestConsumeLogs(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
 	log := plog.NewLogs()
 	log.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords().AppendEmpty().Body().SetStr("foo")
 
@@ -84,7 +93,7 @@ func TestConsumeLogs(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)
@@ -114,6 +123,10 @@ func TestConsumeLogs(t *testing.T) {
 }
 
 func TestConsumeTraces(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/32967")
+	}
+
 	trace := ptrace.NewTraces()
 	trace.ResourceSpans().AppendEmpty().ScopeSpans().AppendEmpty().Spans().AppendEmpty().SetName("foo")
 
@@ -133,7 +146,7 @@ func TestConsumeTraces(t *testing.T) {
 				Limit: rate.Limit(c.limit),
 			}
 
-			processor := newProcessor(processortest.NewNopSettings(), conf)
+			processor := newProcessor(processortest.NewNopSettings(metadata.Type), conf)
 
 			ch := make(chan []byte)
 			idx := processor.cs.add(ch)

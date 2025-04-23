@@ -1,0 +1,29 @@
+some_regex_replace:
+  type: regex_replace
+  field: body.nested
+  regex: a
+  replace_with: b
+ansi_control_sequences_body:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: body.nested
+ansi_control_sequences_nested_attribute:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: attributes.one.two
+ansi_control_sequences_nested_body:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: body.one.two
+ansi_control_sequences_nested_resource:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: resource.one.two
+ansi_control_sequences_single_attribute:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: attributes.key
+ansi_control_sequences_single_resource:
+  type: regex_replace
+  regex_name: ansi_control_sequences
+  field: resource.key

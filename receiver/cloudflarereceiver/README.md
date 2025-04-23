@@ -6,7 +6,7 @@
 | Stability     | [alpha]: logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fcloudflare%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fcloudflare) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fcloudflare%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fcloudflare) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dehaansa](https://www.github.com/dehaansa), [@djaglowski](https://www.github.com/djaglowski) \| Seeking more code owners! |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dehaansa](https://www.github.com/dehaansa) \| Seeking more code owners! |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -48,6 +48,7 @@ If the receiver will be handling TLS termination:
   - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp. the timestamp must be formatted RFC3339, as stated in the Getting Started section.
 - `attributes`
   - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
+  - When the `attributes` configuration is empty, the receiver will automatically ingest all fields from the log messages as attributes, using the original field names as attribute names.
 
 
 ### Example:
@@ -65,4 +66,19 @@ receivers:
       attributes:
         ClientIP: http_request.client_ip
         ClientRequestURI: http_request.uri
+```
+
+### Example with automatic attribute ingestion:
+```yaml
+receivers:
+  cloudflare:
+    logs:
+      tls:
+        key_file: some_key_file
+        cert_file: some_cert_file
+      endpoint: 0.0.0.0:12345
+      secret: 1234567890abcdef1234567890abcdef
+      timestamp_field: EdgeStartTimestamp
+      attributes:
+        # Specifying no attributes ingests them all
 ```

@@ -12,9 +12,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/distribution/reference"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -26,16 +24,9 @@ import (
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/tools/cache"
 
+	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
-)
-
-var enableRFC3339Timestamp = featuregate.GlobalRegistry().MustRegister(
-	"k8sattr.rfc3339",
-	featuregate.StageStable,
-	featuregate.WithRegisterDescription("When enabled, uses RFC3339 format for k8s.pod.start_time value"),
-	featuregate.WithRegisterFromVersion("v0.82.0"),
-	featuregate.WithRegisterToVersion("v0.102.0"),
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -209,30 +200,10 @@ func New(
 // Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
 func (c *WatchClient) Start() error {
 	synced := make([]cache.InformerSynced, 0)
-	reg, err := c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handlePodAdd,
-		UpdateFunc: c.handlePodUpdate,
-		DeleteFunc: c.handlePodDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, reg.HasSynced)
-	go c.informer.Run(c.stopCh)
-
-	reg, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, reg.HasSynced)
-	go c.namespaceInformer.Run(c.stopCh)
-
+	// start the replicaSet informer first, as the replica sets need to be
+	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
 	if c.Rules.DeploymentName || c.Rules.DeploymentUID {
-		reg, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		reg, err := c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
 			DeleteFunc: c.handleReplicaSetDelete,
@@ -243,6 +214,17 @@ func (c *WatchClient) Start() error {
 		synced = append(synced, reg.HasSynced)
 		go c.replicasetInformer.Run(c.stopCh)
 	}
+
+	reg, err := c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+	if err != nil {
+		return err
+	}
+	synced = append(synced, reg.HasSynced)
+	go c.namespaceInformer.Run(c.stopCh)
 
 	if c.nodeInformer != nil {
 		reg, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
@@ -257,20 +239,35 @@ func (c *WatchClient) Start() error {
 		go c.nodeInformer.Run(c.stopCh)
 	}
 
+	reg, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handlePodAdd,
+		UpdateFunc: c.handlePodUpdate,
+		DeleteFunc: c.handlePodDelete,
+	})
+	if err != nil {
+		return err
+	}
+
+	// start the podInformer with the prerequisite of the other informers to be finished first
+	go c.runInformerWithDependencies(c.informer, synced)
+
 	if c.waitForMetadata {
 		timeoutCh := make(chan struct{})
 		t := time.AfterFunc(c.waitForMetadataTimeout, func() {
 			close(timeoutCh)
 		})
 		defer t.Stop()
-		if !cache.WaitForCacheSync(timeoutCh, synced...) {
+		// Wait for the Pod informer to be completed.
+		// The other informers will already be finished at this point, as the pod informer
+		// waits for them be finished before it can run
+		if !cache.WaitForCacheSync(timeoutCh, reg.HasSynced) {
 			return errors.New("failed to wait for caches to sync")
 		}
 	}
 	return nil
 }
 
-// Stop signals the the k8s watcher/informer to stop watching for new events.
+// Stop signals the k8s watcher/informer to stop watching for new events.
 func (c *WatchClient) Stop() {
 	close(c.stopCh)
 }
@@ -472,14 +469,10 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	if c.Rules.StartTime {
 		ts := pod.GetCreationTimestamp()
 		if !ts.IsZero() {
-			if enableRFC3339Timestamp.IsEnabled() {
-				if rfc3339ts, err := ts.MarshalText(); err != nil {
-					c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
-				} else {
-					tags[tagStartTime] = string(rfc3339ts)
-				}
+			if rfc3339ts, err := ts.MarshalText(); err != nil {
+				c.logger.Error("failed to unmarshal pod creation timestamp", zap.Error(err))
 			} else {
-				tags[tagStartTime] = ts.String()
+				tags[tagStartTime] = string(rfc3339ts)
 			}
 		}
 	}
@@ -677,16 +670,14 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 	if c.Rules.ContainerImageName || c.Rules.ContainerImageTag {
 		for _, spec := range append(pod.Spec.Containers, pod.Spec.InitContainers...) {
 			container := &Container{}
-			nameTagSep := strings.LastIndex(spec.Image, ":")
-			if c.Rules.ContainerImageName {
-				if nameTagSep > 0 {
-					container.ImageName = spec.Image[:nameTagSep]
-				} else {
-					container.ImageName = spec.Image
+			imageRef, err := dcommon.ParseImageName(spec.Image)
+			if err == nil {
+				if c.Rules.ContainerImageName {
+					container.ImageName = imageRef.Repository
 				}
-			}
-			if c.Rules.ContainerImageTag && nameTagSep > 0 {
-				container.ImageTag = spec.Image[nameTagSep+1:]
+				if c.Rules.ContainerImageTag {
+					container.ImageTag = imageRef.Tag
+				}
 			}
 			containers.ByName[spec.Name] = container
 		}
@@ -717,12 +708,8 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 			}
 
 			if c.Rules.ContainerImageRepoDigests {
-				if parsed, err := reference.ParseAnyReference(apiStatus.ImageID); err == nil {
-					switch parsed.(type) {
-					case reference.Canonical:
-						containerStatus.ImageRepoDigest = parsed.String()
-					default:
-					}
+				if canonicalRef, err := dcommon.CanonicalImageRef(apiStatus.ImageID); err == nil {
+					containerStatus.ImageRepoDigest = canonicalRef
 				}
 			}
 
@@ -791,8 +778,8 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 		skip := false
 		for i, source := range assoc.Sources {
 			// If association configured to take IP address from connection
-			switch {
-			case source.From == ConnectionSource:
+			switch source.From {
+			case ConnectionSource:
 				if pod.Address == "" {
 					skip = true
 					break
@@ -806,7 +793,7 @@ func (c *WatchClient) getIdentifiersFromAssoc(pod *Pod) []PodIdentifier {
 					break
 				}
 				ret[i] = PodIdentifierAttributeFromSource(source, pod.Address)
-			case source.From == ResourceSource:
+			case ResourceSource:
 				attr := ""
 				switch source.Name {
 				case conventions.AttributeK8SNamespaceName:
@@ -918,10 +905,27 @@ func (c *WatchClient) shouldIgnorePod(pod *api_v1.Pod) bool {
 	return false
 }
 
+var singleValueOperators = map[selection.Operator]int{
+	selection.Equals:       1,
+	selection.DoubleEquals: 1,
+	selection.NotEquals:    1,
+	selection.GreaterThan:  1,
+	selection.LessThan:     1,
+}
+
 func selectorsFromFilters(filters Filters) (labels.Selector, fields.Selector, error) {
 	labelSelector := labels.Everything()
 	for _, f := range filters.Labels {
-		r, err := labels.NewRequirement(f.Key, f.Op, []string{f.Value})
+		if f.Op == selection.In || f.Op == selection.NotIn {
+			return nil, nil, fmt.Errorf("label filters don't support operator: '%s'", f.Op)
+		}
+
+		var vals []string
+		if _, ok := singleValueOperators[f.Op]; ok {
+			vals = []string{f.Value}
+		}
+
+		r, err := labels.NewRequirement(f.Key, f.Op, vals)
 		if err != nil {
 			return nil, nil, err
 		}
@@ -1096,6 +1100,22 @@ func (c *WatchClient) getReplicaSet(uid string) (*ReplicaSet, bool) {
 		return replicaset, ok
 	}
 	return nil, false
+}
+
+// runInformerWithDependencies starts the given informer. The second argument is a list of other informers that should complete
+// before the informer is started. This is necessary e.g. for the pod informer which requires the replica set informer
+// to be finished to correctly establish the connection to the replicaset/deployment it belongs to.
+func (c *WatchClient) runInformerWithDependencies(informer cache.SharedInformer, dependencies []cache.InformerSynced) {
+	if len(dependencies) > 0 {
+		timeoutCh := make(chan struct{})
+		// TODO hard coding the timeout for now, check if we should make this configurable
+		t := time.AfterFunc(5*time.Second, func() {
+			close(timeoutCh)
+		})
+		defer t.Stop()
+		cache.WaitForCacheSync(timeoutCh, dependencies...)
+	}
+	informer.Run(c.stopCh)
 }
 
 // ignoreDeletedFinalStateUnknown returns the object wrapped in

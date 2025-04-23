@@ -424,7 +424,7 @@ Aggregate of MongoDB Metrics DOCUMENT_METRICS_UPDATED, DOCUMENT_METRICS_DELETED,
 
 DB Operation Rates
 
-Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT
+Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT, OPCOUNTER_TTL_DELETED
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -434,7 +434,7 @@ Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOU
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| operation | Type of database operation | Str: ``cmd``, ``query``, ``update``, ``delete``, ``getmore``, ``insert``, ``scan_and_order`` |
+| operation | Type of database operation | Str: ``cmd``, ``query``, ``update``, ``delete``, ``getmore``, ``insert``, ``scan_and_order``, ``ttl_deleted`` |
 | cluster_role | Whether process is acting as replica or primary | Str: ``primary``, ``replica`` |
 
 ### mongodbatlas.process.db.operations.time
@@ -932,6 +932,58 @@ Aggregate of MongoDB Metrics MAX_SWAP_USAGE_FREE, MAX_SWAP_USAGE_USED
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | memory_state | Memory usage type | Str: ``resident``, ``virtual``, ``mapped``, ``computed``, ``shared``, ``free``, ``used`` |
+
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### mongodbatlas.disk.partition.queue.depth
+
+Disk queue depth
+
+Aggregate of MongoDB Metrics DISK_QUEUE_DEPTH
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
+### mongodbatlas.disk.partition.throughput
+
+Disk throughput
+
+Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THROUGHPUT_WRITE
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| By/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| disk_direction | Measurement type for disk operation | Str: ``read``, ``write``, ``total`` |
+
+### mongodbatlas.process.cache.ratio
+
+Cache ratios represented as (%)
+
+Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| % | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| cache_ratio_type | Cache ratio type | Str: ``cache_fill``, ``dirty_fill`` |
 
 ## Resource Attributes
 

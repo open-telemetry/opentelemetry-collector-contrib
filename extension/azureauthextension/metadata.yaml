@@ -1,0 +1,9 @@
+type: azureauth
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  codeowners:
+    active: [constanca-m]
+  distributions: [contrib]

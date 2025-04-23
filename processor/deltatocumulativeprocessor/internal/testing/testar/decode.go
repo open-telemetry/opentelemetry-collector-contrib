@@ -19,6 +19,7 @@
 package testar // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar"
 
 import (
+	"errors"
 	"fmt"
 	"io/fs"
 	"os"
@@ -27,7 +28,7 @@ import (
 
 	"golang.org/x/tools/txtar"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testar/crlf"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/deltatocumulativeprocessor/internal/testing/testar/crlf"
 )
 
 // Read archive data into the fields of struct *T
@@ -53,7 +54,7 @@ func Decode[T any](ar *txtar.Archive, into *T, parsers ...Format) error {
 
 	pv := reflect.ValueOf(into)
 	if pv.Kind() != reflect.Pointer {
-		return fmt.Errorf("into must be pointer")
+		return errors.New("into must be pointer")
 	}
 	sv := pv.Elem()
 

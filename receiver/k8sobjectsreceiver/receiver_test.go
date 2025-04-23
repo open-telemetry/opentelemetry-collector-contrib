@@ -14,15 +14,20 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
 func TestNewReceiver(t *testing.T) {
 	t.Parallel()
 
+	mockClient := newMockDynamicClient()
 	rCfg := createDefaultConfig().(*Config)
-	rCfg.makeDynamicClient = newMockDynamicClient().getMockDynamicClient
+	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
 	)
@@ -67,7 +72,7 @@ func TestPullObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumer,
 	)
@@ -108,7 +113,7 @@ func TestWatchObject(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumer,
 	)
@@ -149,7 +154,7 @@ func TestWatchObject(t *testing.T) {
 	assert.NoError(t, r.Shutdown(ctx))
 }
 
-func TestExludeDeletedTrue(t *testing.T) {
+func TestExcludeDeletedTrue(t *testing.T) {
 	t.Parallel()
 
 	mockClient := newMockDynamicClient()
@@ -180,7 +185,7 @@ func TestExludeDeletedTrue(t *testing.T) {
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumer,
 	)

@@ -12,7 +12,7 @@ type Config struct {
 	// DSN to report transaction to Sentry. If the DSN is not set, no trace will be sent to Sentry.
 	DSN string `mapstructure:"dsn"`
 	// The deployment environment name, such as production or staging.
-	// Environments are case sensitive. The environment name can't contain newlines, spaces or forward slashes,
+	// Environments are case-sensitive. The environment name can't contain newlines, spaces or forward slashes,
 	// can't be the string "None", or exceed 64 characters.
 	Environment string `mapstructure:"environment"`
 	// InsecureSkipVerify controls whether the client verifies the Sentry server certificate chain

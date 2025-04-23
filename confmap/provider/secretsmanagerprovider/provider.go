@@ -1,6 +1,8 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
+//go:generate mdatagen metadata.yaml
+
 package secretsmanagerprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider"
 
 import (
@@ -12,6 +14,7 @@ import (
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/secretsmanager"
 	"go.opentelemetry.io/collector/confmap"
+	"go.uber.org/zap"
 )
 
 type secretsManagerClient interface {
@@ -24,6 +27,7 @@ const (
 
 type provider struct {
 	client secretsManagerClient
+	logger *zap.Logger
 }
 
 // NewFactory returns a new confmap.ProviderFactory that creates a confmap.Provider
@@ -31,22 +35,15 @@ type provider struct {
 //
 // This Provider supports "secretsmanager" scheme, and can be called with a selector:
 // `secretsmanager:NAME_OR_ARN`
+//
+// A default value for unset variable can be provided after :- suffix, for example:
+// `secretsmanager:NAME_OR_ARN:-default_value`
 func NewFactory() confmap.ProviderFactory {
 	return confmap.NewProviderFactory(newWithSettings)
 }
 
-func newWithSettings(_ confmap.ProviderSettings) confmap.Provider {
-	return &provider{client: nil}
-}
-
-// New returns a new confmap.Provider that reads the configuration from the given AWS Secrets Manager Name or ARN.
-//
-// This Provider supports "secretsmanager" scheme, and can be called with a selector:
-// `secretsmanager:NAME_OR_ARN`
-//
-// Deprecated: [v0.100.0] Use NewFactory() instead.
-func New() confmap.Provider {
-	return &provider{client: nil}
+func newWithSettings(ps confmap.ProviderSettings) confmap.Provider {
+	return &provider{client: nil, logger: ps.Logger}
 }
 
 func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
@@ -57,7 +54,6 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 	// initialize the secrets manager client in the first call of Retrieve
 	if provider.client == nil {
 		cfg, err := config.LoadDefaultConfig(ctx)
-
 		if err != nil {
 			return nil, fmt.Errorf("failed to load configurations to initialize an AWS SDK client, error: %w", err)
 		}
@@ -65,8 +61,16 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 		provider.client = secretsmanager.NewFromConfig(cfg)
 	}
 
-	// Remove schemeName and split by # to get the json key
-	secretArn, secretJSONKey, jsonKeyFound := strings.Cut(strings.Replace(uri, schemeName+":", "", 1), "#")
+	spec := strings.TrimPrefix(uri, schemeName+":")
+	// split by :- to get the default value
+	selector, defaultValue, hasDefaultValue := strings.Cut(spec, ":-")
+	// split by # to get the json key
+	secretArn, secretJSONKey, jsonKeyFound := strings.Cut(selector, "#")
+
+	if secretArn == "" && hasDefaultValue {
+		provider.logger.Warn("secret manager selector empty, falling back to default value")
+		return confmap.NewRetrieved(defaultValue)
+	}
 
 	input := &secretsmanager.GetSecretValueInput{
 		SecretId: &secretArn,
@@ -74,7 +78,7 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 
 	response, err := provider.client.GetSecretValue(ctx, input)
 	if err != nil {
-		return nil, fmt.Errorf("error gtting secret: %w", err)
+		return nil, fmt.Errorf("error getting secret: %w", err)
 	}
 
 	if response.SecretString == nil {
@@ -90,6 +94,10 @@ func (provider *provider) Retrieve(ctx context.Context, uri string, _ confmap.Wa
 
 		secretValue, ok := secretFieldsMap[secretJSONKey]
 		if !ok {
+			if hasDefaultValue {
+				provider.logger.Warn("field not found in secret map, falling back to default value")
+				return confmap.NewRetrieved(defaultValue)
+			}
 			return nil, fmt.Errorf("field %q not found in secret map", secretJSONKey)
 		}
 

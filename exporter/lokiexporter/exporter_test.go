@@ -5,6 +5,7 @@ package lokiexporter // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"net/http"
@@ -22,6 +23,8 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/lokiexporter/internal/metadata"
 )
 
 func TestPushLogData(t *testing.T) {
@@ -75,14 +78,14 @@ func TestPushLogData(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -254,14 +257,15 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 			}))
 			defer ts.Close()
 
+			clientConfig := confighttp.NewDefaultClientConfig()
+			clientConfig.Endpoint = ts.URL
+
 			cfg := &Config{
-				ClientConfig: confighttp.ClientConfig{
-					Endpoint: ts.URL,
-				},
+				ClientConfig: clientConfig,
 			}
 
 			f := NewFactory()
-			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(), cfg)
+			exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 
 			err = exp.Start(context.Background(), componenttest.NewNopHost())
@@ -273,7 +277,7 @@ func TestLogsToLokiRequestWithGroupingByTenant(t *testing.T) {
 
 			// actualPushRequest is populated within the test http server, we check it here as assertions are better done at the
 			// end of the test function
-			assert.Equal(t, len(actualPushRequestPerTenant), len(tC.expected))
+			assert.Len(t, actualPushRequestPerTenant, len(tC.expected))
 			for tenant, request := range actualPushRequestPerTenant {
 				pr, ok := tC.expected[tenant]
 				assert.True(t, ok)
@@ -335,5 +339,5 @@ func (p *badProtoForCoverage) Reset()         {}
 func (p *badProtoForCoverage) String() string { return "" }
 func (p *badProtoForCoverage) ProtoMessage()  {}
 func (p *badProtoForCoverage) Marshal() (dAtA []byte, err error) {
-	return nil, fmt.Errorf("this is a bad proto")
+	return nil, errors.New("this is a bad proto")
 }

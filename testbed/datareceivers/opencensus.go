@@ -35,7 +35,7 @@ func (or *ocDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, _ consu
 	cfg := factory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	cfg.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", or.Port), Transport: confignet.TransportTypeTCP}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	if or.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}

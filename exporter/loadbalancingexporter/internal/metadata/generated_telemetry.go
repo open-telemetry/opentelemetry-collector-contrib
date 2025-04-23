@@ -4,22 +4,16 @@ package metadata
 
 import (
 	"errors"
+	"sync"
 
 	"go.opentelemetry.io/otel/metric"
-	"go.opentelemetry.io/otel/metric/noop"
 	"go.opentelemetry.io/otel/trace"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 )
 
 func Meter(settings component.TelemetrySettings) metric.Meter {
 	return settings.MeterProvider.Meter("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter")
-}
-
-// Deprecated: [v0.114.0] use Meter instead.
-func LeveledMeter(settings component.TelemetrySettings, level configtelemetry.Level) metric.Meter {
-	return settings.LeveledMeterProvider(level).Meter("github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter")
 }
 
 func Tracer(settings component.TelemetrySettings) trace.Tracer {
@@ -30,6 +24,8 @@ func Tracer(settings component.TelemetrySettings) trace.Tracer {
 // as defined in metadata and user config.
 type TelemetryBuilder struct {
 	meter                         metric.Meter
+	mu                            sync.Mutex
+	registrations                 []metric.Registration
 	LoadbalancerBackendLatency    metric.Int64Histogram
 	LoadbalancerBackendOutcome    metric.Int64Counter
 	LoadbalancerNumBackendUpdates metric.Int64Counter
@@ -48,6 +44,15 @@ func (tbof telemetryBuilderOptionFunc) apply(mb *TelemetryBuilder) {
 	tbof(mb)
 }
 
+// Shutdown unregister all registered callbacks for async instruments.
+func (builder *TelemetryBuilder) Shutdown() {
+	builder.mu.Lock()
+	defer builder.mu.Unlock()
+	for _, reg := range builder.registrations {
+		reg.Unregister()
+	}
+}
+
 // NewTelemetryBuilder provides a struct with methods to update all internal telemetry
 // for a component
 func NewTelemetryBuilder(settings component.TelemetrySettings, options ...TelemetryBuilderOption) (*TelemetryBuilder, error) {
@@ -57,43 +62,36 @@ func NewTelemetryBuilder(settings component.TelemetrySettings, options ...Teleme
 	}
 	builder.meter = Meter(settings)
 	var err, errs error
-	builder.LoadbalancerBackendLatency, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Histogram(
+	builder.LoadbalancerBackendLatency, err = builder.meter.Int64Histogram(
 		"otelcol_loadbalancer_backend_latency",
 		metric.WithDescription("Response latency in ms for the backends."),
 		metric.WithUnit("ms"),
 		metric.WithExplicitBucketBoundaries([]float64{5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000}...),
 	)
 	errs = errors.Join(errs, err)
-	builder.LoadbalancerBackendOutcome, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.LoadbalancerBackendOutcome, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_backend_outcome",
 		metric.WithDescription("Number of successes and failures for each endpoint."),
 		metric.WithUnit("{outcomes}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.LoadbalancerNumBackendUpdates, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.LoadbalancerNumBackendUpdates, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_backend_updates",
 		metric.WithDescription("Number of times the list of backends was updated."),
 		metric.WithUnit("{updates}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.LoadbalancerNumBackends, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Gauge(
+	builder.LoadbalancerNumBackends, err = builder.meter.Int64Gauge(
 		"otelcol_loadbalancer_num_backends",
 		metric.WithDescription("Current number of backends in use."),
 		metric.WithUnit("{backends}"),
 	)
 	errs = errors.Join(errs, err)
-	builder.LoadbalancerNumResolutions, err = getLeveledMeter(builder.meter, configtelemetry.LevelBasic, settings.MetricsLevel).Int64Counter(
+	builder.LoadbalancerNumResolutions, err = builder.meter.Int64Counter(
 		"otelcol_loadbalancer_num_resolutions",
 		metric.WithDescription("Number of times the resolver has triggered new resolutions."),
 		metric.WithUnit("{resolutions}"),
 	)
 	errs = errors.Join(errs, err)
 	return &builder, errs
-}
-
-func getLeveledMeter(meter metric.Meter, cfgLevel, srvLevel configtelemetry.Level) metric.Meter {
-	if cfgLevel <= srvLevel {
-		return meter
-	}
-	return noop.Meter{}
 }

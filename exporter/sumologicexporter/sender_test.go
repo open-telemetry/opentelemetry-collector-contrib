@@ -41,7 +41,7 @@ type senderTest struct {
 }
 
 // prepareSenderTest prepares sender test environment.
-// Provided cfgOpts additionally configure the sender after the sendible default
+// Provided cfgOpts additionally configure the sender after the sensible default
 // for tests have been applied.
 // The enclosed httptest.Server is closed automatically using test.Cleanup.
 func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []func(w http.ResponseWriter, req *http.Request), cfgOpts ...func(*Config)) *senderTest {
@@ -60,20 +60,20 @@ func prepareSenderTest(t *testing.T, compression configcompression.Type, cb []fu
 	t.Cleanup(func() { testServer.Close() })
 
 	cfg := createDefaultConfig().(*Config)
-	cfg.ClientConfig.Endpoint = testServer.URL
+	cfg.Endpoint = testServer.URL
 	switch compression {
 	case configcompression.TypeGzip:
-		cfg.ClientConfig.Compression = configcompression.TypeGzip
+		cfg.Compression = configcompression.TypeGzip
 	case configcompression.TypeZstd:
-		cfg.ClientConfig.Compression = configcompression.TypeZstd
+		cfg.Compression = configcompression.TypeZstd
 	case NoCompression:
-		cfg.ClientConfig.Compression = NoCompression
+		cfg.Compression = NoCompression
 	case configcompression.TypeDeflate:
-		cfg.ClientConfig.Compression = configcompression.TypeDeflate
+		cfg.Compression = configcompression.TypeDeflate
 	default:
-		cfg.ClientConfig.Compression = configcompression.TypeGzip
+		cfg.Compression = configcompression.TypeGzip
 	}
-	cfg.ClientConfig.Auth = nil
+	cfg.Auth = nil
 	httpSettings := cfg.ClientConfig
 	host := componenttest.NewNopHost()
 	client, err := httpSettings.ToClient(context.Background(), host, componenttest.NewNopTelemetrySettings())
@@ -987,7 +987,7 @@ func TestSendCompressGzip(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1008,7 +1008,7 @@ func TestSendCompressGzipDeprecated(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeGzip(t, req.Body)
@@ -1029,7 +1029,7 @@ func TestSendCompressZstd(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZstd(t, req.Body)
@@ -1050,7 +1050,7 @@ func TestSendCompressDeflate(t *testing.T) {
 			res.WriteHeader(http.StatusOK)
 			if _, err := res.Write([]byte("")); err != nil {
 				res.WriteHeader(http.StatusInternalServerError)
-				assert.Fail(t, "err: %v", err)
+				assert.Fail(t, err.Error())
 				return
 			}
 			body := decodeZlib(t, req.Body)
@@ -1284,7 +1284,7 @@ func TestSendMetricsSplitFailedAll(t *testing.T) {
 }
 
 func TestSendMetricsUnexpectedFormat(t *testing.T) {
-	// Expect no requestes
+	// Expect no requests
 	test := prepareSenderTest(t, NoCompression, nil)
 	test.s.config.MetricFormat = "invalid"
 

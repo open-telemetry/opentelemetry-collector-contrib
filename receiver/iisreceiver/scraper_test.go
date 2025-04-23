@@ -32,7 +32,7 @@ func TestScrape(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 
 	scraper := newIisReceiver(
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		consumertest.NewNop(),
 	)
@@ -61,7 +61,7 @@ func TestScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -97,7 +97,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 	core, obs := observer.New(zapcore.WarnLevel)
 	logger := zap.New(core)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 	rcvrSettings.Logger = logger
 
 	scraper := newIisReceiver(
@@ -128,7 +128,7 @@ func TestMaxQueueItemAgeScrapeFailure(t *testing.T) {
 
 func TestMaxQueueItemAgeNegativeDenominatorScrapeFailure(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	rcvrSettings := receivertest.NewNopSettings()
+	rcvrSettings := receivertest.NewNopSettings(metadata.Type)
 
 	scraper := newIisReceiver(
 		rcvrSettings,

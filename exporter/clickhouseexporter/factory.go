@@ -19,6 +19,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal/metadata"
 )
 
+const clickhouseDriverName = "clickhouse"
+
 // NewFactory creates a factory for ClickHouse exporter.
 func NewFactory() exporter.Factory {
 	return exporter.NewFactory(
@@ -32,6 +34,9 @@ func NewFactory() exporter.Factory {
 
 func createDefaultConfig() component.Config {
 	return &Config{
+		collectorVersion: "unknown",
+		driverName:       clickhouseDriverName,
+
 		TimeoutSettings:  exporterhelper.NewDefaultTimeoutConfig(),
 		QueueSettings:    exporterhelper.NewDefaultQueueConfig(),
 		BackOffConfig:    configretry.NewDefaultBackOffConfig(),
@@ -60,6 +65,7 @@ func createLogsExporter(
 	cfg component.Config,
 ) (exporter.Logs, error) {
 	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
 	exporter, err := newLogsExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse logs exporter: %w", err)
@@ -86,6 +92,7 @@ func createTracesExporter(
 	cfg component.Config,
 ) (exporter.Traces, error) {
 	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
 	exporter, err := newTracesExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse traces exporter: %w", err)
@@ -110,6 +117,7 @@ func createMetricExporter(
 	cfg component.Config,
 ) (exporter.Metrics, error) {
 	c := cfg.(*Config)
+	c.collectorVersion = set.BuildInfo.Version
 	exporter, err := newMetricsExporter(set.Logger, c)
 	if err != nil {
 		return nil, fmt.Errorf("cannot configure clickhouse metrics exporter: %w", err)

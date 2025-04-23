@@ -12,9 +12,10 @@ import (
 
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/postgresqlreceiver/internal/metadata"
@@ -163,6 +164,51 @@ func (p *postgreSQLScraper) scrape(ctx context.Context) (pmetric.Metrics, error)
 	return p.mb.Emit(), errs.combine()
 }
 
+func (p *postgreSQLScraper) scrapeQuerySamples(ctx context.Context, maxRowsPerQuery int64) (plog.Logs, error) {
+	logs := plog.NewLogs()
+	resourceLog := logs.ResourceLogs().AppendEmpty()
+
+	scopedLog := resourceLog.ScopeLogs().AppendEmpty()
+	scopedLog.Scope().SetName(metadata.ScopeName)
+	scopedLog.Scope().SetVersion("0.0.1")
+
+	dbClient, err := p.clientFactory.getClient(defaultPostgreSQLDatabase)
+	if err != nil {
+		p.logger.Error("Failed to initialize connection to postgres", zap.Error(err))
+		return logs, err
+	}
+
+	var errs errsMux
+
+	logRecords := scopedLog.LogRecords()
+
+	p.collectQuerySamples(ctx, dbClient, &logRecords, maxRowsPerQuery, &errs, p.logger)
+
+	defer dbClient.Close()
+
+	return logs, nil
+}
+
+func (p *postgreSQLScraper) collectQuerySamples(ctx context.Context, dbClient client, logRecords *plog.LogRecordSlice, limit int64, mux *errsMux, logger *zap.Logger) {
+	timestamp := pcommon.NewTimestampFromTime(time.Now())
+
+	attributes, err := dbClient.getQuerySamples(ctx, limit, logger)
+	if err != nil {
+		mux.addPartial(err)
+		return
+	}
+	for _, atts := range attributes {
+		record := logRecords.AppendEmpty()
+		record.SetTimestamp(timestamp)
+		record.SetEventName("query sample")
+		if err := record.Attributes().FromRaw(atts); err != nil {
+			mux.addPartial(err)
+			logger.Error("failed to read attributes from row", zap.Error(err))
+		}
+		record.Body().SetStr("sample")
+	}
+}
+
 func (p *postgreSQLScraper) shutdown(_ context.Context) error {
 	if p.clientFactory != nil {
 		p.clientFactory.close()
@@ -201,6 +247,13 @@ func (p *postgreSQLScraper) recordDatabase(now pcommon.Timestamp, db string, r *
 		p.mb.RecordPostgresqlRollbacksDataPoint(now, stats.transactionRollback)
 		p.mb.RecordPostgresqlDeadlocksDataPoint(now, stats.deadlocks)
 		p.mb.RecordPostgresqlTempFilesDataPoint(now, stats.tempFiles)
+		p.mb.RecordPostgresqlTupUpdatedDataPoint(now, stats.tupUpdated)
+		p.mb.RecordPostgresqlTupReturnedDataPoint(now, stats.tupReturned)
+		p.mb.RecordPostgresqlTupFetchedDataPoint(now, stats.tupFetched)
+		p.mb.RecordPostgresqlTupInsertedDataPoint(now, stats.tupInserted)
+		p.mb.RecordPostgresqlTupDeletedDataPoint(now, stats.tupDeleted)
+		p.mb.RecordPostgresqlBlksHitDataPoint(now, stats.blksHit)
+		p.mb.RecordPostgresqlBlksReadDataPoint(now, stats.blksRead)
 	}
 	rb := p.mb.NewResourceBuilder()
 	rb.SetPostgresqlDatabaseName(db)
@@ -297,9 +350,13 @@ func (p *postgreSQLScraper) collectBGWriterStats(
 	p.mb.RecordPostgresqlBgwriterBuffersAllocatedDataPoint(now, bgStats.buffersAllocated)
 
 	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bgWrites, metadata.AttributeBgBufferSourceBgwriter)
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferBackendWrites, metadata.AttributeBgBufferSourceBackend)
+	if bgStats.bufferBackendWrites >= 0 {
+		p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferBackendWrites, metadata.AttributeBgBufferSourceBackend)
+	}
 	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferCheckpoints, metadata.AttributeBgBufferSourceCheckpoints)
-	p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferFsyncWrites, metadata.AttributeBgBufferSourceBackendFsync)
+	if bgStats.bufferFsyncWrites >= 0 {
+		p.mb.RecordPostgresqlBgwriterBuffersWritesDataPoint(now, bgStats.bufferFsyncWrites, metadata.AttributeBgBufferSourceBackendFsync)
+	}
 
 	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsReq, metadata.AttributeBgCheckpointTypeRequested)
 	p.mb.RecordPostgresqlBgwriterCheckpointCountDataPoint(now, bgStats.checkpointsScheduled, metadata.AttributeBgCheckpointTypeScheduled)

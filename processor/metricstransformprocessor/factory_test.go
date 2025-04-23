@@ -123,7 +123,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				tp, tErr := factory.CreateTraces(
 					context.Background(),
-					processortest.NewNopSettings(),
+					processortest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop())
 				// Not implemented error
@@ -132,7 +132,7 @@ func TestCreateProcessors(t *testing.T) {
 
 				mp, mErr := factory.CreateMetrics(
 					context.Background(),
-					processortest.NewNopSettings(),
+					processortest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop())
 				if tt.succeed {
@@ -165,7 +165,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 		},
 	}
 	err := validateConfiguration(&v1)
-	assert.Equal(t, "operation 1: missing required field \"new_label\" while \"action\" is add_label", err.Error())
+	assert.EqualError(t, err, "operation 1: missing required field \"new_label\" while \"action\" is add_label")
 
 	v2 := Config{
 		Transforms: []transform{
@@ -186,7 +186,7 @@ func TestFactory_validateConfiguration(t *testing.T) {
 	}
 
 	err = validateConfiguration(&v2)
-	assert.Equal(t, "operation 1: missing required field \"new_value\" while \"action\" is add_label", err.Error())
+	assert.EqualError(t, err, "operation 1: missing required field \"new_value\" while \"action\" is add_label")
 }
 
 func TestCreateProcessorsFilledData(t *testing.T) {

@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver"
@@ -285,7 +285,9 @@ func (queryReceiver *logsQueryReceiver) collect(ctx context.Context) (plog.Logs,
 	}
 
 	var errs []error
-	scopeLogs := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty().LogRecords()
+	scope := logs.ResourceLogs().AppendEmpty().ScopeLogs().AppendEmpty()
+	scope.Scope().SetName(metadata.ScopeName)
+	scopeLogs := scope.LogRecords()
 	for logsConfigIndex, logsConfig := range queryReceiver.query.Logs {
 		for _, row := range rows {
 			logRecord := scopeLogs.AppendEmpty()

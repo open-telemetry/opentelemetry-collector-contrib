@@ -9,12 +9,14 @@ server:
 capabilities:
   reports_effective_config: true
   reports_own_metrics: true
+  reports_own_logs: true
+  reports_own_traces: true
   reports_health: true
   accepts_remote_config: true
   reports_remote_config: true
 
 agent:
-  executable: ../../bin/otelcontribcol_darwin_amd64
+  executable: ../../bin/otelcontribcol_darwin_arm64
 
 storage:
   directory: .

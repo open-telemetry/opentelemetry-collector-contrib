@@ -26,8 +26,8 @@ func (o *opAMPLogger) Errorf(_ context.Context, format string, v ...any) {
 	o.l.Errorf(format, v...)
 }
 
-func newLoggerFromZap(l *zap.Logger) types.Logger {
+func newLoggerFromZap(l *zap.Logger, name string) types.Logger {
 	return &opAMPLogger{
-		l: l.Sugar(),
+		l: l.Sugar().Named(name),
 	}
 }

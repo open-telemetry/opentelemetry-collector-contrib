@@ -74,7 +74,7 @@ func TestMockedEndToEnd(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	params := receivertest.NewNopSettings()
+	params := receivertest.NewNopSettings(metadata.Type)
 	mockConsumer := new(consumertest.MetricsSink)
 
 	rcvr, err := factory.CreateMetrics(context.Background(), params, cfg, mockConsumer)

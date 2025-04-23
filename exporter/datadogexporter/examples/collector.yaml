@@ -283,7 +283,7 @@ exporters:
         #
         # mode: distributions
 
-        ## Deprecated [v0.75.0]: use `send_aggreggations` instead.
+        ## Deprecated [v0.75.0]: use `send_aggregations` instead.
         ## @param send_count_sum_metrics - boolean - optional - default: false
         ## Whether to report sum, count, min and max as separate histogram metrics.
         #
@@ -448,6 +448,11 @@ exporters:
       ## To attach tags to telemetry signals regardless of the host, use a processor instead.
       #
       # tags: ["team:infra", "<TAG_KEY>:<TAG_VALUE>"]
+
+      ## @param reporter_period - duration - optional - default: 30m
+      ## The period at which the host metadata reporter sends host metadata to Datadog.
+      ## The default is 30 minutes.
+      # reporter_period: 30m
 
     ## @param logs - custom object - optional
     ## Logs exporter specific configuration.

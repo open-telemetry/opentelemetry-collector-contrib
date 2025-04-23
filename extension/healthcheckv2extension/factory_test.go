@@ -55,7 +55,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	ext, err := createExtension(ctx, extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }
@@ -65,7 +65,7 @@ func TestCreate(t *testing.T) {
 	cfg.Endpoint = testutil.GetAvailableLocalAddress(t)
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	ext, err := createExtension(ctx, extensiontest.NewNopSettings(), cfg)
+	ext, err := createExtension(ctx, extensiontest.NewNopSettings(extensiontest.NopType), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, ext)
 }

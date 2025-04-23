@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -146,7 +146,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.EqualValues(t, "put", attrVal.Str())
+					assert.Equal(t, "put", attrVal.Str())
 				case "riak.node.operation.time.mean":
 					assert.False(t, validatedMetrics["riak.node.operation.time.mean"], "Found a duplicate in the metrics slice: riak.node.operation.time.mean")
 					validatedMetrics["riak.node.operation.time.mean"] = true
@@ -161,7 +161,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.EqualValues(t, "put", attrVal.Str())
+					assert.Equal(t, "put", attrVal.Str())
 				case "riak.node.read_repair.count":
 					assert.False(t, validatedMetrics["riak.node.read_repair.count"], "Found a duplicate in the metrics slice: riak.node.read_repair.count")
 					validatedMetrics["riak.node.read_repair.count"] = true
@@ -192,7 +192,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("operation")
 					assert.True(t, ok)
-					assert.EqualValues(t, "read", attrVal.Str())
+					assert.Equal(t, "read", attrVal.Str())
 				case "riak.vnode.operation.count":
 					assert.False(t, validatedMetrics["riak.vnode.operation.count"], "Found a duplicate in the metrics slice: riak.vnode.operation.count")
 					validatedMetrics["riak.vnode.operation.count"] = true
@@ -209,7 +209,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("request")
 					assert.True(t, ok)
-					assert.EqualValues(t, "put", attrVal.Str())
+					assert.Equal(t, "put", attrVal.Str())
 				}
 			}
 		})

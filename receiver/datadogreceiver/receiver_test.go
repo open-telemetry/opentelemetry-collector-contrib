@@ -26,13 +26,15 @@ import (
 	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.uber.org/multierr"
 	"google.golang.org/protobuf/proto"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/metadata"
 )
 
 func TestDatadogTracesReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateTraces(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Traces receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -46,7 +48,7 @@ func TestDatadogMetricsReceiver_Lifecycle(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	cfg.(*Config).Endpoint = "localhost:0"
-	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(), cfg, consumertest.NewNop())
+	ddr, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err, "Metrics receiver should be created")
 
 	err = ddr.Start(context.Background(), componenttest.NewNopHost())
@@ -61,7 +63,7 @@ func TestDatadogServer(t *testing.T) {
 	cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewNop()
 	require.NoError(t, err, "Must not error when creating receiver")
@@ -111,7 +113,6 @@ func TestDatadogServer(t *testing.T) {
 			expectContent: "{}",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -142,12 +143,12 @@ func TestDatadogResponse(t *testing.T) {
 	}{
 		{
 			name:           "non-permanent error",
-			err:            errors.New("non-permanenet error"),
+			err:            errors.New("non-permanent error"),
 			expectedStatus: http.StatusServiceUnavailable,
 		},
 		{
 			name:           "permanent error",
-			err:            consumererror.NewPermanent(errors.New("non-permanenet error")),
+			err:            consumererror.NewPermanent(errors.New("non-permanent error")),
 			expectedStatus: http.StatusBadRequest,
 		},
 	}
@@ -157,7 +158,7 @@ func TestDatadogResponse(t *testing.T) {
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 			dd, err := newDataDogReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 			)
 			require.NoError(t, err, "Must not error when creating receiver")
 			dd.(*datadogReceiver).nextTracesConsumer = consumertest.NewErr(tc.err)
@@ -277,14 +278,13 @@ func TestDatadogInfoEndpoint(t *testing.T) {
 }`,
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.Endpoint = "localhost:0" // Using a randomly assigned address
 
 			dd, err := newDataDogReceiver(
 				cfg,
-				receivertest.NewNopSettings(),
+				receivertest.NewNopSettings(metadata.Type),
 			)
 			require.NoError(t, err, "Must not error when creating receiver")
 
@@ -324,7 +324,7 @@ func TestDatadogMetricsV1_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
@@ -386,7 +386,7 @@ func TestDatadogMetricsV2_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
@@ -466,7 +466,7 @@ func TestDatadogMetricsV2_EndToEndJSON(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
@@ -545,7 +545,7 @@ func TestDatadogSketches_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
@@ -632,7 +632,7 @@ func TestStats_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink
@@ -723,7 +723,7 @@ func TestDatadogServices_EndToEnd(t *testing.T) {
 
 	dd, err := newDataDogReceiver(
 		cfg,
-		receivertest.NewNopSettings(),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	require.NoError(t, err, "Must not error when creating receiver")
 	dd.(*datadogReceiver).nextMetricsConsumer = sink

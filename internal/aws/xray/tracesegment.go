@@ -63,22 +63,22 @@ type Segment struct {
 // Validate checks whether the segment is valid or not
 func (s *Segment) Validate() error {
 	if s.Name == nil {
-		return errors.New(`segment "name" can not be nil`)
+		return errors.New(`segment "name" cannot be nil`)
 	}
 
 	if s.ID == nil {
-		return errors.New(`segment "id" can not be nil`)
+		return errors.New(`segment "id" cannot be nil`)
 	}
 
 	if s.StartTime == nil {
-		return errors.New(`segment "start_time" can not be nil`)
+		return errors.New(`segment "start_time" cannot be nil`)
 	}
 
 	// it's ok for embedded subsegments to not have trace_id
 	// but the root segment and independent subsegments must all
 	// have trace_id.
 	if s.TraceID == nil {
-		return errors.New(`segment "trace_id" can not be nil`)
+		return errors.New(`segment "trace_id" cannot be nil`)
 	}
 
 	return nil

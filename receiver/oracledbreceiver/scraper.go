@@ -13,8 +13,9 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -22,23 +23,37 @@ import (
 )
 
 const (
-	statsSQL                = "select * from v$sysstat"
-	enqueueDeadlocks        = "enqueue deadlocks"
-	exchangeDeadlocks       = "exchange deadlocks"
-	executeCount            = "execute count"
-	parseCountTotal         = "parse count (total)"
-	parseCountHard          = "parse count (hard)"
-	userCommits             = "user commits"
-	userRollbacks           = "user rollbacks"
-	physicalReads           = "physical reads"
-	sessionLogicalReads     = "session logical reads"
-	cpuTime                 = "CPU used by this session"
-	pgaMemory               = "session pga memory"
-	dbBlockGets             = "db block gets"
-	consistentGets          = "consistent gets"
-	sessionCountSQL         = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
-	systemResourceLimitsSQL = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
-	tablespaceUsageSQL      = `
+	statsSQL                       = "select * from v$sysstat"
+	enqueueDeadlocks               = "enqueue deadlocks"
+	exchangeDeadlocks              = "exchange deadlocks"
+	executeCount                   = "execute count"
+	parseCountTotal                = "parse count (total)"
+	parseCountHard                 = "parse count (hard)"
+	userCommits                    = "user commits"
+	userRollbacks                  = "user rollbacks"
+	physicalReads                  = "physical reads"
+	physicalReadsDirect            = "physical reads direct"
+	physicalReadIORequests         = "physical read IO requests"
+	physicalWrites                 = "physical writes"
+	physicalWritesDirect           = "physical writes direct"
+	physicalWriteIORequests        = "physical write IO requests"
+	queriesParallelized            = "queries parallelized"
+	ddlStatementsParallelized      = "DDL statements parallelized"
+	dmlStatementsParallelized      = "DML statements parallelized"
+	parallelOpsNotDowngraded       = "Parallel operations not downgraded"
+	parallelOpsDowngradedToSerial  = "Parallel operations downgraded to serial"
+	parallelOpsDowngraded1To25Pct  = "Parallel operations downgraded 1 to 25 pct"
+	parallelOpsDowngraded25To50Pct = "Parallel operations downgraded 25 to 50 pct"
+	parallelOpsDowngraded50To75Pct = "Parallel operations downgraded 50 to 75 pct"
+	parallelOpsDowngraded75To99Pct = "Parallel operations downgraded 75 to 99 pct"
+	sessionLogicalReads            = "session logical reads"
+	cpuTime                        = "CPU used by this session"
+	pgaMemory                      = "session pga memory"
+	dbBlockGets                    = "db block gets"
+	consistentGets                 = "consistent gets"
+	sessionCountSQL                = "select status, type, count(*) as VALUE FROM v$session GROUP BY status, type"
+	systemResourceLimitsSQL        = "select RESOURCE_NAME, CURRENT_UTILIZATION, LIMIT_VALUE, CASE WHEN TRIM(INITIAL_ALLOCATION) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(INITIAL_ALLOCATION) END as INITIAL_ALLOCATION, CASE WHEN TRIM(LIMIT_VALUE) LIKE 'UNLIMITED' THEN '-1' ELSE TRIM(LIMIT_VALUE) END as LIMIT_VALUE from v$resource_limit"
+	tablespaceUsageSQL             = `
 		select um.TABLESPACE_NAME, um.USED_SPACE, um.TABLESPACE_SIZE, ts.BLOCK_SIZE
 		FROM DBA_TABLESPACE_USAGE_METRICS um INNER JOIN DBA_TABLESPACES ts
 		ON um.TABLESPACE_NAME = ts.TABLESPACE_NAME`
@@ -48,7 +63,7 @@ type dbProviderFunc func() (*sql.DB, error)
 
 type clientProviderFunc func(*sql.DB, string, *zap.Logger) dbClient
 
-type scraper struct {
+type oracleScraper struct {
 	statsClient                dbClient
 	tablespaceUsageClient      dbClient
 	systemResourceLimitsClient dbClient
@@ -65,8 +80,8 @@ type scraper struct {
 	metricsBuilderConfig       metadata.MetricsBuilderConfig
 }
 
-func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraperhelper.Scraper, error) {
-	s := &scraper{
+func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig metadata.MetricsBuilderConfig, scrapeCfg scraperhelper.ControllerConfig, logger *zap.Logger, providerFunc dbProviderFunc, clientProviderFunc clientProviderFunc, instanceName string) (scraper.Metrics, error) {
+	s := &oracleScraper{
 		mb:                   metricsBuilder,
 		metricsBuilderConfig: metricsBuilderConfig,
 		scrapeCfg:            scrapeCfg,
@@ -75,10 +90,10 @@ func newScraper(metricsBuilder *metadata.MetricsBuilder, metricsBuilderConfig me
 		clientProviderFunc:   clientProviderFunc,
 		instanceName:         instanceName,
 	}
-	return scraperhelper.NewScraperWithoutType(s.scrape, scraperhelper.WithShutdown(s.shutdown), scraperhelper.WithStart(s.start))
+	return scraper.NewMetrics(s.scrape, scraper.WithShutdown(s.shutdown), scraper.WithStart(s.start))
 }
 
-func (s *scraper) start(context.Context, component.Host) error {
+func (s *oracleScraper) start(context.Context, component.Host) error {
 	s.startTime = pcommon.NewTimestampFromTime(time.Now())
 	var err error
 	s.db, err = s.dbProviderFunc()
@@ -92,7 +107,7 @@ func (s *scraper) start(context.Context, component.Host) error {
 	return nil
 }
 
-func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
+func (s *oracleScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	s.logger.Debug("Begin scrape")
 
 	var scrapeErrors []error
@@ -105,6 +120,20 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.metricsBuilderConfig.Metrics.OracledbUserCommits.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbUserRollbacks.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPhysicalReads.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadsDirect.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalReadIoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWrites.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWritesDirect.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbPhysicalWriteIoRequests.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbQueriesParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDdlStatementsParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbDmlStatementsParallelized.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsNotDowngraded.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngradedToSerial.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded1To25Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded25To50Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded50To75Pct.Enabled ||
+		s.metricsBuilderConfig.Metrics.OracledbParallelOperationsDowngraded75To99Pct.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbLogicalReads.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbCPUTime.Enabled ||
 		s.metricsBuilderConfig.Metrics.OracledbPgaMemory.Enabled ||
@@ -156,6 +185,76 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 				}
 			case physicalReads:
 				err := s.mb.RecordOracledbPhysicalReadsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadsDirect:
+				err := s.mb.RecordOracledbPhysicalReadsDirectDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalReadIORequests:
+				err := s.mb.RecordOracledbPhysicalReadIoRequestsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWrites:
+				err := s.mb.RecordOracledbPhysicalWritesDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWritesDirect:
+				err := s.mb.RecordOracledbPhysicalWritesDirectDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case physicalWriteIORequests:
+				err := s.mb.RecordOracledbPhysicalWriteIoRequestsDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case queriesParallelized:
+				err := s.mb.RecordOracledbQueriesParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case ddlStatementsParallelized:
+				err := s.mb.RecordOracledbDdlStatementsParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case dmlStatementsParallelized:
+				err := s.mb.RecordOracledbDmlStatementsParallelizedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsNotDowngraded:
+				err := s.mb.RecordOracledbParallelOperationsNotDowngradedDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngradedToSerial:
+				err := s.mb.RecordOracledbParallelOperationsDowngradedToSerialDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded1To25Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded1To25PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded25To50Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded25To50PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded50To75Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded50To75PctDataPoint(now, row["VALUE"])
+				if err != nil {
+					scrapeErrors = append(scrapeErrors, err)
+				}
+			case parallelOpsDowngraded75To99Pct:
+				err := s.mb.RecordOracledbParallelOperationsDowngraded75To99PctDataPoint(now, row["VALUE"])
 				if err != nil {
 					scrapeErrors = append(scrapeErrors, err)
 				}
@@ -331,7 +430,7 @@ func (s *scraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 	return out, nil
 }
 
-func (s *scraper) shutdown(_ context.Context) error {
+func (s *oracleScraper) shutdown(_ context.Context) error {
 	if s.db == nil {
 		return nil
 	}

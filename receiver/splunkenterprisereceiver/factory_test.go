@@ -13,14 +13,14 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/splunkenterprisereceiver/internal/metadata"
 )
 
 func TestFactoryCreate(t *testing.T) {
 	factory := NewFactory()
-	require.EqualValues(t, metadata.Type, factory.Type())
+	require.Equal(t, metadata.Type, factory.Type())
 }
 
 func TestDefaultConfig(t *testing.T) {
@@ -40,6 +40,7 @@ func TestDefaultConfig(t *testing.T) {
 			Timeout:            60 * time.Second,
 		},
 		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		VersionInfo:          false,
 	}
 
 	testConf := createDefaultConfig().(*Config)
@@ -64,7 +65,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettings(),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)

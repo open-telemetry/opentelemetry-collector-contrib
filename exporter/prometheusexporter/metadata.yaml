@@ -8,7 +8,7 @@ status:
   - core
   - contrib
   codeowners:
-    active: [Aneurysm9, dashpole]
+    active: [Aneurysm9, dashpole, ArthurSens]
 
 tests:
   config:

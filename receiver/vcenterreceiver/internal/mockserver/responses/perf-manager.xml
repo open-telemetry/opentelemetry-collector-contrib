@@ -3356,7 +3356,7 @@
                                 <key>153</key>
                                 <nameInfo>
                                     <label>Net Throughput Contention</label>
-                                    <summary>The aggregate network droppped packets for the host</summary>
+                                    <summary>The aggregate network dropped packets for the host</summary>
                                     <key>throughput.contention</key>
                                 </nameInfo>
                                 <groupInfo>
@@ -8064,7 +8064,7 @@
                                 <key>421</key>
                                 <nameInfo>
                                     <label>VMKMEM minfree</label>
-                                    <summary>Mininum amount of machine memory that VMkernel likes to keep free</summary>
+                                    <summary>Minimum amount of machine memory that VMkernel likes to keep free</summary>
                                     <key>kernel.minfree</key>
                                 </nameInfo>
                                 <groupInfo>

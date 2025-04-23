@@ -14,6 +14,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/routingconnector/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
@@ -31,18 +32,17 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	logger         *zap.Logger
-	resourceParser ottl.Parser[ottlresource.TransformContext]
-	spanParser     ottl.Parser[ottlspan.TransformContext]
-	metricParser   ottl.Parser[ottlmetric.TransformContext]
-	logParser      ottl.Parser[ottllog.TransformContext]
-
-	table      []RoutingTableItem
-	routes     map[string]routingItem[C]
-	routeSlice []routingItem[C]
-
+	resourceParser   ottl.Parser[ottlresource.TransformContext]
+	spanParser       ottl.Parser[ottlspan.TransformContext]
+	metricParser     ottl.Parser[ottlmetric.TransformContext]
+	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
+	logParser        ottl.Parser[ottllog.TransformContext]
 	defaultConsumer  C
+	logger           *zap.Logger
+	routes           map[string]routingItem[C]
 	consumerProvider consumerProvider[C]
+	table            []RoutingTableItem
+	routeSlice       []routingItem[C]
 }
 
 // newRouter creates a new router instance with based on type parameters C and K.
@@ -72,17 +72,18 @@ func newRouter[C any](
 }
 
 type routingItem[C any] struct {
-	consumer          C
-	statementContext  string
-	requestCondition  *requestCondition
-	resourceStatement *ottl.Statement[ottlresource.TransformContext]
-	spanStatement     *ottl.Statement[ottlspan.TransformContext]
-	metricStatement   *ottl.Statement[ottlmetric.TransformContext]
-	logStatement      *ottl.Statement[ottllog.TransformContext]
+	consumer           C
+	requestCondition   *requestCondition
+	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
+	spanStatement      *ottl.Statement[ottlspan.TransformContext]
+	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
+	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
+	logStatement       *ottl.Statement[ottllog.TransformContext]
+	statementContext   string
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {
-	var buildResource, buildSpan, buildMetric, buildLog bool
+	var buildResource, buildSpan, buildMetric, buildDataPoint, buildLog bool
 	for _, item := range table {
 		switch item.Context {
 		case "", "resource":
@@ -91,6 +92,8 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 			buildSpan = true
 		case "metric":
 			buildMetric = true
+		case "datapoint":
+			buildDataPoint = true
 		case "log":
 			buildLog = true
 		}
@@ -126,6 +129,19 @@ func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.Te
 		)
 		if err == nil {
 			r.metricParser = parser
+		} else {
+			errs = errors.Join(errs, err)
+		}
+	}
+	if buildDataPoint {
+		parser, err := ottldatapoint.NewParser(
+			common.Functions[ottldatapoint.TransformContext](),
+			settings,
+		)
+		if err == nil {
+			r.dataPointParser = parser
+		} else {
+			errs = errors.Join(errs, err)
 		}
 	}
 	if buildLog {
@@ -216,6 +232,12 @@ func (r *router[C]) registerRouteConsumers() (err error) {
 					return err
 				}
 				route.metricStatement = statement
+			case "datapoint":
+				statement, err := r.dataPointParser.ParseStatement(item.Statement)
+				if err != nil {
+					return err
+				}
+				route.dataPointStatement = statement
 			case "log":
 				statement, err := r.logParser.ParseStatement(item.Statement)
 				if err != nil {

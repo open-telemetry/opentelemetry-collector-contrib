@@ -6,7 +6,7 @@
 | Stability     | [beta]: metrics, logs, traces   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fsumologic%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fsumologic) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fsumologic%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fsumologic) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@chan-tim-sumo](https://www.github.com/chan-tim-sumo) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@chan-tim-sumo](https://www.github.com/chan-tim-sumo), [@echlebek](https://www.github.com/echlebek), [@amdprophet](https://www.github.com/amdprophet) |
 | Emeritus      | [@aboguszewski-sumo](https://www.github.com/aboguszewski-sumo), [@kasia-kujawa](https://www.github.com/kasia-kujawa), [@mat-rumian](https://www.github.com/mat-rumian), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -17,7 +17,7 @@
 
 **This exporter is undergoing major changes right now.**
 
-For some time we have been developing the [new Sumo Logic exporter](https://github.com/SumoLogic/sumologic-otel-collector/tree/main/pkg/exporter/sumologicexporter#sumo-logic-exporter) and now we are in the process of moving it into this repository.
+We are in the process of [moving the Sumo Logic exporter into this repository](https://github.com/SumoLogic/sumologic-otel-collector/pull/1601).
 
 The following options are no longer supported:
 
@@ -69,8 +69,7 @@ After the new exporter will be moved to this repository:
 ## Configuration
 
 This exporter supports sending logs and metrics data to [Sumo Logic](https://www.sumologic.com/).
-Traces are exported using native otlphttp exporter as described
-[here](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing)
+Traces are exported using the [native otlphttp exporter](https://help.sumologic.com/Traces/Getting_Started_with_Transaction_Tracing).
 
 Configuration is specified via the yaml in the following structure:
 

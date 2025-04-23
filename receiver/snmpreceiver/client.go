@@ -10,7 +10,7 @@ import (
 	"strings"
 
 	"github.com/gosnmp/gosnmp"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 )
 
@@ -324,7 +324,7 @@ func (c *snmpClient) convertSnmpPDUToSnmpData(pdu gosnmp.SnmpPDU) SNMPData {
 	}
 
 	// Condense gosnmp data types to our client's simplified data types
-	switch pdu.Type { // nolint:exhaustive
+	switch pdu.Type {
 	// Integer types
 	case gosnmp.Counter64, gosnmp.Counter32, gosnmp.Gauge32, gosnmp.Uinteger32, gosnmp.TimeTicks, gosnmp.Integer:
 		value, err := c.toInt64(pdu.Name, pdu.Value)

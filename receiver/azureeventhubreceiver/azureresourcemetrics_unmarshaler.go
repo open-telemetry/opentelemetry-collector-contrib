@@ -21,13 +21,12 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azureeventhubreceiver/internal/metadata"
 )
 
-const (
-	azureResourceID = "azure.resource.id"
-)
+const azureResourceID = "azure.resource.id"
 
 type azureResourceMetricsUnmarshaler struct {
-	buildInfo component.BuildInfo
-	logger    *zap.Logger
+	buildInfo  component.BuildInfo
+	logger     *zap.Logger
+	TimeFormat []string
 }
 
 // azureMetricRecords represents an array of Azure metric records
@@ -50,10 +49,11 @@ type azureMetricRecord struct {
 	Average    float64 `json:"average"`
 }
 
-func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger) eventMetricsUnmarshaler {
+func newAzureResourceMetricsUnmarshaler(buildInfo component.BuildInfo, logger *zap.Logger, timeFormat []string) eventMetricsUnmarshaler {
 	return azureResourceMetricsUnmarshaler{
-		buildInfo: buildInfo,
-		logger:    logger,
+		buildInfo:  buildInfo,
+		logger:     logger,
+		TimeFormat: timeFormat,
 	}
 }
 
@@ -90,19 +90,18 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 			resourceID = azureMetric.ResourceID
 		}
 
-		nanos, err := asTimestamp(azureMetric.Time)
+		nanos, err := asTimestamp(azureMetric.Time, r.TimeFormat)
 		if err != nil {
 			r.logger.Warn("Invalid Timestamp", zap.String("time", azureMetric.Time))
 			continue
 		}
 
 		var startTimestamp pcommon.Timestamp
-		if azureMetric.TimeGrain == "PT1M" {
-			startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
-		} else {
+		if azureMetric.TimeGrain != "PT1M" {
 			r.logger.Warn("Unhandled Time Grain", zap.String("timegrain", azureMetric.TimeGrain))
 			continue
 		}
+		startTimestamp = pcommon.NewTimestampFromTime(nanos.AsTime().Add(-time.Minute))
 
 		metricTotal := metrics.AppendEmpty()
 		metricTotal.SetName(strings.ToLower(fmt.Sprintf("%s_%s", strings.ReplaceAll(azureMetric.MetricName, " ", "_"), "Total")))
@@ -152,10 +151,19 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string) (pcommon.Timestamp, error) {
-	t, err := iso8601.ParseString(s)
-	if err != nil {
-		return 0, err
+func asTimestamp(s string, formats []string) (pcommon.Timestamp, error) {
+	var err error
+	var t time.Time
+	// Try parsing with provided formats first
+	for _, format := range formats {
+		if t, err = time.Parse(format, s); err == nil {
+			return pcommon.Timestamp(t.UnixNano()), nil
+		}
 	}
-	return pcommon.Timestamp(t.UnixNano()), nil
+
+	// Fallback to ISO 8601 parsing if no format matches
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
+	return 0, err
 }

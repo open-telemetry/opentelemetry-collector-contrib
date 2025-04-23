@@ -16,9 +16,9 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
 )
 
@@ -238,10 +238,9 @@ func spanLinksToZipkinTags(links ptrace.SpanLinkSlice, zTags map[string]string) 
 
 func attributeMapToStringMap(attrMap pcommon.Map) map[string]string {
 	rawMap := make(map[string]string)
-	attrMap.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrMap.All() {
 		rawMap[k] = v.AsString()
-		return true
-	})
+	}
 	return rawMap
 }
 
@@ -262,10 +261,9 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 		return tracetranslator.ResourceNoServiceName, zTags
 	}
 
-	attrs.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attrs.All() {
 		zTags[k] = v.AsString()
-		return true
-	})
+	}
 
 	serviceName = extractZipkinServiceName(zTags)
 	return serviceName, zTags

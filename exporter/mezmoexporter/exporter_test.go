@@ -122,9 +122,7 @@ type (
 func createHTTPServer(params *testServerParams) testServer {
 	httpServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, err := io.ReadAll(r.Body)
-		if err != nil {
-			params.t.Fatal(err)
-		}
+		assert.NoError(params.t, err)
 
 		var logBody mezmoLogBody
 		if err = json.Unmarshal(body, &logBody); err != nil {
@@ -216,7 +214,7 @@ func TestAddsRequiredAttributes(t *testing.T) {
 			for _, line := range lines {
 				assert.Positive(t, line.Timestamp)
 				assert.Equal(t, "info", line.Level)
-				assert.Equal(t, "", line.App)
+				assert.Empty(t, line.App)
 				assert.Equal(t, "minimal attribute log", line.Line)
 			}
 

@@ -21,7 +21,7 @@ import (
 type brokerTraceMoveUnmarshallerV1 struct {
 	logger           *zap.Logger
 	telemetryBuilder *metadata.TelemetryBuilder
-	metricAttrs      attribute.Set // othere Otel attributes (to add to the metrics)
+	metricAttrs      attribute.Set // other Otel attributes (to add to the metrics)
 }
 
 // unmarshal implements tracesUnmarshaller.unmarshal

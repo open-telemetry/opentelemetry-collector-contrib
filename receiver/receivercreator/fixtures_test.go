@@ -56,6 +56,45 @@ var portEndpoint = observer.Endpoint{
 	},
 }
 
+var config = `
+int_field: 20`
+
+var portEndpointWithHints = observer.Endpoint{
+	ID:     "namespace/pod-2-UID/redis(6379)",
+	Target: "1.2.3.4:6379",
+	Details: &observer.Port{
+		Name: "redis", Pod: observer.Pod{
+			Name:      "pod-2",
+			Namespace: "default",
+			UID:       "pod-2-UID",
+			Labels:    map[string]string{"env": "prod"},
+			Annotations: map[string]string{
+				otelMetricsHints + "/enabled": "true",
+				otelMetricsHints + "/scraper": "with_endpoint",
+				otelMetricsHints + "/config":  config,
+			},
+		},
+		Port: 6379,
+	},
+}
+
+var podContainerEndpointWithHints = observer.Endpoint{
+	ID:     "namespace/pod-2-UID/redis(6379)",
+	Target: "1.2.3.4:6379",
+	Details: &observer.PodContainer{
+		Image: "redis",
+		Name:  "redis", Pod: observer.Pod{
+			Name:      "pod-2",
+			Namespace: "default",
+			UID:       "pod-2-UID",
+			Labels:    map[string]string{"env": "prod"},
+			Annotations: map[string]string{
+				otelLogsHints + "/enabled": "true",
+			},
+		},
+	},
+}
+
 var hostportEndpoint = observer.Endpoint{
 	ID:     "port-1",
 	Target: "localhost:1234",
@@ -109,6 +148,12 @@ var k8sNodeEndpoint = observer.Endpoint{
 		Name: "a.name",
 		UID:  "b344f2a7-1ec1-40f0-8557-8a9bfd8b6f99",
 	},
+}
+
+var kafkaTopicsEndpoint = observer.Endpoint{
+	ID:      "topic1",
+	Target:  "topic1",
+	Details: &observer.KafkaTopic{},
 }
 
 var unsupportedEndpoint = observer.Endpoint{

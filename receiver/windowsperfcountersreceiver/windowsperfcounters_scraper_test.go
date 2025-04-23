@@ -16,10 +16,9 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -214,9 +213,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 			scraper := newScraper(cfg, settings)
 
 			err := scraper.start(context.Background(), componenttest.NewNopHost())
-			if test.startErr == "" {
-				require.Equal(t, 0, obs.Len())
-			} else {
+			if test.startErr != "" {
 				require.Equal(t, 1, obs.Len())
 				log := obs.All()[0]
 				assert.Equal(t, zapcore.WarnLevel, log.Level)
@@ -225,6 +222,7 @@ func Test_WindowsPerfCounterScraper(t *testing.T) {
 				assert.EqualError(t, log.Context[0].Interface.(error), test.startErr)
 				return
 			}
+			require.Equal(t, 0, obs.Len())
 			require.NoError(t, err)
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -328,7 +326,7 @@ func TestInitWatchers(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			s := &scraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
+			s := &windowsPerfCountersScraper{cfg: &Config{PerfCounters: test.cfgs}, newWatcher: winperfcounters.NewWatcher}
 			watchers, errs := s.initWatchers()
 			if test.expectedErr != "" {
 				require.EqualError(t, errs, test.expectedErr)
@@ -372,7 +370,7 @@ func TestWatcherResetFailure(t *testing.T) {
 	settings := componenttest.NewNopTelemetrySettings()
 	settings.Logger = logger
 
-	s := &scraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
+	s := &windowsPerfCountersScraper{cfg: &cfg, settings: settings, newWatcher: mockPerfCounterFactoryInvocations(mpc)}
 	errs := s.start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, errs)
 
@@ -498,7 +496,7 @@ func TestScrape(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			mpcs := test.mockPerfCounters
 			testConfig := test.cfg
-			s := &scraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
+			s := &windowsPerfCountersScraper{cfg: &testConfig, newWatcher: mockPerfCounterFactoryInvocations(mpcs...)}
 			errs := s.start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, errs)
 
@@ -550,19 +548,18 @@ func TestScrape(t *testing.T) {
 					assert.Equal(t, len(counterValues), dps.Len())
 					for dpIdx, val := range counterValues {
 						assert.Equal(t, val.Value, dps.At(dpIdx).DoubleValue())
-						expectedAttributeLen := len(counterCfg.MetricRep.Attributes)
+						expectedAttributeLen := len(counterCfg.Attributes)
 						if val.InstanceName != "" {
 							expectedAttributeLen++
 						}
 						assert.Equal(t, expectedAttributeLen, dps.At(dpIdx).Attributes().Len())
-						dps.At(dpIdx).Attributes().Range(func(k string, v pcommon.Value) bool {
+						for k, v := range dps.At(dpIdx).Attributes().All() {
 							if k == instanceLabelName {
 								assert.Equal(t, val.InstanceName, v.Str())
-								return true
+								continue
 							}
-							assert.Equal(t, counterCfg.MetricRep.Attributes[k], v.Str())
-							return true
-						})
+							assert.Equal(t, counterCfg.Attributes[k], v.Str())
+						}
 					}
 					curMetricsNum++
 				}

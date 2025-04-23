@@ -24,7 +24,7 @@ func Test_SimpleHealthCheck(t *testing.T) {
 	port := testutil.GetAvailablePort(t)
 	cfg := f.CreateDefaultConfig().(*Config)
 	cfg.Endpoint = fmt.Sprintf("localhost:%d", port)
-	e, err := f.Create(context.Background(), extensiontest.NewNopSettings(), cfg)
+	e, err := f.Create(context.Background(), extensiontest.NewNopSettings(f.Type()), cfg)
 	require.NoError(t, err)
 	err = e.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

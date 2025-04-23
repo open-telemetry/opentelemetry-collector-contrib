@@ -19,6 +19,8 @@ all_set:
       enabled: true
     splunk.data.indexes.extended.total.size:
       enabled: true
+    splunk.health:
+      enabled: true
     splunk.indexer.avg.rate:
       enabled: true
     splunk.indexer.cpu.time:
@@ -100,6 +102,8 @@ none_set:
     splunk.data.indexes.extended.raw.size:
       enabled: false
     splunk.data.indexes.extended.total.size:
+      enabled: false
+    splunk.health:
       enabled: false
     splunk.indexer.avg.rate:
       enabled: false
