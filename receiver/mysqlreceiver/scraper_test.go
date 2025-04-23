@@ -103,7 +103,6 @@ func TestScrape(t *testing.T) {
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
 
 		// test query metrics as logs
-		cfg.QueryMetricsAsLogs = true
 		scraper = newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
 			globalStatsFile:             "global_stats",

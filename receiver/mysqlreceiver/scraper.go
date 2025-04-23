@@ -628,45 +628,44 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 		log.SetTimestamp(now)
 		log.SetEventName("top query")
 		atts := log.Attributes()
-		if m.config.QueryMetricsAsLogs {
-			atts.PutInt("mysql.query.calls", s.count)
-			atts.PutInt("mysql.query.rows.returned", s.rowsReturned)
-			atts.PutInt("mysql.query.rows.total", s.rowsExamined)
-			atts.PutDouble("mysql.query.time.cpu", s.cpuTime)
-			atts.PutDouble("mysql.query.time.lock", s.lockTime)
-			atts.PutDouble("mysql.query.time.total", s.totalDuration)
-			// Additional values added for good measure
-			atts.PutInt("mysql.query.rows.affected", s.rowsAffected)
-			atts.PutInt("mysql.query.full_joins", s.fullJoins)
-			atts.PutInt("mysql.query.full_range_joins", s.fullRangeJoins)
-			atts.PutInt("mysql.query.select_ranges", s.selectRanges)
-			atts.PutInt("mysql.query.select_range_checks", s.selectRangesChecks)
-			atts.PutInt("mysql.query.select_scans", s.selectScans)
-			atts.PutInt("mysql.query.sort.merge_passes", s.sortMergePasses)
-			atts.PutInt("mysql.query.sort.ranges", s.sortRanges)
-			atts.PutInt("mysql.query.sort.scans", s.sortScans)
-			atts.PutInt("mysql.query.no_indexes_used", s.noIndexUsed)
-			atts.PutInt("mysql.query.no_good_indexes_used", s.noGoodIndexUsed)
-			// short circuit if no attributes were set
-			if atts.Len() == 0 {
-				continue
-			}
-			atts.PutStr("mysql.query.text", s.queryText)
-			atts.PutStr("mysql.query.hash", s.queryDigest)
-			if s.schema != "" {
-				atts.PutStr("mysql.query.schemas", s.schema)
-			}
-			if s.users != "" {
-				atts.PutStr("mysql.query.users", s.users)
-			}
-			if s.hosts != "" {
-				atts.PutStr("mysql.query.hosts", s.hosts)
-			}
-			if s.dbs != "" {
-				atts.PutStr("mysql.query.dbs", s.dbs)
-			}
+		atts.PutInt("mysql.query.calls", s.count)
+		atts.PutInt("mysql.query.rows.returned", s.rowsReturned)
+		atts.PutInt("mysql.query.rows.total", s.rowsExamined)
+		atts.PutDouble("mysql.query.time.cpu", s.cpuTime)
+		atts.PutDouble("mysql.query.time.lock", s.lockTime)
+		atts.PutDouble("mysql.query.time.total", s.totalDuration)
+		// Additional values added for good measure
+		atts.PutInt("mysql.query.rows.affected", s.rowsAffected)
+		atts.PutInt("mysql.query.full_joins", s.fullJoins)
+		atts.PutInt("mysql.query.full_range_joins", s.fullRangeJoins)
+		atts.PutInt("mysql.query.select_ranges", s.selectRanges)
+		atts.PutInt("mysql.query.select_range_checks", s.selectRangesChecks)
+		atts.PutInt("mysql.query.select_scans", s.selectScans)
+		atts.PutInt("mysql.query.sort.merge_passes", s.sortMergePasses)
+		atts.PutInt("mysql.query.sort.ranges", s.sortRanges)
+		atts.PutInt("mysql.query.sort.scans", s.sortScans)
+		atts.PutInt("mysql.query.no_indexes_used", s.noIndexUsed)
+		atts.PutInt("mysql.query.no_good_indexes_used", s.noGoodIndexUsed)
+		// short circuit if no attributes were set
+		if atts.Len() == 0 {
+			continue
+		}
+		atts.PutStr("mysql.query.text", s.queryText)
+		atts.PutStr("mysql.query.hash", s.queryDigest)
+		if s.schema != "" {
+			atts.PutStr("mysql.query.schemas", s.schema)
+		}
+		if s.users != "" {
+			atts.PutStr("mysql.query.users", s.users)
+		}
+		if s.hosts != "" {
+			atts.PutStr("mysql.query.hosts", s.hosts)
+		}
+		if s.dbs != "" {
+			atts.PutStr("mysql.query.dbs", s.dbs)
 		}
 	}
+
 	wg.Wait()
 	m.gatheringExplainPlans = false
 	scopeLogs.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
@@ -677,19 +676,17 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 
 func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	if m.config.QueryMetricsAsLogs {
-		if strings.LastIndex(queryString, "...") == 1021 {
-			log.Attributes().PutStr("mysql.db.query.plan.text", "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
-			return
-		}
-		queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
-		if err != nil {
-			m.logger.Error("Failed to fetch query plan", zap.Error(err))
-			return
-		}
-		if len(queryPlan) > 0 {
-			log.Attributes().PutStr("mysql.db.query.plan.text", queryPlan)
-		}
+	if strings.LastIndex(queryString, "...") == 1021 {
+		log.Attributes().PutStr("mysql.db.query.plan.text", "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
+		return
+	}
+	queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
+	if err != nil {
+		m.logger.Error("Failed to fetch query plan", zap.Error(err))
+		return
+	}
+	if len(queryPlan) > 0 {
+		log.Attributes().PutStr("mysql.db.query.plan.text", queryPlan)
 	}
 }
 
@@ -720,9 +717,6 @@ func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QuerySta
 }
 
 func (m *mySQLScraper) scrapeQueryMetrics(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if m.config.QueryMetricsAsLogs {
-		return
-	}
 	queryStats, err := m.sqlclient.getQueryStats(m.lastQueryMetricsGatheringTime, int(m.config.TopQueryMetricsMax))
 	if err != nil {
 		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
