@@ -225,6 +225,8 @@ const codecovFileName = ".codecov.yml"
 const startComponentList = `# Start components list`
 const endComponentList = `# End components list`
 
+var matchComponentSection = regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
+
 func addComponentList(config *CodecovConfig) error {
 	yamlData, err := yaml.Marshal(config)
 	if err != nil {
@@ -236,8 +238,8 @@ func addComponentList(config *CodecovConfig) error {
 	if err != nil {
 		return fmt.Errorf("failed to read %q: %w", codecovFileName, err)
 	}
-	matchOldContent := regexp.MustCompile("(?s)" + startComponentList + ".*" + endComponentList)
-	oldContent := matchOldContent.FindSubmatch(codecovCfg)
+
+	oldContent := matchComponentSection.FindSubmatch(codecovCfg)
 	if len(oldContent) == 0 {
 		return fmt.Errorf("failed to find start and end markers in .codecov.yaml")
 	}
