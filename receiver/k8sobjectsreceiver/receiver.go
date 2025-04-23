@@ -114,16 +114,6 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 			}
 		}
 
-		// Set default interval for pull mode
-		if object.Mode == PullMode && object.Interval == 0 {
-			object.Interval = defaultPullInterval
-		}
-
-		// Validate exclude watch type configuration
-		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
-			return kr.handleError(errors.New("the Exclude config can only be used with watch mode"), "")
-		}
-
 		object.gvr = gvr
 		validConfigs = append(validConfigs, object)
 	}
@@ -166,6 +156,10 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 
 	switch object.Mode {
 	case PullMode:
+		// Set default interval if not set
+		if object.Interval == 0 {
+			object.Interval = defaultPullInterval
+		}
 		if len(object.Namespaces) == 0 {
 			go kr.startPull(ctx, object, resource)
 		} else {

@@ -137,9 +137,6 @@ func TestPullObject(t *testing.T) {
 		},
 	}
 
-	err := rCfg.Validate()
-	require.NoError(t, err)
-
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -159,7 +156,6 @@ func TestWatchObject(t *testing.T) {
 	t.Parallel()
 
 	mockClient := newMockDynamicClient()
-
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
@@ -169,6 +165,7 @@ func TestWatchObject(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
@@ -177,9 +174,6 @@ func TestWatchObject(t *testing.T) {
 			Namespaces: []string{"default"},
 		},
 	}
-
-	err := rCfg.Validate()
-	require.NoError(t, err)
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(
@@ -228,7 +222,6 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	t.Parallel()
 
 	mockClient := newMockDynamicClient()
-
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
 			"environment": "production",
@@ -238,6 +231,7 @@ func TestExcludeDeletedTrue(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{
@@ -249,9 +243,6 @@ func TestExcludeDeletedTrue(t *testing.T) {
 			},
 		},
 	}
-
-	err := rCfg.Validate()
-	require.NoError(t, err)
 
 	consumer := newMockLogConsumer()
 	r, err := newReceiver(

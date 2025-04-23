@@ -14,8 +14,6 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	"go.uber.org/zap"
-
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
@@ -62,15 +60,10 @@ type Config struct {
 
 	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
 	ErrorMode ErrorMode           `mapstructure:"error_mode"`
-	logger    *zap.Logger
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
 	makeDynamicClient   func() (dynamic.Interface, error)
-}
-
-func (c *Config) SetLogger(logger *zap.Logger) {
-	c.logger = logger
 }
 
 func (c *Config) Validate() error {
