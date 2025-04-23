@@ -71,6 +71,7 @@ processor/tailsamplingprocessor
 exporter/datadogexporter
 connector/datadogconnector
 exporter/datadogexporter
+extension/datadogfleetautomationextension
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector

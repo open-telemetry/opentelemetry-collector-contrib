@@ -1,0 +1,13 @@
+type: datadogfleetautomation
+
+status:
+  class: extension
+  stability:
+    development: [extension]
+  distributions: []
+  codeowners:
+    active: [jackgopack4, dineshg13, mx-psi]
+
+tests:
+  goleak:
+    skip: true
