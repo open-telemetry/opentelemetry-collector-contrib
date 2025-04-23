@@ -98,7 +98,7 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, er
 			return "", ErrNoResolution
 		}
 
-		return removeTrailingDot(hostnames[0]), nil
+		return NormalizeHostname(hostnames[0]), nil
 	})
 }
 
@@ -211,13 +211,4 @@ func normalizeNameserverAddresses(nameservers []string) ([]string, error) {
 		}
 	}
 	return normalizedNameservers, nil
-}
-
-// removeTrailingDot removes a trailing dot from a hostname if present
-// Note: LookupAddr results typically have a trailing dot which can be removed
-func removeTrailingDot(hostname string) string {
-	if len(hostname) > 0 && hostname[len(hostname)-1] == '.' {
-		return hostname[:len(hostname)-1]
-	}
-	return hostname
 }

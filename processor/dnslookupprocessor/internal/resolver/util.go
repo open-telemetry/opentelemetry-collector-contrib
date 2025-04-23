@@ -5,17 +5,21 @@ package resolver
 
 import (
 	"net"
+	"strings"
 
 	"github.com/asaskevich/govalidator"
 )
 
 // Flip the direction for logging
-// if logKey is "hostname", return "ip" and vice versa
 func Flip(logKey string) string {
-	if logKey == LogKeyHostname {
+	switch logKey {
+	case LogKeyHostname:
 		return LogKeyIP
+	case LogKeyIP:
+		return LogKeyHostname
+	default:
+		return LogKeyHostname
 	}
-	return LogKeyHostname
 }
 
 func ParseIP(ip string) (string, error) {
@@ -33,4 +37,18 @@ func ParseHostname(hostname string) (string, error) {
 	}
 
 	return hostname, nil
+}
+
+// RemoveTrailingDot removes a trailing dot from a hostname if present
+// Note: LookupAddr results typically have a trailing dot which can be removed
+func RemoveTrailingDot(hostname string) string {
+	if len(hostname) > 0 && hostname[len(hostname)-1] == '.' {
+		return hostname[:len(hostname)-1]
+	}
+	return hostname
+}
+
+func NormalizeHostname(hostname string) string {
+	hostname = RemoveTrailingDot(hostname)
+	return strings.ToLower(hostname)
 }

@@ -163,7 +163,10 @@ func (dp *dnsLookupProcessor) processResolveLookup(ctx context.Context, pMap pco
 		ctx,
 		pMap,
 		dp.config.Resolve,
-		resolver.ParseHostname,
+		func(hostname string) (string, error) {
+			hostname = resolver.NormalizeHostname(hostname)
+			return resolver.ParseHostname(hostname)
+		},
 		dp.resolver.Resolve,
 		resolver.LogKeyHostname,
 	)

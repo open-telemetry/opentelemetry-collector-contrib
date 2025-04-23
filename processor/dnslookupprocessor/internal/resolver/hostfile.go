@@ -104,7 +104,7 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 
 		// Process all hostnames for this IP
 		for _, hostname := range fields[1:] {
-			hostname, err := ParseHostname(strings.ToLower(hostname))
+			hostname, err := ParseHostname(NormalizeHostname(hostname))
 			if err != nil {
 				r.logger.Debug("Invalid hostname in host file",
 					zap.String("path", path),
