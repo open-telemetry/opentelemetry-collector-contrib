@@ -4,7 +4,6 @@
 package prometheusremotewriteexporter
 
 import (
-	"fmt"
 	"strings"
 	"time"
 
@@ -164,8 +163,8 @@ func getSample(v float64, t int64) prompb.Sample {
 	}
 }
 
-func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) *prompb.TimeSeries {
-	return &prompb.TimeSeries{
+func getTimeSeries(labels []prompb.Label, samples ...prompb.Sample) prompb.TimeSeries {
+	return prompb.TimeSeries{
 		Labels:  labels,
 		Samples: samples,
 	}
@@ -383,12 +382,4 @@ func getQuantiles(bounds []float64, values []float64) pmetric.SummaryDataPointVa
 	}
 
 	return quantiles
-}
-
-func getTimeseriesMap(timeseries []*prompb.TimeSeries) map[string]*prompb.TimeSeries {
-	tsMap := make(map[string]*prompb.TimeSeries)
-	for i, v := range timeseries {
-		tsMap[fmt.Sprintf("%s%d", "timeseries_name", i)] = v
-	}
-	return tsMap
 }

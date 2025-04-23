@@ -28,20 +28,20 @@ func newBatchTimeSericesState() batchTimeSeriesState {
 }
 
 // batchTimeSeries splits series into multiple batch write requests.
-func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata, state *batchTimeSeriesState) ([]*prompb.WriteRequest, error) {
-	if len(tsMap) == 0 {
-		return nil, errors.New("invalid tsMap: cannot be empty map")
+func batchTimeSeries(tss []prompb.TimeSeries, maxBatchByteSize int, m []*prompb.MetricMetadata, state *batchTimeSeriesState) ([]*prompb.WriteRequest, error) {
+	if len(tss) == 0 {
+		return nil, errors.New("invalid tss: cannot be empty slice")
 	}
 
 	// Allocate a buffer size of at least 10, or twice the last # of requests we sent
 	requests := make([]*prompb.WriteRequest, 0, max(10, state.nextRequestBufferSize))
 
 	// Allocate a time series buffer 2x the last time series batch size or the length of the input if smaller
-	tsArray := make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)))
+	tsArray := make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tss)))
 	sizeOfCurrentBatch := 0
 
 	i := 0
-	for _, v := range tsMap {
+	for _, v := range tss {
 		sizeOfSeries := v.Size()
 
 		if sizeOfCurrentBatch+sizeOfSeries >= maxBatchByteSize {
@@ -49,11 +49,11 @@ func batchTimeSeries(tsMap map[string]*prompb.TimeSeries, maxBatchByteSize int, 
 			wrapped := convertTimeseriesToRequest(tsArray)
 			requests = append(requests, wrapped)
 
-			tsArray = make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tsMap)-i))
+			tsArray = make([]prompb.TimeSeries, 0, min(state.nextTimeSeriesBufferSize, len(tss)-i))
 			sizeOfCurrentBatch = 0
 		}
 
-		tsArray = append(tsArray, *v)
+		tsArray = append(tsArray, v)
 		sizeOfCurrentBatch += sizeOfSeries
 		i++
 	}

@@ -22,34 +22,34 @@ func Test_batchTimeSeries(t *testing.T) {
 	ts1 := getTimeSeries(labels, sample1, sample2)
 	ts2 := getTimeSeries(labels, sample1, sample2, sample3)
 
-	tsMap1 := getTimeseriesMap([]*prompb.TimeSeries{})
-	tsMap2 := getTimeseriesMap([]*prompb.TimeSeries{ts1})
-	tsMap3 := getTimeseriesMap([]*prompb.TimeSeries{ts1, ts2})
+	tss1 := []prompb.TimeSeries{}
+	tss2 := []prompb.TimeSeries{ts1}
+	tss3 := []prompb.TimeSeries{ts1, ts2}
 
 	tests := []struct {
 		name                string
-		tsMap               map[string]*prompb.TimeSeries
+		tss                 []prompb.TimeSeries
 		maxBatchByteSize    int
 		numExpectedRequests int
 		returnErr           bool
 	}{
 		{
 			"no_timeseries",
-			tsMap1,
+			tss1,
 			100,
 			-1,
 			true,
 		},
 		{
 			"normal_case",
-			tsMap2,
+			tss2,
 			300,
 			1,
 			false,
 		},
 		{
 			"two_requests",
-			tsMap3,
+			tss3,
 			300,
 			2,
 			false,
@@ -59,7 +59,7 @@ func Test_batchTimeSeries(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			state := newBatchTimeSericesState()
-			requests, err := batchTimeSeries(tt.tsMap, tt.maxBatchByteSize, nil, &state)
+			requests, err := batchTimeSeries(tt.tss, tt.maxBatchByteSize, nil, &state)
 			if tt.returnErr {
 				assert.Error(t, err)
 				return
@@ -88,16 +88,14 @@ func Test_batchTimeSeriesUpdatesStateForLargeBatches(t *testing.T) {
 
 	// Benchmark for large data sizes
 	// First allocate 100k time series
-	tsArray := make([]*prompb.TimeSeries, 0, 100000)
+	tsArray := make([]prompb.TimeSeries, 0, 100000)
 	for i := 0; i < 100000; i++ {
 		ts := getTimeSeries(labels, sample1, sample2, sample3)
 		tsArray = append(tsArray, ts)
 	}
 
-	tsMap1 := getTimeseriesMap(tsArray)
-
 	state := newBatchTimeSericesState()
-	requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+	requests, err := batchTimeSeries(tsArray, 1000000, nil, &state)
 
 	assert.NoError(t, err)
 	assert.Len(t, requests, 18)
@@ -118,13 +116,11 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 
 	// Benchmark for large data sizes
 	// First allocate 100k time series
-	tsArray := make([]*prompb.TimeSeries, 0, 100000)
+	tsArray := make([]prompb.TimeSeries, 0, 100000)
 	for i := 0; i < 100000; i++ {
 		ts := getTimeSeries(labels, sample1, sample2, sample3)
 		tsArray = append(tsArray, ts)
 	}
-
-	tsMap1 := getTimeseriesMap(tsArray)
 
 	b.ReportAllocs()
 	b.ResetTimer()
@@ -132,7 +128,7 @@ func Benchmark_batchTimeSeries(b *testing.B) {
 	state := newBatchTimeSericesState()
 	// Run batchTimeSeries 100 times with a 1mb max request size
 	for i := 0; i < b.N; i++ {
-		requests, err := batchTimeSeries(tsMap1, 1000000, nil, &state)
+		requests, err := batchTimeSeries(tsArray, 1000000, nil, &state)
 		assert.NoError(b, err)
 		assert.Len(b, requests, 18)
 	}

@@ -198,15 +198,17 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 		converter := converterPool.Get().(*prometheusremotewrite.PrometheusConverter)
+		converter.Reset()
 		defer converterPool.Put(converter)
 
-		tsMap, err := converter.FromMetrics(md, prwe.exporterSettings)
+		err := converter.Convert(md, prwe.exporterSettings)
+		tss := converter.TimeSeries()
 		if err != nil {
 			prwe.telemetry.recordTranslationFailure(ctx)
-			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+			prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tss)))
 		}
 
-		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+		prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tss))
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {
@@ -214,7 +216,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		}
 
 		// Call export even if a conversion error, since there may be points that were successfully converted.
-		return prwe.handleExport(ctx, tsMap, m)
+		return prwe.handleExport(ctx, tss, m)
 	}
 }
 
@@ -230,14 +232,14 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tss []prompb.TimeSeries, m []*prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
-	if len(tsMap) == 0 {
+	if len(tss) == 0 {
 		return nil
 	}
 
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	requests, err := batchTimeSeries(tss, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
 	if err != nil {
 		return err
 	}

@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"sort"
-	"strconv"
 
 	"github.com/prometheus/prometheus/prompb"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,27 +25,13 @@ type Settings struct {
 	SendMetadata        bool
 }
 
-// FromMetrics converts pmetric.Metrics to Prometheus remote write format.
-// Only call this function when the result of the previous call is no longer needed
-// (i.e. has been exported out of process). The return values of this function depend on
-// internal state which is reset on every call.
-func (c *PrometheusConverter) FromMetrics(md pmetric.Metrics, settings Settings) (map[string]*prompb.TimeSeries, error) {
-	c.reset()
-	errs := c.fromMetrics(md, settings)
-	tss := c.timeSeries()
-	out := make(map[string]*prompb.TimeSeries, len(tss))
-	for i := range tss {
-		out[strconv.Itoa(i)] = &tss[i]
-	}
-
-	return out, errs
-}
-
 // PrometheusConverter converts from OTel write format to Prometheus write format.
+//
 // Internally it keeps a buffer of labels to avoid expensive allocations, so it is
 // best to keep it around for the lifetime of the Go process. Due to this shared
 // state, PrometheusConverter is NOT thread-safe and is only intended to be used by
-// a single go-routine at a time.
+// a single go-routine at a time. To support thread-safe concurrent access to a pool of
+// converters, use a sync.Pool.
 type PrometheusConverter struct {
 	unique    map[uint64]*prompb.TimeSeries
 	conflicts map[uint64][]*prompb.TimeSeries
@@ -62,15 +47,17 @@ func NewPrometheusConverter() *PrometheusConverter {
 	}
 }
 
-func (c *PrometheusConverter) reset() {
+// Reset clears the internal state of the PrometheusConverter.
+// If is only safe to reset when the previously returned value of TimeSeries() is no longer needed.
+func (c *PrometheusConverter) Reset() {
 	clear(c.labels)
 	c.labels = c.labels[:0]
 	clear(c.unique)
 	clear(c.conflicts)
 }
 
-// fromMetrics converts pmetric.Metrics to Prometheus remote write format.
-func (c *PrometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings) (errs error) {
+// Convert converts pmetric.Metrics to Prometheus remote write format.
+func (c *PrometheusConverter) Convert(md pmetric.Metrics, settings Settings) (errs error) {
 	resourceMetricsSlice := md.ResourceMetrics()
 	for i := 0; i < resourceMetricsSlice.Len(); i++ {
 		resourceMetrics := resourceMetricsSlice.At(i)
@@ -148,8 +135,8 @@ func (c *PrometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 	return
 }
 
-// timeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
-func (c *PrometheusConverter) timeSeries() []prompb.TimeSeries {
+// TimeSeries returns a slice of the prompb.TimeSeries that were converted from OTel format.
+func (c *PrometheusConverter) TimeSeries() []prompb.TimeSeries {
 	conflicts := 0
 	for _, ts := range c.conflicts {
 		conflicts += len(ts)
