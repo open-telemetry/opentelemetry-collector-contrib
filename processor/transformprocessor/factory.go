@@ -49,7 +49,7 @@ func createLogsProcessor(
 ) (processor.Logs, error) {
 	oCfg := cfg.(*Config)
 
-	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings)
+	proc, err := logs.NewProcessor(oCfg.LogStatements, oCfg.ErrorMode, oCfg.FlattenData, set.TelemetrySettings, oCfg.AdditionalOTTLFunc)
 	if err != nil {
 		return nil, fmt.Errorf("invalid config for \"transform\" processor %w", err)
 	}

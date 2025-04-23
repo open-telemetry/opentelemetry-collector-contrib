@@ -15,6 +15,7 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
@@ -46,7 +47,7 @@ type Config struct {
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
 
-	AdditionalOTTLFunc []ottl.Factory[K]
+	AdditionalOTTLFunc []ottl.Factory[ottllog.TransformContext] `mapstructure:"-"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -161,7 +162,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions()))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.AdditionalOTTLFunc)))
 		if err != nil {
 			return err
 		}
