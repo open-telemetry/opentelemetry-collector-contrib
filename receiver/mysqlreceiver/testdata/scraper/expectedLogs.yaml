@@ -1,0 +1,1220 @@
+{
+  "resourceLogs":
+    [
+      {
+        "resource":
+          {
+            "attributes":
+              [
+                {
+                  "key": "mysql.instance.endpoint",
+                  "value": { "stringValue": "localhost:3306" },
+                },
+              ],
+          },
+        "scopeLogs":
+          [
+            {
+              "scope": {},
+              "logRecords":
+                [
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.00852 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.008543125 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT @@SESSION . `transaction_read_only`",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "c16f24f908846019a741db580f6545a5933e9435a7cf1579c50794a6ca287739",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.0013775 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.001391045 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT @@SESSION . `transaction_isolation`",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "a724a21545b602d4ae826ae58bbf526427a94f1e68ebec539ec3c53bfaa88281",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "10" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "10" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "10" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.00188854 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.00190875 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value": { "stringValue": "SELECT SCHEMA ( )" },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "ce04eda080d3f5605113e1d0d47c2f20e23b091e2487ba586f07b32cda423942",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "5" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "65" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "1765" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.007562 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000004 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.007567752 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `A` . `digest_text` AS `query_text` , `A` . `digest` AS HASH , COUNT ( * ) AS `execution_count` , JSON_ARRAYAGG ( `A` . `current_schema` ) AS `schema_nm` , SUM ( `A` . `lock_time` ) / ? AS `lock_time` , SUM ( `A` . `rows_examined` ) AS `total_rows` , SUM ( `A` . `cpu_time` ) / ? AS `cpu_time` , SUM ( `A` . `timer_wait` ) / ? AS `duration` , SUM ( `A` . `rows_sent` ) AS `rows_returned` , SUM ( `B` . `sum_timer_wait` ) AS `total_wait` FROM `performance_schema` . `events_statements_history` AS `A` , `performance_schema` . `events_statements_summary_by_digest` AS `B` WHERE `A` . `event_name` = ? AND `A` . `timer_start` \u003e - ? AND `A` . `digest` = `B` . `digest` GROUP BY HASH , `query_text` ORDER BY `duration` DESC LIMIT ?",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "6a4a0088f4e4708369bb27ba28b68bc9eeafa26c09cd15d374186da73567f940",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.000047333 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.000047917 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value": { "stringValue": "SELECT `VERSION` ( )" },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "b715edd335c8ab2a3c43087e726bbc978f59bc64c69c2ff9f0f7f1ef75c8d651",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "177" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.000578 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000001 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.000578625 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `OBJECT_SCHEMA` , `OBJECT_NAME` , `COUNT_READ_NORMAL` , `COUNT_READ_WITH_SHARED_LOCKS` , `COUNT_READ_HIGH_PRIORITY` , `COUNT_READ_NO_INSERT` , `COUNT_READ_EXTERNAL` , `COUNT_WRITE_ALLOW_WRITE` , `COUNT_WRITE_CONCURRENT_INSERT` , `COUNT_WRITE_LOW_PRIORITY` , `COUNT_WRITE_NORMAL` , `COUNT_WRITE_EXTERNAL` , `FLOOR` ( `SUM_TIMER_READ_NORMAL` / ? ) , `FLOOR` ( `SUM_TIMER_READ_WITH_SHARED_LOCKS` / ? ) , `FLOOR` ( `SUM_TIMER_READ_HIGH_PRIORITY` / ? ) , `FLOOR` ( `SUM_TIMER_READ_NO_INSERT` / ? ) , `FLOOR` ( `SUM_TIMER_READ_EXTERNAL` / ? ) , `FLOOR` ( `SUM_TIMER_WRITE_ALLOW_WRITE` / ? ) , `FLOOR` ( `SUM_TIMER_WRITE_CONCURRENT_INSERT` / ? ) , `FLOOR` ( `SUM_TIMER_WRITE_LOW_PRIORITY` / ? ) , `FLOOR` ( `SUM_TIMER_WRITE_NORMAL` / ? ) , `FLOOR` ( `SUM_TIMER_WRITE_EXTERNAL` / ? ) FROM `performance_schema` . `table_lock_waits_summary_by_table` WHERE `OBJECT_SCHEMA` NOT IN (...)",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "24bb6e93d05619d02fc9d03d4cf30e8205262773aad04ebc5d53c897d64e8c7a",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "314" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.004986958 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000001 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.0049905 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT NAME , `count` FROM `information_schema` . `innodb_metrics` WHERE NAME LIKE ?",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "e6cde7d84cf06c9ada2b0cfc44e9d7e17ba82744abec93ebed9342c73107da45",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "10" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "276" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.001202333 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000001 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.001203583 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `ifnull` ( SCHEMA_NAME , ? ) AS SCHEMA_NAME , `DIGEST` , LEFT ( `DIGEST_TEXT` , ? ) AS `DIGEST_TEXT` , `FLOOR` ( `SUM_TIMER_WAIT` / ? ) , `SUM_ERRORS` , `SUM_WARNINGS` , `SUM_ROWS_AFFECTED` , `SUM_ROWS_SENT` , `SUM_ROWS_EXAMINED` , `SUM_CREATED_TMP_DISK_TABLES` , `SUM_CREATED_TMP_TABLES` , `SUM_SORT_MERGE_PASSES` , `SUM_SORT_ROWS` , `SUM_NO_INDEX_USED` FROM `performance_schema` . `events_statements_summary_by_digest` WHERE SCHEMA_NAME NOT IN (...) AND `last_seen` \u003e DATE_SUB ( NOW ( ) , INTERVAL ? SQL_TSI_SECOND ) ORDER BY `SUM_TIMER_WAIT` DESC LIMIT ?",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "82941644ba20f6ee41cf03677cbf125469243f2d17dc5bbaa8d86242fbd226fc",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "269" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.001171791 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000001 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.00117325 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `OBJECT_SCHEMA` , `OBJECT_NAME` , `ifnull` ( `INDEX_NAME` , ? ) AS `INDEX_NAME` , `COUNT_FETCH` , `COUNT_INSERT` , `COUNT_UPDATE` , `COUNT_DELETE` , `FLOOR` ( `SUM_TIMER_FETCH` / ? ) , `FLOOR` ( `SUM_TIMER_INSERT` / ? ) , `FLOOR` ( `SUM_TIMER_UPDATE` / ? ) , `FLOOR` ( `SUM_TIMER_DELETE` / ? ) FROM `performance_schema` . `table_io_waits_summary_by_index_usage` WHERE `OBJECT_SCHEMA` NOT IN (...)",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "14a993a22472e7f56c021f0d45e2e5f51c95e9b3eda82dffa33eb014995ed3bc",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "154" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "419" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.001828125 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000002 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.00182925 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `TABLE_SCHEMA` , TABLE_NAME , COALESCE ( `TABLE_ROWS` , ? ) AS `TABLE_ROWS` , COALESCE ( AVG_ROW_LENGTH , ? ) AS AVG_ROW_LENGTH , COALESCE ( `DATA_LENGTH` , ? ) AS `DATA_LENGTH` , COALESCE ( `INDEX_LENGTH` , ? ) AS `INDEX_LENGTH` FROM `information_schema` . `TABLES` WHERE `TABLE_SCHEMA` NOT IN (...)",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "d08f3a4d7e1be08b1fe479a1f9c7f56fc480b7b60c365cb330c65acd35ab1c42",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "1" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "177" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.001088667 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.000001 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.001090833 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `OBJECT_SCHEMA` , `OBJECT_NAME` , `COUNT_DELETE` , `COUNT_FETCH` , `COUNT_INSERT` , `COUNT_UPDATE` , `FLOOR` ( `SUM_TIMER_DELETE` / ? ) , `FLOOR` ( `SUM_TIMER_FETCH` / ? ) , `FLOOR` ( `SUM_TIMER_INSERT` / ? ) , `FLOOR` ( `SUM_TIMER_UPDATE` / ? ) FROM `performance_schema` . `table_io_waits_summary_by_table` WHERE `OBJECT_SCHEMA` NOT IN (...)",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "2391d6767eca4b1ed49baedd3f2243a8d9b252f1b797ca5a1b3afee7d83dfaed",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                  {
+                    "timeUnixNano": "1745412519702808000",
+                    "body": {},
+                    "attributes":
+                      [
+                        {
+                          "key": "mysql.query.calls",
+                          "value": { "intValue": "6" },
+                        },
+                        {
+                          "key": "mysql.query.rows.returned",
+                          "value": { "intValue": "12" },
+                        },
+                        {
+                          "key": "mysql.query.rows.total",
+                          "value": { "intValue": "30" },
+                        },
+                        {
+                          "key": "mysql.query.time.cpu",
+                          "value": { "doubleValue": 0.046765208 },
+                        },
+                        {
+                          "key": "mysql.query.time.lock",
+                          "value": { "doubleValue": 0.00002 },
+                        },
+                        {
+                          "key": "mysql.query.time.total",
+                          "value": { "doubleValue": 0.046793834 },
+                        },
+                        {
+                          "key": "mysql.query.rows.affected",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.full_range_joins",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_range_checks",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.select_scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.merge_passes",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.ranges",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.sort.scans",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.no_good_indexes_used",
+                          "value": { "intValue": "0" },
+                        },
+                        {
+                          "key": "mysql.query.text",
+                          "value":
+                            {
+                              "stringValue": "SELECT `ver` . `sys_version` AS `sys_version` , `ver` . `mysql_version` AS `mysql_version` , `hs` . `host` AS HOST FROM `sys` . `version` AS `ver` , `sys` . `host_summary` AS `hs` WHERE HOST NOT IN (...) ORDER BY HOST",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.hash",
+                          "value":
+                            {
+                              "stringValue": "3c3522ebf9086f7604b3a618c80ab5869efc0b328930db2e44150378e70d2069",
+                            },
+                        },
+                        {
+                          "key": "mysql.query.schemas",
+                          "value": { "stringValue": "[null]" },
+                        },
+                        {
+                          "key": "mysql.db.query.plan.text",
+                          "value": { "stringValue": "TEST EXPLAIN PLAN" },
+                        },
+                      ],
+                    "traceId": "",
+                    "spanId": "",
+                    "eventName": "top query",
+                  },
+                ],
+            },
+          ],
+      },
+    ],
+}

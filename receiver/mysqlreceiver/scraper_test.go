@@ -21,6 +21,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver/internal/metadata"
 )
@@ -100,6 +101,30 @@ func TestScrape(t *testing.T) {
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
+
+		// test query metrics as logs
+		cfg.QueryMetricsAsLogs = true
+		scraper = newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
+		scraper.sqlclient = &mockClient{
+			globalStatsFile:             "global_stats",
+			innodbStatsFile:             "innodb_stats",
+			tableIoWaitsFile:            "table_io_waits_stats",
+			indexIoWaitsFile:            "index_io_waits_stats",
+			tableStatsFile:              "table_stats",
+			statementEventsFile:         "statement_events",
+			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
+			replicaStatusFile:           "replica_stats",
+			queryStatsFile:              "query_stats",
+		}
+
+		actualLogs, err := scraper.scrapeLogs(context.Background())
+		require.NoError(t, err)
+		expectedLogsFile := filepath.Join("testdata", "scraper", "expectedLogs.yaml")
+		expectedLogs, err := golden.ReadLogs(expectedLogsFile)
+		require.NoError(t, err)
+		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs,
+			plogtest.IgnoreLogRecordsOrder(), plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp()))
+
 	})
 
 	t.Run("scrapeMetrics has partial failure", func(t *testing.T) {
@@ -489,11 +514,9 @@ func (c *mockClient) getQueryStats(since int64, topCount int) ([]QueryStats, err
 	}
 	return stats, nil
 }
-
-func (c *mockClient) getExplainPlanAsJsonForDigestQuery(query string) (string, error) {
-	return "query plan", nil
+func (c *mockClient) getExplainPlanAsJsonForDigestQuery(digest string) (string, error) {
+	return "TEST EXPLAIN PLAN", nil
 }
-
 func (c *mockClient) checkPerformanceCollectionSettings() {}
 
 func (c *mockClient) Close() error {
