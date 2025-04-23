@@ -65,10 +65,10 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 			zap.String("status", resp.Status),
 		)
 		zl.Debug("Request roundtrip completed.", fields...)
-		if resp.StatusCode == 200 {
+		if resp.StatusCode == http.StatusOK {
 			// Success
 			componentstatus.ReportStatus(cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
-		} else if resp.StatusCode >= 400 && resp.StatusCode <= 599 {
+		} else if resp.StatusCode >= 300 {
 			// Error results
 			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
 			componentstatus.ReportStatus(
@@ -84,7 +84,6 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		err := fmt.Errorf("Elasticsearch request failed: %w", clientErr)
 		componentstatus.ReportStatus(
 			cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
-
 	}
 
 	return nil
