@@ -47,18 +47,15 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 	logRecords := scopeLog.LogRecords()
 
 	// A single netflow packet can contain multiple flow messages
-	if o.sendRaw {
-		for _, msg := range flowMessageSet {
-			logRecord := logRecords.AppendEmpty()
+	for _, msg := range flowMessageSet {
+		logRecord := logRecords.AppendEmpty()
+		if o.sendRaw {
 			logRecord.Body().SetStr(fmt.Sprintf("%+v", msg))
-		}
-	} else {
-		// Parse the message and add the attributes to the log record
-		for _, msg := range flowMessageSet {
-			logRecord := logRecords.AppendEmpty()
-			parseErr := addMessageAttributes(msg, &logRecord)
-			if parseErr != nil {
-				continue
+		} else {
+			// Parse the message and add the attributes to the log record
+			err := addMessageAttributes(msg, &logRecord)
+			if err != nil {
+				o.logger.Error("error adding message attributes", zap.Error(err))
 			}
 		}
 	}
