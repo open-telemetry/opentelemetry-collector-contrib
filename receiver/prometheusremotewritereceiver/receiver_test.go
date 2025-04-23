@@ -473,8 +473,8 @@ func TestTranslateV2(t *testing.T) {
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			// since we are using the interRequestCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
-			prwReceiver.interRequestCache = make(map[uint64]pmetric.ResourceMetrics)
+			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
+			prwReceiver.rmCache = make(map[uint64]pmetric.ResourceMetrics)
 			metrics, stats, err := prwReceiver.translateV2(ctx, tc.request)
 			if tc.expectError != "" {
 				assert.ErrorContains(t, err, tc.expectError)

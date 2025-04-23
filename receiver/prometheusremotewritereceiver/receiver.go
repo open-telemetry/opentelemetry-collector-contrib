@@ -37,7 +37,7 @@ func newRemoteWriteReceiver(settings receiver.Settings, cfg *Config, nextConsume
 		server: &http.Server{
 			ReadTimeout: 60 * time.Second,
 		},
-		interRequestCache: make(map[uint64]pmetric.ResourceMetrics),
+		rmCache: make(map[uint64]pmetric.ResourceMetrics),
 	}, nil
 }
 
@@ -45,10 +45,10 @@ type prometheusRemoteWriteReceiver struct {
 	settings     receiver.Settings
 	nextConsumer consumer.Metrics
 
-	config            *Config
-	server            *http.Server
-	wg                sync.WaitGroup
-	interRequestCache map[uint64]pmetric.ResourceMetrics
+	config  *Config
+	server  *http.Server
+	wg      sync.WaitGroup
+	rmCache map[uint64]pmetric.ResourceMetrics
 }
 
 // MetricIdentity contains all the components that uniquely identify a metric
@@ -237,7 +237,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 			var rm pmetric.ResourceMetrics
 			hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
 
-			if existingRM, ok := prw.interRequestCache[hashedLabels]; ok {
+			if existingRM, ok := prw.rmCache[hashedLabels]; ok {
 				rm = existingRM
 			} else {
 				rm = otelMetrics.ResourceMetrics().AppendEmpty()
@@ -252,20 +252,20 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 					attrs.PutStr(l.Name, l.Value)
 				}
 			}
-			prw.interRequestCache[hashedLabels] = rm
+			prw.rmCache[hashedLabels] = rm
 			continue
 		}
 
 		// For metrics other than target_info, we need to follow the standard process of creating a metric.
 		var rm pmetric.ResourceMetrics
 		hashedLabels := xxhash.Sum64String(ls.Get("job") + string([]byte{'\xff'}) + ls.Get("instance"))
-		existingRM, ok := prw.interRequestCache[hashedLabels]
+		existingRM, ok := prw.rmCache[hashedLabels]
 		if ok {
 			rm = existingRM
 		} else {
 			rm = otelMetrics.ResourceMetrics().AppendEmpty()
 			parseJobAndInstance(rm.Resource().Attributes(), ls.Get("job"), ls.Get("instance"))
-			prw.interRequestCache[hashedLabels] = rm
+			prw.rmCache[hashedLabels] = rm
 		}
 
 		scopeName, scopeVersion := prw.extractScopeInfo(ls)
