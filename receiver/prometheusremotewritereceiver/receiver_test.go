@@ -593,6 +593,7 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 		},
 	}
 
+	// Using the same expected metrics for both tests, because we are just checking if the order of the requests changes the result.
 	expectedMetrics := func() pmetric.Metrics {
 		metrics := pmetric.NewMetrics()
 		rm := metrics.ResourceMetrics().AppendEmpty()
