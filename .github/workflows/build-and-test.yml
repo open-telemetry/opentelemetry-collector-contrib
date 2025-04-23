@@ -680,7 +680,6 @@ jobs:
       - name: Prepare release notes
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
-          NEW_CONTRIBUTOR_TEXT: ${{ steps.new-contributor-text.outputs.result }}
         run: ./.github/workflows/scripts/prepare-release-notes.sh
 
       - name: Generate new contributor celebration text
