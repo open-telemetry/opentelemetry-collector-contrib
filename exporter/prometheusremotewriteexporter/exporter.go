@@ -223,7 +223,7 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 
 		var m []*prompb.MetricMetadata
 		if prwe.exporterSettings.SendMetadata {
-			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes)
+			m = prometheusremotewrite.OtelMetricsToMetadata(md, prwe.exporterSettings.AddMetricSuffixes, prwe.exporterSettings.Namespace)
 		}
 
 		// Call export even if a conversion error, since there may be points that were successfully converted.
