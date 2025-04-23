@@ -9,11 +9,6 @@ import (
 	"github.com/asaskevich/govalidator"
 )
 
-const (
-	LogKeyHostname = "hostname"
-	LogKeyIP       = "ip"
-)
-
 // Flip the direction for logging
 // if logKey is "hostname", return "ip" and vice versa
 func Flip(logKey string) string {

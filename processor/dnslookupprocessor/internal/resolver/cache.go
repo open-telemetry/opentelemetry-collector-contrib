@@ -14,6 +14,7 @@ import (
 
 // CacheResolver implements DNS resolution caching using LRU caches with TTL
 type CacheResolver struct {
+	name string
 	// nextResolver is the chain resolver to use if the cache misses
 	nextResolver Resolver
 	hitCache     *lru.LRU[string, string]
@@ -35,6 +36,7 @@ func NewCacheResolver(
 	}
 
 	r := &CacheResolver{
+		name:         "cache",
 		nextResolver: nextResolver,
 		logger:       logger,
 	}
@@ -42,7 +44,7 @@ func NewCacheResolver(
 	// Initialize hit cache
 	if hitCacheSize > 0 {
 		r.hitCache = lru.NewLRU[string, string](hitCacheSize, nil, hitCacheTTL)
-		r.logger.Debug("Hit cache initialized",
+		r.logger.Debug("Initialized hit cache",
 			zap.Int("size", hitCacheSize),
 			zap.Duration("ttl", hitCacheTTL))
 	} else {
@@ -52,7 +54,7 @@ func NewCacheResolver(
 	// Initialize miss cache
 	if missCacheSize > 0 {
 		r.missCache = lru.NewLRU[string, struct{}](missCacheSize, nil, missCacheTTL)
-		r.logger.Debug("Miss cache initialized",
+		r.logger.Debug("Initialized miss cache",
 			zap.Int("size", missCacheSize),
 			zap.Duration("ttl", missCacheTTL))
 	} else {
@@ -70,6 +72,10 @@ func (r *CacheResolver) Resolve(ctx context.Context, hostname string) (string, e
 // Reverse performs a reverse DNS lookup (IP to hostname) using the cache and the underlying chain resolver
 func (r *CacheResolver) Reverse(ctx context.Context, ip string) (string, error) {
 	return r.resolveWithCache(ctx, ip, LogKeyIP, r.nextResolver.Reverse)
+}
+
+func (r *CacheResolver) Name() string {
+	return r.name
 }
 
 // resolveWithCache searches target in miss cache and hit cache.
@@ -105,7 +111,7 @@ func (r *CacheResolver) resolveWithCache(
 	if err != nil {
 		if r.missCache != nil {
 			r.missCache.Add(target, struct{}{})
-			r.logger.Debug("Add to miss cache",
+			r.logger.Debug("Add miss cache",
 				zap.String(logKey, target),
 				zap.Error(err))
 		}
@@ -115,7 +121,7 @@ func (r *CacheResolver) resolveWithCache(
 	// Add success case including no resolution to hit cache
 	if r.hitCache != nil {
 		r.hitCache.Add(target, result)
-		r.logger.Debug("Add to hit cache",
+		r.logger.Debug("Add hit cache",
 			zap.String(logKey, target),
 			zap.String(Flip(logKey), result))
 	}

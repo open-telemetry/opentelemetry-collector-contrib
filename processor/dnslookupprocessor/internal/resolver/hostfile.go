@@ -18,6 +18,7 @@ var ErrInvalidHostFilePath = errors.New("invalid host file path")
 
 // HostFileResolver uses host files for DNS resolution
 type HostFileResolver struct {
+	name         string
 	hostnameToIP map[string]string // For forward lookups
 	ipToHostname map[string]string // For reverse lookups
 	logger       *zap.Logger
@@ -30,6 +31,7 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 	}
 
 	r := &HostFileResolver{
+		name:         "hostfiles",
 		ipToHostname: make(map[string]string),
 		hostnameToIP: make(map[string]string),
 		logger:       logger,
@@ -42,7 +44,7 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 		}
 	}
 
-	r.logger.Info("resolved number of records",
+	r.logger.Info("Number of records in hostfiles",
 		zap.Int("IPs", len(r.ipToHostname)),
 		zap.Int("Hostnames", len(r.hostnameToIP)))
 
@@ -141,4 +143,8 @@ func (r *HostFileResolver) Reverse(ctx context.Context, ip string) (string, erro
 	}
 
 	return "", ErrNotInHostFiles
+}
+
+func (r *HostFileResolver) Name() string {
+	return r.name
 }

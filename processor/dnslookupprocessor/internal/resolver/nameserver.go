@@ -8,7 +8,6 @@ import (
 	"errors"
 	"fmt"
 	"net"
-	"strings"
 	"time"
 
 	"github.com/cenkalti/backoff/v5"
@@ -18,6 +17,7 @@ import (
 // NameserverResolver uses specified DNS servers for resolution
 type NameserverResolver struct {
 	nameservers []string
+	name        string
 	maxRetries  int
 	resolvers   []*net.Resolver
 	timeout     time.Duration
@@ -48,6 +48,7 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 	}
 
 	r := &NameserverResolver{
+		name:        "nameservers",
 		nameservers: normalizeNameservers,
 		maxRetries:  maxRetries,
 		resolvers:   resolvers,
@@ -60,7 +61,8 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 
 func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger) *NameserverResolver {
 	return &NameserverResolver{
-		nameservers: []string{"system_resolver"},
+		name:        "system",
+		nameservers: []string{"system resolver"},
 		maxRetries:  maxRetries,
 		resolvers:   []*net.Resolver{net.DefaultResolver},
 		timeout:     timeout,
@@ -70,7 +72,7 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 
 // Resolve performs a forward DNS lookup (hostname to IP) using the configured nameservers.
 func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (string, error) {
-	return r.lookupWithNameservers(ctx, hostname, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
+	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
 		ips, err := resolver.LookupIP(fnCtx, "ip", hostname)
 		if err != nil {
 			return "", err
@@ -78,13 +80,14 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (stri
 		if len(ips) == 0 {
 			return "", ErrNoResolution
 		}
+
 		return ips[0].String(), nil
 	})
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the configured nameservers.
 func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, error) {
-	return r.lookupWithNameservers(ctx, ip, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
+	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
 		hostnames, err := resolver.LookupAddr(fnCtx, ip)
 		if err != nil && hostnames == nil {
 			return "", err
@@ -95,8 +98,23 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, er
 			return "", ErrNoResolution
 		}
 
-		return standardizeHostname(hostnames[0]), nil
+		return removeTrailingDot(hostnames[0]), nil
 	})
+}
+
+func (r *NameserverResolver) Name() string {
+	return r.name
+}
+
+func NewExponentialBackOff() *backoff.ExponentialBackOff {
+	expBackOff := backoff.ExponentialBackOff{
+		InitialInterval:     50 * time.Millisecond,
+		RandomizationFactor: 0.5,
+		Multiplier:          1.5,
+		MaxInterval:         200 * time.Millisecond,
+	}
+	expBackOff.Reset()
+	return &expBackOff
 }
 
 // lookupWithNameservers attempts a DNS lookup using all configured nameservers.
@@ -104,6 +122,7 @@ func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, er
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
 	target string,
+	logKey string,
 	lookupFn func(resolver *net.Resolver, fnCtx context.Context) (string, error),
 ) (string, error) {
 	var lastErr error
@@ -138,7 +157,7 @@ func (r *NameserverResolver) lookupWithNameservers(
 					return "", ErrNoResolution
 				}
 
-				// If the error is not a retryable error, try next nameserver
+				// If the error is not a retryable error, try the next nameserver
 				if !e.IsNotFound && !e.IsTimeout && !e.IsTemporary {
 					r.logger.Debug("Non retryable DNS error",
 						zap.String("lookup", target),
@@ -201,26 +220,4 @@ func removeTrailingDot(hostname string) string {
 		return hostname[:len(hostname)-1]
 	}
 	return hostname
-}
-
-// standardizeHostname removes trailing dot and converts hostname to lowercase
-func standardizeHostname(hostname string) string {
-	// Remove trailing dot
-	hostname = removeTrailingDot(hostname)
-
-	// Convert to lowercase
-	hostname = strings.ToLower(hostname)
-
-	return hostname
-}
-
-func NewExponentialBackOff() *backoff.ExponentialBackOff {
-	expBackOff := backoff.ExponentialBackOff{
-		InitialInterval:     50 * time.Millisecond,
-		RandomizationFactor: 0.5,
-		Multiplier:          1.5,
-		MaxInterval:         200 * time.Millisecond,
-	}
-	expBackOff.Reset()
-	return &expBackOff
 }

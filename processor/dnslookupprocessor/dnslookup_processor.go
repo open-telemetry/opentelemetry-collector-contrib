@@ -17,7 +17,7 @@ import (
 
 var (
 	errUnknownContextID     = errors.New("unknown attribute context")
-	errHostnameOrIPNotFound = errors.New("no hostname or IP found in the attributes")
+	errHostnameOrIPNotFound = errors.New("hostname/ip not found in attributes")
 )
 
 type dnsLookupProcessor struct {
@@ -27,6 +27,7 @@ type dnsLookupProcessor struct {
 	logger       *zap.Logger
 }
 
+// ProcessPair holds a context ID and a function to process DNS lookups
 type ProcessPair struct {
 	ContextID ContextID
 	ProcessFn func(ctx context.Context, pMap pcommon.Map) error
@@ -50,7 +51,7 @@ func newDNSLookupProcessor(config *Config, logger *zap.Logger) (*dnsLookupProces
 }
 
 // createResolverChain creates a chain of resolvers based on the provided configuration.
-// The resolution order is cache -> chain( hostfile -> nameserver -> system resolver ).
+// The resolution order is cache -> chain(hostfiles -> nameservers -> system resolver).
 // Returns either a chain resolver or a cache resolver if cache is enabled.
 // Returns an error if no resolvers are configured or if any of the resolvers fail to initialize.
 func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver, error) {
@@ -117,6 +118,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	return chainResolver, nil
 }
 
+// createProcessPairs creates a list of ProcessPair based on the configuration.
 func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 	if dp.config.Resolve.Enabled && dp.config.Reverse.Enabled &&
 		(dp.config.Resolve.Context == dp.config.Reverse.Context) {
@@ -188,14 +190,19 @@ func (dp *dnsLookupProcessor) processLookup(
 	logKey string,
 ) error {
 	target, err := targetStrFromAttributes(config.Attributes, pMap, parseFn)
-	if target == "" || err != nil {
-		dp.logger.Debug(fmt.Sprintf("Failed to find %s from attributes", logKey), zap.Error(err))
+	if err != nil {
+		dp.logger.Debug(err.Error())
+		return nil
+	}
+	if target == "" {
+		dp.logger.Debug(fmt.Sprintf("Skip lookup for empty %s", logKey))
 		return nil
 	}
 
 	// Found a valid target. Try to resolve it
 	result, err := lookupFn(ctx, target)
 	if err != nil {
+		dp.logger.Error(fmt.Sprintf("Failed to lookup %s from %s", logKey, target), zap.Error(err))
 		return err
 	}
 
@@ -207,15 +214,20 @@ func (dp *dnsLookupProcessor) processLookup(
 }
 
 // targetStrFromAttributes returns the first IP/hostname from the given attributes.
-// It uses the provided validation function to check if the value is valid.
-func targetStrFromAttributes(attributes []string, pMap pcommon.Map, validateFn func(string) (string, error)) (string, error) {
+// It uses the provided parsing function to check the format.
+// If no valid IP/hostname is found, it returns an error.
+func targetStrFromAttributes(attributes []string, pMap pcommon.Map, parseFn func(string) (string, error)) (string, error) {
+	lastErr := errHostnameOrIPNotFound
+
 	for _, attr := range attributes {
 		if val, found := pMap.Get(attr); found {
-			if validStr, err := validateFn(val.Str()); err == nil {
-				return validStr, nil
+			if parsedStr, err := parseFn(val.Str()); err == nil {
+				return parsedStr, nil
+			} else {
+				lastErr = err
 			}
 		}
 	}
 
-	return "", errHostnameOrIPNotFound
+	return "", lastErr
 }
