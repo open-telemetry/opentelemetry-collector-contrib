@@ -284,8 +284,8 @@ func (c *mySQLClient) getVersion() (*version.Version, error) {
 	if err != nil {
 		return nil, err
 	}
-	vrsn, err := version.NewVersion(versionStr)
-	return vrsn, err
+	version, err := version.NewVersion(versionStr)
+	return version, err
 }
 
 // getGlobalStats queries the db for global status metrics.
