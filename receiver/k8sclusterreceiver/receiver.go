@@ -14,7 +14,9 @@ import (
 	"go.opentelemetry.io/collector/pipeline"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
+	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/k8sleaderelector"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/collection"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
@@ -42,9 +44,7 @@ type getExporters interface {
 	GetExporters() map[pipeline.Signal]map[component.ID]component.Component
 }
 
-func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
-	ctx, kr.cancel = context.WithCancel(ctx)
-
+func (kr *kubernetesReceiver) startReceiver(ctx context.Context, host component.Host) error {
 	if err := kr.resourceWatcher.initialize(); err != nil {
 		return err
 	}
@@ -97,15 +97,58 @@ func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) er
 			}
 		}
 	}()
+	return nil
+}
+
+func (kr *kubernetesReceiver) Start(ctx context.Context, host component.Host) error {
+	ctx, kr.cancel = context.WithCancel(ctx)
+
+	// if extension is defined start with k8s leader elector
+	if kr.config.K8sLeaderElector != nil {
+		kr.settings.Logger.Info("Starting k8sClusterReceiver with leader election")
+		extList := host.GetExtensions()
+		if extList == nil {
+			return errors.New("extension list is empty")
+		}
+
+		ext := extList[*kr.config.K8sLeaderElector]
+		if ext == nil {
+			return errors.New("extension k8s leader elector not found")
+		}
+
+		leaderElectorExt, ok := ext.(k8sleaderelector.LeaderElection)
+		if !ok {
+			return errors.New("referenced extension is not k8s leader elector")
+		}
+
+		leaderElectorExt.SetCallBackFuncs(
+			func(ctx context.Context) {
+				if err := kr.startReceiver(ctx, host); err != nil {
+					kr.settings.Logger.Error("Failed to start receiver", zap.Error(err))
+				}
+			}, func() {
+				kr.stopReceiver()
+			},
+		)
+	} else {
+		kr.settings.Logger.Info("Starting k8sClusterReceiver without leader election")
+		if err := kr.startReceiver(ctx, host); err != nil {
+			return err
+		}
+	}
 
 	return nil
 }
 
-func (kr *kubernetesReceiver) Shutdown(context.Context) error {
-	if kr.cancel == nil {
-		return nil
+func (kr *kubernetesReceiver) stopReceiver() {
+	kr.settings.Logger.Info("Stopping the receiver")
+	if kr.cancel != nil {
+		kr.cancel()
 	}
-	kr.cancel()
+}
+
+func (kr *kubernetesReceiver) Shutdown(context.Context) error {
+	kr.stopReceiver()
 	return nil
 }
 

@@ -58,28 +58,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	validObjects, err := c.getValidObjects()
-	if err != nil {
-		return err
-	}
 	for _, object := range c.Objects {
-		gvrs, ok := validObjects[object.Name]
-		if !ok {
-			availableResource := make([]string, len(validObjects))
-			for k := range validObjects {
-				availableResource = append(availableResource, k)
-			}
-			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
-		}
-
-		gvr := gvrs[0]
-		for i := range gvrs {
-			if gvrs[i].Group == object.Group {
-				gvr = gvrs[i]
-				break
-			}
-		}
-
 		if object.Mode == "" {
 			object.Mode = defaultMode
 		} else if _, ok := modeMap[object.Mode]; !ok {
@@ -93,8 +72,6 @@ func (c *Config) Validate() error {
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
 			return errors.New("the Exclude config can only be used with watch mode")
 		}
-
-		object.gvr = gvr
 	}
 	return nil
 }
