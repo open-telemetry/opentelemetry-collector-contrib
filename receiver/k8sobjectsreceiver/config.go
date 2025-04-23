@@ -4,6 +4,7 @@
 package k8sobjectsreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver"
 
 import (
+	"errors"
 	"fmt"
 	"strings"
 	"time"
@@ -13,8 +14,9 @@ import (
 	"k8s.io/client-go/discovery"
 	"k8s.io/client-go/dynamic"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 )
 
 type mode string
@@ -90,7 +92,7 @@ func (c *Config) Validate() error {
 		}
 
 		if object.Mode == PullMode && len(object.ExcludeWatchType) != 0 {
-			return fmt.Errorf("the Exclude config can only be used with watch mode")
+			return errors.New("the Exclude config can only be used with watch mode")
 		}
 	}
 	return nil

@@ -18,13 +18,82 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
 )
 
+func TestErrorModes(t *testing.T) {
+	t.Parallel()
+
+	tests := []struct {
+		desc        string
+		errorMode   ErrorMode
+		expectError bool
+	}{
+		{
+			desc:        "propagate error mode returns error",
+			errorMode:   PropagateError,
+			expectError: true,
+		},
+		{
+			desc:        "ignore error mode logs and continues",
+			errorMode:   IgnoreError,
+			expectError: false,
+		},
+		{
+			desc:        "silent error mode continues without logging",
+			errorMode:   SilentError,
+			expectError: false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.desc, func(t *testing.T) {
+			mockClient := newMockDynamicClient()
+			rCfg := createDefaultConfig().(*Config)
+			rCfg.makeDynamicClient = mockClient.getMockDynamicClient
+			rCfg.makeDiscoveryClient = getMockDiscoveryClient
+			rCfg.ErrorMode = tt.errorMode
+			rCfg.Objects = []*K8sObjectsConfig{
+				{
+					Name: "nonexistent-resource",
+					Mode: PullMode,
+				},
+			}
+
+			r, err := newReceiver(
+				receivertest.NewNopSettings(metadata.Type),
+				rCfg,
+				consumertest.NewNop(),
+			)
+			require.NoError(t, err)
+			require.NotNil(t, r)
+			err = r.Start(context.Background(), componenttest.NewNopHost())
+			if tt.expectError {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
+		})
+	}
+}
+
 func TestNewReceiver(t *testing.T) {
 	t.Parallel()
 
 	mockClient := newMockDynamicClient()
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
+	rCfg.Objects = []*K8sObjectsConfig{
+		{
+			Name: "pods",
+			Mode: PullMode,
+		},
+	}
 
 	r, err := newReceiver(
 		receivertest.NewNopSettings(metadata.Type),
@@ -57,6 +126,7 @@ func TestPullObject(t *testing.T) {
 	rCfg := createDefaultConfig().(*Config)
 	rCfg.makeDynamicClient = mockClient.getMockDynamicClient
 	rCfg.makeDiscoveryClient = getMockDiscoveryClient
+	rCfg.ErrorMode = PropagateError
 
 	rCfg.Objects = []*K8sObjectsConfig{
 		{

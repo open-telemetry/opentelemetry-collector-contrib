@@ -132,6 +132,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -144,6 +145,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "exclude watch type with pull mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -159,6 +161,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default mode is set",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -169,6 +172,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default interval for pull mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
