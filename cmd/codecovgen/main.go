@@ -59,10 +59,16 @@ func setupCLI() (Args, error) {
 	flag.Parse()
 
 	if cli.BasePrefix == "" {
-		return cli, fmt.Errorf("basePrefix is required")
+		return cli, fmt.Errorf("base-prefix is required")
 	}
 	if cli.Dir == "" {
 		return cli, fmt.Errorf("dir is required")
+	}
+
+	for pattern := range cli.SkippedModules {
+		if !doublestar.ValidatePattern(pattern) {
+			return cli, fmt.Errorf("invalid glob pattern %q", pattern)
+		}
 	}
 
 	return cli, nil
@@ -161,11 +167,7 @@ func walkTree(cli Args) (*CodecovConfig, error) {
 			// Skip if the module is in the skipped list
 			relModName := strings.Replace(moduleName, cli.BasePrefix+"/", "", 1)
 			for pattern := range cli.SkippedModules {
-				matched, err := doublestar.Match(pattern, relModName)
-				if err != nil {
-					return fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
-				}
-				if matched {
+				if doublestar.MatchUnvalidated(pattern, relModName) {
 					fmt.Printf("Skipping module %q\n", relModName)
 					return nil
 				}
