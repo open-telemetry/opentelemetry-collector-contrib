@@ -6,13 +6,13 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.124.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/component/componentstatus v0.124.0
+	go.opentelemetry.io/collector/component/componentstatus v0.124.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/component/componenttest v0.124.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/config/confighttp v0.124.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/confmap v1.30.1-0.20250422165940-c47951a8bf71
 	go.opentelemetry.io/collector/extension v1.30.1-0.20250422165940-c47951a8bf71
-	go.opentelemetry.io/collector/extension/extensioncapabilities v0.124.0
-	go.opentelemetry.io/collector/extension/extensiontest v0.124.0
+	go.opentelemetry.io/collector/extension/extensioncapabilities v0.124.1-0.20250422165940-c47951a8bf71
+	go.opentelemetry.io/collector/extension/extensiontest v0.124.1-0.20250422165940-c47951a8bf71
 )
 
 require (

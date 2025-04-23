@@ -71,7 +71,6 @@ processor/tailsamplingprocessor
 exporter/datadogexporter
 connector/datadogconnector
 exporter/datadogexporter
-extension/datadogfleetautomationextension
 connector/exceptionsconnector
 connector/failoverconnector
 connector/grafanacloudconnector
@@ -150,6 +149,7 @@ extension/azureauthextension
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
+extension/datadogfleetautomationextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
