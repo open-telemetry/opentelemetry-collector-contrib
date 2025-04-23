@@ -135,10 +135,6 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 }
 
 func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
-	if len(strategy) == 0 {
-		return nil
-	}
-
 	switch strategy {
 	case sarama.RangeBalanceStrategyName:
 		return sarama.NewBalanceStrategyRange()
