@@ -501,10 +501,10 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 	stackFramesSession := startSession(e.bulkIndexers.profilingStackFrames)
 	executablesSession := startSession(e.bulkIndexers.profilingExecutables)
 
-	// mappingModeSessions is used to create the default session according to
+	// scopeMappingModeSessions is used to create the default session according to
 	// the specified mapping mode.
-	mappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
-	defer mappingModeSessions.End()
+	scopeMappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
+	defer scopeMappingModeSessions.End()
 
 	var errs []error
 	for _, rp := range pd.ResourceProfiles().All() {
@@ -515,7 +515,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 			if err != nil {
 				return err
 			}
-			defaultSession := mappingModeSessions.StartSession(ctx, mappingMode)
+			defaultSession := scopeMappingModeSessions.StartSession(ctx, mappingMode)
 			encoder := e.documentEncoders[int(mappingMode)]
 
 			for _, profile := range sp.Profiles().All() {
