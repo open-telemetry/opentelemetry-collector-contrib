@@ -71,6 +71,8 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 }
 
 // Resolve performs a forward DNS lookup (hostname to IP) using the configured nameservers.
+// It returns the first IPv4 address found.
+// If no IPv4 address is found, it returns the first IP address found.
 func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (string, error) {
 	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
 		ips, err := resolver.LookupIP(fnCtx, "ip", hostname)
@@ -81,6 +83,14 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (stri
 			return "", ErrNoResolution
 		}
 
+		// Find first IPv4 address if available
+		for _, ip := range ips {
+			if ipv4 := ip.To4(); ipv4 != nil {
+				return ipv4.String(), nil
+			}
+		}
+
+		// If no IPv4, return the first IP
 		return ips[0].String(), nil
 	})
 }
@@ -118,7 +128,11 @@ func NewExponentialBackOff() *backoff.ExponentialBackOff {
 }
 
 // lookupWithNameservers attempts a DNS lookup using all configured nameservers.
-// It returns the first successful result or the last error encountered.
+// The lookupFn is a function that performs the actual DNS lookup using the resolver.
+// It retries the lookup with exponential backoff on failure.
+// Timeout and temporary errors are retryable failures.
+// No resolution is a valid result that no need to retry.
+// If all nameservers fail, the last error is returned.
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
 	target string,
