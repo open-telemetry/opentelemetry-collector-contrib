@@ -67,6 +67,7 @@ components:
         - asapclient
         - awscloudwatchmetricstreams_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
