@@ -484,37 +484,41 @@ func (e *elasticsearchExporter) extractDocumentPipelineAttribute(m pcommon.Map) 
 
 func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofile.Profiles) error {
 	// TODO add support for routing profiles to different data_stream.namespaces?
-	mappingMode, err := e.getRequestMappingMode(ctx)
+	defaultMappingMode, err := e.getRequestMappingMode(ctx)
 	if err != nil {
 		return err
 	}
-	encoder := e.documentEncoders[int(mappingMode)]
 
 	var sessions sessionList
 	defer sessions.End()
-
 	startSession := func(indexer bulkIndexer) bulkIndexerSession {
 		session := indexer.StartSession(ctx)
 		sessions = append(sessions, session)
 		return session
 	}
-	defaultSession := startSession(e.bulkIndexers.modes[mappingMode])
 	eventsSession := startSession(e.bulkIndexers.profilingEvents)
 	stackTracesSession := startSession(e.bulkIndexers.profilingStackTraces)
 	stackFramesSession := startSession(e.bulkIndexers.profilingStackFrames)
 	executablesSession := startSession(e.bulkIndexers.profilingExecutables)
 
+	// mappingModeSessions is used to create the default session according to
+	// the specified mapping mode.
+	mappingModeSessions := mappingModeSessions{indexers: &e.bulkIndexers.modes}
+	defer mappingModeSessions.End()
+
 	var errs []error
-	rps := pd.ResourceProfiles()
-	for i := 0; i < rps.Len(); i++ {
-		rp := rps.At(i)
+	for _, rp := range pd.ResourceProfiles().All() {
 		resource := rp.Resource()
-		sps := rp.ScopeProfiles()
-		for j := 0; j < sps.Len(); j++ {
-			sp := sps.At(j)
+		for _, sp := range rp.ScopeProfiles().All() {
 			scope := sp.Scope()
-			p := sp.Profiles()
-			for k := 0; k < p.Len(); k++ {
+			mappingMode, err := e.getScopeMappingMode(scope, defaultMappingMode)
+			if err != nil {
+				return err
+			}
+			defaultSession := mappingModeSessions.StartSession(ctx, mappingMode)
+			encoder := e.documentEncoders[int(mappingMode)]
+
+			for _, profile := range sp.Profiles().All() {
 				ec := encodingContext{
 					resource:          resource,
 					resourceSchemaURL: rp.SchemaUrl(),
@@ -522,7 +526,7 @@ func (e *elasticsearchExporter) pushProfilesData(ctx context.Context, pd pprofil
 					scopeSchemaURL:    sp.SchemaUrl(),
 				}
 				if err := e.pushProfileRecord(
-					ctx, encoder, ec, p.At(k), defaultSession, eventsSession,
+					ctx, encoder, ec, profile, defaultSession, eventsSession,
 					stackTracesSession, stackFramesSession, executablesSession,
 				); err != nil {
 					if cerr := ctx.Err(); cerr != nil {
