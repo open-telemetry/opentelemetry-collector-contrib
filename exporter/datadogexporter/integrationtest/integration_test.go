@@ -558,6 +558,7 @@ func sendLogs(t *testing.T, numLogs int, endpoint string) {
 }
 
 func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
+	t.Skip("Flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39585")
 	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
