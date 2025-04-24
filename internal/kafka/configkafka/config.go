@@ -99,6 +99,9 @@ type ConsumerConfig struct {
 	// The maximum bytes per fetch from Kafka (default "0", no limit)
 	MaxFetchSize int32 `mapstructure:"max_fetch_size"`
 
+	// The maximum amount of time to wait for MinFetchSize bytes to be
+	// available before the broker returns a response (default 250ms)
+	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
 	// RebalanceStrategy specifies the strategy to use for partition assignment.
 	// Possible values are "range", "roundrobin", and "sticky".
 	// Defaults to "range".
@@ -120,6 +123,7 @@ func NewDefaultConsumerConfig() ConsumerConfig {
 		},
 		MinFetchSize:     1,
 		MaxFetchSize:     0,
+		MaxFetchWait:     250 * time.Millisecond,
 		DefaultFetchSize: 1048576,
 	}
 }
