@@ -9,6 +9,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
@@ -60,7 +61,7 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
-	actual := MetricFunctions()
+	actual := MetricFunctions([]ottl.Factory[ottlmetric.TransformContext]{})
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
