@@ -19,7 +19,6 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
-	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -61,6 +60,10 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
 		}
+		// Set default interval if in PullMode and interval is 0
+		if objects[i].Mode == PullMode && objects[i].Interval == 0 {
+			objects[i].Interval = defaultPullInterval
+		}
 	}
 
 	return &k8sobjectsreceiver{
@@ -91,8 +94,19 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
 			err := fmt.Errorf("resource not found: %s", object.Name)
-			if handlerErr := kr.handleError(err, "available resources in cluster: "+fmt.Sprint(getAvailableResources(validObjects))); handlerErr != nil {
+			// First handle the error which will log it if in ignore mode
+			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
 				return handlerErr
+			}
+
+			// Then log additional context if in ignore mode
+			if kr.config.ErrorMode == IgnoreError {
+				availableResource := make([]string, 0, len(validObjects))
+				for k := range validObjects {
+					availableResource = append(availableResource, k)
+				}
+				kr.setting.Logger.Warn("Available resources in cluster",
+					zap.Strings("resources", availableResource))
 			}
 			continue
 		}
@@ -147,10 +161,6 @@ func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfi
 
 	switch object.Mode {
 	case PullMode:
-		// Set default interval if not set
-		if object.Interval == 0 {
-			object.Interval = defaultPullInterval
-		}
 		if len(object.Namespaces) == 0 {
 			go kr.startPull(ctx, object, resource)
 		} else {
@@ -192,12 +202,10 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-ticker.C:
 			objects, err := resource.List(ctx, listOption)
 			if err != nil {
-				if handlerErr := kr.handleError(err, fmt.Sprintf("error pulling objects for resource %s", config.gvr.String())); handlerErr != nil {
-					kr.setting.Logger.Error("error handling failed", zap.Error(handlerErr))
-				}
-				continue
-			}
-			if len(objects.Items) > 0 {
+				kr.setting.Logger.Error("error in pulling object",
+					zap.String("resource", config.gvr.String()),
+					zap.Error(err))
+			} else if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
@@ -227,9 +235,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
-			if handlerErr := kr.handleError(err, fmt.Sprintf("could not retrieve a resourceVersion for resource %s", cfgCopy.gvr.String())); handlerErr != nil {
-				kr.setting.Logger.Error("error handling failed", zap.Error(handlerErr))
-			}
+			kr.setting.Logger.Error("could not retrieve a resourceVersion",
+				zap.String("resource", cfgCopy.gvr.String()),
+				zap.Error(err))
 			cancel()
 			return
 		}
@@ -395,13 +403,4 @@ func isCriticalError(err error) bool {
 	}
 
 	return false
-}
-
-// Helper function to get available resources
-func getAvailableResources(validObjects map[string][]*schema.GroupVersionResource) []string {
-	availableResource := make([]string, 0, len(validObjects))
-	for k := range validObjects {
-		availableResource = append(availableResource, k)
-	}
-	return availableResource
 }
