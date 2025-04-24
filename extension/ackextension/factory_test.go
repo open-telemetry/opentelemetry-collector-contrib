@@ -20,3 +20,7 @@ func TestFactory(t *testing.T) {
 	require.Equal(t, defaultMaxNumPendingAcksPerPartition, cfg.MaxNumPendingAcksPerPartition)
 	require.Equal(t, defaultMaxNumPartition, cfg.MaxNumPartition)
 }
+
+func TestFailed(t *testing.T) {
+	t.FailNow()
+}
