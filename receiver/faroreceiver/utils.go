@@ -1,4 +1,4 @@
-package faroreceiver
+package faroreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver"
 
 import (
 	"net/http"
