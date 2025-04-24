@@ -106,14 +106,13 @@ resourceLogs:
               - key: sqlserver.query_plan_hash
                 value:
                   stringValue: "307831343032313046363442373838434239"
-              - key: sqlserver.context_info
-                value:
-                  stringValue: ""
               - key: sqlserver.username
                 value:
                   stringValue: sa
             body:
               stringValue: sample
+            spanId: a7ad6a7169203331
+            traceId: 0af7651916cd43dd8448eb211c80319c
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/sqlserverreceiver
           version: latest
