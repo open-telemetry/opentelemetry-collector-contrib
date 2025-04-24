@@ -28,6 +28,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8sapiserver"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/k8swindows"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/neuron"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/nvme"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/prometheusscraper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/prometheusscraper/decoratorconsumer"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores"
@@ -57,6 +58,7 @@ type awsContainerInsightReceiver struct {
 	prometheusScraper        *k8sapiserver.PrometheusScraper
 	podResourcesStore        *stores.PodResourcesStore
 	dcgmScraper              *prometheusscraper.SimplePrometheusScraper
+	nvmeScraper              *prometheusscraper.SimplePrometheusScraper
 	neuronMonitorScraper     *prometheusscraper.SimplePrometheusScraper
 	efaSysfsScraper          *efa.Scraper
 }
@@ -200,6 +202,10 @@ func (acir *awsContainerInsightReceiver) initEKS(ctx context.Context, host compo
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start dcgm scraper", zap.Error(err))
 		}
+		err = acir.initNVMEScraper(ctx, host, hostInfo, localNodeDecorator)
+		if err != nil {
+			acir.settings.Logger.Debug("Unable to start NVME scraper", zap.Error(err))
+		}
 		err = acir.initPodResourcesStore()
 		if err != nil {
 			acir.settings.Logger.Debug("Unable to start pod resources store", zap.Error(err))
@@ -311,6 +317,31 @@ func (acir *awsContainerInsightReceiver) initDcgmScraper(ctx context.Context, ho
 	return err
 }
 
+func (acir *awsContainerInsightReceiver) initNVMEScraper(ctx context.Context, host component.Host, hostInfo *hostinfo.Info, localNodeDecorator stores.Decorator) error {
+	decoConsumer := decoratorconsumer.DecorateConsumer{
+		ContainerOrchestrator: ci.EKS,
+		NextConsumer:          acir.nextConsumer,
+		MetricType:            ci.TypeNodeNVME,
+		MetricToUnitMap:       nvme.MetricToUnit,
+		K8sDecorator:          localNodeDecorator,
+		Logger:                acir.settings.Logger,
+	}
+
+	scraperOpts := prometheusscraper.SimplePrometheusScraperOpts{
+		Ctx:               ctx,
+		TelemetrySettings: acir.settings,
+		Consumer:          &decoConsumer,
+		Host:              host,
+		ScraperConfigs:    nvme.GetScraperConfig(hostInfo),
+		HostInfoProvider:  hostInfo,
+		Logger:            acir.settings.Logger,
+	}
+
+	var err error
+	acir.nvmeScraper, err = prometheusscraper.NewSimplePrometheusScraper(scraperOpts)
+	return err
+}
+
 func (acir *awsContainerInsightReceiver) initPodResourcesStore() error {
 	var err error
 	acir.podResourcesStore, err = stores.NewPodResourcesStore(acir.settings.Logger)
@@ -401,6 +432,9 @@ func (acir *awsContainerInsightReceiver) Shutdown(context.Context) error {
 	if acir.neuronMonitorScraper != nil {
 		acir.neuronMonitorScraper.Shutdown()
 	}
+	if acir.nvmeScraper != nil {
+		acir.nvmeScraper.Shutdown()
+	}
 	if acir.efaSysfsScraper != nil {
 		acir.efaSysfsScraper.Shutdown()
 	}
@@ -446,6 +480,10 @@ func (acir *awsContainerInsightReceiver) collectData(ctx context.Context) error 
 
 	if acir.neuronMonitorScraper != nil {
 		acir.neuronMonitorScraper.GetMetrics() //nolint:errcheck
+	}
+
+	if acir.nvmeScraper != nil {
+		acir.nvmeScraper.GetMetrics() //nolint:errcheck
 	}
 
 	if acir.efaSysfsScraper != nil {
