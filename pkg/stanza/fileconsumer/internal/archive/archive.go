@@ -34,27 +34,25 @@ func New(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister 
 		return &nopArchive{}
 	}
 
-	a := &archive{
-		pollsToArchive: pollsToArchive,
-		persister:      persister,
-		archiveIndex:   0,
-		logger:         logger,
-	}
-
 	// restore last known archive index
-	archiveIndex, err := a.getArchiveIndex(ctx)
-	if err != nil {
+	archiveIndex, err := getArchiveIndex(ctx, persister)
+	switch {
+	case err != nil:
 		logger.Info("error while fetching archive index. Resetting it to 0", zap.Error(err))
 		archiveIndex = 0
-	} else if archiveIndex >= pollsToArchive {
+	case archiveIndex >= pollsToArchive:
 		logger.Warn("archiveIndex is out of bounds, likely due to change in pollsToArchive. Resetting it to 0") // Try to craft log to explain in user facing terms?
 		archiveIndex = 0
-	} else {
+	default:
 		// archiveIndex should point to index for the next write, hence increment it from last known value.
 		archiveIndex = (archiveIndex + 1) % pollsToArchive
 	}
-	a.archiveIndex = archiveIndex
-	return a
+	return &archive{
+		pollsToArchive: pollsToArchive,
+		persister:      persister,
+		archiveIndex:   archiveIndex,
+		logger:         logger,
+	}
 }
 
 type archive struct {
@@ -162,8 +160,8 @@ func (a *archive) writeArchive(ctx context.Context, index int, rmds *fileset.Fil
 	return checkpoint.SaveKey(ctx, a.persister, rmds.Get(), archiveKey(index), ops...)
 }
 
-func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
-	byteIndex, err := a.persister.Get(ctx, archiveIndexKey)
+func getArchiveIndex(ctx context.Context, persister operator.Persister) (int, error) {
+	byteIndex, err := persister.Get(ctx, archiveIndexKey)
 	if err != nil {
 		return 0, err
 	}

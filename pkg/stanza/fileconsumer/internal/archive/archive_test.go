@@ -73,7 +73,7 @@ func testArchive(t *testing.T, pollsToArchive int) {
 	for index, fp := range m {
 		oldMetadata, err := checkpoint.LoadKey(context.Background(), persister, archiveKey(index))
 		require.NoErrorf(t, err, "expected no error while loading metadata, got %v", err)
-		require.Lenf(t, oldMetadata, 1, "index %d should have no items, found %d items", index, len(oldMetadata))
+		require.Lenf(t, oldMetadata, 1, "index %d should have exactly one item", index)
 
 		// FindFiles removes the data from persister.
 		matchedData := archive.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
@@ -83,8 +83,7 @@ func testArchive(t *testing.T, pollsToArchive int) {
 		// archive should no longer contain data (as FindFiles removed the data)
 		newMetadata, err := checkpoint.LoadKey(context.Background(), persister, archiveKey(index))
 		require.NoErrorf(t, err, "expected no error while loading metadata, got %v", err)
-		require.Lenf(t, newMetadata, 0, "index %d should have exactly one item", index)
-
+		require.Emptyf(t, newMetadata, "index %d should have no items, found %d items", index, len(newMetadata))
 	}
 }
 
@@ -109,7 +108,7 @@ func testArchiveNop(t *testing.T) {
 	for index, fp := range m {
 		oldMetadata, err := checkpoint.LoadKey(context.Background(), persister, archiveKey(index))
 		require.NoErrorf(t, err, "expected no error while loading metadata, got %v", err)
-		require.Lenf(t, oldMetadata, 0, "index %d should have no items, found %d items", index, len(oldMetadata))
+		require.Emptyf(t, oldMetadata, "index %d should have no items, found %d items", index, len(oldMetadata))
 
 		// FindFiles removes the data from persister.
 		matchedData := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
