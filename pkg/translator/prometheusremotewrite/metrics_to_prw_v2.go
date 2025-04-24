@@ -34,10 +34,12 @@ func FromMetricsV2(md pmetric.Metrics, settings Settings) (map[string]*writev2.T
 // prometheusConverterV2 converts from OTLP to Prometheus write 2.0 format.
 type prometheusConverterV2 struct {
 	unique map[uint64]*writev2.TimeSeries
-	// conflicts is a map of time series signatures(an unique identifier for TS labels) to a list of TSs with the same signature
-	// this is used to handle conflicts, that occur when multiple TSs have the same labels
-	conflicts   map[uint64][]*writev2.TimeSeries
-	symbolTable writev2.SymbolsTable
+	// conflicts is a map of time series signatures(an unique identifier for TS labels) to a list of TSs with the same signature.
+	// this is used to handle conflicts that occur when multiple TSs have the same labels or when different labels generate the same signature.
+	conflicts map[uint64][]*writev2.TimeSeries
+	// conflictCount is used to track the number of conflicts that were encountered.
+	conflictCount int
+	symbolTable   writev2.SymbolsTable
 }
 
 func newPrometheusConverterV2() *prometheusConverterV2 {
@@ -112,11 +114,7 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 
 // timeSeries returns a slice of the writev2.TimeSeries that were converted from OTel format.
 func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
-	conflicts := 0
-	for _, ts := range c.conflicts {
-		conflicts += len(ts)
-	}
-	allTS := make([]writev2.TimeSeries, 0, len(c.unique)+conflicts)
+	allTS := make([]writev2.TimeSeries, 0, len(c.unique)+c.conflictCount)
 	for _, ts := range c.unique {
 		allTS = append(allTS, *ts)
 	}
@@ -156,6 +154,7 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		if !isSameMetricV2(existingTS, ts) {
 			// if the time series is not the same metric, add it to the conflicts map
 			c.conflicts[sig] = append(c.conflicts[sig], ts)
+			c.conflictCount++
 		} else {
 			// if the time series is the same metric, add the sample to the existing time series
 			existingTS.Samples = append(existingTS.Samples, *sample)
