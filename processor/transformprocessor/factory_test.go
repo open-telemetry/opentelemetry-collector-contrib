@@ -13,10 +13,13 @@ import (
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processortest"
+	"go.opentelemetry.io/collector/processor/xprocessor"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pprofiletest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metadata"
 )
@@ -30,10 +33,11 @@ func TestFactory_CreateDefaultConfig(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	assert.Equal(t, &Config{
-		ErrorMode:        ottl.PropagateError,
-		TraceStatements:  []common.ContextStatements{},
-		MetricStatements: []common.ContextStatements{},
-		LogStatements:    []common.ContextStatements{},
+		ErrorMode:         ottl.PropagateError,
+		TraceStatements:   []common.ContextStatements{},
+		MetricStatements:  []common.ContextStatements{},
+		LogStatements:     []common.ContextStatements{},
+		ProfileStatements: []common.ContextStatements{},
 	}, cfg)
 	assert.NoError(t, componenttest.CheckConfigStruct(cfg))
 }
@@ -190,6 +194,57 @@ func TestFactoryCreateLogs_InvalidActions(t *testing.T) {
 	assert.Nil(t, ap)
 }
 
+func TestFactoryCreateProfiles(t *testing.T) {
+	factory := NewFactory().(xprocessor.Factory)
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.ErrorMode = ottl.IgnoreError
+	oCfg.ProfileStatements = []common.ContextStatements{
+		{
+			Context: "profile",
+			Statements: []string{
+				`set(attributes["test"], "pass") where original_payload_format == "operationA"`,
+				`set(attributes["test error mode"], ParseJSON(1)) where original_payload_format == "operationA"`,
+			},
+		},
+	}
+	pp, err := factory.CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.NotNil(t, pp)
+	assert.NoError(t, err)
+
+	pd := basicProfiles().Transform()
+	profile := pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+
+	attr := pprofile.FromAttributeIndices(profile.AttributeTable(), profile)
+	_, ok := attr.Get("test")
+	assert.False(t, ok)
+
+	err = pp.ConsumeProfiles(context.Background(), pd)
+	assert.NoError(t, err)
+
+	profile = pd.ResourceProfiles().At(0).ScopeProfiles().At(0).Profiles().At(0)
+
+	attr = pprofile.FromAttributeIndices(profile.AttributeTable(), profile)
+	val, ok := attr.Get("test")
+	assert.True(t, ok)
+	assert.Equal(t, "pass", val.Str())
+}
+
+func TestFactoryCreateProfiles_InvalidActions(t *testing.T) {
+	factory := NewFactory().(xprocessor.Factory)
+	cfg := factory.CreateDefaultConfig()
+	oCfg := cfg.(*Config)
+	oCfg.ProfileStatements = []common.ContextStatements{
+		{
+			Context:    "profile",
+			Statements: []string{`set(123`},
+		},
+	}
+	ap, err := factory.CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+	assert.Error(t, err)
+	assert.Nil(t, ap)
+}
+
 func TestFactoryCreateLogProcessor(t *testing.T) {
 	tests := []struct {
 		name       string
@@ -268,6 +323,101 @@ func TestFactoryCreateLogProcessor(t *testing.T) {
 			tt.want(exLd)
 
 			assert.Equal(t, exLd, ld)
+		})
+	}
+}
+
+func basicProfiles() pprofiletest.Profiles {
+	return pprofiletest.Profiles{
+		ResourceProfiles: []pprofiletest.ResourceProfile{
+			{
+				Resource: pprofiletest.Resource{
+					Attributes: []pprofiletest.Attribute{{Key: "host.name", Value: "localhost"}},
+				},
+				ScopeProfiles: []pprofiletest.ScopeProfile{
+					{
+						Profile: []pprofiletest.Profile{
+							{
+								OriginalPayloadFormat: "operationA",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
+func TestFactoryCreateProfileProcessor(t *testing.T) {
+	tests := []struct {
+		name           string
+		conditions     []string
+		statements     []string
+		want           func() pprofile.Profiles
+		createProfiles func() pprofile.Profiles
+	}{
+		{
+			name:       "create profiles processor and pass profile context with a global condition that meets the specified condition",
+			conditions: []string{`original_payload_format == "operationA"`},
+			statements: []string{`set(attributes["test"], "pass")`},
+			want: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
+				return p.Transform()
+			},
+			createProfiles: func() pprofile.Profiles {
+				return basicProfiles().Transform()
+			},
+		},
+		{
+			name:       "create profiles processor and pass profile context with a statement condition that meets the specified condition",
+			conditions: []string{},
+			statements: []string{`set(attributes["test"], "pass") where original_payload_format == "operationA"`},
+			want: func() pprofile.Profiles {
+				p := basicProfiles()
+				p.ResourceProfiles[0].ScopeProfiles[0].Profile[0].Attributes = []pprofiletest.Attribute{{Key: "test", Value: "pass"}}
+				return p.Transform()
+			},
+			createProfiles: func() pprofile.Profiles {
+				return basicProfiles().Transform()
+			},
+		},
+		{
+			name:       "create profiles processor and pass log context with a global condition that fails the specified condition",
+			conditions: []string{`original_payload_format == "operationB"`},
+			statements: []string{`set(attributes["test"], "pass")`},
+			want: func() pprofile.Profiles {
+				return basicProfiles().Transform()
+			},
+			createProfiles: func() pprofile.Profiles {
+				return basicProfiles().Transform()
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			factory := NewFactory().(xprocessor.Factory)
+			cfg := factory.CreateDefaultConfig()
+			oCfg := cfg.(*Config)
+			oCfg.ErrorMode = ottl.IgnoreError
+			oCfg.ProfileStatements = []common.ContextStatements{
+				{
+					Context:    "profile",
+					Conditions: tt.conditions,
+					Statements: tt.statements,
+				},
+			}
+			lp, err := factory.CreateProfiles(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
+			assert.NotNil(t, lp)
+			assert.NoError(t, err)
+
+			pd := tt.createProfiles()
+
+			err = lp.ConsumeProfiles(context.Background(), pd)
+			assert.NoError(t, err)
+
+			assert.Equal(t, tt.want(), pd)
 		})
 	}
 }

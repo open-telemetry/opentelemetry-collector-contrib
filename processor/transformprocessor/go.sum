@@ -126,6 +126,8 @@ go.opentelemetry.io/collector/processor v1.32.1-0.20250515040533-97a6accbc082 h1
 go.opentelemetry.io/collector/processor v1.32.1-0.20250515040533-97a6accbc082/go.mod h1:4j1uqeLh4QR4kbmL81Vc/VwNQmz5eZrmP+SfQ1DxxQs=
 go.opentelemetry.io/collector/processor/processorhelper v0.126.1-0.20250515040533-97a6accbc082 h1:VSIY/Q491yN+fI1rzcA61/uNcTeE/nz4Bd9+t8iBjCY=
 go.opentelemetry.io/collector/processor/processorhelper v0.126.1-0.20250515040533-97a6accbc082/go.mod h1:7eWyE5CMabClS24dPZzKx1RoICrHLJoZZgeL8mJL3dM=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.126.1-0.20250515040533-97a6accbc082 h1:o8pN2WppnJICLW7BLKieSlp9C5GxSGAmhAFesi6eG1o=
+go.opentelemetry.io/collector/processor/processorhelper/xprocessorhelper v0.126.1-0.20250515040533-97a6accbc082/go.mod h1:248ActFrqGjayGJjgBOiyXZltMtp+3LRFeBslYauLx8=
 go.opentelemetry.io/collector/processor/processortest v0.126.1-0.20250515040533-97a6accbc082 h1:SY5y/D9znBMJtwI9+xYrLpi0lHnfs3XrnTG7G9+DMAA=
 go.opentelemetry.io/collector/processor/processortest v0.126.1-0.20250515040533-97a6accbc082/go.mod h1:OSP8iQDxn1vP71ChYQVSYYQ08s2r910G8eMOnMA7aiI=
 go.opentelemetry.io/collector/processor/xprocessor v0.126.1-0.20250515040533-97a6accbc082 h1:DHat8GOG8trWUxB4jSXklMnA3AA8fgn9D+TE+8SfO+Y=
@@ -237,8 +239,8 @@ golang.org/x/xerrors v0.0.0-20190717185122-a985d3407aa7/go.mod h1:I/5z698sn9Ka8T
 golang.org/x/xerrors v0.0.0-20191011141410-1b5146add898/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20191204190536-9bdfabe68543/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
 golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1/go.mod h1:I/5z698sn9Ka8TeJc9MKroUUfqBBauWjQqLJ2OPfmY0=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a h1:51aaUVRocpvUOSQKM6Q7VuoaktNIaMCLuhZB6DKksq4=
-google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a/go.mod h1:uRxBH1mhmO8PGhU89cMcHaXKZqO+OfakD8QQO0oYwlQ=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e h1:YA5lmSs3zc/5w+xsRcHqpETkaYyK63ivEPzNTcUUlSA=
+google.golang.org/genproto/googleapis/rpc v0.0.0-20250227231956-55c901821b1e/go.mod h1:LuRYeWDFV6WOn90g357N17oMCaxpgCnbi/44qJvDn2I=
 google.golang.org/grpc v1.72.1 h1:HR03wO6eyZ7lknl75XlxABNVLLFc2PAb6mHlYh756mA=
 google.golang.org/grpc v1.72.1/go.mod h1:wH5Aktxcg25y1I3w7H69nHfXdOG3UiadoBtjh3izSDM=
 google.golang.org/protobuf v1.36.6 h1:z1NpPI8ku2WgiWnf+t9wTPsn6eP1L7ksHUlkfLvd9xY=
