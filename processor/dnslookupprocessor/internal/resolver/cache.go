@@ -79,7 +79,7 @@ func (r *CacheResolver) Name() string {
 }
 
 // resolveWithCache searches target in miss cache and hit cache.
-// If not found, it fallbacks to the underlying chain resolver. Stores the result in cache.
+// If not found, it falls back to the underlying chain resolver. Stores the result in cache.
 func (r *CacheResolver) resolveWithCache(
 	ctx context.Context,
 	target string,
@@ -107,7 +107,7 @@ func (r *CacheResolver) resolveWithCache(
 	// Call the underlying chain resolver
 	result, err := resolveFunc(ctx, target)
 
-	// Add failure case to miss cache
+	// Add failure to miss cache
 	if err != nil {
 		if r.missCache != nil {
 			r.missCache.Add(target, struct{}{})
@@ -118,7 +118,7 @@ func (r *CacheResolver) resolveWithCache(
 		return "", err
 	}
 
-	// Add success case including no resolution to hit cache
+	// Add success including no resolution to hit cache
 	if r.hitCache != nil {
 		r.hitCache.Add(target, result)
 		r.logger.Debug("Add hit cache",
