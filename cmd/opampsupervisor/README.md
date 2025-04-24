@@ -30,15 +30,44 @@ for more information. You can also get in touch with us in the
 [#otel-opamp](https://cloud-native.slack.com/archives/C02J58HR58R) channel on
 the CNCF Slack workspace.
 
-## Using the Supervisor
+## Installing the Supervisor
 
-See tags starting with `cmd/opampsupervisor` for binary and container image
-builds of the Supervisor
-[here](https://github.com/open-telemetry/opentelemetry-collector-releases/tags).
+### Binary
+
+Binaries are available as downloadable assets from [OpenTelemetry Collector releases](https://github.com/open-telemetry/opentelemetry-collector-releases/releases) with tags using the prefix `cmd/opampsupervisor`. You can download the file containing the binary for your OS and architecture, and install it on your machine manually.
+
+#### Linux/macOS
+
+Replace `<VERSION>` with your desired Supervisor version, and `<OS>` and `<ARCH>` with your platform-specific information:
+
+```sh
+curl --proto '=https' --tlsv1.2 -fL -o opampsupervisor \
+"https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fopampsupervisor%2Fv<VERSION>/opampsupervisor_<VERSION>_<OS>_<ARCH>"
+chmod +x opampsupervisor
+```
+
+#### Windows
+
+Replace `<VERSION>` with your desired Supervisor version:
+
+```sh
+Invoke-WebRequest -Uri "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/cmd%2Fopampsupervisor%2Fv<VERSION>/opampsupervisor_<VERSION>_windows_amd64.exe" -OutFile "opampsupervisor.exe"
+Unblock-File -Path "opampsupervisor.exe"
+```
+
+### Container image
+
+Container images are available for download from [GitHub Container registry](https://github.com/open-telemetry/opentelemetry-collector-releases/pkgs/container/opentelemetry-collector-releases%2Fopentelemetry-collector-opampsupervisor):
+
+```sh
+docker pull ghcr.io/open-telemetry/opentelemetry-collector-releases/opentelemetry-collector-opampsupervisor
+```
+
+## Using the Supervisor
 
 To use the Supervisor, you will need four things:
 
-1. A Supervisor binary, which can be obtained through the link above.
+1. A Supervisor binary, which can be obtained through the [installation](#installing-the-supervisor) step above.
 2. A Collector binary that you would like to control through the Supervisor.
 3. A Supervisor config file. See examples [here](./examples/).
 4. A running OpAMP server.
@@ -53,8 +82,22 @@ OpAMP example server in the `internal/examples/server` directory.
    go run .
    ```
 
-   Visit [localhost:4321](http://localhost:4321) to verify that the server is running.
+Visit [localhost:4321](http://localhost:4321) to verify that the server is running.
 
+In a separate directory, create a Supervisor configuration file named `supervisor.yaml`. Copy one of the existing [examples](./examples/) or create a new configuration. The `agent::executable` should be set to the path of your Collector binary:
+
+```yaml
+agent:
+  executable: <COLLECTOR_BINARY>
+```
+
+Start the Supervisor:
+
+```sh
+./opampsupervisor --config=supervisor.yaml
+```
+
+Visit [localhost:4321](http://localhost:4321) again to verify that your Collector appears in the Agents list.
 
 ## Persistent data storage
 
