@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
@@ -69,6 +70,24 @@ func (r resourceStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	for i := 0; i < ld.ResourceLogs().Len(); i++ {
 		rlogs := ld.ResourceLogs().At(i)
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
+		condition, err := r.Eval(ctx, tCtx)
+		if err != nil {
+			return err
+		}
+		if condition {
+			err := r.Execute(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func (r resourceStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
+		rprofiles := ld.ResourceProfiles().At(i)
+		tCtx := ottlresource.NewTransformContext(rprofiles.Resource(), rprofiles)
 		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			return err
@@ -157,10 +176,32 @@ func (s scopeStatements) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	return nil
 }
 
+func (s scopeStatements) ConsumeProfiles(ctx context.Context, ld pprofile.Profiles) error {
+	for i := 0; i < ld.ResourceProfiles().Len(); i++ {
+		rprofiles := ld.ResourceProfiles().At(i)
+		for j := 0; j < rprofiles.ScopeProfiles().Len(); j++ {
+			sprofiles := rprofiles.ScopeProfiles().At(j)
+			tCtx := ottlscope.NewTransformContext(sprofiles.Scope(), rprofiles.Resource(), sprofiles)
+			condition, err := s.Eval(ctx, tCtx)
+			if err != nil {
+				return err
+			}
+			if condition {
+				err := s.Execute(ctx, tCtx)
+				if err != nil {
+					return err
+				}
+			}
+		}
+	}
+	return nil
+}
+
 type baseContext interface {
 	TracesConsumer
 	MetricsConsumer
 	LogsConsumer
+	ProfilesConsumer
 }
 
 func withCommonContextParsers[R any]() ottl.ParserCollectionOption[R] {
