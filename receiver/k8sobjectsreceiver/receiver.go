@@ -53,8 +53,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 
 	objects := make([]*K8sObjectsConfig, len(config.Objects))
 	for i, obj := range config.Objects {
-		copied := *obj // Copy the object
-		objects[i] = &copied
+		objects[i] = obj.deepCopy()
 		objects[i].exclude = make(map[apiWatch.EventType]bool)
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
@@ -203,7 +202,7 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	}
 
 	cancelCtx, cancel := context.WithCancel(ctx)
-	cfgCopy := *config
+	cfgCopy := *config.deepCopy()
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
