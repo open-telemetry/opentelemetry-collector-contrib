@@ -325,8 +325,8 @@ receiver/windowseventlogreceiver/                                @open-telemetry
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
-scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock
+receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock @akats7
+scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock @akats7
 testbed/                                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry/collector-contrib-approvers @boostchicken
 
