@@ -1905,7 +1905,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 
 		if sr.Jobid != nil {
 			s.recordSplunkSearchInitiationDataPoint(now, 1, i)
-			err = s.setSearchJobTTLById(*sr.Jobid) // set search TTL once we know the sid
+			err = s.setSearchJobTTLByID(*sr.Jobid) // set search TTL once we know the sid
 			if err != nil {
 				errs <- err // log the error but it doesn't need to fail
 			}
@@ -1921,7 +1921,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 			time.Sleep(2 * time.Second)
 		}
 
-		if time.Since(start) > s.conf.ControllerConfig.Timeout {
+		if time.Since(start) > s.conf.Timeout {
 			s.recordSplunkSearchDurationDataPoint(now, float64(time.Since(start)), i)
 			s.recordSplunkSearchSuccessDataPoint(now, 0, i)
 			errs <- errMaxSearchWaitTimeExceeded
@@ -1943,7 +1943,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 	// get the 1 search we submitted
 	entry := metaEntries.Entries[0]
 
-	for entry.Content.DispatchState != StateDone || time.Since(start) < s.conf.ControllerConfig.Timeout {
+	for entry.Content.DispatchState != StateDone || time.Since(start) < s.conf.Timeout {
 		if s.conf.Metrics.SplunkSearchStatus.Enabled {
 			// record for all possible search states
 			var value int64
@@ -2028,7 +2028,7 @@ func (s *splunkScraper) getSearchEntries(sid string) (searchMetaEntries, error) 
 }
 
 // setSearchJobTTLById sets the SearchJob's TTL on the remote Splunk server to Timeout and returns a ControlResponse.
-func (s *splunkScraper) setSearchJobTTLById(sid string) error {
+func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 	ept := fmt.Sprintf("/services/search/jobs/%s/control", sid)
 
 	req, err := s.splunkClient.createAPIRequest(typeSh, ept)
@@ -2048,7 +2048,7 @@ func (s *splunkScraper) setSearchJobTTLById(sid string) error {
 		return err
 	}
 
-	if res.StatusCode != 200 {
+	if res.StatusCode != http.StatusOK {
 		body, err := io.ReadAll(res.Body)
 		if err != nil {
 			return err
