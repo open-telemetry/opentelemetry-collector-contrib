@@ -16,6 +16,8 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/logs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/transformprocessor/internal/metrics"
@@ -47,7 +49,11 @@ type Config struct {
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
 
-	AdditionalOTTLFunc []ottl.Factory[ottllog.TransformContext] `mapstructure:"-"`
+	// Additional*Funcs config properties will add additional custom OTTL funcs to the resulting transform processor.
+	// This properties can only be set programatically and can't be set throug a configuration file.
+	AdditionalLogFuncs    []ottl.Factory[ottllog.TransformContext]    `mapstructure:"-"`
+	AdditionalSpanFuncs   []ottl.Factory[ottlspan.TransformContext]   `mapstructure:"-"`
+	AdditionalMetricFuncs []ottl.Factory[ottlmetric.TransformContext] `mapstructure:"-"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -136,7 +142,7 @@ func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions()), common.WithSpanEventParser(traces.SpanEventFunctions()))
+		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(c.AdditionalSpanFuncs)), common.WithSpanEventParser(traces.SpanEventFunctions()))
 		if err != nil {
 			return err
 		}
@@ -149,7 +155,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions()), common.WithDataPointParser(metrics.DataPointFunctions()))
+		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(c.AdditionalMetricFuncs)), common.WithDataPointParser(metrics.DataPointFunctions()))
 		if err != nil {
 			return err
 		}
@@ -162,7 +168,7 @@ func (c *Config) Validate() error {
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.AdditionalOTTLFunc)))
+		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.AdditionalLogFuncs)))
 		if err != nil {
 			return err
 		}
