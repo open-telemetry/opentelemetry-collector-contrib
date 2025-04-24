@@ -63,6 +63,26 @@ with detailed sample configurations in [testdata/config.yaml](./testdata/config.
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 
+### Supported Kubernetes objects
+
+The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. Supported objects in the format for `name` parameter:
+
+- `pods`
+- `events`
+- `nodes`
+- `jobs`
+- `cronjobs`
+- `deployments`
+- `services`
+- `configmaps`
+- `secrets`
+- `statefulsets`
+- `replicasets`
+- `daemonsets`
+- `namespaces`
+
+This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Note that while many standard objects are supported, custom resources defined by CRDs and certain third-party metrics may require additional configuration.
+
 ### Configuration
 
 Create a ConfigMap with the config for `otelcontribcol`. Replace `OTLP_ENDPOINT`
