@@ -13,7 +13,6 @@ import (
 	"strings"
 
 	faro "github.com/grafana/faro/pkg/go"
-	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/config/confighttp"
@@ -21,6 +20,8 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
+
+	farotranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/faro"
 )
 
 const faroPath = "/"
@@ -69,7 +70,7 @@ type faroReceiver struct {
 func (r *faroReceiver) Start(ctx context.Context, host component.Host) error {
 	r.settings.Logger.Info("Starting FaroReceiver")
 	if r.nextTraces == nil && r.nextLogs == nil {
-		return fmt.Errorf("at least one consumer (traces or logs) must be registered")
+		return errors.New("at least one consumer (traces or logs) must be registered")
 	}
 	return r.startHTTPServer(ctx, host)
 }
