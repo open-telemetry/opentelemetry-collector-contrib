@@ -70,7 +70,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Resolve.ResolvedAttribute = ""
 			},
 			expectError: true,
-			errorMsg:    "resolve configuration: resovled_attribute must be specified for DNS resolution",
+			errorMsg:    "resolve configuration: resolved_attribute must be specified for DNS resolution",
 		},
 		{
 			name: "Missing reverse resolved_attribute",
@@ -80,7 +80,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Reverse.ResolvedAttribute = ""
 			},
 			expectError: true,
-			errorMsg:    "reverse configuration: resovled_attribute must be specified for DNS resolution",
+			errorMsg:    "reverse configuration: resolved_attribute must be specified for DNS resolution",
 		},
 		{
 			name: "Invalid resolve context",

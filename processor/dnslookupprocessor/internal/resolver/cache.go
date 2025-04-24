@@ -86,7 +86,6 @@ func (r *CacheResolver) resolveWithCache(
 	logKey string,
 	resolveFunc func(ctx context.Context, target string) (string, error),
 ) (string, error) {
-
 	if r.missCache != nil {
 		if _, found := r.missCache.Get(target); found {
 			r.logger.Debug("DNS lookup from miss cache",
@@ -106,7 +105,6 @@ func (r *CacheResolver) resolveWithCache(
 
 	// Call the underlying chain resolver
 	result, err := resolveFunc(ctx, target)
-
 	// Add failure to miss cache
 	if err != nil {
 		if r.missCache != nil {

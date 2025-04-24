@@ -32,7 +32,6 @@ func (dp *dnsLookupProcessor) processMetrics(ctx context.Context, ms pmetric.Met
 				return ms, errUnknownContextID
 			}
 		}
-
 	}
 	return ms, nil
 }

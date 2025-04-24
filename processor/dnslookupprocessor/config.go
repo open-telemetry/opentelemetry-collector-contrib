@@ -79,9 +79,7 @@ type LookupConfig struct {
 	ResolvedAttribute string `mapstructure:"resolved_attribute"`
 }
 
-var (
-	_ component.Config = (*Config)(nil)
-)
+var _ component.Config = (*Config)(nil)
 
 func (cfg *Config) Validate() error {
 	validateLookupConfig := func(lc LookupConfig) error {

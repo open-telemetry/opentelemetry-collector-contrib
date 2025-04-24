@@ -362,7 +362,7 @@ func createTempHostFile(t *testing.T, content string) string {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "hosts")
 
-	err := os.WriteFile(tempFile, []byte(content), 0644)
+	err := os.WriteFile(tempFile, []byte(content), 0o644)
 	require.NoError(t, err)
 
 	return tempFile
