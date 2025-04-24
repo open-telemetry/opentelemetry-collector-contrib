@@ -14,9 +14,8 @@ function getUniqueCombinations(data) {
     const uniqueArray = [];
 
     data.forEach(item => {
-        const combination = `${item.name}-${item.email}`;
-        if (!uniqueSet.has(combination)) {
-            uniqueSet.add(combination);
+        if (!uniqueSet.has(item.name)) {
+            uniqueSet.add(item.name);
             uniqueArray.push(item);
         }
     });
@@ -34,23 +33,25 @@ async function getFirstTimeContributors(fromTag, toTag) {
             format: "oneline"
         }).then(result => result.all);
 
-        const authorsAndHashes = releaseCommits.map(commit => {
-            return {name: commit.author_name, email: commit.author_email, hash: commit.hash}
+        const releaseAuthorsAndHashes = releaseCommits.map(commit => {
+            return {name: commit.author_name, hash: commit.hash}
         });
 
-        const uniqueAuthorsAndHashes = getUniqueCombinations(authorsAndHashes);
+        const uniqueAuthorsAndHashes = getUniqueCombinations(releaseAuthorsAndHashes);
         const allCommits = await git.log({
             format: "oneline",
-        })
+        }).then(result => result.all);
 
         const firstTimeContributorsAndHashes = [];
         for (const item of uniqueAuthorsAndHashes) {
-            const authorCommits = allCommits.all.filter(commit => {
-                return commit.author_name === item.name && commit.author_email === item.email
-            });
+            const authorCommits = allCommits.filter(commit => commit.author_name === item.name);
 
             if (authorCommits.length === 1) {
                 firstTimeContributorsAndHashes.push(item);
+            } else if(authorCommits.length > 1) {
+                if(areAllCommitsInArray(authorCommits, releaseCommits)) {
+                    firstTimeContributorsAndHashes.push(item);
+                }
             }
         }
 
@@ -58,6 +59,18 @@ async function getFirstTimeContributors(fromTag, toTag) {
     } catch (error) {
         console.error('Error:', error);
     }
+}
+
+/**
+ * areAllCommitsInArray checks if all items in arrayToCheck are also contained in arrayToSearchIn.
+ * Comparison is done using the value of item.hash for both arrays
+ *
+ * @param arrayToCheck items here are looked for in arrayToSearchIn
+ * @param arrayToSearchIn is searched for containment checks
+ * @returns true if all items in arrayToCheck are also in array 2
+ */
+function areAllCommitsInArray(arrayToCheck, arrayToSearchIn) {
+    return arrayToCheck.every(item => arrayToSearchIn.findIndex(item2 => item2.hash === item.hash) > -1);
 }
 
 function generateNewContributorText(newContributors) {
