@@ -167,3 +167,74 @@ func TestScraper_Scrape(t *testing.T) {
 		})
 	}
 }
+
+var samplesQueryResponses = map[string][]metricRow{
+	samplesQuery: {{"S.MACHINE": "TEST-MACHINE", "S.USERNAME": "ADMIN", "S.SCHEMANAME": "ADMIN", "S.SQL_ID": "48bc50b6fuz4y",
+		"S.SQL_CHILD_NUMBER": "0", "S.SID": "675", "S.SERIAL#": "51295", "Q.SQL_FULLTEXT": "test_query", "S.OSUSER": "test-user", "S.PROCESS": "1115",
+		"S.PORT": "54440", "S.PROGRAM": "Oracle SQL Developer for VS Code", "S.MODULE": "Oracle SQL Developer for VS Code", "S.STATUS": "ACTIVE", "S.STATE": "WAITED KNOWN TIME", "Q.PLAN_HASH_VALUE": "4199919568", "DURATION_SEC": "1"}},
+}
+
+func TestSamplesQuery(t *testing.T) {
+	tests := []struct {
+		name       string
+		dbclientFn func(db *sql.DB, s string, logger *zap.Logger) dbClient
+		errWanted  string
+	}{
+		{
+			name: "valid",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				return &fakeDbClient{
+					Responses: [][]metricRow{
+						samplesQueryResponses[s],
+					},
+				}
+			},
+		},
+		{
+			name: "bad samples data",
+			dbclientFn: func(_ *sql.DB, s string, _ *zap.Logger) dbClient {
+				if s == samplesQuery {
+					return &fakeDbClient{Responses: [][]metricRow{
+						{
+							{},
+						},
+					}}
+				}
+				return &fakeDbClient{Responses: [][]metricRow{
+					samplesQueryResponses[s],
+				}}
+			},
+			errWanted: `failed to parse int64 for Duration, value was : strconv.ParseInt: parsing "": invalid syntax`,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+
+			scrpr := oracleScraper{
+				logger: zap.NewNop(),
+				dbProviderFunc: func() (*sql.DB, error) {
+					return nil, nil
+				},
+				clientProviderFunc: test.dbclientFn,
+				id:                 component.ID{},
+			}
+			err := scrpr.start(context.Background(), componenttest.NewNopHost())
+			defer func() {
+				assert.NoError(t, scrpr.shutdown(context.Background()))
+			}()
+			require.NoError(t, err)
+			m, err := scrpr.scrapeLogs(context.Background())
+
+			if test.errWanted != "" {
+				//require.True(t, scrapererror.IsPartialScrapeError(err))
+				require.EqualError(t, err, test.errWanted)
+			} else {
+				require.NoError(t, err)
+				assert.Equal(t, 20, m.ResourceLogs().At(0).ScopeLogs().At(0).LogRecords().At(0).Attributes().Len())
+			}
+			name, ok := m.ResourceLogs().At(0).Resource().Attributes().Get("oracledb.instance.name")
+			assert.True(t, ok)
+			assert.Empty(t, name.Str())
+		})
+	}
+}

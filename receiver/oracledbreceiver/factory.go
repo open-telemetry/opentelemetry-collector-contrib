@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/oracledbreceiver/internal/metadata"
@@ -26,6 +27,9 @@ func NewFactory() receiver.Factory {
 		metadata.Type,
 		createDefaultConfig,
 		receiver.WithMetrics(createReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
+			return sql.Open("oracle", dataSourceName)
+		}, newDbClient), metadata.MetricsStability),
+		receiver.WithLogs(createLogsReceiverFunc(func(dataSourceName string) (*sql.DB, error) {
 			return sql.Open("oracle", dataSourceName)
 		}, newDbClient), metadata.MetricsStability))
 }
@@ -69,6 +73,43 @@ func createReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientPr
 			&sqlCfg.ControllerConfig,
 			settings,
 			consumer,
+			opt,
+		)
+	}
+}
+
+func createLogsReceiverFunc(sqlOpenerFunc sqlOpenerFunc, clientProviderFunc clientProviderFunc) receiver.CreateLogsFunc {
+	return func(
+		_ context.Context,
+		settings receiver.Settings,
+		cfg component.Config,
+		logsConsumer consumer.Logs,
+	) (receiver.Logs, error) {
+		sqlCfg := cfg.(*Config)
+
+		instanceName, err := getInstanceName(getDataSource(*sqlCfg))
+		if err != nil {
+			return nil, err
+		}
+
+		mp, err := newLogsScraper(sqlCfg.ControllerConfig, settings.TelemetrySettings.Logger, func() (*sql.DB, error) {
+			return sqlOpenerFunc(getDataSource(*sqlCfg))
+		}, clientProviderFunc, instanceName)
+
+		if err != nil {
+			return nil, err
+		}
+
+		f := scraper.NewFactory(metadata.Type, nil,
+			scraper.WithLogs(func(context.Context, scraper.Settings, component.Config) (scraper.Logs, error) {
+				return mp, nil
+			}, component.StabilityLevelAlpha))
+		opt := scraperhelper.AddFactoryWithConfig(f, nil)
+
+		return scraperhelper.NewLogsController(
+			&sqlCfg.ControllerConfig,
+			settings,
+			logsConsumer,
 			opt,
 		)
 	}
