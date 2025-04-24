@@ -53,7 +53,7 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 			logRecord.Body().SetStr(fmt.Sprintf("%+v", msg))
 		} else {
 			// Parse the message and add the attributes to the log record
-			err := addMessageAttributes(msg, &logRecord)
+			err = addMessageAttributes(msg, &logRecord)
 			if err != nil {
 				o.logger.Error("error adding message attributes", zap.Error(err))
 			}

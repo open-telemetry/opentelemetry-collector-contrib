@@ -138,7 +138,7 @@ func TestProduceRaw(t *testing.T) {
 	assert.Len(t, messages, 3)
 
 	logs := sink.AllLogs()
-	require.Equal(t, 1, len(logs))
+	require.Len(t, logs, 1)
 	records := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
 	require.Equal(t, 3, records.Len()) // Should have one record per flow record
 
