@@ -316,6 +316,10 @@ component_management:
     name: extension_cgroupruntime
     paths:
     - extension/cgroupruntimeextension/**
+  - component_id: extension_datadog
+    name: extension_datadog
+    paths:
+    - extension/datadogextension/**
   - component_id: extension_encoding
     name: extension_encoding
     paths:
