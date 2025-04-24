@@ -302,23 +302,23 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 
 	// Exemplar check function to check that the right values go to the
 	// right datapoints.
-	tchExemplarCheck := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
+	checkClassicHistogramExemplars := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
 		require.Equal(t, 2, hdp.Exemplars().Len())
 		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
 		require.Contains(t, values, 8.1)
 		require.Contains(t, values, 18.0)
 	}
-	tmhcExemplarCheck := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
+	checkMixedHistogramClassicExemplars := func(t *testing.T, hdp pmetric.HistogramDataPoint) {
 		require.Equal(t, 1, hdp.Exemplars().Len())
 		require.Equal(t, 0.1, hdp.Exemplars().At(0).DoubleValue())
 	}
-	tmhnExemplarCheck := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
+	checkMixedHistogramNativeExemplars := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
 		require.Equal(t, 2, hdp.Exemplars().Len())
 		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
 		require.Contains(t, values, 0.2)
 		require.Contains(t, values, 1.3)
 	}
-	tnhExemplarCheck := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
+	checkNativeHistogramExemplars := func(t *testing.T, hdp pmetric.ExponentialHistogramDataPoint) {
 		require.Equal(t, 2, hdp.Exemplars().Len())
 		values := []float64{hdp.Exemplars().At(0).DoubleValue(), hdp.Exemplars().At(1).DoubleValue()}
 		require.Contains(t, values, 0.8)
@@ -340,7 +340,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tchExemplarCheck,
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -352,7 +352,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
-							tmhnExemplarCheck,
+							checkMixedHistogramNativeExemplars,
 						},
 					}},
 					nil,
@@ -364,7 +364,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
-							tnhExemplarCheck,
+							checkNativeHistogramExemplars,
 						},
 					}},
 					nil,
@@ -381,7 +381,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tchExemplarCheck,
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -393,7 +393,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tmhcExemplarCheck,
+							checkMixedHistogramClassicExemplars,
 						},
 					}},
 					nil,
@@ -415,7 +415,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tchExemplarCheck,
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -427,7 +427,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tmhcExemplarCheck,
+							checkMixedHistogramClassicExemplars,
 						},
 					}},
 					nil,
@@ -439,7 +439,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1213, 456, 2, -1, []uint64{1, 0, 2}, -3, []uint64{1, 0, 1}),
-							tmhnExemplarCheck,
+							checkMixedHistogramNativeExemplars,
 						},
 					}},
 					nil,
@@ -451,7 +451,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						exponentialHistogramComparator: []exponentialHistogramComparator{
 							compareExponentialHistogram(3, 1214, 3456, 5, -3, []uint64{1, 0, 2}, 2, []uint64{1, 0, 0, 1}),
-							tnhExemplarCheck,
+							checkNativeHistogramExemplars,
 						},
 					}},
 					nil,
@@ -473,7 +473,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tchExemplarCheck,
+							checkClassicHistogramExemplars,
 						},
 					}},
 					nil,
@@ -485,7 +485,7 @@ func TestNativeVsClassicHistogramScrapeViaProtobuf(t *testing.T) {
 					[]dataPointExpectation{{
 						histogramPointComparator: []histogramPointComparator{
 							compareHistogram(1213, 456, []float64{0.5, 10}, []uint64{789, 222, 202}),
-							tmhcExemplarCheck,
+							checkMixedHistogramClassicExemplars,
 						},
 					}},
 					nil,
