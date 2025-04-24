@@ -3,7 +3,9 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datad
 go 1.23.0
 
 require (
+	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.66.1
 	github.com/DataDog/datadog-agent/pkg/config/model v0.66.1
+	github.com/DataDog/datadog-agent/pkg/metrics v0.66.1
 	github.com/DataDog/datadog-agent/pkg/serializer v0.66.1
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.128.1-0.20250610090210-188191247685
 	github.com/stretchr/testify v1.10.0
@@ -32,7 +34,6 @@ require (
 	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/core/telemetry v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/def v0.66.1 // indirect
-	github.com/DataDog/datadog-agent/comp/forwarder/defaultforwarder v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/forwarder/orchestrator/orchestratorinterface v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/comp/serializer/metricscompression v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/aggregator/ckey v0.66.1 // indirect
@@ -48,7 +49,6 @@ require (
 	github.com/DataDog/datadog-agent/pkg/config/utils v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/config/viperconfig v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/fips v0.66.1 // indirect
-	github.com/DataDog/datadog-agent/pkg/metrics v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/process/util/api v0.66.1 // indirect
 	github.com/DataDog/datadog-agent/pkg/proto v0.68.0-devel // indirect
