@@ -14,7 +14,7 @@ COPY --from=prep /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificat
 COPY --from=prep --chmod=777 --chown=${USER_UID}:${USER_GID} /etc/otel/supervisor-data /etc/otel/supervisor-data
 COPY --chmod=755 opampsupervisor /
 COPY ./examples/supervisor_docker.yaml /etc/otel/supervisor.yaml
-COPY --from=col --chmod=755 /otelcol-contrib /otelcontribcol
+COPY --from=col --chmod=755 /otelcontribcol /otelcontribcol
 
 EXPOSE 4317 55680 55679
 ENTRYPOINT ["/opampsupervisor"]
