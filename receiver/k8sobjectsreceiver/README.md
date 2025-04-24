@@ -65,7 +65,7 @@ Follow the below sections to setup various Kubernetes resources required for the
 
 ### Supported Kubernetes objects
 
-The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. Supported objects in the format for `name` parameter:
+The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. Examples of supported objects in the format for `name` parameter:
 
 - `pods`
 - `events`
