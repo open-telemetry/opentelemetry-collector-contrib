@@ -180,6 +180,19 @@ func (r *Reader) readHeader(ctx context.Context) (doneReadingFile bool) {
 }
 
 func (r *Reader) readContents(ctx context.Context) {
+	defer func() {
+		// If we've read to the end, close the file
+		if r.file != nil {
+			if info, err := r.file.Stat(); err == nil {
+				currentPath := r.file.Name()
+				if r.Offset >= info.Size() && currentPath != r.fileName {
+					// Close if we've read everything OR if the file has been renamed
+					r.close()
+				}
+			}
+		}
+	}()
+
 	var buf []byte
 	if r.TokenLenState.MinimumLength <= r.initialBufferSize {
 		bufPtr := r.getBufPtrFromPool()
