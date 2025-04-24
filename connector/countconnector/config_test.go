@@ -49,6 +49,11 @@ func TestLoadConfig(t *testing.T) {
 						Description: defaultMetricDescLogs,
 					},
 				},
+				Profiles: map[string]MetricInfo{
+					defaultMetricNameProfiles: {
+						Description: defaultMetricDescProfiles,
+					},
+				},
 			},
 		},
 		{
@@ -79,6 +84,11 @@ func TestLoadConfig(t *testing.T) {
 						Description: "My description for default log count metric.",
 					},
 				},
+				Profiles: map[string]MetricInfo{
+					defaultMetricNameProfiles: {
+						Description: "My description for default profile count metric.",
+					},
+				},
 			},
 		},
 		{
@@ -107,6 +117,11 @@ func TestLoadConfig(t *testing.T) {
 				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
 						Description: "My log record count.",
+					},
+				},
+				Profiles: map[string]MetricInfo{
+					"my.profiling.count": {
+						Description: "My profile count.",
 					},
 				},
 			},
@@ -141,6 +156,12 @@ func TestLoadConfig(t *testing.T) {
 				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
 						Description: "My log record count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
+					},
+				},
+				Profiles: map[string]MetricInfo{
+					"my.profiling.count": {
+						Description: "My profile count.",
 						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
 					},
 				},
@@ -194,6 +215,15 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				Profiles: map[string]MetricInfo{
+					"my.profiling.count": {
+						Description: "My profile count.",
+						Conditions: []string{
+							`IsMatch(resource.attributes["host.name"], "pod-l")`,
+							`IsMatch(resource.attributes["foo"], "bar-l")`,
+						},
+					},
+				},
 			},
 		},
 		{
@@ -231,6 +261,14 @@ func TestLoadConfig(t *testing.T) {
 				Logs: map[string]MetricInfo{
 					"my.logrecord.count": {
 						Description: "My log record count by environment.",
+						Attributes: []AttributeConfig{
+							{Key: "env"},
+						},
+					},
+				},
+				Profiles: map[string]MetricInfo{
+					"my.profiling.count": {
+						Description: "My profile count by environment.",
 						Attributes: []AttributeConfig{
 							{Key: "env"},
 						},
@@ -322,6 +360,24 @@ func TestLoadConfig(t *testing.T) {
 						},
 					},
 				},
+				Profiles: map[string]MetricInfo{
+					"my.profiling.count": {
+						Description: "My profile count.",
+					},
+					"limited.profiling.count": {
+						Description: "Limited profile count.",
+						Conditions:  []string{`IsMatch(resource.attributes["host.name"], "pod-l")`},
+						Attributes: []AttributeConfig{
+							{
+								Key: "env",
+							},
+							{
+								Key:          "component",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
 			},
 		},
 		{
@@ -367,6 +423,11 @@ func TestLoadConfig(t *testing.T) {
 								DefaultValue: float64(0.85),
 							},
 						},
+					},
+				},
+				Profiles: map[string]MetricInfo{
+					defaultMetricNameProfiles: {
+						Description: defaultMetricDescProfiles,
 					},
 				},
 			},
@@ -452,6 +513,17 @@ func TestConfigErrors(t *testing.T) {
 			expect: "logs: metric name missing",
 		},
 		{
+			name: "missing_metric_name_profile",
+			input: &Config{
+				Profiles: map[string]MetricInfo{
+					"": {
+						Description: defaultMetricDescSpans,
+					},
+				},
+			},
+			expect: "profiles: metric name missing",
+		},
+		{
 			name: "invalid_condition_span",
 			input: &Config{
 				Spans: map[string]MetricInfo{
@@ -510,6 +582,18 @@ func TestConfigErrors(t *testing.T) {
 				},
 			},
 			expect: fmt.Sprintf("logs condition: metric %q: unable to parse OTTL condition", defaultMetricNameLogs),
+		},
+		{
+			name: "invalid_condition_profile",
+			input: &Config{
+				Profiles: map[string]MetricInfo{
+					defaultMetricNameProfiles: {
+						Description: defaultMetricDescSpans,
+						Conditions:  []string{"invalid condition"},
+					},
+				},
+			},
+			expect: fmt.Sprintf("profiles condition: metric %q: unable to parse OTTL condition", defaultMetricNameProfiles),
 		},
 	}
 
