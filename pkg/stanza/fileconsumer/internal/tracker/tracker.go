@@ -27,7 +27,7 @@ type Tracker interface {
 	CurrentPollFiles() []*reader.Reader
 	PreviousPollFiles() []*reader.Reader
 	ClosePreviousFiles() int
-	EndPoll()
+	EndPoll(context.Context)
 	EndConsume() int
 	TotalReaders() int
 }
@@ -58,7 +58,7 @@ func NewFileTracker(ctx context.Context, set component.TelemetrySettings, maxBat
 		currentPollFiles:  fileset.New[*reader.Reader](maxBatchFiles),
 		previousPollFiles: fileset.New[*reader.Reader](maxBatchFiles),
 		knownFiles:        knownFiles,
-		archive:           archive.NewArchive(ctx, set.Logger.Named("archive"), pollsToArchive, persister),
+		archive:           archive.New(ctx, set.Logger.Named("archive"), pollsToArchive, persister),
 	}
 	return t
 }
@@ -119,12 +119,12 @@ func (t *fileTracker) ClosePreviousFiles() (filesClosed int) {
 	return
 }
 
-func (t *fileTracker) EndPoll() {
+func (t *fileTracker) EndPoll(ctx context.Context) {
 	// shift the filesets at end of every poll() call
 	// t.knownFiles[0] -> t.knownFiles[1] -> t.knownFiles[2]
 
 	// Instead of throwing it away, archive it.
-	t.archive.WriteFiles(t.knownFiles[2])
+	t.archive.WriteFiles(ctx, t.knownFiles[2])
 	copy(t.knownFiles[1:], t.knownFiles)
 	t.knownFiles[0] = fileset.New[*reader.Metadata](t.maxBatchFiles)
 }
@@ -188,6 +188,6 @@ func (t *noStateTracker) PreviousPollFiles() []*reader.Reader { return nil }
 
 func (t *noStateTracker) ClosePreviousFiles() int { return 0 }
 
-func (t *noStateTracker) EndPoll() {}
+func (t *noStateTracker) EndPoll(context.Context) {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }

@@ -25,36 +25,37 @@ const (
 )
 
 type Archive interface {
-	FindFiles([]*fingerprint.Fingerprint) []*reader.Metadata
-	WriteFiles(*fileset.Fileset[*reader.Metadata])
+	FindFiles(context.Context, []*fingerprint.Fingerprint) []*reader.Metadata
+	WriteFiles(context.Context, *fileset.Fileset[*reader.Metadata])
 }
 
-func NewArchive(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister operator.Persister) Archive {
-	if pollsToArchive > 0 && persister != nil {
-		a := &archive{
-			pollsToArchive: pollsToArchive,
-			persister:      persister,
-			archiveIndex:   0,
-			logger:         logger,
-		}
-		a.restoreArchiveIndex(ctx)
-		return a
+func New(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister operator.Persister) Archive {
+	if pollsToArchive <= 0 || persister == nil {
+		return &nopArchive{}
 	}
-	return &nopArchive{}
+
+	a := &archive{
+		pollsToArchive: pollsToArchive,
+		persister:      persister,
+		archiveIndex:   0,
+		logger:         logger,
+	}
+	a.restoreArchiveIndex(ctx)
+	return a
 }
 
 type archive struct {
-	// persister is to be used to store offsets older than 3 poll cycles.
-	// These offsets will be stored on disk
 	persister operator.Persister
 
 	pollsToArchive int
-	archiveIndex   int
-	logger         *zap.Logger
+
+	// archiveIndex points to the index for the next write.
+	archiveIndex int
+	logger       *zap.Logger
 }
 
-// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
-func (a *archive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
+func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint) []*reader.Metadata {
+	// FindFiles goes through archive, one fileset at a time and tries to match all fingerprints against that loaded set.
 	// To minimize disk access, we first access the index, then review unmatched files and update the metadata, if found.
 	// We exit if all fingerprints are matched.
 
@@ -70,7 +71,7 @@ func (a *archive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
 		// Update the mostRecentIndex
 		nextIndex = (nextIndex - 1 + a.pollsToArchive) % a.pollsToArchive
 
-		data, err := a.readArchive(nextIndex) // we load one fileset atmost once per poll
+		data, err := a.readArchive(ctx, nextIndex) // we load one fileset atmost once per poll
 		if err != nil {
 			a.logger.Error("error while opening archive", zap.Error(err))
 			continue
@@ -92,7 +93,7 @@ func (a *archive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
 			continue
 		}
 		// we save one fileset atmost once per poll
-		if err := a.writeArchive(nextIndex, data); err != nil {
+		if err := a.writeArchive(ctx, nextIndex, data); err != nil {
 			a.logger.Error("error while opening archive", zap.Error(err))
 		}
 		// Check if all metadata have been found
@@ -103,7 +104,7 @@ func (a *archive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
 	return matchedMetadata
 }
 
-func (a *archive) WriteFiles(metadata *fileset.Fileset[*reader.Metadata]) {
+func (a *archive) WriteFiles(ctx context.Context, metadata *fileset.Fileset[*reader.Metadata]) {
 	// We make use of a ring buffer, where each set of files is stored under a specific index.
 	// Instead of discarding knownFiles[2], write it to the next index and eventually roll over.
 	// Separate storage keys knownFilesArchive0, knownFilesArchive1, ..., knownFilesArchiveN, roll over back to knownFilesArchive0
@@ -121,17 +122,20 @@ func (a *archive) WriteFiles(metadata *fileset.Fileset[*reader.Metadata]) {
 	//                   start
 	//                   index
 
-	index := a.archiveIndex
-	a.archiveIndex = (a.archiveIndex + 1) % a.pollsToArchive                      // increment the index
-	indexOp := storage.SetOperation(archiveIndexKey, encodeIndex(a.archiveIndex)) // batch the updated index with metadata
-	if err := a.writeArchive(index, metadata, indexOp); err != nil {
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(a.archiveIndex); err != nil {
+		a.logger.Error("error faced while encoding the index", zap.Error(err))
+	}
+	indexOp := storage.SetOperation(archiveIndexKey, buf.Bytes()) // batch the updated index with metadata
+	if err := a.writeArchive(ctx, a.archiveIndex, metadata, indexOp); err != nil {
 		a.logger.Error("error faced while saving to the archive", zap.Error(err))
 	}
+	a.archiveIndex = (a.archiveIndex + 1) % a.pollsToArchive
 }
 
-// readArchive loads data from the archive for a given index and returns a fileset.Filset.
-func (a *archive) readArchive(index int) (*fileset.Fileset[*reader.Metadata], error) {
-	metadata, err := checkpoint.LoadKey(context.Background(), a.persister, archiveKey(index))
+func (a *archive) readArchive(ctx context.Context, index int) (*fileset.Fileset[*reader.Metadata], error) {
+	// readArchive loads data from the archive for a given index and returns a fileset.Filset.
+	metadata, err := checkpoint.LoadKey(ctx, a.persister, archiveKey(index))
 	if err != nil {
 		return nil, err
 	}
@@ -140,9 +144,9 @@ func (a *archive) readArchive(index int) (*fileset.Fileset[*reader.Metadata], er
 	return f, nil
 }
 
-// writeArchive saves data to the archive for a given index and returns an error, if encountered.
-func (a *archive) writeArchive(index int, rmds *fileset.Fileset[*reader.Metadata], ops ...*storage.Operation) error {
-	return checkpoint.SaveKey(context.Background(), a.persister, rmds.Get(), archiveKey(index), ops...)
+func (a *archive) writeArchive(ctx context.Context, index int, rmds *fileset.Fileset[*reader.Metadata], ops ...*storage.Operation) error {
+	// writeArchive saves data to the archive for a given index and returns an error, if encountered.
+	return checkpoint.SaveKey(ctx, a.persister, rmds.Get(), archiveKey(index), ops...)
 }
 
 func (a *archive) restoreArchiveIndex(ctx context.Context) {
@@ -152,12 +156,17 @@ func (a *archive) restoreArchiveIndex(ctx context.Context) {
 	if err != nil {
 		a.logger.Error("error while fetching archive index. Resetting it to 0", zap.Error(err))
 		a.archiveIndex = 0
+		return
 	}
 	if a.archiveIndex >= a.pollsToArchive {
 		// archiveIndex is out of bounds. This most likely happened if `pollsToArchive` changed between collector restarts
 		// we just set archiveIndex to 0 in this case i.e. to reboot the archive index
 		a.archiveIndex = 0
+		return
 	}
+
+	// archiveIndex should point to index for the next write, hence increment it from last known value.
+	a.archiveIndex = (a.archiveIndex + 1) % a.pollsToArchive
 }
 
 func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
@@ -165,31 +174,11 @@ func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	archiveIndex, err := decodeIndex(byteIndex)
-	if err != nil {
+	var archiveIndex int
+	if err := json.NewDecoder(bytes.NewReader(byteIndex)).Decode(&archiveIndex); err != nil {
 		return 0, err
 	}
 	return archiveIndex, nil
-}
-
-func encodeIndex(val int) []byte {
-	var buf bytes.Buffer
-	enc := json.NewEncoder(&buf)
-
-	// Encode the index
-	if err := enc.Encode(val); err != nil {
-		return nil
-	}
-	return buf.Bytes()
-}
-
-func decodeIndex(buf []byte) (int, error) {
-	var index int
-
-	// Decode the index
-	dec := json.NewDecoder(bytes.NewReader(buf))
-	err := dec.Decode(&index)
-	return max(index, 0), err
 }
 
 func archiveKey(i int) string {
@@ -198,10 +187,10 @@ func archiveKey(i int) string {
 
 type nopArchive struct{}
 
-func (*nopArchive) FindFiles(fps []*fingerprint.Fingerprint) []*reader.Metadata {
+func (*nopArchive) FindFiles(_ context.Context, fps []*fingerprint.Fingerprint) []*reader.Metadata {
 	// we return an array of "nil"s, indicating 0 matches are found in archive
 	return make([]*reader.Metadata, len(fps))
 }
 
-func (*nopArchive) WriteFiles(*fileset.Fileset[*reader.Metadata]) {
+func (*nopArchive) WriteFiles(context.Context, *fileset.Fileset[*reader.Metadata]) {
 }
