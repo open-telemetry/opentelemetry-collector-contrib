@@ -149,18 +149,25 @@ func TestGenerateBlobName(t *testing.T) {
 
 	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
 
+	assertFormat := func(blobName string, format string) {
+		ext := filepath.Ext(format)
+		formatWithoutExt := strings.TrimSuffix(format, ext)
+		assert.True(t, strings.HasPrefix(blobName, formatWithoutExt))
+		assert.True(t, strings.HasSuffix(blobName, ext))
+	}
+
 	now := time.Now()
 	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics)
 	assert.NoError(t, err)
-	assert.True(t, strings.HasPrefix(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat)))
+	assertFormat(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat))
 
 	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs)
 	assert.NoError(t, err)
-	assert.True(t, strings.HasPrefix(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat)))
+	assertFormat(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat))
 
 	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces)
 	assert.NoError(t, err)
-	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
+	assertFormat(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat))
 }
 
 func getMockAzBlobClient() *mockAzBlobClient {
