@@ -29,14 +29,16 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 | `profile`       | *optional* | string | The AWS profile used to authenticate, if none is specified the default is chosen from the list of profiles                                                                                                                                                                        |
 | `imds_endpoint` | *optional* | string | A way of specifying a custom URL to be used by the EC2 IMDS client to validate the session. If unset, and the environment variable `AWS_EC2_METADATA_SERVICE_ENDPOINT` has a value the client will use the value of the environment variable as the endpoint for operation calls. |
 | `logs`          | *optional* | `Logs` | Configuration for Logs ingestion of this receiver                                                                                                                                                                                                                                 |
+| `storage`       | *optional* | string | The ID of a storage extension to be used for state persistence.                                                                                                                                                                                                                   |
 
 ### Logs Parameters
 
-| Parameter                | Notes          | type                   | Description                                                                                |
-| ------------------------ | -------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `poll_interval`          | `default=1m`   | duration               | The duration waiting in between requests.                                                  |
-| `max_events_per_request` | `default=1000` | int                    | The maximum number of events to process per request to Cloudwatch                          |
-| `groups`                 | *optional*     | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
+| Parameter                | Type     | Default                                    | Description                                                                                            |
+|--------------------------|----------|--------------------------------------------|--------------------------------------------------------------------------------------------------------|
+| `start_from`             | String   | Read all available logs from the beginning | Timestamp in `RFC3339` format (e.g., 2006-01-02T15:04:05Z07:00) indicating where to start reading logs |
+| `poll_interval`          | Duration | 1 minute                                   | Time to wait between log requests                                                                      |
+| `max_events_per_request` | Integer  | 1,000                                      | The maximum number of events to process per request to Cloudwatch                                      |
+| `groups`                 | Optional | All Log Groups and Streams                 | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected.             |
 
 ### Group Parameters
 
@@ -114,4 +116,3 @@ This receiver has a number of sample configs for reference.
    - Specifies the names of the log groups to collect
    - Does not attempt autodiscovery
    - Only collects from log streams matching a prefix
-

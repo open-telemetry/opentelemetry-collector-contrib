@@ -82,6 +82,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/basicauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/bearertokenauthextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/cgroupruntimeextension
+      - github.com/open-telemetry/opentelemetry-collector-contrib/extension/datadogextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/avrologencodingextension
       - github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension
