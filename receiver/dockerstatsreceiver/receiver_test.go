@@ -120,6 +120,44 @@ var (
 	}
 )
 
+func TestClientOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		endpoint    string
+		expectEnv   bool
+		description string
+	}{
+		{
+			name:        "Empty endpoint, DOCKER_HOST set",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() when Endpoint is empty.",
+		},
+		{
+			name:        "Config endpoint set, DOCKER_HOST ignored",
+			endpoint:    "tcp://config:1234",
+			expectEnv:   false,
+			description: "Should not append WithHostFromEnv() when Endpoint is set.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				Config: docker.Config{
+					Endpoint: tt.endpoint,
+				},
+			}
+
+			receiver := &metricsReceiver{config: config}
+			opts := receiver.clientOptions()
+
+			// If expectEnv is true, opts should not be empty
+			assert.Equal(t, tt.expectEnv, len(opts) > 0, tt.description)
+		})
+	}
+}
+
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
 		ControllerConfig: scraperhelper.ControllerConfig{
