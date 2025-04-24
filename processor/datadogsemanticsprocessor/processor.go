@@ -16,8 +16,8 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-func insertAttrIfMissing(sattr pcommon.Map, key string, value any) (err error) {
-	if _, ok := sattr.Get(key); !ok {
+func (tp *tracesProcessor) insertAttrIfMissingOrShouldOverride(sattr pcommon.Map, key string, value any) (err error) {
+	if _, ok := sattr.Get(key); tp.overrideIncomingDatadogFields || !ok {
 		switch v := value.(type) {
 		case string:
 			sattr.PutStr(key, v)
@@ -37,74 +37,73 @@ func (tp *tracesProcessor) processTraces(ctx context.Context, td ptrace.Traces) 
 		otelres := rspan.Resource()
 		rattr := otelres.Attributes()
 		for j := 0; j < rspan.ScopeSpans().Len(); j++ {
+			if service := traceutil.GetOTelService(otelres, true); service != "" {
+				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.service", service); err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+			if serviceVersion, ok := otelres.Attributes().Get(semconv.AttributeServiceVersion); ok {
+				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.version", serviceVersion.AsString()); err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+			if env := traceutil.GetOTelEnv(otelres); env != "" {
+				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.env", env); err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+
+			if tp.overrideIncomingDatadogFields {
+				rattr.Remove("datadog.host.name")
+			}
+
+			if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet, nil); ok && src.Kind == source.HostnameKind {
+				if err = tp.insertAttrIfMissingOrShouldOverride(rattr, "datadog.host.name", src.Identifier); err != nil {
+					return ptrace.Traces{}, err
+				}
+			}
+
 			libspans := rspan.ScopeSpans().At(j)
 			for k := 0; k < libspans.Spans().Len(); k++ {
 				otelspan := libspans.Spans().At(k)
 				sattr := otelspan.Attributes()
-				if tp.overrideIncomingDatadogFields {
-					sattr.RemoveIf(func(k string, _ pcommon.Value) bool {
-						return strings.HasPrefix(k, "datadog.")
-					})
-					if ddHostname, ok := rattr.Get("datadog.host.name"); ok && ddHostname.AsString() == "" {
-						rattr.Remove("datadog.host.name")
-					}
-				}
-				if err = insertAttrIfMissing(sattr, "datadog.service", traceutil.GetOTelService(otelres, true)); err != nil {
-					return ptrace.Traces{}, err
-				}
-				if err = insertAttrIfMissing(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan)); err != nil {
-					return ptrace.Traces{}, err
-				}
-				if err = insertAttrIfMissing(sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres)); err != nil {
-					return ptrace.Traces{}, err
-				}
-				if err = insertAttrIfMissing(sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres)); err != nil {
-					return ptrace.Traces{}, err
-				}
-				if src, ok := tp.attrsTranslator.ResourceToSource(ctx, otelres, traceutil.SignalTypeSet, nil); ok && src.Kind == source.HostnameKind {
-					if err = insertAttrIfMissing(otelres.Attributes(), "datadog.host.name", src.Identifier); err != nil {
-						return ptrace.Traces{}, err
-					}
-				}
 
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.name", traceutil.GetOTelOperationNameV2(otelspan)); err != nil {
+					return ptrace.Traces{}, err
+				}
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.resource", traceutil.GetOTelResourceV2(otelspan, otelres)); err != nil {
+					return ptrace.Traces{}, err
+				}
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.type", traceutil.GetOTelSpanType(otelspan, otelres)); err != nil {
+					return ptrace.Traces{}, err
+				}
 				spanKind := otelspan.Kind()
-				if err = insertAttrIfMissing(sattr, "datadog.span.kind", traceutil.OTelSpanKindName(spanKind)); err != nil {
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.span.kind", traceutil.OTelSpanKindName(spanKind)); err != nil {
 					return ptrace.Traces{}, err
 				}
-				if env := traceutil.GetOTelEnv(otelres); env != "" {
-					if err = insertAttrIfMissing(sattr, "datadog.env", env); err != nil {
-						return ptrace.Traces{}, err
-					}
-				}
-				if serviceVersion, ok := otelres.Attributes().Get(semconv.AttributeServiceVersion); ok {
-					if err = insertAttrIfMissing(sattr, "datadog.version", serviceVersion.AsString()); err != nil {
-						return ptrace.Traces{}, err
-					}
-				}
-
 				metaMap := make(map[string]string)
 				code := traceutil.GetOTelStatusCode(otelspan)
 				if code != 0 {
-					if err = insertAttrIfMissing(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code)); err != nil {
+					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.http_status_code", fmt.Sprintf("%d", code)); err != nil {
 						return ptrace.Traces{}, err
 					}
 				}
 				ddError := int64(status2Error(otelspan.Status(), otelspan.Events(), metaMap))
-				if err = insertAttrIfMissing(sattr, "datadog.error", ddError); err != nil {
+				if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error", ddError); err != nil {
 					return ptrace.Traces{}, err
 				}
 				if metaMap["error.msg"] != "" {
-					if err = insertAttrIfMissing(sattr, "datadog.error.msg", metaMap["error.msg"]); err != nil {
+					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.msg", metaMap["error.msg"]); err != nil {
 						return ptrace.Traces{}, err
 					}
 				}
 				if metaMap["error.type"] != "" {
-					if err = insertAttrIfMissing(sattr, "datadog.error.type", metaMap["error.type"]); err != nil {
+					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.type", metaMap["error.type"]); err != nil {
 						return ptrace.Traces{}, err
 					}
 				}
 				if metaMap["error.stack"] != "" {
-					if err = insertAttrIfMissing(sattr, "datadog.error.stack", metaMap["error.stack"]); err != nil {
+					if err = tp.insertAttrIfMissingOrShouldOverride(sattr, "datadog.error.stack", metaMap["error.stack"]); err != nil {
 						return ptrace.Traces{}, err
 					}
 				}

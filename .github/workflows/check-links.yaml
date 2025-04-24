@@ -23,7 +23,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: ${{ github.event_name == 'pull_request' && github.event.pull_request.commits || 1 }}
+          fetch-depth: 0
       - name: Get changed files
         id: changes
         run: |
@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
-          fetch-depth: 1
+          fetch-depth: 0
 
       - name: Link Checker
         id: lychee
