@@ -72,7 +72,16 @@ func (e *s3Exporter) ConsumeMetrics(ctx context.Context, md pmetric.Metrics) err
 		return err
 	}
 
-	return e.uploader.Upload(ctx, buf)
+	s3Prefix := ""
+	if s3PrefixKey := e.config.OTelAttrsToS3.S3Prefix; s3PrefixKey != "" {
+		if value, ok := md.ResourceMetrics().At(0).Resource().Attributes().Get(s3PrefixKey); ok {
+			s3Prefix = value.AsString()
+		}
+	}
+	uploadOpts := &upload.UploadOptions{
+		OverridePrefix: s3Prefix,
+	}
+	return e.uploader.Upload(ctx, buf, uploadOpts)
 }
 
 func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
@@ -81,7 +90,18 @@ func (e *s3Exporter) ConsumeLogs(ctx context.Context, logs plog.Logs) error {
 		return err
 	}
 
-	return e.uploader.Upload(ctx, buf)
+	s3Prefix := ""
+	if s3PrefixKey := e.config.OTelAttrsToS3.S3Prefix; s3PrefixKey != "" {
+		if value, ok := logs.ResourceLogs().At(0).Resource().Attributes().Get(s3PrefixKey); ok {
+			s3Prefix = value.AsString()
+		}
+	}
+
+	uploadOpts := &upload.UploadOptions{
+		OverridePrefix: s3Prefix,
+	}
+
+	return e.uploader.Upload(ctx, buf, uploadOpts)
 }
 
 func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) error {
@@ -90,5 +110,15 @@ func (e *s3Exporter) ConsumeTraces(ctx context.Context, traces ptrace.Traces) er
 		return err
 	}
 
-	return e.uploader.Upload(ctx, buf)
+	s3Prefix := ""
+	if s3PrefixKey := e.config.OTelAttrsToS3.S3Prefix; s3PrefixKey != "" {
+		if value, ok := traces.ResourceSpans().At(0).Resource().Attributes().Get(s3PrefixKey); ok {
+			s3Prefix = value.AsString()
+		}
+	}
+	uploadOpts := &upload.UploadOptions{
+		OverridePrefix: s3Prefix,
+	}
+
+	return e.uploader.Upload(ctx, buf, uploadOpts)
 }

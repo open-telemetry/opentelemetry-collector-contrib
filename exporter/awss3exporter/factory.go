@@ -6,6 +6,8 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+	"go.opentelemetry.io/collector/consumer"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -13,6 +15,24 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
 )
+
+// TODO: Find a place for this to be shared.
+type baseMetricsExporter struct {
+	component.Component
+	consumer.Metrics
+}
+
+// TODO: Find a place for this to be shared.
+type baseLogsExporter struct {
+	component.Component
+	consumer.Logs
+}
+
+// TODO: Find a place for this to be shared.
+type baseTracesExporter struct {
+	component.Component
+	consumer.Traces
+}
 
 // NewFactory creates a factory for S3 exporter.
 func NewFactory() exporter.Factory {
@@ -53,13 +73,28 @@ func createLogsExporter(ctx context.Context,
 
 	s3Exporter := newS3Exporter(cfg, "logs", params)
 
-	return exporterhelper.NewLogs(ctx, params,
+	logsExporter, err := exporterhelper.NewLogs(ctx, params,
 		config,
 		s3Exporter.ConsumeLogs,
 		exporterhelper.WithStart(s3Exporter.start),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
+
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.OTelAttrsToS3.S3Prefix == "" {
+		return logsExporter, err
+	}
+
+	wrapped := &baseLogsExporter{
+		Component: logsExporter,
+		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.OTelAttrsToS3.S3Prefix, logsExporter),
+	}
+	return wrapped, nil
+
 }
 
 func createMetricsExporter(ctx context.Context,
@@ -77,13 +112,26 @@ func createMetricsExporter(ctx context.Context,
 		return nil, errors.New("metrics are not supported by sumo_ic output format")
 	}
 
-	return exporterhelper.NewMetrics(ctx, params,
+	metricsExporter, err := exporterhelper.NewMetrics(ctx, params,
 		config,
 		s3Exporter.ConsumeMetrics,
 		exporterhelper.WithStart(s3Exporter.start),
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.OTelAttrsToS3.S3Prefix == "" {
+		return metricsExporter, err
+	}
+
+	wrapped := &baseMetricsExporter{
+		Component: metricsExporter,
+		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(cfg.OTelAttrsToS3.S3Prefix, metricsExporter),
+	}
+	return wrapped, nil
 }
 
 func createTracesExporter(ctx context.Context,
@@ -101,7 +149,7 @@ func createTracesExporter(ctx context.Context,
 		return nil, errors.New("traces are not supported by sumo_ic output format")
 	}
 
-	return exporterhelper.NewTraces(ctx,
+	tracesExporter, err := exporterhelper.NewTraces(ctx,
 		params,
 		config,
 		s3Exporter.ConsumeTraces,
@@ -109,6 +157,20 @@ func createTracesExporter(ctx context.Context,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
+	if err != nil {
+		return nil, err
+	}
+
+	if cfg.OTelAttrsToS3.S3Prefix == "" {
+		return tracesExporter, err
+	}
+
+	wrapped := &baseTracesExporter{
+		Component: tracesExporter,
+		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.OTelAttrsToS3.S3Prefix, tracesExporter),
+	}
+	return wrapped, nil
+
 }
 
 // checkAndCastConfig checks the configuration type and casts it to the S3 exporter Config struct.

@@ -51,6 +51,12 @@ const (
 	Body         MarshalerType = "body"
 )
 
+// OTelAttrsToS3 defines the mapping of S3 uploading configuration values to OTel resource attribute values.
+type OTelAttrsToS3 struct {
+	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific OTel resource attribute value.
+	S3Prefix string `mapstructure:"s3_prefix"`
+}
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
@@ -61,6 +67,7 @@ type Config struct {
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID `mapstructure:"encoding"`
 	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
+	OTelAttrsToS3         OTelAttrsToS3 `mapstructure:"otel_attrs_to_s3"`
 }
 
 func (c *Config) Validate() error {
