@@ -6,8 +6,10 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 import (
 	"context"
 	"errors"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
+
 	"go.opentelemetry.io/collector/consumer"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/exporter"
@@ -80,7 +82,6 @@ func createLogsExporter(ctx context.Context,
 		exporterhelper.WithQueue(cfg.QueueSettings),
 		exporterhelper.WithTimeout(cfg.TimeoutSettings),
 	)
-
 	if err != nil {
 		return nil, err
 	}
@@ -94,7 +95,6 @@ func createLogsExporter(ctx context.Context,
 		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.OTelAttrsToS3.S3Prefix, logsExporter),
 	}
 	return wrapped, nil
-
 }
 
 func createMetricsExporter(ctx context.Context,
@@ -170,7 +170,6 @@ func createTracesExporter(ctx context.Context,
 		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.OTelAttrsToS3.S3Prefix, tracesExporter),
 	}
 	return wrapped, nil
-
 }
 
 // checkAndCastConfig checks the configuration type and casts it to the S3 exporter Config struct.
