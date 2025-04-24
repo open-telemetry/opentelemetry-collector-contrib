@@ -14,12 +14,57 @@ import (
 	"go.uber.org/zap"
 )
 
+// NetResolver is a wrapper around net.Resolver to provide custom DNS resolution
+// It is used to mock the net.Resolver for testing purposes
+type NetResolver struct {
+	net.Resolver
+}
+
+// Lookup interface defines methods for DNS resolution operations
+// It is used to mock the net.Resolver for testing purposes
+type Lookup interface {
+	LookupIP(ctx context.Context, network, host string) ([]net.IP, error)
+	LookupAddr(ctx context.Context, addr string) ([]string, error)
+}
+
+func NewNetResolver(nameserver string, timeout time.Duration) *NetResolver {
+	return &NetResolver{
+		Resolver: net.Resolver{
+			PreferGo: true,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{Timeout: timeout}
+				return d.DialContext(ctx, "udp", nameserver)
+			},
+		},
+	}
+}
+
+func NewSystemNetResolver(timeout time.Duration) *NetResolver {
+	return &NetResolver{
+		Resolver: net.Resolver{
+			PreferGo: false,
+			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+				d := net.Dialer{Timeout: timeout}
+				return d.DialContext(ctx, network, address)
+			},
+		},
+	}
+}
+
+func (nr *NetResolver) LookupIP(ctx context.Context, network, host string) ([]net.IP, error) {
+	return nr.Resolver.LookupIP(ctx, network, host)
+}
+
+func (nr *NetResolver) LookupAddr(ctx context.Context, addr string) ([]string, error) {
+	return nr.Resolver.LookupAddr(ctx, addr)
+}
+
 // NameserverResolver uses specified DNS servers for resolution
 type NameserverResolver struct {
 	nameservers []string
 	name        string
 	maxRetries  int
-	resolvers   []*net.Resolver
+	resolvers   []Lookup
 	timeout     time.Duration
 	logger      *zap.Logger
 }
@@ -30,21 +75,15 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 		return nil, errors.New("at least one nameserver must be provided")
 	}
 
-	normalizeNameservers, err := normalizeNameserverAddresses(nameservers)
+	normalizeNameservers, err := validateAndFormatNameservers(nameservers)
 	if err != nil {
 		return nil, err
 	}
 
-	resolvers := make([]*net.Resolver, len(normalizeNameservers))
+	resolvers := make([]Lookup, len(normalizeNameservers))
 	for i, ns := range normalizeNameservers {
 		ns := ns // copy to local
-		resolvers[i] = &net.Resolver{
-			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
-				d := net.Dialer{Timeout: timeout}
-				return d.DialContext(ctx, "udp", ns)
-			},
-		}
+		resolvers[i] = NewNetResolver(ns, timeout)
 	}
 
 	r := &NameserverResolver{
@@ -64,7 +103,7 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 		name:        "system",
 		nameservers: []string{"system resolver"},
 		maxRetries:  maxRetries,
-		resolvers:   []*net.Resolver{net.DefaultResolver},
+		resolvers:   []Lookup{NewSystemNetResolver(timeout)},
 		timeout:     timeout,
 		logger:      logger,
 	}
@@ -74,7 +113,7 @@ func NewSystemResolver(timeout time.Duration, maxRetries int, logger *zap.Logger
 // It returns the first IPv4 address found.
 // If no IPv4 address is found, it returns the first IP address found.
 func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (string, error) {
-	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
+	return r.lookupWithNameservers(ctx, hostname, LogKeyHostname, func(resolver Lookup, fnCtx context.Context) (string, error) {
 		ips, err := resolver.LookupIP(fnCtx, "ip", hostname)
 		if err != nil {
 			return "", err
@@ -97,7 +136,7 @@ func (r *NameserverResolver) Resolve(ctx context.Context, hostname string) (stri
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the configured nameservers.
 func (r *NameserverResolver) Reverse(ctx context.Context, ip string) (string, error) {
-	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver *net.Resolver, fnCtx context.Context) (string, error) {
+	return r.lookupWithNameservers(ctx, ip, LogKeyIP, func(resolver Lookup, fnCtx context.Context) (string, error) {
 		hostnames, err := resolver.LookupAddr(fnCtx, ip)
 		if err != nil && hostnames == nil {
 			return "", err
@@ -137,7 +176,7 @@ func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
 	target string,
 	logKey string,
-	lookupFn func(resolver *net.Resolver, fnCtx context.Context) (string, error),
+	lookupFn func(resolver Lookup, fnCtx context.Context) (string, error),
 ) (string, error) {
 	var lastErr error
 
@@ -181,17 +220,16 @@ func (r *NameserverResolver) lookupWithNameservers(
 				}
 			}
 
-			sleepDuration := expBackOff.NextBackOff()
-			r.logger.Debug("DNS lookup failed with nameserver. Will retry after backoff.",
-				zap.String("lookup", target),
-				zap.String("nameserver", r.nameservers[i]),
-				zap.String("sleep", sleepDuration.String()),
-				zap.Error(err))
-
 			// Sleep for retry
+			sleepDuration := expBackOff.NextBackOff()
 			if attempt < r.maxRetries {
 				select {
 				case <-time.After(sleepDuration):
+					r.logger.Debug("DNS lookup failed with nameserver. Will retry after backoff.",
+						zap.String("lookup", target),
+						zap.String("nameserver", r.nameservers[i]),
+						zap.String("sleep", sleepDuration.String()),
+						zap.Error(err))
 				case <-ctx.Done():
 					r.logger.Warn("Context cancelled during lookup retry",
 						zap.String("lookup", target),
@@ -206,23 +244,29 @@ func (r *NameserverResolver) lookupWithNameservers(
 	return "", lastErr
 }
 
-// normalizeNameserverAddresses normalizes the nameserver addresses by ensuring they have a port
-func normalizeNameserverAddresses(nameservers []string) ([]string, error) {
+// validateAndFormatNameservers ensures all nameserver addresses have ports and are valid.
+// It appends the default DNS port (53) to addresses if it is missing and validates that each
+// address contains either a valid IP address or hostname.
+// Returns formatted addresses or an error if any address is invalid.
+func validateAndFormatNameservers(nameservers []string) ([]string, error) {
 	normalizedNameservers := make([]string, len(nameservers))
 	for i, ns := range nameservers {
+		nns := ns
+
 		// Check if the address has a port; if not, append the default DNS port
 		if _, _, err := net.SplitHostPort(ns); err != nil {
-			nns := net.JoinHostPort(ns, "53")
-
-			// Re-validate the address
-			if _, _, err := net.SplitHostPort(nns); err != nil {
-				return nil, fmt.Errorf("invalid nameserver address: %s", ns)
-			}
-
-			normalizedNameservers[i] = nns
-		} else {
-			normalizedNameservers[i] = ns
+			nns = net.JoinHostPort(ns, "53")
 		}
+
+		// validate the address
+		host, _, _ := net.SplitHostPort(nns)
+		_, ipErr := ParseIP(host)
+		_, hostErr := ParseHostname(host)
+		if ipErr != nil && hostErr != nil {
+			return nil, fmt.Errorf("invalid nameserver address: %s", ns)
+		}
+
+		normalizedNameservers[i] = nns
 	}
 	return normalizedNameservers, nil
 }
