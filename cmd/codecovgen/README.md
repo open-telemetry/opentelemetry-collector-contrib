@@ -1,3 +1,6 @@
 # codecovgen
 
-This tool generates the component list in the `.codecov.yml` file.
+This tool generates the [component list][1] in the `.codecov.yml` file.
+Each Go module gets its own component, which allows to have code coverage results on a per-component basis.
+
+[1]: https://about.codecov.io/product/feature/components/
