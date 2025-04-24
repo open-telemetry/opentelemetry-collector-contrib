@@ -827,7 +827,7 @@ service:
 
 		remoteConfigStatusUpdated := false
 		mc := &mockOpAMPClient{
-			setRemoteConfigStatusFunc: func(rcs *protobufs.RemoteConfigStatus) error {
+			setRemoteConfigStatusFunc: func(_ *protobufs.RemoteConfigStatus) error {
 				remoteConfigStatusUpdated = true
 				return nil
 			},
@@ -864,7 +864,7 @@ service:
 		})
 
 		// initially write & store config so that we have the same config when we send the remote config message
-		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(testConfigMessage), 0644)
+		err := os.WriteFile(filepath.Join(configStorageDir, lastRecvRemoteConfigFile), []byte(testConfigMessage), 0o600)
 		require.NoError(t, err)
 
 		s.cfgState.Store(&configState{
