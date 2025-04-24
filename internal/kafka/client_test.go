@@ -484,7 +484,6 @@ func TestNewSaramaConsumerGroup_GroupInstanceID_InvalidProtocolVersion(t *testin
 				err = consumerGroup.Close()
 				require.NoError(t, err)
 			}
-
 		})
 	}
 }
