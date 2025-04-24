@@ -32,8 +32,9 @@ type mySQLScraper struct {
 	// Feature gates regarding resource attributes
 	renameCommands bool
 
-	lastQueryMetricsGatheringTime int64
-	gatheringExplainPlans         bool
+	lastLogsQueryMetricsGatheringTime    int64
+	lastMetricsQueryMetricsGatheringTime int64
+	gatheringExplainPlans                bool
 }
 
 func newMySQLScraper(
@@ -42,10 +43,11 @@ func newMySQLScraper(
 ) *mySQLScraper {
 
 	return &mySQLScraper{
-		logger:                        settings.Logger,
-		config:                        config,
-		mb:                            metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
-		lastQueryMetricsGatheringTime: -1,
+		logger:                               settings.Logger,
+		config:                               config,
+		mb:                                   metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
+		lastLogsQueryMetricsGatheringTime:    -1,
+		lastMetricsQueryMetricsGatheringTime: -1,
 	}
 }
 
@@ -594,7 +596,8 @@ Note that individual metric values are tracked and reported similarly to the que
 */
 func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) plog.Logs {
 	m.logger.Debug("scrapeQueryLogs called")
-	queryStats, err := m.sqlclient.getQueryStats(m.lastQueryMetricsGatheringTime, m.config.TopQueryMetricsMax)
+	queryStats, err := m.sqlclient.getQueryStats(m.lastLogsQueryMetricsGatheringTime, m.config.TopQueryMetricsMax)
+	m.lastLogsQueryMetricsGatheringTime = now.AsTime().UnixNano()
 	if err != nil {
 		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
 		errs.AddPartial(1, err)
@@ -717,7 +720,8 @@ func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QuerySta
 }
 
 func (m *mySQLScraper) scrapeQueryMetrics(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	queryStats, err := m.sqlclient.getQueryStats(m.lastQueryMetricsGatheringTime, int(m.config.TopQueryMetricsMax))
+	queryStats, err := m.sqlclient.getQueryStats(m.lastMetricsQueryMetricsGatheringTime, int(m.config.TopQueryMetricsMax))
+	m.lastMetricsQueryMetricsGatheringTime = now.AsTime().UnixNano()
 	if err != nil {
 		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
 		errs.AddPartial(1, err)

@@ -746,7 +746,7 @@ func (c *mySQLClient) getQueryStats(since int64, topCount int) ([]QueryStats, er
 		"WHERE A.event_name = 'statement/sql/select' " +
 		"AND A.digest_text IS NOT NULL " +
 		"AND A.digest_text NOT LIKE 'EXPLAIN%' " +
-		"AND A.timer_start > " + strconv.FormatInt(since, 10) + " " +
+		"AND A.timer_start > " + strconv.FormatInt(since*1000, 10) + " " + // MySQL stores the info as Picoseconds
 		"AND A.digest = B.digest " +
 		"AND A.thread_id = C.thread_id " +
 		"GROUP BY hash, query_text " +
