@@ -40,7 +40,20 @@ func New(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister 
 		archiveIndex:   0,
 		logger:         logger,
 	}
-	a.restoreArchiveIndex(ctx)
+
+	// restore last known archive index
+	archiveIndex, err := a.getArchiveIndex(ctx)
+	if err != nil {
+		logger.Info("error while fetching archive index. Resetting it to 0", zap.Error(err))
+		archiveIndex = 0
+	} else if archiveIndex >= pollsToArchive {
+		logger.Warn("archiveIndex is out of bounds, likely due to change in pollsToArchive. Resetting it to 0") // Try to craft log to explain in user facing terms?
+		archiveIndex = 0
+	} else {
+		// archiveIndex should point to index for the next write, hence increment it from last known value.
+		archiveIndex = (archiveIndex + 1) % pollsToArchive
+	}
+	a.archiveIndex = archiveIndex
 	return a
 }
 
@@ -147,26 +160,6 @@ func (a *archive) readArchive(ctx context.Context, index int) (*fileset.Fileset[
 func (a *archive) writeArchive(ctx context.Context, index int, rmds *fileset.Fileset[*reader.Metadata], ops ...*storage.Operation) error {
 	// writeArchive saves data to the archive for a given index and returns an error, if encountered.
 	return checkpoint.SaveKey(ctx, a.persister, rmds.Get(), archiveKey(index), ops...)
-}
-
-func (a *archive) restoreArchiveIndex(ctx context.Context) {
-	// restoreArchiveIndex loads last known archive index from the storage.
-	var err error
-	a.archiveIndex, err = a.getArchiveIndex(ctx)
-	if err != nil {
-		a.logger.Error("error while fetching archive index. Resetting it to 0", zap.Error(err))
-		a.archiveIndex = 0
-		return
-	}
-	if a.archiveIndex >= a.pollsToArchive {
-		// archiveIndex is out of bounds. This most likely happened if `pollsToArchive` changed between collector restarts
-		// we just set archiveIndex to 0 in this case i.e. to reboot the archive index
-		a.archiveIndex = 0
-		return
-	}
-
-	// archiveIndex should point to index for the next write, hence increment it from last known value.
-	a.archiveIndex = (a.archiveIndex + 1) % a.pollsToArchive
 }
 
 func (a *archive) getArchiveIndex(ctx context.Context) (int, error) {
