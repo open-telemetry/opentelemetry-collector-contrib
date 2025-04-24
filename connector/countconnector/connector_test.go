@@ -12,6 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/connector/connectortest"
+	"go.opentelemetry.io/collector/connector/xconnector"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/countconnector/internal/metadata"
@@ -684,6 +685,178 @@ func TestLogsToMetrics(t *testing.T) {
 
 			// golden.WriteMetrics(t, filepath.Join("testdata", "logs", tc.name+".yaml"), allMetrics[0])
 			expected, err := golden.ReadMetrics(filepath.Join("testdata", "logs", tc.name+".yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
+				pmetrictest.IgnoreTimestamp(),
+				pmetrictest.IgnoreResourceMetricsOrder(),
+				pmetrictest.IgnoreMetricsOrder(),
+				pmetrictest.IgnoreMetricDataPointsOrder()))
+		})
+	}
+}
+
+// The test input file has a repetitive structure:
+// - There are four resources, each with four profiles, each with one sample.
+// - The four resources have the following sets of attributes:
+//   - resource.required: foo, resource.optional: bar
+//   - resource.required: foo, resource.optional: notbar
+//   - resource.required: notfoo
+//   - (no attributes)
+//
+// - The four profiles on each resource have the following sets of attributes:
+//   - profile.required: foo, profile.optional: bar
+//   - profile.required: foo, profile.optional: notbar
+//   - profile.required: notfoo
+//   - (no attributes)
+func TestProfilesToMetrics(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "zero_conditions",
+			cfg:  &Config{Profiles: defaultProfilesConfig()},
+		},
+		{
+			name: "one_condition",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_conditions",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+							`profile.duration_unix_nano > 1000`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_metrics",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"count.all": {
+						Description: "All profiles count",
+					},
+					"count.if": {
+						Description: "Count if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "one_attribute",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"profile.count.by_attr": {
+						Description: "Profile count by attribute",
+						Attributes: []AttributeConfig{
+							{
+								Key: "profile.required",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "multiple_attributes",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"profile.count.by_attr": {
+						Description: "Profile count by attributes",
+						Attributes: []AttributeConfig{
+							{
+								Key: "profile.required",
+							},
+							{
+								Key: "profile.optional",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "default_attribute_value",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"profile.count.by_attr": {
+						Description: "Profile count by attribute with default",
+						Attributes: []AttributeConfig{
+							{
+								Key: "profile.required",
+							},
+							{
+								Key:          "profile.optional",
+								DefaultValue: "other",
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "condition_and_attribute",
+			cfg: &Config{
+				Profiles: map[string]MetricInfo{
+					"profile.count.if.by_attr": {
+						Description: "Profile count by attribute if ...",
+						Conditions: []string{
+							`resource.attributes["resource.optional"] != nil`,
+						},
+						Attributes: []AttributeConfig{
+							{
+								Key: "profile.required",
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	for _, tc := range testCases {
+		t.Run(tc.name, func(t *testing.T) {
+			require.NoError(t, tc.cfg.Validate())
+			factory := NewFactory().(xconnector.Factory)
+			sink := &consumertest.MetricsSink{}
+			conn, err := factory.CreateProfilesToMetrics(context.Background(),
+				connectortest.NewNopSettings(metadata.Type), tc.cfg, sink)
+			require.NoError(t, err)
+			require.NotNil(t, conn)
+			assert.False(t, conn.Capabilities().MutatesData)
+
+			require.NoError(t, conn.Start(context.Background(), componenttest.NewNopHost()))
+			defer func() {
+				assert.NoError(t, conn.Shutdown(context.Background()))
+			}()
+
+			testProfiles, err := golden.ReadProfiles(filepath.Join("testdata", "profiles", "input.yaml"))
+			assert.NoError(t, err)
+			assert.NoError(t, conn.ConsumeProfiles(context.Background(), testProfiles))
+
+			allMetrics := sink.AllMetrics()
+			assert.Len(t, allMetrics, 1)
+
+			// golden.WriteMetrics(t, filepath.Join("testdata", "profiles", tc.name+".yaml"), allMetrics[0])
+			expected, err := golden.ReadMetrics(filepath.Join("testdata", "profiles", tc.name+".yaml"))
 			assert.NoError(t, err)
 			assert.NoError(t, pmetrictest.CompareMetrics(expected, allMetrics[0],
 				pmetrictest.IgnoreTimestamp(),

@@ -12,7 +12,6 @@ import (
 	"github.com/stretchr/testify/mock"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/processor/processortest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/resourcedetectionprocessor/internal/aws/eks/internal/metadata"
@@ -27,11 +26,6 @@ type MockDetectorUtils struct {
 	mock.Mock
 }
 
-func (detectorUtils *MockDetectorUtils) getConfigMap(_ context.Context, namespace string, name string) (map[string]string, error) {
-	args := detectorUtils.Called(namespace, name)
-	return args.Get(0).(map[string]string), args.Error(1)
-}
-
 func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context, _ *zap.Logger) string {
 	var reservations []types.Reservation
 	return detectorUtils.getClusterNameTagFromReservations(reservations)
@@ -39,6 +33,11 @@ func (detectorUtils *MockDetectorUtils) getClusterName(_ context.Context, _ *zap
 
 func (detectorUtils *MockDetectorUtils) getClusterNameTagFromReservations(_ []types.Reservation) string {
 	return clusterName
+}
+
+func (detectorUtils *MockDetectorUtils) getClusterVersion() (string, error) {
+	args := detectorUtils.Called()
+	return args.String(0), args.Error(1)
 }
 
 func (detectorUtils *MockDetectorUtils) getCloudAccountID(_ context.Context, _ *zap.Logger) string {
@@ -58,7 +57,7 @@ func TestEKS(t *testing.T) {
 	ctx := context.Background()
 
 	t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
-	detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
+	detectorUtils.On("getClusterVersion").Return("v1.32.3-eks-d0fe756", nil)
 	// Call EKS Resource detector to detect resources
 	eksResourceDetector := &detector{utils: detectorUtils, err: nil, ra: metadata.DefaultResourceAttributesConfig(), rb: metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig())}
 	res, _, err := eksResourceDetector.Detect(ctx)
@@ -111,7 +110,7 @@ func TestEKSResourceDetection_ForCloudAccountID(t *testing.T) {
 			ctx := context.Background()
 
 			t.Setenv("KUBERNETES_SERVICE_HOST", "localhost")
-			detectorUtils.On("getConfigMap", authConfigmapNS, authConfigmapName).Return(map[string]string{conventions.AttributeK8SClusterName: clusterName}, nil)
+			detectorUtils.On("getClusterVersion").Return("v1.32.3-eks-d0fe756", nil)
 
 			eksResourceDetector := &detector{
 				utils: detectorUtils,
