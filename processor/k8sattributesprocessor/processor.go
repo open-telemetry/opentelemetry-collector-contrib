@@ -331,9 +331,12 @@ func (kp *kubernetesprocessor) processopsrampResources(ctx context.Context, reso
 			if val.Str() == "event" || val.Str() == "log" {
 				resource.Attributes().PutStr("resourceUUID", resourceUuid)
 				resource.Attributes().PutStr("k8s."+resourceType+".resourceUUID", resourceUuid)
+			} else {
+				resource.Attributes().PutStr("uuid", resourceUuid)
 			}
 		} else {
-			resource.Attributes().PutStr("uuid", resourceUuid)
+			kp.logger.Debug("type resource attribute not found hence not adding uuid/resourceuuid")
+
 		}
 	}
 
