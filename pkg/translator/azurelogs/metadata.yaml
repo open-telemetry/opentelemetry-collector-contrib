@@ -1,4 +1,4 @@
 status:
   class: "pkg"
   codeowners:
-    active: [atoulme, cparkins, MikeGoldsmith]
+    active: [atoulme, cparkins, MikeGoldsmith, constanca-m]
