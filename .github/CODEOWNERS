@@ -35,7 +35,7 @@ connector/roundrobinconnector/                                   @open-telemetry
 connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear
 connector/servicegraphconnector/                                 @open-telemetry/collector-contrib-approvers @mapno @JaredTan95
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
-connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen
+connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
@@ -91,6 +91,7 @@ extension/azureauthextension/                                    @open-telemetry
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @frzifus
 extension/bearertokenauthextension/                              @open-telemetry/collector-contrib-approvers @frzifus
 extension/cgroupruntimeextension/                                @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
+extension/datadogextension/                                      @open-telemetry/collector-contrib-approvers @jackgopack4 @dineshg13 @mx-psi @songy23
 extension/encoding/                                              @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/awscloudwatchmetricstreamsencodingextension/  @open-telemetry/collector-contrib-approvers @axw @constanca-m
@@ -324,8 +325,8 @@ receiver/windowseventlogreceiver/                                @open-telemetry
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
-scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock
+receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock @akats7
+scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock @akats7
 testbed/                                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry/collector-contrib-approvers @boostchicken
 

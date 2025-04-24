@@ -28,14 +28,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.003438625
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -140,14 +140,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.000396945
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -252,14 +252,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.004558032
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -364,14 +364,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.046144879
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -476,14 +476,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.019865291
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -588,14 +588,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.00032689
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -700,14 +700,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.003508506
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -812,14 +812,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0.018247146
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
@@ -924,14 +924,14 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-          - description: Container CPU utilization
+          - description: Total CPU usage (sum of all cores per second) averaged over the sample window
             gauge:
               dataPoints:
                 - asDouble: 0
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: container.cpu.utilization
-            unit: "1"
+            name: container.cpu.usage
+            unit: "{cpu}"
           - description: Container filesystem available
             gauge:
               dataPoints:
