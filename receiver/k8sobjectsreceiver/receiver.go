@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"go.uber.org/zap"
 	apierrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/schema"
 	"k8s.io/apimachinery/pkg/util/wait"
 	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/client-go/dynamic"
@@ -89,19 +91,8 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
 			err := fmt.Errorf("resource not found: %s", object.Name)
-			// First handle the error which will log it if in ignore mode
-			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+			if handlerErr := kr.handleError(err, "available resources in cluster: "+fmt.Sprint(getAvailableResources(validObjects))); handlerErr != nil {
 				return handlerErr
-			}
-
-			// Then log additional context if in ignore mode
-			if kr.config.ErrorMode == IgnoreError {
-				availableResource := make([]string, 0, len(validObjects))
-				for k := range validObjects {
-					availableResource = append(availableResource, k)
-				}
-				kr.setting.Logger.Warn("Available resources in cluster",
-					zap.Strings("resources", availableResource))
 			}
 			continue
 		}
@@ -201,10 +192,12 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-ticker.C:
 			objects, err := resource.List(ctx, listOption)
 			if err != nil {
-				kr.setting.Logger.Error("error in pulling object",
-					zap.String("resource", config.gvr.String()),
-					zap.Error(err))
-			} else if len(objects.Items) > 0 {
+				if handlerErr := kr.handleError(err, fmt.Sprintf("error pulling objects for resource %s", config.gvr.String())); handlerErr != nil {
+					kr.setting.Logger.Error("error handling failed", zap.Error(handlerErr))
+				}
+				continue
+			}
+			if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
 				logRecordCount := logs.LogRecordCount()
@@ -234,9 +227,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
-			kr.setting.Logger.Error("could not retrieve a resourceVersion",
-				zap.String("resource", cfgCopy.gvr.String()),
-				zap.Error(err))
+			if handlerErr := kr.handleError(err, fmt.Sprintf("could not retrieve a resourceVersion for resource %s", cfgCopy.gvr.String())); handlerErr != nil {
+				kr.setting.Logger.Error("error handling failed", zap.Error(handlerErr))
+			}
 			cancel()
 			return
 		}
@@ -362,6 +355,13 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		return nil
 	}
 
+	if isCriticalError(err) {
+		if msg != "" {
+			return fmt.Errorf("%s: %w", msg, err)
+		}
+		return err
+	}
+
 	switch kr.config.ErrorMode {
 	case PropagateError:
 		if msg != "" {
@@ -370,9 +370,9 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		return err
 	case IgnoreError:
 		if msg != "" {
-			kr.setting.Logger.Warn(msg, zap.Error(err))
+			kr.setting.Logger.Info(msg, zap.Error(err))
 		} else {
-			kr.setting.Logger.Warn(err.Error())
+			kr.setting.Logger.Info(err.Error())
 		}
 		return nil
 	case SilentError:
@@ -381,4 +381,27 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		// This shouldn't happen as we validate ErrorMode during config validation
 		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
 	}
+}
+
+// isCriticalError returns true if the error is critical and should not be ignored
+func isCriticalError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) {
+		return true
+	}
+
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return true
+	}
+
+	return false
+}
+
+// Helper function to get available resources
+func getAvailableResources(validObjects map[string][]*schema.GroupVersionResource) []string {
+	availableResource := make([]string, 0, len(validObjects))
+	for k := range validObjects {
+		availableResource = append(availableResource, k)
+	}
+	return availableResource
 }
