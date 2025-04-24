@@ -7,7 +7,7 @@ const git = simpleGit();
 const REPO_NAME = "opentelemetry-collector-contrib"
 const REPO_OWNER = "open-telemetry"
 
-const firstTimeContributorText = "We are thrilled to welcome our new first-time contributors to this project. Thank you for your contributions "
+const firstTimeContributorText = "We are thrilled to welcome our first-time contributors to this project. Thank you for your contributions "
 
 function getUniqueCombinations(data) {
     const uniqueSet = new Set();
