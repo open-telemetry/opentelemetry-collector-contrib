@@ -1,0 +1,6 @@
+change_type: bug_fix
+component: kafkareceiver
+issues: [39483]
+change_logs: [user]
+
+note: "`name` label will be correctly set in receiver metrics"

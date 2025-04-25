@@ -6,7 +6,7 @@ status:
     alpha: [traces_to_metrics]
   distributions: [contrib]
   codeowners:
-    active: [portertech, Frapschen]
+    active: [portertech, Frapschen, iblancasa]
     emeritus: [albertteoh]
     seeking_new: true
 
