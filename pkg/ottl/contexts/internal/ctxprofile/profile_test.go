@@ -4,6 +4,7 @@
 package ctxprofile // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxprofile"
 import (
 	"context"
+	"encoding/hex"
 	"strings"
 	"testing"
 	"time"
@@ -105,8 +106,21 @@ func TestPathGetSetter(t *testing.T) {
 			val:  createProfileID(),
 		},
 		{
+			path:     "profile_id",
+			val:      pprofile.NewProfileIDEmpty(),
+			setFails: true,
+		},
+		{
 			path: "profile_id string",
 			val:  createProfileID().String(),
+		},
+		{
+			path: "profile_id string",
+			val: func() string {
+				id := pprofile.NewProfileIDEmpty()
+				return hex.EncodeToString(id[:])
+			}(),
+			setFails: true,
 		},
 		{
 			path: "attribute_indices",
