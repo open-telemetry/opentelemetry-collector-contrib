@@ -242,11 +242,6 @@ type Config struct {
 	Cloud                             string                        `mapstructure:"cloud"`
 	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
 	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
-	Authentication                    string                        `mapstructure:"auth"`
-	TenantID                          string                        `mapstructure:"tenant_id"`
-	ClientID                          string                        `mapstructure:"client_id"`
-	ClientSecret                      string                        `mapstructure:"client_secret"`
-	FederatedTokenFile                string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
 	Metrics                           NestedListAlias               `mapstructure:"metrics"`
@@ -257,6 +252,18 @@ type Config struct {
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
 	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
+
+	// TokenProvider accepts the component azureauthextension,
+	// and uses it to get an access token to make requests.
+	// Using this, `auth` and any related fields become
+	// useless.
+	TokenProvider string `mapstructure:"token_provider"`
+
+	Authentication     string `mapstructure:"auth"`
+	TenantID           string `mapstructure:"tenant_id"`
+	ClientID           string `mapstructure:"client_id"`
+	ClientSecret       string `mapstructure:"client_secret"`
+	FederatedTokenFile string `mapstructure:"federated_token_file"`
 }
 
 const (
@@ -272,36 +279,39 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	switch c.Authentication {
-	case servicePrincipal:
-		if c.TenantID == "" {
-			err = multierr.Append(err, errMissingTenantID)
-		}
+	if c.TokenProvider == "" {
+		// only matters if there is no token provider configured
+		switch c.Authentication {
+		case servicePrincipal:
+			if c.TenantID == "" {
+				err = multierr.Append(err, errMissingTenantID)
+			}
 
-		if c.ClientID == "" {
-			err = multierr.Append(err, errMissingClientID)
-		}
+			if c.ClientID == "" {
+				err = multierr.Append(err, errMissingClientID)
+			}
 
-		if c.ClientSecret == "" {
-			err = multierr.Append(err, errMissingClientSecret)
-		}
-	case workloadIdentity:
-		if c.TenantID == "" {
-			err = multierr.Append(err, errMissingTenantID)
-		}
+			if c.ClientSecret == "" {
+				err = multierr.Append(err, errMissingClientSecret)
+			}
+		case workloadIdentity:
+			if c.TenantID == "" {
+				err = multierr.Append(err, errMissingTenantID)
+			}
 
-		if c.ClientID == "" {
-			err = multierr.Append(err, errMissingClientID)
-		}
+			if c.ClientID == "" {
+				err = multierr.Append(err, errMissingClientID)
+			}
 
-		if c.FederatedTokenFile == "" {
-			err = multierr.Append(err, errMissingFedTokenFile)
-		}
+			if c.FederatedTokenFile == "" {
+				err = multierr.Append(err, errMissingFedTokenFile)
+			}
 
-	case managedIdentity:
-	case defaultCredentials:
-	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		case managedIdentity:
+		case defaultCredentials:
+		default:
+			return fmt.Errorf("authentication %q is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		}
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {

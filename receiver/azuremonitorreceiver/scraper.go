@@ -134,8 +134,8 @@ type azureScraper struct {
 	clientOptionsResolver ClientOptionsResolver
 }
 
-func (s *azureScraper) start(_ context.Context, _ component.Host) (err error) {
-	if err = s.loadCredentials(); err != nil {
+func (s *azureScraper) start(_ context.Context, host component.Host) (err error) {
+	if err = s.loadCredentials(host); err != nil {
 		return err
 	}
 
@@ -158,7 +158,34 @@ func (s *azureScraper) unloadSubscription(id string) {
 	delete(s.subscriptions, id)
 }
 
-func (s *azureScraper) loadCredentials() (err error) {
+func loadTokenProvider(host component.Host, cType string) (azcore.TokenCredential, error) {
+	componentType, err := component.NewType(cType)
+	if err != nil {
+		return nil, fmt.Errorf("invalid component type: %w", err)
+	}
+	id := component.NewID(componentType)
+	authExtension, ok := host.GetExtensions()[id]
+	if !ok {
+		return nil, fmt.Errorf("unknown azureauth extension %q", cType)
+	}
+	credential, ok := authExtension.(azcore.TokenCredential)
+	if !ok {
+		return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", cType)
+	}
+	return credential, nil
+}
+
+func (s *azureScraper) loadCredentials(host component.Host) (err error) {
+	// if token provider is specified, it takes priority
+	// over auth
+	if s.cfg.TokenProvider != "" {
+		s.settings.Logger.Info("'token_provider' will be used to get the token credential")
+		if s.cred, err = loadTokenProvider(host, s.cfg.TokenProvider); err != nil {
+			return err
+		}
+		return nil
+	}
+
 	switch s.cfg.Authentication {
 	case defaultCredentials:
 		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
