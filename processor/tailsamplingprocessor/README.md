@@ -60,6 +60,7 @@ The following configuration options can also be modified:
   - `non_sampled_cache_size` (default = 0) Configures amount of trace IDs to be kept in an LRU cache,
     persisting the "drop" decisions for traces that may have already been released from memory.
     By default, the size is 0 and the cache is inactive.
+- `sample_on_first_match`: Make decision as soon as a policy matches
 
 
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
