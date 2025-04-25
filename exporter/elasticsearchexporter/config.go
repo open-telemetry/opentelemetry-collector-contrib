@@ -134,7 +134,7 @@ type IncludeSourceOnErrorSettings struct {
 	//
 	// This setting has a higher precedence than Enabled, i.e. if this is
 	// true, Enabled will be ignored.
-	CompatibilityMode *bool `mapstructure:"compatibility_mode"`
+	CompatibilityMode bool `mapstructure:"compatibility_mode"`
 }
 
 type TelemetrySettings struct {

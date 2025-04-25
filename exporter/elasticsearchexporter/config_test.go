@@ -359,10 +359,9 @@ func TestConfig(t *testing.T) {
 			configFile: "config.yaml",
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
-				compMode := false
 				cfg.IncludeSourceOnError = IncludeSourceOnErrorSettings{
 					Enabled:           true,
-					CompatibilityMode: &compMode,
+					CompatibilityMode: false,
 				}
 			}),
 		},

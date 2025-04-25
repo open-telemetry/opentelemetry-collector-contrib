@@ -83,7 +83,7 @@ func createDefaultConfig() component.Config {
 		},
 		IncludeSourceOnError: IncludeSourceOnErrorSettings{
 			Enabled:           false,
-			CompatibilityMode: nil,
+			CompatibilityMode: true,
 		},
 		Batcher: BatcherConfig{
 			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck

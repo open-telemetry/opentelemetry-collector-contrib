@@ -323,8 +323,9 @@ This configuration allows users to receive the source document in the error resp
 
 In this exporter, the equivalent configuration is also named `include_source_on_error`.
 
-- `enabled` (default=false): Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: if enabled, users are responsible for sanitizing the error responses themselves as they may contain sensitive information.
-- `compatibility_mode` (default=true): Backward compatible option for older Elasticsearch versions, to avoid logging sensitive data. If set to true, `enabled` is ignored and the error reason is discarded from bulk index responses entirely.
+- `include_source_on_error`:
+  - `enabled` (default=false): Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: if enabled, Elasticsearch Exporter may log error responses containing request payload. This may cause sensitive data being exposed in logs.
+  - `compatibility_mode` (default=true): Backward compatible option for older Elasticsearch versions, to avoid logging sensitive data. If set to true, `enabled` is ignored and the error reason is discarded from bulk index responses entirely.
 
 
 ### Elasticsearch node discovery
