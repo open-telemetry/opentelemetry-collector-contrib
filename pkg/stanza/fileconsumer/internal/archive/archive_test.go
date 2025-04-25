@@ -97,10 +97,6 @@ func testArchiveNop(t *testing.T) {
 	// fingerprints should not be part of archive, as it's nop
 	for _, fp := range m {
 		matchedData := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
-		require.Nil(t, matchedData[0])
-
-		// FindFiles removes the data from persister.
-		matchedData = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
 		require.Nil(t, matchedData[0], "fingerprints shouldn't match for nopArchive")
 	}
 }
