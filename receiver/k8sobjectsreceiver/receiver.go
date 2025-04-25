@@ -78,7 +78,7 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error {
 	client, err := kr.config.getDynamicClient()
 	if err != nil {
-		return kr.handleError(err, "failed to create dynamic client")
+		return err
 	}
 	kr.client = client
 
