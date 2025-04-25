@@ -21,6 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/otel/propagation"
+	"go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery"
@@ -915,10 +917,11 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 	var errs []error
 
 	resourcesAdded := false
+	propagator := propagation.TraceContext{}
+
 	for _, row := range rows {
 		queryHashVal := hex.EncodeToString([]byte(row[queryHash]))
 		queryPlanHashVal := hex.EncodeToString([]byte(row[queryPlanHash]))
-		contextInfoVal := hex.EncodeToString([]byte(row[contextInfo]))
 
 		record := plog.NewLogRecord()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
@@ -973,11 +976,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				key:            dbPrefix + command,
 				columnName:     command,
 				valueRetriever: vanillaRetriever,
-				valueSetter:    setString,
-			},
-			{
-				key:            dbPrefix + contextInfo,
-				valueRetriever: defaultValueRetriever(contextInfoVal),
 				valueSetter:    setString,
 			},
 			{
@@ -1126,6 +1124,21 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueRetriever: retrieveInt,
 				valueSetter:    setInt,
 			},
+		}
+
+		spanContext := trace.SpanContextFromContext(propagator.Extract(context.Background(), propagation.MapCarrier{
+			"traceparent": row[contextInfo],
+		}))
+
+		if spanContext.IsValid() {
+			record.SetTraceID(pcommon.TraceID(spanContext.TraceID()))
+			record.SetSpanID(pcommon.SpanID(spanContext.SpanID()))
+		} else {
+			attributes = append(attributes, internalAttribute{
+				key:            dbPrefix + contextInfo,
+				valueRetriever: defaultValueRetriever(hex.EncodeToString([]byte(row[contextInfo]))),
+				valueSetter:    setString,
+			})
 		}
 
 		for _, attr := range attributes {

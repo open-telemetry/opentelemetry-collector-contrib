@@ -293,22 +293,32 @@ jobs:
         with:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
+
+      # Unit tests without JUnit output are much faster, so it's fine to run on every PR and every go version.
+      # The only time we don't run them is when we already ran them with JUnit output.
+      # Which means:
+      # - On PRs.
+      # - On main, with the go version that we didn't run the JUnit tests with.
       - name: Run Unit Tests
         id: tests
-        if: github.ref != 'refs/heads/main' # Runs on every PR and both go versions
+        if: github.ref != 'refs/heads/main' || !startsWith( matrix.go-version, '~1.23' )
         run: make gotest GROUP=${{ matrix.group }}
+
+      # JUnit tests are super long, so we only run them for one go version.
+      # This is used for automation that automatically creates issues for flaky tests that are
+      # merged to main, so we don't run them on every PR.
       - name: Run Unit Tests With JUnit and Coverage
         id: tests-with-junit
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only run junit/coverage on one version and only on main
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         continue-on-error: true # Allow uploading artifacts even if the test fails
         run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
       - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
-        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push'
         with:
           name: test-results-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: internal/tools/testresults/

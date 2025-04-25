@@ -881,6 +881,26 @@ func TestFileBatching(t *testing.T) {
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 }
 
+func TestMaxConcurrentFilesOne(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	temp1 := filetest.OpenTemp(t, tempDir)
+	_, err := temp1.WriteString("file 0: written before start\n")
+	require.NoError(t, err)
+
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MaxConcurrentFiles = 1
+
+	sink := emittest.NewSink()
+	operator := testManagerWithSink(t, cfg, sink)
+	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.poll(context.Background())
+	sink.ExpectTokens(t, []byte("file 0: written before start"))
+}
+
 func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	t.Parallel()
 
