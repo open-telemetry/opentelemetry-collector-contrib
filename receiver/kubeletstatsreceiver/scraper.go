@@ -5,6 +5,7 @@ package kubeletstatsreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"time"
@@ -29,6 +30,7 @@ type scraperOptions struct {
 	collectionInterval    time.Duration
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 }
 
@@ -38,6 +40,7 @@ type kubeletScraper struct {
 	logger                *zap.Logger
 	extraMetadataLabels   []kubelet.MetadataLabel
 	metricGroupsToCollect map[kubelet.MetricGroup]bool
+	allNetworkInterfaces  map[kubelet.MetricGroup]bool
 	k8sAPIClient          kubernetes.Interface
 	cachedVolumeSource    map[string]v1.PersistentVolumeSource
 	mbs                   *metadata.MetricsBuilders
@@ -57,12 +60,29 @@ func newKubeletScraper(
 	metricsConfig metadata.MetricsBuilderConfig,
 	nodeName string,
 ) (scraper.Metrics, error) {
+	if EnableCPUUsageMetrics.IsEnabled() {
+		if metricsConfig.Metrics.ContainerCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sPodCPUUtilization.Enabled ||
+			metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled {
+			return nil, errors.New("container.cpu.utilization, k8s.pod.cpu.utilization and k8s.node.cpu.utilization metrics cannot be enabled when receiver.kubeletstats.enableCPUUsageMetrics feature gate is enabled")
+		}
+	} else {
+		set.Logger.Warn("The default metric container.cpu.utilization is being replaced by the container.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.pod.cpu.utilization is being replaced by the k8s.pod.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+		set.Logger.Warn("The default metric k8s.node.cpu.utilization is being replaced by the k8s.node.cpu.usage metric. Switch now by enabling the receiver.kubeletstats.enableCPUUsageMetrics feature gate.")
+
+		metricsConfig.Metrics.ContainerCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sPodCPUUtilization.Enabled = true
+		metricsConfig.Metrics.K8sNodeCPUUtilization.Enabled = true
+	}
+
 	ks := &kubeletScraper{
 		statsProvider:         kubelet.NewStatsProvider(restClient),
 		metadataProvider:      kubelet.NewMetadataProvider(restClient),
 		logger:                set.Logger,
 		extraMetadataLabels:   rOptions.extraMetadataLabels,
 		metricGroupsToCollect: rOptions.metricGroupsToCollect,
+		allNetworkInterfaces:  rOptions.allNetworkInterfaces,
 		k8sAPIClient:          rOptions.k8sAPIClient,
 		cachedVolumeSource:    make(map[string]v1.PersistentVolumeSource),
 		mbs: &metadata.MetricsBuilders{
@@ -121,7 +141,7 @@ func (r *kubeletScraper) scrape(context.Context) (pmetric.Metrics, error) {
 
 	metaD := kubelet.NewMetadata(r.extraMetadataLabels, podsMetadata, nodeInfo, r.detailedPVCLabelsSetter())
 
-	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.mbs)
+	mds := kubelet.MetricsData(r.logger, summary, metaD, r.metricGroupsToCollect, r.allNetworkInterfaces, r.mbs)
 	md := pmetric.NewMetrics()
 	for i := range mds {
 		mds[i].ResourceMetrics().MoveAndAppendTo(md.ResourceMetrics())
