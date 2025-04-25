@@ -1986,7 +1986,8 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 	ils2 := rspan2.ScopeSpans().AppendEmpty()
 
 	// Add spans with different names to trigger overflow
-	for i := 0; i < 3; i++ {
+	numberSpans := 5
+	for i := 0; i < numberSpans; i++ {
 		span := ils.Spans().AppendEmpty()
 		span.SetName(fmt.Sprintf("operation%d", i))
 		span.SetKind(ptrace.SpanKindServer)
@@ -1998,22 +1999,54 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 		span2.Attributes().PutStr("http.method", "GET")
 	}
 
+	metrics := connector.buildMetrics()
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
+
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	metrics := connector.buildMetrics()
+	// Call buildMetrics to ensure that the metrics are built and set to 0
+	metrics = connector.buildMetrics()
+	assert.Equal(t, 2, metrics.ResourceMetrics().Len())
+	assert.Equal(t, 1, metrics.ResourceMetrics().At(0).ScopeMetrics().Len())
+	assert.Equal(t, 2, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+
+	overflowFound := false
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() == buildMetricName(DefaultNamespace, metricNameCalls) {
+					overflowFound = true
+					for l := 0; l < metric.Sum().DataPoints().Len(); l++ {
+						dp := metric.Sum().DataPoints().At(l)
+						assert.Equal(t, int64(0), dp.IntValue())
+					}
+				}
+			}
+		}
+	}
+
+	assert.True(t, overflowFound, "expected overflow metric to be found")
+
+	metrics = connector.buildMetrics()
 
 	resourceMetrics := metrics.ResourceMetrics()
 	assert.Equal(t, 2, resourceMetrics.Len()) // 2 resources
+	assert.Equal(t, 2, resourceMetrics.At(0).ScopeMetrics().At(0).Metrics().Len())
+	assert.Equal(t, 1, resourceMetrics.At(0).ScopeMetrics().Len())
 
 	for i := 0; i < resourceMetrics.Len(); i++ {
 		rm := resourceMetrics.At(i)
 		serviceName, _ := rm.Resource().Attributes().Get("service.name")
 
 		// Each resource should have:
-		// - 2 normal metrics (under limit)
 		// - 1 overflow metric
-		metricCount := 0
+		// - X normal metrics (under limit)
 		overflowCount := 0
+		metricCount := 0
+		overflowMetricValue := int64(0)
 
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		for j := 0; j < metrics.Len(); j++ {
@@ -2024,6 +2057,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 					dp := dps.At(k)
 					if _, exists := dp.Attributes().Get(overflowKey); exists {
 						overflowCount++
+						overflowMetricValue = dp.IntValue()
 						attrs := dp.Attributes()
 						overflowVal, exists := attrs.Get(overflowKey)
 						assert.True(t, exists)
@@ -2054,8 +2088,9 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 			}
 		}
 
-		assert.Equal(t, 2, metricCount, "service %s: expected 2 normal metrics. Found: %d", serviceName.Str(), metricCount)
+		assert.Equal(t, cfg.AggregationCardinalityLimit, metricCount, "service %s: expected %d normal metrics. Found: %d", serviceName.Str(), cfg.AggregationCardinalityLimit, metricCount)
 		assert.Equal(t, 1, overflowCount, "service %s: expected 1 overflow metric. Found: %d", serviceName.Str(), overflowCount)
+		assert.Equal(t, int64(numberSpans-cfg.AggregationCardinalityLimit), overflowMetricValue, "service %s: expected overflow metric value to be %d. Found: %d", serviceName.Str(), numberSpans-cfg.AggregationCardinalityLimit, overflowMetricValue)
 	}
 }
 
@@ -2086,13 +2121,17 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 	span.SetName("operation1")
 	span.SetKind(ptrace.SpanKindServer)
 
-	// Add 3 different events to trigger overflow
+	// Add different events to trigger overflow
+	numberEvents := 5
 	events := span.Events()
-	for i := 0; i < 3; i++ {
+	for i := 0; i < numberEvents; i++ {
 		event := events.AppendEmpty()
 		event.SetName(fmt.Sprintf("event%d", i))
 		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
 	}
+
+	metrics := connector.buildMetrics()
+	assert.Equal(t, 0, metrics.ResourceMetrics().Len())
 
 	// First consume to reach the limit
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
@@ -2100,7 +2139,29 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 	// Second consume to trigger overflow
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	metrics := connector.buildMetrics()
+	// Build metrics to ensure that the metrics are built and set to 0
+	metrics = connector.buildMetrics()
+	assert.Equal(t, 1, metrics.ResourceMetrics().Len())
+	assert.Equal(t, 1, metrics.ResourceMetrics().At(0).ScopeMetrics().Len())
+	assert.Equal(t, 3, metrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().Len())
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		for j := 0; j < rm.ScopeMetrics().Len(); j++ {
+			sm := rm.ScopeMetrics().At(j)
+			for k := 0; k < sm.Metrics().Len(); k++ {
+				metric := sm.Metrics().At(k)
+				if metric.Name() == buildMetricName(DefaultNamespace, metricNameEvents) {
+					dps := metric.Sum().DataPoints()
+					for l := 0; l < dps.Len(); l++ {
+						dp := dps.At(l)
+						assert.Equal(t, int64(0), dp.IntValue())
+					}
+				}
+			}
+		}
+	}
+
+	metrics = connector.buildMetrics()
 
 	resourceMetrics := metrics.ResourceMetrics()
 	assert.Equal(t, 1, resourceMetrics.Len())
@@ -2122,7 +2183,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 	dps := eventsMetric.Sum().DataPoints()
 	normalCount := 0
 	overflowCount := 0
-
+	overflowMetricValue := int64(0)
 	for i := 0; i < dps.Len(); i++ {
 		dp := dps.At(i)
 		if _, exists := dp.Attributes().Get(overflowKey); exists {
@@ -2131,6 +2192,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 			serviceNameAttr, ok := dp.Attributes().Get(serviceNameKey)
 			assert.True(t, ok)
 			assert.Equal(t, serviceName.Str(), serviceNameAttr.Str())
+			overflowMetricValue = dp.IntValue()
 		} else {
 			normalCount++
 			// Verify normal metric has event name
@@ -2148,6 +2210,8 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 		}
 	}
 
-	assert.Equal(t, 2, normalCount, "expected 2 normal metrics")
+	assert.Equal(t, cfg.AggregationCardinalityLimit, normalCount, "expected %d normal metrics", cfg.AggregationCardinalityLimit)
 	assert.Equal(t, 1, overflowCount, "expected 1 overflow metric")
+	// Here, we multiply by 2 because we consume 2 times the same trace
+	assert.Equal(t, int64(numberEvents*2-cfg.AggregationCardinalityLimit), overflowMetricValue, "expected overflow metric value to be %d. Found: %d", numberEvents-cfg.AggregationCardinalityLimit, overflowMetricValue)
 }

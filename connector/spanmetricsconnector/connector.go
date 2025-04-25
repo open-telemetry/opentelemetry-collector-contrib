@@ -388,16 +388,18 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
+				var key metrics.Key
 				var attributesFun metrics.BuildAttributesFun
 
 				// Note: we check cardinality limit here for sums metrics but it is the same
 				// for histograms because both use the same key and attributes.
 				if rm.sums.IsCardinalityLimitReached() {
+					key = p.buildKeyWithOverflow(serviceName, p.dimensions, resourceAttr)
+
 					attributesFun = func() pcommon.Map {
 						attributes := pcommon.NewMap()
 						for _, d := range p.dimensions {
-							if v, exists := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttr); exists {
+							if v, exists := utilattri.GetDimensionValue(d, resourceAttr); exists {
 								v.CopyTo(attributes.PutEmpty(d.Name))
 							}
 						}
@@ -406,6 +408,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						return attributes
 					}
 				} else {
+					key = p.buildKey(serviceName, span, p.dimensions, resourceAttr)
 					attributesFun = func() pcommon.Map {
 						attributes := p.buildAttributes(
 							serviceName,
@@ -438,30 +441,34 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						eDimensions := p.dimensions
 						eDimensions = append(eDimensions, p.eDimensions...)
 
-						rscAndEventAttrs := pcommon.NewMap()
+						var eKey metrics.Key
 
-						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
-						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use CopyTo because it overrides the existing keys.
-						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							rscAndEventAttrs.PutStr(k, v.Str())
-							return true
-						})
-
-						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						if rm.events.IsCardinalityLimitReached() {
+							eKey = p.buildKeyWithOverflow(serviceName, eDimensions, resourceAttr)
 							attributesFun = func() pcommon.Map {
 								attributes := pcommon.NewMap()
-								rscAndEventAttrs.CopyTo(attributes)
+								resourceAttr.CopyTo(attributes)
 								attributes.PutBool(overflowKey, true)
 
 								return attributes
 							}
 						} else {
+							rscAndEventAttrs := pcommon.NewMap()
+
+							rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
+							resourceAttr.CopyTo(rscAndEventAttrs)
+
+							// We cannot use CopyTo because it overrides the existing keys.
+							event.Attributes().Range(func(k string, v pcommon.Value) bool {
+								rscAndEventAttrs.PutStr(k, v.Str())
+								return true
+							})
+							eKey = p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 							attributesFun = func() pcommon.Map {
 								return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 							}
 						}
+
 						e := events.GetOrCreate(eKey, attributesFun, startTimestamp)
 						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
@@ -603,6 +610,24 @@ func (p *connectorImp) buildKey(serviceName string, span ptrace.Span, optionalDi
 
 	for _, d := range optionalDims {
 		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceOrEventAttrs); ok {
+			concatDimensionValue(p.keyBuf, v.AsString(), true)
+		}
+	}
+
+	return metrics.Key(p.keyBuf.String())
+}
+
+// buildKeyWithOverflow is similar to buildKey but it does not include the span metadata as it is
+// used to build keys for metrics that have reached the cardinality limit.
+func (p *connectorImp) buildKeyWithOverflow(serviceName string, optionalDims []utilattri.Dimension, resourceOrEventAttrs pcommon.Map) metrics.Key {
+	p.keyBuf.Reset()
+
+	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
+		concatDimensionValue(p.keyBuf, serviceName, false)
+	}
+
+	for _, d := range optionalDims {
+		if v, ok := utilattri.GetDimensionValue(d, resourceOrEventAttrs); ok {
 			concatDimensionValue(p.keyBuf, v.AsString(), true)
 		}
 	}
