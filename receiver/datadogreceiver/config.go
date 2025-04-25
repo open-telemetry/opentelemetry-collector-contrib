@@ -14,4 +14,6 @@ type Config struct {
 	confighttp.ServerConfig `mapstructure:",squash"`
 	// ReadTimeout of the http server
 	ReadTimeout time.Duration `mapstructure:"read_timeout"`
+	// TraceIDCacheSize sets the cache size for the 64 bits to 128 bits mapping
+	TraceIDCacheSize int `mapstructure:"trace_id_cache_size"`
 }

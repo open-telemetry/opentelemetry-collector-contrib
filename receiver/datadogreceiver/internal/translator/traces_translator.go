@@ -17,6 +17,7 @@ import (
 	"sync"
 
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
@@ -55,7 +56,7 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
-func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
+func ToTraces(payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())
@@ -90,13 +91,6 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
-	// Datadog traces split a 128 bits trace id in two parts: TraceID and Tags._dd_p_tid. This happens if the
-	// instrumented service received a TraceContext from an OTel instrumented service. When it happens, we need
-	// to concatenate the two into newSpan.TraceID.
-	// The following map keeps track of the TraceIDs we process as only the first span has the upper 64 bits from the
-	// 128 bits trace ID.
-	map64to128 := make(map[uint64]pcommon.TraceID)
-
 	for _, trace := range traces {
 		for _, span := range trace {
 			slice, exist := groupByService[span.Service]
@@ -108,23 +102,33 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 
 			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
 
+			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
+
+			// Datadog traces split a 128 bits trace id in two parts: TraceID and Tags._dd_p_tid. This happens if the
+			// instrumented service received a TraceContext from an OTel instrumented service. When it happens, we need
+			// to concatenate the two into newSpan.TraceID.
+			// The following map keeps track of the TraceIDs we process as only the first span has the upper 64 bits from the
+			// 128 bits trace ID.
+			//
 			// Reconstructing the 128 bits TraceID, if available or cached.
 			// Note: This may not be resilient to related spans being flushed separately in datadog's tracing libraries.
 			//       It might also not work if multiple datadog instrumented services are chained.
-			if val, ok := span.Meta["_dd.p.tid"]; ok {
-				hexTraceID := val + strconv.FormatUint(span.TraceID, 16)
-				traceID, err := oteltrace.TraceIDFromHex(hexTraceID)
-				if err != nil {
-					panic(err)
-				}
-				newSpan.SetTraceID(pcommon.TraceID(traceID))
+			//
+			// This is currently gated by a feature gate. If we don't get a cache here, we don't enable this behavior.
+			if traceIDCache != nil {
+				if val, ok := span.Meta["_dd.p.tid"]; ok {
+					hexTraceID := val + strconv.FormatUint(span.TraceID, 16)
+					traceID, err := oteltrace.TraceIDFromHex(hexTraceID)
+					if err != nil {
+						return ptrace.Traces{}, err
+					}
+					newSpan.SetTraceID(pcommon.TraceID(traceID))
 
-				// Child spans don't have _dd.p.tid, we cache it.
-				map64to128[span.TraceID] = pcommon.TraceID(traceID)
-			} else if val, ok := map64to128[span.TraceID]; ok {
-				newSpan.SetTraceID(val)
-			} else {
-				newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
+					// Child spans don't have _dd.p.tid, we cache it.
+					traceIDCache.Add(span.TraceID, pcommon.TraceID(traceID))
+				} else if val, ok := traceIDCache.Get(span.TraceID); ok {
+					newSpan.SetTraceID(val)
+				}
 			}
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
@@ -189,7 +193,7 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 		spans.CopyTo(in.Spans())
 	}
 
-	return results
+	return results, nil
 }
 
 // DDSpanLink represents the structure of each JSON object

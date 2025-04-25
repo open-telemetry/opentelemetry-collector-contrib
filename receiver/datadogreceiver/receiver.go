@@ -8,12 +8,14 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"io"
 	"net/http"
 	"strings"
 
 	"github.com/DataDog/agent-payload/v5/gogen"
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/tinylib/msgp/msgp"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
@@ -40,6 +42,8 @@ type datadogReceiver struct {
 
 	server    *http.Server
 	tReceiver *receiverhelper.ObsReport
+
+	traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]
 }
 
 // Endpoint specifies an API endpoint definition.
@@ -140,6 +144,13 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		return nil, err
 	}
 
+	cache, err := simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+		params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create traceID cache: %w", err)
+	}
+
 	return &datadogReceiver{
 		params: params,
 		config: config,
@@ -149,6 +160,7 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		tReceiver:         instance,
 		metricsTranslator: translator.NewMetricsTranslator(params.BuildInfo),
 		statsTranslator:   translator.NewStatsTranslator(),
+		traceIDCache:      cache,
 	}, nil
 }
 
@@ -234,7 +246,11 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	for _, ddTrace := range ddTraces {
-		otelTraces := translator.ToTraces(ddTrace, req)
+		otelTraces, err := translator.ToTraces(ddTrace, req, ddr.traceIDCache)
+		if err != nil {
+			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
+			continue
+		}
 		spanCount = otelTraces.SpanCount()
 		err = ddr.nextTracesConsumer.ConsumeTraces(obsCtx, otelTraces)
 		if err != nil {

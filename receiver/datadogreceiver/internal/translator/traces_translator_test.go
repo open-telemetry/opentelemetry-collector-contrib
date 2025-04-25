@@ -6,6 +6,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"bytes"
 	"fmt"
+	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"io"
 	"net/http"
 	"strconv"
@@ -92,7 +93,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	tracePayloads, _ := HandleTracesPayload(req)
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
-	translated := ToTraces(tracePayload, req)
+	translated, _ := ToTraces(tracePayload, req, nil)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -257,7 +258,9 @@ func TestToTraces64to128bits(t *testing.T) {
 	}
 	req.Header.Set(header.Lang, "go")
 
-	traces := ToTraces(payload, req)
+	cache, _ := simplelru.NewLRU[uint64, pcommon.TraceID](2, func(k uint64, _ pcommon.TraceID) {})
+
+	traces, _ := ToTraces(payload, req, cache)
 	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
 
 	for _, rs := range traces.ResourceSpans().All() {
