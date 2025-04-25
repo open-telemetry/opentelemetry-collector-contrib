@@ -12,6 +12,7 @@ import (
 	"strings"
 	"time"
 
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -76,6 +77,9 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 	// Try to create client, handling panics if recreate is enabled
 	client, err := lfs.createClientWithPanicRecovery(absoluteName)
 	if err != nil {
+		if errors.Is(err, berrors.ErrMaxSizeReached) {
+			return nil, storage.ErrStorageFull
+		}
 		return nil, err
 	}
 
@@ -97,7 +101,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	// First attempt: try to create client normally
 	if !lfs.cfg.Recreate {
 		// If recreate is disabled, just try once
-		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+		return newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, int(lfs.cfg.MaxSize), lfs.cfg.Compaction, !lfs.cfg.FSync)
 	}
 
 	// If recreate is enabled, handle potential panics during database opening
@@ -125,7 +129,7 @@ func (lfs *localFileStorage) createClientWithPanicRecovery(absoluteName string) 
 	}()
 
 	// Try to create the client normally first
-	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	client, err = newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, int(lfs.cfg.MaxSize), lfs.cfg.Compaction, !lfs.cfg.FSync)
 	return client, err
 }
 
