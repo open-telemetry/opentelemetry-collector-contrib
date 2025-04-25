@@ -86,13 +86,13 @@ func createLogsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.OTelAttrsToS3.S3Prefix == "" {
+	if cfg.ResourceAttrsToS3.S3Prefix == "" {
 		return logsExporter, err
 	}
 
 	wrapped := &baseLogsExporter{
 		Component: logsExporter,
-		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.OTelAttrsToS3.S3Prefix, logsExporter),
+		Logs:      batchperresourceattr.NewBatchPerResourceLogs(cfg.ResourceAttrsToS3.S3Prefix, logsExporter),
 	}
 	return wrapped, nil
 }
@@ -123,13 +123,13 @@ func createMetricsExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.OTelAttrsToS3.S3Prefix == "" {
+	if cfg.ResourceAttrsToS3.S3Prefix == "" {
 		return metricsExporter, err
 	}
 
 	wrapped := &baseMetricsExporter{
 		Component: metricsExporter,
-		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(cfg.OTelAttrsToS3.S3Prefix, metricsExporter),
+		Metrics:   batchperresourceattr.NewBatchPerResourceMetrics(cfg.ResourceAttrsToS3.S3Prefix, metricsExporter),
 	}
 	return wrapped, nil
 }
@@ -161,13 +161,13 @@ func createTracesExporter(ctx context.Context,
 		return nil, err
 	}
 
-	if cfg.OTelAttrsToS3.S3Prefix == "" {
+	if cfg.ResourceAttrsToS3.S3Prefix == "" {
 		return tracesExporter, err
 	}
 
 	wrapped := &baseTracesExporter{
 		Component: tracesExporter,
-		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.OTelAttrsToS3.S3Prefix, tracesExporter),
+		Traces:    batchperresourceattr.NewBatchPerResourceTraces(cfg.ResourceAttrsToS3.S3Prefix, tracesExporter),
 	}
 	return wrapped, nil
 }

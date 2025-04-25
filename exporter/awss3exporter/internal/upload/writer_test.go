@@ -138,7 +138,7 @@ func TestS3ManagerUpload(t *testing.T) {
 			uploadOpts:   nil,
 		},
 		{
-			name: "upload with s3 prefix from otel attrbuites",
+			name: "upload with s3 prefix from resource attrbuites",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					_, _ = io.Copy(io.Discard, r.Body)
@@ -146,7 +146,7 @@ func TestS3ManagerUpload(t *testing.T) {
 
 					assert.Equal(
 						t,
-						"/my-bucket/foo-prefix-otel/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
+						"/my-bucket/foo-prefix-resource/year=2024/month=01/day=10/hour=10/minute=30/signal-data-noop_random.metrics",
 						r.URL.Path,
 						"Must match the expected path",
 					)
@@ -155,10 +155,10 @@ func TestS3ManagerUpload(t *testing.T) {
 			compression: configcompression.Type(""),
 			data:        []byte("hello world"),
 			errVal:      "",
-			uploadOpts:  &UploadOptions{OverridePrefix: "foo-prefix-otel"},
+			uploadOpts:  &UploadOptions{OverridePrefix: "foo-prefix-resource"},
 		},
 		{
-			name: "upload with s3 prefix from otel attrbuites empty",
+			name: "upload with s3 prefix from resource attrbuites empty",
 			handler: func(t *testing.T) http.Handler {
 				return http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
 					_, _ = io.Copy(io.Discard, r.Body)

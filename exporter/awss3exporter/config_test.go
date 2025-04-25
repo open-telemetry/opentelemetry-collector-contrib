@@ -410,14 +410,14 @@ func TestCompressionName(t *testing.T) {
 	)
 }
 
-func TestOtelAttrsToS3(t *testing.T) {
+func TestResourceAttrsToS3(t *testing.T) {
 	factories, err := otelcoltest.NopFactories()
 	assert.NoError(t, err)
 
 	factory := NewFactory()
 	factories.Exporters[factory.Type()] = factory
 	cfg, err := otelcoltest.LoadConfigAndValidate(
-		filepath.Join("testdata", "config-s3_otel-attrs-to-s3.yaml"), factories)
+		filepath.Join("testdata", "config-s3_resource-attrs-to-s3.yaml"), factories)
 
 	require.NoError(t, err)
 	require.NotNil(t, cfg)
@@ -440,7 +440,7 @@ func TestOtelAttrsToS3(t *testing.T) {
 			StorageClass:      "STANDARD",
 		},
 		MarshalerName: "otlp_json",
-		OTelAttrsToS3: OTelAttrsToS3{
+		ResourceAttrsToS3: ResourceAttrsToS3{
 			S3Prefix: "com.awss3.prefix",
 		},
 	}, e,

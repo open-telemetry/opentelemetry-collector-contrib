@@ -55,31 +55,31 @@ func TestLog(t *testing.T) {
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
 }
 
-type TestWriterWithOTelAttrs struct {
+type TestWriterWithResourceAttrs struct {
 	t *testing.T
 }
 
-func (testWriterWO *TestWriterWithOTelAttrs) Upload(_ context.Context, buf []byte, uploadOpts *upload.UploadOptions) error {
+func (testWriterWO *TestWriterWithResourceAttrs) Upload(_ context.Context, buf []byte, uploadOpts *upload.UploadOptions) error {
 	assert.Equal(testWriterWO.t, testLogs, buf)
 	assert.Equal(testWriterWO.t, &upload.UploadOptions{OverridePrefix: overridePrefix}, uploadOpts)
 	return nil
 }
 
-func getLogExporterWithOTelAttrs(t *testing.T) *s3Exporter {
+func getLogExporterWithResourceAttrs(t *testing.T) *s3Exporter {
 	marshaler, _ := newMarshaler("otlp_json", zap.NewNop())
 	config := createDefaultConfig().(*Config)
-	config.OTelAttrsToS3.S3Prefix = s3PrefixKey
+	config.ResourceAttrsToS3.S3Prefix = s3PrefixKey
 	exporter := &s3Exporter{
 		config:    config,
-		uploader:  &TestWriterWithOTelAttrs{t},
+		uploader:  &TestWriterWithResourceAttrs{t},
 		logger:    zap.NewNop(),
 		marshaler: marshaler,
 	}
 	return exporter
 }
 
-func TestLogWithOTelAttrs(t *testing.T) {
+func TestLogWithResourceAttrs(t *testing.T) {
 	logs := getTestLogs(t)
-	exporter := getLogExporterWithOTelAttrs(t)
+	exporter := getLogExporterWithResourceAttrs(t)
 	assert.NoError(t, exporter.ConsumeLogs(context.Background(), logs))
 }

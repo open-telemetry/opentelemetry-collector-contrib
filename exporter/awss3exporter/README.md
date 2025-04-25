@@ -38,7 +38,7 @@ The following exporter configuration parameters are supported.
 | `compression`             | should the file be compressed                                                                                                              | none                                        |
 | `sending_queue`           | [exporters common queuing](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | disabled                                    |
 | `timeout`                 | [exporters common timeout](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md)          | 5s                                          |
-| `otel_attrs_to_s3`        | determines the mapping of S3 configuration values to OTel resource attribute values for uploading operations.                              |                                             |
+| `resource_attrs_to_s3`        | determines the mapping of S3 configuration values to resource attribute values for uploading operations.                                   |                                             |
 
 ### Marshaler
 
@@ -61,7 +61,7 @@ See https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/
 - `none` (default): No compression will be applied
 - `gzip`: Files will be compressed with gzip. **This does not support `sumo_ic`marshaler.**
 
-### otel_attrs_to_s3
+### resource_attrs_to_s3
 - `s3_prefix`: Defines which resource attribute's value should be used as the S3 prefix.
   When this option is set, it dynamically overrides `s3uploader/s3_prefix`. 
   If the specified resource attribute exists in the data,  
@@ -116,8 +116,8 @@ In this case, logs and traces would be stored in the following path format.
 metric/YYYY/MM/DD/HH/mm
 ```
 
-## Data routing based on OTel resource attributes
-When `otel_attrs_to_s3/s3_prefix` is configured, the S3 prefix is dynamically derived from a specified resource attribute in your data.
+## Data routing based on resource attributes
+When `resource_attrs_to_s3/s3_prefix` is configured, the S3 prefix is dynamically derived from a specified resource attribute in your data.
 If the attribute value is unavailable, the prefix will fall back to the value defined in `s3uploader/s3_prefix`.
 ```yaml
 exporters:
@@ -127,7 +127,7 @@ exporters:
       s3_bucket: 'databucket'
       s3_prefix: 'metric'
       s3_partition_format: '%Y/%m/%d/%H/%M'
-    otel_attrs_to_s3:
+    resource_attrs_to_s3:
       s3_prefix: "com.awss3.prefix"
 ```
 In this case, metrics, logs and traces would be stored in the following path format examples:
