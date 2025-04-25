@@ -12,8 +12,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	apiWatch "k8s.io/apimachinery/pkg/watch"
 	"k8s.io/apimachinery/pkg/runtime/schema"
+	apiWatch "k8s.io/apimachinery/pkg/watch"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sobjectsreceiver/internal/metadata"
@@ -187,7 +187,7 @@ func TestValidate(t *testing.T) {
 
 func TestDeepCopy(t *testing.T) {
 	t.Parallel()
-	
+
 	tests := []struct {
 		name     string
 		expected *K8sObjectsConfig
@@ -195,16 +195,16 @@ func TestDeepCopy(t *testing.T) {
 		{
 			name: "deep copy",
 			expected: &K8sObjectsConfig{
-				Name:            "pods",
-				Group: 			 "group",
-				Namespaces:      []string{"default"},
-				Mode:            PullMode,
-				FieldSelector:   "status.phase=Running",
-				LabelSelector:   "environment in (production),tier in (frontend)",
-				Interval:        time.Hour,
-				ResourceVersion: "1",
+				Name:             "pods",
+				Group:            "group",
+				Namespaces:       []string{"default"},
+				Mode:             PullMode,
+				FieldSelector:    "status.phase=Running",
+				LabelSelector:    "environment in (production),tier in (frontend)",
+				Interval:         time.Hour,
+				ResourceVersion:  "1",
 				ExcludeWatchType: []apiWatch.EventType{apiWatch.Added},
-				exclude: map[apiWatch.EventType]bool{apiWatch.Added: true},
+				exclude:          map[apiWatch.EventType]bool{apiWatch.Added: true},
 				gvr: &schema.GroupVersionResource{
 					Group:    "group",
 					Version:  "v1",
