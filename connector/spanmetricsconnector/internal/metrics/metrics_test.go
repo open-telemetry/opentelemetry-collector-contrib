@@ -404,7 +404,7 @@ func TestSumMetrics_GetOrCreate(t *testing.T) {
 			attributesFun := func() pcommon.Map {
 				return tt.attributes
 			}
-			sum := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0))
+			sum, _ := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0))
 			assert.Len(t, sm.metrics, tt.expectedCount)
 			if tt.expectedCreated {
 				assert.Equal(t, tt.attributes, sum.attributes)

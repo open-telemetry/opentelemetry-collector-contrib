@@ -1372,7 +1372,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 		{
 			name:   "initialize histogram with no config provided",
 			config: Config{},
-			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
+			want:   metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
 		},
 		{
 			name: "Disable histogram",
@@ -1390,7 +1390,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Milliseconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsMs, nil, 0),
 		},
 		{
 			name: "initialize explicit histogram with default bounds (seconds)",
@@ -1399,7 +1399,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Unit: metrics.Seconds,
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil),
+			want: metrics.NewExplicitHistogramMetrics(defaultHistogramBucketsSeconds, nil, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (seconds)",
@@ -1414,7 +1414,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil),
+			want: metrics.NewExplicitHistogramMetrics([]float64{0.1, 1}, nil, 0),
 		},
 		{
 			name: "initialize explicit histogram with bounds (ms)",
@@ -1429,7 +1429,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil),
+			want: metrics.NewExplicitHistogramMetrics([]float64{100, 1000}, nil, 0),
 		},
 		{
 			name: "initialize exponential histogram",
@@ -1441,7 +1441,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(10, nil),
+			want: metrics.NewExponentialHistogramMetrics(10, nil, 0),
 		},
 		{
 			name: "initialize exponential histogram with default max buckets count",
@@ -1451,7 +1451,7 @@ func TestConnector_initHistogramMetrics(t *testing.T) {
 					Exponential: &ExponentialHistogramConfig{},
 				},
 			},
-			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil),
+			want: metrics.NewExponentialHistogramMetrics(structure.DefaultMaxSize, nil, 0),
 		},
 	}
 	for _, tt := range tests {
@@ -1975,6 +1975,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	// Create spans for the resources
 	traces := ptrace.NewTraces()
+
 	rspan1 := traces.ResourceSpans().AppendEmpty()
 	resource1.CopyTo(rspan1.Resource())
 	ils := rspan1.ScopeSpans().AppendEmpty()
@@ -1984,11 +1985,11 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 	ils2 := rspan2.ScopeSpans().AppendEmpty()
 
 	// Add spans with different names to trigger overflow
-	for i := 0; i < 3; i++ {
-		span := ils.Spans().AppendEmpty()
-		span.SetName(fmt.Sprintf("operation%d", i))
-		span.SetKind(ptrace.SpanKindServer)
-		span.Attributes().PutStr("http.method", "GET")
+	for i := 0; i < 5; i++ {
+		span1 := ils.Spans().AppendEmpty()
+		span1.SetName(fmt.Sprintf("operation%d", i))
+		span1.SetKind(ptrace.SpanKindServer)
+		span1.Attributes().PutStr("http.method", "GET")
 
 		span2 := ils2.Spans().AppendEmpty()
 		span2.SetName(fmt.Sprintf("operation%d", i))
@@ -1998,13 +1999,18 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	metrics := connector.buildMetrics()
+	// first buildMetrics emit zero datapoint value
+	_ = connector.buildMetrics()
 
-	resourceMetrics := metrics.ResourceMetrics()
-	assert.Equal(t, 2, resourceMetrics.Len()) // 2 resources
+	// mock send two batch of spans to this connector
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+	pmetrics := connector.buildMetrics()
 
-	for i := 0; i < resourceMetrics.Len(); i++ {
-		rm := resourceMetrics.At(i)
+	rmetrics := pmetrics.ResourceMetrics()
+	assert.Equal(t, 2, rmetrics.Len()) // 2 ResourceMetrics
+
+	for i := 0; i < rmetrics.Len(); i++ {
+		rm := rmetrics.At(i)
 		serviceName, _ := rm.Resource().Attributes().Get("service.name")
 
 		// Each resource should have:
@@ -2013,11 +2019,13 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 		metricCount := 0
 		overflowCount := 0
 
-		metrics := rm.ScopeMetrics().At(0).Metrics()
-		for j := 0; j < metrics.Len(); j++ {
-			metric := metrics.At(j)
+		assert.Equal(t, 1, rm.ScopeMetrics().Len()) //  one ScopeMetrics
+		metricsSlice := rm.ScopeMetrics().At(0).Metrics()
+		for j := 0; j < metricsSlice.Len(); j++ {
+			metric := metricsSlice.At(j)
 			if metric.Name() == buildMetricName(DefaultNamespace, metricNameCalls) {
 				dps := metric.Sum().DataPoints()
+				assert.Equal(t, 3, dps.Len()) // three DataPoints
 				for k := 0; k < dps.Len(); k++ {
 					dp := dps.At(k)
 					if _, exists := dp.Attributes().Get(overflowKey); exists {
@@ -2026,14 +2034,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 						overflowVal, exists := attrs.Get(overflowKey)
 						assert.True(t, exists)
 						assert.True(t, overflowVal.Bool())
-						_, exists = attrs.Get("region")
-						assert.True(t, exists)
-						_, exists = attrs.Get(spanNameKey)
-						assert.False(t, exists)
-						_, exists = attrs.Get(spanKindKey)
-						assert.False(t, exists)
-						_, exists = attrs.Get(statusCodeKey)
-						assert.False(t, exists)
+						assert.Equal(t, int64(6), dp.IntValue()) // overflow datapoints have value of 6
 					} else {
 						metricCount++
 						attrs := dp.Attributes()
@@ -2047,6 +2048,37 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 						assert.True(t, exists)
 						_, exists = attrs.Get("region")
 						assert.True(t, exists)
+						assert.Equal(t, int64(2), dp.IntValue()) // normal datapoints have value of 2
+					}
+				}
+			}
+			if metric.Name() == buildMetricName(DefaultNamespace, metricNameDuration) {
+				dps := metric.Histogram().DataPoints()
+				assert.Equal(t, 3, dps.Len()) // three DataPoints
+				for k := 0; k < dps.Len(); k++ {
+					assert.Equal(t, 3, dps.Len()) // three DataPoints
+					for k := 0; k < dps.Len(); k++ {
+						dp := dps.At(k)
+						if _, exists := dp.Attributes().Get(overflowKey); exists {
+							attrs := dp.Attributes()
+							overflowVal, exists := attrs.Get(overflowKey)
+							assert.True(t, exists)
+							assert.True(t, overflowVal.Bool())
+							assert.Equal(t, uint64(6), dp.Count()) // overflow datapoints have value of 6
+						} else {
+							attrs := dp.Attributes()
+							_, exists := attrs.Get(serviceNameKey)
+							assert.True(t, exists)
+							_, exists = attrs.Get(spanNameKey)
+							assert.True(t, exists)
+							_, exists = attrs.Get(spanKindKey)
+							assert.True(t, exists)
+							_, exists = attrs.Get(statusCodeKey)
+							assert.True(t, exists)
+							_, exists = attrs.Get("region")
+							assert.True(t, exists)
+							assert.Equal(t, uint64(2), dp.Count()) // normal datapoints have value of 2
+						}
 					}
 				}
 			}
@@ -2086,7 +2118,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 
 	// Add 3 different events to trigger overflow
 	events := span.Events()
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 5; i++ {
 		event := events.AppendEmpty()
 		event.SetName(fmt.Sprintf("event%d", i))
 		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
@@ -2098,15 +2130,17 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 	// Second consume to trigger overflow
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	metrics := connector.buildMetrics()
+	// first buildMetrics emit zero datapoint value
+	_ = connector.buildMetrics()
+	pmetrics := connector.buildMetrics()
 
-	resourceMetrics := metrics.ResourceMetrics()
-	assert.Equal(t, 1, resourceMetrics.Len())
+	rmetrics := pmetrics.ResourceMetrics()
+	assert.Equal(t, 1, rmetrics.Len())
 
-	rm := resourceMetrics.At(0)
-	serviceName, _ := rm.Resource().Attributes().Get("service.name")
+	rm := rmetrics.At(0)
 
 	// Check events metric
+	assert.Equal(t, 1, rm.ScopeMetrics().Len())
 	metricsSlice := rm.ScopeMetrics().At(0).Metrics()
 	var eventsMetric pmetric.Metric
 	for i := 0; i < metricsSlice.Len(); i++ {
@@ -2125,10 +2159,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 		dp := dps.At(i)
 		if _, exists := dp.Attributes().Get(overflowKey); exists {
 			overflowCount++
-			// Verify overflow metric has service name
-			serviceNameAttr, ok := dp.Attributes().Get(serviceNameKey)
-			assert.True(t, ok)
-			assert.Equal(t, serviceName.Str(), serviceNameAttr.Str())
+			assert.Equal(t, int64(6), dp.IntValue())
 		} else {
 			normalCount++
 			// Verify normal metric has event name
@@ -2143,6 +2174,7 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 			assert.True(t, exists)
 			_, exists = attrs.Get(statusCodeKey)
 			assert.True(t, exists)
+			assert.Equal(t, int64(2), dp.IntValue())
 		}
 	}
 
