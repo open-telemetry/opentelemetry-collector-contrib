@@ -226,6 +226,23 @@ func (c *prometheusConverterV2) addHistogramDataPoints(
 	}
 }
 
-func (c *prometheusConverterV2) addExemplars(_ pmetric.HistogramDataPoint, _ []bucketBoundsDataV2) {
-	// TODO: Implement this function
+func (c *prometheusConverterV2) addExemplars(dataPoint pmetric.HistogramDataPoint, bucketBounds []bucketBoundsDataV2) {
+	if len(bucketBounds) == 0 {
+		return
+	}
+
+	exemplars := getPromExemplarsV2(dataPoint)
+
+	// sorting bucketBounds in ascending order using bound as reference
+	sort.Slice(bucketBounds, func(i, j int) bool {
+		return bucketBounds[i].bound < bucketBounds[j].bound
+	})
+
+	for _, exemplar := range exemplars {
+		for _, bound := range bucketBounds {
+			if len(bound.ts.Samples) > 0 && exemplar.Value <= bound.bound {
+				bound.ts.Exemplars = append(bound.ts.Exemplars, exemplar)
+			}
+		}
+	}
 }
