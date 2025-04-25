@@ -1725,7 +1725,7 @@ The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given b
 
 Examples:
 
-- `ProfileID(0x00000000000000000000000000000000)`
+- `ProfileID(0x00112233445566778899aabbccddeeff)`
 
 ### RemoveXML
 
