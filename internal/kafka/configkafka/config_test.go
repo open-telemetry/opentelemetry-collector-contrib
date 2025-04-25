@@ -165,6 +165,7 @@ func TestProducerConfig(t *testing.T) {
 				MaxMessageBytes:  1,
 				RequiredAcks:     0,
 				Compression:      "gzip",
+				CompressionLevel: 3,
 				FlushMaxMessages: 2,
 			},
 		},

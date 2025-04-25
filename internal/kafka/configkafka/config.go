@@ -184,6 +184,10 @@ type ProducerConfig struct {
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
+	// CompressionLevel is a measure of the compression quality
+	// Used in only: 'gzip', 'zstd'
+	CompressionLevel int `mapstructure:"compression_level"`
+
 	// The maximum number of messages the producer will send in a single
 	// broker request. Defaults to 0 for unlimited. Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
@@ -195,6 +199,7 @@ func NewDefaultProducerConfig() ProducerConfig {
 		MaxMessageBytes:  1000000,
 		RequiredAcks:     WaitForLocal,
 		Compression:      "none",
+		CompressionLevel: sarama.CompressionLevelDefault,
 		FlushMaxMessages: 0,
 	}
 }

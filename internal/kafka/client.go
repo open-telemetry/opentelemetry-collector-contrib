@@ -96,6 +96,7 @@ func NewSaramaSyncProducer(
 	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
 	saramaConfig.Producer.Timeout = producerTimeout
 	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	saramaConfig.Producer.CompressionLevel = producerConfig.CompressionLevel
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
 }
 
