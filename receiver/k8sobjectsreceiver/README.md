@@ -42,6 +42,10 @@ Brief description of configuration properties:
 the K8s API server. This can be one of `none` (for no auth), `serviceAccount`
 (to use the standard service account token provided to the agent pod), or
 `kubeConfig` to use credentials from `~/.kube/config`.
+- `error_mode` (default = `propagate`): Determines how to handle errors when the receiver is unable to pull or watch objects due to missing resources. This can be one of `propagate`, `ignore`, or `silent`.
+  - `propagate` will propagate the error to the collector as an Error.
+  - `ignore` will log and ignore the error and continue.
+  - `silent` will ignore the error and continue without logging.
 - `name`: Name of the resource object to collect
 - `mode`: define in which way it collects this type of object, either "pull" or "watch".
   - `pull` mode will read all objects of this type use the list API at an interval.

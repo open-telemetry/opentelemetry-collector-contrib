@@ -33,6 +33,14 @@ var modeMap = map[mode]bool{
 	WatchMode: true,
 }
 
+type ErrorMode string
+
+const (
+	PropagateError ErrorMode = "propagate"
+	IgnoreError    ErrorMode = "ignore"
+	SilentError    ErrorMode = "silent"
+)
+
 type K8sObjectsConfig struct {
 	Name             string               `mapstructure:"name"`
 	Group            string               `mapstructure:"group"`
@@ -50,7 +58,8 @@ type K8sObjectsConfig struct {
 type Config struct {
 	k8sconfig.APIConfig `mapstructure:",squash"`
 
-	Objects []*K8sObjectsConfig `mapstructure:"objects"`
+	Objects   []*K8sObjectsConfig `mapstructure:"objects"`
+	ErrorMode ErrorMode           `mapstructure:"error_mode"`
 
 	// For mocking purposes only.
 	makeDiscoveryClient func() (discovery.ServerResourcesInterface, error)
@@ -58,6 +67,12 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
+	switch c.ErrorMode {
+	case PropagateError, IgnoreError, SilentError:
+	default:
+		return fmt.Errorf("invalid error_mode %q: must be one of 'propagate', 'ignore', or 'silent'", c.ErrorMode)
+	}
+
 	for _, object := range c.Objects {
 		if object.Mode == "" {
 			object.Mode = defaultMode
