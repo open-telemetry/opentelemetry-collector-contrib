@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"net"
 	"net/http"
 	"sync"
 	"time"
@@ -86,27 +85,20 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 	// Validate objects against K8s API
 	validObjects, err := kr.config.getValidObjects()
 	if err != nil {
-		return kr.handleError(err, "failed to get valid objects")
+		return err
 	}
 
 	var validConfigs []*K8sObjectsConfig
 	for _, object := range kr.objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			err := fmt.Errorf("resource not found: %s", object.Name)
-			// First handle the error which will log it if in ignore mode
+			availableResource := make([]string, 0, len(validObjects))
+			for k := range validObjects {
+				availableResource = append(availableResource, k)
+			}
+			err := fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
 			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
 				return handlerErr
-			}
-
-			// Then log additional context if in ignore mode
-			if kr.config.ErrorMode == IgnoreError {
-				availableResource := make([]string, 0, len(validObjects))
-				for k := range validObjects {
-					availableResource = append(availableResource, k)
-				}
-				kr.setting.Logger.Warn("Available resources in cluster",
-					zap.Strings("resources", availableResource))
 			}
 			continue
 		}
@@ -125,7 +117,7 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 
 	if len(validConfigs) == 0 {
 		err := errors.New("no valid Kubernetes objects found to watch")
-		return kr.handleError(err, "")
+		return err
 	}
 
 	kr.setting.Logger.Info("Object Receiver started")
@@ -363,13 +355,6 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		return nil
 	}
 
-	if isCriticalError(err) {
-		if msg != "" {
-			return fmt.Errorf("%s: %w", msg, err)
-		}
-		return err
-	}
-
 	switch kr.config.ErrorMode {
 	case PropagateError:
 		if msg != "" {
@@ -389,18 +374,4 @@ func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
 		// This shouldn't happen as we validate ErrorMode during config validation
 		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
 	}
-}
-
-// isCriticalError returns true if the error is critical and should not be ignored
-func isCriticalError(err error) bool {
-	var netErr net.Error
-	if errors.As(err, &netErr) {
-		return true
-	}
-
-	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
-		return true
-	}
-
-	return false
 }

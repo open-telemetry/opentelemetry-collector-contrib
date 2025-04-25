@@ -22,24 +22,44 @@ func TestErrorModes(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {
-		desc        string
-		errorMode   ErrorMode
-		expectError bool
+		desc          string
+		errorMode     ErrorMode
+		objectName    string
+		expectError   bool
+		expectedError string
 	}{
 		{
-			desc:        "propagate error mode returns error",
-			errorMode:   PropagateError,
-			expectError: true,
+			desc:          "propagate error mode returns error for invalid resource",
+			errorMode:     PropagateError,
+			objectName:    "nonexistent-resource",
+			expectError:   true,
+			expectedError: "resource not found: nonexistent-resource",
 		},
 		{
-			desc:        "ignore error mode logs and continues",
+			desc:        "ignore error mode continues for invalid resource with valid fallback",
 			errorMode:   IgnoreError,
+			objectName:  "pods",
 			expectError: false,
 		},
 		{
-			desc:        "silent error mode continues without logging",
+			desc:        "silent error mode continues for invalid resource with valid fallback",
 			errorMode:   SilentError,
+			objectName:  "pods",
 			expectError: false,
+		},
+		{
+			desc:          "ignore error mode fails when no valid objects found",
+			errorMode:     IgnoreError,
+			objectName:    "nonexistent-resource",
+			expectError:   true,
+			expectedError: "no valid Kubernetes objects found to watch",
+		},
+		{
+			desc:          "silent error mode fails when no valid objects found",
+			errorMode:     SilentError,
+			objectName:    "nonexistent-resource",
+			expectError:   true,
+			expectedError: "no valid Kubernetes objects found to watch",
 		},
 	}
 
@@ -52,7 +72,7 @@ func TestErrorModes(t *testing.T) {
 			rCfg.ErrorMode = tt.errorMode
 			rCfg.Objects = []*K8sObjectsConfig{
 				{
-					Name: "nonexistent-resource",
+					Name: tt.objectName,
 					Mode: PullMode,
 				},
 			}
@@ -67,6 +87,9 @@ func TestErrorModes(t *testing.T) {
 			err = r.Start(context.Background(), componenttest.NewNopHost())
 			if tt.expectError {
 				assert.Error(t, err)
+				if tt.expectedError != "" {
+					assert.Contains(t, err.Error(), tt.expectedError)
+				}
 			} else {
 				assert.NoError(t, err)
 			}
