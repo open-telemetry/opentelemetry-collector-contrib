@@ -216,7 +216,7 @@ func TestDeepCopy(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			actual := tt.expected.deepCopy()
+			actual := tt.expected.DeepCopy()
 			shallowCopy := tt.expected
 
 			// Change all of the fields in the deep copy

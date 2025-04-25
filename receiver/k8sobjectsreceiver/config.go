@@ -130,7 +130,7 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 	return validObjects, nil
 }
 
-func (k *K8sObjectsConfig) deepCopy() *K8sObjectsConfig {
+func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
 	copied := &K8sObjectsConfig{
 		Name:            k.Name,
 		Group:           k.Group,
