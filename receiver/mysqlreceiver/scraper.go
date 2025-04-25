@@ -5,7 +5,9 @@ package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
+	"fmt"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"sort"
 	"strconv"
@@ -24,6 +26,7 @@ import (
 )
 
 type mySQLScraper struct {
+	buildInfo component.BuildInfo
 	sqlclient client
 	logger    *zap.Logger
 	config    *Config
@@ -43,6 +46,7 @@ func newMySQLScraper(
 ) *mySQLScraper {
 
 	return &mySQLScraper{
+		buildInfo:                            settings.BuildInfo,
 		logger:                               settings.Logger,
 		config:                               config,
 		mb:                                   metadata.NewMetricsBuilder(config.MetricsBuilderConfig, settings),
@@ -613,6 +617,8 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 	recRes := recLogs.Resource().Attributes()
 	recRes.PutStr("mysql.instance.endpoint", m.config.Endpoint)
 	scopeLogs := recLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(metadata.ScopeName)
+	scopeLogs.Scope().SetVersion(m.buildInfo.Version)
 	matchedStats := m.sortAndReduceTopQueryStats(queryStats)
 	if len(matchedStats) == 0 {
 		m.logger.Debug("No query logs stats found after sorting and reducing")
@@ -631,42 +637,14 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 		log.SetTimestamp(now)
 		log.SetEventName("top query")
 		atts := log.Attributes()
-		atts.PutInt("mysql.query.calls", s.count)
-		atts.PutInt("mysql.query.rows.returned", s.rowsReturned)
-		atts.PutInt("mysql.query.rows.total", s.rowsExamined)
-		atts.PutDouble("mysql.query.time.cpu", s.cpuTime)
-		atts.PutDouble("mysql.query.time.lock", s.lockTime)
-		atts.PutDouble("mysql.query.time.total", s.totalDuration)
-		// Additional values added for good measure
-		atts.PutInt("mysql.query.rows.affected", s.rowsAffected)
-		atts.PutInt("mysql.query.full_joins", s.fullJoins)
-		atts.PutInt("mysql.query.full_range_joins", s.fullRangeJoins)
-		atts.PutInt("mysql.query.select_ranges", s.selectRanges)
-		atts.PutInt("mysql.query.select_range_checks", s.selectRangesChecks)
-		atts.PutInt("mysql.query.select_scans", s.selectScans)
-		atts.PutInt("mysql.query.sort.merge_passes", s.sortMergePasses)
-		atts.PutInt("mysql.query.sort.ranges", s.sortRanges)
-		atts.PutInt("mysql.query.sort.scans", s.sortScans)
-		atts.PutInt("mysql.query.no_indexes_used", s.noIndexUsed)
-		atts.PutInt("mysql.query.no_good_indexes_used", s.noGoodIndexUsed)
-		// short circuit if no attributes were set
+		atts.PutInt("mysql.execution_count", s.count)
+		atts.PutInt("mysql.total_rows", s.rowsExamined)
+		atts.PutDouble("mysql.total_elapsed_time", s.totalDuration)
 		if atts.Len() == 0 {
 			continue
 		}
-		atts.PutStr("mysql.query.text", s.queryText)
-		atts.PutStr("mysql.query.hash", s.queryDigest)
-		if s.schema != "" {
-			atts.PutStr("mysql.query.schemas", s.schema)
-		}
-		if s.users != "" {
-			atts.PutStr("mysql.query.users", s.users)
-		}
-		if s.hosts != "" {
-			atts.PutStr("mysql.query.hosts", s.hosts)
-		}
-		if s.dbs != "" {
-			atts.PutStr("mysql.query.dbs", s.dbs)
-		}
+		atts.PutStr("db.query.text", s.queryText)
+		atts.PutStr("mysql.query_hash", s.queryDigest)
 	}
 
 	wg.Wait()
@@ -680,7 +658,7 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
 	defer wg.Done()
 	if strings.LastIndex(queryString, "...") == 1021 {
-		log.Attributes().PutStr("mysql.db.query.plan.text", "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
+		log.Attributes().PutStr("mysql.query_plan", "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
 		return
 	}
 	queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
@@ -688,9 +666,19 @@ func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryStri
 		m.logger.Error("Failed to fetch query plan", zap.Error(err))
 		return
 	}
-	if len(queryPlan) > 0 {
-		log.Attributes().PutStr("mysql.db.query.plan.text", queryPlan)
+	if len(queryPlan) == 0 {
+		log.Attributes().PutStr("mysql.query_plan", "NO EXPLAIN PLAN FOUND")
+		return
 	}
+	log.Attributes().PutStr("mysql.query_plan", queryPlan)
+
+	planHash := sha256.New()
+	_, err = planHash.Write([]byte(queryPlan))
+	if err != nil {
+		m.logger.Error("Failed to hash query plan", zap.Error(err))
+		return
+	}
+	log.Attributes().PutStr("mysql.query_plan_hash", fmt.Sprintf("%x", planHash.Sum(nil)))
 }
 
 func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QueryStats {
