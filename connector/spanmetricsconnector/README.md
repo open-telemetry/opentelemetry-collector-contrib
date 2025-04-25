@@ -106,7 +106,7 @@ The following settings can be optionally configured:
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
-- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number.
+- `dimensions_cache_size`: this setting is deprecated, please use aggregation_cardinality_limit instead.
 - `include_instrumentation_scope`: a list of instrumentation scope names to include from the traces.
 - `resource_metrics_cache_size` (default: `1000`): the size of the cache holding metrics for a service. This is mostly relevant for
    cumulative temporality to avoid memory leaks and correct metric timestamp resets.
