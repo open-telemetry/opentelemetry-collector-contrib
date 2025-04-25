@@ -405,7 +405,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						return attributes
 					}
-
 				} else {
 					attributesFun = func() pcommon.Map {
 						attributes := p.buildAttributes(
@@ -458,7 +457,6 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 								return attributes
 							}
-
 						} else {
 							attributesFun = func() pcommon.Map {
 								return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
