@@ -11,6 +11,8 @@ import (
 	"regexp"
 
 	"golang.org/x/text/encoding"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 )
 
 // Config is the configuration for a split func
@@ -21,8 +23,8 @@ type Config struct {
 }
 
 // Func will return a bufio.SplitFunc based on the config
-func (c Config) Func(enc encoding.Encoding, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
-	if enc == encoding.Nop {
+func (c Config) Func(enc encoding.Encoding, encName string, flushAtEOF bool, maxLogSize int) (bufio.SplitFunc, error) {
+	if textutils.IsNop(encName) {
 		if c.LineEndPattern != "" {
 			return nil, errors.New("line_end_pattern should not be set when using nop encoding")
 		}

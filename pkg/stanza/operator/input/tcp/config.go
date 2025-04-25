@@ -77,7 +77,7 @@ type BaseConfig struct {
 type SplitFuncBuilder func(enc encoding.Encoding) (bufio.SplitFunc, error)
 
 func (c Config) defaultSplitFuncBuilder(enc encoding.Encoding) (bufio.SplitFunc, error) {
-	return c.SplitConfig.Func(enc, true, int(c.MaxLogSize))
+	return c.SplitConfig.Func(enc, c.Encoding, true, int(c.MaxLogSize))
 }
 
 // Build will build a tcp input operator.

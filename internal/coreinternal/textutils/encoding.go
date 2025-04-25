@@ -16,12 +16,12 @@ import (
 var encodingOverrides = map[string]encoding.Encoding{
 	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf-8":    unicode.UTF8,
-	"utf8":     unicode.UTF8,
-	"ascii":    unicode.UTF8,
-	"us-ascii": unicode.UTF8,
+	"utf-8":    encoding.Nop,
+	"utf8":     encoding.Nop,
+	"ascii":    encoding.Nop,
+	"us-ascii": encoding.Nop,
 	"nop":      encoding.Nop,
-	"":         unicode.UTF8,
+	"":         encoding.Nop,
 }
 
 func LookupEncoding(enc string) (encoding.Encoding, error) {
@@ -39,11 +39,7 @@ func LookupEncoding(enc string) (encoding.Encoding, error) {
 }
 
 func IsNop(enc string) bool {
-	e, err := LookupEncoding(enc)
-	if err != nil {
-		return false
-	}
-	return e == encoding.Nop
+	return enc == "nop"
 }
 
 // DecodeAsString converts the given encoded bytes using the given decoder. It returns the converted
