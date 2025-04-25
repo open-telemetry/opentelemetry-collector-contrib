@@ -82,7 +82,7 @@ The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes
 - `daemonsets`
 - `namespaces`
 
-This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Note that while many standard objects are supported, custom resources defined by CRDs and certain third-party resources may not be supported without additional changes.
+This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Please note that custom resources are supported only if their CRDs are available in the cluster.
 
 ### Configuration
 
