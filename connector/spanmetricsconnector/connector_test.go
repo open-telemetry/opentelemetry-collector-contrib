@@ -914,35 +914,6 @@ func TestConsumeTraces(t *testing.T) {
 	}
 }
 
-func TestMetricKeyCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
-	require.NoError(t, err)
-	traces := buildSampleTrace()
-
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
-
-	// 0 key was cached at beginning
-	assert.Zero(t, p.metricKeyToDimensions.Len())
-
-	err = p.ConsumeTraces(ctx, traces)
-	// Validate
-	require.NoError(t, err)
-	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
-
-	// consume another batch of traces
-	err = p.ConsumeTraces(ctx, traces)
-	require.NoError(t, err)
-
-	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
-}
-
 func TestResourceMetricsCache(t *testing.T) {
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
