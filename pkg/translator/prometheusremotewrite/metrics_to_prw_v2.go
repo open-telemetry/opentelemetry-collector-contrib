@@ -6,9 +6,11 @@ package prometheusremotewrite // import "github.com/open-telemetry/opentelemetry
 import (
 	"errors"
 	"fmt"
+	"math"
 	"sort"
 	"strconv"
 
+	"github.com/prometheus/prometheus/model/value"
 	"github.com/prometheus/prometheus/prompb"
 	writev2 "github.com/prometheus/prometheus/prompb/io/prometheus/write/v2"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -90,7 +92,8 @@ func (c *prometheusConverterV2) fromMetrics(md pmetric.Metrics, settings Setting
 						c.addSumNumberDataPoints(dataPoints, resource, metric, settings, promName)
 					}
 				case pmetric.MetricTypeHistogram:
-					// TODO implement
+					dataPoints := metric.Histogram().DataPoints()
+					c.addHistogramDataPoints(dataPoints, resource, settings, promName)
 				case pmetric.MetricTypeExponentialHistogram:
 					// TODO implement
 				case pmetric.MetricTypeSummary:
@@ -116,7 +119,7 @@ func (c *prometheusConverterV2) timeSeries() []writev2.TimeSeries {
 	return allTS
 }
 
-func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) {
+func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.Label) writev2.TimeSeries {
 	buf := make([]uint32, 0, len(lbls)*2)
 
 	// TODO: Read the PRW spec to see if labels need to be sorted. If it is, then we need to sort in export code. If not, we can sort in the test. (@dashpole have more context on this)
@@ -136,4 +139,93 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		Samples:    []writev2.Sample{*sample},
 	}
 	c.unique[timeSeriesSignature(lbls)] = &ts
+
+	return ts
+}
+
+type bucketBoundsDataV2 struct {
+	ts    *writev2.TimeSeries
+	bound float64
+}
+
+func (c *prometheusConverterV2) addHistogramDataPoints(
+	dataPoints pmetric.HistogramDataPointSlice,
+	resource pcommon.Resource,
+	settings Settings,
+	baseName string,
+) {
+	for x := 0; x < dataPoints.Len(); x++ {
+		pt := dataPoints.At(x)
+		timestamp := convertTimeStamp(pt.Timestamp())
+		baseLabels := createAttributes(resource, pt.Attributes(), settings.ExternalLabels, nil, false)
+
+		if pt.HasSum() {
+			sum := &writev2.Sample{
+				Timestamp: timestamp,
+				Value:     pt.Sum(),
+			}
+			if pt.Flags().NoRecordedValue() {
+				sum.Value = math.Float64frombits(value.StaleNaN)
+			}
+
+			sumLabels := createLabels(baseName+sumStr, baseLabels)
+			_ = c.addSample(sum, sumLabels)
+		}
+
+		// treat count as a sample in an individual TimeSeries
+		count := &writev2.Sample{
+			Value:     float64(pt.Count()),
+			Timestamp: timestamp,
+		}
+
+		if pt.Flags().NoRecordedValue() {
+			count.Value = math.Float64frombits(value.StaleNaN)
+		}
+
+		countLabels := createLabels(baseName+countStr, baseLabels)
+		_ = c.addSample(count, countLabels)
+
+		// cumulative count for conversion to cumulative histogram
+		var cumulativeCount uint64
+
+		var bucketBounds []bucketBoundsDataV2
+
+		// process each bound, based on histograms proto definition, # of buckes = # of explicit bounds + 1
+		for i := 0; i < pt.ExplicitBounds().Len() && i < pt.BucketCounts().Len(); i++ {
+			bound := pt.ExplicitBounds().At(i)
+			cumulativeCount += pt.BucketCounts().At(i)
+			bucket := &writev2.Sample{
+				Value:     float64(cumulativeCount),
+				Timestamp: timestamp,
+			}
+			if pt.Flags().NoRecordedValue() {
+				bucket.Value = math.Float64frombits(value.StaleNaN)
+			}
+			boundStr := strconv.FormatFloat(bound, 'f', -1, 64)
+			labels := createLabels(baseName+bucketStr, baseLabels, leStr, boundStr)
+			ts := c.addSample(bucket, labels)
+
+			bucketBounds = append(bucketBounds, bucketBoundsDataV2{ts: &ts, bound: math.Inf(1)})
+		}
+
+		infBucket := &writev2.Sample{
+			Timestamp: timestamp,
+		}
+
+		if pt.Flags().NoRecordedValue() {
+			infBucket.Value = math.Float64frombits(value.StaleNaN)
+		} else {
+			infBucket.Value = float64(pt.Count())
+		}
+
+		infLabels := createLabels(baseName+bucketStr, baseLabels, leStr, pInfStr)
+		ts := c.addSample(infBucket, infLabels)
+
+		bucketBounds = append(bucketBounds, bucketBoundsDataV2{ts: &ts, bound: math.Inf(1)})
+		c.addExemplars(pt, bucketBounds)
+	}
+}
+
+func (c *prometheusConverterV2) addExemplars(_ pmetric.HistogramDataPoint, _ []bucketBoundsDataV2) {
+	// TODO: Implement this function
 }
