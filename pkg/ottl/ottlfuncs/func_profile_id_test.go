@@ -38,21 +38,34 @@ func Test_profileID_validation(t *testing.T) {
 	tests := []struct {
 		name  string
 		bytes []byte
+		err   string
 	}{
+		{
+			name:  "nil profile id",
+			bytes: nil,
+			err:   "profile ids must be 16 bytes",
+		},
+		{
+			name:  "invalid profile id",
+			bytes: make([]byte, 16),
+			err:   "profile ids cannot be all zeroes",
+		},
 		{
 			name:  "byte slice less than 16",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
+			err:   "profile ids must be 16 bytes",
 		},
 		{
 			name:  "byte slice longer than 16",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17},
+			err:   "profile ids must be 16 bytes",
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			_, err := profileID[any](tt.bytes)
 			require.Error(t, err)
-			assert.ErrorContains(t, err, "profile ids must be 16 bytes")
+			assert.ErrorContains(t, err, tt.err)
 		})
 	}
 }
