@@ -98,7 +98,6 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 		attributes := pcommon.NewMap()
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
-			attributes.PutBool(overflowKey, true)
 			key = overflowKey
 
 			// check if overflowKey already exit
@@ -106,6 +105,8 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 			if ok {
 				return h, limitReached
 			}
+
+			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()
 		}
@@ -172,7 +173,6 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 		attributes := pcommon.NewMap()
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
-			attributes.PutBool(overflowKey, true)
 			key = overflowKey
 
 			// check if overflowKey already exit
@@ -180,6 +180,8 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 			if ok {
 				return h, limitReached
 			}
+
+			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()
 		}
@@ -334,7 +336,6 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 		// check when new key coming
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
-			attributes.PutBool(overflowKey, true)
 			key = overflowKey
 
 			// check if overflowKey already exit
@@ -342,6 +343,8 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 			if ok {
 				return s, limitReached
 			}
+
+			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()
 		}
