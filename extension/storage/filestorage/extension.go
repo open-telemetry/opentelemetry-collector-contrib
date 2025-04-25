@@ -11,6 +11,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
@@ -76,8 +77,12 @@ func (lfs *localFileStorage) GetClient(_ context.Context, kind component.Kind, e
 			return nil, fmt.Errorf("error renaming the database. Please remove %s manually: %w", absoluteName, err)
 		}
 	}
-	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, lfs.cfg.Compaction, !lfs.cfg.FSync)
+	// the cast of MaxSize here has been checked in config.Validate
+	client, err := newClient(lfs.logger, absoluteName, lfs.cfg.Timeout, int(lfs.cfg.MaxSize), lfs.cfg.Compaction, !lfs.cfg.FSync)
 	if err != nil {
+		if errors.Is(err, berrors.ErrMaxSizeReached) {
+			return nil, storage.ErrStorageFull
+		}
 		return nil, err
 	}
 

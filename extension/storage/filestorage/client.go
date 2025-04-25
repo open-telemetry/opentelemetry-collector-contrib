@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.etcd.io/bbolt"
+	berrors "go.etcd.io/bbolt/errors"
 	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.uber.org/zap"
 )
@@ -39,17 +40,18 @@ type fileStorageClient struct {
 	closed          bool
 }
 
-func bboltOptions(timeout time.Duration, noSync bool) *bbolt.Options {
+func bboltOptions(timeout time.Duration, maxSize int, noSync bool) *bbolt.Options {
 	return &bbolt.Options{
 		Timeout:        timeout,
+		MaxSize:        maxSize,
 		NoSync:         noSync,
 		NoFreelistSync: true,
 		FreelistType:   bbolt.FreelistMapType,
 	}
 }
 
-func newClient(logger *zap.Logger, filePath string, timeout time.Duration, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
-	options := bboltOptions(timeout, noSync)
+func newClient(logger *zap.Logger, filePath string, timeout time.Duration, maxSize int, compactionCfg *CompactionConfig, noSync bool) (*fileStorageClient, error) {
+	options := bboltOptions(timeout, maxSize, noSync)
 	db, err := bbolt.Open(filePath, 0o600, options)
 	if err != nil {
 		return nil, err
@@ -85,7 +87,11 @@ func (c *fileStorageClient) Get(ctx context.Context, key string) ([]byte, error)
 
 // Set will store data. The data can be retrieved using the same key
 func (c *fileStorageClient) Set(ctx context.Context, key string, value []byte) error {
-	return c.Batch(ctx, storage.SetOperation(key, value))
+	err := c.Batch(ctx, storage.SetOperation(key, value))
+	if errors.Is(err, berrors.ErrMaxSizeReached) {
+		return storage.ErrStorageFull
+	}
+	return err
 }
 
 // Delete will delete data associated with the specified key
@@ -132,7 +138,11 @@ func (c *fileStorageClient) Batch(_ context.Context, ops ...*storage.Operation) 
 
 	c.compactionMutex.RLock()
 	defer c.compactionMutex.RUnlock()
-	return c.db.Update(batch)
+	err := c.db.Update(batch)
+	if errors.Is(err, berrors.ErrMaxSizeReached) {
+		return storage.ErrStorageFull
+	}
+	return err
 }
 
 // Close will close the database
@@ -174,7 +184,7 @@ func (c *fileStorageClient) Compact(compactionDirectory string, timeout time.Dur
 	}()
 
 	// use temporary file as compaction target
-	options := bboltOptions(timeout, c.db.NoSync)
+	options := bboltOptions(timeout, c.db.MaxSize, c.db.NoSync)
 
 	c.compactionMutex.Lock()
 	defer c.compactionMutex.Unlock()
