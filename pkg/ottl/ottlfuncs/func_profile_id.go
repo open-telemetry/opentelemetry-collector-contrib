@@ -31,19 +31,12 @@ func createProfileIDFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	return profileID[K](args.Bytes)
 }
 
-var emptyProfileID = pprofile.NewProfileIDEmpty()
-
 func profileID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
-	if len(bytes) != len(emptyProfileID) {
-		return nil, fmt.Errorf("profile ids must be %d bytes", len(emptyProfileID))
-	}
-	if pprofile.ProfileID(bytes) == emptyProfileID {
-		return nil, errors.New("profile ids cannot be all zeroes")
-	}
-
 	id := pprofile.ProfileID{}
+	if len(bytes) != len(id) {
+		return nil, fmt.Errorf("profile ids must be %d bytes", len(id))
+	}
 	copy(id[:], bytes)
-
 	return func(context.Context, K) (any, error) {
 		return id, nil
 	}, nil

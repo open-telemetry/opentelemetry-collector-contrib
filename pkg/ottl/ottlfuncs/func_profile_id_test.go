@@ -46,11 +46,6 @@ func Test_profileID_validation(t *testing.T) {
 			err:   "profile ids must be 16 bytes",
 		},
 		{
-			name:  "invalid profile id",
-			bytes: make([]byte, 16),
-			err:   "profile ids cannot be all zeroes",
-		},
-		{
 			name:  "byte slice less than 16",
 			bytes: []byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},
 			err:   "profile ids must be 16 bytes",
