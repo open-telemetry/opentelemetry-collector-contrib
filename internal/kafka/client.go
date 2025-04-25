@@ -63,6 +63,14 @@ func NewSaramaConsumerGroup(
 	saramaConfig.Consumer.Offsets.AutoCommit.Enable = consumerConfig.AutoCommit.Enable
 	saramaConfig.Consumer.Offsets.AutoCommit.Interval = consumerConfig.AutoCommit.Interval
 	saramaConfig.Consumer.Offsets.Initial = saramaInitialOffsets[consumerConfig.InitialOffset]
+	// Set the rebalance strategy
+	rebalanceStrategy := rebalanceStrategy(consumerConfig.GroupRebalanceStrategy)
+	if rebalanceStrategy != nil {
+		saramaConfig.Consumer.Group.Rebalance.GroupStrategies = []sarama.BalanceStrategy{rebalanceStrategy}
+	}
+	if len(consumerConfig.GroupInstanceID) > 0 {
+		saramaConfig.Consumer.Group.InstanceId = consumerConfig.GroupInstanceID
+	}
 	return sarama.NewConsumerGroup(clientConfig.Brokers, consumerConfig.GroupID, saramaConfig)
 }
 
@@ -125,4 +133,17 @@ func newSaramaClientConfig(ctx context.Context, config configkafka.ClientConfig)
 	}
 	configureSaramaAuthentication(ctx, config.Authentication, saramaConfig)
 	return saramaConfig, nil
+}
+
+func rebalanceStrategy(strategy string) sarama.BalanceStrategy {
+	switch strategy {
+	case sarama.RangeBalanceStrategyName:
+		return sarama.NewBalanceStrategyRange()
+	case sarama.StickyBalanceStrategyName:
+		return sarama.NewBalanceStrategySticky()
+	case sarama.RoundRobinBalanceStrategyName:
+		return sarama.NewBalanceStrategyRoundRobin()
+	default:
+		return nil
+	}
 }

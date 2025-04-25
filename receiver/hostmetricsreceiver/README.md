@@ -47,8 +47,8 @@ The available scrapers are:
 | [memory]     | All                          | Memory utilization metrics                             |
 | [network]    | All                          | Network interface I/O metrics & TCP connection metrics |
 | [paging]     | All                          | Paging/Swap space utilization and I/O metrics          |
-| [processes]  | Linux, Mac                   | Process count metrics                                  |
-| [process]    | Linux, Windows, Mac          | Per process CPU, Memory, and Disk I/O metrics          |
+| [processes]  | Linux, Mac, FreeBSD, OpenBSD | Process count metrics                                  |
+| [process]    | Linux, Windows, Mac, FreeBSD | Per process CPU, Memory, and Disk I/O metrics          |
 | [system]     | Linux, Windows, Mac          | Miscellaneous system metrics                           |
 
 [cpu]: ./internal/scraper/cpuscraper/documentation.md
