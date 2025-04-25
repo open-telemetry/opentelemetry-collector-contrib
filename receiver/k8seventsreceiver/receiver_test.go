@@ -32,6 +32,8 @@ func TestNewReceiver(t *testing.T) {
 		receivertest.NewNopSettings(metadata.Type),
 		rCfg,
 		consumertest.NewNop(),
+		withExtractLabels(),
+		withExtractAnnotations(),
 	)
 
 	require.NoError(t, err)
@@ -130,6 +132,44 @@ func TestAllowEvent(t *testing.T) {
 	assert.False(t, shouldAllowEvent)
 }
 
+func TestEventLabelsAndAnnotationsExtractionOptions(t *testing.T) {
+	rCfg := createDefaultConfig().(*Config)
+	sink := new(consumertest.LogsSink)
+	r, err := newReceiver(
+		receivertest.NewNopSettings(metadata.Type),
+		rCfg,
+		sink,
+	)
+	require.NoError(t, err)
+	require.NotNil(t, r)
+
+	recv := r.(*k8seventsReceiver)
+	assert.NoError(t, withExtractLabels(FieldExtractConfig{
+		Key: "testlabel",
+	})(recv))
+	assert.NoError(t, withExtractAnnotations(FieldExtractConfig{
+		TagName:  "$1",
+		KeyRegex: "testannotation/(.*)",
+	})(recv))
+	recv.ctx = context.Background()
+	k8sEvent := getEvent()
+	k8sEvent.Labels["testlabel"] = "test-label-value"
+	k8sEvent.Annotations["testannotation/a1"] = "test-annotation-value"
+	recv.handleEvent(k8sEvent)
+	assert.Equal(t, 1, sink.LogRecordCount())
+	rl := sink.AllLogs()[0].ResourceLogs().At(0)
+	lr := rl.ScopeLogs().At(0)
+	attrs := lr.LogRecords().At(0).Attributes()
+
+	labelAttribute, ok := attrs.Get("k8s.event.labels.testlabel")
+	assert.True(t, ok)
+	assert.Equal(t, "test-label-value", labelAttribute.AsString())
+
+	labelAttribute, ok = attrs.Get("a1")
+	assert.True(t, ok)
+	assert.Equal(t, "test-annotation-value", labelAttribute.AsString())
+}
+
 func getEvent() *corev1.Event {
 	return &corev1.Event{
 		InvolvedObject: corev1.ObjectReference{
@@ -149,6 +189,8 @@ func getEvent() *corev1.Event {
 			Name:              "1",
 			Namespace:         "test",
 			CreationTimestamp: v1.Now(),
+			Labels:            make(map[string]string),
+			Annotations:       make(map[string]string),
 		},
 		Source: corev1.EventSource{
 			Component: "testComponent",

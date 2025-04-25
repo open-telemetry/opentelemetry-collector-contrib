@@ -11,6 +11,8 @@ import (
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8seventsreceiver/internal/kube"
 )
 
 const (
@@ -29,7 +31,7 @@ var severityMap = map[string]plog.SeverityNumber{
 }
 
 // k8sEventToLogRecord converts Kubernetes event to plog.LogRecordSlice and adds the resource attributes.
-func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
+func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event, extractionRules ...*kube.ExtractionRules) plog.Logs {
 	ld := plog.NewLogs()
 	rl := ld.ResourceLogs().AppendEmpty()
 	sl := rl.ScopeLogs().AppendEmpty()
@@ -72,6 +74,19 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
 	attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
+
+	for _, rules := range extractionRules {
+		for _, r := range rules.Labels {
+			for k, v := range r.ExtractTagsFromMetadata(ev.Labels, "k8s.event.labels.%s") {
+				attrs.PutStr(k, v)
+			}
+		}
+		for _, r := range rules.Annotations {
+			for k, v := range r.ExtractTagsFromMetadata(ev.Annotations, "k8s.event.annotations.%s") {
+				attrs.PutStr(k, v)
+			}
+		}
+	}
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.
