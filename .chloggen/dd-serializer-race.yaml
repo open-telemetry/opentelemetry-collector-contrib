@@ -10,7 +10,7 @@ component: datadogexporter
 note: "Fix a race condition in metric serializer exporter where the exporter may not be fully initialized when it receives metrics"
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues: []
+issues: [39669]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
