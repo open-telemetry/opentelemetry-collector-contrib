@@ -36,7 +36,6 @@ const (
 	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
 	metricKeySeparator             = string(byte(0))
 
-	defaultDimensionsCacheSize      = 1000
 	defaultResourceMetricsCacheSize = 1000
 
 	metricNameDuration = "duration"
@@ -108,6 +107,9 @@ func newDimensions(cfgDims []Dimension) []utilattri.Dimension {
 func newConnector(logger *zap.Logger, config component.Config, clock clockwork.Clock) (*connectorImp, error) {
 	logger.Info("Building spanmetrics connector")
 	cfg := config.(*Config)
+	if cfg.DimensionsCacheSize != 0 {
+		logger.Warn("DimensionsCacheSize is deprecated, please use AggregationCardinalityLimit instead.")
+	}
 
 	resourceMetricsCache, err := cache.NewCache[resourceKey, *resourceMetrics](cfg.ResourceMetricsCacheSize)
 	if err != nil {

@@ -46,7 +46,6 @@ const (
 	notInSpanAttrName1       = "shouldNotBeInMetric"
 	regionResourceAttrName   = "region"
 	exceptionTypeAttrName    = "exception.type"
-	dimensionsCacheSize      = 2
 	resourceMetricsCacheSize = 5
 
 	sampleRegion   = "us-east-1"
@@ -465,7 +464,6 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 		Histogram:                    histogramConfig(),
 		Exemplars:                    exemplarsConfig(),
 		ExcludeDimensions:            excludedDimensions,
-		DimensionsCacheSize:          dimensionsCacheSize,
 		ResourceMetricsCacheSize:     resourceMetricsCacheSize,
 		ResourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
 		Dimensions: []Dimension{

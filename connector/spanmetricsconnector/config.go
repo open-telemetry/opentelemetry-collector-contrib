@@ -134,13 +134,6 @@ func (c Config) Validate() error {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
-	if c.DimensionsCacheSize <= 0 {
-		return fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			c.DimensionsCacheSize,
-		)
-	}
-
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
