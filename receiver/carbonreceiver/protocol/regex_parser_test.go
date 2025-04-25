@@ -179,7 +179,6 @@ func Test_regexParser_parsePath(t *testing.T) {
 func Test_regexParser_parsePath_simple_unnamed_group(t *testing.T) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
-
 			{
 				Regexp:     `(prefix\.)?(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
 				NamePrefix: "cpu_seconds",
@@ -249,7 +248,6 @@ func Test_regexParser_parsePath_simple_unnamed_group(t *testing.T) {
 func Test_regexParser_parsePath_key_inside_unnamed_group(t *testing.T) {
 	config := RegexParserConfig{
 		Rules: []*RegexRule{
-
 			{
 				Regexp:     `(job=(?P<key_job>[^.]+).)?(?P<key_svc>[^.]+)\.(?P<key_host>[^.]+)\.cpu\.seconds`,
 				NamePrefix: "cpu_seconds",
