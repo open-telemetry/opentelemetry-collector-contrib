@@ -65,7 +65,8 @@ Follow the below sections to setup various Kubernetes resources required for the
 
 ### Supported Kubernetes objects
 
-The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. Examples of supported objects in the format for `name` parameter:
+The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes objects from the API server. For example, the mostly used supported objects
+(in addition to other standard Kubernetes objects) are:
 
 - `pods`
 - `events`
@@ -81,7 +82,7 @@ The `k8sobjectsreceiver` supports collecting a wide range of standard Kubernetes
 - `daemonsets`
 - `namespaces`
 
-This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Note that while many standard objects are supported, custom resources defined by CRDs and certain third-party metrics may require additional configuration.
+This receiver supports both `pull` and `watch` modes, allowing for flexible and real-time monitoring of these objects. Note that while many standard objects are supported, custom resources defined by CRDs and certain third-party resources may not be supported without additional changes.
 
 ### Configuration
 
