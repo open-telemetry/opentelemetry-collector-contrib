@@ -38,7 +38,7 @@ func profileID[K any](bytes []byte) (ottl.ExprFunc[K], error) {
 		return nil, fmt.Errorf("profile ids must be %d bytes", len(emptyProfileID))
 	}
 	if pprofile.ProfileID(bytes) == emptyProfileID {
-		return nil, fmt.Errorf("profile ids cannot be all zeroes")
+		return nil, errors.New("profile ids cannot be all zeroes")
 	}
 
 	id := pprofile.ProfileID{}
