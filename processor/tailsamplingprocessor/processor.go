@@ -50,20 +50,21 @@ type tailSamplingSpanProcessor struct {
 	telemetry *metadata.TelemetryBuilder
 	logger    *zap.Logger
 
-	nextConsumer      consumer.Traces
-	maxNumTraces      uint64
-	policies          []*policy
-	idToTrace         sync.Map
-	policyTicker      timeutils.TTicker
-	tickerFrequency   time.Duration
-	decisionBatcher   idbatcher.Batcher
-	sampledIDCache    cache.Cache[bool]
-	nonSampledIDCache cache.Cache[bool]
-	deleteChan        chan pcommon.TraceID
-	numTracesOnMap    *atomic.Uint64
-	recordPolicy      bool
-	setPolicyMux      sync.Mutex
-	pendingPolicy     []PolicyCfg
+	nextConsumer       consumer.Traces
+	maxNumTraces       uint64
+	policies           []*policy
+	idToTrace          sync.Map
+	policyTicker       timeutils.TTicker
+	tickerFrequency    time.Duration
+	decisionBatcher    idbatcher.Batcher
+	sampledIDCache     cache.Cache[bool]
+	nonSampledIDCache  cache.Cache[bool]
+	deleteChan         chan pcommon.TraceID
+	numTracesOnMap     *atomic.Uint64
+	recordPolicy       bool
+	setPolicyMux       sync.Mutex
+	pendingPolicy      []PolicyCfg
+	sampleOnFirstMatch bool
 }
 
 // spanAndScope a structure for holding information about span and its instrumentation scope.
@@ -113,16 +114,17 @@ func newTracesProcessor(ctx context.Context, set processor.Settings, nextConsume
 	}
 
 	tsp := &tailSamplingSpanProcessor{
-		ctx:               ctx,
-		set:               set,
-		telemetry:         telemetry,
-		nextConsumer:      nextConsumer,
-		maxNumTraces:      cfg.NumTraces,
-		sampledIDCache:    sampledDecisions,
-		nonSampledIDCache: nonSampledDecisions,
-		logger:            telemetrySettings.Logger,
-		numTracesOnMap:    &atomic.Uint64{},
-		deleteChan:        make(chan pcommon.TraceID, cfg.NumTraces),
+		ctx:                ctx,
+		set:                set,
+		telemetry:          telemetry,
+		nextConsumer:       nextConsumer,
+		maxNumTraces:       cfg.NumTraces,
+		sampledIDCache:     sampledDecisions,
+		nonSampledIDCache:  nonSampledDecisions,
+		logger:             telemetrySettings.Logger,
+		numTracesOnMap:     &atomic.Uint64{},
+		deleteChan:         make(chan pcommon.TraceID, cfg.NumTraces),
+		sampleOnFirstMatch: cfg.SampleOnFirstMatch,
 	}
 	tsp.policyTicker = &timeutils.PolicyTicker{OnTickFunc: tsp.samplingPolicyOnTick}
 
@@ -428,6 +430,11 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 
 		// Break early if dropped. This can drastically reduce tick/decision latency.
 		if decision == sampling.Dropped {
+			break
+		}
+		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
+		if tsp.sampleOnFirstMatch && decision == sampling.Sampled {
+			finalDecision = decision
 			break
 		}
 	}

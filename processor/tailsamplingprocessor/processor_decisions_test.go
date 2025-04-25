@@ -636,3 +636,61 @@ func TestLateSpanUsesNonSampledDecisionCache(t *testing.T) {
 	require.Equal(t, 1, mpe.EvaluationCount)
 	require.Equal(t, 0, nextConsumer.SpanCount(), "original final decision not honored")
 }
+
+func TestSampleOnFirstMatch(t *testing.T) {
+	nextConsumer := new(consumertest.TracesSink)
+	idb := newSyncIDBatcher()
+
+	mpe1 := &mockPolicyEvaluator{}
+	mpe2 := &mockPolicyEvaluator{}
+	mpe3 := &mockPolicyEvaluator{}
+
+	policies := []*policy{
+		{name: "mock-policy-1", evaluator: mpe1, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-1"))},
+		{name: "mock-policy-2", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-2"))},
+		{name: "mock-policy-3", evaluator: mpe2, attribute: metric.WithAttributes(attribute.String("policy", "mock-policy-3"))},
+	}
+
+	cfg := Config{
+		DecisionWait:       defaultTestDecisionWait,
+		NumTraces:          defaultNumTraces,
+		SampleOnFirstMatch: true,
+		Options: []Option{
+			withDecisionBatcher(idb),
+			withPolicies(policies),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
+	require.NoError(t, err)
+
+	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(t, p.Shutdown(context.Background()))
+	}()
+
+	// Second policy matches, last policy should not be evaluated
+	mpe1.NextDecision = sampling.NotSampled
+	mpe2.NextDecision = sampling.Sampled
+
+	// Generate and deliver first span
+	require.NoError(t, p.ConsumeTraces(context.Background(), simpleTraces()))
+
+	tsp := p.(*tailSamplingSpanProcessor)
+
+	// The first tick won't do anything
+	tsp.policyTicker.OnTick()
+	require.Equal(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe3.EvaluationCount)
+
+	// This will cause policy evaluations on the first span
+	tsp.policyTicker.OnTick()
+
+	// Only the first policy should have been evaluated
+	require.Equal(t, 1, mpe1.EvaluationCount)
+	require.Equal(t, 1, mpe2.EvaluationCount)
+	require.Equal(t, 0, mpe3.EvaluationCount)
+
+	// The final decision SHOULD be Sampled.
+	require.Equal(t, 1, nextConsumer.SpanCount())
+}
