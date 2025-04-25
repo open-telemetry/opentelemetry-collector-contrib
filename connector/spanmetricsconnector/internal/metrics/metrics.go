@@ -259,16 +259,22 @@ func (s *Sum) Add(value uint64) {
 	s.count += value
 }
 
-func NewSumMetrics(maxExemplarCount *int) SumMetrics {
+func NewSumMetrics(maxExemplarCount *int, cardinalityLimit int) SumMetrics {
 	return SumMetrics{
 		metrics:          make(map[Key]*Sum),
 		maxExemplarCount: maxExemplarCount,
+		cardinalityLimit: cardinalityLimit,
 	}
 }
 
 type SumMetrics struct {
 	metrics          map[Key]*Sum
 	maxExemplarCount *int
+	cardinalityLimit int
+}
+
+func (m *SumMetrics) IsCardinalityLimitReached() bool {
+	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
 func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) *Sum {
