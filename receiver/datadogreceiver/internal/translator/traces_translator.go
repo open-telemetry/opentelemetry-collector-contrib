@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
-	"go.opentelemetry.io/otel/trace"
+	oteltrace "go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
@@ -90,6 +90,13 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	// now instead of being a span level attribute.
 	groupByService := make(map[string]ptrace.SpanSlice)
 
+	// Datadog traces split a 128 bits trace id in two parts: TraceID and Tags._dd_p_tid. This happens if the
+	// instrumented service received a TraceContext from an OTel instrumented service. When it happens, we need
+	// to concatenate the two into newSpan.TraceID.
+	// The following map keeps track of the TraceIDs we process as only the first span has the upper 64 bits from the
+	// 128 bits trace ID.
+	map64to128 := make(map[uint64]pcommon.TraceID)
+
 	for _, trace := range traces {
 		for _, span := range trace {
 			slice, exist := groupByService[span.Service]
@@ -101,7 +108,24 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 
 			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
 
-			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
+			// Reconstructing the 128 bits TraceID, if available or cached.
+			// Note: This may not be resilient to related spans being flushed separately in datadog's tracing libraries.
+			//       It might also not work if multiple datadog instrumented services are chained.
+			if val, ok := span.Meta["_dd.p.tid"]; ok {
+				hexTraceID := val + strconv.FormatUint(span.TraceID, 16)
+				traceID, err := oteltrace.TraceIDFromHex(hexTraceID)
+				if err != nil {
+					panic(err)
+				}
+				newSpan.SetTraceID(pcommon.TraceID(traceID))
+
+				// Child spans don't have _dd.p.tid, we cache it.
+				map64to128[span.TraceID] = pcommon.TraceID(traceID)
+			} else if val, ok := map64to128[span.TraceID]; ok {
+				newSpan.SetTraceID(val)
+			} else {
+				newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
+			}
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
@@ -195,14 +219,14 @@ func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		link := dest.AppendEmpty()
 
 		// Convert trace id.
-		rawTrace, errTrace := trace.TraceIDFromHex(span.TraceID)
+		rawTrace, errTrace := oteltrace.TraceIDFromHex(span.TraceID)
 		if errTrace != nil {
 			return errTrace
 		}
 		link.SetTraceID(pcommon.TraceID(rawTrace))
 
 		// Convert span id.
-		rawSpan, errSpan := trace.SpanIDFromHex(span.SpanID)
+		rawSpan, errSpan := oteltrace.SpanIDFromHex(span.SpanID)
 		if errSpan != nil {
 			return errSpan
 		}
