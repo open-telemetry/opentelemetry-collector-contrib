@@ -7,15 +7,13 @@ import (
 	"context"
 	"errors"
 
-	"go.opentelemetry.io/collector/consumer"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
-
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr"
 )
 
 // TODO: Find a place for this to be shared.

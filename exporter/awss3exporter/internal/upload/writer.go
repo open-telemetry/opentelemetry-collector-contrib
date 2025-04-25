@@ -8,12 +8,11 @@ import (
 	"compress/gzip"
 	"context"
 
-	"github.com/tilinna/clock"
-
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/s3/manager"
 	"github.com/aws/aws-sdk-go-v2/service/s3"
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
+	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
 )
 
