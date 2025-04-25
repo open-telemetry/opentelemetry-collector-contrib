@@ -31,7 +31,11 @@ type Config struct {
 	TLS                            configtls.ClientConfig        `mapstructure:"tls,omitempty"`
 	MetricsBuilderConfig           metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	StatementEvents                StatementEventsConfig         `mapstructure:"statement_events"`
-	TopQueryMetricsMax             int                           `mapstructure:"top_query_metrics_max"`
+	TopQueryCollection             TopQueryCollection            `mapstructure:"top_query_collection"`
+}
+
+type TopQueryCollection struct {
+	TopQueryCount int `mapstructure:"top_query_count"`
 }
 
 type StatementEventsConfig struct {

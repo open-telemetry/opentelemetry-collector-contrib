@@ -4,7 +4,8 @@ mysql:
   password: ${env:MYSQL_PASSWORD}
   database: otel
   collection_interval: 10s
-  top_query_metrics_max: 9
+  top_query_collection:
+    top_query_count: 9
 mysql/default_tls:
   endpoint: localhost:3306
   username: otel
