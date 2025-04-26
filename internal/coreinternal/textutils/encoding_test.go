@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package textutils
+package textutils // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 
 import (
 	"testing"
@@ -11,7 +11,6 @@ import (
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
-	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 )
 
@@ -23,7 +22,7 @@ func TestUTF8Encoding(t *testing.T) {
 	}{
 		{
 			name:         "UTF8 encoding",
-			encoding:     unicode.UTF8,
+			encoding:     utf8,
 			encodingName: "utf8",
 		},
 		{
