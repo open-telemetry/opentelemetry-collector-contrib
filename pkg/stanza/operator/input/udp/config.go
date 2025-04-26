@@ -97,7 +97,7 @@ func (c Config) Build(set component.TelemetrySettings) (operator.Operator, error
 	}
 
 	// Build split func
-	splitFunc, err := c.SplitConfig.Func(enc, c.Encoding, true, MaxUDPSize)
+	splitFunc, err := c.SplitConfig.Func(enc, true, MaxUDPSize)
 	if err != nil {
 		return nil, err
 	}

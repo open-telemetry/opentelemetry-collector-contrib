@@ -13,15 +13,26 @@ import (
 	"golang.org/x/text/encoding/unicode"
 )
 
+// utf8 wraps [encoding.Nop] while ensuring their values differ. This way,
+// any code relying on `enc == encoding.Nop` to determine the encoding setup
+// maintains compatibility without needing a signature change.
+//
+// Unlike [unicode.UTF8], it doesn't replace invalid UTF-8 sequences with '\uFFFD'.
+var utf8 = encodingWrapper{encoding.Nop}
+
+type encodingWrapper struct {
+	encoding.Encoding
+}
+
 var encodingOverrides = map[string]encoding.Encoding{
 	"utf-16":   unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
 	"utf16":    unicode.UTF16(unicode.LittleEndian, unicode.IgnoreBOM),
-	"utf-8":    encoding.Nop,
-	"utf8":     encoding.Nop,
-	"ascii":    encoding.Nop,
-	"us-ascii": encoding.Nop,
+	"utf-8":    utf8,
+	"utf8":     utf8,
+	"ascii":    utf8,
+	"us-ascii": utf8,
 	"nop":      encoding.Nop,
-	"":         encoding.Nop,
+	"":         utf8,
 }
 
 func LookupEncoding(enc string) (encoding.Encoding, error) {
@@ -39,7 +50,11 @@ func LookupEncoding(enc string) (encoding.Encoding, error) {
 }
 
 func IsNop(enc string) bool {
-	return enc == "nop"
+	e, err := LookupEncoding(enc)
+	if err != nil {
+		return false
+	}
+	return e == encoding.Nop
 }
 
 // DecodeAsString converts the given encoded bytes using the given decoder. It returns the converted

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.uber.org/zap"
+	"golang.org/x/text/encoding"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
@@ -116,14 +117,14 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 
 	splitFunc := o.splitFunc
 	if splitFunc == nil {
-		splitFunc, err = c.SplitConfig.Func(enc, c.Encoding, false, int(c.MaxLogSize))
+		splitFunc, err = c.SplitConfig.Func(enc, false, int(c.MaxLogSize))
 		if err != nil {
 			return nil, err
 		}
 	}
 
 	trimFunc := trim.Nop
-	if textutils.IsNop(c.Encoding) {
+	if enc != encoding.Nop {
 		trimFunc = c.TrimConfig.Func()
 	}
 
