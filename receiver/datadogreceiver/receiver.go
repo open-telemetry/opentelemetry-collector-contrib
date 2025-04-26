@@ -8,7 +8,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"io"
 	"net/http"
 	"strings"
@@ -20,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componentstatus"
 	"go.opentelemetry.io/collector/consumer"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/receiver/receiverhelper"
 	"go.uber.org/zap"
@@ -144,11 +144,14 @@ func newDataDogReceiver(config *Config, params receiver.Settings) (component.Com
 		return nil, err
 	}
 
-	cache, err := simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
-		params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to create traceID cache: %w", err)
+	var cache *simplelru.LRU[uint64, pcommon.TraceID]
+	if FullTraceIDFeatureGate.IsEnabled() {
+		cache, err = simplelru.NewLRU[uint64, pcommon.TraceID](config.TraceIDCacheSize, func(k uint64, _ pcommon.TraceID) {
+			params.Logger.Debug("evicting datadog trace id from cache", zap.Uint64("id", k))
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to create traceID cache: %w", err)
+		}
 	}
 
 	return &datadogReceiver{

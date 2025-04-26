@@ -8,6 +8,15 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/confighttp"
+	"go.opentelemetry.io/collector/featuregate"
+)
+
+var FullTraceIDFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"receiver.datadogreceiver.Enable128BitTraceID",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, adds support for 128bits TraceIDs for spans coming from Datadog instrumented services."),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
+	featuregate.WithRegisterReferenceURL("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36926"),
 )
 
 type Config struct {

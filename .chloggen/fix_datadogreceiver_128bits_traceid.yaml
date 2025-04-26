@@ -7,7 +7,7 @@ change_type: bug_fix
 component: datadogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Support 128 bits TraceID coming from Datadog
+note: Support 128 bits TraceIDs coming from Datadog
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [36926]
@@ -15,7 +15,10 @@ issues: [36926]
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
-subtext:
+subtext: |
+  This fix is released behind a featuregate so as to not be a breaking change for users. To enable it, enable 
+  `receiver.datadogreceiver.Enable128BitTraceID`. The feature uses an LRU cache that will keep the last 100 trace ids by
+  default. This can be configured via `receivers.datadog.trace_id_cache_size`.
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
