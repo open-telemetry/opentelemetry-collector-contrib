@@ -95,17 +95,18 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 	limitReached := false
 	h, ok := m.metrics[key]
 	if !ok {
-		attributes := pcommon.NewMap()
+		var attributes pcommon.Map
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
 			key = overflowKey
 
-			// check if overflowKey already exit
+			// check if overflowKey already exists
 			h, ok = m.metrics[key]
 			if ok {
 				return h, limitReached
 			}
 
+			attributes = pcommon.NewMap()
 			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()
@@ -170,17 +171,18 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 		)
 		histogram.Init(cfg)
 
-		attributes := pcommon.NewMap()
+		var attributes pcommon.Map
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
 			key = overflowKey
 
-			// check if overflowKey already exit
+			// check if overflowKey already exists
 			h, ok = m.metrics[key]
 			if ok {
 				return h, limitReached
 			}
 
+			attributes = pcommon.NewMap()
 			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()
@@ -332,18 +334,19 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 	limitReached := false
 	s, ok := m.metrics[key]
 	if !ok {
-		attributes := pcommon.NewMap()
+		var attributes pcommon.Map
 		// check when new key coming
 		if m.IsCardinalityLimitReached() {
 			limitReached = true
 			key = overflowKey
 
-			// check if overflowKey already exit
+			// check if overflowKey already exists
 			s, ok = m.metrics[key]
 			if ok {
 				return s, limitReached
 			}
 
+			attributes = pcommon.NewMap()
 			attributes.PutBool(overflowKey, true)
 		} else {
 			attributes = attributesFun()

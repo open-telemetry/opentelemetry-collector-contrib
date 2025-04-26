@@ -912,6 +912,42 @@ func TestConsumeTraces(t *testing.T) {
 	}
 }
 
+func TestCallsMetricsInitialise(t *testing.T) {
+	traces := buildSampleTrace()
+
+	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
+	require.NoError(t, err)
+
+	ctx := metadata.NewIncomingContext(context.Background(), nil)
+	err = p.Start(ctx, componenttest.NewNopHost())
+	defer func() { sdErr := p.Shutdown(ctx); require.NoError(t, sdErr) }()
+	require.NoError(t, err)
+
+	err = p.ConsumeTraces(ctx, traces)
+	assert.NoError(t, err)
+
+	verifyDataPointValue := func(t *testing.T, pmetrics pmetric.Metrics, value int64) {
+		assert.NotNil(t, pmetrics)
+		require.NotEmpty(t, pmetrics.ResourceMetrics().Len())
+		rm := pmetrics.ResourceMetrics().At(0)
+		require.NotEmpty(t, rm.ScopeMetrics().Len())
+		sm := rm.ScopeMetrics().At(0)
+		require.NotEmpty(t, sm.Metrics().Len())
+		m := sm.Metrics().At(0)
+		require.NotEmpty(t, m.Sum().DataPoints().Len())
+		dp := m.Sum().DataPoints().At(0)
+		require.Equal(t, value, dp.IntValue())
+	}
+
+	// first call buildMetrics(), it will emit zero value
+	pmetrics := p.buildMetrics()
+	verifyDataPointValue(t, pmetrics, 0)
+
+	// second call buildMetrics(), it will emit actual value
+	pmetrics = p.buildMetrics()
+	verifyDataPointValue(t, pmetrics, 1)
+}
+
 func TestResourceMetricsCache(t *testing.T) {
 	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
 	require.NoError(t, err)
@@ -1978,7 +2014,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	rspan1 := traces.ResourceSpans().AppendEmpty()
 	resource1.CopyTo(rspan1.Resource())
-	ils := rspan1.ScopeSpans().AppendEmpty()
+	ils1 := rspan1.ScopeSpans().AppendEmpty()
 
 	rspan2 := traces.ResourceSpans().AppendEmpty()
 	resource2.CopyTo(rspan2.Resource())
@@ -1986,7 +2022,7 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 
 	// Add spans with different names to trigger overflow
 	for i := 0; i < 5; i++ {
-		span1 := ils.Spans().AppendEmpty()
+		span1 := ils1.Spans().AppendEmpty()
 		span1.SetName(fmt.Sprintf("operation%d", i))
 		span1.SetKind(ptrace.SpanKindServer)
 		span1.Attributes().PutStr("http.method", "GET")
@@ -1997,15 +2033,15 @@ func TestConnectorWithCardinalityLimit(t *testing.T) {
 		span2.Attributes().PutStr("http.method", "GET")
 	}
 
+	// Send two batches of spans to the connector to ensure it consumes more spans data,
+	// avoiding potential edge-case traps.
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	// first buildMetrics emit zero datapoint value
+	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()
 
-	// mock send two batch of spans to this connector
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 	pmetrics := connector.buildMetrics()
-
 	rmetrics := pmetrics.ResourceMetrics()
 	assert.Equal(t, 2, rmetrics.Len()) // 2 ResourceMetrics
 
@@ -2124,13 +2160,12 @@ func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
 		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
 	}
 
-	// First consume to reach the limit
+	// Send two batches of spans to the connector to ensure it consumes more spans data,
+	// avoiding potential edge-case traps.
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
 
-	// Second consume to trigger overflow
-	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
-
-	// first buildMetrics emit zero datapoint value
+	// Ignore the first buildMetrics call, which emits zero datapoint values.
 	_ = connector.buildMetrics()
 	pmetrics := connector.buildMetrics()
 
