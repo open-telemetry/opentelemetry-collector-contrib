@@ -50,6 +50,19 @@ var datadogKnownResourceAttributes = map[string]string{
 	"kube_namespace":      string(semconv.K8SNamespaceNameKey),
 	"pod_name":            string(semconv.K8SPodNameKey),
 
+	// HTTP
+	"http.client_ip":               string(semconv.ClientAddressKey),
+	"http.response.content_length": string(semconv.HTTPResponseBodySizeKey),
+	"http.status_code":             string(semconv.HTTPResponseStatusCodeKey),
+	"http.request.content_length":  string(semconv.HTTPRequestBodySizeKey),
+	"http.referer":                 "http.request.header.referer",
+	"http.method":                  string(semconv.HTTPRequestMethodKey),
+	"http.route":                   string(semconv.HTTPRouteKey),
+	"http.version":                 string(semconv.NetworkProtocolVersionKey),
+	"http.server_name":             string(semconv.ServerAddressKey),
+	"http.url":                     string(semconv.URLFullKey),
+	"http.useragent":               string(semconv.UserAgentOriginalKey),
+
 	// Other
 	"process_id":       string(semconv.ProcessPIDKey),
 	"error.stacktrace": string(semconv.ExceptionStacktraceKey),
@@ -79,6 +92,15 @@ func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
 func translateDatadogKeyToOTel(k string) string {
 	if otelKey, ok := datadogKnownResourceAttributes[strings.ToLower(k)]; ok {
 		return otelKey
+	}
+
+	// HTTP dynamic attributes
+	if strings.HasPrefix(k, "http.response.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.response.headers.")
+		return "http.response.header." + header
+	} else if strings.HasPrefix(k, "http.request.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.request.headers.")
+		return "http.request.header." + header
 	}
 	return k
 }
@@ -136,7 +158,7 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
-			val = stringPool.Intern(val)                               // No need to intern the key if we already have it
+			val = stringPool.Intern(val)                       // No need to intern the key if we already have it
 			if attr == string(semconv.ContainerImageTagsKey) { // type: string[]
 				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)
 			} else {
@@ -145,7 +167,12 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 		} else {
 			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
-			attrs.dp.PutStr(key, val)
+			if strings.HasPrefix(key, "http.request.header.") || strings.HasPrefix(key, "http.response.header.") {
+				// type string[]
+				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
+			} else {
+				attrs.dp.PutStr(key, val)
+			}
 		}
 	}
 
