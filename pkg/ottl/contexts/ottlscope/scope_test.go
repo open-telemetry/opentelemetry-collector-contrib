@@ -11,7 +11,6 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -398,13 +397,16 @@ func Test_newPathGetSetter(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			il, resource := createTelemetry()
+			is, res := createTelemetry()
 
-			tCtx := NewTransformContext(il, resource, plog.NewScopeLogs())
+			tCtx := NewTransformContext(is, res, pmetric.NewResourceMetrics())
 			got, err := accessor.Get(context.Background(), tCtx)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.orig, got)
@@ -412,13 +414,13 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), tCtx, tt.newVal)
 			assert.NoError(t, err)
 
-			exIl, exRes := createTelemetry()
+			exIs, exRes := createTelemetry()
 			exCache := pcommon.NewMap()
-			tt.modified(exIl, exRes, exCache)
+			tt.modified(exIs, exRes, exCache)
 
-			assert.Equal(t, exIl, il)
-			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exCache, tCtx.getCache())
+			assert.Equal(t, exIs, is)
+			assert.Equal(t, exRes, res)
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -426,7 +428,11 @@ func Test_newPathGetSetter(t *testing.T) {
 func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr("foo", "bar")
-	ctx := NewTransformContext(pcommon.NewInstrumentationScope(), resource, plog.NewScopeLogs())
+
+	scope := pcommon.NewInstrumentationScope()
+	scope.SetName("instrumentation_scope")
+
+	ctx := NewTransformContext(scope, resource, pmetric.NewResourceMetrics())
 
 	tests := []struct {
 		name     string
@@ -456,10 +462,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -467,20 +472,6 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	ctx := NewTransformContext(
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		pmetric.NewResourceMetrics(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
 func createTelemetry() (pcommon.InstrumentationScope, pcommon.Resource) {

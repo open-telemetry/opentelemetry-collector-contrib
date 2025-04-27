@@ -48,6 +48,7 @@ If the receiver will be handling TLS termination:
   - This receiver was built with the Cloudflare `http_requests` dataset in mind, but should be able to support any Cloudflare dataset. If using another dataset, you will need to set the `timestamp_field` appropriately in order to have the log record be associated with the correct timestamp. the timestamp must be formatted RFC3339, as stated in the Getting Started section.
 - `attributes`
   - This parameter allows the receiver to be configured to set log record attributes based on fields found in the log message. The fields are not removed from the log message when set in this way. Only string, boolean, integer or float fields can be mapped using this parameter.
+  - When the `attributes` configuration is empty, the receiver will automatically ingest all fields from the log messages as attributes, using the original field names as attribute names.
 
 
 ### Example:
@@ -65,4 +66,19 @@ receivers:
       attributes:
         ClientIP: http_request.client_ip
         ClientRequestURI: http_request.uri
+```
+
+### Example with automatic attribute ingestion:
+```yaml
+receivers:
+  cloudflare:
+    logs:
+      tls:
+        key_file: some_key_file
+        cert_file: some_cert_file
+      endpoint: 0.0.0.0:12345
+      secret: 1234567890abcdef1234567890abcdef
+      timestamp_field: EdgeStartTimestamp
+      attributes:
+        # Specifying no attributes ingests them all
 ```

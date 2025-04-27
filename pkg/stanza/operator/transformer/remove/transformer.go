@@ -17,6 +17,10 @@ type Transformer struct {
 	Field rootableField
 }
 
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWith(ctx, entries, t.Process)
+}
+
 // Process will process an entry with a remove transformation.
 func (t *Transformer) Process(ctx context.Context, entry *entry.Entry) error {
 	return t.ProcessWith(ctx, entry, t.Transform)
@@ -36,7 +40,7 @@ func (t *Transformer) Transform(entry *entry.Entry) error {
 
 	_, exist := entry.Delete(t.Field.Field)
 	if !exist {
-		return fmt.Errorf("remove: field does not exist: %s", t.Field.Field.String())
+		return fmt.Errorf("remove: field does not exist: %s", t.Field.String())
 	}
 	return nil
 }

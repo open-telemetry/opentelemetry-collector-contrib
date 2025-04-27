@@ -72,7 +72,7 @@ func Test_signalfxreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), tt.args.config)
+			got, err := newReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config)
 			require.NoError(t, err)
 			if tt.args.nextConsumer != nil {
 				got.RegisterMetricsConsumer(tt.args.nextConsumer)
@@ -91,7 +91,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
 	sink := new(consumertest.MetricsSink)
-	r, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *cfg)
+	r, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
 
@@ -152,7 +152,7 @@ func Test_signalfxreceiver_EndToEnd(t *testing.T) {
 	}
 	exp, err := signalfxexporter.NewFactory().CreateMetrics(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		expCfg)
 	require.NoError(t, err)
 	require.NoError(t, exp.Start(context.Background(), componenttest.NewNopHost()))
@@ -425,7 +425,7 @@ func Test_sfxReceiver_handleReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterMetricsConsumer(sink)
@@ -595,7 +595,7 @@ func Test_sfxReceiver_handleEventReq(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			require.NoError(t, err)
 			if !tt.skipRegistration {
 				rcv.RegisterLogsConsumer(sink)
@@ -621,14 +621,14 @@ func Test_sfxReceiver_TLS(t *testing.T) {
 	addr := testutil.GetAvailableLocalAddress(t)
 	cfg := createDefaultConfig().(*Config)
 	cfg.Endpoint = addr
-	cfg.ServerConfig.TLSSetting = &configtls.ServerConfig{
+	cfg.TLSSetting = &configtls.ServerConfig{
 		Config: configtls.Config{
 			CertFile: "./testdata/server.crt",
 			KeyFile:  "./testdata/server.key",
 		},
 	}
 	sink := new(consumertest.MetricsSink)
-	cs := receivertest.NewNopSettingsWithType(metadata.Type)
+	cs := receivertest.NewNopSettings(metadata.Type)
 	r, err := newReceiver(cs, *cfg)
 	require.NoError(t, err)
 	r.RegisterMetricsConsumer(sink)
@@ -765,7 +765,7 @@ func Test_sfxReceiver_DatapointAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.MetricsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			require.NoError(t, err)
 			rcv.RegisterMetricsConsumer(sink)
 
@@ -855,7 +855,7 @@ func Test_sfxReceiver_EventAccessTokenPassthrough(t *testing.T) {
 			config.AccessTokenPassthrough = tt.passthrough
 
 			sink := new(consumertest.LogsSink)
-			rcv, err := newReceiver(receivertest.NewNopSettingsWithType(metadata.Type), *config)
+			rcv, err := newReceiver(receivertest.NewNopSettings(metadata.Type), *config)
 			require.NoError(t, err)
 			rcv.RegisterLogsConsumer(sink)
 

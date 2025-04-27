@@ -22,7 +22,7 @@ func TestTrackerAddSpans(t *testing.T) {
 	tracker := NewTracker(
 		DefaultConfig(),
 		"abcd",
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 	)
 
 	err := tracker.Start(context.Background(), componenttest.NewNopHost())
@@ -74,7 +74,7 @@ func TestTrackerStart(t *testing.T) {
 			tracker := NewTracker(
 				tt.config,
 				"abcd",
-				exportertest.NewNopSettingsWithType(metadata.Type),
+				exportertest.NewNopSettings(metadata.Type),
 			)
 
 			err := tracker.Start(context.Background(), componenttest.NewNopHost())

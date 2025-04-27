@@ -20,7 +20,7 @@ func TestReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	settings := receivertest.NewNopSettingsWithType(metadata.Type)
+	settings := receivertest.NewNopSettings(metadata.Type)
 	sink := new(consumertest.LogsSink)
 	logs, err := factory.CreateLogs(context.Background(), settings, cfg, sink)
 	require.NoError(t, err)

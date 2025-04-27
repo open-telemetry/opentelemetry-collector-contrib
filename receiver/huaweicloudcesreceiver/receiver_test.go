@@ -37,7 +37,7 @@ func TestNewReceiver(t *testing.T) {
 			CollectionInterval: 1 * time.Second,
 		},
 	}
-	mr := newHuaweiCloudCesReceiver(receivertest.NewNopSettingsWithType(metadata.Type), cfg, new(consumertest.MetricsSink))
+	mr := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(metadata.Type), cfg, new(consumertest.MetricsSink))
 	assert.NotNil(t, mr)
 }
 
@@ -97,7 +97,7 @@ func TestListMetricDefinitionsFailure(t *testing.T) {
 func TestListDataPointsForMetricBackOffWIthDefaultConfig(t *testing.T) {
 	mockCes := mocks.NewCesClient(t)
 	next := new(consumertest.MetricsSink)
-	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettingsWithType(metadata.Type), createDefaultConfig().(*Config), next)
+	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(metadata.Type), createDefaultConfig().(*Config), next)
 	receiver.client = mockCes
 
 	mockCes.On("ShowMetricData", mock.Anything).Return(nil, errors.New(requestThrottledErrMsg)).Times(3)
@@ -133,7 +133,7 @@ func TestListDataPointsForMetricBackOffWIthDefaultConfig(t *testing.T) {
 func TestListDataPointsForMetricBackOffFails(t *testing.T) {
 	mockCes := mocks.NewCesClient(t)
 	next := new(consumertest.MetricsSink)
-	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettingsWithType(metadata.Type), &Config{BackOffConfig: configretry.BackOffConfig{
+	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(metadata.Type), &Config{BackOffConfig: configretry.BackOffConfig{
 		Enabled:             true,
 		InitialInterval:     100 * time.Millisecond,
 		MaxInterval:         800 * time.Millisecond,
@@ -163,7 +163,7 @@ func TestListDataPointsForMetricBackOffFails(t *testing.T) {
 func TestPollMetricsAndConsumeSuccess(t *testing.T) {
 	mockCes := mocks.NewCesClient(t)
 	next := new(consumertest.MetricsSink)
-	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettingsWithType(metadata.Type), &Config{}, next)
+	receiver := newHuaweiCloudCesReceiver(receivertest.NewNopSettings(metadata.Type), &Config{}, next)
 	receiver.client = mockCes
 
 	mockCes.On("ListMetrics", mock.Anything).Return(&model.ListMetricsResponse{

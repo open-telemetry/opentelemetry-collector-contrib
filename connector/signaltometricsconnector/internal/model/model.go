@@ -9,26 +9,28 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/signaltometricsconnector/internal/customottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
 type AttributeKeyValue struct {
 	Key          string
+	Optional     bool
 	DefaultValue pcommon.Value
 }
 
 type MetricKey struct {
-	Name        string
-	Description string
+	Name string
+	Type pmetric.MetricType
+	Unit string
 }
 
 type ExplicitHistogram[K any] struct {
 	Buckets []float64
-	Count   *ottl.Statement[K]
-	Value   *ottl.Statement[K]
+	Count   *ottl.ValueExpression[K]
+	Value   *ottl.ValueExpression[K]
 }
 
 func (h *ExplicitHistogram[K]) fromConfig(
@@ -42,12 +44,12 @@ func (h *ExplicitHistogram[K]) fromConfig(
 	var err error
 	h.Buckets = mi.Buckets
 	if mi.Count != "" {
-		h.Count, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Count))
+		h.Count, err = parser.ParseValueExpression(mi.Count)
 		if err != nil {
-			return fmt.Errorf("failed to parse count statement for explicit histogram: %w", err)
+			return fmt.Errorf("failed to parse count OTTL expression for explicit histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	h.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
 		return fmt.Errorf("failed to parse value statement for explicit histogram: %w", err)
 	}
@@ -56,8 +58,8 @@ func (h *ExplicitHistogram[K]) fromConfig(
 
 type ExponentialHistogram[K any] struct {
 	MaxSize int32
-	Count   *ottl.Statement[K]
-	Value   *ottl.Statement[K]
+	Count   *ottl.ValueExpression[K]
+	Value   *ottl.ValueExpression[K]
 }
 
 func (h *ExponentialHistogram[K]) fromConfig(
@@ -71,20 +73,20 @@ func (h *ExponentialHistogram[K]) fromConfig(
 	var err error
 	h.MaxSize = mi.MaxSize
 	if mi.Count != "" {
-		h.Count, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Count))
+		h.Count, err = parser.ParseValueExpression(mi.Count)
 		if err != nil {
-			return fmt.Errorf("failed to parse count statement for exponential histogram: %w", err)
+			return fmt.Errorf("failed to parse count OTTL expression for exponential histogram: %w", err)
 		}
 	}
-	h.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	h.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
-		return fmt.Errorf("failed to parse value statement for exponential histogram: %w", err)
+		return fmt.Errorf("failed to parse value OTTL expression for exponential histogram: %w", err)
 	}
 	return nil
 }
 
 type Sum[K any] struct {
-	Value *ottl.Statement[K]
+	Value *ottl.ValueExpression[K]
 }
 
 func (s *Sum[K]) fromConfig(
@@ -96,16 +98,16 @@ func (s *Sum[K]) fromConfig(
 	}
 
 	var err error
-	s.Value, err = parser.ParseStatement(customottl.ConvertToStatement(mi.Value))
+	s.Value, err = parser.ParseValueExpression(mi.Value)
 	if err != nil {
-		return fmt.Errorf("failed to parse value statement for sum: %w", err)
+		return fmt.Errorf("failed to parse value OTTL expression for sum: %w", err)
 	}
 	return nil
 }
 
 type MetricDef[K any] struct {
 	Key                       MetricKey
-	Unit                      string
+	Description               string
 	IncludeResourceAttributes []AttributeKeyValue
 	Attributes                []AttributeKeyValue
 	Conditions                *ottl.ConditionSequence[K]
@@ -120,8 +122,8 @@ func (md *MetricDef[K]) FromMetricInfo(
 	telemetrySettings component.TelemetrySettings,
 ) error {
 	md.Key.Name = mi.Name
-	md.Key.Description = mi.Description
-	md.Unit = mi.Unit
+	md.Key.Unit = mi.Unit
+	md.Description = mi.Description
 
 	var err error
 	md.IncludeResourceAttributes, err = parseAttributeConfigs(mi.IncludeResourceAttributes)
@@ -145,18 +147,21 @@ func (md *MetricDef[K]) FromMetricInfo(
 		md.Conditions = &condSeq
 	}
 	if mi.Histogram != nil {
+		md.Key.Type = pmetric.MetricTypeHistogram
 		md.ExplicitHistogram = new(ExplicitHistogram[K])
 		if err := md.ExplicitHistogram.fromConfig(mi.Histogram, parser); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
 	if mi.ExponentialHistogram != nil {
+		md.Key.Type = pmetric.MetricTypeExponentialHistogram
 		md.ExponentialHistogram = new(ExponentialHistogram[K])
 		if err := md.ExponentialHistogram.fromConfig(mi.ExponentialHistogram, parser); err != nil {
 			return fmt.Errorf("failed to parse histogram config: %w", err)
 		}
 	}
 	if mi.Sum != nil {
+		md.Key.Type = pmetric.MetricTypeSum
 		md.Sum = new(Sum[K])
 		if err := md.Sum.fromConfig(mi.Sum, parser); err != nil {
 			return fmt.Errorf("failed to parse sum config: %w", err)
@@ -172,7 +177,7 @@ func (md *MetricDef[K]) FromMetricInfo(
 // definition.
 func (md *MetricDef[K]) FilterResourceAttributes(
 	attrs pcommon.Map,
-	collectorInfo *CollectorInstanceInfo,
+	collectorInfo CollectorInstanceInfo,
 ) pcommon.Map {
 	var filteredAttributes pcommon.Map
 	switch {
@@ -200,8 +205,7 @@ func (md *MetricDef[K]) FilterResourceAttributes(
 func (md *MetricDef[K]) FilterAttributes(attrs pcommon.Map) (pcommon.Map, bool) {
 	// Figure out if all the attributes are available, saves allocation
 	for _, filter := range md.Attributes {
-		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty {
-			// will always add an attribute
+		if filter.DefaultValue.Type() != pcommon.ValueTypeEmpty || filter.Optional {
 			continue
 		}
 		if _, ok := attrs.Get(filter.Key); !ok {
@@ -236,6 +240,7 @@ func parseAttributeConfigs(cfgs []config.Attribute) ([]AttributeKeyValue, error)
 		}
 		kvs[i] = AttributeKeyValue{
 			Key:          attr.Key,
+			Optional:     attr.Optional,
 			DefaultValue: val,
 		}
 	}

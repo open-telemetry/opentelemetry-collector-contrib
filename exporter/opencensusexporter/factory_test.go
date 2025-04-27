@@ -153,7 +153,7 @@ func TestCreateTraces(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := exportertest.NewNopSettingsWithType(metadata.Type)
+			set := exportertest.NewNopSettings(metadata.Type)
 			tExporter, tErr := createTracesExporter(context.Background(), set, tt.config)
 			checkErrorsAndStartAndShutdown(t, tExporter, tErr, tt.mustFailOnCreate, tt.mustFailOnStart)
 			mExporter, mErr := createMetricsExporter(context.Background(), set, tt.config)

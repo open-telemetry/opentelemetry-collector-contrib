@@ -25,7 +25,7 @@ func TestCreateMetricsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createMetricsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -35,7 +35,7 @@ func TestCreateTracesExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createTracesExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)
@@ -45,7 +45,7 @@ func TestCreateLogsExporter(t *testing.T) {
 	cfg := createDefaultConfig()
 	exp, err := createLogsExporter(
 		context.Background(),
-		exportertest.NewNopSettingsWithType(metadata.Type),
+		exportertest.NewNopSettings(metadata.Type),
 		cfg)
 	assert.NoError(t, err)
 	require.NotNil(t, exp)

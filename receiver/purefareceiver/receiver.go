@@ -91,7 +91,12 @@ func (r *purefaReceiver) Start(ctx context.Context, compHost component.Host) err
 	promRecvCfg := fact.CreateDefaultConfig().(*prometheusreceiver.Config)
 	promRecvCfg.PrometheusConfig = &prometheusreceiver.PromConfig{ScrapeConfigs: scrapeCfgs}
 
-	wrapped, err := fact.CreateMetrics(ctx, r.set, promRecvCfg, r.next)
+	set := receiver.Settings{
+		ID:                component.NewIDWithName(fact.Type(), r.set.ID.String()),
+		TelemetrySettings: r.set.TelemetrySettings,
+		BuildInfo:         r.set.BuildInfo,
+	}
+	wrapped, err := fact.CreateMetrics(ctx, set, promRecvCfg, r.next)
 	if err != nil {
 		return err
 	}

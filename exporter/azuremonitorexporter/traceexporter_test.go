@@ -6,6 +6,7 @@ package azuremonitorexporter
 import (
 	"testing"
 
+	"github.com/microsoft/ApplicationInsights-Go/appinsights"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 	"go.opentelemetry.io/collector/consumer/consumererror"
@@ -24,9 +25,10 @@ func TestExporterTraceDataCallbackNoSpans(t *testing.T) {
 
 	traces := ptrace.NewTraces()
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
 }
 
 // Tests the export onTraceData callback with a single Span
@@ -47,9 +49,37 @@ func TestExporterTraceDataCallbackSingleSpan(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 1)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
+}
+
+// Tests the export onTraceData callback calls exporter flush only once for 8 spans
+func TestExporterTraceDataCallbackCallFlushOnce(t *testing.T) {
+	mockTransportChannel := getMockTransportChannel()
+	exporter := getExporter(defaultConfig, mockTransportChannel)
+
+	resource := getResource()
+	scope := getScope()
+	span := getDefaultHTTPServerSpan()
+
+	traces := ptrace.NewTraces()
+	rs := traces.ResourceSpans().AppendEmpty()
+	r := rs.Resource()
+	resource.CopyTo(r)
+	ilss := rs.ScopeSpans().AppendEmpty()
+	scope.CopyTo(ilss.Scope())
+
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	span.CopyTo(ilss.Spans().AppendEmpty())
+	ilss.CopyTo(rs.ScopeSpans().AppendEmpty())
+	rs.CopyTo(traces.ResourceSpans().AppendEmpty())
+
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
+
+	mockTransportChannel.AssertNumberOfCalls(t, "Send", 8)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
 }
 
 // Tests the export onTraceData callback with a single Span with SpanEvents
@@ -79,9 +109,10 @@ func TestExporterTraceDataCallbackSingleSpanWithSpanEvents(t *testing.T) {
 
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	assert.NoError(t, exporter.onTraceData(context.Background(), traces))
+	assert.NoError(t, exporter.consumeTraces(context.Background(), traces))
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 3)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 1)
 }
 
 // Tests the export onTraceData callback with a single Span that fails to produce an envelope
@@ -106,11 +137,12 @@ func TestExporterTraceDataCallbackSingleSpanNoEnvelope(t *testing.T) {
 	scope.CopyTo(ilss.Scope())
 	span.CopyTo(ilss.Spans().AppendEmpty())
 
-	err := exporter.onTraceData(context.Background(), traces)
+	err := exporter.consumeTraces(context.Background(), traces)
 	assert.Error(t, err)
 	assert.True(t, consumererror.IsPermanent(err), "error should be permanent")
 
 	mockTransportChannel.AssertNumberOfCalls(t, "Send", 0)
+	mockTransportChannel.AssertNumberOfCalls(t, "Flush", 0)
 }
 
 func getMockTransportChannel() *mockTransportChannel {
@@ -120,10 +152,11 @@ func getMockTransportChannel() *mockTransportChannel {
 	return &transportChannelMock
 }
 
-func getExporter(config *Config, transportChannel transportChannel) *traceExporter {
-	return &traceExporter{
+func getExporter(config *Config, transportChannel appinsights.TelemetryChannel) *azureMonitorExporter {
+	return &azureMonitorExporter{
 		config,
 		transportChannel,
 		zap.NewNop(),
+		newMetricPacker(zap.NewNop()),
 	}
 }

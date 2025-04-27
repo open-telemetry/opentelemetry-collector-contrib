@@ -3,8 +3,11 @@ type: kafkatopics_observer
 status:
   class: extension
   stability:
-    beta: [extension]
-  distributions: [contrib]
+    alpha: [extension]
   codeowners:
     active: [MovieStoreGuy]
+  distributions: [contrib]
 
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

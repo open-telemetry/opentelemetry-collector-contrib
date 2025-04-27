@@ -34,7 +34,7 @@ func setupServer(t *testing.T) (func() net.Conn, *consumertest.LogsSink, *observ
 	logCore, logObserver := observer.New(zap.DebugLevel)
 	logger := zap.New(logCore)
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	set.Logger = logger
 
 	conf := &Config{
@@ -337,7 +337,7 @@ func TestUnixEndpoint(t *testing.T) {
 		ListenAddress: "unix://" + filepath.Join(tmpdir, "fluent.sock"),
 	}
 
-	receiver, err := newFluentReceiver(receivertest.NewNopSettingsWithType(metadata.Type), conf, next)
+	receiver, err := newFluentReceiver(receivertest.NewNopSettings(metadata.Type), conf, next)
 	require.NoError(t, err)
 	require.NoError(t, receiver.Start(ctx, nil))
 	defer func() { require.NoError(t, receiver.Shutdown(ctx)) }()

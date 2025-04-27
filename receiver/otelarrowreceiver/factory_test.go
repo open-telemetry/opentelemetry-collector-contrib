@@ -32,7 +32,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = testutil.GetAvailableLocalAddress(t)
 
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(context.Background(), creationSet, cfg, consumertest.NewNop())
 	assert.NotNil(t, tReceiver)
 	assert.NoError(t, err)
@@ -80,7 +80,7 @@ func TestCreateTraces(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.TracesSink)
@@ -136,7 +136,7 @@ func TestCreateMetricReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
@@ -195,7 +195,7 @@ func TestCreateLogReceiver(t *testing.T) {
 		},
 	}
 	ctx := context.Background()
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			mr, err := factory.CreateLogs(ctx, creationSet, tt.cfg, tt.sink)

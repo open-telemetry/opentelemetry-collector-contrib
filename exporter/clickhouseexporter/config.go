@@ -20,9 +20,13 @@ import (
 
 // Config defines configuration for clickhouse exporter.
 type Config struct {
+	// collectorVersion is the build version of the collector. This is overridden when an exporter is initialized.
+	collectorVersion string
+	driverName       string // for testing
+
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
 	// Endpoint is the clickhouse endpoint.
 	Endpoint string `mapstructure:"endpoint"`
@@ -147,6 +151,15 @@ func (cfg *Config) buildDSN() (string, error) {
 		queryParams.Set("compress", cfg.Compress)
 	}
 
+	productInfo := queryParams.Get("client_info_product")
+	collectorProductInfo := fmt.Sprintf("%s/%s", "otelcol", cfg.collectorVersion)
+	if productInfo == "" {
+		productInfo = collectorProductInfo
+	} else {
+		productInfo = fmt.Sprintf("%s,%s", productInfo, collectorProductInfo)
+	}
+	queryParams.Set("client_info_product", productInfo)
+
 	// Use database from config if not specified in path, or if config is not default.
 	if dsnURL.Path == "" || cfg.Database != defaultDatabase {
 		dsnURL.Path = cfg.Database
@@ -171,7 +184,7 @@ func (cfg *Config) buildDB() (*sql.DB, error) {
 	// ClickHouse sql driver will read clickhouse settings from the DSN string.
 	// It also ensures defaults.
 	// See https://github.com/ClickHouse/clickhouse-go/blob/08b27884b899f587eb5c509769cd2bdf74a9e2a1/clickhouse_std.go#L189
-	conn, err := sql.Open(driverName, dsn)
+	conn, err := sql.Open(cfg.driverName, dsn)
 	if err != nil {
 		return nil, err
 	}

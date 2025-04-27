@@ -42,6 +42,28 @@ var MapAttributeState = map[string]AttributeState{
 	"used":     AttributeStateUsed,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemFilesystemInodesUsage: metricInfo{
+		Name: "system.filesystem.inodes.usage",
+	},
+	SystemFilesystemUsage: metricInfo{
+		Name: "system.filesystem.usage",
+	},
+	SystemFilesystemUtilization: metricInfo{
+		Name: "system.filesystem.utilization",
+	},
+}
+
+type metricsInfo struct {
+	SystemFilesystemInodesUsage metricInfo
+	SystemFilesystemUsage       metricInfo
+	SystemFilesystemUtilization metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemFilesystemInodesUsage struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -312,7 +334,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/filesystemscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemFilesystemInodesUsage.emit(ils.Metrics())

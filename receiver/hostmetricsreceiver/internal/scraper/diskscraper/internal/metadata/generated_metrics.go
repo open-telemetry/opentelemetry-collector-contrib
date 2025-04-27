@@ -38,6 +38,44 @@ var MapAttributeDirection = map[string]AttributeDirection{
 	"write": AttributeDirectionWrite,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemDiskIo: metricInfo{
+		Name: "system.disk.io",
+	},
+	SystemDiskIoTime: metricInfo{
+		Name: "system.disk.io_time",
+	},
+	SystemDiskMerged: metricInfo{
+		Name: "system.disk.merged",
+	},
+	SystemDiskOperationTime: metricInfo{
+		Name: "system.disk.operation_time",
+	},
+	SystemDiskOperations: metricInfo{
+		Name: "system.disk.operations",
+	},
+	SystemDiskPendingOperations: metricInfo{
+		Name: "system.disk.pending_operations",
+	},
+	SystemDiskWeightedIoTime: metricInfo{
+		Name: "system.disk.weighted_io_time",
+	},
+}
+
+type metricsInfo struct {
+	SystemDiskIo                metricInfo
+	SystemDiskIoTime            metricInfo
+	SystemDiskMerged            metricInfo
+	SystemDiskOperationTime     metricInfo
+	SystemDiskOperations        metricInfo
+	SystemDiskPendingOperations metricInfo
+	SystemDiskWeightedIoTime    metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemDiskIo struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -523,7 +561,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemDiskIo.emit(ils.Metrics())

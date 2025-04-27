@@ -18,14 +18,14 @@ func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	_, err := factory.CreateMetrics(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)
 	require.NoError(t, err)
 	_, err = factory.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		factory.CreateDefaultConfig(),
 		consumertest.NewNop(),
 	)

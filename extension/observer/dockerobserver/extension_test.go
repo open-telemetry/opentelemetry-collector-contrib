@@ -9,7 +9,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	dtypes "github.com/docker/docker/api/types"
+	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
@@ -18,11 +18,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/observer/dockerobserver/internal/metadata"
 )
 
-func containerJSON(t *testing.T) dtypes.ContainerJSON {
+func containerJSON(t *testing.T) ctypes.InspectResponse {
 	containerRaw, err := os.ReadFile(filepath.Join("testdata", "container.json"))
 	require.NoError(t, err)
 
-	var container dtypes.ContainerJSON
+	var container ctypes.InspectResponse
 	require.NoError(t, json.Unmarshal(containerRaw, &container))
 	return container
 }

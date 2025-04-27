@@ -22,7 +22,7 @@ func FuzzProcessTraces(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettingsWithType(metadata.Type), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -37,7 +37,7 @@ func FuzzProcessLogs(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettingsWithType(metadata.Type), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}
@@ -52,7 +52,7 @@ func FuzzProcessMetrics(f *testing.F) {
 		if err != nil {
 			return
 		}
-		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettingsWithType(metadata.Type), []string{})
+		gap, err := createGroupByAttrsProcessor(processortest.NewNopSettings(metadata.Type), []string{})
 		if err != nil {
 			t.Fatal(err)
 		}

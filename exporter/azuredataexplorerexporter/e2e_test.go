@@ -62,7 +62,7 @@ func TestCreateTracesE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config)
+	exp, err := f.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -104,7 +104,7 @@ func TestCreateTracesE2E(t *testing.T) {
 		if err != nil {
 			assert.Equal(t, spanID, string(spanBytes))
 		}
-		assert.Equal(t, "", recs[i].ParentID)
+		assert.Empty(t, recs[i].ParentID)
 		assert.Equal(t, spanName, recs[i].SpanName)
 		assert.Equal(t, "STATUS_CODE_UNSET", recs[i].SpanStatus)
 		assert.Equal(t, "STATUS_MESSAGE", recs[i].SpanStatusMessage)
@@ -125,7 +125,7 @@ func TestCreateLogsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config)
+	exp, err := f.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -186,7 +186,7 @@ func TestCreateMetricsE2E(t *testing.T) {
 	}
 	// Create an exporter
 	f := NewFactory()
-	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), config)
+	exp, err := f.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), config)
 	require.NoError(t, err)
 	err = exp.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)

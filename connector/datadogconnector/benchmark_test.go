@@ -64,7 +64,7 @@ func benchmarkPeerTags(b *testing.B) {
 	cfg.Traces.TraceBuffer = 0
 
 	factory := NewFactory()
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	metricsSink := &consumertest.MetricsSink{}
 
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, metricsSink)

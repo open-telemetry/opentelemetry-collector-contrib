@@ -12,6 +12,20 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.9.0"
 )
 
+var MetricsInfo = metricsInfo{
+	SystemUptime: metricInfo{
+		Name: "system.uptime",
+	},
+}
+
+type metricsInfo struct {
+	SystemUptime metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemUptime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -159,7 +173,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/systemscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemUptime.emit(ils.Metrics())

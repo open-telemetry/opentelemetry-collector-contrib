@@ -7,7 +7,8 @@
 |               | [beta]: traces, logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Floadbalancing%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Floadbalancing) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Floadbalancing%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Floadbalancing) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rlankfo](https://www.github.com/rlankfo) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -26,6 +27,7 @@ The options for `routing_key` are: `service`, `traceID`, `metric` (metric name),
 | resource    | metrics              |
 | metric      | metrics              |
 | streamID    | metrics              |
+| attributes  | spans                |
 
 If no `routing_key` is configured, the default routing mechanism is `traceID`  for traces, while `service` is the default for metrics. This means that spans belonging to the same `traceID` (or `service.name`, when `service` is used as the `routing_key`) will be sent to the same backend.
 
@@ -115,10 +117,12 @@ Refer to [config.yaml](./testdata/config.yaml) for detailed examples on using th
     * `TODO`: Feature request [29771](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/29771) aims to cover the pagination for this scenario
 * The `routing_key` property is used to specify how to route values (spans or metrics) to exporters based on different parameters. This functionality is currently enabled only for `trace` and `metric` pipeline types. It supports one of the following values:
   * `service`: Routes values based on their service name. This is useful when using processors like the span metrics, so all spans for each service are sent to consistent collector instances for metric collection. Otherwise, metrics for the same services are sent to different collectors, making aggregations inaccurate.
+  * `attributes`: Routes based on values in the attributes of the traces. This is similar to service, but useful for situations in which a single service overwhelms any given instance of the collector, and should be split over multiple collectors. In addition to resource / span attributes, `span.kind`, `span.name` (the top level properties of a span) are also supported.
   * `traceID`: Routes spans based on their `traceID`. Invalid for metrics.
   * `metric`: Routes metrics based on their metric name. Invalid for spans.
   * `streamID`: Routes metrics based on their datapoint streamID. That's the unique hash of all it's attributes, plus the attributes and identifying information of its resource, scope, and metric data
 * loadbalancing exporter supports set of standard [queuing, retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), but they are disable by default to maintain compatibility
+* The `routing_attributes` property is used to list the attributes that should be used if the `routing_key` is `attributes`.
 
 Simple example
 

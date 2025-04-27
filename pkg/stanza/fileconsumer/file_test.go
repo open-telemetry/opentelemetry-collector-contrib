@@ -22,9 +22,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/emittest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/reader"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/matcher"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator/helper"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
@@ -881,6 +881,26 @@ func TestFileBatching(t *testing.T) {
 	require.ElementsMatch(t, expectedTokens, actualTokens)
 }
 
+func TestMaxConcurrentFilesOne(t *testing.T) {
+	t.Parallel()
+
+	tempDir := t.TempDir()
+
+	temp1 := filetest.OpenTemp(t, tempDir)
+	_, err := temp1.WriteString("file 0: written before start\n")
+	require.NoError(t, err)
+
+	cfg := NewConfig().includeDir(tempDir)
+	cfg.StartAt = "beginning"
+	cfg.MaxConcurrentFiles = 1
+
+	sink := emittest.NewSink()
+	operator := testManagerWithSink(t, cfg, sink)
+	operator.persister = testutil.NewUnscopedMockPersister()
+	operator.poll(context.Background())
+	sink.ExpectTokens(t, []byte("file 0: written before start"))
+}
+
 func TestFileBatchingRespectsStartAtEnd(t *testing.T) {
 	t.Parallel()
 
@@ -1579,79 +1599,4 @@ func TestReadGzipCompressedLogsFromEnd(t *testing.T) {
 	appendToLog(t, "testlog4\n")
 	operator.poll(context.TODO())
 	sink.ExpectToken(t, []byte("testlog4"))
-}
-
-func TestIncludeFileRecordNumber(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	operator, sink := testManager(t, cfg)
-
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
-	filetest.WriteString(t, temp, "testlog1\n")
-
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
-	})
-}
-
-func TestIncludeFileRecordNumberWithHeaderConfigured(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	cfg = cfg.withHeader("^#", "(?P<header_attr>[A-z]+)")
-	operator, sink := testManager(t, cfg)
-
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
-	filetest.WriteString(t, temp, "#abc\n#xyz: headerValue2\ntestlog1\n")
-
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
-		"header_attr":             "xyz",
-	})
-}
-
-func TestIncludeFileRecordNumberWithHeaderConfiguredButMissing(t *testing.T) {
-	t.Parallel()
-
-	tempDir := t.TempDir()
-	cfg := NewConfig().includeDir(tempDir)
-	cfg.StartAt = "beginning"
-	cfg.IncludeFileRecordNumber = true
-	cfg = cfg.withHeader("^#", "(?P<header_key>[A-z]+): (?P<header_value>[A-z]+)")
-	operator, sink := testManager(t, cfg)
-
-	// Create a file, then start
-	temp := filetest.OpenTemp(t, tempDir)
-	filetest.WriteString(t, temp, "testlog1\n")
-
-	require.NoError(t, operator.Start(testutil.NewUnscopedMockPersister()))
-	defer func() {
-		require.NoError(t, operator.Stop())
-	}()
-
-	sink.ExpectCall(t, []byte("testlog1"), map[string]any{
-		attrs.LogFileName:         filepath.Base(temp.Name()),
-		attrs.LogFileRecordNumber: int64(1),
-	})
 }

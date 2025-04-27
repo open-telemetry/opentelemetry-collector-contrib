@@ -49,10 +49,9 @@ type Config struct {
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles.
-// When the flat configuration style is used, each statement becomes a new common.ContextStatements
+// When the flat configuration style is used, all statements are grouped into a common.ContextStatements
 // object, with empty [common.ContextStatements.Context] value.
 // On the other hand, structured configurations are parsed following the mapstructure Config format.
-// Mixed configuration styles are also supported.
 //
 // Example of flat configuration:
 //
@@ -78,7 +77,6 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 		"log_statements":    &c.LogStatements,
 	}
 
-	flatContextStatements := map[string][]int{}
 	contextStatementsPatch := map[string]any{}
 	for fieldName := range contextStatementsFields {
 		if !conf.IsSet(fieldName) {
@@ -93,17 +91,25 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 			continue
 		}
 
-		stmts := make([]any, 0, len(values))
-		for i, value := range values {
-			// Array of strings means it's a flat configuration style
+		statementsConfigs := make([]any, 0, len(values))
+		var basicStatements []any
+		for _, value := range values {
+			// Array of strings means it's a basic configuration style
 			if reflect.TypeOf(value).Kind() == reflect.String {
-				stmts = append(stmts, map[string]any{"statements": []any{value}})
-				flatContextStatements[fieldName] = append(flatContextStatements[fieldName], i)
+				basicStatements = append(basicStatements, value)
 			} else {
-				stmts = append(stmts, value)
+				if len(basicStatements) > 0 {
+					return errors.New("configuring multiple configuration styles is not supported, please use only Basic configuration or only Advanced configuration")
+				}
+				statementsConfigs = append(statementsConfigs, value)
 			}
 		}
-		contextStatementsPatch[fieldName] = stmts
+
+		if len(basicStatements) > 0 {
+			statementsConfigs = append(statementsConfigs, map[string]any{"statements": basicStatements})
+		}
+
+		contextStatementsPatch[fieldName] = statementsConfigs
 	}
 
 	if len(contextStatementsPatch) > 0 {
@@ -116,12 +122,6 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 	err := conf.Unmarshal(c)
 	if err != nil {
 		return err
-	}
-
-	for fieldName, indexes := range flatContextStatements {
-		for _, i := range indexes {
-			(*contextStatementsFields[fieldName])[i].SharedCache = true
-		}
 	}
 
 	return err

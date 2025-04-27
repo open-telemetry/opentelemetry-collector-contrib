@@ -26,7 +26,7 @@ func TestNewFactory(t *testing.T) {
 			desc: "creates a new factory with correct type",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, metadata.Type, factory.Type())
+				require.Equal(t, metadata.Type, factory.Type())
 			},
 		},
 		{
@@ -59,7 +59,7 @@ func TestNewFactory(t *testing.T) {
 				cfg := factory.CreateDefaultConfig()
 				_, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					cfg,
 					consumertest.NewNop(),
 				)
@@ -72,7 +72,7 @@ func TestNewFactory(t *testing.T) {
 				factory := NewFactory()
 				_, err := factory.CreateMetrics(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)

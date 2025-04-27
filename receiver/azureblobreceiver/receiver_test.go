@@ -58,7 +58,7 @@ func TestConsumeTracesJSON(t *testing.T) {
 }
 
 func getBlobReceiver(t *testing.T) (component.Component, error) {
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 
 	blobClient := newMockBlobClient()
 	blobEventHandler := getBlobEventHandler(t, blobClient)

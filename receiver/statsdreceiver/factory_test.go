@@ -26,7 +26,7 @@ func TestCreateReceiver(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
 	cfg.NetAddr.Endpoint = "localhost:0" // Endpoint is required, not going to be used here.
 
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := createMetricsReceiver(context.Background(), params, cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, tReceiver, "receiver creation failed")

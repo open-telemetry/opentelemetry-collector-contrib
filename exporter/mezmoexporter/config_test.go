@@ -45,10 +45,10 @@ func TestLoadConfig(t *testing.T) {
 			expected: &Config{
 				ClientConfig: confighttp.ClientConfig{
 					Timeout:             5 * time.Second,
-					MaxIdleConns:        &defaultMaxIdleConns,
-					MaxIdleConnsPerHost: &defaultMaxIdleConnsPerHost,
-					MaxConnsPerHost:     &defaultMaxConnsPerHost,
-					IdleConnTimeout:     &defaultIdleConnTimeout,
+					MaxIdleConns:        defaultMaxIdleConns,
+					MaxIdleConnsPerHost: defaultMaxIdleConnsPerHost,
+					MaxConnsPerHost:     defaultMaxConnsPerHost,
+					IdleConnTimeout:     defaultIdleConnTimeout,
 					Headers:             map[string]configopaque.String{},
 				},
 				BackOffConfig: configretry.BackOffConfig{
@@ -59,10 +59,11 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: 7,
 					QueueSize:    17,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				IngestURL: "https://alternate.mezmo.com/otel/ingest/rest",
 				IngestKey: "1234509876",

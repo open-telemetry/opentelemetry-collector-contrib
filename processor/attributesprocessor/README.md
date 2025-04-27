@@ -193,8 +193,8 @@ must be specified with a non-empty value for a valid configuration. The `log_bod
 - For logs, one of `log_bodies`, `log_severity_texts`, `log_severity_number`, `attributes`, `resources`
 or `libraries` must be specified with a non-empty value for a valid configuration. The `span_names`, 
 `span_kinds`, `metric_names` and `services` fields are invalid.
-- For metrics, `metric_names` must be specified with a valid non-empty value for
-a valid configuration. The `span_names`, `span_kinds`, `resources`, `log_bodies`, `log_severity_texts`,
+- For metrics, one of `metric_names` or `resources` must be specified with a valid non-empty value for
+a valid configuration. The `span_names`, `span_kinds`, `log_bodies`, `log_severity_texts`,
 `log_severity_number`, `services`, `attributes` and `libraries` fields are invalid.
 
 

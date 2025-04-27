@@ -32,11 +32,11 @@ func TestCreateExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettingsWithType(metadata.Type), eCfg)
+	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettingsWithType(metadata.Type), eCfg)
+	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }
@@ -51,11 +51,11 @@ func TestCreateLegacyExporter(t *testing.T) {
 	eCfg := cfg.(*Config)
 	eCfg.ProjectID = "test"
 
-	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettingsWithType(metadata.Type), eCfg)
+	te, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te, "failed to create trace exporter")
 
-	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettingsWithType(metadata.Type), eCfg)
+	me, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), eCfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, me, "failed to create metrics exporter")
 }

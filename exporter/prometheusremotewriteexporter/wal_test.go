@@ -166,14 +166,13 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
 		},
-		TargetInfo:    &TargetInfo{},    // Declared just to avoid nil pointer dereference.
-		CreatedMetric: &CreatedMetric{}, // Declared just to avoid nil pointer dereference.
+		TargetInfo: &TargetInfo{}, // Declared just to avoid nil pointer dereference.
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
 	server := httptest.NewServer(http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {

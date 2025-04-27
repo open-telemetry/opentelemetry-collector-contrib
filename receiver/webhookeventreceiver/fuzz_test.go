@@ -29,7 +29,7 @@ func FuzzHandleReq(f *testing.F) {
 		}
 
 		consumer := consumertest.NewNop()
-		receiver, err := newLogsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), Config{ServerConfig: confighttp.ServerConfig{
+		receiver, err := newLogsReceiver(receivertest.NewNopSettings(metadata.Type), Config{ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8080",
 		}}, consumer)
 		if err != nil {

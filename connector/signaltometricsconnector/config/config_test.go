@@ -52,6 +52,14 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
+			path: "with_optional_and_default_value",
+			errorMsgs: []string{
+				fullErrorForSignal(t, "spans", "attributes validation failed: only one of default_value or optional should be set"),
+				fullErrorForSignal(t, "datapoints", "attributes validation failed: only one of default_value or optional should be set"),
+				fullErrorForSignal(t, "logs", "attributes validation failed: only one of default_value or optional should be set"),
+			},
+		},
+		{
 			path: "invalid_histogram",
 			errorMsgs: []string{
 				fullErrorForSignal(t, "spans", "histogram validation failed"),
@@ -84,11 +92,11 @@ func TestConfig(t *testing.T) {
 			},
 		},
 		{
-			path: "invalid_ottl_statements",
+			path: "invalid_ottl_value_expression",
 			errorMsgs: []string{
-				fullErrorForSignal(t, "spans", "failed to parse OTTL statements"),
-				fullErrorForSignal(t, "datapoints", "failed to parse OTTL statements"),
-				fullErrorForSignal(t, "logs", "failed to parse OTTL statements"),
+				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),
+				fullErrorForSignal(t, "datapoints", "failed to parse value OTTL expression"),
+				fullErrorForSignal(t, "logs", "failed to parse value OTTL expression"),
 			},
 		},
 		{
@@ -108,7 +116,10 @@ func TestConfig(t *testing.T) {
 						Description:               "Exponential histogram",
 						Unit:                      "us",
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
-						Attributes:                []Attribute{{Key: "key.2", DefaultValue: "bar"}},
+						Attributes: []Attribute{
+							{Key: "key.2", DefaultValue: "bar"},
+							{Key: "key.3", Optional: true},
+						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
 							`resource.attributes["some.optional.2"] != nil`,
@@ -124,7 +135,10 @@ func TestConfig(t *testing.T) {
 						Description:               "Histogram",
 						Unit:                      "us",
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
-						Attributes:                []Attribute{{Key: "key.2", DefaultValue: "bar"}},
+						Attributes: []Attribute{
+							{Key: "key.2", DefaultValue: "bar"},
+							{Key: "key.3", Optional: true},
+						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
 							`resource.attributes["some.optional.2"] != nil`,
@@ -142,7 +156,10 @@ func TestConfig(t *testing.T) {
 						Description:               "Sum",
 						Unit:                      "ms",
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
-						Attributes:                []Attribute{{Key: "key.2", DefaultValue: "bar"}},
+						Attributes: []Attribute{
+							{Key: "key.2", DefaultValue: "bar"},
+							{Key: "key.3", Optional: true},
+						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
 							`IsDouble(attributes["some.optional.1"])`,
@@ -158,7 +175,10 @@ func TestConfig(t *testing.T) {
 						Description:               "Sum",
 						Unit:                      "1",
 						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
-						Attributes:                []Attribute{{Key: "key.2", DefaultValue: "bar"}},
+						Attributes: []Attribute{
+							{Key: "key.2", DefaultValue: "bar"},
+							{Key: "key.3", Optional: true},
+						},
 						Conditions: []string{
 							`attributes["some.optional.1"] != nil`,
 						},

@@ -31,7 +31,7 @@ func TestMetricsTransformProcessor(t *testing.T) {
 
 			mtp, err := processorhelper.NewMetrics(
 				context.Background(),
-				processortest.NewNopSettingsWithType(metadata.Type),
+				processortest.NewNopSettings(metadata.Type),
 				&Config{},
 				next,
 				p.processMetrics,
@@ -116,13 +116,11 @@ func lessAttributes(a, b pcommon.Map) bool {
 	}
 
 	var res bool
-	a.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range a.All() {
 		bv, ok := b.Get(k)
 		if !ok || v.Str() < bv.Str() {
-			res = true
-			return false
+			return true
 		}
-		return true
-	})
+	}
 	return res
 }

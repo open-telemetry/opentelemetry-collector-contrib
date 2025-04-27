@@ -25,7 +25,7 @@ func TestCreateLogs(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{
@@ -54,7 +54,7 @@ func TestCreateMetrics(t *testing.T) {
 	ctx := context.Background()
 	receiver, err := createReceiver(
 		ctx,
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			Config: sqlquery.Config{
 				ControllerConfig: scraperhelper.ControllerConfig{

@@ -39,7 +39,7 @@ func TestNonUDPTransport(t *testing.T) {
 			Transport:          "tcp",
 			NumOfPollerToStart: 2,
 		},
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	assert.EqualError(t, err,
 		"X-Ray receiver only supports ingesting spans through UDP, provided: tcp")
@@ -52,7 +52,7 @@ func TestInvalidEndpoint(t *testing.T) {
 			Transport:          "udp",
 			NumOfPollerToStart: 2,
 		},
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	assert.EqualError(t, err, "address invalidAddr: missing port in address")
 }
@@ -72,7 +72,7 @@ func TestUDPPortUnavailable(t *testing.T) {
 			Endpoint:           address,
 			NumOfPollerToStart: 2,
 		},
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 
 	assert.Error(t, err, "should have failed to create a new receiver")
@@ -91,7 +91,7 @@ func TestCloseStopsPoller(t *testing.T) {
 			Endpoint:           addr,
 			NumOfPollerToStart: 2,
 		},
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	assert.NoError(t, err, "poller should be created")
 

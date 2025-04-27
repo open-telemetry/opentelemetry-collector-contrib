@@ -28,7 +28,7 @@ import (
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
@@ -198,7 +198,7 @@ func TestGRPCInvalidTLSCredentials(t *testing.T) {
 
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(componentmetadata.Type),
+		receivertest.NewNopSettings(componentmetadata.Type),
 		cfg,
 		consumertest.NewNop())
 
@@ -259,7 +259,7 @@ func newGRPCReceiver(t *testing.T, endpoint string, settings component.Telemetry
 }
 
 func newReceiver(t *testing.T, factory receiver.Factory, settings component.TelemetrySettings, cfg *Config, id component.ID, tc consumer.Traces, mc consumer.Metrics) component.Component {
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.TelemetrySettings = settings
 	set.ID = id
 	var r component.Component
@@ -286,7 +286,7 @@ func TestStandardShutdown(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(
 		context.Background(),
@@ -337,7 +337,7 @@ func TestStandardShutdown(t *testing.T) {
 
 	// The last, additional trace should not be received by sink, so the number of spans in
 	// the sink should not change.
-	assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+	assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 }
 
 func TestOTelArrowShutdown(t *testing.T) {
@@ -363,9 +363,9 @@ func TestOTelArrowShutdown(t *testing.T) {
 				cfg.GRPC.Keepalive.ServerParameters.MaxConnectionAgeGrace = 5 * time.Second
 			}
 			cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-			set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+			set := receivertest.NewNopSettings(componentmetadata.Type)
 			core, obslogs := observer.New(zapcore.DebugLevel)
-			set.TelemetrySettings.Logger = zap.New(core)
+			set.Logger = zap.New(core)
 
 			set.ID = testReceiverID
 			r, err := NewFactory().CreateTraces(
@@ -443,7 +443,7 @@ func TestOTelArrowShutdown(t *testing.T) {
 
 			// The last, additional trace should not be received by sink, so the number of spans in
 			// the sink should not change.
-			assert.EqualValues(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
+			assert.Equal(t, sinkSpanCountAfterShutdown, nextSink.SpanCount())
 
 			shutdownCause := ""
 		scanLogs:
@@ -582,7 +582,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -649,7 +649,7 @@ func TestGRPCArrowReceiver(t *testing.T) {
 
 	assert.Equal(t, expectTraces, sink.AllTraces())
 
-	assert.Equal(t, len(expectMDs), len(sink.Metadatas()))
+	assert.Len(t, sink.Metadatas(), len(expectMDs))
 	// gRPC adds its own metadata keys, so we check for only the
 	// expected ones below:
 	for idx := range expectMDs {
@@ -675,7 +675,7 @@ func (h *hostWithExtensions) GetExtensions() map[component.ID]component.Componen
 	return h.exts
 }
 
-func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) auth.Server {
+func newTestAuthExtension(t *testing.T, authFunc func(ctx context.Context, hdrs map[string][]string) (context.Context, error)) extension.Extension {
 	ctrl := gomock.NewController(t)
 	as := mock.NewMockServer(ctrl)
 	as.EXPECT().Authenticate(gomock.Any(), gomock.Any()).AnyTimes().DoAndReturn(authFunc)
@@ -695,7 +695,7 @@ func TestGRPCArrowReceiverAuth(t *testing.T) {
 	cfg.GRPC.Auth = &configauth.Authentication{
 		AuthenticatorID: authID,
 	}
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -762,7 +762,7 @@ func TestConcurrentArrowReceiver(t *testing.T) {
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.GRPC.NetAddr.Endpoint = addr
 	cfg.GRPC.IncludeMetadata = true
-	id := component.NewID(component.MustNewType("arrow"))
+	id := component.NewID(componentmetadata.Type)
 	tt := componenttest.NewNopTelemetrySettings()
 	ocr := newReceiver(t, factory, tt, cfg, id, sink, nil)
 
@@ -860,7 +860,7 @@ func TestOTelArrowHalfOpenShutdown(t *testing.T) {
 	}
 	// No keepalive parameters are set
 	cfg.GRPC.NetAddr.Endpoint = endpointGrpc
-	set := receivertest.NewNopSettingsWithType(componentmetadata.Type)
+	set := receivertest.NewNopSettings(componentmetadata.Type)
 
 	set.ID = testReceiverID
 	r, err := NewFactory().CreateTraces(

@@ -152,7 +152,7 @@ func TestWithDNSResolverNoEndpoints(t *testing.T) {
 	_, e, _ := p.exporterAndEndpoint([]byte{128, 128, 0, 0})
 
 	// verify
-	assert.Equal(t, "", e)
+	assert.Empty(t, e)
 }
 
 func TestMultipleResolvers(t *testing.T) {
@@ -202,7 +202,7 @@ func TestStartFailureStaticResolver(t *testing.T) {
 func TestLoadBalancerShutdown(t *testing.T) {
 	// prepare
 	cfg := simpleConfig()
-	p, err := newTracesExporter(exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	p, err := newTracesExporter(exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NotNil(t, p)
 	require.NoError(t, err)
 
@@ -275,8 +275,8 @@ func TestAddMissingExporters(t *testing.T) {
 	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
-		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettingsWithType(metadata.Type), &oCfg)
+		oCfg.ClientConfig.Endpoint = endpoint
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(exporterFactory.Type()), &oCfg)
 	}
 
 	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)
@@ -310,8 +310,8 @@ func TestFailedToAddMissingExporters(t *testing.T) {
 	}, component.StabilityLevelDevelopment))
 	fn := func(ctx context.Context, endpoint string) (component.Component, error) {
 		oCfg := cfg.Protocol.OTLP
-		oCfg.Endpoint = endpoint
-		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettingsWithType(metadata.Type), &oCfg)
+		oCfg.ClientConfig.Endpoint = endpoint
+		return exporterFactory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), &oCfg)
 	}
 
 	p, err := newLoadBalancer(ts.Logger, cfg, fn, tb)

@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/kafkametricsreceiver/internal/metadata"
 )
 
@@ -45,20 +46,18 @@ func TestConsumerShutdown_closed(t *testing.T) {
 }
 
 func TestConsumerScraper_createConsumerScraper(t *testing.T) {
-	sc := sarama.NewConfig()
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	cs, err := createConsumerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 }
 
 func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	cs, err := createConsumerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.ScrapeMetrics(context.Background())
@@ -66,11 +65,10 @@ func TestConsumerScraper_scrape_handles_client_error(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		return nil, errors.New("new client failed")
 	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	cs, err := createConsumerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Shutdown(context.Background())
@@ -78,17 +76,16 @@ func TestConsumerScraper_scrape_handles_nil_client(t *testing.T) {
 }
 
 func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
-	newSaramaClient = func([]string, *sarama.Config) (sarama.Client, error) {
+	newSaramaClient = func(context.Context, configkafka.ClientConfig) (sarama.Client, error) {
 		client := newMockClient()
 		client.Mock.
 			On("Close").Return(nil)
 		return client, nil
 	}
-	newClusterAdmin = func([]string, *sarama.Config) (sarama.ClusterAdmin, error) {
+	newClusterAdmin = func(sarama.Client) (sarama.ClusterAdmin, error) {
 		return nil, errors.New("new cluster admin failed")
 	}
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	cs, err := createConsumerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	_, err = cs.ScrapeMetrics(context.Background())
@@ -98,8 +95,7 @@ func TestConsumerScraper_scrape_handles_clusterAdmin_error(t *testing.T) {
 func TestConsumerScraperStart(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
-	cs, err := createConsumerScraper(context.Background(), Config{}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	cs, err := createConsumerScraper(context.Background(), Config{}, receivertest.NewNopSettings(metadata.Type))
 	assert.NoError(t, err)
 	assert.NotNil(t, cs)
 	err = cs.Start(context.Background(), nil)
@@ -109,10 +105,9 @@ func TestConsumerScraperStart(t *testing.T) {
 func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{
 		TopicMatch: "[",
-	}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	}, receivertest.NewNopSettings(metadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, cs)
 }
@@ -120,10 +115,9 @@ func TestConsumerScraper_createScraper_handles_invalid_topic_match(t *testing.T)
 func TestConsumerScraper_createScraper_handles_invalid_group_match(t *testing.T) {
 	newSaramaClient = mockNewSaramaClient
 	newClusterAdmin = mockNewClusterAdmin
-	sc := sarama.NewConfig()
 	cs, err := createConsumerScraper(context.Background(), Config{
 		GroupMatch: "[",
-	}, sc, receivertest.NewNopSettingsWithType(metadata.Type))
+	}, receivertest.NewNopSettings(metadata.Type))
 	assert.Error(t, err)
 	assert.Nil(t, cs)
 }
@@ -132,7 +126,7 @@ func TestConsumerScraper_scrape(t *testing.T) {
 	filter := regexp.MustCompile(defaultGroupMatch)
 	cs := consumerScraper{
 		client:       newMockClient(),
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: newMockClusterAdmin(),
 		topicFilter:  filter,
 		groupFilter:  filter,
@@ -150,7 +144,7 @@ func TestConsumerScraper_scrape_handlesListTopicError(t *testing.T) {
 	clusterAdmin.topics = nil
 	cs := consumerScraper{
 		client:       client,
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
@@ -165,7 +159,7 @@ func TestConsumerScraper_scrape_handlesListConsumerGroupError(t *testing.T) {
 	clusterAdmin.consumerGroups = nil
 	cs := consumerScraper{
 		client:       newMockClient(),
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
@@ -180,7 +174,7 @@ func TestConsumerScraper_scrape_handlesDescribeConsumerError(t *testing.T) {
 	clusterAdmin.consumerGroupDescriptions = nil
 	cs := consumerScraper{
 		client:       newMockClient(),
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		clusterAdmin: clusterAdmin,
 		topicFilter:  filter,
 		groupFilter:  filter,
@@ -197,7 +191,7 @@ func TestConsumerScraper_scrape_handlesOffsetPartialError(t *testing.T) {
 	clusterAdmin.consumerGroupOffsets = nil
 	cs := consumerScraper{
 		client:       client,
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,
@@ -215,7 +209,7 @@ func TestConsumerScraper_scrape_handlesPartitionPartialError(t *testing.T) {
 	clusterAdmin.consumerGroupOffsets = nil
 	cs := consumerScraper{
 		client:       client,
-		settings:     receivertest.NewNopSettingsWithType(metadata.Type),
+		settings:     receivertest.NewNopSettings(metadata.Type),
 		groupFilter:  filter,
 		topicFilter:  filter,
 		clusterAdmin: clusterAdmin,

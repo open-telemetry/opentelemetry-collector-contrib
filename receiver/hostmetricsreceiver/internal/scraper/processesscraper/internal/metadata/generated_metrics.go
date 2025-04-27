@@ -82,6 +82,24 @@ var MapAttributeStatus = map[string]AttributeStatus{
 	"zombies":  AttributeStatusZombies,
 }
 
+var MetricsInfo = metricsInfo{
+	SystemProcessesCount: metricInfo{
+		Name: "system.processes.count",
+	},
+	SystemProcessesCreated: metricInfo{
+		Name: "system.processes.created",
+	},
+}
+
+type metricsInfo struct {
+	SystemProcessesCount   metricInfo
+	SystemProcessesCreated metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricSystemProcessesCount struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -286,7 +304,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricSystemProcessesCount.emit(ils.Metrics())

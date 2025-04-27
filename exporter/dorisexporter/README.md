@@ -30,7 +30,11 @@ The following configuration options are supported:
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if `create_schema` is false. If set to 0, historical data will not be deleted.
 * `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created; ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
 * `replication_num` (default = 1) The number of replicas of the table; ignored if `create_schema` is false.
-* `timezone` (default is UTC) The time zone of doris.
+* `timezone` (default is the time zone of the opentelemetry collector if IANA Time Zone Database is found, else is UTC) The time zone of doris, e.g. Asia/Shanghai.
+* `log_response` (default = false) Whether to log the response of doris stream load.
+* `label_prefix` (default = open_telemetry) the prefix of the label in doris stream load. The final generated label is {label_prefix}{db}{table}{yyyyMMddHHmmss}{uuid}.
+* `headers` (default is empty map) The headers of doris stream load. Details: [header parameters](https://doris.apache.org/docs/data-operate/import/import-way/stream-load-manual#load-configuration-parameters) and [group commit](https://doris.apache.org/docs/data-operate/import/group-commit-manual#stream-load).
+* `log_progress_interval` (default = 10) The interval, in seconds, between statistical logs. When it is less than or equal to 0, the statistical log is not printed.
 * `sending_queue`  [details here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
   * `enabled` (default = true)
   * `num_consumers` (default = 10) Number of consumers that dequeue batches; ignored if `enabled` is false.

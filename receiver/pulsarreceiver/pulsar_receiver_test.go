@@ -17,6 +17,6 @@ func Test_newTracesReceiver_err(t *testing.T) {
 	c := Config{
 		Encoding: defaultEncoding,
 	}
-	_, err := newTracesReceiver(c, receivertest.NewNopSettingsWithType(metadata.Type), defaultTracesUnmarshalers(), consumertest.NewNop())
+	_, err := newTracesReceiver(c, receivertest.NewNopSettings(metadata.Type), defaultTracesUnmarshalers(), consumertest.NewNop())
 	assert.Error(t, err)
 }

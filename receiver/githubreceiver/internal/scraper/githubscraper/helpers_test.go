@@ -15,7 +15,7 @@ import (
 	"time"
 
 	"github.com/Khan/genqlient/graphql"
-	"github.com/google/go-github/v69/github"
+	"github.com/google/go-github/v71/github"
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
@@ -80,9 +80,9 @@ func MockServer(responses *responses) *http.ServeMux {
 		if err := json.NewDecoder(r.Body).Decode(&reqBody); err != nil {
 			return
 		}
-		switch {
+		switch reqBody.OpName {
 		// These OpNames need to be name of the GraphQL query as defined in genqlient.graphql
-		case reqBody.OpName == "checkLogin":
+		case "checkLogin":
 			loginResp := &responses.checkLoginResponse
 			w.WriteHeader(loginResp.responseCode)
 			if loginResp.responseCode == http.StatusOK {
@@ -92,7 +92,7 @@ func MockServer(responses *responses) *http.ServeMux {
 					return
 				}
 			}
-		case reqBody.OpName == "getRepoDataBySearch":
+		case "getRepoDataBySearch":
 			repoResp := &responses.repoResponse
 			w.WriteHeader(repoResp.responseCode)
 			if repoResp.responseCode == http.StatusOK {
@@ -105,7 +105,7 @@ func MockServer(responses *responses) *http.ServeMux {
 				}
 				repoResp.page++
 			}
-		case reqBody.OpName == "getBranchData":
+		case "getBranchData":
 			branchResp := &responses.branchResponse
 			w.WriteHeader(branchResp.responseCode)
 			if branchResp.responseCode == http.StatusOK {
@@ -120,7 +120,7 @@ func MockServer(responses *responses) *http.ServeMux {
 				}
 				branchResp.page++
 			}
-		case reqBody.OpName == "getPullRequestData":
+		case "getPullRequestData":
 			prResp := &responses.prResponse
 			w.WriteHeader(prResp.responseCode)
 			if prResp.responseCode == http.StatusOK {
@@ -135,7 +135,7 @@ func MockServer(responses *responses) *http.ServeMux {
 				}
 				prResp.page++
 			}
-		case reqBody.OpName == "getCommitData":
+		case "getCommitData":
 			commitResp := &responses.commitResponse
 			w.WriteHeader(commitResp.responseCode)
 			if commitResp.responseCode == http.StatusOK {
@@ -333,7 +333,7 @@ func TestCheckOwnerExists(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -447,7 +447,7 @@ func TestGetPullRequests(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -550,7 +550,7 @@ func TestGetRepos(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -654,7 +654,7 @@ func TestGetBranches(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()
@@ -706,7 +706,7 @@ func TestGetContributors(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			ghs.cfg.GitHubOrg = tc.org
 
@@ -891,7 +891,7 @@ func TestEvalCommits(t *testing.T) {
 		t.Run(tc.desc, func(t *testing.T) {
 			factory := Factory{}
 			defaultConfig := factory.CreateDefaultConfig()
-			settings := receivertest.NewNopSettingsWithType(metadata.Type)
+			settings := receivertest.NewNopSettings(metadata.Type)
 			ghs := newGitHubScraper(settings, defaultConfig.(*Config))
 			server := httptest.NewServer(tc.server)
 			defer server.Close()

@@ -29,11 +29,11 @@ func TestEndToEnd(t *testing.T) {
 	ctx := context.Background()
 	f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 	cfg := f.CreateDefaultConfig().(*BenchConfig)
-	cfg.BenchOpConfig.NumEntries = numEntries
-	cfg.BenchOpConfig.NumHosts = numHosts
+	cfg.NumEntries = numEntries
+	cfg.NumHosts = numHosts
 	sink := new(consumertest.LogsSink)
 
-	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettingsWithType(f.Type()), cfg, sink)
+	rcvr, err := f.CreateLogs(ctx, receivertest.NewNopSettings(f.Type()), cfg, sink)
 	require.NoError(t, err)
 
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
@@ -54,13 +54,13 @@ func (bc benchCase) run(b *testing.B) {
 	for i := 0; i < b.N; i++ {
 		f := NewFactory(BenchReceiverType{}, component.StabilityLevelUndefined)
 		cfg := f.CreateDefaultConfig().(*BenchConfig)
-		cfg.BaseConfig.maxBatchSize = bc.maxBatchSize
-		cfg.BaseConfig.flushInterval = bc.flushInterval
-		cfg.BenchOpConfig.NumEntries = numEntries
-		cfg.BenchOpConfig.NumHosts = numHosts
+		cfg.maxBatchSize = bc.maxBatchSize
+		cfg.flushInterval = bc.flushInterval
+		cfg.NumEntries = numEntries
+		cfg.NumHosts = numHosts
 		sink := new(consumertest.LogsSink)
 
-		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(f.Type()), cfg, sink)
+		rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, sink)
 		require.NoError(b, err)
 
 		b.ReportAllocs()

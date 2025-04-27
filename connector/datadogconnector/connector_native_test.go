@@ -35,7 +35,7 @@ var _ component.Component = (*traceToMetricConnectorNative)(nil) // testing that
 func TestNewConnectorNative(t *testing.T) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	tconn, err := factory.CreateTracesToMetrics(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -48,7 +48,7 @@ func TestNewConnectorNative(t *testing.T) {
 func TestTraceToTraceConnectorNative(t *testing.T) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	cfg := factory.CreateDefaultConfig().(*Config)
 
 	tconn, err := factory.CreateTracesToTraces(context.Background(), creationParams, cfg, consumertest.NewNop())
@@ -67,7 +67,7 @@ func creteConnectorNative(t *testing.T) (*traceToMetricConnectorNative, *consume
 func creteConnectorNativeWithCfg(t *testing.T, cfg *Config) (*traceToMetricConnectorNative, *consumertest.MetricsSink) {
 	factory := NewFactory()
 
-	creationParams := connectortest.NewNopSettingsWithType(metadata.Type)
+	creationParams := connectortest.NewNopSettings(metadata.Type)
 	metricsSink := &consumertest.MetricsSink{}
 
 	cfg.Traces.BucketInterval = 1 * time.Second
@@ -102,10 +102,7 @@ func TestContainerTagsNative(t *testing.T) {
 	err = connector.ConsumeTraces(context.Background(), trace2)
 	assert.NoError(t, err)
 
-	for {
-		if len(metricsSink.AllMetrics()) > 0 {
-			break
-		}
+	for len(metricsSink.AllMetrics()) == 0 {
 		time.Sleep(100 * time.Millisecond)
 	}
 

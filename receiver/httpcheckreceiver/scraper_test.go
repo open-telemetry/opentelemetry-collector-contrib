@@ -178,7 +178,7 @@ func TestScraperScrape(t *testing.T) {
 					},
 				}
 			}
-			scraper := newScraper(cfg, receivertest.NewNopSettingsWithType(metadata.Type))
+			scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 			require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 			actualMetrics, err := scraper.scrape(context.Background())
@@ -196,7 +196,7 @@ func TestScraperScrape(t *testing.T) {
 }
 
 func TestNilClient(t *testing.T) {
-	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettingsWithType(metadata.Type))
+	scraper := newScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 	actualMetrics, err := scraper.scrape(context.Background())
 	require.EqualError(t, err, errClientNotInit.Error())
 	require.NoError(t, pmetrictest.CompareMetrics(pmetric.NewMetrics(), actualMetrics))
@@ -220,7 +220,7 @@ func TestScraperMultipleTargets(t *testing.T) {
 		},
 	})
 
-	scraper := newScraper(cfg, receivertest.NewNopSettingsWithType(metadata.Type))
+	scraper := newScraper(cfg, receivertest.NewNopSettings(metadata.Type))
 	require.NoError(t, scraper.start(context.Background(), componenttest.NewNopHost()))
 
 	actualMetrics, err := scraper.scrape(context.Background())

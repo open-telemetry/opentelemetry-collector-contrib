@@ -26,16 +26,16 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 					return "fixed"
 				},
 			},
-			expect: "/year=2024/month=01/day=24/hour=06/_fixed",
+			expect: "/_fixed",
 		},
 		{
 			name: "no compression set",
 			inputs: &PartitionKeyBuilder{
-				PartitionPrefix:     "/telemetry",
-				PartitionTruncation: "minute",
-				FilePrefix:          "signal-output-",
-				Metadata:            "service-01_pod2",
-				FileFormat:          "metrics",
+				PartitionPrefix: "/telemetry",
+				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:      "signal-output-",
+				Metadata:        "service-01_pod2",
+				FileFormat:      "metrics",
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
@@ -45,12 +45,12 @@ func TestPartitionKeyInputsNewPartitionKey(t *testing.T) {
 		{
 			name: "gzip compression set",
 			inputs: &PartitionKeyBuilder{
-				PartitionPrefix:     "/telemetry",
-				PartitionTruncation: "minute",
-				FilePrefix:          "signal-output-",
-				Metadata:            "service-01_pod2",
-				FileFormat:          "metrics",
-				Compression:         configcompression.TypeGzip,
+				PartitionPrefix: "/telemetry",
+				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
+				FilePrefix:      "signal-output-",
+				Metadata:        "service-01_pod2",
+				FileFormat:      "metrics",
+				Compression:     configcompression.TypeGzip,
 				UniqueKeyFunc: func() string {
 					return "fixed"
 				},
@@ -79,21 +79,21 @@ func TestPartitionKeyInputsBucketPrefix(t *testing.T) {
 		{
 			name:   "no values provided",
 			inputs: &PartitionKeyBuilder{},
-			expect: "/year=2024/month=01/day=24/hour=06",
+			expect: "",
 		},
 		{
 			name: "partition by minutes",
 			inputs: &PartitionKeyBuilder{
-				PartitionTruncation: "minute",
+				PartitionFormat: "year=%Y/month=%m/day=%d/hour=%H/minute=%M",
 			},
-			expect: "/year=2024/month=01/day=24/hour=06/minute=40",
+			expect: "year=2024/month=01/day=24/hour=06/minute=40",
 		},
 		{
-			name: "unknown partition truncation value",
+			name: "partition by hours",
 			inputs: &PartitionKeyBuilder{
-				PartitionTruncation: "weekly",
+				PartitionFormat: "%Y/%m/%d/%H/%M",
 			},
-			expect: "/year=2024/month=01/day=24/hour=06",
+			expect: "2024/01/24/06/40",
 		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {

@@ -25,7 +25,7 @@ func TestCreateTraces(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+	te, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, te)
 }

@@ -63,7 +63,7 @@ func TestExportWithNetworkIssueRecovery(t *testing.T) {
 			cfg.Connection.Endpoint = endpoint
 			cfg.Connection.VHost = vhost
 			cfg.Connection.Auth = AuthConfig{Plain: PlainAuth{Username: username, Password: password}}
-			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettingsWithType(metadata.Type), cfg)
+			exporter, err := factory.CreateLogs(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 			require.NoError(t, err)
 			err = exporter.Start(context.Background(), componenttest.NewNopHost())
 			require.NoError(t, err)

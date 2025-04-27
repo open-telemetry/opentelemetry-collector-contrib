@@ -8,6 +8,8 @@ extensions:
           insecure: true
     ppid: {{.PID}}
     ppid_poll_interval: {{.PPIDPollInterval}}
+    capabilities:
+      reports_available_components: {{.ReportsAvailableComponents}}
 
 service:
   extensions: [opamp]

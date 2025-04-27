@@ -52,7 +52,7 @@ func TestReceiverTLSIntegration(t *testing.T) {
 
 			recv, err := fact.CreateLogs(
 				context.Background(),
-				receivertest.NewNopSettingsWithType(metadata.Type),
+				receivertest.NewNopSettings(metadata.Type),
 				&Config{
 					Logs: LogsConfig{
 						Secret:   testSecret,

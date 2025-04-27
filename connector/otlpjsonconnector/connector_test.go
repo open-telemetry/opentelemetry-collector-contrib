@@ -47,7 +47,7 @@ func TestLogsToLogs2(t *testing.T) {
 			sink := &consumertest.LogsSink{}
 			conn, err := factory.CreateLogsToLogs(context.Background(),
 
-				connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -100,7 +100,7 @@ func TestLogsToMetrics(t *testing.T) {
 			sink := &consumertest.MetricsSink{}
 			conn, err := factory.CreateLogsToMetrics(context.Background(),
 
-				connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -153,7 +153,7 @@ func TestLogsToTraces(t *testing.T) {
 			sink := &consumertest.TracesSink{}
 			conn, err := factory.CreateLogsToTraces(context.Background(),
 
-				connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), sink)
+				connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), sink)
 			require.NoError(t, err)
 			require.NotNil(t, conn)
 			assert.False(t, conn.Capabilities().MutatesData)
@@ -190,7 +190,7 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	// initialize log -> log connector
 	logsink := &consumertest.LogsSink{}
 	logscon, _ := factory.CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), logsink)
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), logsink)
 
 	require.NoError(b, logscon.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
@@ -200,7 +200,7 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	// initialize log -> traces connector
 	tracesink := &consumertest.TracesSink{}
 	traceconn, _ := factory.CreateLogsToTraces(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), tracesink)
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), tracesink)
 	require.NoError(b, traceconn.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		assert.NoError(b, traceconn.Shutdown(context.Background()))
@@ -209,7 +209,7 @@ func BenchmarkConsumeLogs(b *testing.B) {
 	// initialize log -> metric connector
 	metricsink := &consumertest.MetricsSink{}
 	metricconn, _ := factory.CreateLogsToMetrics(context.Background(),
-		connectortest.NewNopSettingsWithType(metadata.Type), createDefaultConfig(), metricsink)
+		connectortest.NewNopSettings(metadata.Type), createDefaultConfig(), metricsink)
 	require.NoError(b, metricconn.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		assert.NoError(b, metricconn.Shutdown(context.Background()))

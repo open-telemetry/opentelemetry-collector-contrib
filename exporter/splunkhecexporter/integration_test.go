@@ -237,7 +237,7 @@ type testCfg struct {
 }
 
 func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettingsWithType(metadata.Type)
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newLogsClient(settings, config)
 	var logs plog.Logs
 	if test.config.index != "main" {
@@ -265,7 +265,7 @@ func logsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettingsWithType(metadata.Type)
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newMetricsClient(settings, config)
 	metricData := prepareMetricsData(test.config.event)
 
@@ -281,7 +281,7 @@ func metricsTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
 }
 
 func tracesTest(t *testing.T, config *Config, url *url.URL, test testCfg) {
-	settings := exportertest.NewNopSettingsWithType(metadata.Type)
+	settings := exportertest.NewNopSettings(metadata.Type)
 	c := newTracesClient(settings, config)
 	tracesData := prepareTracesData(test.config.index, test.config.source, test.config.sourcetype)
 
@@ -364,7 +364,7 @@ func TestSplunkHecExporter(t *testing.T) {
 			// Endpoint and Token do not have a default value so set them directly.
 			config := NewFactory().CreateDefaultConfig().(*Config)
 			config.Token = configopaque.String(integrationtestutils.GetConfigVariable("HEC_TOKEN"))
-			config.ClientConfig.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
+			config.Endpoint = "https://" + integrationtestutils.GetConfigVariable("HOST") + ":" + integrationtestutils.GetConfigVariable("HEC_PORT") + "/services/collector"
 			config.Source = "otel"
 			config.SourceType = "st-otel"
 

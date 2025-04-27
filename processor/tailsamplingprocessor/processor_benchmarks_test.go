@@ -26,7 +26,7 @@ func BenchmarkSampling(b *testing.B) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              testPolicy,
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	require.NoError(b, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {

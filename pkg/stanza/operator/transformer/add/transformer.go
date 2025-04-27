@@ -5,6 +5,7 @@ package add // import "github.com/open-telemetry/opentelemetry-collector-contrib
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -21,6 +22,10 @@ type Transformer struct {
 	Field   entry.Field
 	Value   any
 	program *vm.Program
+}
+
+func (t *Transformer) ProcessBatch(ctx context.Context, entries []*entry.Entry) error {
+	return t.ProcessBatchWith(ctx, entries, t.Process)
 }
 
 // Process will process an entry with a add transformation.
@@ -43,7 +48,7 @@ func (t *Transformer) Transform(e *entry.Entry) error {
 		}
 		return e.Set(t.Field, result)
 	}
-	return fmt.Errorf("add: missing required field 'value'")
+	return errors.New("add: missing required field 'value'")
 }
 
 func isExpr(str string) bool {

@@ -25,7 +25,7 @@ func TestNewFactory(t *testing.T) {
 func TestCreateTraces(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := f.CreateTraces(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -35,7 +35,7 @@ func TestCreateTraces(t *testing.T) {
 func TestCreateLogs(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	receiver, err := f.CreateLogs(ctx, params, getConfig(), consumertest.NewNop())
 
 	require.NoError(t, err)
@@ -45,7 +45,7 @@ func TestCreateLogs(t *testing.T) {
 func TestTracesAndLogsReceiversAreSame(t *testing.T) {
 	f := NewFactory()
 	ctx := context.Background()
-	params := receivertest.NewNopSettingsWithType(metadata.Type)
+	params := receivertest.NewNopSettings(metadata.Type)
 	config := getConfig()
 	logsReceiver, err := f.CreateLogs(ctx, params, config, consumertest.NewNop())
 	require.NoError(t, err)

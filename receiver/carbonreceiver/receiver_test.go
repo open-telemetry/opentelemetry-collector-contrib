@@ -92,7 +92,7 @@ func Test_carbonreceiver_New(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config, tt.args.nextConsumer)
 			assert.Equal(t, tt.wantErr, err)
 			if err == nil {
 				require.NotNil(t, got)
@@ -134,7 +134,7 @@ func Test_carbonreceiver_Start(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got, err := newMetricsReceiver(receivertest.NewNopSettingsWithType(metadata.Type), tt.args.config, tt.args.nextConsumer)
+			got, err := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), tt.args.config, tt.args.nextConsumer)
 			require.NoError(t, err)
 			err = got.Start(context.Background(), componenttest.NewNopHost())
 			assert.Equal(t, tt.wantErr, err)
@@ -193,7 +193,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			sink := new(consumertest.MetricsSink)
 			recorder := tracetest.NewSpanRecorder()
 			rt := sdktrace.NewTracerProvider(sdktrace.WithSpanProcessor(recorder))
-			cs := receivertest.NewNopSettingsWithType(metadata.Type)
+			cs := receivertest.NewNopSettings(metadata.Type)
 			cs.TracerProvider = rt
 			rcv, err := newMetricsReceiver(cs, *cfg, sink)
 			require.NoError(t, err)
@@ -237,7 +237,7 @@ func Test_carbonreceiver_EndToEnd(t *testing.T) {
 			m := mdd[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0)
 			assert.Equal(t, carbonMetric.Name, m.Name())
 			require.Equal(t, 1, m.Gauge().DataPoints().Len())
-			require.Equal(t, len(recorder.Ended()), len(recorder.Started()))
+			require.Len(t, recorder.Started(), len(recorder.Ended()))
 		})
 	}
 }

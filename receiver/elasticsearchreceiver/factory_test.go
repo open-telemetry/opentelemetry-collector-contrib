@@ -26,7 +26,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					createDefaultConfig(),
 					consumertest.NewNop(),
 				)
@@ -41,7 +41,7 @@ func TestCreateMetrics(t *testing.T) {
 
 				_, err := createMetricsReceiver(
 					context.Background(),
-					receivertest.NewNopSettingsWithType(metadata.Type),
+					receivertest.NewNopSettings(metadata.Type),
 					nil,
 					consumertest.NewNop(),
 				)

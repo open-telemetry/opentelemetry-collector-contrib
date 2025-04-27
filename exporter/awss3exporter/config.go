@@ -20,9 +20,8 @@ type S3UploaderConfig struct {
 	S3Bucket string `mapstructure:"s3_bucket"`
 	// S3Prefix is the key (directory) prefix to written to inside the bucket
 	S3Prefix string `mapstructure:"s3_prefix"`
-	// S3Partition is used to provide the rollup on how data is written.
-	// Valid values are: [hour,minute]
-	S3Partition string `mapstructure:"s3_partition"`
+	// S3PartitionFormat is used to provide the rollup on how data is written. Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
+	S3PartitionFormat string `mapstructure:"s3_partition_format"`
 	// FilePrefix is the filename prefix used for the file to avoid any potential collisions.
 	FilePrefix string `mapstructure:"file_prefix"`
 	// Endpoint is the URL used for communicated with S3.
@@ -33,6 +32,8 @@ type S3UploaderConfig struct {
 	S3ForcePathStyle bool `mapstructure:"s3_force_path_style"`
 	// DisableSLL forces communication to happen via HTTP instead of HTTPS.
 	DisableSSL bool `mapstructure:"disable_ssl"`
+	// ACL is the canned ACL to use when uploading objects.
+	ACL string `mapstructure:"acl"`
 
 	StorageClass string `mapstructure:"storage_class"`
 	// Compression sets the algorithm used to process the payload
@@ -52,10 +53,10 @@ const (
 
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
-	QueueSettings exporterhelper.QueueConfig `mapstructure:"sending_queue"`
-
-	S3Uploader    S3UploaderConfig `mapstructure:"s3uploader"`
-	MarshalerName MarshalerType    `mapstructure:"marshaler"`
+	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
+	TimeoutSettings exporterhelper.TimeoutConfig    `mapstructure:",squash"` // squash ensures fields are correctly decoded in embedded struct.
+	S3Uploader      S3UploaderConfig                `mapstructure:"s3uploader"`
+	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
 	Encoding              *component.ID `mapstructure:"encoding"`
@@ -73,6 +74,16 @@ func (c *Config) Validate() error {
 		"DEEP_ARCHIVE":        true,
 	}
 
+	validACLs := map[string]bool{
+		"private":                   true,
+		"public-read":               true,
+		"public-read-write":         true,
+		"authenticated-read":        true,
+		"aws-exec-read":             true,
+		"bucket-owner-read":         true,
+		"bucket-owner-full-control": true,
+	}
+
 	if c.S3Uploader.Region == "" {
 		errs = multierr.Append(errs, errors.New("region is required"))
 	}
@@ -82,6 +93,10 @@ func (c *Config) Validate() error {
 
 	if !validStorageClasses[c.S3Uploader.StorageClass] {
 		errs = multierr.Append(errs, errors.New("invalid StorageClass"))
+	}
+
+	if c.S3Uploader.ACL != "" && !validACLs[c.S3Uploader.ACL] {
+		errs = multierr.Append(errs, errors.New("invalid ACL"))
 	}
 
 	compression := c.S3Uploader.Compression

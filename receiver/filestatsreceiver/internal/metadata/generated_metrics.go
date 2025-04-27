@@ -12,6 +12,36 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	FileAtime: metricInfo{
+		Name: "file.atime",
+	},
+	FileCount: metricInfo{
+		Name: "file.count",
+	},
+	FileCtime: metricInfo{
+		Name: "file.ctime",
+	},
+	FileMtime: metricInfo{
+		Name: "file.mtime",
+	},
+	FileSize: metricInfo{
+		Name: "file.size",
+	},
+}
+
+type metricsInfo struct {
+	FileAtime metricInfo
+	FileCount metricInfo
+	FileCtime metricInfo
+	FileMtime metricInfo
+	FileSize  metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricFileAtime struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -391,7 +421,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricFileAtime.emit(ils.Metrics())

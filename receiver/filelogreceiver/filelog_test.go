@@ -69,7 +69,7 @@ func TestCreateWithInvalidInputConfig(t *testing.T) {
 
 	_, err := NewFactory().CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		cfg,
 		new(consumertest.LogsSink),
 	)
@@ -85,7 +85,7 @@ func TestReadStaticFile(t *testing.T) {
 	sink := new(consumertest.LogsSink)
 	cfg := testdataConfigYaml()
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -176,7 +176,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 	fileName := filepath.Join(tempDir, "test.log")
 	backupFileName := filepath.Join(tempDir, "test-backup.log")
 
-	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettingsWithType(metadata.Type), cfg, sink)
+	rcvr, err := f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	require.NoError(t, err, "failed to create receiver")
 	require.NoError(t, rcvr.Start(context.Background(), componenttest.NewNopHost()))
 
@@ -224,7 +224,7 @@ func (rt *rotationTest) Run(t *testing.T) {
 		msg := fmt.Sprintf("This is a simple log line with the number %3d", i)
 
 		// ... and write the logs lines to the actual file consumed by receiver.
-		_, err := file.WriteString(fmt.Sprintf("2020-08-25 %s\n", msg))
+		_, err := fmt.Fprintf(file, "2020-08-25 %s\n", msg)
 		require.NoError(t, err)
 		time.Sleep(time.Millisecond)
 	}

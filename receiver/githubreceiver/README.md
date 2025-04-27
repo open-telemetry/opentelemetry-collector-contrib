@@ -7,7 +7,7 @@
 |               | [alpha]: metrics   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fgithub%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fgithub) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fgithub%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fgithub) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@adrielp](https://www.github.com/adrielp), [@andrzej-stencel](https://www.github.com/andrzej-stencel), [@crobert-1](https://www.github.com/crobert-1), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@adrielp](https://www.github.com/adrielp), [@crobert-1](https://www.github.com/crobert-1), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -70,12 +70,12 @@ receivers:
         collection_interval: 60s
         scrapers:
             scraper:
-                metrics:
-                    vcs.repository.contributor.count:
+                metrics: #Optional
+                    vcs.contributor.count:
                         enabled: true
-                github_org: myfancyorg
-                search_query: "org:myfancyorg topic:o11yalltheway" #Recommended optional query override, defaults to "{org,user}:<github_org>"
-                endpoint: "https://selfmanagedenterpriseserver.com"
+                github_org: <myfancyorg> 
+                search_query: "org:<myfancyorg> topic:<o11yalltheway>" # Recommended optional query override, defaults to "{org,user}:<github_org>"
+                endpoint: "https://selfmanagedenterpriseserver.com" # Optional
                 auth:
                     authenticator: bearertokenauth/github
 service:
@@ -87,7 +87,15 @@ service:
             exporters: [...]
 ```
 
-A [Grafana Dashboard for metrics from this receiver is on the marketplace](https://grafana.com/grafana/dashboards/20976-engineering-effectiveness-metrics/).
+### Configuration
+
+`github_org` (**required**): Specify the GitHub organization or username to scrape.
+
+`endpoint` (optional): Set this only when using a self-managed GitHub instance (e.g., `https://selfmanagedenterpriseserver.com` -- SHOULD NOT include `api` subdomain or `/graphql` context path).
+
+`search_query` (optional): A filter to narrow down repositories. Defaults to `org:<github_org>` (or `user:<username>`). For example, use `repo:<org>/<repo>` to target a specific repository. Any valid GitHub search syntax is allowed.
+
+`metrics` (optional): Enable or disable metrics scraping. See the [metrics documentation](./documentation.md) for details.
 
 ### Scraping
 
@@ -102,17 +110,37 @@ see the [Scraping README][ghsread].
 
 [ghsread]: internal/scraper/githubscraper/README.md#github-limitations
 
+
+### GitHub Personal Access Token (PAT) Setup
+
+To create a GitHub Personal Access Token (PAT), please refer to the official [documentation](https://docs.github.com/en/authentication/keeping-your-account-and-data-secure/managing-your-personal-access-tokens).
+
+**Organization or Personal Access:**
+When generating the PAT, select the appropriate `Resource owner` — either your personal account or the organization and choose the correct `Repository access` type. For fine-grained tokens, explicitly configure the necessary `Repository permissions` or `Organization permissions`.
+
+**Note**: 
+The PAT must have read access to the target repositories. If the PAT doesn't have permission to access repositories in the target organization, only the repository count metric will be available. Detailed repository metrics cannot be fetched.
+
 ## Traces - Getting Started
 
-Workflow tracing support is actively being added to the GitHub receiver.
-This is accomplished through the processing of GitHub Actions webhook
-events for workflows and jobs. The [`workflow_job`][wjob] and
+Workflow tracing support is accomplished through the processing of GitHub
+Actions webhook events for workflows and jobs. The [`workflow_job`][wjob] and
 [`workflow_run`][wrun] event payloads are then constructed into `trace`
 telemetry.
 
 Each GitHub Action workflow or job, along with its steps, are converted
 into trace spans, allowing the observation of workflow execution times,
-success, and failure rates.
+success, and failure rates. Each Trace and Span ID is deterministic. This
+enables the underlying actions to emit telemetry from any command running in any
+step. This can be achieved by using tools like the [run-with-telemetry
+action][run] and [otel-cli][otcli]. The key is generating IDs in the same way
+that this GitHub receiver does. The [trace_event_handling.go][tr] file contains
+the `new*ID` functions that generate deterministic IDs.
+
+**IMPORTANT** - Workflow Job names MUST be unique in each workflow for
+deterministic span IDs to not conflict with eachother. GitHub does not enforce
+this behavior, but when linting a workflow, warns that there are duplicate job
+names.
 
 ### Receiver Configuration
 
@@ -179,8 +207,6 @@ To configure a GitHub App, you will need to create a new GitHub App within your
 organization. Refer to the general [GitHub App documentation][ghapp] for how to
 create a GitHub App. During the subscription phase, subscribe to `workflow_run` and `workflow_job` events.
 
-> NOTE: Only `workflow_run` events are supported in created traces at this time.
-
 [wjob]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_job
 [wrun]: https://docs.github.com/en/webhooks/webhook-events-and-payloads#workflow_run
 [valid]: https://docs.github.com/en/webhooks/using-webhooks/validating-webhook-deliveries
@@ -190,3 +216,6 @@ create a GitHub App. During the subscription phase, subscribe to `workflow_run` 
 [doracap]: https://dora.dev/capabilities/
 [dorafour]: https://dora.dev/guides/dora-metrics-four-keys/
 [ghapp]: https://docs.github.com/en/apps/creating-github-apps/registering-a-github-app/registering-a-github-app
+[run]: https://github.com/krzko/run-with-telemetry
+[otcli]: https://github.com/equinix-labs/otel-cli
+[tr]: ./trace_event_handling.go

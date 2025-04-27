@@ -8,7 +8,9 @@ package integrationtest // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"runtime"
+	"strconv"
 	"testing"
 	"time"
 
@@ -18,77 +20,31 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 
 	commonTestutil "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
-	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 )
 
-func TestIntegrationInternalMetrics_WithRemapping(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
+func TestIntegrationInternalMetrics(t *testing.T) {
+	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
 	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
+		require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", true))
 	}()
-
-	expectedMetrics := map[string]struct{}{
-		// Datadog internal metrics on trace and stats writers, with the otelcol_ prefix
-		"otelcol_datadog_otlp_translator_resources_missing_source": {},
-		"otelcol_datadog_trace_agent_stats_writer_bytes":           {},
-		"otelcol_datadog_trace_agent_stats_writer_retries":         {},
-		"otelcol_datadog_trace_agent_stats_writer_stats_buckets":   {},
-		"otelcol_datadog_trace_agent_stats_writer_stats_entries":   {},
-		"otelcol_datadog_trace_agent_stats_writer_payloads":        {},
-		"otelcol_datadog_trace_agent_stats_writer_client_payloads": {},
-		"otelcol_datadog_trace_agent_stats_writer_errors":          {},
-		"otelcol_datadog_trace_agent_stats_writer_splits":          {},
-		"otelcol_datadog_trace_agent_trace_writer_bytes":           {},
-		"otelcol_datadog_trace_agent_trace_writer_retries":         {},
-		"otelcol_datadog_trace_agent_trace_writer_spans":           {},
-		"otelcol_datadog_trace_agent_trace_writer_traces":          {},
-		"otelcol_datadog_trace_agent_trace_writer_payloads":        {},
-		"otelcol_datadog_trace_agent_trace_writer_errors":          {},
-		"otelcol_datadog_trace_agent_trace_writer_events":          {},
-
-		// OTel collector internal metrics
-		"otelcol_process_memory_rss":                     {},
-		"otelcol_process_runtime_total_sys_memory_bytes": {},
-		"otelcol_process_uptime":                         {},
-		"otelcol_process_cpu_seconds":                    {},
-		"otelcol_process_runtime_heap_alloc_bytes":       {},
-		"otelcol_process_runtime_total_alloc_bytes":      {},
-		"otelcol_receiver_accepted_metric_points":        {},
-		"otelcol_receiver_accepted_spans":                {},
-		"otelcol_exporter_queue_capacity":                {},
-		"otelcol_exporter_queue_size":                    {},
-		"otelcol_exporter_sent_spans":                    {},
-		"otelcol_exporter_sent_metric_points":            {},
-	}
-	testIntegrationInternalMetrics(t, expectedMetrics)
-}
-
-func TestIntegrationInternalMetrics_WithoutRemapping(t *testing.T) {
-	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
-	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
-	defer func() {
-		require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), prevVal))
-	}()
-
 	expectedMetrics := map[string]struct{}{
 		// Datadog internal metrics on trace and stats writers
-		"datadog_otlp_translator_resources_missing_source": {},
-		"datadog_trace_agent_stats_writer_bytes":           {},
-		"datadog_trace_agent_stats_writer_retries":         {},
-		"datadog_trace_agent_stats_writer_stats_buckets":   {},
-		"datadog_trace_agent_stats_writer_stats_entries":   {},
-		"datadog_trace_agent_stats_writer_payloads":        {},
-		"datadog_trace_agent_stats_writer_client_payloads": {},
-		"datadog_trace_agent_stats_writer_errors":          {},
-		"datadog_trace_agent_stats_writer_splits":          {},
-		"datadog_trace_agent_trace_writer_bytes":           {},
-		"datadog_trace_agent_trace_writer_retries":         {},
-		"datadog_trace_agent_trace_writer_spans":           {},
-		"datadog_trace_agent_trace_writer_traces":          {},
-		"datadog_trace_agent_trace_writer_payloads":        {},
-		"datadog_trace_agent_trace_writer_errors":          {},
-		"datadog_trace_agent_trace_writer_events":          {},
+		"datadog.otlp_translator.resources.missing_source": {},
+		"datadog.trace_agent.stats_writer.bytes":           {},
+		"datadog.trace_agent.stats_writer.retries":         {},
+		"datadog.trace_agent.stats_writer.stats_buckets":   {},
+		"datadog.trace_agent.stats_writer.stats_entries":   {},
+		"datadog.trace_agent.stats_writer.payloads":        {},
+		"datadog.trace_agent.stats_writer.client_payloads": {},
+		"datadog.trace_agent.stats_writer.errors":          {},
+		"datadog.trace_agent.stats_writer.splits":          {},
+		"datadog.trace_agent.trace_writer.bytes":           {},
+		"datadog.trace_agent.trace_writer.retries":         {},
+		"datadog.trace_agent.trace_writer.spans":           {},
+		"datadog.trace_agent.trace_writer.traces":          {},
+		"datadog.trace_agent.trace_writer.payloads":        {},
+		"datadog.trace_agent.trace_writer.errors":          {},
+		"datadog.trace_agent.trace_writer.events":          {},
 
 		// OTel collector internal metrics
 		"otelcol_process_memory_rss":                     {},
@@ -117,7 +73,9 @@ func testIntegrationInternalMetrics(t *testing.T, expectedMetrics map[string]str
 	server := testutil.DatadogServerMock(seriesRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	t.Setenv("PROM_SERVER", commonTestutil.GetAvailableLocalAddress(t))
+	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
+	t.Setenv("PROM_SERVER_PORT", promPort)
+	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)

@@ -47,7 +47,7 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			set := receivertest.NewNopSettingsWithType(metadata.Type)
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(tt.config, &set)
 			if tt.wantError {
 				assert.Error(t, err)
@@ -63,7 +63,7 @@ func TestNewLibhoneyReceiver(t *testing.T) {
 func TestLibhoneyReceiver_Start(t *testing.T) {
 	cfg := createDefaultConfig()
 
-	set := receivertest.NewNopSettingsWithType(metadata.Type)
+	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 	require.NoError(t, err)
 
@@ -128,7 +128,7 @@ func TestLibhoneyReceiver_HandleEvent(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig()
-			set := receivertest.NewNopSettingsWithType(metadata.Type)
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg.(*Config), &set)
 			require.NoError(t, err)
 
@@ -191,7 +191,7 @@ func TestLibhoneyReceiver_AuthEndpoint(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			cfg.AuthAPI = tt.authAPI
-			set := receivertest.NewNopSettingsWithType(metadata.Type)
+			set := receivertest.NewNopSettings(metadata.Type)
 			r, err := newLibhoneyReceiver(cfg, &set)
 			require.NoError(t, err)
 

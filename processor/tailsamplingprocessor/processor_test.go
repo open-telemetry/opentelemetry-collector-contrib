@@ -136,7 +136,7 @@ func TestTraceIntegrity(t *testing.T) {
 			withPolicies(policies),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), nextConsumer, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), nextConsumer, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -153,13 +153,13 @@ func TestTraceIntegrity(t *testing.T) {
 
 	// The first tick won't do anything
 	tsp.policyTicker.OnTick()
-	require.EqualValues(t, 0, mpe1.EvaluationCount)
+	require.Equal(t, 0, mpe1.EvaluationCount)
 
 	// This will cause policy evaluations on the first span
 	tsp.policyTicker.OnTick()
 
 	// Both policies should have been evaluated once
-	require.EqualValues(t, 4, mpe1.EvaluationCount)
+	require.Equal(t, 4, mpe1.EvaluationCount)
 
 	consumed := nextConsumer.AllTraces()
 	require.Len(t, consumed, 4)
@@ -191,7 +191,7 @@ func TestSequentialTraceArrival(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -227,7 +227,7 @@ func TestConcurrentTraceArrival(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -284,7 +284,7 @@ func TestConcurrentArrivalAndEvaluation(t *testing.T) {
 			withTickerFrequency(time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -331,7 +331,7 @@ func TestSequentialTraceMapSize(t *testing.T) {
 			withTickerFrequency(100 * time.Millisecond),
 		},
 	}
-	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, err)
 
 	err = sp.Start(context.Background(), componenttest.NewNopHost())
@@ -368,7 +368,7 @@ func TestConcurrentTraceMapSize(t *testing.T) {
 			withTickerFrequency(100 * time.Millisecond),
 		},
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	require.NoError(t, sp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {
 		require.NoError(t, sp.Shutdown(context.Background()))
@@ -414,7 +414,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -450,7 +450,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 	receivedTraces := msp.AllTraces()
 	for i, traceID := range traceIDs {
 		trace := findTrace(t, receivedTraces, traceID)
-		require.EqualValues(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
+		require.Equal(t, i+1, trace.SpanCount(), "The trace should have all of its spans in a single batch")
 
 		expected := expectedSpanIDs[i]
 		got := collectSpanIDs(trace)
@@ -464,7 +464,7 @@ func TestMultipleBatchesAreCombinedIntoOne(t *testing.T) {
 			return a < b
 		})
 
-		require.EqualValues(t, expected, got)
+		require.Equal(t, expected, got)
 	}
 }
 
@@ -487,7 +487,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 			withDecisionBatcher(idb),
 		},
 	}
-	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), msp, cfg)
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
 	require.NoError(t, err)
 
 	require.NoError(t, p.Start(context.Background(), componenttest.NewNopHost()))
@@ -559,7 +559,7 @@ func TestSetSamplingPolicy(t *testing.T) {
 func TestSubSecondDecisionTime(t *testing.T) {
 	// prepare
 	msp := new(consumertest.TracesSink)
-	tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), msp, Config{
+	tsp, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: 500 * time.Millisecond,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs:   testPolicy,
@@ -616,7 +616,7 @@ func TestDuplicatePolicyName(t *testing.T) {
 		Type: AlwaysSample,
 	}
 
-	_, err := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), msp, Config{
+	_, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, Config{
 		DecisionWait: defaultTestDecisionWait,
 		NumTraces:    defaultNumTraces,
 		PolicyCfgs: []PolicyCfg{
@@ -646,7 +646,7 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 		ExpectedNewTracesPerSec: 64,
 		PolicyCfgs:              policy,
 	}
-	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettingsWithType(metadata.Type), consumertest.NewNop(), cfg)
+	sp, _ := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), consumertest.NewNop(), cfg)
 	tsp := sp.(*tailSamplingSpanProcessor)
 	require.NoError(t, tsp.Start(context.Background(), componenttest.NewNopHost()))
 	defer func() {

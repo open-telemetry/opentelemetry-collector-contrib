@@ -34,7 +34,7 @@ import (
 // sending the data itself.
 type stefExporter struct {
 	set         component.TelemetrySettings
-	cfg         *Config
+	cfg         Config
 	compression stefpkg.Compression
 
 	// connMutex is taken when connecting, disconnecting or checking connection status.
@@ -70,21 +70,23 @@ func (w *loggerWrapper) Errorf(_ context.Context, format string, v ...any) {
 func newStefExporter(set component.TelemetrySettings, cfg *Config) *stefExporter {
 	exp := &stefExporter{
 		set:     set,
-		cfg:     cfg,
+		cfg:     *cfg,
 		ackCond: internal.NewCancellableCond(),
 	}
 
 	exp.compression = stefpkg.CompressionNone
-	if cfg.Compression == "zstd" {
+	if exp.cfg.Compression == "zstd" {
 		exp.compression = stefpkg.CompressionZstd
 	}
+	// Disable built-in grpc compression. STEF has its own zstd compression support.
+	exp.cfg.Compression = ""
 	return exp
 }
 
 func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 	// Prepare gRPC connection.
 	var err error
-	s.grpcConn, err = s.cfg.ClientConfig.ToClientConn(ctx, host, s.set)
+	s.grpcConn, err = s.cfg.ToClientConn(ctx, host, s.set)
 	if err != nil {
 		return err
 	}

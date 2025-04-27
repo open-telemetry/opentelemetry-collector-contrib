@@ -15,7 +15,7 @@ import (
 )
 
 func NewSettings(tt *componenttest.Telemetry) connector.Settings {
-	set := connectortest.NewNopSettingsWithType(connectortest.NopType)
+	set := connectortest.NewNopSettings(connectortest.NopType)
 	set.ID = component.NewID(component.MustNewType("servicegraph"))
 	set.TelemetrySettings = tt.NewTelemetrySettings()
 	return set

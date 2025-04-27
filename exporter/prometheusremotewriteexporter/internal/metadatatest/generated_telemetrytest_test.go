@@ -20,9 +20,17 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ExporterPrometheusremotewriteConsumers.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteFailedTranslations.Add(context.Background(), 1)
+	tb.ExporterPrometheusremotewriteSentBatches.Add(context.Background(), 1)
 	tb.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(context.Background(), 1)
+	AssertEqualExporterPrometheusremotewriteConsumers(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteFailedTranslations(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
+	AssertEqualExporterPrometheusremotewriteSentBatches(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())
 	AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, testTel,

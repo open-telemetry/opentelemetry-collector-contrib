@@ -13,6 +13,7 @@ import (
 	commonconfig "github.com/prometheus/common/config"
 	promconfig "github.com/prometheus/prometheus/config"
 	"github.com/prometheus/prometheus/discovery/kubernetes"
+	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
 	"gopkg.in/yaml.v2"
 
@@ -36,6 +37,11 @@ type Config struct {
 	ReportExtraScrapeMetrics bool `mapstructure:"report_extra_scrape_metrics"`
 
 	TargetAllocator *targetallocator.Config `mapstructure:"target_allocator"`
+
+	//  APIServer has the settings to enable the receiver to host the Prometheus API
+	// server in agent mode. This allows the user to call the endpoint to get
+	// the config, service discovery, and targets for debugging purposes.
+	APIServer *APIServer `mapstructure:"api_server"`
 }
 
 // Validate checks the receiver configuration is valid.
@@ -43,6 +49,13 @@ func (cfg *Config) Validate() error {
 	if !containsScrapeConfig(cfg) && cfg.TargetAllocator == nil {
 		return errors.New("no Prometheus scrape_configs or target_allocator set")
 	}
+
+	if cfg.APIServer != nil {
+		if err := cfg.APIServer.Validate(); err != nil {
+			return fmt.Errorf("invalid API server configuration settings: %w", err)
+		}
+	}
+
 	return nil
 }
 
@@ -103,6 +116,15 @@ func (cfg *PromConfig) Validate() error {
 	if err != nil {
 		return err
 	}
+	// Since Prometheus 3.0, the scrape manager started to fail scrapes that don't have proper
+	// Content-Type headers, but they provided an extra configuration option to fallback to the
+	// previous behavior. We need to make sure that this option is set for all scrape configs
+	// to avoid introducing a breaking change.
+	for _, sc := range scrapeConfigs {
+		if sc.ScrapeFallbackProtocol == "" {
+			sc.ScrapeFallbackProtocol = promconfig.PrometheusText0_0_4
+		}
+	}
 
 	for _, sc := range scrapeConfigs {
 		if err := validateHTTPClientConfig(&sc.HTTPClientConfig); err != nil {
@@ -162,5 +184,22 @@ func checkTLSConfig(tlsConfig commonconfig.TLSConfig) error {
 	if err := checkFile(tlsConfig.KeyFile); err != nil {
 		return fmt.Errorf("error checking client key file %q: %w", tlsConfig.KeyFile, err)
 	}
+	return nil
+}
+
+type APIServer struct {
+	Enabled      bool                    `mapstructure:"enabled"`
+	ServerConfig confighttp.ServerConfig `mapstructure:"server_config"`
+}
+
+func (cfg *APIServer) Validate() error {
+	if !cfg.Enabled {
+		return nil
+	}
+
+	if cfg.ServerConfig.Endpoint == "" {
+		return errors.New("if api_server is enabled, it requires a non-empty server_config endpoint")
+	}
+
 	return nil
 }

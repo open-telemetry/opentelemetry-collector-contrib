@@ -61,7 +61,7 @@ func TestPrometheusExporter(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	for _, tt := range tests {
 		// Run it a few times to ensure that shutdowns exit cleanly.
 		for j := 0; j < 3; j++ {
@@ -113,7 +113,7 @@ func TestPrometheusExporter_WithTLS(t *testing.T) {
 		},
 	}
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	require.NoError(t, err)
 
@@ -181,7 +181,7 @@ func TestPrometheusExporter_endToEndMultipleTargets(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -254,7 +254,7 @@ func TestPrometheusExporter_endToEnd(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -322,7 +322,7 @@ func TestPrometheusExporter_endToEndWithTimestamps(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 
@@ -393,7 +393,7 @@ func TestPrometheusExporter_endToEndWithResource(t *testing.T) {
 	}
 
 	factory := NewFactory()
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	exp, err := factory.CreateMetrics(context.Background(), set, cfg)
 	assert.NoError(t, err)
 

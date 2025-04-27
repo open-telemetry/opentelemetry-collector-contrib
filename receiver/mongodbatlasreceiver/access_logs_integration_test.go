@@ -60,7 +60,7 @@ func TestAccessLogsIntegration(t *testing.T) {
 
 	recv, err := fact.CreateLogs(
 		context.Background(),
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 		&Config{
 			ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
 			Logs: LogConfig{

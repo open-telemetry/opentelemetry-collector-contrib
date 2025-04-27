@@ -443,7 +443,7 @@ func TestThriftHTTPToStatusCode(t *testing.T) {
 		}})
 		require.NoError(t, err)
 		gs := td.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
-		require.EqualValues(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
+		require.Equal(t, wantStatus, gs.Status().Code(), "Unsuccessful conversion %d", i)
 	}
 }
 

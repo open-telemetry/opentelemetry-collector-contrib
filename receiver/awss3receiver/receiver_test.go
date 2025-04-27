@@ -221,7 +221,7 @@ func Test_receiveBytes_traces(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettingsWithType(metadata.Type)})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -355,7 +355,7 @@ func Test_receiveBytes_metrics(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettingsWithType(metadata.Type)})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),
@@ -489,7 +489,7 @@ func Test_receiveBytes_logs(t *testing.T) {
 				}
 				return nil
 			})
-			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettingsWithType(metadata.Type)})
+			obsrecv, err := receiverhelper.NewObsReport(receiverhelper.ObsReportSettings{ReceiverCreateSettings: receivertest.NewNopSettings(metadata.Type)})
 			require.NoError(t, err)
 			r := &awss3Receiver{
 				logger:  zap.NewNop(),

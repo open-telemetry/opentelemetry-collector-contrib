@@ -22,7 +22,7 @@ func FuzzConsumeLogs(f *testing.F) {
 			return
 		}
 		sink := new(consumertest.LogsSink)
-		set := processortest.NewNopSettingsWithType(metadata.Type)
+		set := processortest.NewNopSettings(metadata.Type)
 		cfg := &Config{}
 		lp, err := newProcessor(cfg, sink, set)
 		if err != nil {

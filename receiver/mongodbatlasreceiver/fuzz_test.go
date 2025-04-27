@@ -25,7 +25,7 @@ func FuzzHandleReq(f *testing.F) {
 		req.Header.Add(signatureHeaderName, payloadSigHeader)
 		consumer := &consumertest.LogsSink{}
 
-		set := receivertest.NewNopSettingsWithType(metadata.Type)
+		set := receivertest.NewNopSettings(metadata.Type)
 		set.Logger = zaptest.NewLogger(t)
 		ar, err := newAlertsReceiver(set, &Config{Alerts: AlertConfig{Secret: "some_secret"}}, consumer)
 		if err != nil {

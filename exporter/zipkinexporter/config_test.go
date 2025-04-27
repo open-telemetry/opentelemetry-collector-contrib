@@ -53,10 +53,11 @@ func TestLoadConfig(t *testing.T) {
 					RandomizationFactor: backoff.DefaultRandomizationFactor,
 					Multiplier:          backoff.DefaultMultiplier,
 				},
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 2,
 					QueueSize:    10,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				ClientConfig: withDefaultHTTPClientConfig(func(config *confighttp.ClientConfig) {
 					config.Endpoint = "https://somedest:1234/api/v2/spans"
@@ -65,8 +66,8 @@ func TestLoadConfig(t *testing.T) {
 					config.TLSSetting = configtls.ClientConfig{
 						InsecureSkipVerify: true,
 					}
-					config.MaxIdleConns = &maxIdleConns
-					config.IdleConnTimeout = &idleConnTimeout
+					config.MaxIdleConns = maxIdleConns
+					config.IdleConnTimeout = idleConnTimeout
 				}),
 				Format:             "proto",
 				DefaultServiceName: "test_name",

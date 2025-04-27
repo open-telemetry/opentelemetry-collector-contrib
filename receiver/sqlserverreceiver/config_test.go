@@ -54,6 +54,24 @@ func TestValidate(t *testing.T) {
 			expectedSuccess: false,
 		},
 		{
+			desc: "invalid config with datasource and any direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				DataSource:       "a connection string",
+				Username:         "sa",
+				Port:             1433,
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "valid config only datasource and none direct connect settings",
+			cfg: &Config{
+				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
+				DataSource:       "a connection string",
+			},
+			expectedSuccess: true,
+		},
+		{
 			desc: "valid config with all direct connection settings",
 			cfg: &Config{
 				ControllerConfig: scraperhelper.NewDefaultControllerConfig(),
@@ -63,6 +81,29 @@ func TestValidate(t *testing.T) {
 				Port:             1433,
 			},
 			expectedSuccess: true,
+		},
+		{
+			desc: "config with invalid MaxQuerySampleCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection: TopQueryCollection{
+					MaxQuerySampleCount: 100000,
+				},
+			},
+			expectedSuccess: false,
+		},
+		{
+			desc: "config with invalid TopQueryCount value",
+			cfg: &Config{
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+				ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
+				TopQueryCollection: TopQueryCollection{
+					MaxQuerySampleCount: 100,
+					TopQueryCount:       200000,
+				},
+			},
+			expectedSuccess: false,
 		},
 	}
 
@@ -122,13 +163,22 @@ func TestLoadConfig(t *testing.T) {
 		}
 		expected.ComputerName = "CustomServer"
 		expected.InstanceName = "CustomInstance"
+		expected.TopQueryCollection.Enabled = true
+		expected.LookbackTime = 60
+		expected.TopQueryCount = 200
+		expected.MaxQuerySampleCount = 1000
+
+		expected.QuerySample = QuerySample{
+			Enabled:         true,
+			MaxRowsPerQuery: 1450,
+		}
 
 		sub, err := cm.Sub("sqlserver/named")
 		require.NoError(t, err)
 		require.NoError(t, sub.Unmarshal(cfg))
 
 		assert.NoError(t, xconfmap.Validate(cfg))
-		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
+		if diff := cmp.Diff(expected, cfg, cmpopts.IgnoreUnexported(Config{}), cmpopts.IgnoreUnexported(metadata.MetricConfig{}), cmpopts.IgnoreUnexported(metadata.ResourceAttributeConfig{})); diff != "" {
 			t.Errorf("Config mismatch (-expected +actual):\n%s", diff)
 		}
 	})

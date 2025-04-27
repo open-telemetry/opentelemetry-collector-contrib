@@ -109,14 +109,11 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 		BackOffConfig: retrySettings,
 	}
 
 	assert.NotNil(t, cfg)
-	set := exportertest.NewNopSettingsWithType(metadata.Type)
+	set := exportertest.NewNopSettings(metadata.Type)
 	prwe, nErr := newPRWExporter(cfg, set)
 
 	require.NoError(t, nErr)

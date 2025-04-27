@@ -5,6 +5,7 @@ package spanmetricsconnector
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"sync"
 	"testing"
@@ -45,7 +46,6 @@ const (
 	notInSpanAttrName1       = "shouldNotBeInMetric"
 	regionResourceAttrName   = "region"
 	exceptionTypeAttrName    = "exception.type"
-	dimensionsCacheSize      = 2
 	resourceMetricsCacheSize = 5
 
 	sampleRegion   = "us-east-1"
@@ -163,9 +163,10 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		val, ok := rm.Resource().Attributes().Get(serviceNameKey)
 		require.True(tb, ok)
 		serviceName := val.AsString()
-		if serviceName == "service-a" {
+		switch serviceName {
+		case "service-a":
 			numDataPoints = 2
-		} else if serviceName == "service-b" {
+		case "service-b":
 			numDataPoints = 1
 		}
 
@@ -187,8 +188,13 @@ func verifyConsumeMetricsInput(tb testing.TB, input pmetric.Metrics, expectedTem
 		require.Equal(tb, numDataPoints, callsDps.Len())
 		for dpi := 0; dpi < numDataPoints; dpi++ {
 			dp := callsDps.At(dpi)
+			expectIntValue := numCumulativeConsumptions
+			// this calls init value is 0 for the first Consumption.
+			if numCumulativeConsumptions == 1 {
+				expectIntValue = 0
+			}
 			assert.Equal(tb,
-				int64(numCumulativeConsumptions),
+				int64(expectIntValue),
 				dp.IntValue(),
 				"There should only be one metric per Service/name/kind combination",
 			)
@@ -285,7 +291,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 		notInSpanAttrName0:     pcommon.NewValueStr("defaultNotInSpanAttrVal"),
 		regionResourceAttrName: pcommon.NewValueStr(sampleRegion),
 	}
-	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range dp.Attributes().All() {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
@@ -301,8 +307,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
-		return true
-	})
+	}
 	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/name/kind should be a unique metric.
@@ -459,24 +464,23 @@ func newConnectorImp(defaultNullValue *string, histogramConfig func() HistogramC
 		Histogram:                    histogramConfig(),
 		Exemplars:                    exemplarsConfig(),
 		ExcludeDimensions:            excludedDimensions,
-		DimensionsCacheSize:          dimensionsCacheSize,
 		ResourceMetricsCacheSize:     resourceMetricsCacheSize,
 		ResourceMetricsKeyAttributes: resourceMetricsKeyAttributes,
 		Dimensions: []Dimension{
 			// Set nil defaults to force a lookup for the attribute in the span.
-			{stringAttrName, nil},
-			{intAttrName, nil},
-			{doubleAttrName, nil},
-			{boolAttrName, nil},
-			{mapAttrName, nil},
-			{arrayAttrName, nil},
-			{nullAttrName, defaultNullValue},
+			{Name: stringAttrName, Default: nil},
+			{Name: intAttrName, Default: nil},
+			{Name: doubleAttrName, Default: nil},
+			{Name: boolAttrName, Default: nil},
+			{Name: mapAttrName, Default: nil},
+			{Name: arrayAttrName, Default: nil},
+			{Name: nullAttrName, Default: defaultNullValue},
 			// Add a default value for an attribute that doesn't exist in a span
-			{notInSpanAttrName0, stringp("defaultNotInSpanAttrVal")},
+			{Name: notInSpanAttrName0, Default: stringp("defaultNotInSpanAttrVal")},
 			// Leave the default value unset to test that this dimension should not be added to the metric.
-			{notInSpanAttrName1, nil},
+			{Name: notInSpanAttrName1, Default: nil},
 			// Add a resource attribute to test "process" attributes like IP, host, region, cluster, etc.
-			{regionResourceAttrName, nil},
+			{Name: regionResourceAttrName, Default: nil},
 		},
 		Events:               eventsConfig(),
 		MetricsExpiration:    expiration,
@@ -623,7 +627,7 @@ func TestStart(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 
-	createParams := connectortest.NewNopSettingsWithType(factory.Type())
+	createParams := connectortest.NewNopSettings(factory.Type())
 	conn, err := factory.CreateTracesToMetrics(context.Background(), createParams, cfg, consumertest.NewNop())
 	require.NoError(t, err)
 
@@ -712,7 +716,7 @@ func (e *errConsumer) ConsumeMetrics(_ context.Context, _ pmetric.Metrics) error
 
 func TestConsumeMetricsErrors(t *testing.T) {
 	// Prepare
-	fakeErr := fmt.Errorf("consume metrics error")
+	fakeErr := errors.New("consume metrics error")
 
 	core, observedLogs := observer.New(zapcore.ErrorLevel)
 	logger := zap.New(core)
@@ -906,35 +910,6 @@ func TestConsumeTraces(t *testing.T) {
 			}
 		})
 	}
-}
-
-func TestMetricKeyCache(t *testing.T) {
-	p, err := newConnectorImp(stringp("defaultNullValue"), explicitHistogramsConfig, disabledExemplarsConfig, disabledEventsConfig, cumulative, 0, []string{}, 1000, clockwork.NewFakeClock())
-	require.NoError(t, err)
-	traces := buildSampleTrace()
-
-	// Test
-	ctx := metadata.NewIncomingContext(context.Background(), nil)
-
-	// 0 key was cached at beginning
-	assert.Zero(t, p.metricKeyToDimensions.Len())
-
-	err = p.ConsumeTraces(ctx, traces)
-	// Validate
-	require.NoError(t, err)
-	// 2 key was cached, 1 key was evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
-
-	// consume another batch of traces
-	err = p.ConsumeTraces(ctx, traces)
-	require.NoError(t, err)
-
-	// 2 key was cached, other keys were evicted and cleaned after the processing
-	assert.Eventually(t, func() bool {
-		return p.metricKeyToDimensions.Len() == dimensionsCacheSize
-	}, 10*time.Second, time.Millisecond*100)
 }
 
 func TestResourceMetricsCache(t *testing.T) {
@@ -1872,6 +1847,305 @@ func newAlwaysIncreasingClock() alwaysIncreasingClock {
 }
 
 func (c alwaysIncreasingClock) Now() time.Time {
-	c.Clock.(clockwork.FakeClock).Advance(time.Millisecond)
+	c.Clock.(*clockwork.FakeClock).Advance(time.Millisecond)
 	return c.Clock.Now()
+}
+
+func TestBuildAttributes_InstrumentationScope(t *testing.T) {
+	tests := []struct {
+		name                 string
+		instrumentationScope pcommon.InstrumentationScope
+		config               Config
+		want                 map[string]string
+	}{
+		{
+			name: "with instrumentation scope name and version",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:                 "test_service",
+				spanNameKey:                    "test_span",
+				spanKindKey:                    "SPAN_KIND_INTERNAL",
+				statusCodeKey:                  "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey:    "express",
+				instrumentationScopeVersionKey: "1.0.0",
+			},
+		},
+		{
+			name: "with instrumentation scope but not included",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+		{
+			name: "without instrumentation scope but version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetVersion("1.0.0")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey: "test_service",
+				spanNameKey:    "test_span",
+				spanKindKey:    "SPAN_KIND_INTERNAL",
+				statusCodeKey:  "STATUS_CODE_UNSET",
+			},
+		},
+
+		{
+			name: "with instrumentation scope and instrumentation scope name but no version and included in config",
+			instrumentationScope: func() pcommon.InstrumentationScope {
+				scope := pcommon.NewInstrumentationScope()
+				scope.SetName("express")
+				return scope
+			}(),
+			config: Config{
+				IncludeInstrumentationScope: []string{"express"},
+			},
+			want: map[string]string{
+				serviceNameKey:              "test_service",
+				spanNameKey:                 "test_span",
+				spanKindKey:                 "SPAN_KIND_INTERNAL",
+				statusCodeKey:               "STATUS_CODE_UNSET",
+				instrumentationScopeNameKey: "express",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			p := &connectorImp{config: tt.config}
+
+			span := ptrace.NewSpan()
+			span.SetName("test_span")
+			span.SetKind(ptrace.SpanKindInternal)
+
+			attrs := p.buildAttributes("test_service", span, pcommon.NewMap(), nil, tt.instrumentationScope)
+
+			assert.Equal(t, len(tt.want), attrs.Len())
+			for k, v := range tt.want {
+				val, ok := attrs.Get(k)
+				assert.True(t, ok)
+				assert.Equal(t, v, val.Str())
+			}
+		})
+	}
+}
+
+func TestConnectorWithCardinalityLimit(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationCardinalityLimit = 2
+	cfg.Dimensions = []Dimension{
+		{Name: "region"},
+	}
+
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+
+	require.NotNil(t, connector)
+
+	// Create two different resources
+	resource1 := pcommon.NewResource()
+	resource1.Attributes().PutStr("service.name", "service1")
+	resource1.Attributes().PutStr("region", "us-east-1")
+
+	resource2 := pcommon.NewResource()
+	resource2.Attributes().PutStr("service.name", "service2")
+	resource2.Attributes().PutStr("region", "us-west-1")
+
+	// Create spans for the resources
+	traces := ptrace.NewTraces()
+	rspan1 := traces.ResourceSpans().AppendEmpty()
+	resource1.CopyTo(rspan1.Resource())
+	ils := rspan1.ScopeSpans().AppendEmpty()
+
+	rspan2 := traces.ResourceSpans().AppendEmpty()
+	resource2.CopyTo(rspan2.Resource())
+	ils2 := rspan2.ScopeSpans().AppendEmpty()
+
+	// Add spans with different names to trigger overflow
+	for i := 0; i < 3; i++ {
+		span := ils.Spans().AppendEmpty()
+		span.SetName(fmt.Sprintf("operation%d", i))
+		span.SetKind(ptrace.SpanKindServer)
+		span.Attributes().PutStr("http.method", "GET")
+
+		span2 := ils2.Spans().AppendEmpty()
+		span2.SetName(fmt.Sprintf("operation%d", i))
+		span2.SetKind(ptrace.SpanKindServer)
+		span2.Attributes().PutStr("http.method", "GET")
+	}
+
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	metrics := connector.buildMetrics()
+
+	resourceMetrics := metrics.ResourceMetrics()
+	assert.Equal(t, 2, resourceMetrics.Len()) // 2 resources
+
+	for i := 0; i < resourceMetrics.Len(); i++ {
+		rm := resourceMetrics.At(i)
+		serviceName, _ := rm.Resource().Attributes().Get("service.name")
+
+		// Each resource should have:
+		// - 2 normal metrics (under limit)
+		// - 1 overflow metric
+		metricCount := 0
+		overflowCount := 0
+
+		metrics := rm.ScopeMetrics().At(0).Metrics()
+		for j := 0; j < metrics.Len(); j++ {
+			metric := metrics.At(j)
+			if metric.Name() == buildMetricName(DefaultNamespace, metricNameCalls) {
+				dps := metric.Sum().DataPoints()
+				for k := 0; k < dps.Len(); k++ {
+					dp := dps.At(k)
+					if _, exists := dp.Attributes().Get(overflowKey); exists {
+						overflowCount++
+						attrs := dp.Attributes()
+						overflowVal, exists := attrs.Get(overflowKey)
+						assert.True(t, exists)
+						assert.True(t, overflowVal.Bool())
+						_, exists = attrs.Get("region")
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanNameKey)
+						assert.False(t, exists)
+						_, exists = attrs.Get(spanKindKey)
+						assert.False(t, exists)
+						_, exists = attrs.Get(statusCodeKey)
+						assert.False(t, exists)
+					} else {
+						metricCount++
+						attrs := dp.Attributes()
+						_, exists := attrs.Get(serviceNameKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanNameKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(spanKindKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get(statusCodeKey)
+						assert.True(t, exists)
+						_, exists = attrs.Get("region")
+						assert.True(t, exists)
+					}
+				}
+			}
+		}
+
+		assert.Equal(t, 2, metricCount, "service %s: expected 2 normal metrics. Found: %d", serviceName.Str(), metricCount)
+		assert.Equal(t, 1, overflowCount, "service %s: expected 1 overflow metric. Found: %d", serviceName.Str(), overflowCount)
+	}
+}
+
+func TestConnectorWithCardinalityLimitForEvents(t *testing.T) {
+	cfg := createDefaultConfig().(*Config)
+	cfg.AggregationCardinalityLimit = 2
+	cfg.Events.Enabled = true
+	cfg.Dimensions = []Dimension{
+		{Name: "event.name"},
+	}
+
+	connector, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+	require.NotNil(t, connector)
+
+	// Create a resource
+	resource := pcommon.NewResource()
+	resource.Attributes().PutStr("service.name", "service1")
+
+	// Create traces with events
+	traces := ptrace.NewTraces()
+	rspan := traces.ResourceSpans().AppendEmpty()
+	resource.CopyTo(rspan.Resource())
+	ils := rspan.ScopeSpans().AppendEmpty()
+
+	// Add a span with multiple events that will trigger overflow
+	span := ils.Spans().AppendEmpty()
+	span.SetName("operation1")
+	span.SetKind(ptrace.SpanKindServer)
+
+	// Add 3 different events to trigger overflow
+	events := span.Events()
+	for i := 0; i < 3; i++ {
+		event := events.AppendEmpty()
+		event.SetName(fmt.Sprintf("event%d", i))
+		event.Attributes().PutStr("event.name", fmt.Sprintf("event%d", i))
+	}
+
+	// First consume to reach the limit
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	// Second consume to trigger overflow
+	assert.NoError(t, connector.ConsumeTraces(context.Background(), traces))
+
+	metrics := connector.buildMetrics()
+
+	resourceMetrics := metrics.ResourceMetrics()
+	assert.Equal(t, 1, resourceMetrics.Len())
+
+	rm := resourceMetrics.At(0)
+	serviceName, _ := rm.Resource().Attributes().Get("service.name")
+
+	// Check events metric
+	metricsSlice := rm.ScopeMetrics().At(0).Metrics()
+	var eventsMetric pmetric.Metric
+	for i := 0; i < metricsSlice.Len(); i++ {
+		if metricsSlice.At(i).Name() == buildMetricName(DefaultNamespace, metricNameEvents) {
+			eventsMetric = metricsSlice.At(i)
+			break
+		}
+	}
+	require.NotNil(t, eventsMetric, "events metric not found")
+
+	dps := eventsMetric.Sum().DataPoints()
+	normalCount := 0
+	overflowCount := 0
+
+	for i := 0; i < dps.Len(); i++ {
+		dp := dps.At(i)
+		if _, exists := dp.Attributes().Get(overflowKey); exists {
+			overflowCount++
+			// Verify overflow metric has service name
+			serviceNameAttr, ok := dp.Attributes().Get(serviceNameKey)
+			assert.True(t, ok)
+			assert.Equal(t, serviceName.Str(), serviceNameAttr.Str())
+		} else {
+			normalCount++
+			// Verify normal metric has event name
+			attrs := dp.Attributes()
+			_, exists = attrs.Get("event.name")
+			assert.True(t, exists)
+			_, exists = attrs.Get(serviceNameKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(spanNameKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(spanKindKey)
+			assert.True(t, exists)
+			_, exists = attrs.Get(statusCodeKey)
+			assert.True(t, exists)
+		}
+	}
+
+	assert.Equal(t, 2, normalCount, "expected 2 normal metrics")
+	assert.Equal(t, 1, overflowCount, "expected 1 overflow metric")
 }

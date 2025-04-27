@@ -53,6 +53,7 @@ var allMetrics = []string{
 	"system.network.io",
 	"system.network.packets",
 	"system.paging.operations",
+	"system.paging.usage",
 }
 
 var resourceMetrics = []string{
@@ -127,7 +128,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 		rm := rms.At(i)
 		metrics := getMetricSlice(t, rm)
 		returnedMetricNames := getReturnedMetricNames(metrics)
-		assert.EqualValues(t, conventions.SchemaURL, rm.SchemaUrl(),
+		assert.Equal(t, conventions.SchemaURL, rm.SchemaUrl(),
 			"SchemaURL is incorrect for metrics: %v", returnedMetricNames)
 		if rm.Resource().Attributes().Len() == 0 {
 			appendMapInto(returnedMetrics, returnedMetricNames)
@@ -138,12 +139,9 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	// verify the expected list of metrics returned (os/arch dependent)
 	expectedMetrics := allMetrics
-	if !(runtime.GOOS == "linux" && runtime.GOARCH == "arm64") {
-		expectedMetrics = append(expectedMetrics, "system.paging.usage")
-	}
 
 	expectedMetrics = append(expectedMetrics, systemSpecificMetrics[runtime.GOOS]...)
-	assert.Equal(t, len(expectedMetrics), len(returnedMetrics))
+	assert.Len(t, returnedMetrics, len(expectedMetrics))
 	for _, expected := range expectedMetrics {
 		assert.Contains(t, returnedMetrics, expected)
 	}
@@ -155,7 +153,7 @@ func assertIncludesExpectedMetrics(t *testing.T, got pmetric.Metrics) {
 
 	var expectedResourceMetrics []string
 	expectedResourceMetrics = append(expectedResourceMetrics, resourceMetrics...)
-	assert.Equal(t, len(expectedResourceMetrics), len(returnedResourceMetrics))
+	assert.Len(t, returnedResourceMetrics, len(expectedResourceMetrics))
 	for _, expected := range expectedResourceMetrics {
 		assert.Contains(t, returnedResourceMetrics, expected)
 	}
@@ -244,7 +242,7 @@ func benchmarkScrapeMetrics(b *testing.B, cfg *Config) {
 	require.NoError(b, err)
 	options = append(options, scraperhelper.WithTickerChannel(tickerCh))
 
-	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettingsWithType(metadata.Type), sink, options...)
+	receiver, err := scraperhelper.NewMetricsController(&cfg.ControllerConfig, receivertest.NewNopSettings(metadata.Type), sink, options...)
 	require.NoError(b, err)
 
 	require.NoError(b, receiver.Start(context.Background(), componenttest.NewNopHost()))

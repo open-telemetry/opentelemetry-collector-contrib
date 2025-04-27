@@ -12,6 +12,20 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
+var MetricsInfo = metricsInfo{
+	TlscheckTimeLeft: metricInfo{
+		Name: "tlscheck.time_left",
+	},
+}
+
+type metricsInfo struct {
+	TlscheckTimeLeft metricInfo
+}
+
+type metricInfo struct {
+	Name string
+}
+
 type metricTlscheckTimeLeft struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -27,7 +41,7 @@ func (m *metricTlscheckTimeLeft) init() {
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
 }
 
-func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string) {
+func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
 	if !m.config.Enabled {
 		return
 	}
@@ -37,6 +51,7 @@ func (m *metricTlscheckTimeLeft) recordDataPoint(start pcommon.Timestamp, ts pco
 	dp.SetIntValue(val)
 	dp.Attributes().PutStr("tlscheck.x509.issuer", tlscheckX509IssuerAttributeValue)
 	dp.Attributes().PutStr("tlscheck.x509.cn", tlscheckX509CnAttributeValue)
+	dp.Attributes().PutEmptySlice("tlscheck.x509.san").FromRaw(tlscheckX509SanAttributeValue)
 }
 
 // updateCapacity saves max length of data point slices that will be used for the slice capacity.
@@ -104,11 +119,11 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		resourceAttributeIncludeFilter: make(map[string]filter.Filter),
 		resourceAttributeExcludeFilter: make(map[string]filter.Filter),
 	}
-	if mbc.ResourceAttributes.TlscheckURL.MetricsInclude != nil {
-		mb.resourceAttributeIncludeFilter["tlscheck.url"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckURL.MetricsInclude)
+	if mbc.ResourceAttributes.TlscheckTarget.MetricsInclude != nil {
+		mb.resourceAttributeIncludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsInclude)
 	}
-	if mbc.ResourceAttributes.TlscheckURL.MetricsExclude != nil {
-		mb.resourceAttributeExcludeFilter["tlscheck.url"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckURL.MetricsExclude)
+	if mbc.ResourceAttributes.TlscheckTarget.MetricsExclude != nil {
+		mb.resourceAttributeExcludeFilter["tlscheck.target"] = filter.CreateFilter(mbc.ResourceAttributes.TlscheckTarget.MetricsExclude)
 	}
 
 	for _, op := range options {
@@ -176,7 +191,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/tlscheckreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricTlscheckTimeLeft.emit(ils.Metrics())
@@ -212,8 +227,8 @@ func (mb *MetricsBuilder) Emit(options ...ResourceMetricsOption) pmetric.Metrics
 }
 
 // RecordTlscheckTimeLeftDataPoint adds a data point to tlscheck.time_left metric.
-func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string) {
-	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue)
+func (mb *MetricsBuilder) RecordTlscheckTimeLeftDataPoint(ts pcommon.Timestamp, val int64, tlscheckX509IssuerAttributeValue string, tlscheckX509CnAttributeValue string, tlscheckX509SanAttributeValue []any) {
+	mb.metricTlscheckTimeLeft.recordDataPoint(mb.startTime, ts, val, tlscheckX509IssuerAttributeValue, tlscheckX509CnAttributeValue, tlscheckX509SanAttributeValue)
 }
 
 // Reset resets metrics builder to its initial state. It should be used when external metrics source is restarted,

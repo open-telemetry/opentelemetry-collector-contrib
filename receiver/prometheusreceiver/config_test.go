@@ -187,7 +187,7 @@ func TestConfigWarningsOnRenameDisallowed(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 	// Use a fake logger
-	creationSet := receivertest.NewNopSettingsWithType(metadata.Type)
+	creationSet := receivertest.NewNopSettings(metadata.Type)
 	observedZapCore, observedLogs := observer.New(zap.WarnLevel)
 	creationSet.Logger = zap.New(observedZapCore)
 	_, err = createMetricsReceiver(context.Background(), creationSet, cfg, nil)
@@ -354,4 +354,48 @@ func TestFileSDConfigWithoutSDFile(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	require.NoError(t, xconfmap.Validate(cfg))
+}
+
+func TestLoadPrometheusAPIServerExtensionConfig(t *testing.T) {
+	cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config_prometheus_api_server.yaml"))
+	require.NoError(t, err)
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+
+	sub, err := cm.Sub(component.NewIDWithName(metadata.Type, "withAPIEnabled").String())
+	require.NoError(t, err)
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r0 := cfg.(*Config)
+	assert.NotNil(t, r0.PrometheusConfig)
+	assert.True(t, r0.APIServer.Enabled)
+	assert.NotNil(t, r0.APIServer.ServerConfig)
+	assert.Equal(t, "localhost:9090", r0.APIServer.ServerConfig.Endpoint)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withAPIDisabled").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r1 := cfg.(*Config)
+	assert.NotNil(t, r1.APIServer)
+	assert.False(t, r1.APIServer.Enabled)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withoutAPI").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
+
+	r2 := cfg.(*Config)
+	assert.NotNil(t, r2.PrometheusConfig)
+	assert.Nil(t, r2.APIServer)
+
+	sub, err = cm.Sub(component.NewIDWithName(metadata.Type, "withInvalidAPIConfig").String())
+	require.NoError(t, err)
+	cfg = factory.CreateDefaultConfig()
+	require.NoError(t, sub.Unmarshal(cfg))
+	require.Error(t, xconfmap.Validate(cfg))
 }

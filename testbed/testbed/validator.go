@@ -72,7 +72,7 @@ type PerfTestValidator struct {
 }
 
 func (v *PerfTestValidator) Validate(tc *TestCase) {
-	if assert.EqualValues(tc.t,
+	if assert.Equal(tc.t,
 		int64(tc.LoadGenerator.DataItemsSent()),
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
@@ -130,7 +130,7 @@ func NewCorrectTestValidator(senderName string, receiverName string, provider Da
 }
 
 func (v *CorrectnessTestValidator) Validate(tc *TestCase) {
-	if assert.EqualValues(tc.t,
+	if assert.Equal(tc.t,
 		int64(tc.LoadGenerator.DataItemsSent())-int64(tc.LoadGenerator.PermanentErrors()),
 		int64(tc.MockBackend.DataItemsReceived()),
 		"Received and sent counters do not match.") {
@@ -457,7 +457,7 @@ func (v *CorrectnessTestValidator) diffSpanStatus(sentSpan ptrace.Span, recdSpan
 func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 	sentAttrs pcommon.Map, recdAttrs pcommon.Map, fmtStr string,
 ) {
-	sentAttrs.Range(func(sentKey string, sentVal pcommon.Value) bool {
+	for sentKey, sentVal := range sentAttrs.All() {
 		recdVal, ok := recdAttrs.Get(sentKey)
 		if !ok {
 			af := &TraceAssertionFailure{
@@ -468,7 +468,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 				actualValue:   nil,
 			}
 			v.assertionFailures = append(v.assertionFailures, af)
-			return true
+			continue
 		}
 		switch sentVal.Type() {
 		case pcommon.ValueTypeMap:
@@ -476,8 +476,7 @@ func (v *CorrectnessTestValidator) diffAttributeMap(spanName string,
 		default:
 			v.compareSimpleValues(spanName, sentVal, recdVal, fmtStr, sentKey)
 		}
-		return true
-	})
+	}
 }
 
 func (v *CorrectnessTestValidator) compareSimpleValues(spanName string, sentVal pcommon.Value, recdVal pcommon.Value,

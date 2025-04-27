@@ -60,7 +60,7 @@ func TestProxyCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create TCP proxy")
 }
@@ -75,7 +75,7 @@ func TestPollerCreationFailed(t *testing.T) {
 			},
 		},
 		sink,
-		receivertest.NewNopSettingsWithType(metadata.Type),
+		receivertest.NewNopSettings(metadata.Type),
 	)
 	assert.Error(t, err, "receiver creation should fail due to failure to create UCP poller")
 }

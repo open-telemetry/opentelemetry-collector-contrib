@@ -14,12 +14,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
 
 func Test_newPathGetSetter(t *testing.T) {
-	refMetric := createMetricTelemetry()
+	refMetric := createTelemetry()
 
 	newCache := pcommon.NewMap()
 	newCache.PutStr("temp", "value")
@@ -148,17 +149,22 @@ func Test_newPathGetSetter(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxmetric.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			// Create a controlled test cache
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
-			metric := createMetricTelemetry()
+			metric := createTelemetry()
 
 			ctx := NewTransformContext(metric, pmetric.NewMetricSlice(), pcommon.NewInstrumentationScope(), pcommon.NewResource(), pmetric.NewScopeMetrics(), pmetric.NewResourceMetrics())
 
@@ -169,12 +175,12 @@ func Test_newPathGetSetter(t *testing.T) {
 			err = accessor.Set(context.Background(), ctx, tt.newVal)
 			assert.NoError(t, err)
 
-			exMetric := createMetricTelemetry()
+			exMetric := createTelemetry()
 			exCache := pcommon.NewMap()
 			tt.modified(exMetric, exCache)
 
 			assert.Equal(t, exMetric, metric)
-			assert.Equal(t, exCache, ctx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -226,10 +232,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -239,24 +244,7 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 	}
 }
 
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	ctx := NewTransformContext(
-		pmetric.NewMetric(),
-		pmetric.NewMetricSlice(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		pmetric.NewScopeMetrics(),
-		pmetric.NewResourceMetrics(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, ctx.getCache())
-}
-
-func createMetricTelemetry() pmetric.Metric {
+func createTelemetry() pmetric.Metric {
 	metric := pmetric.NewMetric()
 	metric.SetName("name")
 	metric.SetDescription("description")
