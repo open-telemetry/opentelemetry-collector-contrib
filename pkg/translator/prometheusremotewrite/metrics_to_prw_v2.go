@@ -148,19 +148,14 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		Samples:    []writev2.Sample{*sample},
 	}
 
-	// check if the time series is already in the unique map
 	if existingTS, ok := c.unique[sig]; ok {
-		// if the time series is already in the unique map, check if it is the same metric
 		if !isSameMetricV2(existingTS, ts) {
-			// if the time series is not the same metric, add it to the conflicts map
 			c.conflicts[sig] = append(c.conflicts[sig], ts)
 			c.conflictCount++
 		} else {
-			// if the time series is the same metric, add the sample to the existing time series
 			existingTS.Samples = append(existingTS.Samples, *sample)
 		}
 	} else {
-		// if the time series is not in the unique map, add it to the unique map
 		c.unique[sig] = ts
 	}
 }
