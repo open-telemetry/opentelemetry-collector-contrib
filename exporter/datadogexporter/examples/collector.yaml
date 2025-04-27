@@ -125,9 +125,6 @@ processors:
         - k8s.cronjob.name
         - k8s.statefulset.name
         - k8s.statefulset.uid
-        - container.image.name
-        - container.image.tag
-        - container.id
         - k8s.container.name
         - container.image.name
         - container.image.tag
