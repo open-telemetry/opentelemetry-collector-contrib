@@ -55,6 +55,15 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
+// getSpanName returns a better suited span name on specific conditions
+// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36924
+func getSpanName(span *pb.Span) string {
+	if span.Name == "servlet.request" || span.Name == "spring.handler" {
+		return span.Resource
+	}
+	return span.Name
+}
+
 func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
@@ -106,7 +115,7 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
-			newSpan.SetName(span.Name)
+			newSpan.SetName(getSpanName(span))
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {

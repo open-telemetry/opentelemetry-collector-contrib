@@ -148,6 +148,12 @@ func TestTranslateDataDogKeyToOtel(t *testing.T) {
 			assert.Equal(t, v, translateDatadogKeyToOTel(k))
 		})
 	}
+
+	// test dynamic attributes:
+	// * http.request.header.<header_name>
+	// * http.response.header.<header_name>
+	assert.Equal(t, "http.request.header.referer", translateDatadogKeyToOTel("http.request.headers.referer"))
+	assert.Equal(t, "http.response.header.content-type", translateDatadogKeyToOTel("http.response.headers.content-type"))
 }
 
 func TestImageTags(t *testing.T) {
@@ -160,4 +166,20 @@ func TestImageTags(t *testing.T) {
 	attrs := tagsToAttributes(tags, host, pool)
 	imageTags, _ := attrs.resource.Get(semconv.AttributeContainerImageTags)
 	assert.Equal(t, expected, imageTags.AsString())
+}
+
+func TestHTTPHeaders(t *testing.T) {
+	// make sure container.image.tags is a string[]
+	expected := "[\"value\"]"
+	tags := []string{"env:prod", "foo", "http.request.headers.header:value", "http.response.headers.header:value"}
+	host := "host"
+	pool := newStringPool()
+
+	attrs := tagsToAttributes(tags, host, pool)
+	header, found := attrs.resource.Get("http.request.header.header")
+	assert.True(t, found)
+	assert.Equal(t, expected, header.AsString())
+	header, found = attrs.resource.Get("http.response.header.header")
+	assert.True(t, found)
+	assert.Equal(t, expected, header.AsString())
 }

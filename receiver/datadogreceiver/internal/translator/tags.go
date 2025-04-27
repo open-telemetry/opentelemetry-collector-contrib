@@ -50,6 +50,19 @@ var datadogKnownResourceAttributes = map[string]string{
 	"kube_namespace":      semconv.AttributeK8SNamespaceName,
 	"pod_name":            semconv.AttributeK8SPodName,
 
+	// HTTP
+	"http.client_ip":               semconv.AttributeClientAddress,
+	"http.response.content_length": semconv.AttributeHTTPResponseBodySize,
+	"http.status_code":             semconv.AttributeHTTPResponseStatusCode,
+	"http.request.content_length":  semconv.AttributeHTTPRequestBodySize,
+	"http.referer":                 "http.request.header.referer",
+	"http.method":                  semconv.AttributeHTTPRequestMethod,
+	"http.route":                   semconv.AttributeHTTPRoute,
+	"http.version":                 semconv.AttributeNetworkProtocolVersion,
+	"http.server_name":             semconv.AttributeServerAddress,
+	"http.url":                     semconv.AttributeURLFull,
+	"http.useragent":               semconv.AttributeUserAgentOriginal,
+
 	// Other
 	"process_id":       semconv.AttributeProcessPID,
 	"error.stacktrace": semconv.AttributeExceptionStacktrace,
@@ -79,6 +92,15 @@ func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
 func translateDatadogKeyToOTel(k string) string {
 	if otelKey, ok := datadogKnownResourceAttributes[strings.ToLower(k)]; ok {
 		return otelKey
+	}
+
+	// HTTP dynamic attributes
+	if strings.HasPrefix(k, "http.response.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.response.headers.")
+		return "http.response.header." + header
+	} else if strings.HasPrefix(k, "http.request.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.request.headers.")
+		return "http.request.header." + header
 	}
 	return k
 }
@@ -145,7 +167,12 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 		} else {
 			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
-			attrs.dp.PutStr(key, val)
+			if strings.HasPrefix(key, "http.request.header.") || strings.HasPrefix(key, "http.response.header.") {
+				// type string[]
+				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
+			} else {
+				attrs.dp.PutStr(key, val)
+			}
 		}
 	}
 
