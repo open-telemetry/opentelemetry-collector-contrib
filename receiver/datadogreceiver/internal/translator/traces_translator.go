@@ -19,7 +19,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
@@ -62,14 +62,14 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		semconv.AttributeContainerID:           payload.ContainerID,
-		semconv.AttributeTelemetrySDKLanguage:  payload.LanguageName,
-		semconv.AttributeProcessRuntimeVersion: payload.LanguageVersion,
-		semconv.AttributeDeploymentEnvironment: payload.Env,
-		semconv.AttributeHostName:              payload.Hostname,
-		semconv.AttributeServiceVersion:        payload.AppVersion,
-		semconv.AttributeTelemetrySDKName:      "Datadog",
-		semconv.AttributeTelemetrySDKVersion:   payload.TracerVersion,
+		semconv.AttributeContainerID:               payload.ContainerID,
+		semconv.AttributeTelemetrySDKLanguage:      payload.LanguageName,
+		semconv.AttributeProcessRuntimeVersion:     payload.LanguageVersion,
+		semconv.AttributeDeploymentEnvironmentName: payload.Env,
+		semconv.AttributeHostName:                  payload.Hostname,
+		semconv.AttributeServiceVersion:            payload.AppVersion,
+		semconv.AttributeTelemetrySDKName:          "Datadog",
+		semconv.AttributeTelemetrySDKVersion:       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)

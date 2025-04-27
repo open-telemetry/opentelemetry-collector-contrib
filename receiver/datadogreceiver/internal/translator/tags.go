@@ -8,14 +8,14 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 // See:
 // https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/
 // https://github.com/DataDog/opentelemetry-mapping-go/blob/main/pkg/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
-	"env":     semconv.AttributeDeploymentEnvironment,
+	"env":     semconv.AttributeDeploymentEnvironmentName,
 	"service": semconv.AttributeServiceName,
 	"version": semconv.AttributeServiceVersion,
 
@@ -23,7 +23,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	"container_id":   semconv.AttributeContainerID,
 	"container_name": semconv.AttributeContainerName,
 	"image_name":     semconv.AttributeContainerImageName,
-	"image_tag":      semconv.AttributeContainerImageTag,
+	"image_tag":      semconv.AttributeContainerImageTags,
 	"runtime":        semconv.AttributeContainerRuntime,
 
 	// Cloud-related attributes
@@ -136,8 +136,12 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
-			val = stringPool.Intern(val) // No need to intern the key if we already have it
-			attrs.resource.PutStr(attr, val)
+			val = stringPool.Intern(val)                     // No need to intern the key if we already have it
+			if attr == semconv.AttributeContainerImageTags { // type: string[]
+				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)
+			} else {
+				attrs.resource.PutStr(attr, val)
+			}
 		} else {
 			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
