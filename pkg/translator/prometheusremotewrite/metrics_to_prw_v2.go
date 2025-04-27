@@ -148,7 +148,7 @@ func (c *prometheusConverterV2) addSample(sample *writev2.Sample, lbls []prompb.
 		Samples:    []writev2.Sample{*sample},
 	}
 
-	if existingTS, ok := c.unique[sig]; ok {
+	if existingTS := c.unique[sig]; existingTS != nil {
 		if !isSameMetricV2(existingTS, ts) {
 			c.conflicts[sig] = append(c.conflicts[sig], ts)
 			c.conflictCount++
