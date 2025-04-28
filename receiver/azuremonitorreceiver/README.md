@@ -23,9 +23,9 @@ The following settings are required:
 
 The following settings are optional:
 
-- `token_provider` or `auth` (default = service_principal): Specifies the used authentication method:
+- `credentials` to get valid credentials for azure. It should be the id of an `azureauthextension` component.
+-  `auth`, if `credentials` are not specified (default = service_principal): Specifies the used authentication method:
   - Supported values for `auth` are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
-  - `token_provider` valid value should be the id of an `azureauthextension` component.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
@@ -57,7 +57,7 @@ Authenticating using managed identities has the following optional settings:
 
 Authentication using `azureauthextension` requires:
 
-- `token_provider`
+- `credentials`
 
 ### Filtering metrics
 
@@ -159,7 +159,7 @@ receivers:
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    token_provider: azureauth
+    credentials: azureauth
 
 extensions:
   azureauth:

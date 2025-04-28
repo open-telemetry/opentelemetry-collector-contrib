@@ -29,7 +29,7 @@ azuremonitor/invalid_auth:
   discover_subscriptions: true
   auth: invalid
 
-azuremonitor/token_provider:
+azuremonitor/credentials:
   discover_subscriptions: true
-  token_provider: test
+  credentials: test
   auth: does-not-matter

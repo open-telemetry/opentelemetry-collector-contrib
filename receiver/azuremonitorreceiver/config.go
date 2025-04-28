@@ -257,7 +257,7 @@ type Config struct {
 	// and uses it to get an access token to make requests.
 	// Using this, `auth` and any related fields become
 	// useless.
-	TokenProvider string `mapstructure:"token_provider"`
+	TokenProvider string `mapstructure:"credentials"`
 
 	Authentication     string `mapstructure:"auth"`
 	TenantID           string `mapstructure:"tenant_id"`

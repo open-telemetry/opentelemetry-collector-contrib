@@ -86,7 +86,7 @@ func TestLoadConfig(t *testing.T) {
 			expectedErr: `authentication "invalid" is not supported`,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "token_provider"),
+			id: component.NewIDWithName(metadata.Type, "credentials"),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.DiscoverSubscriptions = true
