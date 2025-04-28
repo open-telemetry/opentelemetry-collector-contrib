@@ -5,6 +5,7 @@ package awss3exporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	"errors"
+	"time"
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configcompression"
@@ -40,6 +41,16 @@ type S3UploaderConfig struct {
 	// before uploading to S3.
 	// Valid values are: `gzip` or no value set.
 	Compression configcompression.Type `mapstructure:"compression"`
+
+	// RetryMode specifies the retry mode for S3 client, default is "standard".
+	// Valid values are: "standard", "adaptive", or "".
+	RetryMode string `mapstructure:"retry_mode"`
+	// RetryMaxAttempts specifies the maximum number of attempts for S3 client.
+	// Default is 3 (SDK default).
+	RetryMaxAttempts int `mapstructure:"retry_max_attempts"`
+	// RetryMaxBackoff specifies the maximum backoff delay for S3 client.
+	// Default is 20 seconds (SDK default).
+	RetryMaxBackoff time.Duration `mapstructure:"retry_max_backoff"`
 }
 
 type MarshalerType string
@@ -108,6 +119,10 @@ func (c *Config) Validate() error {
 		if c.MarshalerName == SumoIC {
 			errs = multierr.Append(errs, errors.New("marshaler does not support compression"))
 		}
+	}
+
+	if c.S3Uploader.RetryMode != "" && c.S3Uploader.RetryMode != "standard" && c.S3Uploader.RetryMode != "adaptive" {
+		errs = multierr.Append(errs, errors.New("invalid retry mode, must be either 'standard' or 'adaptive'"))
 	}
 	return errs
 }
