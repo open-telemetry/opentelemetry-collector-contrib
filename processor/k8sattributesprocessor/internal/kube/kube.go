@@ -319,7 +319,7 @@ func (r *FieldExtractionRule) extractFromNodeMetadata(metadata map[string]string
 
 func (r *FieldExtractionRule) extractFromDeploymentMetadata(metadata map[string]string, tags map[string]string, formatter string) {
 	if r.From == MetadataFromDeployment {
-		r.extractFromMetadata(metadata, tags, formatter)
+		r.extractFromMetadataSemconvValid(metadata, tags, formatter)
 	}
 }
 
@@ -339,6 +339,25 @@ func (r *FieldExtractionRule) extractFromMetadata(metadata map[string]string, ta
 		}
 	} else if v, ok := metadata[r.Key]; ok {
 		tags[r.Name] = r.extractField(v)
+	}
+}
+
+func (r *FieldExtractionRule) extractFromMetadataSemconvValid(metadata map[string]string, tags map[string]string, formatter string) {
+	if r.KeyRegex != nil {
+		for k, v := range metadata {
+			if r.KeyRegex.MatchString(k) && v != "" {
+				var name string
+				if r.HasKeyRegexReference {
+					var result []byte
+					name = string(r.KeyRegex.ExpandString(result, r.Name, k, r.KeyRegex.FindStringSubmatchIndex(k)))
+				} else {
+					name = fmt.Sprintf(formatter, k)
+				}
+				tags[name] = v
+			}
+		}
+	} else if v, ok := metadata[r.Key]; ok {
+		tags[fmt.Sprintf(formatter, r.Name)] = r.extractField(v)
 	}
 }
 

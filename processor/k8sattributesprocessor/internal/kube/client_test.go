@@ -1454,8 +1454,8 @@ func TestDeploymentExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"l1": "lv1",
-				"a1": "av1",
+				"k8s.deployment.label.l1":      "lv1",
+				"k8s.deployment.annotation.a1": "av1",
 			},
 		},
 		{
@@ -1469,7 +1469,7 @@ func TestDeploymentExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.deployment.labels.label1": "lv1",
+				"k8s.deployment.label.label1": "lv1",
 			},
 		},
 		{
@@ -1483,7 +1483,7 @@ func TestDeploymentExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.deployment.annotations.annotation1": "av1",
+				"k8s.deployment.annotation.annotation1": "av1",
 			},
 		},
 	}

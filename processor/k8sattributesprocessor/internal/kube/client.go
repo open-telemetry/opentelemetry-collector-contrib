@@ -911,11 +911,11 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDeploymentMetadata(d.Labels, tags, "k8s.deployment.labels.%s")
+		r.extractFromDeploymentMetadata(d.Labels, tags, "k8s.deployment.label.%s")
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, "k8s.deployment.annotations.%s")
+		r.extractFromDeploymentMetadata(d.Annotations, tags, "k8s.deployment.annotation.%s")
 	}
 
 	return tags
