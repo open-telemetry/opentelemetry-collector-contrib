@@ -12,6 +12,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/component v1.31.0
+	go.opentelemetry.io/collector/config/configcompression v1.31.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.31.0
 	go.opentelemetry.io/collector/config/configtls v1.31.0
 	go.opentelemetry.io/collector/confmap v1.31.0
@@ -85,3 +86,9 @@ require (
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250424234037-ac7c0f2f4cd8
+
+replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250424234037-ac7c0f2f4cd8
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250424234037-ac7c0f2f4cd8

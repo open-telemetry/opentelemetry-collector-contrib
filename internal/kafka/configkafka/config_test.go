@@ -4,6 +4,7 @@
 package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 
 import (
+	"go.opentelemetry.io/collector/config/configcompression"
 	"path/filepath"
 	"testing"
 	"time"
@@ -162,10 +163,12 @@ func TestProducerConfig(t *testing.T) {
 		},
 		"full": {
 			expected: ProducerConfig{
-				MaxMessageBytes:  1,
-				RequiredAcks:     0,
-				Compression:      "gzip",
-				CompressionLevel: 3,
+				MaxMessageBytes: 1,
+				RequiredAcks:    0,
+				Compression:     "gzip",
+				CompressionParams: configcompression.CompressionParams{
+					Level: 1,
+				},
 				FlushMaxMessages: 2,
 			},
 		},

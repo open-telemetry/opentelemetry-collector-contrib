@@ -6,6 +6,7 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"time"
 
 	"github.com/IBM/sarama"
@@ -184,9 +185,8 @@ type ProducerConfig struct {
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
-	// CompressionLevel is a measure of the compression quality
-	// Used in only: 'gzip', 'zstd'
-	CompressionLevel int `mapstructure:"compression_level"`
+	// CompressionParams defines compression parameters for the producer.
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
 
 	// The maximum number of messages the producer will send in a single
 	// broker request. Defaults to 0 for unlimited. Similar to
@@ -196,10 +196,12 @@ type ProducerConfig struct {
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:  1000000,
-		RequiredAcks:     WaitForLocal,
-		Compression:      "none",
-		CompressionLevel: sarama.CompressionLevelDefault,
+		MaxMessageBytes: 1000000,
+		RequiredAcks:    WaitForLocal,
+		Compression:     "none",
+		CompressionParams: configcompression.CompressionParams{
+			Level: configcompression.DefaultCompressionLevel,
+		},
 		FlushMaxMessages: 0,
 	}
 }
@@ -207,7 +209,13 @@ func NewDefaultProducerConfig() ProducerConfig {
 func (c ProducerConfig) Validate() error {
 	switch c.Compression {
 	case "none", "gzip", "snappy", "lz4", "zstd":
-		// Valid compression
+		ct := configcompression.Type(c.Compression)
+		if !ct.IsCompressed() {
+			return nil
+		}
+		if err := ct.ValidateParams(c.CompressionParams); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf(
 			"compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value is %q",
