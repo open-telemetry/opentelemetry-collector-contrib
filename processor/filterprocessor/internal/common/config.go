@@ -1,4 +1,4 @@
-package common
+package common // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 
 import (
 	"fmt"
