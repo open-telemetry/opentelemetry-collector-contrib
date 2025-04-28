@@ -7,11 +7,17 @@ resourceLogs:
         - key: cloud.resource_id
           value:
             stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
           - body:
               kvlistValue:
                 values:
+                  - key: http.request.header.x-azure-fdid
+                    value:
+                      stringValue: FDID
                   - key: http.request.header.x-fd-healthprobe
                     value:
                       stringValue: HEALTH_PROBE
@@ -21,21 +27,18 @@ resourceLogs:
                   - key: http.request.header.x-forwarded-host
                     value:
                       stringValue: FORWARDED_HOST
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
                   - key: category
                     value:
                       stringValue: AppServiceIPSecAuditLogs
                   - key: operation.name
                     value:
                       stringValue: IPSecAuditLog
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
                   - key: url.domain
                     value:
                       stringValue: HOST
-                  - key: http.request.header.x-azure-fdid
-                    value:
-                      stringValue: FDID
             spanId: ""
             timeUnixNano: "1713960372000000000"
             traceId: ""

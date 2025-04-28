@@ -7,11 +7,17 @@ resourceLogs:
         - key: cloud.resource_id
           value:
             stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
           - body:
               kvlistValue:
                 values:
+                  - key: operation.name
+                    value:
+                      stringValue: AppLog
                   - key: container.id
                     value:
                       stringValue: CONTAINER_ID
@@ -21,12 +27,6 @@ resourceLogs:
                   - key: host.id
                     value:
                       stringValue: HOST
-                  - key: category
-                    value:
-                      stringValue: AppServiceAppLogs
-                  - key: operation.name
-                    value:
-                      stringValue: AppLog
                   - key: code.function
                     value:
                       stringValue: METHOD
@@ -36,6 +36,9 @@ resourceLogs:
                   - key: exception.stacktrace
                     value:
                       stringValue: STACKTRACE
+                  - key: category
+                    value:
+                      stringValue: AppServiceAppLogs
             spanId: ""
             timeUnixNano: "1713960372000000000"
             traceId: ""

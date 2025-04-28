@@ -120,6 +120,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 		rl := l.ResourceLogs().AppendEmpty()
 		rl.Resource().Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
 		rl.Resource().Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
+		rl.Resource().Attributes().PutStr(conventions.AttributeEventName, "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 

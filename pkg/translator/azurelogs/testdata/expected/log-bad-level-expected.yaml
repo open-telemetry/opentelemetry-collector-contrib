@@ -7,6 +7,9 @@ resourceLogs:
         - key: cloud.resource_id
           value:
             stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
           - body:
@@ -34,54 +37,54 @@ resourceLogs:
                           - key: operationId
                             value:
                               stringValue: GetSessions
-                          - key: responseCode
+                          - key: method
                             value:
-                              doubleValue: 200
-                          - key: requestSize
+                              stringValue: GET
+                          - key: backendTime
                             value:
-                              doubleValue: 632
+                              doubleValue: 54
+                          - key: apimSubscriptionId
+                            value:
+                              stringValue: master
                           - key: backendProtocol
                             value:
                               stringValue: HTTP/1.1
+                          - key: requestSize
+                            value:
+                              doubleValue: 632
+                          - key: url
+                            value:
+                              stringValue: https://api.azure-api.net/sessions
+                          - key: apiId
+                            value:
+                              stringValue: demo-api
+                          - key: backendUrl
+                            value:
+                              stringValue: https://api.azurewebsites.net/sessions
                           - key: apiRevision
                             value:
                               stringValue: "1"
                           - key: clientTlsVersion
                             value:
                               stringValue: "1.2"
-                          - key: backendUrl
-                            value:
-                              stringValue: https://api.azurewebsites.net/sessions
-                          - key: apimSubscriptionId
-                            value:
-                              stringValue: master
-                          - key: apiId
-                            value:
-                              stringValue: demo-api
-                          - key: method
-                            value:
-                              stringValue: GET
                           - key: backendMethod
                             value:
                               stringValue: GET
-                          - key: responseSize
+                          - key: responseCode
                             value:
-                              doubleValue: 102945
+                              doubleValue: 200
                           - key: cache
                             value:
                               stringValue: none
-                          - key: clientTime
-                            value:
-                              doubleValue: 190
-                          - key: url
-                            value:
-                              stringValue: https://api.azure-api.net/sessions
-                          - key: backendTime
-                            value:
-                              doubleValue: 54
                           - key: clientProtocol
                             value:
                               stringValue: HTTP/1.1
+                          - key: responseSize
+                            value:
+                              doubleValue: 102945
+                          - key: clientTime
+                            value:
+                              doubleValue: 190
                           - key: backendResponseCode
                             value:
                               doubleValue: 200

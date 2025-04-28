@@ -7,6 +7,9 @@ resourceLogs:
         - key: cloud.resource_id
           value:
             stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
           - body:

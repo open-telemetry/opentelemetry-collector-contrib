@@ -7,20 +7,14 @@ resourceLogs:
         - key: cloud.resource_id
           value:
             stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
           - body:
               kvlistValue:
                 values:
-                  - key: az.service_request_id
-                    value:
-                      stringValue: TRACKING_REFERENCE
-                  - key: client.address
-                    value:
-                      stringValue: 42.42.42.42
-                  - key: client.port
-                    value:
-                      stringValue: "0"
                   - key: network.peer.address
                     value:
                       stringValue: 23.23.23.23
@@ -30,12 +24,21 @@ resourceLogs:
                   - key: server.address
                     value:
                       stringValue: test.net
+                  - key: az.service_request_id
+                    value:
+                      stringValue: TRACKING_REFERENCE
+                  - key: client.address
+                    value:
+                      stringValue: 42.42.42.42
                   - key: category
                     value:
                       stringValue: FrontdoorWebApplicationFirewallLog
                   - key: operation.name
                     value:
                       stringValue: WAF/FirewallLog
+                  - key: client.port
+                    value:
+                      stringValue: "0"
             spanId: ""
             timeUnixNano: "1713960372000000000"
             traceId: ""
