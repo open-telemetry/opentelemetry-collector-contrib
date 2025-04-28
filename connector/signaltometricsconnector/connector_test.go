@@ -38,6 +38,7 @@ func TestConnectorWithTraces(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
@@ -102,6 +103,7 @@ func TestConnectorWithLogs(t *testing.T) {
 		"sum",
 		"histograms",
 		"exponential_histograms",
+		"metric_identity",
 	}
 
 	ctx, cancel := context.WithCancel(context.Background())
