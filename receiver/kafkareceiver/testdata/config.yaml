@@ -45,3 +45,15 @@ kafka/logs:
     max_interval: 10s
     max_elapsed_time: 1m
     multiplier: 1.5
+kafka/rebalance_strategy:
+  metrics:
+    topic: otlp_metrics
+    encoding: otlp_proto
+  traces:
+    topic: otlp_spans
+    encoding: otlp_proto
+  logs:
+    topic: otlp_logs
+    encoding: otlp_proto
+  group_rebalance_strategy: sticky
+  group_instance_id: test-instance

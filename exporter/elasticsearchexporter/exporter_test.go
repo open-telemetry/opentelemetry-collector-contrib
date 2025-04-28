@@ -11,6 +11,7 @@ import (
 	"math"
 	"net/http"
 	"runtime"
+	"sort"
 	"sync"
 	"sync/atomic"
 	"testing"
@@ -2149,7 +2150,7 @@ func TestExporterTraces(t *testing.T) {
 	})
 }
 
-func TestExporter_MappingModeMetadata(t *testing.T) {
+func TestExporter_DynamicMappingMode(t *testing.T) {
 	otelContext := client.NewContext(context.Background(), client.Info{
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"otel"}}),
 	})
@@ -2160,32 +2161,69 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 		Metadata: client.NewMetadata(map[string][]string{"X-Elastic-Mapping-Mode": {"none"}}),
 	})
 
-	logs := plog.NewLogs()
-	resourceLog := logs.ResourceLogs().AppendEmpty()
-	resourceLog.Resource().Attributes().PutStr("k", "v")
-	scopeLog := resourceLog.ScopeLogs().AppendEmpty()
-	scopeLog.LogRecords().AppendEmpty()
-	logs.MarkReadOnly()
+	defaultScope := pcommon.NewInstrumentationScope()
+	ecsScope := pcommon.NewInstrumentationScope()
+	ecsScope.Attributes().PutStr("elastic.mapping.mode", "ecs")
+	bodymapScope := pcommon.NewInstrumentationScope()
+	bodymapScope.Attributes().PutStr("elastic.mapping.mode", "bodymap")
 
-	metrics := pmetric.NewMetrics()
-	resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
-	resourceMetrics.Resource().Attributes().PutStr("k", "v")
-	metric := resourceMetrics.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	metric.SetName("metric.foo")
-	metric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(123)
-	metrics.MarkReadOnly()
+	createLogs := func(scopes ...pcommon.InstrumentationScope) plog.Logs {
+		logs := plog.NewLogs()
+		resourceLog := logs.ResourceLogs().AppendEmpty()
+		resourceLog.Resource().Attributes().PutStr("k", "v")
+		for _, scope := range scopes {
+			scopeLog := resourceLog.ScopeLogs().AppendEmpty()
+			scope.CopyTo(scopeLog.Scope())
+			scopeLog.LogRecords().AppendEmpty()
+		}
+		logs.MarkReadOnly()
+		return logs
+	}
 
-	traces := ptrace.NewTraces()
-	resourceSpans := traces.ResourceSpans().AppendEmpty()
-	resourceSpans.Resource().Attributes().PutStr("k", "v")
-	resourceSpans.ScopeSpans().AppendEmpty().Spans().AppendEmpty()
-	traces.MarkReadOnly()
+	createMetrics := func(scopes ...pcommon.InstrumentationScope) pmetric.Metrics {
+		metrics := pmetric.NewMetrics()
+		resourceMetrics := metrics.ResourceMetrics().AppendEmpty()
+		resourceMetrics.Resource().Attributes().PutStr("k", "v")
+		for _, scope := range scopes {
+			scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
+			scope.CopyTo(scopeMetrics.Scope())
+			metric := scopeMetrics.Metrics().AppendEmpty()
+			metric.SetName("metric.foo")
+			metric.SetEmptySum().DataPoints().AppendEmpty().SetIntValue(123)
+		}
+		metrics.MarkReadOnly()
+		return metrics
+	}
+
+	createTraces := func(scopes ...pcommon.InstrumentationScope) ptrace.Traces {
+		traces := ptrace.NewTraces()
+		resourceSpans := traces.ResourceSpans().AppendEmpty()
+		resourceSpans.Resource().Attributes().PutStr("k", "v")
+		for _, scope := range scopes {
+			scopeSpans := resourceSpans.ScopeSpans().AppendEmpty()
+			scope.CopyTo(scopeSpans.Scope())
+			scopeSpans.Spans().AppendEmpty()
+		}
+		traces.MarkReadOnly()
+		return traces
+	}
+
+	// sortItemRequests sorts by _index, so we get consistent ordering for
+	// the different scopes below. This is necessary since bulk requests
+	// are produced concurrently for each mapping mode.
+	sortItemRequests := func(items []itemRequest) {
+		sort.Slice(items, func(i, j int) bool {
+			return gjson.GetBytes(items[i].Action, "create._index").Str <
+				gjson.GetBytes(items[j].Action, "create._index").Str
+		})
+	}
 
 	setAllowedMappingModes := func(cfg *Config) {
 		cfg.Mapping.AllowedModes = []string{"ecs", "otel"}
 		cfg.Mapping.Mode = "otel"
 	}
 
+	type checkFunc func(_ *testing.T, doc []byte, signal string)
 	checkOTelResource := func(t *testing.T, doc []byte, _ string) {
 		t.Helper()
 		assert.JSONEq(t, `{"k":"v"}`, gjson.GetBytes(doc, `resource.attributes`).Raw)
@@ -2204,20 +2242,39 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 	testcases := []struct {
 		name      string
 		ctx       context.Context
-		check     func(_ *testing.T, doc []byte, signal string)
+		scopes    []pcommon.InstrumentationScope
+		checks    []checkFunc
 		expectErr string
 	}{{
-		name:  "otel",
-		ctx:   otelContext,
-		check: checkOTelResource,
+		name:   "otel",
+		ctx:    otelContext,
+		scopes: []pcommon.InstrumentationScope{defaultScope},
+		checks: []checkFunc{checkOTelResource},
 	}, {
-		name:  "ecs",
-		ctx:   ecsContext,
-		check: checkECSResource,
+		name:   "ecs",
+		ctx:    ecsContext,
+		scopes: []pcommon.InstrumentationScope{defaultScope},
+		checks: []checkFunc{checkECSResource},
 	}, {
-		name:      "bodymap",
+		name:      "none",
 		ctx:       noneContext,
-		expectErr: `unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+		scopes:    []pcommon.InstrumentationScope{defaultScope},
+		expectErr: `invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+	}, {
+		name:   "ecs_scope",
+		ctx:    context.Background(),
+		scopes: []pcommon.InstrumentationScope{ecsScope},
+		checks: []checkFunc{checkECSResource},
+	}, {
+		name:   "mixed_scopes",
+		ctx:    context.Background(),
+		scopes: []pcommon.InstrumentationScope{ecsScope, defaultScope},
+		checks: []checkFunc{checkECSResource, checkOTelResource},
+	}, {
+		name:      "bodymap_scope",
+		ctx:       otelContext, // scope overrides context
+		scopes:    []pcommon.InstrumentationScope{bodymapScope},
+		expectErr: `invalid scope mapping mode: unsupported mapping mode "bodymap", expected one of ["ecs" "otel"]`,
 	}}
 
 	t.Run("logs", func(t *testing.T) {
@@ -2228,6 +2285,8 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					rec.Record(docs)
 					return itemsAllOK(docs)
 				})
+
+				logs := createLogs(tc.scopes...)
 				exporter := newTestLogsExporter(t, server.URL, setAllowedMappingModes)
 				err := exporter.ConsumeLogs(tc.ctx, logs)
 				if tc.expectErr != "" {
@@ -2235,8 +2294,11 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return
 				}
 				require.NoError(t, err)
-				items := rec.WaitItems(1)
-				tc.check(t, items[0].Document, "logs")
+				items := rec.WaitItems(len(tc.scopes))
+				sortItemRequests(items)
+				for i, item := range items {
+					tc.checks[i](t, item.Document, "logs")
+				}
 			})
 		}
 	})
@@ -2248,6 +2310,8 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					rec.Record(docs)
 					return itemsAllOK(docs)
 				})
+
+				metrics := createMetrics(tc.scopes...)
 				exporter := newTestMetricsExporter(t, server.URL, setAllowedMappingModes)
 				err := exporter.ConsumeMetrics(tc.ctx, metrics)
 				if tc.expectErr != "" {
@@ -2255,8 +2319,11 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return
 				}
 				require.NoError(t, err)
-				items := rec.WaitItems(1)
-				tc.check(t, items[0].Document, "metrics")
+				items := rec.WaitItems(len(tc.scopes))
+				sortItemRequests(items)
+				for i, item := range items {
+					tc.checks[i](t, item.Document, "metrics")
+				}
 			})
 		}
 	})
@@ -2266,7 +2333,7 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 		exporter := newTestProfilesExporter(t, "https://testing.invalid", setAllowedMappingModes)
 		err := exporter.ConsumeProfiles(noneContext, pprofile.NewProfiles())
 		assert.EqualError(t, err,
-			`unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
+			`invalid context mapping mode: unsupported mapping mode "none", expected one of ["ecs" "otel"]`,
 		)
 	})
 	t.Run("traces", func(t *testing.T) {
@@ -2277,6 +2344,8 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					rec.Record(docs)
 					return itemsAllOK(docs)
 				})
+
+				traces := createTraces(tc.scopes...)
 				exporter := newTestTracesExporter(t, server.URL, setAllowedMappingModes)
 				err := exporter.ConsumeTraces(tc.ctx, traces)
 				if tc.expectErr != "" {
@@ -2284,8 +2353,11 @@ func TestExporter_MappingModeMetadata(t *testing.T) {
 					return
 				}
 				require.NoError(t, err)
-				items := rec.WaitItems(1)
-				tc.check(t, items[0].Document, "traces")
+				items := rec.WaitItems(len(tc.scopes))
+				sortItemRequests(items)
+				for i, item := range items {
+					tc.checks[i](t, item.Document, "traces")
+				}
 			})
 		}
 	})

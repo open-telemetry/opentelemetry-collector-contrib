@@ -24,7 +24,10 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sematextexporter/internal/metadata"
 )
 
-var metricsAppToken = uuid.NewString()
+var (
+	metricsAppToken = uuid.NewString()
+	logsAppToken    = uuid.NewString()
+)
 
 // NewFactory creates a factory for the Sematext metrics exporter.
 func NewFactory() exporter.Factory {

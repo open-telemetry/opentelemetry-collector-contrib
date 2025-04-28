@@ -35,6 +35,7 @@ const (
 	transport = "kafka"
 	// TODO: update the following attributes to reflect semconv
 	attrInstanceName = "name"
+	attrTopic        = "topic"
 	attrPartition    = "partition"
 )
 
@@ -78,7 +79,10 @@ func newLogsReceiver(config *Config, set receiver.Settings, nextConsumer consume
 			config, set.Logger,
 			c.telemetryBuilder.KafkaReceiverUnmarshalFailedLogRecords,
 			[]metric.AddOption{
-				metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())),
+				metric.WithAttributeSet(attribute.NewSet(
+					attribute.String(attrInstanceName, c.id.String()),
+					attribute.String(attrTopic, config.Logs.Topic),
+				)),
 			},
 			&logsHandler{
 				unmarshaler: unmarshaler,
@@ -101,7 +105,10 @@ func newMetricsReceiver(config *Config, set receiver.Settings, nextConsumer cons
 			config, set.Logger,
 			c.telemetryBuilder.KafkaReceiverUnmarshalFailedMetricPoints,
 			[]metric.AddOption{
-				metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())),
+				metric.WithAttributeSet(attribute.NewSet(
+					attribute.String(attrInstanceName, c.id.String()),
+					attribute.String(attrTopic, config.Metrics.Topic),
+				)),
 			},
 			&metricsHandler{
 				unmarshaler: unmarshaler,
@@ -124,7 +131,10 @@ func newTracesReceiver(config *Config, set receiver.Settings, nextConsumer consu
 			config, set.Logger,
 			c.telemetryBuilder.KafkaReceiverUnmarshalFailedSpans,
 			[]metric.AddOption{
-				metric.WithAttributes(attribute.String(attrInstanceName, c.id.String())),
+				metric.WithAttributeSet(attribute.NewSet(
+					attribute.String(attrInstanceName, c.id.String()),
+					attribute.String(attrTopic, config.Traces.Topic),
+				)),
 			},
 			&tracesHandler{
 				unmarshaler: unmarshaler,
@@ -155,6 +165,7 @@ func newMessageHandlerConsumeFunc[T plog.Logs | pmetric.Metrics | ptrace.Traces]
 		data, n, err = h.unmarshalData(message.Value)
 		if err != nil {
 			logger.Error("failed to unmarshal message", zap.Error(err))
+			metricAddOpts = append(metricAddOpts, metric.WithAttributes(attribute.String(attrPartition, strconv.Itoa(int(message.Partition)))))
 			unmarshalFailedCounter.Add(ctx, 1, metricAddOpts...)
 			return err
 		}
@@ -487,6 +498,7 @@ func (c *consumerGroupHandler) handleMessage(
 	ctx := newContextWithHeaders(session.Context(), message.Headers)
 	attrs := attribute.NewSet(
 		attribute.String(attrInstanceName, c.id.String()),
+		attribute.String(attrTopic, message.Topic),
 		attribute.String(attrPartition, strconv.Itoa(int(claim.Partition()))),
 	)
 	c.telemetryBuilder.KafkaReceiverMessages.Add(ctx, 1, metric.WithAttributeSet(attrs))

@@ -207,8 +207,12 @@ type RetrySettings struct {
 type MappingsSettings struct {
 	// Mode configures the default document mapping mode.
 	//
-	// The mode may be overridden by the client metadata key
-	// X-Elastic-Mapping-Mode, if specified.
+	// The mode may be overridden in two ways:
+	//  - by the client metadata key X-Elastic-Mapping-Mode, if specified
+	//  - by the scope attribute elastic.mapping.mode, if specified
+	//
+	// The order of precedence is:
+	//   scope attribute > client metadata > default mode.
 	Mode string `mapstructure:"mode"`
 
 	// AllowedModes controls the allowed document mapping modes

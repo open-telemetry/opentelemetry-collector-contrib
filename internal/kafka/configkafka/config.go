@@ -102,6 +102,13 @@ type ConsumerConfig struct {
 	// The maximum amount of time to wait for MinFetchSize bytes to be
 	// available before the broker returns a response (default 250ms)
 	MaxFetchWait time.Duration `mapstructure:"max_fetch_wait"`
+	// RebalanceStrategy specifies the strategy to use for partition assignment.
+	// Possible values are "range", "roundrobin", and "sticky".
+	// Defaults to "range".
+	GroupRebalanceStrategy string `mapstructure:"group_rebalance_strategy,omitempty"`
+
+	// GroupInstanceID specifies the ID of the consumer
+	GroupInstanceID string `mapstructure:"group_instance_id,omitempty"`
 }
 
 func NewDefaultConsumerConfig() ConsumerConfig {
@@ -130,6 +137,18 @@ func (c ConsumerConfig) Validate() error {
 			"initial_offset should be one of 'latest' or 'earliest'. configured value %v",
 			c.InitialOffset,
 		)
+	}
+
+	if len(c.GroupRebalanceStrategy) != 0 {
+		switch c.GroupRebalanceStrategy {
+		case sarama.RangeBalanceStrategyName, sarama.RoundRobinBalanceStrategyName, sarama.StickyBalanceStrategyName:
+			// Valid
+		default:
+			return fmt.Errorf(
+				"rebalance_strategy should be one of 'range', 'roundrobin', or 'sticky'. configured value %v",
+				c.GroupRebalanceStrategy,
+			)
+		}
 	}
 	return nil
 }

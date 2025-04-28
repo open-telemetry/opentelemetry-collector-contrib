@@ -15,6 +15,9 @@
     logs:
       log.record.count:
         description: My description for default log count metric.
+    profiles:
+      profile.count:
+        description: My description for default profile count metric.
   count/custom_metric:
     spans:
       my.span.count:
@@ -31,6 +34,9 @@
     logs:
       my.logrecord.count:
         description: My log record count.
+    profiles:
+      my.profiling.count:
+        description: My profile count.
   count/condition:
     spans:
       my.span.count:
@@ -55,6 +61,11 @@
     logs:
       my.logrecord.count:
         description: My log record count.
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+    profiles:
+      my.profiling.count:
+        description: My profile count.
         conditions:
           - IsMatch(resource.attributes["host.name"], "pod-l")
   count/multiple_condition:
@@ -88,6 +99,12 @@
         conditions:
           - IsMatch(resource.attributes["host.name"], "pod-l")
           - IsMatch(resource.attributes["foo"], "bar-l")
+    profiles:
+      my.profiling.count:
+        description: My profile count.
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+          - IsMatch(resource.attributes["foo"], "bar-l")
   count/attribute:
     spans:
       my.span.count:
@@ -111,6 +128,11 @@
     logs:
       my.logrecord.count:
         description: My log record count by environment.
+        attributes:
+          - key: env
+    profiles:
+      my.profiling.count:
+        description: My profile count by environment.
         attributes:
           - key: env
   count/multiple_metrics:
@@ -159,6 +181,17 @@
         description: My log record count.
       limited.logrecord.count:
         description: Limited log record count.
+        conditions:
+          - IsMatch(resource.attributes["host.name"], "pod-l")
+        attributes:
+          - key: env
+          - key: component
+            default_value: other
+    profiles:
+      my.profiling.count:
+        description: My profile count.
+      limited.profiling.count:
+        description: Limited profile count.
         conditions:
           - IsMatch(resource.attributes["host.name"], "pod-l")
         attributes:

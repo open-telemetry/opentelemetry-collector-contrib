@@ -53,7 +53,7 @@ func createK8sHintsBuilder(config DiscoveryConfig, logger *zap.Logger) k8sHintsB
 // createReceiverTemplateFromHints creates a receiver configuration based on the provided hints.
 // Hints are extracted from Pod's annotations.
 // Scraper configurations are only created for Port Endpoints.
-// TODO: Log receiver configurations are only created for Pod Container Endpoints.
+// Log receiver configurations are only created for Pod Container Endpoints.
 func (builder *k8sHintsBuilder) createReceiverTemplateFromHints(env observer.EndpointEnv) (*receiverTemplate, error) {
 	var pod observer.Pod
 

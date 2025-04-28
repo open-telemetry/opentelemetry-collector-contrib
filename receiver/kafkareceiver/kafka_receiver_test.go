@@ -285,6 +285,8 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		Value: 1,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_spans"),
+			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -301,6 +303,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		Value: 5,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_spans"),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -327,6 +330,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		Value: 4, // offset of the final message
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_spans"),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -335,6 +339,7 @@ func TestReceiver_InternalTelemetry(t *testing.T) {
 		Value: 0,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_spans"),
 			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp())
@@ -383,6 +388,8 @@ func TestNewLogsReceiver(t *testing.T) {
 		Value: 1,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_logs"),
+			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 
@@ -435,6 +442,8 @@ func TestNewMetricsReceiver(t *testing.T) {
 		Value: 1,
 		Attributes: attribute.NewSet(
 			attribute.String("name", set.ID.String()),
+			attribute.String("topic", "otlp_metrics"),
+			attribute.String("partition", "0"),
 		),
 	}}, metricdatatest.IgnoreTimestamp(), metricdatatest.IgnoreExemplars())
 

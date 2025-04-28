@@ -27,11 +27,12 @@ type (
 )
 
 type BlobNameFormat struct {
-	MetricsFormat  string            `mapstructure:"metrics_format"`
-	LogsFormat     string            `mapstructure:"logs_format"`
-	TracesFormat   string            `mapstructure:"traces_format"`
-	SerialNumRange int64             `mapstructure:"serial_num_range"`
-	Params         map[string]string `mapstructure:"params"`
+	MetricsFormat            string            `mapstructure:"metrics_format"`
+	LogsFormat               string            `mapstructure:"logs_format"`
+	TracesFormat             string            `mapstructure:"traces_format"`
+	SerialNumRange           int64             `mapstructure:"serial_num_range"`
+	SerialNumBeforeExtension bool              `mapstructure:"serial_num_before_extension"`
+	Params                   map[string]string `mapstructure:"params"`
 }
 
 type AppendBlob struct {

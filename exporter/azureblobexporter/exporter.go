@@ -10,6 +10,8 @@ import (
 	"fmt"
 	"io"
 	"math/rand/v2"
+	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/Azure/azure-sdk-for-go/sdk/azcore"
@@ -162,7 +164,18 @@ func (e *azureBlobExporter) generateBlobName(signal pipeline.Signal) (string, er
 	default:
 		return "", fmt.Errorf("unsupported signal type: %v", signal)
 	}
-	return fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange))), nil
+	var blobName string
+	if e.config.BlobNameFormat.SerialNumBeforeExtension {
+		// Append a random number and do so before the file extension if there is one
+		ext := filepath.Ext(format)
+		formatWithoutExt := strings.TrimSuffix(format, ext)
+		randInt := randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange))
+		blobName = fmt.Sprintf("%s_%d%s", now.Format(formatWithoutExt), randInt, ext)
+	} else {
+		// Appends the random number after any potential file extension to minimize performance impact when high throughput
+		blobName = fmt.Sprintf("%s_%d", now.Format(format), randomInRange(0, int(e.config.BlobNameFormat.SerialNumRange)))
+	}
+	return blobName, nil
 }
 
 func (e *azureBlobExporter) Capabilities() consumer.Capabilities {

@@ -59,6 +59,10 @@ func newReceiver(params receiver.Settings, config *Config, consumer consumer.Log
 		for _, item := range objects[i].ExcludeWatchType {
 			objects[i].exclude[item] = true
 		}
+		// Set default interval if in PullMode and interval is 0
+		if objects[i].Mode == PullMode && objects[i].Interval == 0 {
+			objects[i].Interval = defaultPullInterval
+		}
 	}
 
 	return &k8sobjectsreceiver{
@@ -84,14 +88,19 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 		return err
 	}
 
+	var validConfigs []*K8sObjectsConfig
 	for _, object := range kr.objects {
 		gvrs, ok := validObjects[object.Name]
 		if !ok {
-			availableResource := make([]string, len(validObjects))
+			availableResource := make([]string, 0, len(validObjects))
 			for k := range validObjects {
 				availableResource = append(availableResource, k)
 			}
-			return fmt.Errorf("resource %v not found. Valid resources are: %v", object.Name, availableResource)
+			err := fmt.Errorf("resource not found: %s. Available resources in cluster: %v", object.Name, availableResource)
+			if handlerErr := kr.handleError(err, ""); handlerErr != nil {
+				return handlerErr
+			}
+			continue
 		}
 
 		gvr := gvrs[0]
@@ -101,15 +110,21 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, _ component.Host) error
 				break
 			}
 		}
+
 		object.gvr = gvr
+		validConfigs = append(validConfigs, object)
+	}
+
+	if len(validConfigs) == 0 {
+		err := errors.New("no valid Kubernetes objects found to watch")
+		return err
 	}
 
 	kr.setting.Logger.Info("Object Receiver started")
-
 	cctx, cancel := context.WithCancel(ctx)
 	kr.cancel = cancel
 
-	for _, object := range kr.objects {
+	for _, object := range validConfigs {
 		kr.start(cctx, object)
 	}
 	return nil
@@ -131,7 +146,10 @@ func (kr *k8sobjectsreceiver) Shutdown(context.Context) error {
 
 func (kr *k8sobjectsreceiver) start(ctx context.Context, object *K8sObjectsConfig) {
 	resource := kr.client.Resource(*object.gvr)
-	kr.setting.Logger.Info("Started collecting", zap.Any("gvr", object.gvr), zap.Any("mode", object.Mode), zap.Any("namespaces", object.Namespaces))
+	kr.setting.Logger.Info("Started collecting",
+		zap.Any("gvr", object.gvr),
+		zap.Any("mode", object.Mode),
+		zap.Any("namespaces", object.Namespaces))
 
 	switch object.Mode {
 	case PullMode:
@@ -176,7 +194,9 @@ func (kr *k8sobjectsreceiver) startPull(ctx context.Context, config *K8sObjectsC
 		case <-ticker.C:
 			objects, err := resource.List(ctx, listOption)
 			if err != nil {
-				kr.setting.Logger.Error("error in pulling object", zap.String("resource", config.gvr.String()), zap.Error(err))
+				kr.setting.Logger.Error("error in pulling object",
+					zap.String("resource", config.gvr.String()),
+					zap.Error(err))
 			} else if len(objects.Items) > 0 {
 				logs := pullObjectsToLogData(objects, time.Now(), config)
 				obsCtx := kr.obsrecv.StartLogsOp(ctx)
@@ -207,7 +227,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 	wait.UntilWithContext(cancelCtx, func(newCtx context.Context) {
 		resourceVersion, err := getResourceVersion(newCtx, &cfgCopy, resource)
 		if err != nil {
-			kr.setting.Logger.Error("could not retrieve a resourceVersion", zap.String("resource", cfgCopy.gvr.String()), zap.Error(err))
+			kr.setting.Logger.Error("could not retrieve a resourceVersion",
+				zap.String("resource", cfgCopy.gvr.String()),
+				zap.Error(err))
 			cancel()
 			return
 		}
@@ -227,7 +249,9 @@ func (kr *k8sobjectsreceiver) startWatch(ctx context.Context, config *K8sObjects
 func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsConfig, resourceVersion string, watchFunc func(options metav1.ListOptions) (apiWatch.Interface, error), stopperChan chan struct{}) bool {
 	watcher, err := watch.NewRetryWatcher(resourceVersion, &cache.ListWatch{WatchFunc: watchFunc})
 	if err != nil {
-		kr.setting.Logger.Error("error in watching object", zap.String("resource", config.gvr.String()), zap.Error(err))
+		kr.setting.Logger.Error("error in watching object",
+			zap.String("resource", config.gvr.String()),
+			zap.Error(err))
 		return true
 	}
 
@@ -240,19 +264,22 @@ func (kr *k8sobjectsreceiver) doWatch(ctx context.Context, config *K8sObjectsCon
 				errObject := apierrors.FromObject(data.Object)
 				//nolint:errorlint
 				if errObject.(*apierrors.StatusError).ErrStatus.Code == http.StatusGone {
-					kr.setting.Logger.Info("received a 410, grabbing new resource version", zap.Any("data", data))
+					kr.setting.Logger.Info("received a 410, grabbing new resource version",
+						zap.Any("data", data))
 					// we received a 410 so we need to restart
 					return false
 				}
 			}
 
 			if !ok {
-				kr.setting.Logger.Warn("Watch channel closed unexpectedly", zap.String("resource", config.gvr.String()))
+				kr.setting.Logger.Warn("Watch channel closed unexpectedly",
+					zap.String("resource", config.gvr.String()))
 				return true
 			}
 
 			if config.exclude[data.Type] {
-				kr.setting.Logger.Debug("dropping excluded data", zap.String("type", string(data.Type)))
+				kr.setting.Logger.Debug("dropping excluded data",
+					zap.String("type", string(data.Type)))
 				continue
 			}
 
@@ -320,4 +347,31 @@ func newTicker(ctx context.Context, repeat time.Duration) *time.Ticker {
 
 	ticker.C = nc
 	return ticker
+}
+
+// handleError handles errors according to the configured error mode
+func (kr *k8sobjectsreceiver) handleError(err error, msg string) error {
+	if err == nil {
+		return nil
+	}
+
+	switch kr.config.ErrorMode {
+	case PropagateError:
+		if msg != "" {
+			return fmt.Errorf("%s: %w", msg, err)
+		}
+		return err
+	case IgnoreError:
+		if msg != "" {
+			kr.setting.Logger.Info(msg, zap.Error(err))
+		} else {
+			kr.setting.Logger.Info(err.Error())
+		}
+		return nil
+	case SilentError:
+		return nil
+	default:
+		// This shouldn't happen as we validate ErrorMode during config validation
+		return fmt.Errorf("invalid error_mode %q: %w", kr.config.ErrorMode, err)
+	}
 }

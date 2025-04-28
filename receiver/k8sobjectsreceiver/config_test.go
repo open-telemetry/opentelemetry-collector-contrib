@@ -112,6 +112,13 @@ func TestLoadConfig(t *testing.T) {
 
 			assert.Equal(t, tt.expected.AuthType, cfg.AuthType)
 			assert.Equal(t, tt.expected.Objects, cfg.Objects)
+
+			err = cfg.Validate()
+			if tt.expected == nil {
+				assert.Error(t, err)
+			} else {
+				assert.NoError(t, err)
+			}
 		})
 	}
 }
@@ -125,6 +132,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "invalid mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -137,6 +145,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "exclude watch type with pull mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -152,6 +161,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default mode is set",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
@@ -162,6 +172,7 @@ func TestValidate(t *testing.T) {
 		{
 			desc: "default interval for pull mode",
 			cfg: &Config{
+				ErrorMode: PropagateError,
 				Objects: []*K8sObjectsConfig{
 					{
 						Name: "pods",
