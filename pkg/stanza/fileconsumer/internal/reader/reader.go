@@ -10,7 +10,6 @@ import (
 	"errors"
 	"io"
 	"os"
-	"path/filepath"
 	"sync"
 
 	"go.opentelemetry.io/collector/component"
@@ -34,6 +33,7 @@ type Metadata struct {
 	HeaderFinalized bool
 	FlushState      flush.State
 	TokenLenState   tokenlen.State
+	FileType        string
 }
 
 // Reader manages a single file
@@ -82,7 +82,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	case "auto":
 		// TODO: Find a better solution
 		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
-		if filepath.Ext(r.fileName) == ".gz" {
+		if r.FileType == ".gz" {
 			currentEOF, err := r.createGzipReader()
 			if err != nil {
 				return
@@ -119,7 +119,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 	r.readContents(ctx)
 }
 
-// createGzipReader creates gzip reader and returns the current file offset
+// createGzipReader creates gzip reader and returns the file offset
 func (r *Reader) createGzipReader() (int64, error) {
 	// We need to create a gzip reader each time ReadToEnd is called because the underlying
 	// SectionReader can only read a fixed window (from previous offset to EOF).
