@@ -21,5 +21,7 @@ func NewCluster(tb testing.TB, opts ...kfake.Opt) (*kfake.Cluster, configkafka.C
 
 	cfg := configkafka.NewDefaultClientConfig()
 	cfg.Brokers = cluster.ListenAddrs()
+	// We need to set the protocol version to 2.3.0 to make Sarama happy.
+	cfg.ProtocolVersion = "2.3.0"
 	return cluster, cfg
 }

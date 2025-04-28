@@ -21,3 +21,14 @@ coverage:
 
 ignore:
   - "*/**/third_party/**/*" # Ignore all 'third_party' directories and files within those directories recursively.
+
+# Use component management to get coverage for each component.
+# See https://docs.codecov.com/docs/components
+component_management:
+  individual_components:
+    # This list should be generated automatically.
+    # For now, I am adding just one component to test the functionality.
+    - component_id: receiver_filelog
+      name: receiver_filelog
+      paths:
+        - receiver/filelogreceiver/**

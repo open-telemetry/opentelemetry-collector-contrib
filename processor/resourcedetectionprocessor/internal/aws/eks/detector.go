@@ -18,7 +18,6 @@ import (
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
-	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/client-go/kubernetes"
 	"k8s.io/client-go/rest"
 
@@ -32,8 +31,6 @@ const (
 
 	// Environment variable that is set when running on Kubernetes.
 	kubernetesServiceHostEnvVar = "KUBERNETES_SERVICE_HOST"
-	authConfigmapNS             = "kube-system"
-	authConfigmapName           = "aws-auth"
 
 	clusterNameAwsEksTag     = "aws:eks:cluster-name"
 	clusterNameEksTag        = "eks:cluster-name"
@@ -41,10 +38,10 @@ const (
 )
 
 type detectorUtils interface {
-	getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error)
 	getClusterName(ctx context.Context, logger *zap.Logger) string
 	getClusterNameTagFromReservations([]types.Reservation) string
 	getCloudAccountID(ctx context.Context, logger *zap.Logger) string
+	getClusterVersion() (string, error)
 }
 
 type eksDetectorUtils struct {
@@ -81,10 +78,13 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 // Detect returns a Resource describing the Amazon EKS environment being run in.
 func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schemaURL string, err error) {
 	// Check if running on EKS.
-	isEKS, err := isEKS(ctx, d.utils)
-	if !isEKS {
+	isEKS, err := isEKS(d.utils)
+	if err != nil {
 		d.logger.Debug("Unable to identify EKS environment", zap.Error(err))
 		return pcommon.NewResource(), "", err
+	}
+	if !isEKS {
+		return pcommon.NewResource(), "", nil
 	}
 
 	d.rb.SetCloudProvider(conventions.AttributeCloudProviderAWS)
@@ -102,18 +102,19 @@ func (d *detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 	return d.rb.Emit(), conventions.SchemaURL, nil
 }
 
-func isEKS(ctx context.Context, utils detectorUtils) (bool, error) {
+func isEKS(utils detectorUtils) (bool, error) {
 	if os.Getenv(kubernetesServiceHostEnvVar) == "" {
 		return false, nil
 	}
 
-	// Make HTTP GET request
-	awsAuth, err := utils.getConfigMap(ctx, authConfigmapNS, authConfigmapName)
+	clusterVersion, err := utils.getClusterVersion()
 	if err != nil {
-		return false, fmt.Errorf("isEks() error retrieving auth configmap: %w", err)
+		return false, fmt.Errorf("isEks() error retrieving cluster version: %w", err)
 	}
-
-	return awsAuth != nil, nil
+	if strings.Contains(clusterVersion, "-eks-") {
+		return true, nil
+	}
+	return false, nil
 }
 
 func newK8sDetectorUtils() (*eksDetectorUtils, error) {
@@ -132,12 +133,12 @@ func newK8sDetectorUtils() (*eksDetectorUtils, error) {
 	return &eksDetectorUtils{clientset: clientset}, nil
 }
 
-func (e eksDetectorUtils) getConfigMap(ctx context.Context, namespace string, name string) (map[string]string, error) {
-	cm, err := e.clientset.CoreV1().ConfigMaps(namespace).Get(ctx, name, metav1.GetOptions{})
+func (e eksDetectorUtils) getClusterVersion() (string, error) {
+	serverVersion, err := e.clientset.Discovery().ServerVersion()
 	if err != nil {
-		return nil, fmt.Errorf("failed to retrieve ConfigMap %s/%s: %w", namespace, name, err)
+		return "", fmt.Errorf("failed to retrieve server version: %w", err)
 	}
-	return cm.Data, nil
+	return serverVersion.GitVersion, nil
 }
 
 func (e eksDetectorUtils) getClusterName(ctx context.Context, logger *zap.Logger) string {

@@ -29,6 +29,9 @@ const (
 
 	defaultMetricNameLogs = "log.record.count"
 	defaultMetricDescLogs = "The number of log records observed."
+
+	defaultMetricNameProfiles = "profile.count"
+	defaultMetricDescProfiles = "The number of profiles observed."
 )
 
 // Config for the connector
@@ -38,6 +41,7 @@ type Config struct {
 	Metrics    map[string]MetricInfo `mapstructure:"metrics"`
 	DataPoints map[string]MetricInfo `mapstructure:"datapoints"`
 	Logs       map[string]MetricInfo `mapstructure:"logs"`
+	Profiles   map[string]MetricInfo `mapstructure:"profiles"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
@@ -115,6 +119,17 @@ func (c *Config) Validate() error {
 			return fmt.Errorf("logs attributes: metric %q: %w", name, err)
 		}
 	}
+	for name, info := range c.Profiles {
+		if name == "" {
+			return errors.New("profiles: metric name missing")
+		}
+		if _, err := filterottl.NewBoolExprForProfile(info.Conditions, filterottl.StandardProfileFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()}); err != nil {
+			return fmt.Errorf("profiles condition: metric %q: %w", name, err)
+		}
+		if err := info.validateAttributes(); err != nil {
+			return fmt.Errorf("profiles attributes: metric %q: %w", name, err)
+		}
+	}
 	return nil
 }
 
@@ -155,6 +170,9 @@ func (c *Config) Unmarshal(componentParser *confmap.Conf) error {
 	if !componentParser.IsSet("logs") {
 		c.Logs = defaultLogsConfig()
 	}
+	if !componentParser.IsSet("profiles") {
+		c.Profiles = defaultProfilesConfig()
+	}
 	return nil
 }
 
@@ -194,6 +212,14 @@ func defaultLogsConfig() map[string]MetricInfo {
 	return map[string]MetricInfo{
 		defaultMetricNameLogs: {
 			Description: defaultMetricDescLogs,
+		},
+	}
+}
+
+func defaultProfilesConfig() map[string]MetricInfo {
+	return map[string]MetricInfo{
+		defaultMetricNameProfiles: {
+			Description: defaultMetricDescProfiles,
 		},
 	}
 }

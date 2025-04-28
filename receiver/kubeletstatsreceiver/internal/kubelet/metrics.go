@@ -17,12 +17,14 @@ func MetricsData(
 	logger *zap.Logger, summary *stats.Summary,
 	metadata Metadata,
 	metricGroupsToCollect map[MetricGroup]bool,
+	allNetworkInterfaces map[MetricGroup]bool,
 	mbs *metadata.MetricsBuilders,
 ) []pmetric.Metrics {
 	acc := &metricDataAccumulator{
 		metadata:              metadata,
 		logger:                logger,
 		metricGroupsToCollect: metricGroupsToCollect,
+		allNetworkInterfaces:  allNetworkInterfaces,
 		time:                  time.Now(),
 		mbs:                   mbs,
 	}

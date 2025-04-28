@@ -189,8 +189,12 @@ The mapping mode can also be controlled via the client metadata key `X-Elastic-M
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
-processors or exporter configurations will maintain client
-metadata.
+processors or exporter configurations will maintain client metadata.
+
+Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+If any scope has an invalid mapping mode, the exporter will reject the entire batch.
+The attribute will be excluded from the final document.
 
 See below for a description of each mapping mode.
 

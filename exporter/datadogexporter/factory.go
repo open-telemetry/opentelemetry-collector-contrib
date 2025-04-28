@@ -365,8 +365,8 @@ func (f *factory) createMetricsExporter(
 			TimeoutConfig: exporterhelper.TimeoutConfig{
 				Timeout: cfg.Timeout,
 			},
-			QueueConfig: cfg.QueueSettings,
-			API:         cfg.API,
+			QueueBatchConfig: cfg.QueueSettings,
+			API:              cfg.API,
 			HostProvider: func(ctx context.Context) (string, error) {
 				h, err2 := hostProvider.Source(ctx)
 				if err2 != nil {

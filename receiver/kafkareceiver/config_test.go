@@ -160,6 +160,33 @@ func TestLoadConfig(t *testing.T) {
 				},
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "rebalance_strategy"),
+			expected: &Config{
+				ClientConfig: configkafka.NewDefaultClientConfig(),
+				ConsumerConfig: func() configkafka.ConsumerConfig {
+					config := configkafka.NewDefaultConsumerConfig()
+					config.GroupRebalanceStrategy = "sticky"
+					config.GroupInstanceID = "test-instance"
+					return config
+				}(),
+				Logs: TopicEncodingConfig{
+					Topic:    "otlp_logs",
+					Encoding: "otlp_proto",
+				},
+				Metrics: TopicEncodingConfig{
+					Topic:    "otlp_metrics",
+					Encoding: "otlp_proto",
+				},
+				Traces: TopicEncodingConfig{
+					Topic:    "otlp_spans",
+					Encoding: "otlp_proto",
+				},
+				ErrorBackOff: configretry.BackOffConfig{
+					Enabled: false,
+				},
+			},
+		},
 	}
 
 	for _, tt := range tests {

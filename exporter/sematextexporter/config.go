@@ -18,6 +18,8 @@ const (
 	usRegion          = "us"
 	euMetricsEndpoint = "https://spm-receiver.eu.sematext.com"
 	usMetricsEndpoint = "https://spm-receiver.sematext.com"
+	usLogsEndpoint    = "https://logsene-receiver.sematext.com"
+	euLogsEndpoint    = "https://logsene-receiver.eu.sematext.com"
 )
 
 type Config struct {
@@ -31,6 +33,8 @@ type Config struct {
 	Region string `mapstructure:"region"`
 	// MetricsConfig defines the configuration specific to metrics
 	MetricsConfig `mapstructure:"metrics"`
+	// LogsConfig defines the configuration specific to logs
+	LogsConfig `mapstructure:"logs"`
 }
 type MetricsConfig struct {
 	// App token is the token of Sematext Monitoring App to which you want to send the metrics.
@@ -45,21 +49,32 @@ type MetricsConfig struct {
 	// PayloadMaxBytes is the maximum number of line protocol bytes to POST in a single request.
 	PayloadMaxBytes int `mapstructure:"payload_max_bytes"`
 }
+type LogsConfig struct {
+	// App token is the token of Sematext Monitoring App to which you want to send the logs.
+	AppToken string `mapstructure:"app_token"`
+	// LogsEndpoint specifies the endpoint for receiving logs in Sematext
+	LogsEndpoint string `mapstructure:"-"`
+}
 
 // Validate checks for invalid or missing entries in the configuration.
 func (cfg *Config) Validate() error {
 	if strings.ToLower(cfg.Region) != euRegion && strings.ToLower(cfg.Region) != usRegion && strings.ToLower(cfg.Region) != "" {
 		return fmt.Errorf("invalid region: %s. please use either 'EU' or 'US'", cfg.Region)
 	}
-	if !isValidUUID(cfg.AppToken) && cfg.AppToken != "" {
-		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.AppToken)
+	if !isValidUUID(cfg.MetricsConfig.AppToken) && cfg.MetricsConfig.AppToken != "" {
+		return fmt.Errorf("invalid metrics app_token: %s. app_token is not a valid UUID", cfg.MetricsConfig.AppToken)
+	}
+	if !isValidUUID(cfg.LogsConfig.AppToken) && cfg.LogsConfig.AppToken != "" {
+		return fmt.Errorf("invalid logs app_token: %s. app_token is not a valid UUID", cfg.LogsConfig.AppToken)
 	}
 
 	if strings.ToLower(cfg.Region) == euRegion {
 		cfg.MetricsEndpoint = euMetricsEndpoint
+		cfg.LogsEndpoint = euLogsEndpoint
 	}
 	if strings.ToLower(cfg.Region) == usRegion {
 		cfg.MetricsEndpoint = usMetricsEndpoint
+		cfg.LogsEndpoint = usLogsEndpoint
 	}
 
 	return nil

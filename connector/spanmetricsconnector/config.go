@@ -48,6 +48,7 @@ type Config struct {
 	// DimensionsCacheSize defines the size of cache for storing Dimensions, which helps to avoid cache memory growing
 	// indefinitely over the lifetime of the collector.
 	// Optional. See defaultDimensionsCacheSize in connector.go for the default value.
+	// Deprecated:  Please use AggregationCardinalityLimit instead
 	DimensionsCacheSize int `mapstructure:"dimensions_cache_size"`
 
 	// ResourceMetricsCacheSize defines the size of the cache holding metrics for a service. This is mostly relevant for
@@ -88,6 +89,8 @@ type Config struct {
 	Events EventsConfig `mapstructure:"events"`
 
 	IncludeInstrumentationScope []string `mapstructure:"include_instrumentation_scope"`
+
+	AggregationCardinalityLimit int `mapstructure:"aggregation_cardinality_limit"`
 }
 
 type HistogramConfig struct {
@@ -131,13 +134,6 @@ func (c Config) Validate() error {
 		return fmt.Errorf("failed validating event dimensions: %w", err)
 	}
 
-	if c.DimensionsCacheSize <= 0 {
-		return fmt.Errorf(
-			"invalid cache size: %v, the maximum number of the items in the cache should be positive",
-			c.DimensionsCacheSize,
-		)
-	}
-
 	if c.Histogram.Explicit != nil && c.Histogram.Exponential != nil {
 		return errors.New("use either `explicit` or `exponential` buckets histogram")
 	}
@@ -155,6 +151,10 @@ func (c Config) Validate() error {
 			"invalid delta timestamp cache size: %v, the maximum number of the items in the cache should be positive",
 			c.GetDeltaTimestampCacheSize(),
 		)
+	}
+
+	if c.AggregationCardinalityLimit < 0 {
+		return fmt.Errorf("invalid aggregation_cardinality_limit: %v, the limit should be positive", c.AggregationCardinalityLimit)
 	}
 
 	return nil

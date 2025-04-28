@@ -93,6 +93,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/cgroupruntime
+      - extension/datadog
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding

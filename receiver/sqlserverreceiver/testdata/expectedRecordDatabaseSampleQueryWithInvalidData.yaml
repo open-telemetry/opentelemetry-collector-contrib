@@ -1,6 +1,6 @@
 resourceLogs:
   - resource:
-      attributes: 
+      attributes:
       - key: sqlserver.computer.name
         value:
           stringValue: DESKTOP-GHAEGRD
@@ -108,7 +108,7 @@ resourceLogs:
                   stringValue: "307831343032313046363442373838434239"
               - key: sqlserver.context_info
                 value:
-                  stringValue: ""
+                  stringValue: "307837304133423133304231303438443444"
               - key: sqlserver.username
                 value:
                   stringValue: sa

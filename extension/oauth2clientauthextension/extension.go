@@ -21,14 +21,14 @@ import (
 )
 
 var (
-	_ extension.Extension      = (*OauthClientAuthenticator)(nil)
-	_ extensionauth.HTTPClient = (*OauthClientAuthenticator)(nil)
-	_ extensionauth.GRPCClient = (*OauthClientAuthenticator)(nil)
+	_ extension.Extension      = (*clientAuthenticator)(nil)
+	_ extensionauth.HTTPClient = (*clientAuthenticator)(nil)
+	_ extensionauth.GRPCClient = (*clientAuthenticator)(nil)
 )
 
-// OauthClientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
+// clientAuthenticator provides implementation for providing client authentication using OAuth2 client credentials
 // workflow for both gRPC and HTTP clients.
-type OauthClientAuthenticator struct {
+type clientAuthenticator struct {
 	component.StartFunc
 	component.ShutdownFunc
 
@@ -48,7 +48,7 @@ var _ oauth2.TokenSource = (*errorWrappingTokenSource)(nil)
 // errFailedToGetSecurityToken indicates a problem communicating with OAuth2 server.
 var errFailedToGetSecurityToken = errors.New("failed to get security token from token endpoint")
 
-func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*OauthClientAuthenticator, error) {
+func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*clientAuthenticator, error) {
 	transport := http.DefaultTransport.(*http.Transport).Clone()
 
 	tlsCfg, err := cfg.TLSSetting.LoadTLSConfig(context.Background())
@@ -57,7 +57,7 @@ func newClientAuthenticator(cfg *Config, logger *zap.Logger) (*OauthClientAuthen
 	}
 	transport.TLSClientConfig = tlsCfg
 
-	return &OauthClientAuthenticator{
+	return &clientAuthenticator{
 		clientCredentials: &clientCredentialsConfig{
 			Config: clientcredentials.Config{
 				ClientID:       cfg.ClientID,
@@ -90,7 +90,7 @@ func (ewts errorWrappingTokenSource) Token() (*oauth2.Token, error) {
 
 // RoundTripper returns oauth2.Transport, an http.RoundTripper that performs "client-credential" OAuth flow and
 // also auto refreshes OAuth tokens as needed.
-func (o *OauthClientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
+func (o *clientAuthenticator) RoundTripper(base http.RoundTripper) (http.RoundTripper, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return &oauth2.Transport{
 		Source: errorWrappingTokenSource{
@@ -103,7 +103,7 @@ func (o *OauthClientAuthenticator) RoundTripper(base http.RoundTripper) (http.Ro
 
 // PerRPCCredentials returns gRPC PerRPCCredentials that supports "client-credential" OAuth flow. The underneath
 // oauth2.clientcredentials.Config instance will manage tokens performing auto refresh as necessary.
-func (o *OauthClientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
+func (o *clientAuthenticator) PerRPCCredentials() (credentials.PerRPCCredentials, error) {
 	ctx := context.WithValue(context.Background(), oauth2.HTTPClient, o.client)
 	return grpcOAuth.TokenSource{
 		TokenSource: errorWrappingTokenSource{

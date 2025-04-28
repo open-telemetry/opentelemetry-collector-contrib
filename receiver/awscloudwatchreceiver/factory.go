@@ -24,12 +24,12 @@ func NewFactory() receiver.Factory {
 
 func createLogsReceiver(
 	_ context.Context,
-	params receiver.Settings,
+	settings receiver.Settings,
 	rConf component.Config,
 	consumer consumer.Logs,
 ) (receiver.Logs, error) {
 	cfg := rConf.(*Config)
-	rcvr := newLogsReceiver(cfg, params.Logger, consumer)
+	rcvr := newLogsReceiver(cfg, settings, consumer)
 	return rcvr, nil
 }
 
