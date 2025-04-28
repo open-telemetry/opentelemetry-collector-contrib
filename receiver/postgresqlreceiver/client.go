@@ -896,16 +896,16 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 		}
 
 		needConversion := map[string]func(string, string, *zap.Logger) (any, error){
-			CallsColumnName:             convertToInt,
-			RowsColumnName:              convertToInt,
-			SharedBlksDirtiedColumnName: convertToInt,
-			SharedBlksHitColumnName:     convertToInt,
-			SharedBlksReadColumnName:    convertToInt,
-			SharedBlksWrittenColumnName: convertToInt,
-			TempBlksReadColumnName:      convertToInt,
-			TempBlksWrittenColumnName:   convertToInt,
-			TotalExecTimeColumnName:     convertMillisecondToSecond,
-			TotalPlanTimeColumnName:     convertMillisecondToSecond,
+			callsColumnName:             convertToInt,
+			rowsColumnName:              convertToInt,
+			sharedBlksDirtiedColumnName: convertToInt,
+			sharedBlksHitColumnName:     convertToInt,
+			sharedBlksReadColumnName:    convertToInt,
+			sharedBlksWrittenColumnName: convertToInt,
+			tempBlksReadColumnName:      convertToInt,
+			tempBlksWrittenColumnName:   convertToInt,
+			totalExecTimeColumnName:     convertMillisecondToSecond,
+			totalPlanTimeColumnName:     convertMillisecondToSecond,
 			"query": func(_ string, val string, logger *zap.Logger) (any, error) {
 				// TODO: check if it is truncated.
 				result, err := obfuscateSQL(val)
@@ -934,7 +934,7 @@ func (c *postgreSQLClient) getTopQuery(ctx context.Context, limit int64, logger 
 			if hasConvention[col] != "" {
 				currentAttributes[hasConvention[col]] = val
 			} else {
-				currentAttributes[DbAttributePrefix+col] = val
+				currentAttributes[dbAttributePrefix+col] = val
 			}
 		}
 		finalAttributes = append(finalAttributes, currentAttributes)

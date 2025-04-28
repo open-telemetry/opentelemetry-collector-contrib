@@ -472,17 +472,17 @@ func TestScrapeTopQueries(t *testing.T) {
 	}
 
 	scraper := newPostgreSQLScraper(settings, cfg, factory, newCache(30))
-	scraper.cache.Add(queryid+TotalExecTimeColumnName, 10)
-	scraper.cache.Add(queryid+TotalPlanTimeColumnName, 11)
-	scraper.cache.Add(queryid+CallsColumnName, 120)
-	scraper.cache.Add(queryid+RowsColumnName, 20)
+	scraper.cache.Add(queryid+totalExecTimeColumnName, 10)
+	scraper.cache.Add(queryid+totalPlanTimeColumnName, 11)
+	scraper.cache.Add(queryid+callsColumnName, 120)
+	scraper.cache.Add(queryid+rowsColumnName, 20)
 
-	scraper.cache.Add(queryid+SharedBlksDirtiedColumnName, 1110)
-	scraper.cache.Add(queryid+SharedBlksHitColumnName, 1110)
-	scraper.cache.Add(queryid+SharedBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+SharedBlksWrittenColumnName, 1110)
-	scraper.cache.Add(queryid+TempBlksReadColumnName, 1110)
-	scraper.cache.Add(queryid+TempBlksWrittenColumnName, 1110)
+	scraper.cache.Add(queryid+sharedBlksDirtiedColumnName, 1110)
+	scraper.cache.Add(queryid+sharedBlksHitColumnName, 1110)
+	scraper.cache.Add(queryid+sharedBlksReadColumnName, 1110)
+	scraper.cache.Add(queryid+sharedBlksWrittenColumnName, 1110)
+	scraper.cache.Add(queryid+tempBlksReadColumnName, 1110)
+	scraper.cache.Add(queryid+tempBlksWrittenColumnName, 1110)
 
 	mock.ExpectQuery(expectedScrapeTopQuery).WillReturnRows(sqlmock.NewRows(expectedRows).FromCSVString(expectedValues[:len(expectedValues)-1]))
 	actualLogs, err := scraper.scrapeTopQuery(context.Background(), 31, 32)

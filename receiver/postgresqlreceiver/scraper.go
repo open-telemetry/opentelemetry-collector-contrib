@@ -209,11 +209,11 @@ func (p *postgreSQLScraper) scrapeTopQuery(ctx context.Context, maxRowsPerQuery 
 
 	var errs errsMux
 
+	defer dbClient.Close()
+
 	logRecords := scopedLog.LogRecords()
 
 	p.collectTopQuery(ctx, dbClient, &logRecords, maxRowsPerQuery, topNQuery, &errs, p.logger)
-
-	defer dbClient.Close()
 
 	return logs, nil
 }
@@ -257,22 +257,22 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, dbClient client
 	}
 
 	updatedOnly := map[string]updatedOnlyInfo{
-		TotalExecTimeColumnName:     {},
-		TotalPlanTimeColumnName:     {},
-		RowsColumnName:              {finalConverter: convertToInt},
-		CallsColumnName:             {finalConverter: convertToInt},
-		SharedBlksDirtiedColumnName: {finalConverter: convertToInt},
-		SharedBlksHitColumnName:     {finalConverter: convertToInt},
-		SharedBlksReadColumnName:    {finalConverter: convertToInt},
-		SharedBlksWrittenColumnName: {finalConverter: convertToInt},
-		TempBlksReadColumnName:      {finalConverter: convertToInt},
-		TempBlksWrittenColumnName:   {finalConverter: convertToInt},
+		totalExecTimeColumnName:     {},
+		totalPlanTimeColumnName:     {},
+		rowsColumnName:              {finalConverter: convertToInt},
+		callsColumnName:             {finalConverter: convertToInt},
+		sharedBlksDirtiedColumnName: {finalConverter: convertToInt},
+		sharedBlksHitColumnName:     {finalConverter: convertToInt},
+		sharedBlksReadColumnName:    {finalConverter: convertToInt},
+		sharedBlksWrittenColumnName: {finalConverter: convertToInt},
+		tempBlksReadColumnName:      {finalConverter: convertToInt},
+		tempBlksWrittenColumnName:   {finalConverter: convertToInt},
 	}
 
 	pq := make(priorityQueue, 0)
 
 	for i, row := range rows {
-		queryID := row[DbAttributePrefix+QueryidColumnName]
+		queryID := row[dbAttributePrefix+queryidColumnName]
 
 		if queryID == nil {
 			// this should not happen, but in case
@@ -283,7 +283,7 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, dbClient client
 
 		for columnName, info := range updatedOnly {
 			var valInAtts float64
-			_val := row[DbAttributePrefix+columnName]
+			_val := row[dbAttributePrefix+columnName]
 			if i, ok := _val.(int64); ok {
 				valInAtts = float64(i)
 			} else {
@@ -300,14 +300,14 @@ func (p *postgreSQLScraper) collectTopQuery(ctx context.Context, dbClient client
 				finalValue = valDelta
 			}
 			if info.finalConverter != nil {
-				row[DbAttributePrefix+columnName] = info.finalConverter(finalValue)
+				row[dbAttributePrefix+columnName] = info.finalConverter(finalValue)
 			} else {
-				row[DbAttributePrefix+columnName] = finalValue
+				row[dbAttributePrefix+columnName] = finalValue
 			}
 		}
 		item := Item{
 			row:      row,
-			priority: row[DbAttributePrefix+TotalExecTimeColumnName].(float64),
+			priority: row[dbAttributePrefix+totalExecTimeColumnName].(float64),
 			index:    i,
 		}
 		pq.Push(&item)
