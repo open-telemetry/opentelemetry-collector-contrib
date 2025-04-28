@@ -88,7 +88,7 @@ func withBatcherEnabled(enabled bool) dataReceiverOption {
 
 func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc consumer.Logs) error {
 	factory := receiver.NewFactory(
-		component.MustNewType("mockelasticsearch"),
+		metadata.Type,
 		createDefaultConfig,
 		receiver.WithLogs(createLogsReceiver, component.StabilityLevelDevelopment),
 		receiver.WithMetrics(createMetricsReceiver, component.StabilityLevelDevelopment),
@@ -99,7 +99,7 @@ func (es *esDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, lc cons
 		return fmt.Errorf("invalid ES URL specified %s: %w", es.endpoint, err)
 	}
 	cfg := factory.CreateDefaultConfig().(*config)
-	cfg.ServerConfig.Endpoint = esURL.Host
+	cfg.Endpoint = esURL.Host
 	cfg.DecodeBulkRequests = es.decodeBulkRequest
 
 	set := receivertest.NewNopSettings(metadata.Type)

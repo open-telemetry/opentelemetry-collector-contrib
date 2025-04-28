@@ -10,6 +10,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
 
@@ -31,6 +32,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "sometoken"),
 			expected: &Config{
+				Header:      defaultHeader,
 				Scheme:      defaultScheme,
 				BearerToken: "sometoken",
 			},
@@ -38,11 +40,65 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "withscheme"),
 			expected: &Config{
+				Header:      defaultHeader,
 				Scheme:      "MyScheme",
 				BearerToken: "my-token",
 			},
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "multipletokens"),
+			expected: &Config{
+				Header: defaultHeader,
+				Scheme: "Bearer",
+				Tokens: []configopaque.String{"token1", "thistokenalsoworks"},
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withfilename"),
+			expected: &Config{
+				Header:   defaultHeader,
+				Scheme:   "Bearer",
+				Filename: "file-containing.token",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "both"),
+			expected: &Config{
+				Header:      defaultHeader,
+				Scheme:      "Bearer",
+				BearerToken: "ignoredtoken",
+				Filename:    "file-containing.token",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "tokensandtoken"),
+			expected: &Config{
+				Header:      defaultHeader,
+				Scheme:      "Bearer",
+				BearerToken: "sometoken",
+				Tokens:      []configopaque.String{"token1", "thistokenalsoworks"},
+			},
+			expectedErr: true,
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withtokensandfilename"),
+			expected: &Config{
+				Header:   defaultHeader,
+				Scheme:   "Bearer",
+				Tokens:   []configopaque.String{"ignoredtoken1", "ignoredtoken2"},
+				Filename: "file-containing.token",
+			},
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "withheader"),
+			expected: &Config{
+				Header:      "X-Custom-Authorization",
+				Scheme:      "",
+				BearerToken: "my-token",
+			},
+		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.id.String(), func(t *testing.T) {
 			cm, err := confmaptest.LoadConf(filepath.Join("testdata", "config.yaml"))

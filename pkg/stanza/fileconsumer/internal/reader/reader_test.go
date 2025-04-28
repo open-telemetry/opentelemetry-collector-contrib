@@ -347,10 +347,8 @@ func BenchmarkFileRead(b *testing.B) {
 
 	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
 	counter := atomic.Int64{}
-	f := newTestFactory(b, func(_ context.Context, token emit.Token) error {
-		if len(token.Body) != 0 {
-			counter.Add(1)
-		}
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+		counter.Add(int64(len(tokens)))
 		return nil
 	})
 	b.ReportAllocs()

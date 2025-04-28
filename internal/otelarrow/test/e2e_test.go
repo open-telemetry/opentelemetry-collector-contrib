@@ -134,11 +134,11 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 
 	addr := testutil.GetAvailableLocalAddress(t)
 
-	receiverCfg.Protocols.GRPC.NetAddr.Endpoint = addr
+	receiverCfg.GRPC.NetAddr.Endpoint = addr
 
-	exporterCfg.ClientConfig.Endpoint = addr
-	exporterCfg.ClientConfig.WaitForReady = true
-	exporterCfg.ClientConfig.TLSSetting.Insecure = true
+	exporterCfg.Endpoint = addr
+	exporterCfg.WaitForReady = true
+	exporterCfg.TLSSetting.Insecure = true
 	exporterCfg.TimeoutSettings.Timeout = time.Minute
 	exporterCfg.QueueSettings.Enabled = false
 	exporterCfg.RetryConfig.Enabled = true
@@ -169,13 +169,13 @@ func basicTestConfig(t *testing.T, tp testParams, cfgF CfgFunc) (*testConsumer, 
 	}
 
 	receiver, err := rfact.CreateTraces(ctx, receiver.Settings{
-		ID:                component.MustNewID("otelarrowreceiver"),
+		ID:                component.NewID(rfact.Type()),
 		TelemetrySettings: recvTset,
 	}, receiverCfg, testCon)
 	require.NoError(t, err)
 
 	exporter, err := efact.CreateTraces(ctx, exporter.Settings{
-		ID:                component.MustNewID("otelarrowexporter"),
+		ID:                component.NewID(efact.Type()),
 		TelemetrySettings: expTset,
 	}, exporterCfg)
 	require.NoError(t, err)
@@ -558,7 +558,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 
 	// Number of export requests: exact match.  This is the
 	// exporterhelper's base span.
-	require.Equal(t, total, expOps["exporter/otelarrowexporter/traces/Unset"])
+	require.Equal(t, total, expOps["exporter/otelarrow/traces/Unset"])
 
 	// Number of export requests: exact match.  This span covers
 	// handling one request in the Arrow exporter.
@@ -585,7 +585,7 @@ func multiStreamEnding(t *testing.T, p testParams, testCon *testConsumer, td [][
 	require.Equal(t, total, recvOps["otel_arrow_stream_recv/Unset"])
 
 	// This is in request context, the receiverhelper's per-request span.
-	require.Equal(t, total, recvOps["receiver/otelarrowreceiver/TraceDataReceived/Unset"])
+	require.Equal(t, total, recvOps["receiver/otelarrow/TraceDataReceived/Unset"])
 
 	// Exporter and Receiver stream span counts match:
 	require.Equal(t, expStreamsUnset+expStreamsError, recvStreamsUnset+recvStreamsError)
@@ -612,7 +612,7 @@ func TestIntegrationSelfTracing(t *testing.T) {
 	}
 
 	testIntegrationTraces(ctx, t, params, func(_ *ExpConfig, rcfg *RecvConfig) {
-		rcfg.Protocols.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
+		rcfg.GRPC.Keepalive = &configgrpc.KeepaliveServerConfig{
 			ServerParameters: &configgrpc.KeepaliveServerParameters{
 				MaxConnectionAge:      time.Second,
 				MaxConnectionAgeGrace: 5 * time.Second,

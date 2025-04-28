@@ -20,22 +20,32 @@ type Manager interface {
 	Upload(ctx context.Context, data []byte) error
 }
 
+type ManagerOpt func(Manager)
+
 type s3manager struct {
 	bucket       string
 	builder      *PartitionKeyBuilder
 	uploader     *manager.Uploader
 	storageClass s3types.StorageClass
+	acl          s3types.ObjectCannedACL
 }
 
 var _ Manager = (*s3manager)(nil)
 
-func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass) Manager {
-	return &s3manager{
+func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Client, storageClass s3types.StorageClass, opts ...ManagerOpt) Manager {
+	manager := &s3manager{
 		bucket:       bucket,
 		builder:      builder,
 		uploader:     manager.NewUploader(service),
 		storageClass: storageClass,
 	}
+	for _, opt := range opts {
+		if opt != nil {
+			opt(manager)
+		}
+	}
+
+	return manager
 }
 
 func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
@@ -61,13 +71,13 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte) error {
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
 		StorageClass:    sw.storageClass,
+		ACL:             sw.acl,
 	})
 
 	return err
 }
 
 func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
-	//nolint:gocritic // Leaving this as a switch statement to make it easier to add more later compressions
 	switch sw.builder.Compression {
 	case configcompression.TypeGzip:
 		content := bytes.NewBuffer(nil)
@@ -81,6 +91,17 @@ func (sw *s3manager) contentBuffer(raw []byte) (*bytes.Buffer, error) {
 		}
 
 		return content, nil
+	default:
+		return bytes.NewBuffer(raw), nil
 	}
-	return bytes.NewBuffer(raw), nil
+}
+
+func WithACL(acl s3types.ObjectCannedACL) func(Manager) {
+	return func(m Manager) {
+		s3m, ok := m.(*s3manager)
+		if !ok {
+			return
+		}
+		s3m.acl = acl
+	}
 }

@@ -4,6 +4,7 @@
 package opampextension
 
 import (
+	"context"
 	"path/filepath"
 	"testing"
 	"time"
@@ -144,8 +145,68 @@ func TestConfig_Getters(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			tt.expected.headers(t, tt.fields.Server.GetHeaders())
-			tt.expected.tls(t, tt.fields.Server.GetTLSSetting())
+			tt.expected.tls(t, tt.fields.Server.getTLSSetting())
 			tt.expected.endpoint(t, tt.fields.Server.GetEndpoint())
+		})
+	}
+}
+
+func TestOpAMPServer_GetTLSConfig(t *testing.T) {
+	tests := []struct {
+		name              string
+		server            OpAMPServer
+		expectedTLSConfig assert.ValueAssertionFunc
+	}{
+		{
+			name: "wss endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint:   "wss://example.com",
+					TLSSetting: configtls.NewDefaultClientConfig(),
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "https endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint:   "https://example.com",
+						TLSSetting: configtls.NewDefaultClientConfig(),
+					},
+				},
+			},
+			expectedTLSConfig: assert.NotNil,
+		},
+		{
+			name: "ws endpoint",
+			server: OpAMPServer{
+				WS: &commonFields{
+					Endpoint: "ws://example.com",
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+		{
+			name: "http endpoint",
+			server: OpAMPServer{
+				HTTP: &httpFields{
+					commonFields: commonFields{
+						Endpoint: "http://example.com",
+					},
+				},
+			},
+			expectedTLSConfig: assert.Nil,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			ctx := context.Background()
+			tlsConfig, err := tt.server.GetTLSConfig(ctx)
+			assert.NoError(t, err)
+			tt.expectedTLSConfig(t, tlsConfig)
 		})
 	}
 }
@@ -292,8 +353,9 @@ func TestConfig_Validate(t *testing.T) {
 
 func TestCapabilities_toAgentCapabilities(t *testing.T) {
 	type fields struct {
-		ReportsEffectiveConfig bool
-		ReportsHealth          bool
+		ReportsEffectiveConfig     bool
+		ReportsHealth              bool
+		ReportsAvailableComponents bool
 	}
 	tests := []struct {
 		name   string
@@ -303,25 +365,28 @@ func TestCapabilities_toAgentCapabilities(t *testing.T) {
 		{
 			name: "default capabilities",
 			fields: fields{
-				ReportsEffectiveConfig: false,
-				ReportsHealth:          false,
+				ReportsEffectiveConfig:     false,
+				ReportsHealth:              false,
+				ReportsAvailableComponents: false,
 			},
 			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus,
 		},
 		{
 			name: "all supported capabilities enabled",
 			fields: fields{
-				ReportsEffectiveConfig: true,
-				ReportsHealth:          true,
+				ReportsEffectiveConfig:     true,
+				ReportsHealth:              true,
+				ReportsAvailableComponents: true,
 			},
-			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth,
+			want: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus | protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig | protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth | protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			caps := Capabilities{
-				ReportsEffectiveConfig: tt.fields.ReportsEffectiveConfig,
-				ReportsHealth:          tt.fields.ReportsHealth,
+				ReportsEffectiveConfig:     tt.fields.ReportsEffectiveConfig,
+				ReportsHealth:              tt.fields.ReportsHealth,
+				ReportsAvailableComponents: tt.fields.ReportsEffectiveConfig,
 			}
 			assert.Equalf(t, tt.want, caps.toAgentCapabilities(), "toAgentCapabilities()")
 		})

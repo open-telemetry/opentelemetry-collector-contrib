@@ -19,7 +19,6 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 	"go.opentelemetry.io/collector/confmap/xconfmap"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/metadata"
@@ -57,19 +56,18 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "trace"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      false,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"https://elastic.example.com:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
 				TracesIndex: "trace_index",
 				TracesDynamicIndex: DynamicIndexSetting{
@@ -78,6 +76,9 @@ func TestConfig(t *testing.T) {
 				LogsDynamicID: DynamicIDSettings{
 					Enabled: false,
 				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
+					Enabled: false,
+				},
 				Pipeline: "mypipeline",
 				ClientConfig: withDefaultHTTPClientConfig(func(cfg *confighttp.ClientConfig) {
 					cfg.Timeout = 2 * time.Minute
@@ -109,7 +110,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "otel",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -117,13 +119,16 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 5000,
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
+						FlushTimeout: 30 * time.Second,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
+							MinSize: defaultBatcherMinSizeItems,
+						},
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 0,
-					},
+				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
 				},
 			},
 		},
@@ -131,25 +136,27 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "log"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
 				LogsIndex: "my_log_index",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
-				MetricsIndex: "metrics-generic-default",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -183,7 +190,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "otel",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -191,13 +199,16 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 5000,
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
+						FlushTimeout: 30 * time.Second,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
+							MinSize: defaultBatcherMinSizeItems,
+						},
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 0,
-					},
+				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
 				},
 			},
 		},
@@ -205,25 +216,27 @@ func TestConfig(t *testing.T) {
 			id:         component.NewIDWithName(metadata.Type, "metric"),
 			configFile: "config.yaml",
 			expected: &Config{
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: exporterhelper.NewDefaultQueueConfig().NumConsumers,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
+					Sizer:        exporterhelper.RequestSizerTypeRequests,
 				},
 				Endpoints: []string{"http://localhost:9200"},
-				LogsIndex: "logs-generic-default",
 				LogsDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				MetricsIndex: "my_metric_index",
 				MetricsDynamicIndex: DynamicIndexSetting{
-					Enabled: true,
+					Enabled: false,
 				},
-				TracesIndex: "traces-generic-default",
 				TracesDynamicIndex: DynamicIndexSetting{
 					Enabled: false,
 				},
 				LogsDynamicID: DynamicIDSettings{
+					Enabled: false,
+				},
+				LogsDynamicPipeline: DynamicPipelineSettings{
 					Enabled: false,
 				},
 				Pipeline: "mypipeline",
@@ -257,7 +270,8 @@ func TestConfig(t *testing.T) {
 					RetryOnStatus:   []int{http.StatusTooManyRequests, http.StatusInternalServerError},
 				},
 				Mapping: MappingsSettings{
-					Mode: "none",
+					Mode:         "otel",
+					AllowedModes: []string{"bodymap", "ecs", "none", "otel", "raw"},
 				},
 				LogstashFormat: LogstashFormatSettings{
 					Enabled:         false,
@@ -265,13 +279,16 @@ func TestConfig(t *testing.T) {
 					DateFormat:      "%Y.%m.%d",
 				},
 				Batcher: BatcherConfig{
-					FlushTimeout: 30 * time.Second,
-					MinSizeConfig: exporterbatcher.MinSizeConfig{
-						MinSizeItems: 5000,
+					BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
+						FlushTimeout: 30 * time.Second,
+						SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+							Sizer:   exporterhelper.RequestSizerTypeItems,
+							MinSize: defaultBatcherMinSizeItems,
+						},
 					},
-					MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-						MaxSizeItems: 0,
-					},
+				},
+				TelemetrySettings: TelemetrySettings{
+					LogFailedDocsInputRateLimit: time.Second,
 				},
 			},
 		},
@@ -305,8 +322,8 @@ func TestConfig(t *testing.T) {
 			expected: withDefaultConfig(func(cfg *Config) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
-				enabled := false
-				cfg.Batcher.Enabled = &enabled
+				cfg.Batcher.Enabled = false
+				cfg.Batcher.enabledSet = true
 			}),
 		},
 		{
@@ -325,6 +342,16 @@ func TestConfig(t *testing.T) {
 				cfg.Endpoint = "https://elastic.example.com:9200"
 
 				cfg.Compression = "gzip"
+			}),
+		},
+		{
+			id:         component.NewIDWithName(metadata.Type, "batcher_minmax_size"),
+			configFile: "config.yaml",
+			expected: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoint = "https://elastic.example.com:9200"
+
+				cfg.Batcher.MinSize = 100
+				cfg.Batcher.MaxSize = 200
 			}),
 		},
 	}
@@ -402,7 +429,22 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.Endpoints = []string{"http://test:9200"}
 				cfg.Mapping.Mode = "invalid"
 			}),
-			err: `unknown mapping mode "invalid"`,
+			err: `invalid or disallowed default mapping mode "invalid"`,
+		},
+		"invalid allowed mapping modes": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Mapping.AllowedModes = []string{"foo"}
+			}),
+			err: `unknown allowed mapping mode name "foo"`,
+		},
+		"disallowed mapping mode": {
+			config: withDefaultConfig(func(cfg *Config) {
+				cfg.Endpoints = []string{"http://test:9200"}
+				cfg.Mapping.Mode = "otel"
+				cfg.Mapping.AllowedModes = []string{"raw"}
+			}),
+			err: `invalid or disallowed default mapping mode "otel"`,
 		},
 		"invalid scheme": {
 			config: withDefaultConfig(func(cfg *Config) {

@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    windows.service.status:
+      enabled: true
+none_set:
+  metrics:
+    windows.service.status:
+      enabled: false

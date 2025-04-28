@@ -470,6 +470,7 @@ The list of the populated resource attributes can be found at [kubeadm Detector 
 
 The following permissions are required:
 ```yaml
+apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: otel-collector
@@ -478,6 +479,10 @@ rules:
   - apiGroups: [""]
     resources: ["configmaps"]
     resourceNames: ["kubeadm-config"]
+    verbs: ["get"]
+  - apiGroups: [""]
+    resources: ["namespaces"]
+    resourceNames: ["kube-system"]
     verbs: ["get"]
 ---
 apiVersion: rbac.authorization.k8s.io/v1

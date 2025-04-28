@@ -26,7 +26,7 @@ func TestNewFactory(t *testing.T) {
 			desc: "creates a new factory with correct type",
 			testFunc: func(t *testing.T) {
 				factory := NewFactory()
-				require.EqualValues(t, metadata.Type, factory.Type())
+				require.Equal(t, metadata.Type, factory.Type())
 			},
 		},
 		{
@@ -40,7 +40,7 @@ func TestNewFactory(t *testing.T) {
 						InitialDelay:       time.Second,
 					},
 					MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-					Targets:              []*targetConfig{},
+					Targets:              []*CertificateTarget{},
 				}
 
 				require.Equal(t, expectedCfg, factory.CreateDefaultConfig())

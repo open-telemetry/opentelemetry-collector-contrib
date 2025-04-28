@@ -13,7 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
-			rb.SetTlscheckURL("tlscheck.url-val")
+			rb.SetTlscheckTarget("tlscheck.target-val")
 
 			res := rb.Emit()
 			assert.Equal(t, 0, rb.Emit().Attributes().Len()) // Second call should return empty Resource
@@ -30,10 +30,10 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("tlscheck.url")
+			val, ok := res.Attributes().Get("tlscheck.target")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "tlscheck.url-val", val.Str())
+				assert.Equal(t, "tlscheck.target-val", val.Str())
 			}
 		})
 	}

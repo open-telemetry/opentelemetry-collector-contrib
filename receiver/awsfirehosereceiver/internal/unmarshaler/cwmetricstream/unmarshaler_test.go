@@ -10,10 +10,13 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -24,12 +27,12 @@ const (
 )
 
 func TestType(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	require.Equal(t, TypeStr, unmarshaler.Type())
 }
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	testCases := map[string]struct {
 		filename           string
 		wantResourceCount  int
@@ -93,7 +96,7 @@ func TestUnmarshal(t *testing.T) {
 }
 
 func TestUnmarshal_SingleRecord(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 
 	record, err := os.ReadFile(filepath.Join("testdata", "single_record"))
 	require.NoError(t, err)
@@ -112,6 +115,8 @@ func TestUnmarshal_SingleRecord(t *testing.T) {
 	assert.Equal(t, conventions.AttributeCloudProviderAWS, cloudProvider.Str())
 	require.Equal(t, 1, rm.ScopeMetrics().Len())
 	sm := rm.ScopeMetrics().At(0)
+	assert.Equal(t, metadata.ScopeName, sm.Scope().Name())
+	assert.Equal(t, component.NewDefaultBuildInfo().Version, sm.Scope().Version())
 
 	require.Equal(t, 1, sm.Metrics().Len())
 	metric := sm.Metrics().At(0)

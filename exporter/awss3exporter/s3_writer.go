@@ -60,17 +60,24 @@ func newUploadManager(
 		})
 	}
 
+	var managerOpts []upload.ManagerOpt
+	if conf.S3Uploader.ACL != "" {
+		managerOpts = append(managerOpts,
+			upload.WithACL(s3types.ObjectCannedACL(conf.S3Uploader.ACL)))
+	}
+
 	return upload.NewS3Manager(
 		conf.S3Uploader.S3Bucket,
 		&upload.PartitionKeyBuilder{
-			PartitionPrefix:     conf.S3Uploader.S3Prefix,
-			PartitionTruncation: conf.S3Uploader.S3Partition,
-			FilePrefix:          conf.S3Uploader.FilePrefix,
-			Metadata:            metadata,
-			FileFormat:          format,
-			Compression:         conf.S3Uploader.Compression,
+			PartitionPrefix: conf.S3Uploader.S3Prefix,
+			PartitionFormat: conf.S3Uploader.S3PartitionFormat,
+			FilePrefix:      conf.S3Uploader.FilePrefix,
+			Metadata:        metadata,
+			FileFormat:      format,
+			Compression:     conf.S3Uploader.Compression,
 		},
 		s3.NewFromConfig(cfg, s3Opts...),
 		s3types.StorageClass(conf.S3Uploader.StorageClass),
+		managerOpts...,
 	), nil
 }

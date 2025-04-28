@@ -48,8 +48,8 @@ func (a *Aggregator[K]) Aggregate(
 	resAttrs, srcAttrs pcommon.Map,
 	defaultCount int64,
 ) error {
-	switch {
-	case md.ExponentialHistogram != nil:
+	switch md.Key.Type {
+	case pmetric.MetricTypeExponentialHistogram:
 		val, count, err := getValueCount(
 			ctx, tCtx,
 			md.ExponentialHistogram.Value,
@@ -60,7 +60,7 @@ func (a *Aggregator[K]) Aggregate(
 			return err
 		}
 		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
-	case md.ExplicitHistogram != nil:
+	case pmetric.MetricTypeHistogram:
 		val, count, err := getValueCount(
 			ctx, tCtx,
 			md.ExplicitHistogram.Value,
@@ -71,8 +71,8 @@ func (a *Aggregator[K]) Aggregate(
 			return err
 		}
 		return a.aggregateValueCount(md, resAttrs, srcAttrs, val, count)
-	case md.Sum != nil:
-		raw, _, err := md.Sum.Value.Execute(ctx, tCtx)
+	case pmetric.MetricTypeSum:
+		raw, err := md.Sum.Value.Eval(ctx, tCtx)
 		if err != nil {
 			return fmt.Errorf("failed to execute OTTL value for sum: %w", err)
 		}
@@ -103,20 +103,20 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 				destExpHist      pmetric.ExponentialHistogram
 				destExplicitHist pmetric.Histogram
 			)
-			switch {
-			case md.ExponentialHistogram != nil:
+			switch md.Key.Type {
+			case pmetric.MetricTypeExponentialHistogram:
 				destMetric := metrics.AppendEmpty()
 				destMetric.SetName(md.Key.Name)
-				destMetric.SetDescription(md.Key.Description)
-				destMetric.SetUnit(md.Unit)
+				destMetric.SetUnit(md.Key.Unit)
+				destMetric.SetDescription(md.Description)
 				destExpHist = destMetric.SetEmptyExponentialHistogram()
 				destExpHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				destExpHist.DataPoints().EnsureCapacity(len(dpMap))
-			case md.ExplicitHistogram != nil:
+			case pmetric.MetricTypeHistogram:
 				destMetric := metrics.AppendEmpty()
 				destMetric.SetName(md.Key.Name)
-				destMetric.SetDescription(md.Key.Description)
-				destMetric.SetUnit(md.Unit)
+				destMetric.SetUnit(md.Key.Unit)
+				destMetric.SetDescription(md.Description)
 				destExplicitHist = destMetric.SetEmptyHistogram()
 				destExplicitHist.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 				destExplicitHist.DataPoints().EnsureCapacity(len(dpMap))
@@ -136,8 +136,8 @@ func (a *Aggregator[K]) Finalize(mds []model.MetricDef[K]) {
 			metrics := a.smLookup[resID].Metrics()
 			destMetric := metrics.AppendEmpty()
 			destMetric.SetName(md.Key.Name)
-			destMetric.SetDescription(md.Key.Description)
-			destMetric.SetUnit(md.Unit)
+			destMetric.SetUnit(md.Key.Unit)
+			destMetric.SetDescription(md.Description)
 			destCounter := destMetric.SetEmptySum()
 			destCounter.SetAggregationTemporality(pmetric.AggregationTemporalityDelta)
 			destCounter.DataPoints().EnsureCapacity(len(dpMap))
@@ -237,7 +237,7 @@ func (a *Aggregator[K]) getResourceID(resourceAttrs pcommon.Map) [16]byte {
 // value is missing.
 func getValueCount[K any](
 	ctx context.Context, tCtx K,
-	valueExpr, countExpr *ottl.Statement[K],
+	valueExpr, countExpr *ottl.ValueExpression[K],
 	defaultCount int64,
 ) (float64, int64, error) {
 	val, err := getDoubleFromOTTL(ctx, tCtx, valueExpr)
@@ -257,12 +257,12 @@ func getValueCount[K any](
 func getIntFromOTTL[K any](
 	ctx context.Context,
 	tCtx K,
-	s *ottl.Statement[K],
+	s *ottl.ValueExpression[K],
 ) (int64, error) {
 	if s == nil {
 		return 0, nil
 	}
-	raw, _, err := s.Execute(ctx, tCtx)
+	raw, err := s.Eval(ctx, tCtx)
 	if err != nil {
 		return 0, err
 	}
@@ -282,12 +282,12 @@ func getIntFromOTTL[K any](
 func getDoubleFromOTTL[K any](
 	ctx context.Context,
 	tCtx K,
-	s *ottl.Statement[K],
+	s *ottl.ValueExpression[K],
 ) (float64, error) {
 	if s == nil {
 		return 0, nil
 	}
-	raw, _, err := s.Execute(ctx, tCtx)
+	raw, err := s.Eval(ctx, tCtx)
 	if err != nil {
 		return 0, err
 	}

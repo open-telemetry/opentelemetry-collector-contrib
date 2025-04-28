@@ -354,3 +354,13 @@ attributes/from_context:
     # for more information about which attributes are available.
     from_context: auth.subject
     action: insert
+
+attributes/servicesmetrics:
+  include:
+    match_type: strict
+    services:
+      - foo
+  actions:
+    - key: service.name
+      value: bar
+      action: insert

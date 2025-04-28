@@ -3,19 +3,19 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlque
 go 1.23.0
 
 require (
-	github.com/SAP/go-hdb v1.13.3
-	github.com/go-sql-driver/mysql v1.9.0
+	github.com/SAP/go-hdb v1.13.5
+	github.com/go-sql-driver/mysql v1.9.2
 	github.com/lib/pq v1.10.9
 	github.com/microsoft/go-mssqldb v1.8.0
-	github.com/sijms/go-ora/v2 v2.8.23
+	github.com/sijms/go-ora/v2 v2.8.24
 	github.com/snowflakedb/gosnowflake v1.12.0
 	github.com/stretchr/testify v1.10.0
 	github.com/thda/tds v0.1.7
-	go.opentelemetry.io/collector/component v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/component/componenttest v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/pdata v1.26.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/scraper v0.120.1-0.20250224010654-18e18b21da7a
-	go.opentelemetry.io/collector/scraper/scraperhelper v0.120.1-0.20250224010654-18e18b21da7a
+	go.opentelemetry.io/collector/component v1.30.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/component/componenttest v0.124.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/pdata v1.30.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/scraper v0.124.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/scraper/scraperhelper v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
@@ -52,13 +52,14 @@ require (
 	github.com/goccy/go-json v0.10.2 // indirect
 	github.com/godbus/dbus v0.0.0-20190726142602-4481cbc300e2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/golang-jwt/jwt/v5 v5.2.1 // indirect
+	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang-sql/civil v0.0.0-20220223132316-b832511892a9 // indirect
 	github.com/golang-sql/sqlexp v0.1.0 // indirect
 	github.com/google/flatbuffers v23.5.26+incompatible // indirect
 	github.com/google/uuid v1.6.0 // indirect
 	github.com/gsterjov/go-libsecret v0.0.0-20161001094733-a6f4afe4910c // indirect
 	github.com/hashicorp/go-uuid v1.0.3 // indirect
+	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/jcmturner/aescts/v2 v2.0.0 // indirect
 	github.com/jcmturner/dnsutils/v2 v2.0.0 // indirect
 	github.com/jcmturner/gofork v1.7.6 // indirect
@@ -78,26 +79,37 @@ require (
 	github.com/sirupsen/logrus v1.9.3 // indirect
 	github.com/zeebo/xxh3 v1.0.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer v1.26.1-0.20250224010654-18e18b21da7a // indirect
-	go.opentelemetry.io/collector/pipeline v0.120.1-0.20250224010654-18e18b21da7a // indirect
-	go.opentelemetry.io/collector/receiver v0.120.1-0.20250224010654-18e18b21da7a // indirect
-	go.opentelemetry.io/otel v1.34.0 // indirect
-	go.opentelemetry.io/otel/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk v1.34.0 // indirect
-	go.opentelemetry.io/otel/sdk/metric v1.34.0 // indirect
-	go.opentelemetry.io/otel/trace v1.34.0 // indirect
-	golang.org/x/crypto v0.33.0 // indirect
+	go.opentelemetry.io/collector/consumer v1.30.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/collector/pipeline v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/collector/receiver v1.30.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
+	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
+	go.opentelemetry.io/otel v1.35.0 // indirect
+	go.opentelemetry.io/otel/log v0.11.0 // indirect
+	go.opentelemetry.io/otel/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/sdk v1.35.0 // indirect
+	go.opentelemetry.io/otel/sdk/metric v1.35.0 // indirect
+	go.opentelemetry.io/otel/trace v1.35.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
 	golang.org/x/exp v0.0.0-20240205201215-2c58cdc269a3 // indirect
 	golang.org/x/mod v0.17.0 // indirect
-	golang.org/x/net v0.33.0 // indirect
-	golang.org/x/sync v0.11.0 // indirect
-	golang.org/x/sys v0.30.0 // indirect
-	golang.org/x/term v0.29.0 // indirect
-	golang.org/x/text v0.22.0 // indirect
+	golang.org/x/net v0.39.0 // indirect
+	golang.org/x/sync v0.13.0 // indirect
+	golang.org/x/sys v0.32.0 // indirect
+	golang.org/x/term v0.31.0 // indirect
+	golang.org/x/text v0.24.0 // indirect
 	golang.org/x/tools v0.21.1-0.20240508182429-e35e4ccd0d2d // indirect
 	golang.org/x/xerrors v0.0.0-20220907171357-04be3eba64a2 // indirect
-	google.golang.org/genproto/googleapis/rpc v0.0.0-20241202173237-19429a94021a // indirect
-	google.golang.org/grpc v1.70.0 // indirect
-	google.golang.org/protobuf v1.36.5 // indirect
+	google.golang.org/genproto/googleapis/rpc v0.0.0-20250218202821-56aae31c358a // indirect
+	google.golang.org/grpc v1.72.0 // indirect
+	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/extension/extensionmiddleware/extensionmiddlewaretest v0.0.0-20250424234037-ac7c0f2f4cd8
+
+replace go.opentelemetry.io/collector/config/configmiddleware v0.0.0-00010101000000-000000000000 => go.opentelemetry.io/collector/config/configmiddleware v0.0.0-20250424234037-ac7c0f2f4cd8
+
+replace go.opentelemetry.io/collector/extension/extensionmiddleware v1.30.0 => go.opentelemetry.io/collector/extension/extensionmiddleware v0.0.0-20250424234037-ac7c0f2f4cd8

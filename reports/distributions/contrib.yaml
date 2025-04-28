@@ -22,6 +22,7 @@ components:
         - awskinesis
         - awss3
         - awsxray
+        - azureblob
         - azuredataexplorer
         - azuremonitor
         - bmchelix
@@ -64,7 +65,9 @@ components:
     extension:
         - ack
         - asapclient
+        - awscloudwatchmetricstreams_encoding
         - awsproxy
+        - azureauth
         - basicauth
         - bearertokenauth
         - cgroupruntime
@@ -79,6 +82,7 @@ components:
         - http_forwarder
         - jaegerremotesampling
         - k8s_observer
+        - kafkatopics_observer
         - oauth2client
         - oidc
         - opamp
@@ -88,6 +92,7 @@ components:
     processor:
         - attributes
         - cumulativetodelta
+        - datadogsemantics
         - deltatocumulative
         - deltatorate
         - filter
@@ -109,6 +114,10 @@ components:
         - sumologic
         - tail_sampling
         - transform
+    provider:
+        - aes
+        - s3
+        - secretsmanager
     receiver:
         - active_directory_ds
         - aerospike
@@ -133,6 +142,7 @@ components:
         - datadog
         - docker_stats
         - elasticsearch
+        - envoyals
         - expvar
         - filelog
         - filestats
@@ -163,6 +173,7 @@ components:
         - mongodbatlas
         - mysql
         - namedpipe
+        - netflow
         - nginx
         - nsxt
         - ntp
@@ -194,6 +205,7 @@ components:
         - sshcheck
         - statsd
         - syslog
+        - tcpcheck
         - tcplog
         - tlscheck
         - udplog
@@ -202,6 +214,7 @@ components:
         - webhookevent
         - windowseventlog
         - windowsperfcounters
+        - windowsservice
         - zipkin
         - zookeeper
     scraper:

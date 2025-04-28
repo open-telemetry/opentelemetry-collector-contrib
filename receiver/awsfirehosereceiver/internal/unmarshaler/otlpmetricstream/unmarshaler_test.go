@@ -10,13 +10,16 @@ import (
 
 	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 func TestType(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	require.Equal(t, TypeStr, unmarshaler.Type())
 }
 
@@ -44,7 +47,7 @@ func createMetricRecord() []byte {
 }
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop())
+	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
 	testCases := map[string]struct {
 		record             []byte
 		wantResourceCount  int
@@ -101,6 +104,8 @@ func TestUnmarshal(t *testing.T) {
 					rm := got.ResourceMetrics().At(i)
 					require.Equal(t, 1, rm.ScopeMetrics().Len())
 					ilm := rm.ScopeMetrics().At(0)
+					require.Equal(t, metadata.ScopeName, ilm.Scope().Name())
+					require.Equal(t, component.NewDefaultBuildInfo().Version, ilm.Scope().Version())
 					gotMetricCount += ilm.Metrics().Len()
 					for j := 0; j < ilm.Metrics().Len(); j++ {
 						metric := ilm.Metrics().At(j)

@@ -6,6 +6,7 @@ package ottlspan
 import (
 	"context"
 	"encoding/hex"
+	"fmt"
 	"slices"
 	"testing"
 	"time"
@@ -16,6 +17,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -658,14 +661,18 @@ func Test_newPathGetSetter(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxspan.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			// Create a controlled cache map for testing
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			span, il, resource := createTelemetry()
@@ -686,7 +693,7 @@ func Test_newPathGetSetter(t *testing.T) {
 			assert.Equal(t, exSpan, span)
 			assert.Equal(t, exIl, il)
 			assert.Equal(t, exRes, resource)
-			assert.Equal(t, exCache, tCtx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
 }
@@ -738,10 +745,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)
@@ -749,6 +755,24 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 			assert.Equal(t, tt.expected, got)
 		})
 	}
+}
+
+func TestHigherContextCacheAccessError(t *testing.T) {
+	path := &pathtest.Path[TransformContext]{
+		N: "cache",
+		C: ctxresource.Name,
+		KeySlice: []ottl.Key[TransformContext]{
+			&pathtest.Key[TransformContext]{
+				S: ottltest.Strp("key"),
+			},
+		},
+		FullPath: fmt.Sprintf("%s.cache[key]", ctxresource.Name),
+	}
+
+	_, err := pathExpressionParser(getCache)(path)
+	require.Error(t, err)
+	expectError := fmt.Sprintf(`replace "%s.cache[key]" with "span.cache[key]"`, ctxresource.Name)
+	require.Contains(t, err.Error(), expectError)
 }
 
 func createTelemetry() (ptrace.Span, pcommon.InstrumentationScope, pcommon.Resource) {

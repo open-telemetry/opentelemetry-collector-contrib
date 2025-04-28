@@ -33,37 +33,37 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 func TestNewExporter(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		defer require.NoError(t, enableZorkianMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
-			HistConfig: HistogramConfig{
-				Mode:             HistogramModeDistributions,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
 				SendAggregations: false,
 			},
-			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
-			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
@@ -86,13 +86,66 @@ func TestNewExporter(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
+}
+
+func TestNewExporter_Serializer(t *testing.T) {
+	t.Skip("Flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39601")
+	server := testutil.DatadogServerMock()
+	defer server.Close()
+
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		Metrics: datadogconfig.MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{
+				Endpoint: server.URL,
+			},
+			DeltaTTL: 3600,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
+				SendAggregations: false,
+			},
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
+			},
+		},
+		HostMetadata: datadogconfig.HostMetadataConfig{
+			Enabled:        true,
+			ReporterPeriod: 30 * time.Minute,
+		},
+	}
+	cfg.HostMetadata.SetSourceTimeout(50 * time.Millisecond)
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	var err error
+	params.Logger, err = zap.NewDevelopment()
+	require.NoError(t, err)
+	f := NewFactory()
+
+	// The client should have been created correctly
+	exp, err := f.CreateMetrics(context.Background(), params, cfg)
+	require.NoError(t, err)
+	assert.NotNil(t, exp)
+	testMetrics := pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	assert.Empty(t, server.MetadataChan)
+
+	testMetrics = pmetric.NewMetrics()
+	testutil.TestMetrics.CopyTo(testMetrics)
+	err = exp.ConsumeMetrics(context.Background(), testMetrics)
+	require.NoError(t, err)
+	recvMetadata := <-server.MetadataChan
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData(t *testing.T) {
 	if !isMetricExportV2Enabled() {
 		require.NoError(t, enableNativeMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableZorkianMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
@@ -102,7 +155,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 		metrics               pmetric.Metrics
 		source                source.Source
 		hostTags              []string
-		histogramMode         HistogramMode
+		histogramMode         datadogconfig.HistogramMode
 		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
@@ -113,7 +166,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeNoBuckets,
+			histogramMode: datadogconfig.HistogramModeNoBuckets,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedErr:   errors.New("no buckets mode and no send count sum are incompatible"),
 		},
@@ -123,7 +176,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -188,7 +241,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -250,7 +303,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeDistributions,
+			histogramMode: datadogconfig.HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -316,7 +369,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				Kind:       source.AWSECSFargateKind,
 				Identifier: "task_arn",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -429,7 +482,7 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 				dec := json.NewDecoder(reader)
 				var actual map[string]any
 				assert.NoError(t, dec.Decode(&actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -448,32 +501,31 @@ func Test_metricsExporter_PushMetricsData(t *testing.T) {
 func TestNewExporter_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		defer require.NoError(t, enableNativeMetricExport())
+		defer require.NoError(t, enableMetricExportSerializer())
 	}
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 
-	cfg := &Config{
-		API: APIConfig{
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
 			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
 		},
-		Metrics: MetricsConfig{
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: server.URL,
 			},
 			DeltaTTL: 3600,
-			HistConfig: HistogramConfig{
-				Mode:             HistogramModeDistributions,
+			HistConfig: datadogconfig.HistogramConfig{
+				Mode:             datadogconfig.HistogramModeDistributions,
 				SendAggregations: false,
 			},
-			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeToDelta,
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeToDelta,
 			},
 		},
-		HostMetadata: HostMetadataConfig{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Enabled:        true,
 			ReporterPeriod: 30 * time.Minute,
-			HostnameSource: HostnameSourceFirstResource,
 		},
 	}
 	params := exportertest.NewNopSettings(metadata.Type)
@@ -494,13 +546,13 @@ func TestNewExporter_Zorkian(t *testing.T) {
 	err = exp.ConsumeMetrics(context.Background(), testMetrics)
 	require.NoError(t, err)
 	recvMetadata := <-server.MetadataChan
-	assert.Equal(t, "custom-hostname", recvMetadata.InternalHostname)
+	assert.NotEmpty(t, recvMetadata.InternalHostname)
 }
 
 func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 	if isMetricExportV2Enabled() {
 		require.NoError(t, enableZorkianMetricExport())
-		t.Cleanup(func() { require.NoError(t, enableNativeMetricExport()) })
+		t.Cleanup(func() { require.NoError(t, enableMetricExportSerializer()) })
 	}
 	attrs := map[string]string{
 		conventions.AttributeDeploymentEnvironment: "dev",
@@ -510,7 +562,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 		metrics               pmetric.Metrics
 		source                source.Source
 		hostTags              []string
-		histogramMode         HistogramMode
+		histogramMode         datadogconfig.HistogramMode
 		expectedSeries        map[string]any
 		expectedSketchPayload *gogen.SketchPayload
 		expectedErr           error
@@ -521,7 +573,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeNoBuckets,
+			histogramMode: datadogconfig.HistogramModeNoBuckets,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedErr:   errors.New("no buckets mode and no send count sum are incompatible"),
 		},
@@ -531,7 +583,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -589,7 +641,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -644,7 +696,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeDistributions,
+			histogramMode: datadogconfig.HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -703,7 +755,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.AWSECSFargateKind,
 				Identifier: "task_arn",
 			},
-			histogramMode: HistogramModeCounters,
+			histogramMode: datadogconfig.HistogramModeCounters,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -763,7 +815,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				Kind:       source.HostnameKind,
 				Identifier: "test-host",
 			},
-			histogramMode: HistogramModeDistributions,
+			histogramMode: datadogconfig.HistogramModeDistributions,
 			hostTags:      []string{"key1:value1", "key2:value2"},
 			expectedSeries: map[string]any{
 				"series": []any{
@@ -868,7 +920,7 @@ func Test_metricsExporter_PushMetricsData_Zorkian(t *testing.T) {
 				assert.NoError(t, err)
 				var actual map[string]any
 				assert.NoError(t, json.Unmarshal(seriesRecorder.ByteBody, &actual))
-				assert.EqualValues(t, tt.expectedSeries, actual)
+				assert.Equal(t, tt.expectedSeries, actual)
 			}
 			if tt.expectedSketchPayload == nil {
 				assert.Nil(t, sketchRecorder.ByteBody)
@@ -942,23 +994,26 @@ func seconds(i int) pcommon.Timestamp {
 	return pcommon.NewTimestampFromTime(time.Unix(int64(i), 0))
 }
 
-func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode HistogramMode) *Config {
+func newTestConfig(t *testing.T, endpoint string, hostTags []string, histogramMode datadogconfig.HistogramMode) *datadogconfig.Config {
 	t.Helper()
-	return &Config{
-		HostMetadata: HostMetadataConfig{
+	return &datadogconfig.Config{
+		HostMetadata: datadogconfig.HostMetadataConfig{
 			Tags: hostTags,
 		},
-		Metrics: MetricsConfig{
+		TagsConfig: datadogconfig.TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: datadogconfig.MetricsConfig{
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: endpoint,
 			},
-			HistConfig: HistogramConfig{
+			HistConfig: datadogconfig.HistogramConfig{
 				Mode: histogramMode,
 			},
 			// Set values to avoid errors. No particular intention in value selection.
 			DeltaTTL: 3600,
-			SumConfig: SumConfig{
-				CumulativeMonotonicMode: CumulativeMonotonicSumModeRawValue,
+			SumConfig: datadogconfig.SumConfig{
+				CumulativeMonotonicMode: datadogconfig.CumulativeMonotonicSumModeRawValue,
 			},
 		},
 	}

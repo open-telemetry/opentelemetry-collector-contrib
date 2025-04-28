@@ -36,22 +36,22 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("device.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "device.id-val", val.Str())
+				assert.Equal(t, "device.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("nsxt.node.id")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "nsxt.node.id-val", val.Str())
+				assert.Equal(t, "nsxt.node.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("nsxt.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "nsxt.node.name-val", val.Str())
+				assert.Equal(t, "nsxt.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("nsxt.node.type")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "nsxt.node.type-val", val.Str())
+				assert.Equal(t, "nsxt.node.type-val", val.Str())
 			}
 		})
 	}

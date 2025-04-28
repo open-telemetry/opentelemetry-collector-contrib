@@ -17,7 +17,7 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
-	"go.opentelemetry.io/collector/extension/auth"
+	"go.opentelemetry.io/collector/extension/extensionauth/extensionauthtest"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
@@ -47,7 +47,7 @@ func TestClientCreation(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
 		},
 	}
 	// create a client from an example config
@@ -76,7 +76,7 @@ func TestClientCreateRequest(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
 		},
 	}
 	// create a client from an example config
@@ -126,11 +126,9 @@ func TestClientCreateRequest(t *testing.T) {
 		},
 	}
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			req, err := test.client.createRequest(ctx, test.sr)
+			req, err := test.client.createRequest(typeIdx, test.sr)
 			require.NoError(t, err)
 			// have to test specific parts since individual fields are pointers
 			require.Equal(t, test.expected.URL, req.URL)
@@ -157,7 +155,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	host := &mockHost{
 		extensions: map[component.ID]component.Component{
-			component.MustNewIDWithName("basicauth", "client"): auth.NewClient(),
+			component.MustNewIDWithName("basicauth", "client"): extensionauthtest.NewNopClient(),
 		},
 	}
 	// create a client from an example config
@@ -165,9 +163,7 @@ func TestAPIRequestCreate(t *testing.T) {
 
 	require.NoError(t, err)
 
-	ctx := context.Background()
-	ctx = context.WithValue(ctx, endpointType("type"), typeIdx)
-	req, err := client.createAPIRequest(ctx, "/test/endpoint")
+	req, err := client.createAPIRequest(typeIdx, "/test/endpoint")
 	require.NoError(t, err)
 
 	// build the expected request

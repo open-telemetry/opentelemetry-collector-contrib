@@ -21,12 +21,12 @@ const (
 
 var (
 	// Predefined error responses for configuration validation failures
-	errMissingTenantID       = errors.New(`TenantID" is not specified in config`)
-	errMissingSubscriptionID = errors.New(`SubscriptionID" is not specified in config`)
-	errMissingClientID       = errors.New(`ClientID" is not specified in config`)
-	errMissingClientSecret   = errors.New(`ClientSecret" is not specified in config`)
-	errMissingFedTokenFile   = errors.New(`FederatedTokenFile is not specified in config`)
-	errInvalidCloud          = errors.New(`Cloud" is invalid`)
+	errMissingTenantID        = errors.New(`"TenantID" is not specified in config`)
+	errMissingSubscriptionIDs = errors.New(`neither "SubscriptionIDs" nor "DiscoverSubscription" is specified in the config`)
+	errMissingClientID        = errors.New(`"ClientID" is not specified in config`)
+	errMissingClientSecret    = errors.New(`"ClientSecret" is not specified in config`)
+	errMissingFedTokenFile    = errors.New(`"FederatedTokenFile" is not specified in config`)
+	errInvalidCloud           = errors.New(`"Cloud" is invalid`)
 
 	monitorServices = []string{
 		"Microsoft.EventGrid/eventSubscriptions",
@@ -228,12 +228,20 @@ var (
 	}
 )
 
+type NestedListAlias = map[string]map[string][]string
+
+type DimensionsConfig struct {
+	Enabled   *bool           `mapstructure:"enabled"`
+	Overrides NestedListAlias `mapstructure:"overrides"`
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig    `mapstructure:",squash"`
 	MetricsBuilderConfig              metadata.MetricsBuilderConfig `mapstructure:",squash"`
 	Cloud                             string                        `mapstructure:"cloud"`
-	SubscriptionID                    string                        `mapstructure:"subscription_id"`
+	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
+	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
 	Authentication                    string                        `mapstructure:"auth"`
 	TenantID                          string                        `mapstructure:"tenant_id"`
 	ClientID                          string                        `mapstructure:"client_id"`
@@ -241,11 +249,14 @@ type Config struct {
 	FederatedTokenFile                string                        `mapstructure:"federated_token_file"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
+	Metrics                           NestedListAlias               `mapstructure:"metrics"`
 	CacheResources                    float64                       `mapstructure:"cache_resources"`
 	CacheResourcesDefinitions         float64                       `mapstructure:"cache_resources_definitions"`
 	MaximumNumberOfMetricsInACall     int                           `mapstructure:"maximum_number_of_metrics_in_a_call"`
 	MaximumNumberOfRecordsPerResource int32                         `mapstructure:"maximum_number_of_records_per_resource"`
 	AppendTagsAsAttributes            bool                          `mapstructure:"append_tags_as_attributes"`
+	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
+	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 }
 
 const (
@@ -257,8 +268,8 @@ const (
 
 // Validate validates the configuration by checking for missing or invalid fields
 func (c Config) Validate() (err error) {
-	if c.SubscriptionID == "" {
-		err = multierr.Append(err, errMissingSubscriptionID)
+	if len(c.SubscriptionIDs) == 0 && !c.DiscoverSubscriptions {
+		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
 	switch c.Authentication {

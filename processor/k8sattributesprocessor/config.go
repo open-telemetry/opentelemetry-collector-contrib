@@ -5,6 +5,7 @@ package k8sattributesprocessor // import "github.com/open-telemetry/opentelemetr
 
 import (
 	"fmt"
+	"os"
 	"regexp"
 	"time"
 
@@ -166,6 +167,10 @@ type ExtractConfig struct {
 	// It is a list of FieldExtractConfig type. See FieldExtractConfig
 	// documentation for more details.
 	Labels []FieldExtractConfig `mapstructure:"labels"`
+
+	// OtelAnnotations extracts all pod annotations with the prefix "resource.opentelemetry.io" as resource attributes
+	// E.g. "resource.opentelemetry.io/foo" becomes "foo"
+	OtelAnnotations bool `mapstructure:"otel_annotations"`
 }
 
 // FieldExtractConfig allows specifying an extraction rule to extract a resource attribute from pod (or namespace)
@@ -253,6 +258,15 @@ type FilterConfig struct {
 	//
 	// Check FieldFilterConfig for more details.
 	Labels []FieldFilterConfig `mapstructure:"labels"`
+}
+
+func (cfg *FilterConfig) Validate() error {
+	if cfg.NodeFromEnvVar != "" {
+		if _, ok := os.LookupEnv(cfg.NodeFromEnvVar); !ok {
+			return fmt.Errorf("`node_from_env_var` is configured but envvar %q is not set", cfg.NodeFromEnvVar)
+		}
+	}
+	return nil
 }
 
 // FieldFilterConfig allows specifying exactly one filter by a field.

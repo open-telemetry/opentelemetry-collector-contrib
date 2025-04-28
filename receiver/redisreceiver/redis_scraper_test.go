@@ -5,6 +5,7 @@ package redisreceiver
 
 import (
 	"context"
+	"runtime"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -17,6 +18,9 @@ import (
 )
 
 func TestRedisRunnable(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38955")
+	}
 	logger, _ := zap.NewDevelopment()
 	settings := receivertest.NewNopSettings(metadata.Type)
 	settings.Logger = logger
@@ -27,9 +31,9 @@ func TestRedisRunnable(t *testing.T) {
 	require.NoError(t, err)
 	md, err := runner.ScrapeMetrics(context.Background())
 	require.NoError(t, err)
-	// + 6 because there are two keyspace entries each of which has three metrics
+	// + 9 because there are three keyspace entries each of which has three metrics
 	// -2 because maxmemory and slave_repl_offset is by default disabled, so recorder is there, but there won't be data point
-	assert.Equal(t, len(rs.dataPointRecorders())+6-2, md.DataPointCount())
+	assert.Equal(t, len(rs.dataPointRecorders())+9-2, md.DataPointCount())
 	rm := md.ResourceMetrics().At(0)
 	ilm := rm.ScopeMetrics().At(0)
 	il := ilm.Scope()

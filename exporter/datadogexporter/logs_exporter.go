@@ -13,6 +13,7 @@ import (
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline"
 	"github.com/DataDog/datadog-agent/comp/otelcol/logsagentpipeline/logsagentpipelineimpl"
 	"github.com/DataDog/datadog-agent/comp/otelcol/otlp/components/exporter/logsagentexporter"
+	logscompressionimpl "github.com/DataDog/datadog-agent/comp/serializer/logscompression/impl"
 	"github.com/DataDog/datadog-agent/pkg/logs/sources"
 	"github.com/DataDog/datadog-api-client-go/v2/api/datadogV2"
 	"github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata"
@@ -30,6 +31,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/clientutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/hostmetadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/datadog/scrub"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 const (
@@ -41,7 +43,7 @@ const (
 
 type logsExporter struct {
 	params           exporter.Settings
-	cfg              *Config
+	cfg              *datadogconfig.Config
 	ctx              context.Context // ctx triggers shutdown upon cancellation
 	scrubber         scrub.Scrubber  // scrubber scrubs sensitive information from error messages
 	translator       *logsmapping.Translator
@@ -58,7 +60,7 @@ type logsExporter struct {
 func newLogsExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg *Config,
+	cfg *datadogconfig.Config,
 	onceMetadata *sync.Once,
 	attributesTranslator *attributes.Translator,
 	sourceProvider source.Provider,
@@ -72,12 +74,12 @@ func newLogsExporter(
 	if isMetricExportV2Enabled() {
 		apiClient := clientutil.CreateAPIClient(
 			params.BuildInfo,
-			cfg.Metrics.TCPAddrConfig.Endpoint,
+			cfg.Metrics.Endpoint,
 			cfg.ClientConfig)
 		go func() { errchan <- clientutil.ValidateAPIKey(ctx, string(cfg.API.Key), params.Logger, apiClient) }()
 		metricsAPI = datadogV2.NewMetricsApi(apiClient)
 	} else {
-		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.TCPAddrConfig.Endpoint)
+		client := clientutil.CreateZorkianClient(string(cfg.API.Key), cfg.Metrics.Endpoint)
 		go func() { errchan <- clientutil.ValidateAPIKeyZorkian(params.Logger, client) }()
 	}
 	// validate the apiKey
@@ -91,7 +93,7 @@ func newLogsExporter(
 	if err != nil {
 		return nil, fmt.Errorf("failed to create logs translator: %w", err)
 	}
-	s := logs.NewSender(cfg.Logs.TCPAddrConfig.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
+	s := logs.NewSender(cfg.Logs.Endpoint, params.Logger, cfg.ClientConfig, cfg.Logs.DumpPayloads, string(cfg.API.Key))
 	scrubber := scrub.NewScrubber()
 	return &logsExporter{
 		params:           params,
@@ -132,7 +134,7 @@ func (exp *logsExporter) consumeLogs(ctx context.Context, ld plog.Logs) (err err
 		}
 	}
 
-	payloads := exp.translator.MapLogs(ctx, ld, nil)
+	payloads := exp.translator.MapLogs(ctx, ld, attributes.NewGatewayUsage())
 	hosts := make(map[string]struct{})
 
 	for _, payload := range payloads {
@@ -174,7 +176,7 @@ func (exp *logsExporter) exportUsageMetrics(ctx context.Context, hosts map[strin
 func newLogsAgentExporter(
 	ctx context.Context,
 	params exporter.Settings,
-	cfg *Config,
+	cfg *datadogconfig.Config,
 	sourceProvider source.Provider,
 	_ *attributes.GatewayUsage,
 ) (logsagentpipeline.LogsAgent, *logsagentexporter.Exporter, error) {
@@ -186,9 +188,10 @@ func newLogsAgentExporter(
 	}
 	hostnameComponent := logs.NewHostnameService(sourceProvider)
 	logsAgent := logsagentpipelineimpl.NewLogsAgent(logsagentpipelineimpl.Dependencies{
-		Log:      logComponent,
-		Config:   cfgComponent,
-		Hostname: hostnameComponent,
+		Log:         logComponent,
+		Config:      cfgComponent,
+		Hostname:    hostnameComponent,
+		Compression: logscompressionimpl.NewComponent(),
 	})
 	err := logsAgent.Start(ctx)
 	if err != nil {

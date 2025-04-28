@@ -4,6 +4,7 @@
 package config // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 
 import (
+	"errors"
 	"fmt"
 	"regexp"
 	"time"
@@ -126,7 +127,7 @@ func (c *TracesExporterConfig) Validate() error {
 		return err
 	}
 	if c.TraceBuffer < 0 {
-		return fmt.Errorf("trace buffer must be non-negative")
+		return errors.New("trace buffer must be non-negative")
 	}
 
 	return nil
@@ -157,11 +158,11 @@ func (c *TracesConnectorConfig) Validate() error {
 	}
 
 	if c.TraceBuffer < 0 {
-		return fmt.Errorf("trace buffer must be non-negative")
+		return errors.New("trace buffer must be non-negative")
 	}
 
 	if c.BucketInterval < 0 {
-		return fmt.Errorf("bucket interval must be non-negative")
+		return errors.New("bucket interval must be non-negative")
 	}
 	return nil
 }

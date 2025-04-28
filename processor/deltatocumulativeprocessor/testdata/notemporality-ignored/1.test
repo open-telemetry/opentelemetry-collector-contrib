@@ -69,8 +69,8 @@ resourceMetrics:
                       value: 25
 
 -- telemetry --
-counter otelcol_deltatocumulative.datapoints.linear:
+counter otelcol_deltatocumulative_datapoints:
 - int: 1
 
-updown otelcol_deltatocumulative.streams.tracked.linear:
+updown otelcol_deltatocumulative_streams_tracked:
 - int: 1

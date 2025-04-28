@@ -64,6 +64,12 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 	count := 10
 	c.SetTasks(GenTasks("p", count, func(_ int, task *ecs.Task) {
 		task.LastStatus = aws.String("running")
+		task.Tags = []*ecs.Tag{
+			{
+				Key:   aws.String("Name"),
+				Value: aws.String("TestDescribeTaskWithTags"),
+			},
+		}
 	}))
 
 	t.Run("invalid cluster", func(t *testing.T) {
@@ -87,6 +93,14 @@ func TestCluster_DescribeTasksWithContext(t *testing.T) {
 		require.NoError(t, err)
 		assert.Len(t, res.Tasks, 1)
 		assert.Len(t, res.Failures, 1)
+	})
+
+	t.Run("tags not found", func(t *testing.T) {
+		req := &ecs.DescribeTasksInput{Include: []*string{aws.String("TAGS")}, Tasks: []*string{aws.String("p0"), aws.String(fmt.Sprintf("p%d", count))}}
+		res, err := c.DescribeTasksWithContext(ctx, req)
+		require.NoError(t, err)
+		assert.Equal(t, res.Tasks[0].Tags[0].Key, aws.String("Name"))
+		assert.Equal(t, res.Tasks[0].Tags[0].Value, aws.String("TestDescribeTaskWithTags"))
 	})
 }
 
