@@ -91,7 +91,7 @@ func TestLoadConfig(t *testing.T) {
 				cfg := createDefaultConfig().(*Config)
 				cfg.DiscoverSubscriptions = true
 				cfg.Authentication = "does-not-matter"
-				cfg.TokenProvider = "test"
+				cfg.Credentials = "test"
 				return cfg
 			}(),
 		},

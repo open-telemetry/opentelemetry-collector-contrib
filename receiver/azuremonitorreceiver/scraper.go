@@ -178,9 +178,9 @@ func loadTokenProvider(host component.Host, cType string) (azcore.TokenCredentia
 func (s *azureScraper) loadCredentials(host component.Host) (err error) {
 	// if token provider is specified, it takes priority
 	// over auth
-	if s.cfg.TokenProvider != "" {
+	if s.cfg.Credentials != "" {
 		s.settings.Logger.Info("'token_provider' will be used to get the token credential")
-		if s.cred, err = loadTokenProvider(host, s.cfg.TokenProvider); err != nil {
+		if s.cred, err = loadTokenProvider(host, s.cfg.Credentials); err != nil {
 			return err
 		}
 		return nil

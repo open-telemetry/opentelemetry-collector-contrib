@@ -253,11 +253,11 @@ type Config struct {
 	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 
-	// TokenProvider accepts the component azureauthextension,
+	// Credentials accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.
 	// Using this, `auth` and any related fields become
 	// useless.
-	TokenProvider string `mapstructure:"credentials"`
+	Credentials string `mapstructure:"credentials"`
 
 	Authentication     string `mapstructure:"auth"`
 	TenantID           string `mapstructure:"tenant_id"`
@@ -279,7 +279,7 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	if c.TokenProvider == "" {
+	if c.Credentials == "" {
 		// only matters if there is no token provider configured
 		switch c.Authentication {
 		case servicePrincipal:
