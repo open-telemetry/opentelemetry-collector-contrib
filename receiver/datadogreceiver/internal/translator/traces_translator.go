@@ -60,6 +60,8 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 func getSpanName(span *pb.Span) string {
 	if span.Name == "servlet.request" || span.Name == "spring.handler" {
 		return span.Resource
+	} else if span.Name == "postgresql.query" {
+		return span.Resource
 	}
 	return span.Name
 }
