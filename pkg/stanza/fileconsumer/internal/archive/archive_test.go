@@ -5,8 +5,6 @@ package archive_test // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"context"
-	"fmt"
-	"math/rand/v2"
 	"testing"
 
 	"github.com/stretchr/testify/require"
@@ -19,96 +17,94 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/testutil"
 )
 
-func TestArchiveCRUD(t *testing.T) {
-	// pollsToArchiveMatrix contains different polls_to_archive settings to test
-	pollsToArchiveMatrix := []int{10, 20, 50, 100, 200}
-
-	for _, p := range pollsToArchiveMatrix {
-		t.Run(fmt.Sprintf("pollsToArchive:%d", p), func(t *testing.T) { testArchive(t, p) })
-	}
-
-	t.Run("nopArchive", func(t *testing.T) {
-		testArchiveNop(t)
-	})
-}
-
-func testArchive(t *testing.T, pollsToArchive int) {
+func TestArchiveNoRollover(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
-	a := archive.New(context.Background(), zap.L(), pollsToArchive, persister)
+	a := archive.New(context.Background(), zap.L(), 3, persister)
 
-	m := make(map[int]*fingerprint.Fingerprint)
+	fp1 := fingerprint.New([]byte("fp1"))
+	fp2 := fingerprint.New([]byte("fp2"))
+	fp3 := fingerprint.New([]byte("fp3"))
 
-	// rolledOverFps contains the fingerprints that were previously a part of archive, but are now rolled over i.e. removed.
-	// archive should no longer contain such fingerprints
-	rolledOverFps := make([]*fingerprint.Fingerprint, 0)
+	// Simulate three consecutive poll cycles
+	a.WriteFiles(context.Background(), getFileset(fp1))
+	a.WriteFiles(context.Background(), getFileset(fp2))
+	a.WriteFiles(context.Background(), getFileset(fp3))
 
-	for i := 0; i < 50; i++ {
-		fp := fingerprint.New([]byte(createRandomString(100)))
+	// All three fingerprints should still be present in the archive
+	fp3Modified := fingerprint.New([]byte("fp3...."))
+	foundMetadata := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp3Modified})
+	require.True(t, fp3.Equal(foundMetadata[0].GetFingerprint()), "Expected fp3 to match")
 
-		if oldFp, isRollover := m[i%pollsToArchive]; isRollover {
-			// store the fp if we've already written to this index
-			rolledOverFps = append(rolledOverFps, oldFp)
-		}
+	fp2Modified := fingerprint.New([]byte("fp2...."))
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp2Modified})
+	require.True(t, fp2.Equal(foundMetadata[0].GetFingerprint()), "Expected fp2 to match")
 
-		m[i%pollsToArchive] = fp
-
-		set := fileset.New[*reader.Metadata](0)
-		set.Add(&reader.Metadata{Fingerprint: fp})
-
-		a.WriteFiles(context.Background(), set)
-	}
-
-	// sub-test 1: rolled over fingerprints should not be a part of archive
-	for _, fp := range rolledOverFps {
-		matchedData := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
-		require.Nil(t, matchedData[0])
-	}
-
-	// sub-test 2: newer fingerprints should be part of archive
-	for _, fp := range m {
-		// FindFiles removes the data from persister.
-		matchedData := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
-		require.NotNil(t, matchedData[0])
-		require.True(t, fp.Equal(matchedData[0].GetFingerprint()), "expected fingerprints to match")
-
-		// archive should no longer contain data (as FindFiles removed the data)
-		matchedData = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
-		require.Nil(t, matchedData[0])
-	}
+	fp1Modified := fingerprint.New([]byte("fp1...."))
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp1Modified})
+	require.True(t, fp1.Equal(foundMetadata[0].GetFingerprint()), "Expected fp1 to match")
 }
 
-func testArchiveNop(t *testing.T) {
+func TestArchiveRollOver(t *testing.T) {
 	persister := testutil.NewUnscopedMockPersister()
-	a := archive.New(context.Background(), zap.L(), -1, persister)
+	a := archive.New(context.Background(), zap.L(), 3, persister)
 
-	m := make(map[int]*fingerprint.Fingerprint)
+	fp1 := fingerprint.New([]byte("fp1"))
+	fp2 := fingerprint.New([]byte("fp2"))
+	fp3 := fingerprint.New([]byte("fp3"))
+	fp4 := fingerprint.New([]byte("fp4"))
 
-	for i := 0; i < 50; i++ {
-		fp := fingerprint.New([]byte(createRandomString(100)))
+	// Simulate four consecutive poll cycles
+	a.WriteFiles(context.Background(), getFileset(fp1))
+	a.WriteFiles(context.Background(), getFileset(fp2))
+	a.WriteFiles(context.Background(), getFileset(fp3))
+	a.WriteFiles(context.Background(), getFileset(fp4)) // This should evice fp1
 
-		m[i] = fp
+	// The archive should now contain fp2, fp3, and fp4
+	fp4Modified := fingerprint.New([]byte("fp4...."))
+	foundMetadata := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp4Modified})
+	require.Len(t, foundMetadata, 1)
+	require.True(t, fp4.Equal(foundMetadata[0].GetFingerprint()), "Expected fp4 to match")
 
-		set := fileset.New[*reader.Metadata](0)
-		set.Add(&reader.Metadata{Fingerprint: fp})
+	fp3Modified := fingerprint.New([]byte("fp3...."))
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp3Modified})
+	require.Len(t, foundMetadata, 1)
+	require.True(t, fp3.Equal(foundMetadata[0].GetFingerprint()), "Expected fp3 to match")
 
-		a.WriteFiles(context.Background(), set)
-	}
+	fp2Modified := fingerprint.New([]byte("fp2...."))
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp2Modified})
+	require.Len(t, foundMetadata, 1)
+	require.True(t, fp2.Equal(foundMetadata[0].GetFingerprint()), "Expected fp2 to match")
 
-	// fingerprints should not be part of archive, as it's nop
-	for _, fp := range m {
-		matchedData := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp})
-		require.Nil(t, matchedData[0], "fingerprints shouldn't match for nopArchive")
-	}
+	// fp1 should have been evicted and thus not retrievable
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp1})
+	require.Nil(t, foundMetadata[0], "Expected fp1 to be evicted from archive")
 }
 
-func createRandomString(length int) string {
-	// some characters for the random generation
-	const letterBytes = " ,.;:*-+/[]{}<>abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"
+func TestNopArchive(t *testing.T) {
+	a := archive.New(context.Background(), zap.L(), 3, nil)
 
-	b := make([]byte, length)
-	for i := range b {
-		b[i] = letterBytes[rand.IntN(len(letterBytes))]
-	}
+	fp1 := fingerprint.New([]byte("fp1"))
+	fp2 := fingerprint.New([]byte("fp2"))
+	fp3 := fingerprint.New([]byte("fp3"))
 
-	return string(b)
+	// Simulate three consecutive poll cycles
+	a.WriteFiles(context.Background(), getFileset(fp1))
+	a.WriteFiles(context.Background(), getFileset(fp2))
+	a.WriteFiles(context.Background(), getFileset(fp3))
+
+	// All three fingerprints should not be present in the archive
+	foundMetadata := a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp3})
+	require.Nil(t, foundMetadata[0], "fingerprint should not be in nopArchive")
+
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp2})
+	require.Nil(t, foundMetadata[0], "fingerprint should not be in nopArchive")
+
+	foundMetadata = a.FindFiles(context.Background(), []*fingerprint.Fingerprint{fp1})
+	require.Nil(t, foundMetadata[0], "fingerprint should not be in nopArchive")
+}
+
+func getFileset(fp *fingerprint.Fingerprint) *fileset.Fileset[*reader.Metadata] {
+	set := fileset.New[*reader.Metadata](0)
+	set.Add(&reader.Metadata{Fingerprint: fp})
+	return set
 }
