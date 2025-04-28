@@ -54,6 +54,11 @@ signaltometrics:
       description: Count of log records
       sum:
         value: "1" # increment by 1 for each log record
+  profiles:
+    - name: profile.count
+      description: Count of profiles
+      sum:
+        value: "1" # increment by 1 for each profile
 ```
 
 ### Metrics types
