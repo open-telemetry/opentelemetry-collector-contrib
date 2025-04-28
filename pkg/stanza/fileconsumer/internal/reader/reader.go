@@ -80,7 +80,6 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 			r.Offset = currentEOF
 		}()
 	case "auto":
-		// TODO: Find a better solution
 		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
 		if r.FileType == ".gz" {
 			currentEOF, err := r.createGzipReader()
