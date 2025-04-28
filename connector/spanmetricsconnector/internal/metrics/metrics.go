@@ -14,7 +14,7 @@ import (
 type Key string
 
 type HistogramMetrics interface {
-	GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) Histogram
+	GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) Histogram
 	BuildMetrics(pmetric.Metric, pcommon.Timestamp, func(Key, pcommon.Timestamp) pcommon.Timestamp, pmetric.AggregationTemporality)
 	ClearExemplars()
 }
@@ -62,6 +62,8 @@ type exponentialHistogram struct {
 	startTimestamp pcommon.Timestamp
 }
 
+type BuildAttributesFun func() pcommon.Map
+
 func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
@@ -78,11 +80,11 @@ func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount *int) Histog
 	}
 }
 
-func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) Histogram {
+func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) Histogram {
 	h, ok := m.metrics[key]
 	if !ok {
 		h = &explicitHistogram{
-			attributes:       attributes,
+			attributes:       attributesFun(),
 			exemplars:        pmetric.NewExemplarSlice(),
 			bounds:           m.bounds,
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
@@ -126,7 +128,7 @@ func (m *explicitHistogramMetrics) ClearExemplars() {
 	}
 }
 
-func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimeStamp pcommon.Timestamp) Histogram {
+func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp) Histogram {
 	h, ok := m.metrics[key]
 	if !ok {
 		histogram := new(structure.Histogram[float64])
@@ -137,7 +139,7 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributes pcommon.Ma
 
 		h = &exponentialHistogram{
 			histogram:        histogram,
-			attributes:       attributes,
+			attributes:       attributesFun(),
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
@@ -277,11 +279,11 @@ func (m *SumMetrics) IsCardinalityLimitReached() bool {
 	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
-func (m *SumMetrics) GetOrCreate(key Key, attributes pcommon.Map, startTimestamp pcommon.Timestamp) *Sum {
+func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) *Sum {
 	s, ok := m.metrics[key]
 	if !ok {
 		s = &Sum{
-			attributes:       attributes,
+			attributes:       attributesFun(),
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
