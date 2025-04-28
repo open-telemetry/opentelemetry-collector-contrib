@@ -10,7 +10,8 @@ exporters:
         s3_partition_format: 'year=%Y/month=%m/day=%d/hour=%H/minute=%M'
         endpoint: "http://endpoint.com"
         storage_class: "STANDARD"
-        acl: "bucket-owner-read"
+    resource_attrs_to_s3:
+      s3_prefix: "com.awss3.prefix"
 
 processors:
   nop:
