@@ -91,7 +91,7 @@ type Config struct {
 	// WARNING: If set to true, the exporter may log error responses containing
 	// request payload, causing potential sensitive data to be exposed in logs.
 	// Users are expected to sanitize the responses themselves.
-	IncludeSourceOnError *bool
+	IncludeSourceOnError *bool `mapstructure:"include_source_on_error"`
 
 	// Batcher holds configuration for batching requests based on timeout
 	// and size-based thresholds.
