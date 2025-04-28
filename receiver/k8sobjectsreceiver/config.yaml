@@ -1,0 +1,5 @@
+receivers:
+  k8sobjects:
+    error_mode: ignore  # Can be "propagate", "ignore", or "silent"
+    objects:
+      # ... other configuration ...
