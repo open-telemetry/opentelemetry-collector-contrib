@@ -17,9 +17,11 @@ require (
 	go.opentelemetry.io/collector/confmap/xconfmap v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/connector v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/connector/connectortest v0.124.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/connector/xconnector v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/consumer v1.30.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/consumer/consumertest v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/pdata v1.30.1-0.20250424234037-ac7c0f2f4cd8
+	go.opentelemetry.io/collector/pdata/pprofile v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/pipeline v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.opentelemetry.io/collector/semconv v0.124.1-0.20250424234037-ac7c0f2f4cd8
 	go.uber.org/goleak v1.3.0
@@ -59,12 +61,10 @@ require (
 	github.com/twmb/murmur3 v1.1.8 // indirect
 	github.com/ua-parser/uap-go v0.0.0-20240611065828-3a4781585db6 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/connector/xconnector v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/collector/internal/fanoutconsumer v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/collector/pipeline/xpipeline v0.124.1-0.20250424234037-ac7c0f2f4cd8 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
