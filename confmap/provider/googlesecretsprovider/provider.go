@@ -12,6 +12,7 @@ import (
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	gax "github.com/googleapis/gax-go/v2"
+	"github.com/googleapis/gax-go/v2/apierror"
 	"go.opentelemetry.io/collector/confmap"
 
 	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
@@ -57,8 +58,14 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 		Name: secretName,
 	}
 	resp, err := p.client.AccessSecretVersion(ctx, req)
+
 	if err != nil {
-		return nil, fmt.Errorf("failed to access secret version: %w", err)
+		var apiErr *apierror.APIError
+		apiErr, ok := apierror.FromError(err)
+		if !ok {
+			return nil, fmt.Errorf("failed to access secret version: %w", err)
+		}
+		return nil, fmt.Errorf("failed to access secret version: %v", apiErr.Error())
 	}
 
 	return confmap.NewRetrieved(string(resp.GetPayload().GetData()))
