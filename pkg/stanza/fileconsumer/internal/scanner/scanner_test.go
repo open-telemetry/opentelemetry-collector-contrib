@@ -77,7 +77,7 @@ func TestScanner(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scanner := New(bytes.NewReader(tc.stream), tc.maxSize, tc.bufferSize, tc.startOffset, simpleSplit(tc.delimiter))
+			scanner := New(bytes.NewReader(tc.stream), tc.maxSize, make([]byte, 0, tc.bufferSize), tc.startOffset, simpleSplit(tc.delimiter))
 			for i, p := 0, 0; scanner.Scan(); i++ {
 				assert.NoError(t, scanner.Error())
 
@@ -117,12 +117,12 @@ func (r *errReader) Read([]byte) (n int, err error) {
 
 func TestScannerError(t *testing.T) {
 	reader := &errReader{err: bufio.ErrTooLong}
-	scanner := New(reader, 100, 100, 0, simpleSplit([]byte("\n")))
+	scanner := New(reader, 100, make([]byte, 0, 100), 0, simpleSplit([]byte("\n")))
 	assert.False(t, scanner.Scan())
 	assert.EqualError(t, scanner.Error(), "log entry too large")
 
 	reader = &errReader{err: errors.New("some err")}
-	scanner = New(reader, 100, 100, 0, simpleSplit([]byte("\n")))
+	scanner = New(reader, 100, make([]byte, 0, 100), 0, simpleSplit([]byte("\n")))
 	assert.False(t, scanner.Scan())
 	assert.EqualError(t, scanner.Error(), "scanner error: some err")
 }

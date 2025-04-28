@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -147,7 +148,7 @@ type Supervisor struct {
 	// will listen on for health check requests from the Supervisor.
 	agentHealthCheckEndpoint string
 
-	// Internal config state for agent use. See the configState struct for more details.
+	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
@@ -1237,13 +1238,13 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 1) the remote config from OpAMP Server
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
-func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 
-	if !configMapIsEmpty {
-		c := config.GetConfig()
+	if hasIncomingConfigMap {
+		c := incomingConfig.GetConfig()
 
 		// Sort to make sure the order of merging is stable.
 		var names []string
@@ -1320,7 +1321,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapIsEmpty,
+		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
 	}
 
 	configChanged = false
@@ -1749,7 +1750,9 @@ func (s *Supervisor) processRemoteConfigMessage(ctx context.Context, msg *protob
 		span.SetStatus(codes.Error, fmt.Sprintf("Error composing merged config. Reporting failed remote config status: %s", err.Error()))
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-	} else {
+	}
+	if configChanged {
+		// only report applying if the config has changed and will run agent with new config
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
@@ -1876,7 +1879,21 @@ func configMergeFunc(src, dest map[string]any) error {
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
-				service["extensions"] = append(destExt, srcExt...)
+				allExt := slices.Concat(destExt, srcExt)
+				// This is a small hack to ensure that the order is consitent and
+				// follows this simple rule: extensions from [src], then from [dest],
+				// in the order that they appear.
+				// We cannot use other simpler methods, like [sort.Strings], because
+				// we work with a `[]any` that cannot be cast to `[]string`.
+				seenExt := make(map[any]struct{}, len(allExt))
+				var uniqueExts []any
+				for _, ext := range allExt {
+					if _, ok := seenExt[ext]; !ok {
+						seenExt[ext] = struct{}{}
+						uniqueExts = append(uniqueExts, ext)
+					}
+				}
+				service["extensions"] = uniqueExts
 			}
 		}
 	}

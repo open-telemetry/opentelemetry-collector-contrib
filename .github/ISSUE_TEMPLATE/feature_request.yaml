@@ -88,6 +88,7 @@ body:
       - extension/basicauth
       - extension/bearertokenauth
       - extension/cgroupruntime
+      - extension/datadog
       - extension/encoding
       - extension/encoding/avrologencoding
       - extension/encoding/awscloudwatchmetricstreamsencoding
@@ -182,6 +183,7 @@ body:
       - processor/datadogsemantics
       - processor/deltatocumulative
       - processor/deltatorate
+      - processor/dnslookup
       - processor/filter
       - processor/geoip
       - processor/groupbyattrs

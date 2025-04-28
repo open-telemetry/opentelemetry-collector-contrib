@@ -43,7 +43,7 @@ CONNECTOR_MODS := $(shell find ./connector/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR
 INTERNAL_MODS := $(shell find ./internal/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 PKG_MODS := $(shell find ./pkg/* $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 CMD_MODS_0 := $(shell find ./cmd/[a-z]* $(FIND_MOD_ARGS) -not -path "./cmd/otel*col/*" -exec $(TO_MOD_DIR) )
-CMD_MODS := $(CMD_MODS_0) $(CMD_MODS_1)
+CMD_MODS := $(CMD_MODS_0)
 OTHER_MODS := $(shell find . $(EX_COMPONENTS) $(EX_INTERNAL) $(EX_PKG) $(EX_CMD) $(FIND_MOD_ARGS) -exec $(TO_MOD_DIR) )
 ALL_MODS := $(RECEIVER_MODS) $(PROCESSOR_MODS) $(EXPORTER_MODS) $(EXTENSION_MODS) $(CONNECTOR_MODS) $(INTERNAL_MODS) $(PKG_MODS) $(CMD_MODS) $(OTHER_MODS)
 
@@ -186,6 +186,7 @@ gotest-with-junit:
 .PHONY: gotest-with-junit-and-cover
 gotest-with-junit-and-cover:
 	@$(MAKE) $(FOR_GROUP_TARGET) TARGET="test-with-junit-and-cover"
+	@go tool covdata textfmt -i=$(COVER_DIR_ABS) -o $(GROUP)-coverage.txt
 
 .PHONY: gobuildtest
 gobuildtest:
@@ -333,8 +334,8 @@ run:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_$(GOARCH) ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
@@ -347,6 +348,10 @@ endif
 .PHONY: docker-otelcontribcol
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
+
+.PHONY: docker-supervisor-otelcontribcol
+docker-supervisor-otelcontribcol: docker-otelcontribcol
+	COMPONENT=opampsupervisor $(MAKE) docker-component
 
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
@@ -432,6 +437,12 @@ telemetrygen:
 telemetrygenlite:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
+
+# Build the Supervisor executable.
+.PHONY: opampsupervisor
+opampsupervisor:
+	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
 
 MODULES="internal/buildscripts/modules"
 .PHONY: update-core-modules

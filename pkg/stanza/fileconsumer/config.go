@@ -152,7 +152,7 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	}
 
 	set.Logger = set.Logger.With(zap.String("component", "fileconsumer"))
-	readerFactory := reader.Factory{
+	readerFactory := &reader.Factory{
 		TelemetrySettings:       set,
 		FromBeginning:           startAtBeginning,
 		FingerprintSize:         int(c.FingerprintSize),
@@ -175,12 +175,18 @@ func (c Config) Build(set component.TelemetrySettings, emit emit.Callback, opts 
 	if err != nil {
 		return nil, err
 	}
+
+	maxBatchFiles := c.MaxConcurrentFiles / 2
+	if maxBatchFiles == 0 {
+		maxBatchFiles = 1
+	}
+
 	return &Manager{
 		set:              set,
 		readerFactory:    readerFactory,
 		fileMatcher:      fileMatcher,
 		pollInterval:     c.PollInterval,
-		maxBatchFiles:    c.MaxConcurrentFiles / 2,
+		maxBatchFiles:    maxBatchFiles,
 		maxBatches:       c.MaxBatches,
 		telemetryBuilder: telemetryBuilder,
 		noTracking:       o.noTracking,
