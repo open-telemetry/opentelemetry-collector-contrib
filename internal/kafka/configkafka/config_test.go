@@ -172,6 +172,20 @@ func TestProducerConfig(t *testing.T) {
 				FlushMaxMessages: 2,
 			},
 		},
+		"default_compression_level": {
+			expected: ProducerConfig{
+				MaxMessageBytes: 1,
+				RequiredAcks:    0,
+				Compression:     "zstd",
+				CompressionParams: configcompression.CompressionParams{
+					Level: configcompression.DefaultCompressionLevel,
+				},
+				FlushMaxMessages: 2,
+			},
+		},
+		"invalid_compression_level": {
+			expectedErr: `unsupported parameters {Level:-123} for compression type "gzip"`,
+		},
 		"required_acks_all": {
 			expected: func() ProducerConfig {
 				cfg := NewDefaultProducerConfig()
