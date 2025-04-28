@@ -6,8 +6,9 @@ package kafka // import "github.com/open-telemetry/opentelemetry-collector-contr
 import (
 	"context"
 	"crypto/tls"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/IBM/sarama"
 

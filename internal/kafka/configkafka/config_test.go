@@ -4,10 +4,11 @@
 package configkafka // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 
 import (
-	"go.opentelemetry.io/collector/config/configcompression"
 	"path/filepath"
 	"testing"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"

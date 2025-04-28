@@ -6,8 +6,9 @@ package configkafka // import "github.com/open-telemetry/opentelemetry-collector
 import (
 	"errors"
 	"fmt"
-	"go.opentelemetry.io/collector/config/configcompression"
 	"time"
+
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/IBM/sarama"
 	"go.opentelemetry.io/collector/config/configtls"
