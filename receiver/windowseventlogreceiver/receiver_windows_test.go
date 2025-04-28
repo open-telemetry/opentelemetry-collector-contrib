@@ -396,6 +396,7 @@ func assertEventSourceInstallation(t *testing.T, src string) (uninstallEventSour
 	return
 }
 
+//nolint:unparam // expectedEventCount might be greater than one in the future
 func assertExpectedLogRecords(t *testing.T, sink *consumertest.LogsSink, expectedEventSrc string, expectedEventCount int) []plog.LogRecord {
 	var actualLogRecords []plog.LogRecord
 
