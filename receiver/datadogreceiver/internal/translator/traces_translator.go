@@ -93,6 +93,8 @@ func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.T
 func getSpanName(span *pb.Span) string {
 	if span.Name == "servlet.request" || span.Name == "spring.handler" {
 		return span.Resource
+	} else if span.Name == "postgresql.query" {
+		return span.Resource
 	}
 	return span.Name
 }

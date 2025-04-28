@@ -63,6 +63,12 @@ var datadogKnownResourceAttributes = map[string]string{
 	"http.url":                     string(semconv.URLFullKey),
 	"http.useragent":               string(semconv.UserAgentOriginalKey),
 
+	// DB
+	"db.type":      semconv.AttributeDBSystem,
+	"db.operation": semconv.AttributeDBOperationName,
+	"db.instance":  semconv.AttributeDBCollectionName,
+	"db.pool.name": semconv.AttributeDBClientConnectionPoolName,
+
 	// Other
 	"process_id":       string(semconv.ProcessPIDKey),
 	"error.stacktrace": string(semconv.ExceptionStacktraceKey),
