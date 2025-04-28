@@ -18,15 +18,15 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
 	github.com/stretchr/testify v1.10.0
 	github.com/valyala/fastjson v1.6.4
-	go.opentelemetry.io/collector/component v1.30.1-0.20250428165440-8862cb18f3df
+	go.opentelemetry.io/collector/component v1.30.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/component/componenttest v0.124.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/config/configtls v1.30.1-0.20250428165858-4ed72bda40bd
-	go.opentelemetry.io/collector/confmap v1.30.1-0.20250428165440-8862cb18f3df
+	go.opentelemetry.io/collector/confmap v1.30.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/consumer v1.30.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/consumer/consumertest v0.124.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/extension/xextension v0.124.1-0.20250428165858-4ed72bda40bd
-	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250428165440-8862cb18f3df
-	go.opentelemetry.io/collector/pdata v1.30.1-0.20250428165440-8862cb18f3df
+	go.opentelemetry.io/collector/featuregate v1.30.1-0.20250428165858-4ed72bda40bd
+	go.opentelemetry.io/collector/pdata v1.30.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/receiver v1.30.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.124.1-0.20250428165858-4ed72bda40bd
 	go.opentelemetry.io/collector/receiver/receivertest v0.124.1-0.20250428165858-4ed72bda40bd
