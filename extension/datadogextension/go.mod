@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/DataDog/datadog-agent/pkg/serializer v0.64.3
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.125.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.31.0
 	go.opentelemetry.io/collector/component/componentstatus v0.125.0

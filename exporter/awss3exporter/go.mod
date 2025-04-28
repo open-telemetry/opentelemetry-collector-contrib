@@ -10,7 +10,7 @@ require (
 	github.com/aws/aws-sdk-go-v2/service/s3 v1.79.2
 	github.com/aws/aws-sdk-go-v2/service/sts v1.33.19
 	github.com/itchyny/timefmt-go v0.1.6
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.124.1
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/batchperresourceattr v0.125.0
 	github.com/stretchr/testify v1.10.0
 	github.com/tilinna/clock v1.1.0
 	go.opentelemetry.io/collector/component v1.31.0
