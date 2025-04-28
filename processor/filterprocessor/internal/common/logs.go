@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -36,7 +37,7 @@ func (l logConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 				tCtx := ottllog.NewTransformContext(logs, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
 				cond, err := l.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
-					condErr = err
+					condErr = multierr.Append(condErr, err)
 					return false
 				}
 				return cond

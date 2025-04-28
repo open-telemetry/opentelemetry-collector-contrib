@@ -9,6 +9,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -39,7 +40,7 @@ func (t traceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 				tCtx := ottlspan.NewTransformContext(span, scope, resource, ss, rs)
 				cond, err := t.BoolExpr.Eval(ctx, tCtx)
 				if err != nil {
-					condErr = err
+					condErr = multierr.Append(condErr, err)
 					return false
 				}
 				return cond
@@ -73,7 +74,7 @@ func (s spanEventConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces
 					tCtx := ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, sspans, rspans)
 					cond, err := s.BoolExpr.Eval(ctx, tCtx)
 					if err != nil {
-						condErr = err
+						condErr = multierr.Append(condErr, err)
 						return false
 					}
 					return cond

@@ -11,6 +11,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/collector/processor/processorhelper"
+	"go.uber.org/multierr"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -34,7 +35,7 @@ func (r resourceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
-			condErr = err
+			condErr = multierr.Append(condErr, err)
 			return false
 		}
 		return condition
@@ -51,7 +52,7 @@ func (r resourceConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
-			condErr = err
+			condErr = multierr.Append(condErr, err)
 			return false
 		}
 		return condition
@@ -68,7 +69,7 @@ func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
 		condition, err := r.BoolExpr.Eval(ctx, tCtx)
 		if err != nil {
-			condErr = err
+			condErr = multierr.Append(condErr, err)
 			return false
 		}
 		return condition
@@ -96,7 +97,7 @@ func (s scopeConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
-				condErr = err
+				condErr = multierr.Append(condErr, err)
 				return false
 			}
 			return condition
@@ -116,7 +117,7 @@ func (s scopeConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
-				condErr = err
+				condErr = multierr.Append(condErr, err)
 				return false
 			}
 			return condition
@@ -136,7 +137,7 @@ func (s scopeConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
 			condition, err := s.BoolExpr.Eval(ctx, tCtx)
 			if err != nil {
-				condErr = err
+				condErr = multierr.Append(condErr, err)
 				return false
 			}
 			return condition
