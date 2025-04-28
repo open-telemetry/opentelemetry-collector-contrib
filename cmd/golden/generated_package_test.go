@@ -4,7 +4,7 @@ package main
 
 import (
 	"testing"
-	
+
 	"go.uber.org/goleak"
 )
 

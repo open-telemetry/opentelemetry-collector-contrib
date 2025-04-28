@@ -48,14 +48,6 @@ func WriteMetrics(tb testing.TB, filePath string, metrics pmetric.Metrics, opts 
 	return nil
 }
 
-// WriteMetricsWithoutTesting writes a pmetric.Metrics to the specified file in YAML format.
-func WriteMetricsWithoutTesting(filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
-	if err := writeMetrics(filePath, metrics, opts...); err != nil {
-		return err
-	}
-	return nil
-}
-
 // MarshalMetricsYAML marshals a pmetric.Metrics to YAML format.
 func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 	unmarshaler := &pmetric.JSONMarshaler{}

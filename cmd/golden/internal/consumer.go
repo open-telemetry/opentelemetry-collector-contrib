@@ -33,7 +33,7 @@ func (m *MetricsSink) Capabilities() consumer.Capabilities {
 func (m *MetricsSink) ConsumeMetrics(_ context.Context, md pmetric.Metrics) error {
 	if m.noExpected {
 		if m.cfg.WriteExpected {
-			err := golden.WriteMetricsWithoutTesting(m.cfg.ExpectedFile, md)
+			err := golden.WriteMetricsToFile(m.cfg.ExpectedFile, md)
 			if err != nil {
 				return err
 			}

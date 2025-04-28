@@ -1,4 +1,5 @@
 # This file is auto-generated. Do not edit manually.
+cmd/golden cmd/golden
 cmd/opampsupervisor cmd/opampsupervisor
 cmd/otelcontribcol cmd/otelcontribcol
 cmd/oteltestbedcol cmd/oteltestbedcol
