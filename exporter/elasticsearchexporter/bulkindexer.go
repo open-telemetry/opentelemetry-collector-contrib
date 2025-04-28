@@ -90,11 +90,11 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 	}
 }
 
-func bulkIndexerIncludeSourceOnError(includeSourceOnError IncludeSourceOnErrorSettings) docappender.Value {
-	if includeSourceOnError.CompatibilityMode {
+func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
+	if includeSourceOnError == nil {
 		return docappender.Unset
 	}
-	if includeSourceOnError.Enabled {
+	if *includeSourceOnError {
 		return docappender.True
 	}
 	return docappender.False

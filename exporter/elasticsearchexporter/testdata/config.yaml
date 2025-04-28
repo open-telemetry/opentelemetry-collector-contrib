@@ -114,6 +114,4 @@ elasticsearch/batcher_minmax_size:
     max_size: 200
 elasticsearch/include_source_on_error:
   endpoint: https://elastic.example.com:9200
-  include_source_on_error:
-    enabled: true
-    compatibility_mode: false
+  include_source_on_error: true

@@ -325,12 +325,10 @@ The behaviour of this bulk indexing can be configured with the following setting
 With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
 This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
 
-In this exporter, the equivalent configuration is also named `include_source_on_error`.
-
-- `include_source_on_error`:
-  - `enabled` (default=false): Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: if enabled, Elasticsearch Exporter may log error responses containing request payload. This may cause sensitive data being exposed in logs.
-  - `compatibility_mode` (default=true): Backward compatible option for older Elasticsearch versions, to avoid logging sensitive data. If set to true, `enabled` is ignored and the error reason is discarded from bulk index responses entirely.
-
+In this exporter, the equivalent configuration is also named `include_source_on_error`. The valid values are:
+- `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
+- `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
+- `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
 
 ### Elasticsearch node discovery
 
