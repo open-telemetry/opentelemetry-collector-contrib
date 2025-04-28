@@ -722,6 +722,11 @@ transform:
 
 The configuration can be used also with `delete_matching_keys()` to copy the attributes that do not match the regular expression.
 
+## Additional OTTL Functions
+The Config `AdditionalLogFuncs`, `AdditionalSpanFuncs` and `AdditionalMetricFuncs` properties can be set programatically by
+instantiating the transform processor. The provided OTTL functions would be accessible in the resulting processor. This properties
+cannot be set through a yaml configuration.
+
 ## Troubleshooting
 
 When using OTTL you can enable debug logging in the collector to print out useful information,
