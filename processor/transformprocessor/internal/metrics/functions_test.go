@@ -73,7 +73,7 @@ type TestMetricFuncArguments[K any] struct {
 }
 
 func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ExtractPatternsRubyRegex", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
+	return ottl.NewFactory("MetricFunc", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
 }
 
 func createTestMetricFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

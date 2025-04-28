@@ -28,7 +28,7 @@ type TestLogFuncArguments[K any] struct {
 }
 
 func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ExtractPatternsRubyRegex", &TestLogFuncArguments[K]{}, createTestLogFunc[K])
+	return ottl.NewFactory("LogFunc", &TestLogFuncArguments[K]{}, createTestLogFunc[K])
 }
 
 func createTestLogFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {

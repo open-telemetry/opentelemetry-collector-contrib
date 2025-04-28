@@ -31,7 +31,7 @@ type TestSpanFuncArguments[K any] struct {
 }
 
 func NewTestSpanFuncFactory[K any]() ottl.Factory[K] {
-	return ottl.NewFactory("ExtractPatternsRubyRegex", &TestSpanFuncArguments[K]{}, createTestSpanFunc[K])
+	return ottl.NewFactory("SpanFunc", &TestSpanFuncArguments[K]{}, createTestSpanFunc[K])
 }
 
 func createTestSpanFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
