@@ -1256,7 +1256,7 @@ func Test_ProcessTraces_CacheAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructTraces()
-			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), EmptyAdditionalSpanFuncs)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessTraces(context.Background(), td)
@@ -1398,6 +1398,53 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	}
 }
 
+func Test_NewProcessor_AdditionalSpanFuncs(t *testing.T) {
+	type testCase struct {
+		name                string
+		statements          []common.ContextStatements
+		wantErrorWith       string
+		additionalSpanFuncs []ottl.Factory[ottlspan.TransformContext]
+	}
+
+	tests := []testCase{
+		{
+			name: "additional span funcs : statement with added span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			additionalSpanFuncs: []ottl.Factory[ottlspan.TransformContext]{NewTestSpanFuncFactory[ottlspan.TransformContext]()},
+		},
+		{
+			name: "additional span funcs : statement with missing span func",
+			statements: []common.ContextStatements{
+				{
+					Context:    common.ContextID("span"),
+					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
+				},
+			},
+			wantErrorWith:       fmt.Sprintf(`undefined function "TestSpanFunc"`),
+			additionalSpanFuncs: EmptyAdditionalSpanFuncs,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.additionalSpanFuncs)
+			if tt.wantErrorWith != "" {
+				if err == nil {
+					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
+				}
+				assert.Contains(t, err.Error(), tt.wantErrorWith)
+				return
+			}
+			require.NoError(t, err)
+		})
+	}
+}
+
 func BenchmarkTwoSpans(b *testing.B) {
 	tests := []struct {
 		name       string
@@ -1484,53 +1531,6 @@ func BenchmarkHundredSpans(b *testing.B) {
 				_, err = processor.ProcessTraces(context.Background(), td)
 				assert.NoError(b, err)
 			}
-		})
-	}
-}
-
-func Test_NewProcessor_AdditionalSpanFuncs(t *testing.T) {
-	type testCase struct {
-		name                string
-		statements          []common.ContextStatements
-		wantErrorWith       string
-		additionalSpanFuncs []ottl.Factory[ottlspan.TransformContext]
-	}
-
-	tests := []testCase{
-		{
-			name: "additional span funcs : statement with added span func",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("span"),
-					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
-				},
-			},
-			additionalSpanFuncs: []ottl.Factory[ottlspan.TransformContext]{NewTestSpanFuncFactory[ottlspan.TransformContext]()},
-		},
-		{
-			name: "additional span funcs : statement with missing span func",
-			statements: []common.ContextStatements{
-				{
-					Context:    common.ContextID("span"),
-					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
-				},
-			},
-			wantErrorWith:       fmt.Sprintf(`undefined function "TestSpanFunc"`),
-			additionalSpanFuncs: EmptyAdditionalSpanFuncs,
-		},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			_, err := NewProcessor(tt.statements, ottl.PropagateError, componenttest.NewNopTelemetrySettings(), tt.additionalSpanFuncs)
-			if tt.wantErrorWith != "" {
-				if err == nil {
-					t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
-				}
-				assert.Contains(t, err.Error(), tt.wantErrorWith)
-				return
-			}
-			require.NoError(t, err)
 		})
 	}
 }

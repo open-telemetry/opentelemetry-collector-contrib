@@ -1869,7 +1869,7 @@ func Test_ProcessMetrics_CacheAccess(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructMetrics()
-			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.statements, ottl.IgnoreError, componenttest.NewNopTelemetrySettings(), EmptyAdditionalMetricFuncs)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessMetrics(context.Background(), td)

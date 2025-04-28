@@ -51,7 +51,7 @@ func Test_SpanFunctions_AdditionalSpanFuncs(t *testing.T) {
 	additionalSpanFuncs := []ottl.Factory[ottlspan.TransformContext]{testSpanFuncFactory}
 	actual := SpanFunctions(additionalSpanFuncs)
 
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}

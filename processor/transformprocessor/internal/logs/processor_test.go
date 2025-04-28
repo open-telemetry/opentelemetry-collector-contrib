@@ -1190,7 +1190,7 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			td := constructLogs()
-			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings())
+			processor, err := NewProcessor(tt.contextStatements, ottl.IgnoreError, false, componenttest.NewNopTelemetrySettings(), EmptyAdditionalLogFuncs)
 			assert.NoError(t, err)
 
 			_, err = processor.ProcessLogs(context.Background(), td)
@@ -1206,10 +1206,9 @@ func Test_ProcessLogs_InferredContextFromConditions(t *testing.T) {
 
 func Test_NewProcessor_ConditionsParse(t *testing.T) {
 	type testCase struct {
-		name               string
-		statements         []common.ContextStatements
-		wantErrorWith      string
-		additionalLogFuncs []ottl.Factory[ottllog.TransformContext]
+		name          string
+		statements    []common.ContextStatements
+		wantErrorWith string
 	}
 
 	contextsTests := map[string][]testCase{"log": nil}
@@ -1261,7 +1260,7 @@ func Test_NewProcessor_ConditionsParse(t *testing.T) {
 		t.Run(ctx, func(t *testing.T) {
 			for _, tt := range tests {
 				t.Run(tt.name, func(t *testing.T) {
-					_, err := NewProcessor(tt.statements, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), tt.additionalLogFuncs)
+					_, err := NewProcessor(tt.statements, ottl.PropagateError, false, componenttest.NewNopTelemetrySettings(), EmptyAdditionalLogFuncs)
 					if tt.wantErrorWith != "" {
 						if err == nil {
 							t.Errorf("expected error containing '%s', got: <nil>", tt.wantErrorWith)
