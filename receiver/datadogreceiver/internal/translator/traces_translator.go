@@ -136,6 +136,11 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 
 	for _, trace := range traces {
 		for _, span := range trace {
+			// Restore base service name as the service name.
+			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
+			if val, ok := span.Meta["_dd.base_service"]; ok {
+				span.Service = val
+			}
 			slice, exist := groupByService[span.Service]
 			if !exist {
 				slice = ptrace.NewSpanSlice()

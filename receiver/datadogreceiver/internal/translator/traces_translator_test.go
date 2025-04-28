@@ -286,3 +286,39 @@ func TestToTraces64to128bits(t *testing.T) {
 		}
 	}
 }
+
+func TestToTracesServiceName(t *testing.T) {
+	expectedServiceName := "my-service"
+	spans := []pb.Span{
+		{
+			TraceID:  2133000431340558749,
+			SpanID:   2133000431340558749,
+			ParentID: 2133000431340558749,
+			Name:     "postgresql",
+			Meta: map[string]string{
+				"_dd.base_service": expectedServiceName,
+			},
+		},
+		{
+			TraceID:  2133000431340558749,
+			SpanID:   2133000431340558750,
+			ParentID: 2133000431340558750,
+			Name:     "postgresql",
+			Meta: map[string]string{
+				"_dd.base_service": expectedServiceName,
+			},
+		},
+	}
+	payload := &pb.TracerPayload{
+		Chunks: traceChunksFromSpans(spans),
+	}
+	req := &http.Request{
+		Header: http.Header{},
+	}
+
+	traces, _ := ToTraces(zap.NewNop(), payload, req, nil)
+	for _, rs := range traces.ResourceSpans().All() {
+		actualServiceName, _ := rs.Resource().Attributes().Get(string(semconv.ServiceNameKey))
+		assert.Equal(t, expectedServiceName, actualServiceName.AsString())
+	}
+}
