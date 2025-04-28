@@ -51,6 +51,12 @@ const (
 	Body         MarshalerType = "body"
 )
 
+// ResourceAttrsToS3 defines the mapping of S3 uploading configuration values to resource attribute values.
+type ResourceAttrsToS3 struct {
+	// S3Prefix indicates the mapping of the key (directory) prefix used for writing into the bucket to a specific resource attribute value.
+	S3Prefix string `mapstructure:"s3_prefix"`
+}
+
 // Config contains the main configuration options for the s3 exporter
 type Config struct {
 	QueueSettings   exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
@@ -59,8 +65,9 @@ type Config struct {
 	MarshalerName   MarshalerType                   `mapstructure:"marshaler"`
 
 	// Encoding to apply. If present, overrides the marshaler configuration option.
-	Encoding              *component.ID `mapstructure:"encoding"`
-	EncodingFileExtension string        `mapstructure:"encoding_file_extension"`
+	Encoding              *component.ID     `mapstructure:"encoding"`
+	EncodingFileExtension string            `mapstructure:"encoding_file_extension"`
+	ResourceAttrsToS3     ResourceAttrsToS3 `mapstructure:"resource_attrs_to_s3"`
 }
 
 func (c *Config) Validate() error {

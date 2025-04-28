@@ -271,10 +271,10 @@ github.com/yuin/goldmark v1.3.5/go.mod h1:mwnBkeHKe2W/ZEtQ+71ViKU8L12m81fl3OWwC1
 go.etcd.io/etcd/api/v3 v3.5.4/go.mod h1:5GB2vv4A4AOn3yk7MftYGHkUfGtDHnEraIjym4dYz5A=
 go.etcd.io/etcd/client/pkg/v3 v3.5.4/go.mod h1:IJHfcCEKxYu1Os13ZdwCwIUTUVGYTSAM3YSwc9/Ac1g=
 go.etcd.io/etcd/client/v3 v3.5.4/go.mod h1:ZaRkVgBZC+L+dLCjTcF1hRXpgZXQPOvnA/Ak/gq3kiY=
-go.opentelemetry.io/collector/confmap v1.30.1-0.20250424234037-ac7c0f2f4cd8 h1:IHqRPBftluHCgpPev5CyrRS8fKPfT1mSEPEd4Ow5IW8=
-go.opentelemetry.io/collector/confmap v1.30.1-0.20250424234037-ac7c0f2f4cd8/go.mod h1:XwxdgZpFYd3wy+/f8B5L300yV3V/L8tSuV2wmW1f6MI=
-go.opentelemetry.io/collector/featuregate v1.30.1-0.20250424234037-ac7c0f2f4cd8 h1:W8LJ3kvSYBsws87mJ3Hyx5NmD9POBTtn6V8ujmC3B7E=
-go.opentelemetry.io/collector/featuregate v1.30.1-0.20250424234037-ac7c0f2f4cd8/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
+go.opentelemetry.io/collector/confmap v1.30.1-0.20250428165858-4ed72bda40bd h1:Or73yXTnmYXfBeelmdK6EthQEhdng+aLiD6Zyne3oNg=
+go.opentelemetry.io/collector/confmap v1.30.1-0.20250428165858-4ed72bda40bd/go.mod h1:XwxdgZpFYd3wy+/f8B5L300yV3V/L8tSuV2wmW1f6MI=
+go.opentelemetry.io/collector/featuregate v1.30.1-0.20250428165858-4ed72bda40bd h1:TZTqKTEaiZRRbJsglUbZHP/8cM6nVq2OZxqw8OchZhU=
+go.opentelemetry.io/collector/featuregate v1.30.1-0.20250428165858-4ed72bda40bd/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.uber.org/atomic v1.7.0/go.mod h1:fEN4uk6kAWBTFdckzkM89CLk9XfWZrxpCo0nPH17wJc=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
