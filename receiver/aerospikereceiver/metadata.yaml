@@ -13,8 +13,8 @@ tests:
   goleak:
     ignore:
       top:
-        - "github.com/aerospike/aerospike-client-go/v7.(*baseMultiCommand).parseRecordResults"
-        - "github.com/aerospike/aerospike-client-go/v7.(*Cluster).clusterBoss"
+        - "github.com/aerospike/aerospike-client-go/v8.(*baseMultiCommand).parseRecordResults"
+        - "github.com/aerospike/aerospike-client-go/v8.(*Cluster).clusterBoss"
         - "sync.runtime_Semacquire"
 
 resource_attributes:

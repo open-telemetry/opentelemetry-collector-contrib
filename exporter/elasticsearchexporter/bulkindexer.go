@@ -26,7 +26,7 @@ import (
 
 type bulkIndexer interface {
 	// StartSession starts a new bulk indexing session.
-	StartSession(context.Context) (bulkIndexerSession, error)
+	StartSession(context.Context) bulkIndexerSession
 
 	// Close closes the bulk indexer, ending any in-progress
 	// sessions and stopping any background processing.
@@ -111,15 +111,16 @@ type syncBulkIndexer struct {
 
 // StartSession creates a new docappender.BulkIndexer, and wraps
 // it with a syncBulkIndexerSession.
-func (s *syncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, error) {
+func (s *syncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
 	bi, err := docappender.NewBulkIndexer(s.config)
 	if err != nil {
-		return nil, err
+		// This should never happen in practice:
+		// NewBulkIndexer should only fail if the
+		// config is invalid, and we expect it to
+		// always be valid at this point.
+		return errBulkIndexerSession{err: err}
 	}
-	return &syncBulkIndexerSession{
-		s:  s,
-		bi: bi,
-	}, nil
+	return &syncBulkIndexerSession{s: s, bi: bi}
 }
 
 // Close is a no-op.
@@ -241,8 +242,8 @@ type asyncBulkIndexerSession struct {
 }
 
 // StartSession returns a new asyncBulkIndexerSession.
-func (a *asyncBulkIndexer) StartSession(context.Context) (bulkIndexerSession, error) {
-	return asyncBulkIndexerSession{a}, nil
+func (a *asyncBulkIndexer) StartSession(context.Context) bulkIndexerSession {
+	return asyncBulkIndexerSession{a}
 }
 
 // Close closes the asyncBulkIndexer and any active sessions.
@@ -508,14 +509,10 @@ type wgTrackingBulkIndexer struct {
 	wg *sync.WaitGroup
 }
 
-func (w *wgTrackingBulkIndexer) StartSession(ctx context.Context) (bulkIndexerSession, error) {
+func (w *wgTrackingBulkIndexer) StartSession(ctx context.Context) bulkIndexerSession {
 	w.wg.Add(1)
-	session, err := w.bulkIndexer.StartSession(ctx)
-	if err != nil {
-		w.wg.Done()
-		return nil, err
-	}
-	return &wgTrackingBulkIndexerSession{bulkIndexerSession: session, wg: w.wg}, nil
+	session := w.bulkIndexer.StartSession(ctx)
+	return &wgTrackingBulkIndexerSession{bulkIndexerSession: session, wg: w.wg}
 }
 
 type wgTrackingBulkIndexerSession struct {
@@ -526,4 +523,18 @@ type wgTrackingBulkIndexerSession struct {
 func (w *wgTrackingBulkIndexerSession) End() {
 	defer w.wg.Done()
 	w.bulkIndexerSession.End()
+}
+
+type errBulkIndexerSession struct {
+	err error
+}
+
+func (s errBulkIndexerSession) Add(context.Context, string, string, string, io.WriterTo, map[string]string, string) error {
+	return fmt.Errorf("creating bulk indexer session failed, cannot add item: %w", s.err)
+}
+
+func (s errBulkIndexerSession) End() {}
+
+func (s errBulkIndexerSession) Flush(context.Context) error {
+	return fmt.Errorf("creating bulk indexer session failed, cannot flush: %w", s.err)
 }
