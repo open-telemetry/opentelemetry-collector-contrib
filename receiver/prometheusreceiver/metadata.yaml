@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib, k8s]
   codeowners:
-    active: [Aneurysm9, dashpole]
+    active: [Aneurysm9, dashpole, ArthurSens, krajorama]
 tests:
   config:
     config:
