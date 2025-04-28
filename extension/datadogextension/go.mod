@@ -3,6 +3,7 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/extension/datad
 go 1.23.0
 
 require (
+	github.com/DataDog/datadog-agent/pkg/serializer v0.64.3
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog v0.124.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.30.1-0.20250424234037-ac7c0f2f4cd8

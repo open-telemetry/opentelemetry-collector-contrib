@@ -1,5 +1,7 @@
 github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel h1:ReGJuAAOw+/AcuNtNeD7dyk//FKjNCmtaq6tkLRNhe8=
 github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel/go.mod h1:b5ikXuJHhxN0I0mReyhe/10Lq/ZtkKTaAG6L0GuEY8s=
+github.com/DataDog/datadog-agent/pkg/serializer v0.64.3 h1:KefKTYDsajtyx+/oK+HR4FaXi1wZqkavTH9ub3szS2Q=
+github.com/DataDog/datadog-agent/pkg/serializer v0.64.3/go.mod h1:/ZG8je7Ua39dQPNkziIEtWTB/Nknpwwzm8lJBX/ynNw=
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.3 h1:YHTifHfjkN+s4tLRLu+tkm+zSe1e5WA7AZIvp4Rljts=
 github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.3/go.mod h1:nucHXjvT1az8xBedqPRQox07woPX6KUzZLkAjKYvXwI=
 github.com/DataDog/datadog-agent/pkg/util/log v0.64.3 h1:JpT79bpG8nKNWSPsTWLxAZ2I8an7Dav3ArfH1p2yi+Q=
