@@ -174,6 +174,59 @@ func TestReadWindowsEventLogger(t *testing.T) {
 	require.Equal(t, int64(10), eventIDMap["id"])
 }
 
+func TestReadWindowsEventLoggerWithQuery(t *testing.T) {
+	logMessage := "Test log"
+	src := "otel-windowseventlogreceiver-test"
+	uninstallEventSource, err := assertEventSourceInstallation(t, src)
+	defer uninstallEventSource()
+	require.NoError(t, err)
+
+	ctx := context.Background()
+	factory := newFactoryAdapter()
+	createSettings := receivertest.NewNopSettings(metadata.Type)
+	cfg := createTestConfigWithQuery()
+	sink := new(consumertest.LogsSink)
+
+	receiver, err := factory.CreateLogs(ctx, createSettings, cfg, sink)
+	require.NoError(t, err)
+
+	err = receiver.Start(ctx, componenttest.NewNopHost())
+	require.NoError(t, err)
+	defer func() {
+		require.NoError(t, receiver.Shutdown(ctx))
+	}()
+	// Start launches nested goroutines, give them a chance to run before logging the test event(s).
+	time.Sleep(3 * time.Second)
+
+	logger, err := eventlog.Open(src)
+	require.NoError(t, err)
+	defer logger.Close()
+
+	err = logger.Info(10, logMessage)
+	require.NoError(t, err)
+
+	records := assertExpectedLogRecords(t, sink, src, 1)
+	require.Len(t, records, 1)
+	record := records[0]
+	body := record.Body().Map().AsRaw()
+
+	require.Equal(t, logMessage, body["message"])
+
+	eventData := body["event_data"]
+	eventDataMap, ok := eventData.(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, map[string]any{
+		"data": []any{map[string]any{"": "Test log"}},
+	}, eventDataMap)
+
+	eventID := body["event_id"]
+	require.NotNil(t, eventID)
+
+	eventIDMap, ok := eventID.(map[string]any)
+	require.True(t, ok)
+	require.Equal(t, int64(10), eventIDMap["id"])
+}
+
 func TestReadWindowsEventLoggerRaw(t *testing.T) {
 	logMessage := "Test log"
 	src := "otel-windowseventlogreceiver-test"
@@ -292,6 +345,28 @@ func createTestConfig() *WindowsLogConfig {
 		InputConfig: func() windows.Config {
 			c := windows.NewConfig()
 			c.Channel = "application"
+			c.StartAt = "end"
+			return *c
+		}(),
+	}
+}
+
+func createTestConfigWithQuery() *WindowsLogConfig {
+	queryXML := `
+    <QueryList>
+      <Query Id="0">
+        <Select Path="Application">*</Select>
+      </Query>
+    </QueryList>
+  `
+	return &WindowsLogConfig{
+		BaseConfig: adapter.BaseConfig{
+			Operators:      []operator.Config{},
+			RetryOnFailure: consumerretry.NewDefaultConfig(),
+		},
+		InputConfig: func() windows.Config {
+			c := windows.NewConfig()
+			c.Query = &queryXML
 			c.StartAt = "end"
 			return *c
 		}(),
