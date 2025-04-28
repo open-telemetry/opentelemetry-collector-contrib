@@ -186,6 +186,7 @@ func (s *azureScraper) loadCredentials(host component.Host) (err error) {
 		return nil
 	}
 
+	s.settings.Logger.Warn("'auth' is deprecated, use 'credentials' instead")
 	switch s.cfg.Authentication {
 	case defaultCredentials:
 		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {

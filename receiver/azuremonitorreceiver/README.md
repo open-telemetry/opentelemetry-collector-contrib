@@ -24,7 +24,7 @@ The following settings are required:
 The following settings are optional:
 
 - `credentials` to get valid credentials for azure. It should be the id of an `azureauthextension` component.
--  `auth`, if `credentials` are not specified (default = service_principal): Specifies the used authentication method:
+- `auth` (deprecated), if `credentials` are not specified (default = service_principal). Specifies the used authentication method:
   - Supported values for `auth` are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
