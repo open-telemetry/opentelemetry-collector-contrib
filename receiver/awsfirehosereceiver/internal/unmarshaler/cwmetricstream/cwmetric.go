@@ -50,6 +50,16 @@ type cWMetricValue struct {
 	Sum float64 `json:"sum"`
 	// Count is the number of data points.
 	Count float64 `json:"count"`
+	// P70 is the 70th percentile of observed values. This value is optional.
+	P70 *float64 `json:"p70"`
+	// P80 is the 80th percentile of observed values. This value is optional.
+	P80 *float64 `json:"p80"`
+	// P90 is the 90th percentile of observed values. This value is optional.
+	P90 *float64 `json:"p90"`
+	// P95 is the 95th percentile of observed values. This value is optional.
+	P95 *float64 `json:"p95"`
+	// P99 is the 99th percentile of observed values. This value is optional.
+	P99 *float64 `json:"p99"`
 }
 
 func (v *cWMetricValue) UnmarshalJSON(data []byte) error {
