@@ -7,7 +7,7 @@ change_type: 'bug_fix'
 component: k8sobjectsreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Properly deep copy the K8sObjectsConfig struct in the k8sobjectsreceiver
+note: Properly deep copy the K8sObjectsConfig struct in the k8sobjectsreceiver and separate mutable fields
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39553]
