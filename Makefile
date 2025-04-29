@@ -444,6 +444,12 @@ opampsupervisor:
 	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
+# Build the golden executable.
+.PHONY: golden
+golden:
+	cd ./cmd/golden && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/golden_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
 MODULES="internal/buildscripts/modules"
 .PHONY: update-core-modules
 update-core-module-list:
