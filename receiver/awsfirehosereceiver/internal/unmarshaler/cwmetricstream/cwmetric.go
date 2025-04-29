@@ -50,7 +50,7 @@ type cWMetricValue struct {
 	Sum float64
 	// Count is the number of data points.
 	Count float64
-	// Map containing all additional fields, including percentiles
+	// Map containing all percentiles
 	Percentiles map[string]float64
 }
 

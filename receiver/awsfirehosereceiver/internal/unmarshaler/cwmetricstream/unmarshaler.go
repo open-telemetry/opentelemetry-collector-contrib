@@ -117,7 +117,7 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 
 		for key, value := range cwMetric.Value.Percentiles {
 			// Only process percentile fields (those starting with 'p')
-			if len(key) < 2 || key[0] != 'p' {
+			if len(key) < 3 || key[0] != 'p' {
 				continue
 			}
 
