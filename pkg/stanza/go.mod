@@ -8,7 +8,6 @@ require (
 	github.com/expr-lang/expr v1.17.2
 	github.com/fsnotify/fsnotify v1.9.0
 	github.com/goccy/go-json v0.10.5
-	github.com/google/uuid v1.6.0
 	github.com/jonboulle/clockwork v0.5.0
 	github.com/jpillora/backoff v1.0.0
 	github.com/json-iterator/go v1.1.12
@@ -50,6 +49,7 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
+	github.com/google/uuid v1.6.0 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/knadh/koanf/maps v0.1.2 // indirect
 	github.com/knadh/koanf/providers/confmap v1.0.0 // indirect
