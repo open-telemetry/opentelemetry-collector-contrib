@@ -70,20 +70,9 @@ func (c *metricsConsumer) Start(ctx context.Context, host component.Host) error 
 		// TODO: make cwmetrics an encoding extension
 		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	case "otlp_v1":
-		f := awscloudwatchmetricstreamsencodingextension.NewFactory()
-		ext, err := f.Create(ctx, extension.Settings{
-			ID:                component.NewID(f.Type()),
-			BuildInfo:         c.settings.BuildInfo,
-			TelemetrySettings: c.settings.TelemetrySettings,
-		}, &awscloudwatchmetricstreamsencodingextension.Config{
-			Format: "opentelemetry1.0",
-		})
+		unmarshaler, err := c.newUnmarshalerFromEncoding(ctx, encoding, "opentelemetry1.0")
 		if err != nil {
-			return fmt.Errorf("failed to create encoding extension for %q format: %w", "otlp_v1", err)
-		}
-		unmarshaler, ok := ext.(pmetric.Unmarshaler)
-		if !ok {
-			return errors.New("unexpected: failed to cast aws cloudwatch metric streams encoding extension to unmarshaler")
+			return err
 		}
 		c.unmarshaler = unmarshaler
 	default:
@@ -94,6 +83,31 @@ func (c *metricsConsumer) Start(ctx context.Context, host component.Host) error 
 		c.unmarshaler = unmarshaler
 	}
 	return nil
+}
+
+// newUnmarshalerFromEncoding creates a new unmarshaler from
+// aws cloudwatch metric streams encoding extension.
+func (c *metricsConsumer) newUnmarshalerFromEncoding(
+	ctx context.Context,
+	encoding string,
+	format string,
+) (pmetric.Unmarshaler, error) {
+	f := awscloudwatchmetricstreamsencodingextension.NewFactory()
+	ext, err := f.Create(ctx, extension.Settings{
+		ID:                component.NewID(f.Type()),
+		BuildInfo:         c.settings.BuildInfo,
+		TelemetrySettings: c.settings.TelemetrySettings,
+	}, &awscloudwatchmetricstreamsencodingextension.Config{
+		Format: format,
+	})
+	if err != nil {
+		return nil, fmt.Errorf("failed to create encoding extension for %q format: %w", encoding, err)
+	}
+	unmarshaler, ok := ext.(pmetric.Unmarshaler)
+	if !ok {
+		return nil, errors.New("unexpected: failed to cast aws cloudwatch metric streams encoding extension to unmarshaler")
+	}
+	return unmarshaler, nil
 }
 
 // Consume uses the configured unmarshaler to deserialize each record,

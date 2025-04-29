@@ -15,11 +15,9 @@ import (
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awscloudwatchmetricstreamsencodingextension"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/unmarshaler/cwmetricstream"
@@ -54,14 +52,10 @@ func TestMetricsReceiver_Start(t *testing.T) {
 		"WithOTLP_v1Encoding": {
 			recordType: "otlp_v1",
 			wantUnmarshalerType: func() pmetric.Unmarshaler {
-				f := awscloudwatchmetricstreamsencodingextension.NewFactory()
-				ext, err := f.Create(context.TODO(), extension.Settings{
-					ID: component.NewID(f.Type()),
-				}, &awscloudwatchmetricstreamsencodingextension.Config{
-					Format: "opentelemetry1.0",
-				})
+				c := metricsConsumer{}
+				u, err := c.newUnmarshalerFromEncoding(context.Background(), "otlp_v1", "opentelemetry1.0")
 				require.NoError(t, err)
-				return ext.(pmetric.Unmarshaler)
+				return u
 			}(),
 		},
 		"WithBuiltinEncoding": {
