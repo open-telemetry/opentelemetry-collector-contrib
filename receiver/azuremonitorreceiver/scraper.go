@@ -159,7 +159,7 @@ func (s *azureScraper) unloadSubscription(id string) {
 }
 
 func (s *azureScraper) loadCredentials() (err error) {
-	switch s.cfg.Authentication {
+	switch s.cfg.Credentials {
 	case defaultCredentials:
 		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
 			return err
@@ -183,7 +183,7 @@ func (s *azureScraper) loadCredentials() (err error) {
 			return err
 		}
 	default:
-		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
+		return fmt.Errorf("unknown credentials %v", s.cfg.Credentials)
 	}
 	return nil
 }
