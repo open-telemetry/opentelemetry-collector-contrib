@@ -6,6 +6,7 @@ package dockerstatsreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"context"
 	"fmt"
+	"regexp"
 	"strconv"
 	"strings"
 	"sync"
@@ -18,10 +19,84 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/dockerstatsreceiver/internal/metadata"
 )
+
+// Matcher is an interface for matching container labels.
+type Matcher interface {
+	Matches(label string) bool
+}
+
+// StrictMatcher is a matcher that matches by exact match.
+type StrictMatcher struct {
+	Include string
+}
+
+// Matches returns true if the matcher matches the label.
+func (sm *StrictMatcher) Matches(label string) bool {
+	return label == sm.Include
+}
+
+// RegexMatcher is a matcher that matches by regular expression.
+type RegexMatcher struct {
+	re *regexp.Regexp
+}
+
+// Matches returns true if the matcher matches the label.
+func (rm *RegexMatcher) Matches(label string) bool {
+	return rm.re.MatchString(label)
+}
+
+// MatcherCorpus is a collection of matchers.
+type MatcherCorpus struct {
+	matchers []Matcher
+}
+
+// Add adds a matcher to the corpus.
+func (mc *MatcherCorpus) Add(lm LabelMatcher) error {
+	switch lm.MatchType {
+	case strictMatchType:
+		mc.matchers = append(mc.matchers, &StrictMatcher{Include: lm.Include})
+	case regexpMatchType:
+		re, err := regexp.Compile(lm.Include)
+		if err != nil {
+			return fmt.Errorf("failed to compile regex from include '%v': %w", lm.Include, err)
+		}
+		mc.matchers = append(mc.matchers, &RegexMatcher{re: re})
+	default:
+		return fmt.Errorf("unknown match type: %v", lm.MatchType)
+	}
+	return nil
+}
+
+// MatcherCorpusFromConfig creates a MatcherCorpus from a Config.
+func MatcherCorpusFromConfig(config *Config) (*MatcherCorpus, error) {
+	mc := &MatcherCorpus{}
+	for _, lm := range config.ContainerLabelsToResourceAttributes {
+		if err := mc.Add(lm); err != nil {
+			return nil, err
+		}
+	}
+	return mc, nil
+}
+
+// Matches returns true if any of the matchers in the corpus matches the label.
+func (mc *MatcherCorpus) Matches(label string) bool {
+	for _, matcher := range mc.matchers {
+		if matcher.Matches(label) {
+			return true
+		}
+	}
+	return false
+}
+
+// IsEmpty returns true if the corpus is empty.
+func (mc *MatcherCorpus) IsEmpty() bool {
+	return mc == nil || len(mc.matchers) == 0
+}
 
 var (
 	defaultDockerAPIVersion         = "1.25"
@@ -39,11 +114,18 @@ type metricsReceiver struct {
 	settings receiver.Settings
 	client   *docker.Client
 	mb       *metadata.MetricsBuilder
+	lm       *MatcherCorpus
 	cancel   context.CancelFunc
 }
 
 func newMetricsReceiver(set receiver.Settings, config *Config) *metricsReceiver {
+	lm, err := MatcherCorpusFromConfig(config)
+	if err != nil {
+		// This can practically never happen due to config validation.
+		set.Logger.Warn("Failed to parse include regexes for labels from config.", zap.Error(err))
+	}
 	return &metricsReceiver{
+		lm:       lm,
 		config:   config,
 		settings: set,
 		mb:       metadata.NewMetricsBuilder(config.MetricsBuilderConfig, set),
@@ -142,9 +224,16 @@ func (r *metricsReceiver) recordContainerStats(now pcommon.Timestamp, containerS
 	rb.SetContainerName(strings.TrimPrefix(container.Name, "/"))
 	rb.SetContainerImageID(container.Image)
 	rb.SetContainerCommandLine(strings.Join(container.Config.Cmd, " "))
-	l := make(map[string]any, len(container.Config.Labels))
-	for k, v := range container.Config.Labels {
-		l[k] = v
+
+	// Copy container labels into the resource attributes if they match the configured regexes.
+	var l map[string]any
+	if !r.lm.IsEmpty() {
+		l = make(map[string]any, len(container.Config.Labels))
+		for k, v := range container.Config.Labels {
+			if r.lm.Matches(k) {
+				l[k] = v
+			}
+		}
 	}
 	rb.SetContainerLabels(l)
 	resource := rb.Emit()

@@ -480,7 +480,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 5.848954705252094e+07
+                - asDouble: 6.40221150593387e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

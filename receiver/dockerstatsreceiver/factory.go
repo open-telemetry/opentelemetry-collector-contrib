@@ -55,3 +55,4 @@ func createMetricsReceiver(
 
 	return scraperhelper.NewMetricsController(&dsr.config.ControllerConfig, params, consumer, scraperhelper.AddScraper(metadata.Type, scrp))
 }
+

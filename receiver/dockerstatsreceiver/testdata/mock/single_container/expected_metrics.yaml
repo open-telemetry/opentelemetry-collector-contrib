@@ -20,9 +20,6 @@ resourceMetrics:
           value:
             kvlistValue:
               values:
-                - key: container.label
-                  value:
-                    stringValue: container-label
                 - key: container.label.2
                   value:
                     stringValue: container-label-2
@@ -843,7 +840,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 8.332172456138211e+07
+                - asDouble: 8.88542925652125e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime

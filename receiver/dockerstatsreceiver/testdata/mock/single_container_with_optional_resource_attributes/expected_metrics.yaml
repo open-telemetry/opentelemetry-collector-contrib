@@ -4,6 +4,9 @@ resourceMetrics:
         - key: container-metric-label
           value:
             stringValue: container-label
+        - key: container-metric-label-2
+          value:
+            stringValue: container-label-2
         - key: container.command_line
           value:
             stringValue: /bin/sh
@@ -23,9 +26,9 @@ resourceMetrics:
           value:
             kvlistValue:
               values:
-                - key: container.label
+                - key: container.label.2
                   value:
-                    stringValue: container-label
+                    stringValue: container-label-2
         - key: container.name
           value:
             stringValue: bold_sinoussi
@@ -840,7 +843,7 @@ resourceMetrics:
           - description: Time elapsed since container start time.
             gauge:
               dataPoints:
-                - asDouble: 8.332172461790705e+07
+                - asDouble: 8.885429262633167e+07
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: container.uptime
