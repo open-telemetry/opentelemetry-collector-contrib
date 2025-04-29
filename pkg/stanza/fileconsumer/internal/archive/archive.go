@@ -31,6 +31,7 @@ type Archive interface {
 
 func New(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister operator.Persister) Archive {
 	if pollsToArchive <= 0 || persister == nil {
+		logger.Debug("archiving is disabled. enable pollsToArchive and storage settings to save offsets on disk.")
 		return &nopArchive{}
 	}
 
@@ -38,7 +39,7 @@ func New(ctx context.Context, logger *zap.Logger, pollsToArchive int, persister 
 	archiveIndex, err := getArchiveIndex(ctx, persister)
 	switch {
 	case err != nil:
-		logger.Info("error while fetching archive index. Resetting it to 0", zap.Error(err))
+		logger.Error("failed to read archive index. Resetting it to 0", zap.Error(err))
 		archiveIndex = 0
 	case archiveIndex >= pollsToArchive:
 		logger.Warn("archiveIndex is out of bounds, likely due to change in pollsToArchive. Resetting it to 0") // Try to craft log to explain in user facing terms?
@@ -84,7 +85,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 
 		data, err := a.readArchive(ctx, nextIndex) // we load one fileset atmost once per poll
 		if err != nil {
-			a.logger.Error("error while opening archive", zap.Error(err))
+			a.logger.Error("failed to read archive", zap.Error(err))
 			continue
 		}
 		archiveModified := false
@@ -105,7 +106,7 @@ func (a *archive) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint)
 		}
 		// we save one fileset atmost once per poll
 		if err := a.writeArchive(ctx, nextIndex, data); err != nil {
-			a.logger.Error("error while opening archive", zap.Error(err))
+			a.logger.Error("failed to write archive", zap.Error(err))
 		}
 		// Check if all metadata have been found
 		if numMatched == len(fps) {
@@ -135,11 +136,11 @@ func (a *archive) WriteFiles(ctx context.Context, metadata *fileset.Fileset[*rea
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(a.archiveIndex); err != nil {
-		a.logger.Error("error faced while encoding the index", zap.Error(err))
+		a.logger.Error("failed to encode archive index", zap.Error(err))
 	}
 	indexOp := storage.SetOperation(archiveIndexKey, buf.Bytes()) // batch the updated index with metadata
 	if err := a.writeArchive(ctx, a.archiveIndex, metadata, indexOp); err != nil {
-		a.logger.Error("error faced while saving to the archive", zap.Error(err))
+		a.logger.Error("failed to write archive", zap.Error(err))
 	}
 	a.archiveIndex = (a.archiveIndex + 1) % a.pollsToArchive
 }
