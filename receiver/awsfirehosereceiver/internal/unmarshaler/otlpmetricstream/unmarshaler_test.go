@@ -4,117 +4,84 @@
 package otlpmetricstream
 
 import (
-	"slices"
+	"context"
+	"encoding/binary"
 	"testing"
-	"time"
 
-	"github.com/gogo/protobuf/proto"
 	"github.com/stretchr/testify/require"
-	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
-	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
-	"go.uber.org/zap"
+	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 )
 
-func TestType(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
-	require.Equal(t, TypeStr, unmarshaler.Type())
+func TestNewUnmarshaler(t *testing.T) {
+	unmarshaler, err := NewUnmarshaler(context.Background())
+	require.NoError(t, err)
+	require.NotNil(t, unmarshaler)
 }
 
-func createMetricRecord() []byte {
-	er := pmetricotlp.NewExportRequest()
-	rsm := er.Metrics().ResourceMetrics().AppendEmpty()
-	sm := rsm.ScopeMetrics().AppendEmpty().Metrics().AppendEmpty()
-	sm.SetName("TestMetric")
-	dp := sm.SetEmptySummary().DataPoints().AppendEmpty()
-	dp.SetCount(1)
-	dp.SetSum(1)
-	qv := dp.QuantileValues()
-	minQ := qv.AppendEmpty()
-	minQ.SetQuantile(0)
-	minQ.SetValue(0)
-	maxQ := qv.AppendEmpty()
-	maxQ.SetQuantile(1)
-	maxQ.SetValue(1)
-	dp.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+// getMetricRecord reads the resource metrics inside file
+// and adds a uvarint prefix to it, before returning the
+// byte array.
+func getMetricRecord(t *testing.T, file string) []byte {
+	metrics, err := golden.ReadMetrics(file)
+	require.NoError(t, err)
 
-	temp, _ := er.MarshalProto()
-	record := proto.EncodeVarint(uint64(len(temp)))
-	record = append(record, temp...)
+	m := pmetric.ProtoMarshaler{}
+	data, err := m.MarshalMetrics(metrics)
+	require.NoError(t, err)
+
+	buf := make([]byte, binary.MaxVarintLen64)
+	n := binary.PutUvarint(buf, uint64(len(data)))
+	record := buf[:n]
+	record = append(record, data...)
 	return record
 }
 
 func TestUnmarshal(t *testing.T) {
-	unmarshaler := NewUnmarshaler(zap.NewNop(), component.NewDefaultBuildInfo())
+	t.Parallel()
+
+	unmarshaler, errU := NewUnmarshaler(context.Background())
+	require.NoError(t, errU)
+
 	testCases := map[string]struct {
-		record             []byte
-		wantResourceCount  int
-		wantMetricCount    int
-		wantDatapointCount int
-		wantErr            string
+		record                  []byte
+		expectedMetricsFilename string
+		wantErr                 string
 	}{
 		"WithSingleRecord": {
-			record:             createMetricRecord(),
-			wantResourceCount:  1,
-			wantMetricCount:    1,
-			wantDatapointCount: 1,
+			record:                  getMetricRecord(t, "testdata/single_record.yaml"),
+			expectedMetricsFilename: "testdata/single_record_expected.yaml",
 		},
 		"WithMultipleRecords": {
-			record: slices.Concat(
-				createMetricRecord(),
-				createMetricRecord(),
-				createMetricRecord(),
-				createMetricRecord(),
-				createMetricRecord(),
-				createMetricRecord(),
-			),
-			wantResourceCount:  6,
-			wantMetricCount:    6,
-			wantDatapointCount: 6,
+			record:                  getMetricRecord(t, "testdata/multiple_records.yaml"),
+			expectedMetricsFilename: "testdata/multiple_records_expected.yaml",
 		},
 		"WithEmptyRecord": {
-			record:             []byte{},
-			wantResourceCount:  0,
-			wantMetricCount:    0,
-			wantDatapointCount: 0,
+			record:                  []byte{},
+			expectedMetricsFilename: "testdata/empty_record_expected.yaml",
 		},
 		"WithInvalidRecord": {
-			record:             []byte{1, 2},
-			wantResourceCount:  0,
-			wantMetricCount:    0,
-			wantDatapointCount: 0,
-			wantErr:            "unable to unmarshal input: proto: ExportMetricsServiceRequest: illegal tag 0 (wire type 2)",
+			record:  []byte{1, 2},
+			wantErr: "unable to unmarshal input",
 		},
 	}
 	for name, testCase := range testCases {
 		t.Run(name, func(t *testing.T) {
 			got, err := unmarshaler.UnmarshalMetrics(testCase.record)
 			if testCase.wantErr != "" {
-				require.Error(t, err)
-				require.EqualError(t, err, testCase.wantErr)
-			} else {
-				require.NoError(t, err)
-				require.NotNil(t, got)
-				require.Equal(t, testCase.wantResourceCount, got.ResourceMetrics().Len())
-				gotMetricCount := 0
-				gotDatapointCount := 0
-				for i := 0; i < got.ResourceMetrics().Len(); i++ {
-					rm := got.ResourceMetrics().At(i)
-					require.Equal(t, 1, rm.ScopeMetrics().Len())
-					ilm := rm.ScopeMetrics().At(0)
-					require.Equal(t, metadata.ScopeName, ilm.Scope().Name())
-					require.Equal(t, component.NewDefaultBuildInfo().Version, ilm.Scope().Version())
-					gotMetricCount += ilm.Metrics().Len()
-					for j := 0; j < ilm.Metrics().Len(); j++ {
-						metric := ilm.Metrics().At(j)
-						gotDatapointCount += metric.Summary().DataPoints().Len()
-					}
-				}
-				require.Equal(t, testCase.wantMetricCount, gotMetricCount)
-				require.Equal(t, testCase.wantDatapointCount, gotDatapointCount)
+				require.ErrorContains(t, err, testCase.wantErr)
+				return
 			}
+
+			require.NoError(t, err)
+
+			expected, err := golden.ReadMetrics(testCase.expectedMetricsFilename)
+			require.NoError(t, err)
+
+			err = pmetrictest.CompareMetrics(expected, got)
+			require.NoError(t, err)
 		})
 	}
 }

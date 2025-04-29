@@ -56,7 +56,7 @@ func newMetricsReceiver(
 	}, nil
 }
 
-func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
+func (c *metricsConsumer) Start(ctx context.Context, host component.Host) error {
 	encoding := c.config.Encoding
 	if encoding == "" {
 		encoding = c.config.RecordType
@@ -69,8 +69,10 @@ func (c *metricsConsumer) Start(_ context.Context, host component.Host) error {
 		// TODO: make cwmetrics an encoding extension
 		c.unmarshaler = cwmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
 	case otlpmetricstream.TypeStr:
-		// TODO: make otlp_v1 an encoding extension
-		c.unmarshaler = otlpmetricstream.NewUnmarshaler(c.settings.Logger, c.settings.BuildInfo)
+		var err error
+		if c.unmarshaler, err = otlpmetricstream.NewUnmarshaler(ctx); err != nil {
+			return err
+		}
 	default:
 		unmarshaler, err := loadEncodingExtension[pmetric.Unmarshaler](host, encoding, "metrics")
 		if err != nil {
