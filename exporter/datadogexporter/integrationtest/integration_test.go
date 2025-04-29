@@ -485,10 +485,16 @@ func TestIntegrationLogs(t *testing.T) {
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
