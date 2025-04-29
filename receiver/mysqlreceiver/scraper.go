@@ -635,7 +635,7 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 		wg.Add(1)
 		go m.addQueryPlanToLogAttributes(log, s.querySample, &wg)
 		log.SetTimestamp(now)
-		log.SetEventName("top query")
+		log.SetEventName("db.server.top_query")
 		atts := log.Attributes()
 		atts.PutInt("mysql.execution_count", s.count)
 		atts.PutInt("mysql.total_rows", s.rowsExamined)
