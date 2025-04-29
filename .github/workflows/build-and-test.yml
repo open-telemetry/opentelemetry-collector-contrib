@@ -669,21 +669,46 @@ jobs:
   publish-stable:
     runs-on: ubuntu-24.04
     needs: [lint, unittest, integration-tests]
+    env:
+      RELEASE_NOTES: release-notes.md
     if: startsWith(github.ref, 'refs/tags/v') && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
     permissions:
       contents: write
     steps:
       - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
-      - name: Set Release Tag
+        with:
+          fetch-depth: 0
+
+      - run: npm install simple-git@^3.27.0
+
+      - name: Set current and previous tags
         id: github_tag
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: ./.github/workflows/scripts/set_release_tag.sh
+
       - name: Prepare release notes
         env:
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
         run: ./.github/workflows/scripts/prepare-release-notes.sh
+
+      - name: Generate new contributor celebration text
+        id: new-contributor-text
+        uses: actions/github-script@60a0d83039c74a4aee543508d2ffcb1c3799cdea # v7.0.1
+        with:
+          result-encoding: 'string'
+          script: |
+            const { default: script } = await import('${{ github.workspace }}/.github/workflows/scripts/generate-new-contributors.js')
+            return await script(github, '${{ steps.github_tag.outputs.tag }}', '${{ steps.github_tag.outputs.previous_tag }}')
+
+      - name: Prepare full release notes
+        run: |
+          echo "" >> ${{ env.RELEASE_NOTES }}
+          echo "${{ steps.new-contributor-text.outputs.result }}" >> ${{ env.RELEASE_NOTES }}
+
       - name: Create Github Release
         run: |
-          gh release create $RELEASE_TAG -t $RELEASE_TAG -F release-notes.md
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -F ${{ env.RELEASE_NOTES }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}
