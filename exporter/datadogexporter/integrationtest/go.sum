@@ -68,8 +68,8 @@ github.com/BurntSushi/toml v0.3.1/go.mod h1:xHWCNGjB5oqiDr8zfno3MHue2Ht5sIBksp03
 github.com/BurntSushi/xgb v0.0.0-20160522181843-27f122750802/go.mod h1:IVnqGOEym/WlBOVXweHU+Q+/VP0lqqI8lqeDx9IjBqo=
 github.com/Code-Hex/go-generics-cache v1.5.1 h1:6vhZGc5M7Y/YD8cIUcY8kcuQLB4cHR7U+0KMqAA0KcU=
 github.com/Code-Hex/go-generics-cache v1.5.1/go.mod h1:qxcC9kRVrct9rHeiYpFWSoW1vxyillCVzX13KZG8dl4=
-github.com/DataDog/agent-payload/v5 v5.0.148 h1:nvUkO6v7LBdAbxLLIz44azEFqldvI82XaMCNqFWemq8=
-github.com/DataDog/agent-payload/v5 v5.0.148/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
+github.com/DataDog/agent-payload/v5 v5.0.149 h1:qO1IfzVqMf4SaVwB8uz4Ifgh3BqmB1QsX16hbLTRwnI=
+github.com/DataDog/agent-payload/v5 v5.0.149/go.mod h1:lxh9lb5xYrBXjblpIWYUi4deJqVbkIfkjwesi5nskDc=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.61.0 h1:gMvKuTE5aeXW7pHqx+2SOWmHvlyD0yQWHGBD3tUfvrk=
 github.com/DataDog/datadog-agent/comp/api/api/def v0.61.0/go.mod h1:Uhrn1RIKROBu1Cx/PieW+RRmd9G7LQM75d2BEA4bu9g=
 github.com/DataDog/datadog-agent/comp/core/config v0.66.0-devel.0.20250407180930-ebfcfa2817ce h1:1of1Vf9tEeWyOmliFh6KpswPYWtu0D9RzPYEk3I/xpg=
@@ -186,8 +186,8 @@ github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.66.0-devel.0.20250407
 github.com/DataDog/datadog-agent/pkg/orchestrator/model v0.66.0-devel.0.20250407180930-ebfcfa2817ce/go.mod h1:a8cPaeE65MIqcQGxZbXcd/kP2iyV/T96NLj9VRHtkQw=
 github.com/DataDog/datadog-agent/pkg/process/util/api v0.66.0-devel.0.20250407180930-ebfcfa2817ce h1:XTdVCZzQUNPDD2+bfxBxKS2j4yq20IHLigfARk1g4SQ=
 github.com/DataDog/datadog-agent/pkg/process/util/api v0.66.0-devel.0.20250407180930-ebfcfa2817ce/go.mod h1:uckeYcHAkid8msRPl8G++46vWzjZP3b7YqTvldiOt1I=
-github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel.0.20250407180930-ebfcfa2817ce h1:SZSDR+8w0z+bZKike4z0dbdVoZPUsqqmmB3AcdomA6s=
-github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel.0.20250407180930-ebfcfa2817ce/go.mod h1:07jphzXKrdxfBm7Wn3IAA4odJTkpxDom0O7fYUxFCvQ=
+github.com/DataDog/datadog-agent/pkg/proto v0.67.0-devel h1:/ERrlY+e3/t4t2enA7eYAcvL+OMvJIUFsJFzU/Ts9fg=
+github.com/DataDog/datadog-agent/pkg/proto v0.67.0-devel/go.mod h1:eUhWdIjBj4KqdABQkhL8h/CjMCbFhlO+Pv9EUjP3tjE=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.0-devel.0.20250407180930-ebfcfa2817ce h1:+4nPzlMkq13AH8IUy+nePJsbgTHky5RBwIa2Xs3K5gc=
 github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.66.0-devel.0.20250407180930-ebfcfa2817ce/go.mod h1:NY9KdZi7WDO085fQ17F5whm6C0T/MF6d+HUPyaBlfm4=
 github.com/DataDog/datadog-agent/pkg/serializer v0.66.0-devel.0.20250407180930-ebfcfa2817ce h1:X+YRGhSKl6EjYvdq2jjsKjD+DuTYCcf+gZUpxTvFwB4=
