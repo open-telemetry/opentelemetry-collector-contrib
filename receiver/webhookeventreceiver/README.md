@@ -64,6 +64,21 @@ Three log records will be created from this example. The first two are JSON body
 
 This receiver does not attempt to marshal the body into a structured format as it is received so it cannot make a more intelligent determination about where the split records. 
 
+### Split logs at JSON boundary example
+
+If you don't have clear new-line splits between objects, the regex `}\s.{` will match the boundary between objects.
+`split_logs_at_json_boundary: true`
+
+```yaml
+{ "name": "francis", "city": "newyork", "multiple lines?": "you 
+know it!"}
+{ "name": "john", "city": "paris" }{ "name": "tim", "city": "london" }
+```
+
+This settings works when JSON objects have newlines in the middle of a string or multiple objects on a line.
+
+
+
 ### Configuration Example
 
 ```yaml
