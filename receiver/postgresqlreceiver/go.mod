@@ -6,6 +6,7 @@ require (
 	github.com/DATA-DOG/go-sqlmock v1.5.2
 	github.com/DataDog/datadog-agent/pkg/obfuscate v0.64.3
 	github.com/google/go-cmp v0.7.0
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/lib/pq v1.10.9
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
