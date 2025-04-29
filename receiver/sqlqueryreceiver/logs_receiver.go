@@ -56,11 +56,17 @@ func newLogsReceiver(
 		return nil, err
 	}
 
+	var dataSource string
+	dataSource, err = sqlquery.BuildDataSourceString(config.Driver, config.DataSource)
+	if err != nil {
+		return nil, err
+	}
+
 	receiver := &logsReceiver{
 		config:   config,
 		settings: settings,
 		createConnection: func() (*sql.DB, error) {
-			return sqlOpenerFunc(config.Driver, config.DataSource)
+			return sqlOpenerFunc(config.Driver, dataSource)
 		},
 		createClient:      createClient,
 		nextConsumer:      nextConsumer,
