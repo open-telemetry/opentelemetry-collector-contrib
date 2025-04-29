@@ -4,9 +4,9 @@ go 1.23.0
 
 require (
 	github.com/DataDog/agent-payload/v5 v5.0.148
-	github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20250429123751-a78fdf4dc51e
-	github.com/DataDog/datadog-agent/pkg/proto v0.0.0-20250429123751-a78fdf4dc51e
-	github.com/DataDog/datadog-agent/pkg/trace v0.0.0-20250429123751-a78fdf4dc51e
+	github.com/DataDog/datadog-agent/pkg/obfuscate v0.0.0-20250429160048-0df20aec90c6
+	github.com/DataDog/datadog-agent/pkg/proto v0.0.0-20250429160048-0df20aec90c6
+	github.com/DataDog/datadog-agent/pkg/trace v0.0.0-20250429160048-0df20aec90c6
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
 	github.com/DataDog/sketches-go v1.4.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.124.1
@@ -35,12 +35,12 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/comp/core/tagger/origindetection v0.0.0-20250429160048-0df20aec90c6 // indirect
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.0.0-20250429160048-0df20aec90c6 // indirect
+	github.com/DataDog/datadog-agent/pkg/remoteconfig/state v0.0.0-20250429160048-0df20aec90c6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20250429160048-0df20aec90c6 // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.0.0-20250429160048-0df20aec90c6 // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.0.0-20250429160048-0df20aec90c6 // indirect
 	github.com/DataDog/datadog-go/v5 v5.6.0 // indirect
 	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
