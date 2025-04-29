@@ -8,6 +8,7 @@ import (
 	"database/sql"
 	"errors"
 	"fmt"
+	"net/url"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -106,4 +107,122 @@ func (s *Scraper) Shutdown(_ context.Context) error {
 		return s.Db.Close()
 	}
 	return nil
+}
+
+func BuildDataSourceString(driver string, dataSource DataSourceConfig) (string, error) {
+	switch driver {
+	case "postgres":
+		return buildPostgreSQLString(dataSource)
+	case "mysql":
+		return buildMySQLString(dataSource)
+	case "snowflake":
+		return buildSnowflakeString(dataSource)
+	case "sqlserver":
+		return buildSQLServerString(dataSource)
+	case "oracle":
+		return buildOracleString(dataSource)
+	default:
+		return "", fmt.Errorf("unsupported driver: %s", driver)
+	}
+}
+
+func buildPostgreSQLString(conn DataSourceConfig) (string, error) {
+	// PostgreSQL connection string format: postgresql://user:pass@host:port/db?param1=value1&param2=value2
+	var auth string
+	if conn.Username != "" {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	query := url.Values{}
+	for k, v := range conn.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	connStr := fmt.Sprintf("postgresql://%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
+	if len(query) > 0 {
+		connStr += "?" + query.Encode()
+	}
+
+	return connStr, nil
+}
+
+func buildMySQLString(conn DataSourceConfig) (string, error) {
+	// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
+	var auth string
+	if conn.Username != "" {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	query := url.Values{}
+	for k, v := range conn.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	connStr := fmt.Sprintf("%stcp(%s:%d)/%s", auth, conn.Host, conn.Port, conn.Database)
+	if len(query) > 0 {
+		connStr += "?" + query.Encode()
+	}
+
+	return connStr, nil
+}
+
+func buildSnowflakeString(conn DataSourceConfig) (string, error) {
+	// Snowflake connection string format: user:pass@host:port/database?param1=value1&param2=value2
+	var auth string
+	if conn.Username != "" {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	query := url.Values{}
+	for k, v := range conn.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	connStr := fmt.Sprintf("%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
+	if len(query) > 0 {
+		connStr += "?" + query.Encode()
+	}
+
+	return connStr, nil
+}
+
+func buildSQLServerString(conn DataSourceConfig) (string, error) {
+	// SQL Server connection string format: sqlserver://user:pass@host:port?database=db&param1=value1&param2=value2
+	var auth string
+	if conn.Username != "" {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	query := url.Values{}
+	query.Set("database", conn.Database)
+	for k, v := range conn.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	connStr := fmt.Sprintf("sqlserver://%s%s:%d", auth, conn.Host, conn.Port)
+	if len(query) > 0 {
+		connStr += "?" + query.Encode()
+	}
+
+	return connStr, nil
+}
+
+func buildOracleString(conn DataSourceConfig) (string, error) {
+	// Oracle connection string format: oracle://user:pass@host:port/service_name?param1=value1&param2=value2
+	var auth string
+	if conn.Username != "" {
+		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+	}
+
+	query := url.Values{}
+	for k, v := range conn.AdditionalParams {
+		query.Set(k, fmt.Sprintf("%v", v))
+	}
+
+	connStr := fmt.Sprintf("oracle://%s%s:%d/%s", auth, conn.Host, conn.Port, conn.Database)
+	if len(query) > 0 {
+		connStr += "?" + query.Encode()
+	}
+
+	return connStr, nil
 }
