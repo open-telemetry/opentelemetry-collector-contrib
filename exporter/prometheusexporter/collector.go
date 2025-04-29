@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 var separatorString = string([]byte{model.SeparatorByte})
@@ -46,7 +46,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         prometheustranslator.NormalizeLabel(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
@@ -116,7 +116,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+	name := prometheustranslator.BuildCompliantMetricName(metric, c.namespace, c.addMetricSuffixes)
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
