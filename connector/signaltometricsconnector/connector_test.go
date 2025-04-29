@@ -61,9 +61,7 @@ func TestConnectorWithTraces(t *testing.T) {
 
 			require.NoError(t, connector.ConsumeTraces(ctx, inputTraces))
 			require.Len(t, next.AllMetrics(), 1)
-			if !assertAggregatedMetrics(t, expectedMetrics, next.AllMetrics()[0]) {
-				golden.WriteMetrics(t, filepath.Join(tcTestDataDir, "output.yaml"), next.AllMetrics()[0])
-			}
+			assertAggregatedMetrics(t, expectedMetrics, next.AllMetrics()[0])
 		})
 	}
 }
@@ -352,9 +350,9 @@ func telemetryResource(t *testing.T) pcommon.Resource {
 	return r
 }
 
-func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) bool {
+func assertAggregatedMetrics(t *testing.T, expected, actual pmetric.Metrics) {
 	t.Helper()
-	return assert.NoError(t, pmetrictest.CompareMetrics(
+	assert.NoError(t, pmetrictest.CompareMetrics(
 		expected, actual,
 		pmetrictest.IgnoreMetricDataPointsOrder(),
 		pmetrictest.IgnoreMetricsOrder(),
