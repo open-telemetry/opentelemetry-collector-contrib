@@ -6,8 +6,8 @@ package metrics // import "github.com/open-telemetry/opentelemetry-collector-con
 import (
 	"context"
 
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics"
-	"github.com/DataDog/opentelemetry-mapping-go/pkg/quantile"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics"
+	"github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/quantile"
 	"go.opentelemetry.io/collector/component"
 	zorkian "gopkg.in/zorkian/go-datadog-api.v2"
 

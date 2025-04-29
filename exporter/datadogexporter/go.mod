@@ -31,11 +31,11 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
 	github.com/DataDog/datadog-go/v5 v5.6.0
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
-	github.com/DataDog/opentelemetry-mapping-go/pkg/inframetadata v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/logs v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0
-	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.0
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.0.0-20250429123751-a78fdf4dc51e
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.0.0-20250429123751-a78fdf4dc51e
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.0.0-20250429123751-a78fdf4dc51e
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.0.0-20250429123751-a78fdf4dc51e
+	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/quantile v0.0.0-20250429123751-a78fdf4dc51e
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect
 	github.com/aws/aws-sdk-go v1.55.6 // indirect
