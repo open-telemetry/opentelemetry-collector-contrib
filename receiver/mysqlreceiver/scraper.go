@@ -593,13 +593,17 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 }
 
 /*
-scrapeQueryLogs collects the top query logs and returns them as plog.Logs. Note that this function tracks and accumulates
-the reported wait_times for each query, and only processes the queries that have a wait_time that has increased.
-This means that intermittent queries that take a lot of time will be reported based on their accumulated wait_times.
+scrapeQueryLogs collects the top query logs and returns them as plog.Logs.
 Note that individual metric values are tracked and reported similarly to the query logs.
 */
 func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) plog.Logs {
 	m.logger.Debug("scrapeQueryLogs called")
+	const eventNameKey = "db.server.top_query"
+	const executionCountKey = "mysql.execution_count"
+	const totalRowsKey = "mysql.total_rows"
+	const totalElapsedTimeKey = "mysql.total_elapsed_time"
+	const queryTextKey = "db.query.text"
+	const queryHashKey = "mysql.query_hash"
 	queryStats, err := m.sqlclient.getQueryStats(m.lastLogsQueryMetricsGatheringTime, m.config.TopQueryCollection.TopQueryCount)
 	m.lastLogsQueryMetricsGatheringTime = now.AsTime().UnixNano()
 	if err != nil {
@@ -633,32 +637,38 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 	for _, s := range matchedStats {
 		log := scopeLogs.LogRecords().AppendEmpty()
 		wg.Add(1)
+		// This is an additional query, and is peeled off as a separate goroutine while the rest of the metrics are being processed
 		go m.addQueryPlanToLogAttributes(log, s.querySample, &wg)
 		log.SetTimestamp(now)
-		log.SetEventName("db.server.top_query")
+		log.SetEventName(eventNameKey)
 		atts := log.Attributes()
-		atts.PutInt("mysql.execution_count", s.count)
-		atts.PutInt("mysql.total_rows", s.rowsExamined)
-		atts.PutDouble("mysql.total_elapsed_time", s.totalDuration)
+		atts.PutInt(executionCountKey, s.count)
+		atts.PutInt(totalRowsKey, s.rowsExamined)
+		atts.PutDouble(totalElapsedTimeKey, s.totalDuration)
+		// If there are no metrics applied, then short-cycle and return
 		if atts.Len() == 0 {
 			continue
 		}
-		atts.PutStr("db.query.text", s.queryText)
-		atts.PutStr("mysql.query_hash", s.queryDigest)
+		atts.PutStr(queryTextKey, s.queryText)
+		atts.PutStr(queryHashKey, s.queryDigest)
 	}
-
-	wg.Wait()
-	m.gatheringExplainPlans = false
+	// Remove any empty log records
 	scopeLogs.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
 		return lr.Attributes().Len() == 0
 	})
+	// wait until all of the explain plan go-routines have returned
+	wg.Wait()
+	m.gatheringExplainPlans = false
 	return logs
 }
 
 func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	if strings.LastIndex(queryString, "...") == 1021 {
-		log.Attributes().PutStr("mysql.query_plan", "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
+	const plan_key = "mysql.query_plan"
+	const plan_hash_key = "mysql.query_plan_hash"
+	// if the query string ends with "...", it means that the query is truncated and cannot be used to derive a plan
+	if strings.LastIndex(queryString, "...") == len(queryString)-3 {
+		log.Attributes().PutStr(plan_key, "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
 		return
 	}
 	queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
@@ -667,10 +677,10 @@ func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryStri
 		return
 	}
 	if len(queryPlan) == 0 {
-		log.Attributes().PutStr("mysql.query_plan", "NO EXPLAIN PLAN FOUND")
+		log.Attributes().PutStr(plan_key, "NO EXPLAIN PLAN FOUND")
 		return
 	}
-	log.Attributes().PutStr("mysql.query_plan", queryPlan)
+	log.Attributes().PutStr(plan_key, queryPlan)
 
 	planHash := sha256.New()
 	_, err = planHash.Write([]byte(queryPlan))
@@ -678,7 +688,7 @@ func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryStri
 		m.logger.Error("Failed to hash query plan", zap.Error(err))
 		return
 	}
-	log.Attributes().PutStr("mysql.query_plan_hash", fmt.Sprintf("%x", planHash.Sum(nil)))
+	log.Attributes().PutStr(plan_hash_key, fmt.Sprintf("%x", planHash.Sum(nil)))
 }
 
 func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QueryStats {
