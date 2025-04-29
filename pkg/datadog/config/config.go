@@ -332,7 +332,7 @@ func CreateDefaultConfig() component.Config {
 			DeltaTTL: 3600,
 			ExporterConfig: MetricsExporterConfig{
 				ResourceAttributesAsTags:           false,
-				InstrumentationScopeMetadataAsTags: false,
+				InstrumentationScopeMetadataAsTags: true,
 			},
 			HistConfig: HistogramConfig{
 				Mode:             "distributions",

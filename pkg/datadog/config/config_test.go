@@ -118,6 +118,9 @@ func TestValidate(t *testing.T) {
 			cfg: &Config{
 				API: APIConfig{Key: "aaaaaaa"},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					HistConfig: HistogramConfig{
 						Mode:             HistogramModeNoBuckets,
 						SendAggregations: false,
@@ -419,6 +422,9 @@ func TestCreateDefaultConfig(t *testing.T) {
 		},
 
 		Metrics: MetricsConfig{
+			ExporterConfig: MetricsExporterConfig{
+				InstrumentationScopeMetadataAsTags: true,
+			},
 			TCPAddrConfig: confignet.TCPAddrConfig{
 				Endpoint: "https://api.datadoghq.com",
 			},
@@ -492,6 +498,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
@@ -551,6 +560,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: true,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.eu",
 					},
@@ -615,6 +627,9 @@ func TestLoadConfig(t *testing.T) {
 					FailOnInvalidKey: false,
 				},
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.test",
 					},
@@ -675,6 +690,9 @@ func TestLoadConfig(t *testing.T) {
 				},
 
 				Metrics: MetricsConfig{
+					ExporterConfig: MetricsExporterConfig{
+						InstrumentationScopeMetadataAsTags: true,
+					},
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: "https://api.datadoghq.com",
 					},
