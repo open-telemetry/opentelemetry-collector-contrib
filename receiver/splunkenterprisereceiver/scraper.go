@@ -1915,9 +1915,9 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 
 		// if no errors and 200 returned scrape was successful, return. Note we must make sure that
 		// the 200 is coming after the first request which provides a jobId to retrieve results
-		if sr.Return == 201 && sr.Jobid != nil {
+		if sr.Return == http.StatusCreated && sr.Jobid != nil {
 			break
-		} else if sr.Return == 201 && sr.Jobid == nil {
+		} else if sr.Return == http.StatusCreated && sr.Jobid == nil {
 			time.Sleep(2 * time.Second)
 		}
 
