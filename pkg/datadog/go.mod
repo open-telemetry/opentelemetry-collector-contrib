@@ -33,7 +33,7 @@ require (
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1 // indirect
 	github.com/DataDog/gohai v0.0.0-20230524154621-4316413895ee // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect
 	github.com/GoogleCloudPlatform/opentelemetry-operations-go/detectors/gcp v1.27.0 // indirect

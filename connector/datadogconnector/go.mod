@@ -131,7 +131,7 @@ require (
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/inframetadata v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/logs v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/DataDog/viper v1.14.0 // indirect
 	github.com/DataDog/zstd v1.5.6 // indirect

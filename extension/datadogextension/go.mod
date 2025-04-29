@@ -23,7 +23,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/version v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/attributes v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/otlp/metrics v0.0.0-20250429123751-a78fdf4dc51e // indirect
-	github.com/DataDog/datadog-agent/pkg/opentelemetry-mapping-go/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/quantile v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/sketches-go v1.4.7 // indirect
 	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/cihub/seelog v0.0.0-20170130134532-f561c5e57575 // indirect
