@@ -189,8 +189,12 @@ The mapping mode can also be controlled via the client metadata key `X-Elastic-M
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
-processors or exporter configurations will maintain client
-metadata.
+processors or exporter configurations will maintain client metadata.
+
+Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+If any scope has an invalid mapping mode, the exporter will reject the entire batch.
+The attribute will be excluded from the final document.
 
 See below for a description of each mapping mode.
 
@@ -315,6 +319,16 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 > [!NOTE]
 > The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
+
+#### Bulk indexing error response
+
+With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
+This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+
+In this exporter, the equivalent configuration is also named `include_source_on_error`. The valid values are:
+- `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
+- `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
+- `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
 
 ### Elasticsearch node discovery
 

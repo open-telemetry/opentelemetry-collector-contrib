@@ -1,0 +1,11 @@
+change_type: enhancement  
+
+component: dockerstatsreceiver  
+
+note: "Returns Docker client options, using the DOCKER_HOST environment variable if no endpoint is configured."  
+
+issues: [35779]  
+
+subtext: |  
+  - Previously, the receiver required explicit configuration of the endpoint.  
+  - This change allows automatic detection of DOCKER_HOST, improving flexibility in different environments. 
