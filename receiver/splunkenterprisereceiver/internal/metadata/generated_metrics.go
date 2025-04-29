@@ -54,6 +54,9 @@ var MetricsInfo = metricsInfo{
 	SplunkIndexerRawWriteTime: metricInfo{
 		Name: "splunk.indexer.raw.write.time",
 	},
+	SplunkIndexerRollingrestartStatus: metricInfo{
+		Name: "splunk.indexer.rollingrestart.status",
+	},
 	SplunkIndexerThroughput: metricInfo{
 		Name: "splunk.indexer.throughput",
 	},
@@ -152,6 +155,7 @@ type metricsInfo struct {
 	SplunkIndexerCPUTime                        metricInfo
 	SplunkIndexerQueueRatio                     metricInfo
 	SplunkIndexerRawWriteTime                   metricInfo
+	SplunkIndexerRollingrestartStatus           metricInfo
 	SplunkIndexerThroughput                     metricInfo
 	SplunkIndexesAvgSize                        metricInfo
 	SplunkIndexesAvgUsage                       metricInfo
