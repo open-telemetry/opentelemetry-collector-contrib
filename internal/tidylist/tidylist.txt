@@ -1,6 +1,7 @@
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
+cmd/golden
 internal/coreinternal
 pkg/ottl
 connector/routingconnector
@@ -149,6 +150,7 @@ extension/azureauthextension
 extension/basicauthextension
 extension/bearertokenauthextension
 extension/cgroupruntimeextension
+extension/datadogextension
 extension/encoding/avrologencodingextension
 extension/encoding/awscloudwatchmetricstreamsencodingextension
 extension/encoding/awslogsencodingextension
@@ -204,6 +206,7 @@ processor/cumulativetodeltaprocessor
 processor/datadogsemanticsprocessor
 processor/deltatocumulativeprocessor
 processor/deltatorateprocessor
+processor/dnslookupprocessor
 processor/filterprocessor
 processor/geoipprocessor
 processor/groupbyattrsprocessor
