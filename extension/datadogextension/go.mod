@@ -16,11 +16,11 @@ require (
 )
 
 require (
-	github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel // indirect
-	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/log v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.64.3 // indirect
-	github.com/DataDog/datadog-agent/pkg/version v0.64.3 // indirect
+	github.com/DataDog/datadog-agent/pkg/proto v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/log v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/util/scrubber v0.0.0-20250429123751-a78fdf4dc51e // indirect
+	github.com/DataDog/datadog-agent/pkg/version v0.0.0-20250429123751-a78fdf4dc51e // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/metrics v0.27.0 // indirect
 	github.com/DataDog/opentelemetry-mapping-go/pkg/quantile v0.27.0 // indirect
