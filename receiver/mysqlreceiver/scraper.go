@@ -645,17 +645,9 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 		atts.PutInt(executionCountKey, s.count)
 		atts.PutInt(totalRowsKey, s.rowsExamined)
 		atts.PutDouble(totalElapsedTimeKey, s.totalDuration)
-		// If there are no metrics applied, then short-cycle and return
-		if atts.Len() == 0 {
-			continue
-		}
 		atts.PutStr(queryTextKey, s.queryText)
 		atts.PutStr(queryHashKey, s.queryDigest)
 	}
-	// Remove any empty log records
-	scopeLogs.LogRecords().RemoveIf(func(lr plog.LogRecord) bool {
-		return lr.Attributes().Len() == 0
-	})
 	// wait until all of the explain plan go-routines have returned
 	wg.Wait()
 	m.gatheringExplainPlans = false
