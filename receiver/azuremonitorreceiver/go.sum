@@ -103,6 +103,8 @@ go.opentelemetry.io/collector/component/componenttest v0.125.0 h1:E2mpnMQbkMpYoZ
 go.opentelemetry.io/collector/component/componenttest v0.125.0/go.mod h1:pQtsE1u/SPZdTphP5BZP64XbjXSq6wc+mDut5Ws/JDI=
 go.opentelemetry.io/collector/confmap v1.31.0 h1:+AW5VJc1rCtgEyGd+1J5uSNw/kVZ98+lKO/pqXEwVvU=
 go.opentelemetry.io/collector/confmap v1.31.0/go.mod h1:TdutQlIoHDPXcZ2xZ0QWGRkSFC8oTKO61zTx569dvrY=
+go.opentelemetry.io/collector/confmap/xconfmap v0.125.0 h1:Y0LPtz+xgtRYVAk2gZmvnBROEJj8C3YDiFPj5URbsX8=
+go.opentelemetry.io/collector/confmap/xconfmap v0.125.0/go.mod h1:8hNqCMs9Gzahh4W1h5XWOrQ+bE6NfP13WAggNyExJJs=
 go.opentelemetry.io/collector/consumer v1.31.0 h1:L+y66ywxLHnAxnUxv0JDwUf5bFj53kMxCCyEfRKlM7s=
 go.opentelemetry.io/collector/consumer v1.31.0/go.mod h1:rPsqy5ni+c6xNMUkOChleZYO/nInVY6eaBNZ1FmWJVk=
 go.opentelemetry.io/collector/consumer/consumererror v0.125.0 h1:Qq9SgbxlJoRn0952dj4lPJhcuBiqKzD1aNxCfa+Bz00=
