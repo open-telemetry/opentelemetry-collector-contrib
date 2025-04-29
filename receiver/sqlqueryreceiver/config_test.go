@@ -37,8 +37,12 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
-					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Driver: "postgres",
+					DataSource: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Port:     5432,
+						Database: "mydb",
+					},
 					Queries: []sqlquery.Query{
 						{
 							SQL: "select count(*) as count, type from mytable group by type",
@@ -107,7 +111,7 @@ func TestLoadConfig(t *testing.T) {
 		{
 			fname:        "config-invalid-missing-datasource.yaml",
 			id:           component.NewIDWithName(metadata.Type, ""),
-			errorMessage: "'datasource' cannot be empty",
+			errorMessage: "'datasource.host' must be specified",
 		},
 		{
 			fname: "config-logs.yaml",
@@ -118,8 +122,17 @@ func TestLoadConfig(t *testing.T) {
 						CollectionInterval: 10 * time.Second,
 						InitialDelay:       time.Second,
 					},
-					Driver:     "mydriver",
-					DataSource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable",
+					Driver: "postgres",
+					DataSource: sqlquery.DataSourceConfig{
+						Host:     "localhost",
+						Port:     5432,
+						Database: "my-datasource",
+						Username: "user",
+						Password: "pass",
+						AdditionalParams: map[string]any{
+							"sslmode": "disable",
+						},
+					},
 					Queries: []sqlquery.Query{
 						{
 							SQL:                "select * from test_logs where log_id > ?",
