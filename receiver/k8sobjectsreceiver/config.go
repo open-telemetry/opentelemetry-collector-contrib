@@ -34,14 +34,18 @@ var modeMap = map[mode]bool{
 }
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
+	Name            string        `mapstructure:"name"`
+	Group           string        `mapstructure:"group"`
+	Mode            mode          `mapstructure:"mode"`
+	LabelSelector   string        `mapstructure:"label_selector"`
+	FieldSelector   string        `mapstructure:"field_selector"`
+	Interval        time.Duration `mapstructure:"interval"`
+	ResourceVersion string        `mapstructure:"resource_version"`
+	K8sObjectTarget `mapstructure:",squash"`
+}
+
+type K8sObjectTarget struct {
 	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
 	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
 	exclude          map[apiWatch.EventType]bool
 	gvr              *schema.GroupVersionResource
