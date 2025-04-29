@@ -7,7 +7,7 @@ change_type: enhancement
 component: awsfirehosereceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: support all possible quantile values (0.7, 0.8, 0.9, 0.95, 0.99) of CloudWatch metrics in addition to quantile 0 (min) and 1 (max)
+note: support all possible quantile values of CloudWatch metrics in addition to quantile 0 (min) and 1 (max)
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39687]
