@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -114,30 +115,31 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		maxQ.SetQuantile(1)
 		maxQ.SetValue(cwMetric.Value.Max)
 
-		if cwMetric.Value.P70 != nil {
-			p70Q := dp.QuantileValues().AppendEmpty()
-			p70Q.SetQuantile(0.7)
-			p70Q.SetValue(*cwMetric.Value.P70)
-		}
-		if cwMetric.Value.P80 != nil {
-			p80Q := dp.QuantileValues().AppendEmpty()
-			p80Q.SetQuantile(0.8)
-			p80Q.SetValue(*cwMetric.Value.P80)
-		}
-		if cwMetric.Value.P90 != nil {
-			p90Q := dp.QuantileValues().AppendEmpty()
-			p90Q.SetQuantile(0.9)
-			p90Q.SetValue(*cwMetric.Value.P90)
-		}
-		if cwMetric.Value.P95 != nil {
-			p95Q := dp.QuantileValues().AppendEmpty()
-			p95Q.SetQuantile(0.95)
-			p95Q.SetValue(*cwMetric.Value.P95)
-		}
-		if cwMetric.Value.P99 != nil {
-			p99Q := dp.QuantileValues().AppendEmpty()
-			p99Q.SetQuantile(0.99)
-			p99Q.SetValue(*cwMetric.Value.P99)
+		for key, value := range cwMetric.Value.Percentiles {
+			// Only process percentile fields (those starting with 'p')
+			if len(key) < 2 || key[0] != 'p' {
+				continue
+			}
+
+			// Extract the percentile value from the field name (e.g., "p95" -> 0.95)
+			percentileStr := key[1:]
+			percentileInt, err := strconv.ParseFloat(percentileStr, 64)
+			if err != nil {
+				// Skip if we can't parse the percentile value
+				u.logger.Debug(
+					"Unable to parse percentile",
+					zap.String("percentile", percentileStr),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			// Calculate the quantile value (divide by 100 to get a value between 0 and 1)
+			quantile := percentileInt / 100.0
+
+			q := dp.QuantileValues().AppendEmpty()
+			q.SetQuantile(quantile)
+			q.SetValue(value)
 		}
 	}
 	if err := scanner.Err(); err != nil {

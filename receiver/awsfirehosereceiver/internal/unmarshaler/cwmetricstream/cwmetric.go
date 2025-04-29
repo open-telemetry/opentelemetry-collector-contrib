@@ -43,30 +43,49 @@ type cWMetricValue struct {
 	isSet bool
 
 	// Max is the highest value observed.
-	Max float64 `json:"max"`
+	Max float64
 	// Min is the lowest value observed.
-	Min float64 `json:"min"`
+	Min float64
 	// Sum is the sum of data points collected.
-	Sum float64 `json:"sum"`
+	Sum float64
 	// Count is the number of data points.
-	Count float64 `json:"count"`
-	// P70 is the 70th percentile of observed values. This value is optional.
-	P70 *float64 `json:"p70"`
-	// P80 is the 80th percentile of observed values. This value is optional.
-	P80 *float64 `json:"p80"`
-	// P90 is the 90th percentile of observed values. This value is optional.
-	P90 *float64 `json:"p90"`
-	// P95 is the 95th percentile of observed values. This value is optional.
-	P95 *float64 `json:"p95"`
-	// P99 is the 99th percentile of observed values. This value is optional.
-	P99 *float64 `json:"p99"`
+	Count float64
+	// Map containing all additional fields, including percentiles
+	Percentiles map[string]float64
 }
 
 func (v *cWMetricValue) UnmarshalJSON(data []byte) error {
-	type valueType cWMetricValue
-	if err := jsoniter.ConfigFastest.Unmarshal(data, (*valueType)(v)); err != nil {
+	// Use a map to capture all fields
+	rawFields := make(map[string]any)
+	if err := jsoniter.ConfigFastest.Unmarshal(data, &rawFields); err != nil {
 		return err
 	}
+
+	// Extract the required fields
+	if maxValue, ok := rawFields["max"].(float64); ok {
+		v.Max = maxValue
+	}
+	if minValue, ok := rawFields["min"].(float64); ok {
+		v.Min = minValue
+	}
+	if sum, ok := rawFields["sum"].(float64); ok {
+		v.Sum = sum
+	}
+	if count, ok := rawFields["count"].(float64); ok {
+		v.Count = count
+	}
+
+	v.Percentiles = make(map[string]float64)
+
+	// Extract any percentile fields (fields starting with 'p')
+	for key, value := range rawFields {
+		if len(key) > 1 && key[0] == 'p' {
+			if floatVal, ok := value.(float64); ok {
+				v.Percentiles[key] = floatVal
+			}
+		}
+	}
+
 	v.isSet = true
 	return nil
 }
