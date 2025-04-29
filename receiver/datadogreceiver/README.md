@@ -58,6 +58,11 @@ https://github.com/open-telemetry/opentelemetry-collector/tree/main/config/confi
 
 - `dd.span.Resource`: The datadog resource name (as distinct from the span name)
 
+### Optional Attributes
+
+- `_dd.span_links`: This receiver supports DD Agent's `_dd.span_links` attribute for span links creation, as produced by Datadog's tracing libraries. 
+Format example can be found [here](./internal/translator/traces_translator_test.go).
+
 ### Datadog's API support
 
 **Traces**

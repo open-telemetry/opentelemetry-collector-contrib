@@ -5,11 +5,15 @@
 
 package processesscraper // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper"
 
+import (
+	"context"
+)
+
 const (
 	enableProcessesCount   = false
 	enableProcessesCreated = false
 )
 
-func (s *processesScraper) getProcessesMetadata() (processesMetadata, error) {
+func (s *processesScraper) getProcessesMetadata(context.Context) (processesMetadata, error) {
 	return processesMetadata{}, nil
 }

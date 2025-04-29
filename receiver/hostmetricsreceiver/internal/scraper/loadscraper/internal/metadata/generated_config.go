@@ -25,7 +25,7 @@ func (ms *MetricConfig) Unmarshal(parser *confmap.Conf) error {
 	return nil
 }
 
-// MetricsConfig provides config for hostmetricsreceiver/load metrics.
+// MetricsConfig provides config for load metrics.
 type MetricsConfig struct {
 	SystemCPULoadAverage15m MetricConfig `mapstructure:"system.cpu.load_average.15m"`
 	SystemCPULoadAverage1m  MetricConfig `mapstructure:"system.cpu.load_average.1m"`
@@ -46,7 +46,7 @@ func DefaultMetricsConfig() MetricsConfig {
 	}
 }
 
-// MetricsBuilderConfig is a configuration for hostmetricsreceiver/load metrics builder.
+// MetricsBuilderConfig is a configuration for load metrics builder.
 type MetricsBuilderConfig struct {
 	Metrics MetricsConfig `mapstructure:"metrics"`
 }

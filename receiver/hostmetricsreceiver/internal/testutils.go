@@ -12,11 +12,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func AssertContainsAttribute(t *testing.T, attr pcommon.Map, key string) {
-	_, ok := attr.Get(key)
-	assert.True(t, ok)
-}
-
 func AssertDescriptorEqual(t *testing.T, expected pmetric.Metric, actual pmetric.Metric) {
 	assert.Equal(t, expected.Name(), actual.Name())
 	assert.Equal(t, expected.Description(), actual.Description())

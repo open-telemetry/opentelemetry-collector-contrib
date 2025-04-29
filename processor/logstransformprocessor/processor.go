@@ -12,7 +12,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.uber.org/zap"
 
@@ -31,7 +31,7 @@ type logsTransformProcessor struct {
 
 	pipe          *pipeline.DirectedPipeline
 	firstOperator operator.Operator
-	emitter       *helper.LogEmitter
+	emitter       helper.LogEmitter
 	fromConverter *adapter.FromPdataConverter
 	shutdownFns   []component.ShutdownFunc
 }
@@ -45,7 +45,7 @@ func newProcessor(config *Config, nextConsumer consumer.Logs, set component.Tele
 
 	baseCfg := p.config.BaseConfig
 
-	p.emitter = helper.NewLogEmitter(p.set, p.consumeStanzaLogEntries)
+	p.emitter = helper.NewBatchingLogEmitter(p.set, p.consumeStanzaLogEntries)
 	pipe, err := pipeline.Config{
 		Operators:     baseCfg.Operators,
 		DefaultOutput: p.emitter,

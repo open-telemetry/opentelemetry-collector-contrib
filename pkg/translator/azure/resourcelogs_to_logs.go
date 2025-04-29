@@ -8,6 +8,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strconv"
+	"time"
 
 	jsoniter "github.com/json-iterator/go"
 	"github.com/relvacode/iso8601"
@@ -71,8 +72,9 @@ type azureLogRecord struct {
 var _ plog.Unmarshaler = (*ResourceLogsUnmarshaler)(nil)
 
 type ResourceLogsUnmarshaler struct {
-	Version string
-	Logger  *zap.Logger
+	Version     string
+	Logger      *zap.Logger
+	TimeFormats []string
 }
 
 func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
@@ -105,7 +107,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 
 		for i := 0; i < len(logs); i++ {
 			log := logs[i]
-			nanos, err := getTimestamp(log)
+			nanos, err := getTimestamp(log, r.TimeFormats...)
 			if err != nil {
 				r.Logger.Warn("Unable to convert timestamp from log", zap.String("timestamp", log.Time))
 				continue
@@ -129,11 +131,11 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	return l, nil
 }
 
-func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
+func getTimestamp(record azureLogRecord, formats ...string) (pcommon.Timestamp, error) {
 	if record.Time != "" {
-		return asTimestamp(record.Time)
+		return asTimestamp(record.Time, formats...)
 	} else if record.Timestamp != "" {
-		return asTimestamp(record.Timestamp)
+		return asTimestamp(record.Timestamp, formats...)
 	}
 
 	return 0, errMissingTimestamp
@@ -142,13 +144,21 @@ func getTimestamp(record azureLogRecord) (pcommon.Timestamp, error) {
 // asTimestamp will parse an ISO8601 string into an OpenTelemetry
 // nanosecond timestamp. If the string cannot be parsed, it will
 // return zero and the error.
-func asTimestamp(s string) (pcommon.Timestamp, error) {
-	t, err := iso8601.ParseString(s)
-	if err != nil {
-		return 0, err
+func asTimestamp(s string, formats ...string) (pcommon.Timestamp, error) {
+	var err error
+	var t time.Time
+	// Try parsing with provided formats first
+	for _, format := range formats {
+		if t, err = time.Parse(format, s); err == nil {
+			return pcommon.Timestamp(t.UnixNano()), nil
+		}
 	}
 
-	return pcommon.Timestamp(t.UnixNano()), nil
+	// Fallback to ISO 8601 parsing if no format matches
+	if t, err = iso8601.ParseString(s); err == nil {
+		return pcommon.Timestamp(t.UnixNano()), nil
+	}
+	return 0, err
 }
 
 // asSeverity converts the Azure log level to equivalent

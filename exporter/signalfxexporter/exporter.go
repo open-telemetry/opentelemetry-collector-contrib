@@ -69,13 +69,13 @@ func newSignalFxExporter(
 		return nil, errors.New("nil config")
 	}
 
-	metricTranslator, err := config.getMetricTranslator(createSettings.TelemetrySettings.Logger, make(chan struct{}))
+	metricTranslator, err := config.getMetricTranslator(make(chan struct{}))
 	if err != nil {
 		return nil, err
 	}
 
 	converter, err := translation.NewMetricsConverter(
-		createSettings.TelemetrySettings.Logger,
+		createSettings.Logger,
 		metricTranslator,
 		config.ExcludeMetrics,
 		config.IncludeMetrics,
@@ -212,7 +212,7 @@ func (se *signalfxExporter) startLogs(ctx context.Context, host component.Host) 
 }
 
 func (se *signalfxExporter) createClient(ctx context.Context, host component.Host) (*http.Client, error) {
-	se.config.ClientConfig.TLSSetting = se.config.IngestTLSSettings
+	se.config.TLSSetting = se.config.IngestTLSSettings
 
 	return se.config.ToClient(ctx, host, se.telemetrySettings)
 }
@@ -262,11 +262,11 @@ func buildHeaders(config *Config, version string) map[string]string {
 	// Add any custom headers from the config. They will override the pre-defined
 	// ones above in case of conflict, but, not the content encoding one since
 	// the latter one is defined according to the payload.
-	for k, v := range config.ClientConfig.Headers {
+	for k, v := range config.Headers {
 		headers[k] = string(v)
 	}
 	// we want to control how headers are set, overriding user headers with our passthrough.
-	config.ClientConfig.Headers = nil
+	config.Headers = nil
 
 	return headers
 }

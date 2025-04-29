@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/config/configauth"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/sumologicexporter/internal/metadata"
@@ -45,5 +46,5 @@ func TestCreateDefaultConfig(t *testing.T) {
 		QueueSettings: qs,
 	}, cfg)
 
-	assert.NoError(t, component.ValidateConfig(cfg))
+	assert.NoError(t, xconfmap.Validate(cfg))
 }

@@ -13,9 +13,13 @@ all_set:
       enabled: true
     mongodbatlas.disk.partition.latency.max:
       enabled: true
+    mongodbatlas.disk.partition.queue.depth:
+      enabled: true
     mongodbatlas.disk.partition.space.average:
       enabled: true
     mongodbatlas.disk.partition.space.max:
+      enabled: true
+    mongodbatlas.disk.partition.throughput:
       enabled: true
     mongodbatlas.disk.partition.usage.average:
       enabled: true
@@ -30,6 +34,8 @@ all_set:
     mongodbatlas.process.background_flush:
       enabled: true
     mongodbatlas.process.cache.io:
+      enabled: true
+    mongodbatlas.process.cache.ratio:
       enabled: true
     mongodbatlas.process.cache.size:
       enabled: true
@@ -166,9 +172,13 @@ none_set:
       enabled: false
     mongodbatlas.disk.partition.latency.max:
       enabled: false
+    mongodbatlas.disk.partition.queue.depth:
+      enabled: false
     mongodbatlas.disk.partition.space.average:
       enabled: false
     mongodbatlas.disk.partition.space.max:
+      enabled: false
+    mongodbatlas.disk.partition.throughput:
       enabled: false
     mongodbatlas.disk.partition.usage.average:
       enabled: false
@@ -183,6 +193,8 @@ none_set:
     mongodbatlas.process.background_flush:
       enabled: false
     mongodbatlas.process.cache.io:
+      enabled: false
+    mongodbatlas.process.cache.ratio:
       enabled: false
     mongodbatlas.process.cache.size:
       enabled: false

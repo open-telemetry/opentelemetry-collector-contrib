@@ -120,7 +120,7 @@ func (rt *clientRoundTripper) RoundTrip(r *http.Request) (*http.Response, error)
 }
 
 // MongoDBAtlasClient wraps the official MongoDB Atlas client to manage pagination
-// and mapping to OpenTelmetry metric and log structures.
+// and mapping to OpenTelemetry metric and log structures.
 type MongoDBAtlasClient struct {
 	log          *zap.Logger
 	client       *mongodbatlas.Client
@@ -135,7 +135,7 @@ func NewMongoDBAtlasClient(
 	backoffConfig configretry.BackOffConfig,
 	log *zap.Logger,
 ) *MongoDBAtlasClient {
-	defaultTransporter := &http.Transport{}
+	defaultTransporter := http.DefaultTransport.(*http.Transport)
 	t := digest.NewTransportWithHTTPTransport(publicKey, privateKey, defaultTransporter)
 	roundTripper := newClientRoundTripper(t, log, backoffConfig)
 	tc := &http.Client{Transport: roundTripper}

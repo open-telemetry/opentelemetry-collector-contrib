@@ -35,7 +35,7 @@ var HyperPodConditions = []k8sutil.HyperPodConditionType{
 
 const HyperPodNodePrefix = "hyperpod-"
 
-// eventBroadcaster is adpated from record.EventBroadcaster
+// eventBroadcaster is adapted from record.EventBroadcaster
 type eventBroadcaster interface {
 	// StartRecordingToSink starts sending events received from this EventBroadcaster to the given
 	// sink. The return value can be ignored or used to stop recording, if desired.

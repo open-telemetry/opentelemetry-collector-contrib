@@ -8,7 +8,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.6.1"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 	corev1 "k8s.io/api/core/v1"
 )
@@ -68,9 +68,9 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 
 	attrs.PutStr("k8s.event.reason", ev.Reason)
 	attrs.PutStr("k8s.event.action", ev.Action)
-	attrs.PutStr("k8s.event.start_time", ev.ObjectMeta.CreationTimestamp.String())
-	attrs.PutStr("k8s.event.name", ev.ObjectMeta.Name)
-	attrs.PutStr("k8s.event.uid", string(ev.ObjectMeta.UID))
+	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
+	attrs.PutStr("k8s.event.name", ev.Name)
+	attrs.PutStr("k8s.event.uid", string(ev.UID))
 	attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is

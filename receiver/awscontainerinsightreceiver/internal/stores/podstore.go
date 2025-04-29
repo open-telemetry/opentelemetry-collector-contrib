@@ -74,8 +74,8 @@ type mapWithExpiry struct {
 }
 
 func (m *mapWithExpiry) Get(key string) (any, bool) {
-	m.MapWithExpiry.Lock()
-	defer m.MapWithExpiry.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	if val, ok := m.MapWithExpiry.Get(awsmetrics.NewKey(key, nil)); ok {
 		return val.RawValue, ok
 	}
@@ -84,8 +84,8 @@ func (m *mapWithExpiry) Get(key string) (any, bool) {
 }
 
 func (m *mapWithExpiry) Set(key string, content any) {
-	m.MapWithExpiry.Lock()
-	defer m.MapWithExpiry.Unlock()
+	m.Lock()
+	defer m.Unlock()
 	val := awsmetrics.MetricValue{
 		RawValue:  content,
 		Timestamp: time.Now(),

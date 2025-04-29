@@ -32,11 +32,11 @@ This receiver uses the [AWS SDK](https://docs.aws.amazon.com/sdk-for-go/v1/devel
 
 ### Logs Parameters
 
-| Parameter                | Notes        | type                   | Description                                                                                |
-| ------------------------ | ------------ | ---------------------- | ------------------------------------------------------------------------------------------ |
-| `poll_interval`          | `default=1m` | duration               | The duration waiting in between requests.                                                  |
-| `max_events_per_request` | `default=50` | int                    | The maximum number of events to process per request to Cloudwatch                          |
-| `groups`                 | *optional*   | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
+| Parameter                | Notes          | type                   | Description                                                                                |
+| ------------------------ | -------------- | ---------------------- | ------------------------------------------------------------------------------------------ |
+| `poll_interval`          | `default=1m`   | duration               | The duration waiting in between requests.                                                  |
+| `max_events_per_request` | `default=1000` | int                    | The maximum number of events to process per request to Cloudwatch                          |
+| `groups`                 | *optional*     | `See Group Parameters` | Configuration for Log Groups, by default all Log Groups and Log Streams will be collected. |
 
 ### Group Parameters
 

@@ -132,7 +132,7 @@ func (split *dataPointSplit) appendMetricData(metricVal float64, count uint64) {
 
 // CalculateDeltaDatapoints retrieves the NumberDataPoint at the given index and performs rate/delta calculation if necessary.
 func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes())
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -171,7 +171,7 @@ func (dps numberDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ bool
 }
 
 func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.NumberDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -225,7 +225,7 @@ func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ b
 }
 
 func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -432,7 +432,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 }
 
 func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -505,7 +505,7 @@ func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, _ string, detai
 }
 
 func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	if metric.Flags().NoRecordedValue() {
 		return true, metric.Attributes()
 	}
@@ -529,10 +529,9 @@ func (dps summaryDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 // and optionally adds in the OTel instrumentation library name
 func createLabels(attributes pcommon.Map) map[string]string {
 	labels := make(map[string]string, attributes.Len()+1)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		labels[k] = v.AsString()
-		return true
-	})
+	}
 
 	return labels
 }
@@ -584,7 +583,7 @@ func getDataPoints(pmd pmetric.Metric, metadata cWMetricMetadata, logger *zap.Lo
 		// For summaries coming from the prometheus receiver, the sum and count are cumulative, whereas for summaries
 		// coming from other sources, e.g. SDK, the sum and count are delta by being accumulated and reset periodically.
 		// In order to ensure metrics are sent as deltas, we check the receiver attribute (which can be injected by
-		// attribute processor) from resource metrics. If it exists, and equals to prometheus, the sum and count will be
+		// attribute processor) from resource metrics. If it exists, and is equal to prometheus, the sum and count will be
 		// converted.
 		// For more information: https://github.com/open-telemetry/opentelemetry-collector/blob/main/receiver/prometheusreceiver/DESIGN.md#summary
 		metricMetadata.adjustToDelta = metadata.receiver == prometheusReceiver || metadata.receiver == containerInsightsReceiver

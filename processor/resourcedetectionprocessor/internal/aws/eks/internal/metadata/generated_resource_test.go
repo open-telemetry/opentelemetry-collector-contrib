@@ -13,6 +13,7 @@ func TestResourceBuilder(t *testing.T) {
 		t.Run(tt, func(t *testing.T) {
 			cfg := loadResourceAttributesConfig(t, tt)
 			rb := NewResourceBuilder(cfg)
+			rb.SetCloudAccountID("cloud.account.id-val")
 			rb.SetCloudPlatform("cloud.platform-val")
 			rb.SetCloudProvider("cloud.provider-val")
 			rb.SetK8sClusterName("k8s.cluster.name-val")
@@ -24,7 +25,7 @@ func TestResourceBuilder(t *testing.T) {
 			case "default":
 				assert.Equal(t, 2, res.Attributes().Len())
 			case "all_set":
-				assert.Equal(t, 3, res.Attributes().Len())
+				assert.Equal(t, 4, res.Attributes().Len())
 			case "none_set":
 				assert.Equal(t, 0, res.Attributes().Len())
 				return
@@ -32,20 +33,25 @@ func TestResourceBuilder(t *testing.T) {
 				assert.Failf(t, "unexpected test case: %s", tt)
 			}
 
-			val, ok := res.Attributes().Get("cloud.platform")
+			val, ok := res.Attributes().Get("cloud.account.id")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "cloud.account.id-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("cloud.platform")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.platform-val", val.Str())
+				assert.Equal(t, "cloud.platform-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("cloud.provider")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "cloud.provider-val", val.Str())
+				assert.Equal(t, "cloud.provider-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.cluster.name-val", val.Str())
+				assert.Equal(t, "k8s.cluster.name-val", val.Str())
 			}
 		})
 	}

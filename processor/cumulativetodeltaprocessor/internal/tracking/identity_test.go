@@ -8,6 +8,7 @@ import (
 	"strings"
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
@@ -137,9 +138,7 @@ func TestMetricIdentity_IsFloatVal(t *testing.T) {
 				MetricType:             pmetric.MetricTypeSum,
 				MetricValueType:        tt.fields.MetricValueType,
 			}
-			if got := mi.IsFloatVal(); got != tt.want {
-				t.Errorf("MetricIdentity.IsFloatVal() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, mi.IsFloatVal(), "MetricIdentity.IsFloatVal()")
 		})
 	}
 }
@@ -204,9 +203,7 @@ func TestMetricIdentity_IsSupportedMetricType(t *testing.T) {
 				Attributes:             pcommon.NewMap(),
 				MetricType:             tt.fields.MetricType,
 			}
-			if got := mi.IsSupportedMetricType(); got != tt.want {
-				t.Errorf("MetricIdentity.IsSupportedMetricType() = %v, want %v", got, tt.want)
-			}
+			assert.Equal(t, tt.want, mi.IsSupportedMetricType(), "MetricIdentity.IsSupportedMetricType()")
 		})
 	}
 }

@@ -18,12 +18,13 @@ import (
 	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 func TestStartAndShutdown(t *testing.T) {
@@ -52,7 +53,7 @@ func TestStartAndShutdown(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.desc, func(t *testing.T) {
 			sink := &consumertest.LogsSink{}
-			r := newEventsReceiver(receivertest.NewNopSettings(), tc.getConfig(), sink)
+			r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), tc.getConfig(), sink)
 			err := r.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
 			if tc.expectedStartErr != nil {
 				require.ErrorContains(t, err, tc.expectedStartErr.Error())
@@ -79,7 +80,7 @@ func TestContextDone(t *testing.T) {
 		},
 	}
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	r.pollInterval = 500 * time.Millisecond
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
@@ -115,7 +116,7 @@ func TestPoll(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	mClient := &mockEventsClient{}
 	mClient.setupMock(t)
 	r.client = mClient
@@ -160,7 +161,7 @@ func TestProjectGetFailure(t *testing.T) {
 	}
 
 	sink := &consumertest.LogsSink{}
-	r := newEventsReceiver(receivertest.NewNopSettings(), cfg, sink)
+	r := newEventsReceiver(receivertest.NewNopSettings(metadata.Type), cfg, sink)
 	mClient := &mockEventsClient{}
 	mClient.On("GetProject", mock.Anything, "fake-project").Return(nil, fmt.Errorf("unable to get project: %d", http.StatusUnauthorized))
 	mClient.On("GetOrganization", mock.Anything, "fake-org").Return(nil, fmt.Errorf("unable to get org: %d", http.StatusUnauthorized))

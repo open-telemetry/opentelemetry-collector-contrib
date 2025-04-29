@@ -19,12 +19,13 @@ Use case: it does not support horizontal pool of collectors. Desired work case i
 
 ## Configuration
 
-The following settings are required:
-
-- `endpoint` (default = `localhost:8125`): Address and port to listen on.
-
-
 The Following settings are optional:
+
+- `endpoint`: Address and port to listen on.
+  - For `udp` and `tcp` based `transport`, this config will default to `localhost:8125`
+  - For `unixgram` `transport`, this config will default to `/var/run/statsd-receiver.sock`
+
+- `transport` (default = `udp`): Protocol used by the StatsD server. Currently supported transports can be found in [this file](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/receiver/statsdreceiver/internal/transport/transport.go).
 
 - `aggregation_interval: 70s`(default value is 60s): The aggregation time that the receiver aggregates the metrics (similar to the flush interval in StatsD server)
 
@@ -68,8 +69,8 @@ receivers:
           percentiles: [0, 10, 50, 90, 95, 100]
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ## Aggregation
 

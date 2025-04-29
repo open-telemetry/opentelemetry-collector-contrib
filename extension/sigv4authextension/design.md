@@ -295,7 +295,7 @@ We take a closer look at the performance of `RoundTrip()`, since it will be heav
 First, we obtain the body. This should not have an impact on runtime performance or memory performance as we do not expect to handle http requests that are exponentially large in size*. `body` is necessary as it is passed into the `Sign()` method later.
 
 
-**Note that OTEL does not limit the size of HTTP requests, except if the exporters themselves set a limit. No information could be found on the size of AWS API requests either. If the request body is exponentially large it could affect performance but it is a reasonably safe assumption that that will not be the case.*
+**Note that OTEL does not limit the size of HTTP requests, except if the exporters themselves set a limit. No information could be found on the size of AWS API requests either. If the request body is exponentially large it could affect performance but it is a reasonably safe assumption that will not be the case.*
 
 
 ```go

@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/iisreceiver/internal/metadata"
 )
@@ -17,7 +17,7 @@ import (
 func TestNewFactory(t *testing.T) {
 	t.Run("NewFactoryCorrectType", func(t *testing.T) {
 		factory := NewFactory()
-		require.EqualValues(t, metadata.Type, factory.Type())
+		require.Equal(t, metadata.Type, factory.Type())
 	})
 
 	t.Run("NewFactoryDefaultConfig", func(t *testing.T) {

@@ -9,7 +9,6 @@ import (
 	"runtime"
 	"strconv"
 	"strings"
-	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -251,8 +250,9 @@ func ConvertToOTLPMetrics(fields map[string]any, tags map[string]string, logger 
 		if tagKey == Timestamp {
 			timeNs, _ := strconv.ParseUint(tagValue, 10, 64)
 			timestamp = pcommon.Timestamp(timeNs)
-			// convert from nanosecond to millisecond (as emf log use millisecond timestamp)
-			tagValue = strconv.FormatUint(timeNs/uint64(time.Millisecond), 10)
+
+			// Do not add Timestamp as a resource attribute to avoid high-cardinality.
+			continue
 		}
 		resource.Attributes().PutStr(tagKey, tagValue)
 	}

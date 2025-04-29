@@ -24,7 +24,7 @@ The following settings are required:
 
 The following settings are optional:
 
-* `metrics` (default: see `DefaultMetricSettings` [here](./internal/metadata/generated_metrics.go)): Controls the enabling/disabling of specific metrics. For in depth documentation on the allowable metrics see [here](./documentation.md).
+* `metrics` (default: see [`DefaultMetricSettings`](./internal/metadata/generated_metrics.go)): Controls the enabling/disabling of specific metrics. See [in-depth documentation on the allowable metrics](./documentation.md).
 * `schema` (default: 'ACCOUNT_USAGE'): Snowflake DB schema containing usage statistics and metadata to be monitored.
 * `database` (default: 'SNOWFLAKE'): Snowflake DB containing schema with usage statistics and metadata to be monitored.
 * `role` (default: 'ACCOUNTADMIN'): Role associated with the username designated above. By default admin privileges are required to access most/all of the usage data.
@@ -38,12 +38,12 @@ receivers:
     password: securepassword
     account: bigbusinessaccount
     warehouse: metricWarehouse
-    collection_interval: 18m
+    collection_interval: 5m
     metrics:
       snowflake.database.bytes_scanned.avg:
         enabled: true
-      snowflake.database.bytes_deketed.avg:
+      snowflake.query.bytes_deleted.avg:
         enabled: false
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go) with a detailed sample configuration [here](./testdata/config.yaml)
+The full list of settings exposed for this receiver are documented in [config.go](./config.go) with a detailed sample configuration in [testdata/config.yaml](./testdata/config.yaml)

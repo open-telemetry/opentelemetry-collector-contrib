@@ -392,7 +392,7 @@ The number of times each type of command has been executed.
 
 | Name | Description | Values |
 | ---- | ----------- | ------ |
-| command | The command types. | Str: ``delete``, ``insert``, ``select``, ``update`` |
+| command | The command types. | Str: ``delete``, ``delete_multi``, ``insert``, ``select``, ``update``, ``update_multi`` |
 
 ### mysql.connection.count
 

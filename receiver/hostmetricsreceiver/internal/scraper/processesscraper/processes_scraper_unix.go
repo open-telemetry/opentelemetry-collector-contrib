@@ -9,7 +9,6 @@ import (
 	"context"
 	"runtime"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/process"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processesscraper/internal/metadata"
@@ -20,9 +19,8 @@ const (
 	enableProcessesCreated = runtime.GOOS == "openbsd" || runtime.GOOS == "linux"
 )
 
-func (s *processesScraper) getProcessesMetadata() (processesMetadata, error) {
-	ctx := context.WithValue(context.Background(), common.EnvKey, s.config.EnvMap)
-	processes, err := s.getProcesses()
+func (s *processesScraper) getProcessesMetadata(ctx context.Context) (processesMetadata, error) {
+	processes, err := s.getProcesses(ctx)
 	if err != nil {
 		return processesMetadata{}, err
 	}

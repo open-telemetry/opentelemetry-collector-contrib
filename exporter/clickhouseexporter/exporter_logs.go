@@ -11,11 +11,10 @@ import (
 
 	_ "github.com/ClickHouse/clickhouse-go/v2" // For register database driver.
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/clickhouseexporter/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
 
@@ -76,18 +75,15 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 			logs := ld.ResourceLogs().At(i)
 			res := logs.Resource()
 			resURL := logs.SchemaUrl()
-			resAttr := attributesToMap(res.Attributes())
-			var serviceName string
-			if v, ok := res.Attributes().Get(conventions.AttributeServiceName); ok {
-				serviceName = v.Str()
-			}
+			resAttr := internal.AttributesToMap(res.Attributes())
+			serviceName := internal.GetServiceName(res.Attributes())
 
 			for j := 0; j < logs.ScopeLogs().Len(); j++ {
 				rs := logs.ScopeLogs().At(j).LogRecords()
 				scopeURL := logs.ScopeLogs().At(j).SchemaUrl()
 				scopeName := logs.ScopeLogs().At(j).Scope().Name()
 				scopeVersion := logs.ScopeLogs().At(j).Scope().Version()
-				scopeAttr := attributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
+				scopeAttr := internal.AttributesToMap(logs.ScopeLogs().At(j).Scope().Attributes())
 
 				for k := 0; k < rs.Len(); k++ {
 					r := rs.At(k)
@@ -97,7 +93,7 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 						timestamp = r.ObservedTimestamp()
 					}
 
-					logAttr := attributesToMap(r.Attributes())
+					logAttr := internal.AttributesToMap(r.Attributes())
 					_, err = statement.ExecContext(ctx,
 						timestamp.AsTime(),
 						traceutil.TraceIDToHexOrEmptyString(r.TraceID()),
@@ -127,15 +123,6 @@ func (e *logsExporter) pushLogsData(ctx context.Context, ld plog.Logs) error {
 	e.logger.Debug("insert logs", zap.Int("records", ld.LogRecordCount()),
 		zap.String("cost", duration.String()))
 	return err
-}
-
-func attributesToMap(attributes pcommon.Map) map[string]string {
-	m := make(map[string]string, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
-		m[k] = v.AsString()
-		return true
-	})
-	return m
 }
 
 const (

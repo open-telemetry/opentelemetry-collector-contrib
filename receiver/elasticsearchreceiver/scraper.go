@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver/internal/model"
@@ -239,7 +239,7 @@ func (r *elasticsearchScraper) scrapeNodeMetrics(ctx context.Context, now pcommo
 		r.mb.RecordJvmMemoryHeapUtilizationDataPoint(now, float64(info.JVMInfo.JVMMemoryInfo.HeapUsedPercent)/100)
 
 		r.mb.RecordJvmMemoryNonheapUsedDataPoint(now, info.JVMInfo.JVMMemoryInfo.NonHeapUsedInBy)
-		r.mb.RecordJvmMemoryNonheapCommittedDataPoint(now, info.JVMInfo.JVMMemoryInfo.NonHeapComittedInBy)
+		r.mb.RecordJvmMemoryNonheapCommittedDataPoint(now, info.JVMInfo.JVMMemoryInfo.NonHeapCommittedInBy)
 
 		r.mb.RecordJvmMemoryPoolUsedDataPoint(now, info.JVMInfo.JVMMemoryInfo.MemoryPools.Young.MemUsedBy, "young")
 		r.mb.RecordJvmMemoryPoolUsedDataPoint(now, info.JVMInfo.JVMMemoryInfo.MemoryPools.Survivor.MemUsedBy, "survivor")

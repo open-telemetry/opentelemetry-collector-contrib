@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/common"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/extension/healthcheckv2extension/internal/grpc"
@@ -182,10 +183,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 			if tt.expectedErr != nil {
-				assert.ErrorIs(t, component.ValidateConfig(cfg), tt.expectedErr)
+				assert.ErrorIs(t, xconfmap.Validate(cfg), tt.expectedErr)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

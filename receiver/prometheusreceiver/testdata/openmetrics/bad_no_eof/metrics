@@ -1,0 +1,3 @@
+# TYPE a counter
+# HELP a help
+a_total 0 123 # {a="b"} 0.5

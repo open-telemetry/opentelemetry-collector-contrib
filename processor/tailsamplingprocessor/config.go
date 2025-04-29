@@ -190,7 +190,7 @@ type StringAttributeCfg struct {
 // RateLimitingCfg holds the configurable settings to create a rate limiting
 // sampling policy evaluator.
 type RateLimitingCfg struct {
-	// SpansPerSecond sets the limit on the maximum nuber of spans that can be processed each second.
+	// SpansPerSecond sets the limit on the maximum number of spans that can be processed each second.
 	SpansPerSecond int64 `mapstructure:"spans_per_second"`
 }
 
@@ -227,12 +227,12 @@ type OTTLConditionCfg struct {
 type DecisionCacheConfig struct {
 	// SampledCacheSize specifies the size of the cache that holds the sampled trace IDs.
 	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
-	// For effective use, this value should be at least an order of magnitude higher than Config.NumTraces.
+	// For effective use, this value should be at least an order of magnitude greater than Config.NumTraces.
 	// If left as default 0, a no-op DecisionCache will be used.
 	SampledCacheSize int `mapstructure:"sampled_cache_size"`
 	// NonSampledCacheSize specifies the size of the cache that holds the non-sampled trace IDs.
 	// This value will be the maximum amount of trace IDs that the cache can hold before overwriting previous IDs.
-	// For effective use, this value should be at least an order of magnitude higher than Config.NumTraces.
+	// For effective use, this value should be at least an order of magnitude greater than Config.NumTraces.
 	// If left as default 0, a no-op DecisionCache will be used.
 	NonSampledCacheSize int `mapstructure:"non_sampled_cache_size"`
 }
@@ -253,4 +253,6 @@ type Config struct {
 	PolicyCfgs []PolicyCfg `mapstructure:"policies"`
 	// DecisionCache holds configuration for the decision cache(s)
 	DecisionCache DecisionCacheConfig `mapstructure:"decision_cache"`
+	// Options allows for additional configuration of the tail-based sampling processor in code.
+	Options []Option `mapstructure:"-"`
 }

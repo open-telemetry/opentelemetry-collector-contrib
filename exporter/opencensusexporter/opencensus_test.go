@@ -19,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/testdata"
 	"go.opentelemetry.io/collector/receiver/receivertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opencensusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/opencensusreceiver"
 )
@@ -28,8 +29,8 @@ func TestSendTraces(t *testing.T) {
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
-	set := receivertest.NewNopSettings()
+	rCfg.NetAddr.Endpoint = endpoint
+	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := rFactory.CreateTraces(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -46,7 +47,7 @@ func TestSendTraces(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -75,7 +76,7 @@ func TestSendTraces(t *testing.T) {
 	}, 10*time.Second, 5*time.Millisecond)
 	traces = sink.AllTraces()
 	require.Len(t, traces, 1)
-	assert.EqualValues(t, newData, traces[0])
+	assert.Equal(t, newData, traces[0])
 }
 
 func TestSendTraces_NoBackend(t *testing.T) {
@@ -87,7 +88,7 @@ func TestSendTraces_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -111,7 +112,7 @@ func TestSendTraces_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateTraces(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -127,8 +128,8 @@ func TestSendMetrics(t *testing.T) {
 	rFactory := opencensusreceiver.NewFactory()
 	rCfg := rFactory.CreateDefaultConfig().(*opencensusreceiver.Config)
 	endpoint := testutil.GetAvailableLocalAddress(t)
-	rCfg.ServerConfig.NetAddr.Endpoint = endpoint
-	set := receivertest.NewNopSettings()
+	rCfg.NetAddr.Endpoint = endpoint
+	set := receivertest.NewNopSettings(metadata.Type)
 	recv, err := rFactory.CreateMetrics(context.Background(), set, rCfg, sink)
 	assert.NoError(t, err)
 	assert.NoError(t, recv.Start(context.Background(), componenttest.NewNopHost()))
@@ -145,7 +146,7 @@ func TestSendMetrics(t *testing.T) {
 		},
 	}
 	cfg.NumWorkers = 1
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -184,7 +185,7 @@ func TestSendMetrics_NoBackend(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()
@@ -208,7 +209,7 @@ func TestSendMetrics_AfterStop(t *testing.T) {
 			Insecure: true,
 		},
 	}
-	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(), cfg)
+	exp, err := factory.CreateMetrics(context.Background(), exportertest.NewNopSettings(metadata.Type), cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exp)
 	host := componenttest.NewNopHost()

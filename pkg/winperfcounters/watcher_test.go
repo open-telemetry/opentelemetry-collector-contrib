@@ -128,7 +128,7 @@ func TestPerfCounter_Reset(t *testing.T) {
 
 	// new query is different instance of same counter.
 	require.NoError(t, err)
-	assert.NotSame(t, handle, pc.handle)
+	assert.NotEqual(t, handle, pc.handle)
 	assert.NotSame(t, query, pc.query)
 	assert.Equal(t, path, pc.Path())
 
@@ -317,11 +317,7 @@ func Test_InstanceNameIndexing(t *testing.T) {
 	for _, test := range testCases {
 		actual := cleanupScrapedValues(test.vals)
 		t.Run(test.name, func(t *testing.T) {
-			compareCounterValues(t, test.expected, actual)
+			assert.Equal(t, test.expected, actual)
 		})
 	}
-}
-
-func compareCounterValues(t *testing.T, expected []CounterValue, actual []CounterValue) {
-	assert.EqualValues(t, expected, actual)
 }

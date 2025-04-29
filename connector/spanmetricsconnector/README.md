@@ -31,20 +31,20 @@ dimensions, including Errors. Multiple metrics can be aggregated if, for instanc
 a user wishes to view call counts just on `service.name` and `span.name`.
 
 ```
-calls{service.name="shipping",span.name="get_shipping/{shippingId}",span.kind="SERVER",status.code="Ok"}
+traces.span.metrics.calls{service.name="shipping",span.name="get_shipping/{shippingId}",span.kind="SERVER",status.code="Ok"}
 ```
 
 **Error** counts are computed from the Request counts which have an `Error` Status Code metric dimension.
 
 ```
-calls{service.name="shipping",span.name="get_shipping/{shippingId},span.kind="SERVER",status.code="Error"}
+traces.span.metrics.calls{service.name="shipping",span.name="get_shipping/{shippingId},span.kind="SERVER",status.code="Error"}
 ```
 
 **Duration** is computed from the difference between the span start and end times and inserted into the
 relevant duration histogram time bucket for each unique set dimensions.
 
 ```
-duration{service.name="shipping",span.name="get_shipping/{shippingId}",span.kind="SERVER",status.code="Ok"}
+traces.span.metrics.duration{service.name="shipping",span.name="get_shipping/{shippingId}",span.kind="SERVER",status.code="Ok"}
 ```
 
 Each metric will have _at least_ the following dimensions because they are common
@@ -106,7 +106,8 @@ The following settings can be optionally configured:
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
-- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number. 
+- `dimensions_cache_size` (default: `1000`): the size of cache for storing Dimensions to improve collectors memory usage. Must be a positive number.
+- `include_instrumentation_scope`: a list of instrumentation scope names to include from the traces.
 - `resource_metrics_cache_size` (default: `1000`): the size of the cache holding metrics for a service. This is mostly relevant for
    cumulative temporality to avoid memory leaks and correct metric timestamp resets.
 - `aggregation_temporality` (default: `AGGREGATION_TEMPORALITY_CUMULATIVE`): Defines the aggregation temporality of the generated metrics. 
@@ -130,7 +131,7 @@ The following is a simple example usage of the `spanmetrics` connector.
 
 For configuration examples on other use cases, please refer to [More Examples](#more-examples).
 
-The full list of settings exposed for this connector are documented [here](../../connector/spanmetricsconnector/config.go).
+The full list of settings exposed for this connector are documented in [spanmetricsconnector/config.go](../../connector/spanmetricsconnector/config.go).
 
 ```yaml
 receivers:
@@ -164,6 +165,8 @@ connectors:
       - service.name
       - telemetry.sdk.language
       - telemetry.sdk.name
+    include_instrumentation_scope:
+      - express
 
 service:
   pipelines:
@@ -229,3 +232,41 @@ calls_total{span_name="/Address", service_name="shippingservice", span_kind="SPA
 For more example configuration covering various other use cases, please visit the [testdata directory](../../connector/spanmetricsconnector/testdata).
 
 [Connectors README]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md
+
+## Known Limitation: Violation of the Single Writer Principle
+
+The `spanmetricsconnector` currently does not guarantee adherence to the [Single Writer Principle](https://opentelemetry.io/docs/specs/otel/metrics/data-model/#single-writer), which is a core requirement in the OpenTelemetry metrics data model. Depending on how the collector is configured, multiple components may write to the same metric stream. This can result in inconsistent data, metric conflicts, or dropped series in metric backends.
+
+### Why this happens
+
+This issue typically arises when:
+
+* Multiple pipelines use the same instance of the `spanmetricsconnector`
+* The connector is instantiated more than once without ensuring the resulting metric streams are distinct
+* The `resource_metrics_key_attributes` field is not configured correctly or includes common/shared attributes across all instances
+
+### Recommendations
+
+To reduce the risk of conflicting writes:
+
+* Avoid using multiple instances of the `spanmetricsconnector` unless metrics are partitioned (e.g., by attribute filtering) so each stream has a single writer
+* If multiple pipelines are used, ensure each produces uniquely identified metrics (e.g., inject attributes using a processor)
+* For exporters like Prometheus, which rely on the single writer assumption, use a dedicated pipeline with a single `spanmetricsconnector` instance
+
+More context is available in [GitHub issue #21101](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21101).
+
+### About `resource_metrics_key_attributes`
+
+The `resource_metrics_key_attributes` setting controls which resource attributes are included in the metric stream identity. These attributes are used to build the key map that determines how metrics are grouped.
+
+If this field is left empty, the connector will use **all** available attributes to compute the resource metric hash.
+
+To avoid problems, be cautious when choosing which attributes to include.
+
+Avoid attributes that:
+
+* **Change frequently** – such as `request_id`, `timestamp`, or `trace_id`. These increase cardinality and create excessive metric streams.
+* **Are shared across all sources** – values like `true`, `default`, or `team:backend` offer no uniqueness and can lead to multiple writers sharing the same stream.
+* **Are optional or inconsistently applied** – if an attribute is only present in some spans, this can fragment metric streams (e.g., one stream with the attribute and one without).
+
+Instead, use attributes that are stable, present in all spans, and meaningfully distinguish each stream. Good examples include `cluster_id`, `region`, or `deployment_environment`.

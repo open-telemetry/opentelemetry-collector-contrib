@@ -30,7 +30,7 @@ type monitoringReceiver struct {
 	client            *monitoring.MetricClient
 	metricsBuilder    *internal.MetricsBuilder
 	mutex             sync.RWMutex
-	metricDescriptors map[string]*metric.MetricDescriptor
+	metricDescriptors map[string]*metric.MetricDescriptor // key is the Type of MetricDescriptor
 }
 
 func newGoogleCloudMonitoringReceiver(cfg *Config, logger *zap.Logger) *monitoringReceiver {
@@ -78,7 +78,7 @@ func (mr *monitoringReceiver) Shutdown(context.Context) error {
 
 func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, error) {
 	var (
-		gInternal    time.Duration
+		gInterval    time.Duration
 		gDelay       time.Duration
 		calStartTime time.Time
 		calEndTime   time.Time
@@ -89,20 +89,13 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 	metrics := pmetric.NewMetrics()
 
 	// Iterate over each metric in the configuration to calculate start/end times and construct the filter query.
-	for _, metric := range mr.config.MetricsList {
-		// Acquire read lock to safely read metricDescriptors
-		mr.mutex.RLock()
-		metricDesc, exists := mr.metricDescriptors[metric.MetricName]
-		mr.mutex.RUnlock()
-		if !exists {
-			mr.logger.Warn("Metric descriptor not found", zap.String("metric_name", metric.MetricName))
-			continue
-		}
-
+	mr.mutex.RLock()
+	defer mr.mutex.RUnlock()
+	for metricType, metricDesc := range mr.metricDescriptors {
 		// Set interval and delay times, using defaults if not provided
-		gInternal = mr.config.CollectionInterval
-		if gInternal <= 0 {
-			gInternal = defaultCollectionInterval
+		gInterval = mr.config.CollectionInterval
+		if gInterval <= 0 {
+			gInterval = defaultCollectionInterval
 		}
 
 		gDelay = metricDesc.GetMetadata().GetIngestDelay().AsDuration()
@@ -111,10 +104,10 @@ func (mr *monitoringReceiver) Scrape(ctx context.Context) (pmetric.Metrics, erro
 		}
 
 		// Calculate the start and end times
-		calStartTime, calEndTime = calculateStartEndTime(gInternal, gDelay)
+		calStartTime, calEndTime = calculateStartEndTime(gInterval, gDelay)
 
 		// Get the filter query for the metric
-		filterQuery = getFilterQuery(metric)
+		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metricType)
 
 		// Define the request to list time series data
 		tsReq := &monitoringpb.ListTimeSeriesRequest{
@@ -158,9 +151,6 @@ func (mr *monitoringReceiver) initializeClient(ctx context.Context) error {
 	creds, err := google.FindDefaultCredentials(ctx, "https://www.googleapis.com/auth/monitoring.read")
 	if err != nil {
 		return fmt.Errorf("failed to find default credentials: %w", err)
-	}
-	if creds == nil || creds.JSON == nil {
-		return errors.New("no valid credentials found")
 	}
 
 	// Attempt to create the monitoring client
@@ -244,10 +234,14 @@ func calculateStartEndTime(interval, delay time.Duration) (time.Time, time.Time)
 // getFilterQuery constructs a filter query string based on the provided metric.
 func getFilterQuery(metric MetricConfig) string {
 	var filterQuery string
-	const baseQuery = `metric.type =`
 
-	// If a specific metric name is provided, use it in the filter query
-	filterQuery = fmt.Sprintf(`%s "%s"`, baseQuery, metric.MetricName)
+	// see https://cloud.google.com/monitoring/api/v3/filters
+	if metric.MetricName != "" {
+		filterQuery = fmt.Sprintf(`metric.type = "%s"`, metric.MetricName)
+	} else {
+		filterQuery = metric.MetricDescriptorFilter
+	}
+
 	return filterQuery
 }
 
@@ -274,14 +268,21 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 		}
 
 		// Set metadata (user and system labels)
-		if timeSeries.Metadata != nil {
-			for k, v := range timeSeries.Metadata.UserLabels {
+		if timeSeries.GetMetadata() != nil {
+			for k, v := range timeSeries.GetMetadata().GetUserLabels() {
 				resource.Attributes().PutStr(k, v)
 			}
-			if timeSeries.Metadata.SystemLabels != nil {
-				for k, v := range timeSeries.Metadata.SystemLabels.Fields {
+			if timeSeries.GetMetadata().GetSystemLabels() != nil {
+				for k, v := range timeSeries.GetMetadata().GetSystemLabels().GetFields() {
 					resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 				}
+			}
+		}
+
+		// Add metric-specific labels if they are present
+		if len(timeSeries.GetMetric().Labels) > 0 {
+			for k, v := range timeSeries.GetMetric().GetLabels() {
+				resource.Attributes().PutStr(k, fmt.Sprintf("%v", v))
 			}
 		}
 
@@ -318,7 +319,7 @@ func (mr *monitoringReceiver) convertGCPTimeSeriesToMetrics(metrics pmetric.Metr
 	// TODO: Add support for EXPONENTIAL_HISTOGRAM
 	default:
 		metricError := fmt.Sprintf("\n Unsupported metric kind: %v\n", timeSeries.GetMetricKind())
-		mr.logger.Info(metricError)
+		mr.logger.Warn(metricError)
 	}
 }
 

@@ -90,6 +90,12 @@ attributes:
     enum:
       - read_into
       - written_from
+  cache_ratio_type:
+    description: Cache ratio type
+    type: string
+    enum:
+      - cache_fill
+      - dirty_fill
   cache_status:
     description: Cache status
     type: string
@@ -165,6 +171,7 @@ attributes:
       - getmore
       - insert
       - scan_and_order
+      - ttl_deleted
   cluster_role:
     description: Whether process is acting as replica or primary
     type: string
@@ -256,6 +263,14 @@ metrics:
     extended_documentation: Aggregate of MongoDB Metrics CACHE_BYTES_READ_INTO, CACHE_BYTES_WRITTEN_FROM
     unit: By
     attributes: [cache_direction]
+    gauge:
+      value_type: double
+  mongodbatlas.process.cache.ratio:
+    enabled: false
+    description: Cache ratios represented as (%)
+    extended_documentation: Aggregate of MongoDB Metrics CACHE_FILL_RATIO, DIRTY_FILL_RATIO
+    unit: "%"
+    attributes: [cache_ratio_type]
     gauge:
       value_type: double
   mongodbatlas.process.cache.size:
@@ -452,7 +467,7 @@ metrics:
   mongodbatlas.process.db.operations.rate:
     enabled: true
     description: DB Operation Rates
-    extended_documentation: Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT
+    extended_documentation: Aggregate of MongoDB Metrics OPCOUNTER_GETMORE, OPERATIONS_SCAN_AND_ORDER, OPCOUNTER_UPDATE, OPCOUNTER_REPL_UPDATE, OPCOUNTER_CMD, OPCOUNTER_DELETE, OPCOUNTER_REPL_DELETE, OPCOUNTER_REPL_CMD, OPCOUNTER_QUERY, OPCOUNTER_REPL_INSERT, OPCOUNTER_INSERT, OPCOUNTER_TTL_DELETED
     unit: "{operations}/s"
     attributes: [operation, cluster_role]
     gauge:
@@ -618,6 +633,14 @@ metrics:
     attributes: [disk_direction]
     gauge:
       value_type: double
+  mongodbatlas.disk.partition.throughput:
+    enabled: false
+    description: Disk throughput
+    extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_THROUGHPUT_READ, DISK_PARTITION_THROUGHPUT_WRITE
+    unit: By/s
+    attributes: [disk_direction]
+    gauge:
+      value_type: double
   mongodbatlas.disk.partition.usage.max:
     enabled: true
     description: Disk partition usage (%)
@@ -678,6 +701,14 @@ metrics:
     extended_documentation: Aggregate of MongoDB Metrics DISK_PARTITION_SPACE_FREE, DISK_PARTITION_SPACE_USED
     unit: By
     attributes: [disk_status]
+    gauge:
+      value_type: double
+  mongodbatlas.disk.partition.queue.depth:
+    enabled: false
+    description: Disk queue depth
+    extended_documentation: Aggregate of MongoDB Metrics DISK_QUEUE_DEPTH
+    unit: "1"
+    attributes: []
     gauge:
       value_type: double
   mongodbatlas.db.size:

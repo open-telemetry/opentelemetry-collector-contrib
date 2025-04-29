@@ -37,7 +37,7 @@ func TestCreateTraces(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(), cfg)
+	exporter, err := factory.CreateTraces(ctx, exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.Error(t, err)
 	assert.Nil(t, exporter)
 }
@@ -53,7 +53,7 @@ func TestCreateMetrics(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	ctx := context.Background()
-	exporter, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(), cfg)
+	exporter, err := factory.CreateMetrics(ctx, exportertest.NewNopSettings(metadata.Type), cfg)
 	assert.NoError(t, err)
 	assert.NotNil(t, exporter)
 }

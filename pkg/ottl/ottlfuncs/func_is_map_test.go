@@ -59,7 +59,7 @@ func Test_IsMap(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsMap_Error(t *testing.T) {
 	exprFunc := isMap[any](&ottl.StandardPMapGetter[any]{
 		Getter: func(context.Context, any) (any, error) {

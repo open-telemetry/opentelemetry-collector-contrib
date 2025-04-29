@@ -4,9 +4,10 @@ status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
-    active: [StefanKurek]
+    active: [StefanKurek, sincejune, crobert-1]
     seeking_new: true
 
 resource_attributes:
@@ -22,6 +23,14 @@ resource_attributes:
     description: The name of the SQL Server instance being monitored.
     enabled: false
     type: string
+  server.address:
+    description: Name of the database host.
+    enabled: false
+    type: string
+  server.port:
+    description: Server port number.
+    enabled: false
+    type: int
 
 attributes:
   page.operations:
@@ -46,6 +55,22 @@ attributes:
     description: The direction of flow of bytes or operations.
     type: string
     enum: [read, write]
+  replica.direction:
+    description: The direction of flow of bytes for replica.
+    type: string
+    enum: [transmit, receive]
+  table.state:
+    description: The state of the table.
+    type: string
+    enum: [active, inactive]
+  table.status:
+    description: The status of the table.
+    type: string
+    enum: [temporary, permanent]
+  tempdb.state:
+    description: The status of the tempdb space usage.
+    type: string
+    enum: [free, used]
 
 metrics:
   sqlserver.user.connection.count:
@@ -255,6 +280,142 @@ metrics:
       input_type: string
     attributes: [database.status]
     extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
+  sqlserver.table.count:
+    enabled: false
+    description: The number of tables.
+    unit: “{tables}”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: [table.state, table.status]
+  sqlserver.database.backup_or_restore.rate:
+    enabled: false
+    description: Total number of backups/restores.
+    unit: “{backups_or_restores}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.replica.data.rate:
+    enabled: false
+    description: Throughput rate of replica data.
+    unit: By/s
+    gauge:
+      value_type: double
+    attributes: [replica.direction]
+  sqlserver.database.execution.errors:
+    enabled: false
+    description: Number of execution errors.
+    unit: “{errors}”
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.page.buffer_cache.free_list.stalls.rate:
+    enabled: false
+    description: Number of free list stalls.
+    unit: “{stalls}/s”
+    gauge:
+      value_type: int
+    attributes: []
+  sqlserver.database.tempdb.space:
+    enabled: false
+    description: Total free space in temporary DB.
+    unit: “KB”
+    sum:
+      monotonic: false
+      aggregation_temporality: cumulative
+      value_type: int
+    attributes: [tempdb.state]
+  sqlserver.database.full_scan.rate:
+    enabled: false
+    description: The number of unrestricted full table or index scans.
+    unit: "{scans}/s"
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.index.search.rate:
+    enabled: false
+    description: Total number of index searches.
+    unit: “{searches}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.lock.timeout.rate:
+    enabled: false
+    description: Total number of lock timeouts.
+    unit: “{timeouts}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.login.rate:
+    enabled: false
+    description: Total number of logins.
+    unit: “{logins}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.logout.rate:
+    enabled: false
+    description: Total number of logouts.
+    unit: “{logouts}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.deadlock.rate:
+    enabled: false
+    description: Total number of deadlocks.
+    unit: “{deadlocks}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.transaction.mirror_write.rate:
+    enabled: false
+    description: Total number of mirror write transactions.
+    unit: “{transactions}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.memory.grants.pending.count:
+    enabled: false
+    description: Total number of memory grants pending.
+    unit: “{grants}”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: int
+    attributes: []
+  sqlserver.page.lookup.rate:
+    enabled: false
+    description: Total number of page lookups.
+    unit: “{lookups}/s”
+    gauge:
+      value_type: double
+    attributes: []
+  sqlserver.transaction.delay:
+    enabled: false
+    description: Time consumed in transaction delays.
+    unit: ms
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: double
+    attributes: []
+  sqlserver.memory.usage:
+    enabled: false
+    description: Total memory in use.
+    unit: “KB”
+    sum:
+      aggregation_temporality: cumulative
+      monotonic: false
+      value_type: double
+    attributes: []
+  sqlserver.database.tempdb.version_store.size:
+    enabled: false
+    description: TempDB version store size.
+    unit: “KB”
+    gauge:
+      value_type: double
+    attributes: []  
 
 tests:
   config:

@@ -12,6 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/schemaprocessor/internal/translation"
@@ -83,6 +84,6 @@ func TestConfigurationValidation(t *testing.T) {
 			Targets: tc.target,
 		}
 
-		assert.ErrorIs(t, component.ValidateConfig(cfg), tc.expectError, tc.scenario)
+		assert.ErrorIs(t, xconfmap.Validate(cfg), tc.expectError, tc.scenario)
 	}
 }

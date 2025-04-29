@@ -20,7 +20,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
-	"go.opentelemetry.io/collector/exporter/exporterbatcher"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/otelarrowexporter/internal/arrow"
@@ -34,7 +34,7 @@ func TestUnmarshalDefaultConfig(t *testing.T) {
 	cfg := factory.CreateDefaultConfig()
 	assert.NoError(t, cm.Unmarshal(cfg))
 	assert.Equal(t, factory.CreateDefaultConfig(), cfg)
-	assert.Equal(t, "round_robin", cfg.(*Config).ClientConfig.BalancerName)
+	assert.Equal(t, "round_robin", cfg.(*Config).BalancerName)
 	assert.Equal(t, arrow.DefaultPrioritizer, cfg.(*Config).Arrow.Prioritizer)
 }
 
@@ -57,10 +57,11 @@ func TestUnmarshalConfig(t *testing.T) {
 				MaxInterval:         1 * time.Minute,
 				MaxElapsedTime:      10 * time.Minute,
 			},
-			QueueSettings: exporterhelper.QueueConfig{
+			QueueSettings: exporterhelper.QueueBatchConfig{
 				Enabled:      true,
 				NumConsumers: 2,
 				QueueSize:    10,
+				Sizer:        exporterhelper.RequestSizerTypeRequests,
 			},
 			ClientConfig: configgrpc.ClientConfig{
 				Headers: map[string]configopaque.String{
@@ -85,14 +86,13 @@ func TestUnmarshalConfig(t *testing.T) {
 				BalancerName:    "experimental",
 				Auth:            &configauth.Authentication{AuthenticatorID: component.NewID(component.MustNewType("nop"))},
 			},
-			BatcherConfig: exporterbatcher.Config{
+			BatcherConfig: exporterhelper.BatcherConfig{ //nolint:staticcheck
 				Enabled:      true,
 				FlushTimeout: 200 * time.Millisecond,
-				MinSizeConfig: exporterbatcher.MinSizeConfig{
-					MinSizeItems: 1000,
-				},
-				MaxSizeConfig: exporterbatcher.MaxSizeConfig{
-					MaxSizeItems: 10000,
+				SizeConfig: exporterhelper.SizeConfig{ //nolint:staticcheck
+					Sizer:   exporterhelper.RequestSizerTypeItems,
+					MinSize: 1000,
+					MaxSize: 10000,
 				},
 			},
 			Arrow: ArrowConfig{
@@ -138,7 +138,7 @@ func TestDefaultConfigValid(t *testing.T) {
 	// this must be set by the user and config
 	// validation always checks that a value is set.
 	cfg.(*Config).Arrow.MaxStreamLifetime = 2 * time.Second
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 }
 
 func TestArrowConfigPayloadCompressionZstd(t *testing.T) {

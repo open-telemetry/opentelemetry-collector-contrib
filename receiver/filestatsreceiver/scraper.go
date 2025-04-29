@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 
@@ -63,7 +63,7 @@ func (s *fsScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 func newScraper(cfg *Config, settings receiver.Settings) *fsScraper {
 	return &fsScraper{
 		include: cfg.Include,
-		logger:  settings.TelemetrySettings.Logger,
+		logger:  settings.Logger,
 		mb:      metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 	}
 }

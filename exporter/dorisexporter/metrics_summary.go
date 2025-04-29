@@ -5,7 +5,6 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -32,7 +31,7 @@ type dQuantileValue struct {
 }
 
 type metricModelSummary struct {
-	data []*dMetricSummary
+	metricModelCommon[dMetricSummary]
 }
 
 func (m *metricModelSummary) metricType() pmetric.MetricType {
@@ -78,16 +77,4 @@ func (m *metricModelSummary) add(pm pmetric.Metric, dm *dMetric, e *metricsExpor
 	}
 
 	return nil
-}
-
-func (m *metricModelSummary) raw() any {
-	return m.data
-}
-
-func (m *metricModelSummary) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelSummary) bytes() ([]byte, error) {
-	return json.Marshal(m.data)
 }

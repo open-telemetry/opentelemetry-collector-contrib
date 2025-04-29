@@ -28,11 +28,13 @@ import (
 )
 
 const (
-	serviceNameKey     = conventions.AttributeServiceName
-	spanNameKey        = "span.name"   // OpenTelemetry non-standard constant.
-	spanKindKey        = "span.kind"   // OpenTelemetry non-standard constant.
-	statusCodeKey      = "status.code" // OpenTelemetry non-standard constant.
-	metricKeySeparator = string(byte(0))
+	serviceNameKey                 = conventions.AttributeServiceName
+	spanNameKey                    = "span.name"                          // OpenTelemetry non-standard constant.
+	spanKindKey                    = "span.kind"                          // OpenTelemetry non-standard constant.
+	statusCodeKey                  = "status.code"                        // OpenTelemetry non-standard constant.
+	instrumentationScopeNameKey    = "span.instrumentation.scope.name"    // OpenTelemetry non-standard constant.
+	instrumentationScopeVersionKey = "span.instrumentation.scope.version" // OpenTelemetry non-standard constant.
+	metricKeySeparator             = string(byte(0))
 
 	defaultDimensionsCacheSize      = 1000
 	defaultResourceMetricsCacheSize = 1000
@@ -85,8 +87,6 @@ type resourceMetrics struct {
 	sums       metrics.SumMetrics
 	events     metrics.SumMetrics
 	attributes pcommon.Map
-	// startTimestamp captures when the first data points for this resource are recorded.
-	startTimestamp pcommon.Timestamp
 	// lastSeen captures when the last data points for this resource were recorded.
 	lastSeen time.Time
 }
@@ -279,8 +279,7 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		 * - For delta metrics: (T1, T2), (T2, T3), (T3, T4) ...
 		 */
 		deltaMetricKeys := make(map[metrics.Key]bool)
-		startTimeGenerator := func(mk metrics.Key) pcommon.Timestamp {
-			startTime := rawMetrics.startTimestamp
+		timeStampGenerator := func(mk metrics.Key, startTime pcommon.Timestamp) pcommon.Timestamp {
 			if p.config.GetAggregationTemporality() == pmetric.AggregationTemporalityDelta {
 				if lastTimestamp, ok := p.lastDeltaTimestamps.Get(mk); ok {
 					startTime = lastTimestamp
@@ -299,21 +298,21 @@ func (p *connectorImp) buildMetrics() pmetric.Metrics {
 		sums := rawMetrics.sums
 		metric := sm.Metrics().AppendEmpty()
 		metric.SetName(buildMetricName(metricsNamespace, metricNameCalls))
-		sums.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+		sums.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 
 		if !p.config.Histogram.Disable {
 			histograms := rawMetrics.histograms
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameDuration))
 			metric.SetUnit(p.config.Histogram.Unit.String())
-			histograms.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+			histograms.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		events := rawMetrics.events
 		if p.events.Enabled {
 			metric = sm.Metrics().AppendEmpty()
 			metric.SetName(buildMetricName(metricsNamespace, metricNameEvents))
-			events.BuildMetrics(metric, startTimeGenerator, timestamp, p.config.GetAggregationTemporality())
+			events.BuildMetrics(metric, timestamp, timeStampGenerator, p.config.GetAggregationTemporality())
 		}
 
 		for mk := range deltaMetricKeys {
@@ -377,7 +376,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 			continue
 		}
 
-		rm := p.getOrCreateResourceMetrics(resourceAttr, startTimestamp)
+		rm := p.getOrCreateResourceMetrics(resourceAttr)
 		sums := rm.sums
 		histograms := rm.histograms
 		events := rm.events
@@ -401,17 +400,17 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				attributes, ok := p.metricKeyToDimensions.Get(key)
 				if !ok {
-					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions)
+					attributes = p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
 					p.metricKeyToDimensions.Add(key, attributes)
 				}
 				if !p.config.Histogram.Disable {
 					// aggregate histogram metrics
-					h := histograms.GetOrCreate(key, attributes)
+					h := histograms.GetOrCreate(key, attributes, startTimestamp)
 					p.addExemplar(span, duration, h)
 					h.Observe(duration)
 				}
 				// aggregate sums metrics
-				s := sums.GetOrCreate(key, attributes)
+				s := sums.GetOrCreate(key, attributes, startTimestamp)
 				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
@@ -432,10 +431,10 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
 						eAttributes, ok := p.metricKeyToDimensions.Get(eKey)
 						if !ok {
-							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions)
+							eAttributes = p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 							p.metricKeyToDimensions.Add(eKey, eAttributes)
 						}
-						e := events.GetOrCreate(eKey, eAttributes)
+						e := events.GetOrCreate(eKey, eAttributes, startTimestamp)
 						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
@@ -473,16 +472,15 @@ func (p *connectorImp) createResourceKey(attr pcommon.Map) resourceKey {
 	return pdatautil.MapHash(m)
 }
 
-func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map, startTimestamp pcommon.Timestamp) *resourceMetrics {
+func (p *connectorImp) getOrCreateResourceMetrics(attr pcommon.Map) *resourceMetrics {
 	key := p.createResourceKey(attr)
 	v, ok := p.resourceMetrics.Get(key)
 	if !ok {
 		v = &resourceMetrics{
-			histograms:     initHistogramMetrics(p.config),
-			sums:           metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			events:         metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
-			attributes:     attr,
-			startTimestamp: startTimestamp,
+			histograms: initHistogramMetrics(p.config),
+			sums:       metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			events:     metrics.NewSumMetrics(p.config.Exemplars.MaxPerDataPoint),
+			attributes: attr,
 		}
 		p.resourceMetrics.Add(key, v)
 	}
@@ -505,7 +503,7 @@ func contains(elements []string, value string) bool {
 	return false
 }
 
-func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension) pcommon.Map {
+func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, resourceAttrs pcommon.Map, dimensions []utilattri.Dimension, instrumentationScope pcommon.InstrumentationScope) pcommon.Map {
 	attr := pcommon.NewMap()
 	attr.EnsureCapacity(4 + len(dimensions))
 	if !contains(p.config.ExcludeDimensions, serviceNameKey) {
@@ -520,11 +518,20 @@ func (p *connectorImp) buildAttributes(serviceName string, span ptrace.Span, res
 	if !contains(p.config.ExcludeDimensions, statusCodeKey) {
 		attr.PutStr(statusCodeKey, traceutil.StatusCodeStr(span.Status().Code()))
 	}
+
 	for _, d := range dimensions {
 		if v, ok := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttrs); ok {
 			v.CopyTo(attr.PutEmpty(d.Name))
 		}
 	}
+
+	if contains(p.config.IncludeInstrumentationScope, instrumentationScope.Name()) && instrumentationScope.Name() != "" {
+		attr.PutStr(instrumentationScopeNameKey, instrumentationScope.Name())
+		if instrumentationScope.Version() != "" {
+			attr.PutStr(instrumentationScopeVersionKey, instrumentationScope.Version())
+		}
+	}
+
 	return attr
 }
 

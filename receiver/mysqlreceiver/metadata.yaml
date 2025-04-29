@@ -3,10 +3,11 @@ type: mysql
 status:
   class: receiver
   stability:
-    beta: [metrics]
+    unmaintained: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [djaglowski]
+    seeking_new: true
+    emeritus: [djaglowski]
 
 resource_attributes:
   mysql.instance.endpoint:
@@ -38,7 +39,7 @@ attributes:
   command:
     description: The command types.
     type: string
-    enum: [delete, insert, select, update]
+    enum: [delete, delete_multi, insert, select, update, update_multi]
   connection_error:
     name_override: error
     description: The connection error type.

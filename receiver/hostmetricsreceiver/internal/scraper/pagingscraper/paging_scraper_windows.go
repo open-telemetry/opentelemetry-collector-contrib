@@ -14,8 +14,8 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scrapererror"
+	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
@@ -34,7 +34,7 @@ const (
 
 // scraper for Paging Metrics
 type pagingScraper struct {
-	settings receiver.Settings
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 
@@ -47,7 +47,7 @@ type pagingScraper struct {
 }
 
 // newPagingScraper creates a Paging Scraper
-func newPagingScraper(_ context.Context, settings receiver.Settings, cfg *Config) *pagingScraper {
+func newPagingScraper(_ context.Context, settings scraper.Settings, cfg *Config) *pagingScraper {
 	return &pagingScraper{
 		settings:           settings,
 		config:             cfg,

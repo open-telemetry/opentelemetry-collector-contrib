@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/receiver"
 )
 
-// AttributeCPULevel specifies the a value cpu_level attribute.
+// AttributeCPULevel specifies the value cpu_level attribute.
 type AttributeCPULevel int
 
 const (
@@ -40,7 +40,7 @@ var MapAttributeCPULevel = map[string]AttributeCPULevel{
 	"children": AttributeCPULevelChildren,
 }
 
-// AttributeCPUMode specifies the a value cpu_mode attribute.
+// AttributeCPUMode specifies the value cpu_mode attribute.
 type AttributeCPUMode int
 
 const (
@@ -66,7 +66,7 @@ var MapAttributeCPUMode = map[string]AttributeCPUMode{
 	"user":   AttributeCPUModeUser,
 }
 
-// AttributeScoreboardState specifies the a value scoreboard_state attribute.
+// AttributeScoreboardState specifies the value scoreboard_state attribute.
 type AttributeScoreboardState int
 
 const (
@@ -132,7 +132,7 @@ var MapAttributeScoreboardState = map[string]AttributeScoreboardState{
 	"unknown":      AttributeScoreboardStateUnknown,
 }
 
-// AttributeWorkersState specifies the a value workers_state attribute.
+// AttributeWorkersState specifies the value workers_state attribute.
 type AttributeWorkersState int
 
 const (
@@ -156,6 +156,64 @@ func (av AttributeWorkersState) String() string {
 var MapAttributeWorkersState = map[string]AttributeWorkersState{
 	"busy": AttributeWorkersStateBusy,
 	"idle": AttributeWorkersStateIdle,
+}
+
+var MetricsInfo = metricsInfo{
+	ApacheCPULoad: metricInfo{
+		Name: "apache.cpu.load",
+	},
+	ApacheCPUTime: metricInfo{
+		Name: "apache.cpu.time",
+	},
+	ApacheCurrentConnections: metricInfo{
+		Name: "apache.current_connections",
+	},
+	ApacheLoad1: metricInfo{
+		Name: "apache.load.1",
+	},
+	ApacheLoad15: metricInfo{
+		Name: "apache.load.15",
+	},
+	ApacheLoad5: metricInfo{
+		Name: "apache.load.5",
+	},
+	ApacheRequestTime: metricInfo{
+		Name: "apache.request.time",
+	},
+	ApacheRequests: metricInfo{
+		Name: "apache.requests",
+	},
+	ApacheScoreboard: metricInfo{
+		Name: "apache.scoreboard",
+	},
+	ApacheTraffic: metricInfo{
+		Name: "apache.traffic",
+	},
+	ApacheUptime: metricInfo{
+		Name: "apache.uptime",
+	},
+	ApacheWorkers: metricInfo{
+		Name: "apache.workers",
+	},
+}
+
+type metricsInfo struct {
+	ApacheCPULoad            metricInfo
+	ApacheCPUTime            metricInfo
+	ApacheCurrentConnections metricInfo
+	ApacheLoad1              metricInfo
+	ApacheLoad15             metricInfo
+	ApacheLoad5              metricInfo
+	ApacheRequestTime        metricInfo
+	ApacheRequests           metricInfo
+	ApacheScoreboard         metricInfo
+	ApacheTraffic            metricInfo
+	ApacheUptime             metricInfo
+	ApacheWorkers            metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricApacheCPULoad struct {
@@ -810,7 +868,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
@@ -910,7 +967,7 @@ func WithStartTimeOverride(start pcommon.Timestamp) ResourceMetricsOption {
 func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/apachereceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricApacheCPULoad.emit(ils.Metrics())

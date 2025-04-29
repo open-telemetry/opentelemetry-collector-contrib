@@ -2070,7 +2070,7 @@ func TestGetDataPoints(t *testing.T) {
 		rm := tc.metric.ResourceMetrics().At(0)
 		metrics := rm.ScopeMetrics().At(0).Metrics()
 		metric := metrics.At(metrics.Len() - 1)
-		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type())
+		metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metric.Type(), 0)
 
 		t.Run(tc.name, func(t *testing.T) {
 			metadata.receiver = tc.receiver
@@ -2083,7 +2083,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, expectedDPS.adjustToDelta, convertedDPS.adjustToDelta)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.NumberDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				switch dp.ValueType() {
 				case pmetric.NumberDataPointValueTypeDouble:
 					assert.Equal(t, 0.1, dp.DoubleValue())
@@ -2095,14 +2095,14 @@ func TestGetDataPoints(t *testing.T) {
 				expectedDPS := tc.expectedDatapointSlice.(histogramDataPointSlice)
 				assert.Equal(t, expectedDPS.adjustToDelta, convertedDPS.adjustToDelta)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.HistogramDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, 35.0, dp.Sum())
 				assert.Equal(t, uint64(18), dp.Count())
 				assert.Equal(t, []float64{0, 10}, dp.ExplicitBounds().AsRaw())
 				assert.Equal(t, tc.expectedAttributes, dp.Attributes().AsRaw())
 			case exponentialHistogramDataPointSlice:
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.ExponentialHistogramDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, float64(0), dp.Sum())
 				assert.Equal(t, uint64(4), dp.Count())
 				assert.Equal(t, []uint64{1, 0, 1}, dp.Positive().BucketCounts().AsRaw())
@@ -2114,7 +2114,7 @@ func TestGetDataPoints(t *testing.T) {
 				assert.Equal(t, expectedDPS.deltaMetricMetadata, convertedDPS.deltaMetricMetadata)
 				assert.Equal(t, expectedDPS.adjustToDelta, convertedDPS.adjustToDelta)
 				assert.Equal(t, 1, convertedDPS.Len())
-				dp := convertedDPS.SummaryDataPointSlice.At(0)
+				dp := convertedDPS.At(0)
 				assert.Equal(t, 15.0, dp.Sum())
 				assert.Equal(t, uint64(5), dp.Count())
 				assert.Equal(t, 2, dp.QuantileValues().Len())
@@ -2171,7 +2171,7 @@ func BenchmarkGetAndCalculateDeltaDataPoints(b *testing.B) {
 	b.ResetTimer()
 	for n := 0; n < b.N; n++ {
 		for i := 0; i < metrics.Len(); i++ {
-			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type())
+			metadata := generateTestMetricMetadata("namespace", time.Now().UnixNano()/int64(time.Millisecond), "log-group", "log-stream", "cloudwatch-otel", metrics.At(i).Type(), 0)
 			dps := getDataPoints(metrics.At(i), metadata, zap.NewNop())
 
 			for i := 0; i < dps.Len(); i++ {

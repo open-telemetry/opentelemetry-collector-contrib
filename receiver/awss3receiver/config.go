@@ -85,7 +85,7 @@ func (c Config) Validate() error {
 }
 
 func parseTime(timeStr, configName string) (time.Time, error) {
-	layouts := []string{"2006-01-02 15:04", time.DateOnly}
+	layouts := []string{time.RFC3339, "2006-01-02 15:04", time.DateOnly}
 
 	for _, layout := range layouts {
 		if t, err := time.Parse(layout, timeStr); err == nil {

@@ -5,6 +5,7 @@ receivers:
 
   purefa/with_custom_intervals:
     fa_array_name: foobar.example.com
+    namespace: purefa
     endpoint: http://172.31.60.208:9490/metrics
     array:
       - address: array01

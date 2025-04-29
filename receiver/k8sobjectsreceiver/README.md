@@ -6,7 +6,7 @@
 | Stability     | [beta]: logs   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8sobjects%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8sobjects) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8sobjects%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8sobjects) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@hvaghani221](https://www.github.com/hvaghani221), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -58,8 +58,8 @@ For example, `events` resource is available in both `v1` and `events.k8s.io/v1` 
 this case, it will select `v1` by default.
 
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 Follow the below sections to setup various Kubernetes resources required for the deployment.
 

@@ -5,6 +5,7 @@ package testbed // import "github.com/open-telemetry/opentelemetry-collector-con
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log"
 	"net"
@@ -80,7 +81,7 @@ type ProviderSender struct {
 // NewLoadGenerator creates a ProviderSender to send DataProvider-generated telemetry via a DataSender.
 func NewLoadGenerator(dataProvider DataProvider, sender DataSender) (LoadGenerator, error) {
 	if sender == nil {
-		return nil, fmt.Errorf("cannot create load generator without DataSender")
+		return nil, errors.New("cannot create load generator without DataSender")
 	}
 
 	ps := &ProviderSender{
@@ -213,12 +214,14 @@ func (ps *ProviderSender) generate() {
 
 	var workers sync.WaitGroup
 
+	tickDuration := ps.perWorkerTickDuration(numWorkers)
+
 	for i := 0; i < numWorkers; i++ {
 		workers.Add(1)
 
 		go func() {
 			defer workers.Done()
-			t := time.NewTicker(time.Second / time.Duration(ps.options.DataItemsPerSecond/ps.options.ItemsPerBatch/numWorkers))
+			t := time.NewTicker(tickDuration)
 			defer t.Stop()
 
 			var prevErr error
@@ -337,4 +340,16 @@ func (ps *ProviderSender) generateLog() error {
 		default:
 		}
 	}
+}
+
+// perWorkerTickDuration calculates the tick interval each worker must observe in order to
+// produce the desired average DataItemsPerSecond given the constraints of ItemsPerBatch and numWorkers.
+//
+// Of particular note are cases when the batchesPerSecond required of each worker is less than one due to a high
+// number of workers relative to the desired DataItemsPerSecond. If the total batchesPerSecond is less than the
+// number of workers then we are dealing with fractional batches per second per worker, so we need float arithmetic.
+func (ps *ProviderSender) perWorkerTickDuration(numWorkers int) time.Duration {
+	batchesPerSecond := float64(ps.options.DataItemsPerSecond) / float64(ps.options.ItemsPerBatch)
+	batchesPerSecondPerWorker := batchesPerSecond / float64(numWorkers)
+	return time.Duration(float64(time.Second) / batchesPerSecondPerWorker)
 }

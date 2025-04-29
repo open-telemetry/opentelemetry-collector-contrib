@@ -11,6 +11,8 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/exporter/exportertest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
 
 func TestCreateDefaultConfig(t *testing.T) {
@@ -25,7 +27,7 @@ func TestFactory_CreateTraces(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "https://opensearch.example.com:9200"
 	})
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateTraces(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)
@@ -38,7 +40,7 @@ func TestFactory_CreateLogs(t *testing.T) {
 	cfg := withDefaultConfig(func(cfg *Config) {
 		cfg.Endpoint = "https://opensearch.example.com:9200"
 	})
-	params := exportertest.NewNopSettings()
+	params := exportertest.NewNopSettings(metadata.Type)
 	exporter, err := factory.CreateLogs(context.Background(), params, cfg)
 	require.NoError(t, err)
 	require.NotNil(t, exporter)

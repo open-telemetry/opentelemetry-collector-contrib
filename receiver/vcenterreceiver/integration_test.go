@@ -42,7 +42,7 @@ func TestIntegration(t *testing.T) {
 		require.NoError(t, err)
 		for i, host := range hosts {
 			newName := fmt.Sprintf("H%d", i)
-			simulator.Map.Get(host.Reference()).(*simulator.HostSystem).Name = newName
+			simulator.Map(ctx).Get(host.Reference()).(*simulator.HostSystem).Name = newName
 		}
 
 		vms, err := finder.VirtualMachineList(ctx, "/DC0/vm/*")
@@ -50,7 +50,7 @@ func TestIntegration(t *testing.T) {
 		for i, vm := range vms {
 			newName := fmt.Sprintf("VM%d", i)
 			newUUID := fmt.Sprintf("vm-uuid-%d", i)
-			simVM := simulator.Map.Get(vm.Reference()).(*simulator.VirtualMachine)
+			simVM := simulator.Map(ctx).Get(vm.Reference()).(*simulator.VirtualMachine)
 			simVM.Name = newName
 			simVM.Config.Uuid = newUUID
 

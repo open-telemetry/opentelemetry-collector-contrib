@@ -6,7 +6,6 @@ package awsemfexporter
 import (
 	"errors"
 	"fmt"
-	"math"
 	"reflect"
 	"sort"
 	"testing"
@@ -415,25 +414,16 @@ func TestTranslateOtToGroupedMetric(t *testing.T) {
 
 			for _, v := range groupedMetrics {
 				assert.Equal(t, tc.expectedNamespace, v.metadata.namespace)
-				assert.Equal(t, tc.expectedReceiver, v.metadata.receiver)
-
-				for _, metric := range v.metrics {
-					if mv, ok := metric.value.(float64); ok {
-						// round the metrics, the floats can get off by a very small amount
-						metric.value = math.Round(mv*100000) / 100000
-					}
-				}
-
-				switch {
-				case v.metadata.metricDataType == pmetric.MetricTypeSum:
+				switch v.metadata.metricDataType {
+				case pmetric.MetricTypeSum:
 					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterSumMetrics, v.metrics)
-				case v.metadata.metricDataType == pmetric.MetricTypeGauge:
+				case pmetric.MetricTypeGauge:
 					assert.Len(t, v.metrics, 2)
 					assert.Equal(t, tc.counterLabels, v.labels)
 					assert.Equal(t, counterGaugeMetrics, v.metrics)
-				case v.metadata.metricDataType == pmetric.MetricTypeHistogram:
+				case pmetric.MetricTypeHistogram:
 					assert.Len(t, v.metrics, 1)
 					assert.Equal(t, tc.timerLabels, v.labels)
 					assert.Equal(t, timerMetrics, v.metrics)
@@ -1710,7 +1700,7 @@ func TestGroupedMetricToCWMeasurementsWithFilters(t *testing.T) {
 
 			cWMeasurements := groupedMetricToCWMeasurementsWithFilters(groupedMetric, config)
 			assert.NotNil(t, cWMeasurements)
-			assert.Equal(t, len(tc.expectedMeasurements), len(cWMeasurements))
+			assert.Len(t, cWMeasurements, len(tc.expectedMeasurements))
 			assertCWMeasurementSliceEqual(t, tc.expectedMeasurements, cWMeasurements)
 		})
 	}

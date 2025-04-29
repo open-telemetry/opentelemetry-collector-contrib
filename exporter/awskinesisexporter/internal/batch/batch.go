@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
-	"github.com/aws/aws-sdk-go-v2/service/kinesis/types" //nolint:staticcheck // Some encoding types uses legacy prototype version
+	"github.com/aws/aws-sdk-go-v2/service/kinesis/types"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awskinesisexporter/internal/compress"
@@ -101,7 +101,7 @@ func (b *Batch) AddRecord(raw []byte, key string) error {
 	return nil
 }
 
-// Chunk breaks up the iternal queue into blocks that can be used
+// Chunk breaks up the internal queue into blocks that can be used
 // to be written to he kinesis.PutRecords endpoint
 func (b *Batch) Chunk() (chunks [][]types.PutRecordsRequestEntry) {
 	// Using local copies to avoid mutating internal data

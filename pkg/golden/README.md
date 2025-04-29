@@ -31,7 +31,7 @@ necessary to ensure the function is removed after the golden file is written.
 ```go
 func TestScraper(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	scraper := newScraper(componenttest.NewNopReceiverCreateSettings(), cfg)
 

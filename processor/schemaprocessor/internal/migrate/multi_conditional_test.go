@@ -40,7 +40,7 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 				},
 				map[string][]string{"span.name": {"application start"}},
 			),
-			inCondData: map[string]string{"span.name": "datatbase operation"},
+			inCondData: map[string]string{"span.name": "database operation"},
 			inAttr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -49,14 +49,14 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 		{
-			name: "No condition set, applys to all",
+			name: "No condition set, applies to all",
 			cond: NewMultiConditionalAttributeSet[string](
 				map[string]string{
 					"service.version": "application.version",
 				},
 				map[string][]string{},
 			),
-			inCondData: map[string]string{"span.name": "datatbase operation"},
+			inCondData: map[string]string{"span.name": "database operation"},
 			inAttr: testHelperBuildMap(func(m pcommon.Map) {
 				m.PutStr("service.version", "v0.0.0")
 			}),
@@ -139,7 +139,6 @@ func TestMultiConditionalAttributeSetApply(t *testing.T) {
 			}),
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 			require.NoError(t, tc.cond.Do(StateSelectorApply, tc.inAttr, tc.inCondData))

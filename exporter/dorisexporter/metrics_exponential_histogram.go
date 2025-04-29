@@ -5,7 +5,6 @@ package dorisexporter // import "github.com/open-telemetry/opentelemetry-collect
 
 import (
 	_ "embed"
-	"encoding/json"
 	"fmt"
 
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -36,7 +35,7 @@ type dMetricExponentialHistogram struct {
 }
 
 type metricModelExponentialHistogram struct {
-	data []*dMetricExponentialHistogram
+	metricModelCommon[dMetricExponentialHistogram]
 }
 
 func (m *metricModelExponentialHistogram) metricType() pmetric.MetricType {
@@ -57,11 +56,11 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 		dp := dataPoints.At(i)
 
 		exemplars := dp.Exemplars()
-		newExeplars := make([]*dExemplar, 0, exemplars.Len())
+		newExemplars := make([]*dExemplar, 0, exemplars.Len())
 		for j := 0; j < exemplars.Len(); j++ {
 			exemplar := exemplars.At(j)
 
-			newExeplar := &dExemplar{
+			newExemplar := &dExemplar{
 				FilteredAttributes: exemplar.FilteredAttributes().AsRaw(),
 				Timestamp:          e.formatTime(exemplar.Timestamp().AsTime()),
 				Value:              e.getExemplarValue(exemplar),
@@ -69,7 +68,7 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 				TraceID:            exemplar.TraceID().String(),
 			}
 
-			newExeplars = append(newExeplars, newExeplar)
+			newExemplars = append(newExemplars, newExemplar)
 		}
 
 		positiveBucketCounts := dp.Positive().BucketCounts()
@@ -97,7 +96,7 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 			PositiveBucketCounts:   newPositiveBucketCounts,
 			NegativeOffset:         dp.Negative().Offset(),
 			NegativeBucketCounts:   newNegativeBucketCounts,
-			Exemplars:              newExeplars,
+			Exemplars:              newExemplars,
 			Min:                    dp.Min(),
 			Max:                    dp.Max(),
 			ZeroThreshold:          dp.ZeroThreshold(),
@@ -107,16 +106,4 @@ func (m *metricModelExponentialHistogram) add(pm pmetric.Metric, dm *dMetric, e 
 	}
 
 	return nil
-}
-
-func (m *metricModelExponentialHistogram) raw() any {
-	return m.data
-}
-
-func (m *metricModelExponentialHistogram) size() int {
-	return len(m.data)
-}
-
-func (m *metricModelExponentialHistogram) bytes() ([]byte, error) {
-	return json.Marshal(m.data)
 }

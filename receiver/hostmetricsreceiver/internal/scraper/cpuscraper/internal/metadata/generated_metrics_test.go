@@ -8,7 +8,7 @@ import (
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver/receivertest"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 )
@@ -48,7 +48,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := scrapertest.NewNopSettings(scrapertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -111,7 +111,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cpu-val", attrVal.Str())
+					assert.Equal(t, "cpu-val", attrVal.Str())
 				case "system.cpu.logical.count":
 					assert.False(t, validatedMetrics["system.cpu.logical.count"], "Found a duplicate in the metrics slice: system.cpu.logical.count")
 					validatedMetrics["system.cpu.logical.count"] = true
@@ -156,10 +156,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cpu-val", attrVal.Str())
+					assert.Equal(t, "cpu-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "idle", attrVal.Str())
+					assert.Equal(t, "idle", attrVal.Str())
 				case "system.cpu.utilization":
 					assert.False(t, validatedMetrics["system.cpu.utilization"], "Found a duplicate in the metrics slice: system.cpu.utilization")
 					validatedMetrics["system.cpu.utilization"] = true
@@ -174,10 +174,10 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 					attrVal, ok := dp.Attributes().Get("cpu")
 					assert.True(t, ok)
-					assert.EqualValues(t, "cpu-val", attrVal.Str())
+					assert.Equal(t, "cpu-val", attrVal.Str())
 					attrVal, ok = dp.Attributes().Get("state")
 					assert.True(t, ok)
-					assert.EqualValues(t, "idle", attrVal.Str())
+					assert.Equal(t, "idle", attrVal.Str())
 				}
 			}
 		})

@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/goldendataset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/metadata"
 )
 
 const (
@@ -106,12 +107,11 @@ func testFilter(t *testing.T, mdType pmetric.MetricType, mvType pmetric.NumberDa
 }
 
 func assertFiltered(t *testing.T, lm pcommon.Map) {
-	lm.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range lm.All() {
 		if k == filteredAttrKey {
 			require.NotEqual(t, v.AsRaw(), filteredAttrVal.AsRaw())
 		}
-		return true
-	})
+	}
 }
 
 func filterMetrics(t *testing.T, include []string, exclude []string, mds []pmetric.Metrics) []pmetric.Metrics {
@@ -130,7 +130,7 @@ func testProcessor(t *testing.T, include []string, exclude []string) (processor.
 	next := &consumertest.MetricsSink{}
 	proc, err := factory.CreateMetrics(
 		ctx,
-		processortest.NewNopSettings(),
+		processortest.NewNopSettings(metadata.Type),
 		cfg,
 		next,
 	)

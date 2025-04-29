@@ -1,0 +1,19 @@
+signaltometrics:
+  spans:
+    - name: span.sum
+      attributes:
+        - default_value: key.1
+      sum:
+        value: "1"
+  datapoints:
+    - name: dp.sum
+      attributes:
+        - default_value: key.1
+      sum:
+        value: "1"
+  logs:
+    - name: log.sum
+      attributes:
+        - default_value: key.1
+      sum:
+        value: "1"

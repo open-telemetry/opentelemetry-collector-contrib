@@ -44,8 +44,7 @@ func newNopHost() component.Host {
 }
 
 func TestReceiver(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -94,8 +93,7 @@ func TestReceiver(t *testing.T) {
 }
 
 func TestNamespacedReceiver(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -145,8 +143,7 @@ func TestNamespacedReceiver(t *testing.T) {
 }
 
 func TestReceiverTimesOutAfterStartup(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -166,8 +163,7 @@ func TestReceiverTimesOutAfterStartup(t *testing.T) {
 }
 
 func TestReceiverWithManyResources(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -206,8 +202,7 @@ var (
 )
 
 func TestReceiverWithMetadata(t *testing.T) {
-	tt, err := componenttest.SetupTelemetry(component.NewID(metadata.Type))
-	require.NoError(t, err)
+	tt := componenttest.NewTelemetry()
 	defer func() {
 		require.NoError(t, tt.Shutdown(context.Background()))
 	}()
@@ -241,7 +236,7 @@ func TestReceiverWithMetadata(t *testing.T) {
 	deletePods(t, client, 1)
 
 	// Ensure ConsumeKubernetesMetadata is called twice, once for the add and
-	// then for the update. Note the second update does not result in metatada call
+	// then for the update. Note the second update does not result in metadata call
 	// since the pod is not changed.
 	require.Eventually(t, func() bool {
 		return int(numCalls.Load()) == 2
@@ -278,7 +273,7 @@ func setupReceiver(
 	metricsConsumer consumer.Metrics,
 	logsConsumer consumer.Logs,
 	initialSyncTimeout time.Duration,
-	tt componenttest.TestTelemetry,
+	tt *componenttest.Telemetry,
 	namespace string,
 ) *kubernetesReceiver {
 	distribution := distributionKubernetes
@@ -295,7 +290,7 @@ func setupReceiver(
 		Namespace:                  namespace,
 	}
 
-	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.TelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
+	r, _ := newReceiver(context.Background(), receiver.Settings{ID: component.NewID(metadata.Type), TelemetrySettings: tt.NewTelemetrySettings(), BuildInfo: component.NewDefaultBuildInfo()}, config)
 	kr := r.(*kubernetesReceiver)
 	kr.metricsConsumer = metricsConsumer
 	kr.resourceWatcher.makeClient = func(_ k8sconfig.APIConfig) (kubernetes.Interface, error) {

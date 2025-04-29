@@ -5,9 +5,11 @@ package cloudfoundryreceiver // import "github.com/open-telemetry/opentelemetry-
 
 import (
 	"fmt"
+	"slices"
 	"time"
 
 	"code.cloudfoundry.org/go-loggregator/rpc/loggregator_v2"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
@@ -15,6 +17,31 @@ import (
 
 const (
 	attributeNamePrefix = "org.cloudfoundry."
+)
+
+var ResourceAttributesKeys = []string{
+	"index",
+	"ip",
+	"deployment",
+	"id",
+	"job",
+	"product",
+	"instance_group",
+	"instance_id",
+	"origin",
+	"system_domain",
+	"source_id",
+	"source_type",
+	"process_type",
+	"process_id",
+	"process_instance_id",
+}
+
+var allowResourceAttributes = featuregate.GlobalRegistry().MustRegister(
+	"cloudfoundry.resourceAttributes.allow",
+	featuregate.StageBeta,
+	featuregate.WithRegisterDescription("When enabled, envelope tags are copied to the metrics as resource attributes instead of datapoint attributes"),
+	featuregate.WithRegisterFromVersion("v0.117.0"),
 )
 
 func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pmetric.MetricSlice, startTime time.Time) {
@@ -28,7 +55,12 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 		dataPoint.SetDoubleValue(float64(message.Counter.GetTotal()))
 		dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 		dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-		copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
+		if allowResourceAttributes.IsEnabled() {
+			attrs := getEnvelopeDataAttributes(envelope)
+			attrs.CopyTo(dataPoint.Attributes())
+		} else {
+			copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
+		}
 	case *loggregator_v2.Envelope_Gauge:
 		for name, value := range message.Gauge.GetMetrics() {
 			metric := metricSlice.AppendEmpty()
@@ -37,7 +69,12 @@ func convertEnvelopeToMetrics(envelope *loggregator_v2.Envelope, metricSlice pme
 			dataPoint.SetDoubleValue(value.Value)
 			dataPoint.SetTimestamp(pcommon.Timestamp(envelope.GetTimestamp()))
 			dataPoint.SetStartTimestamp(pcommon.NewTimestampFromTime(startTime))
-			copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
+			if allowResourceAttributes.IsEnabled() {
+				attrs := getEnvelopeDataAttributes(envelope)
+				attrs.CopyTo(dataPoint.Attributes())
+			} else {
+				copyEnvelopeAttributes(dataPoint.Attributes(), envelope)
+			}
 		}
 	}
 }
@@ -59,7 +96,12 @@ func convertEnvelopeToLogs(envelope *loggregator_v2.Envelope, logSlice plog.LogR
 	default:
 		return fmt.Errorf("unsupported envelope log type: %s", envelope.GetLog().GetType())
 	}
-	copyEnvelopeAttributes(log.Attributes(), envelope)
+	if allowResourceAttributes.IsEnabled() {
+		attrs := getEnvelopeDataAttributes(envelope)
+		attrs.CopyTo(log.Attributes())
+	} else {
+		copyEnvelopeAttributes(log.Attributes(), envelope)
+	}
 	return nil
 }
 
@@ -73,4 +115,30 @@ func copyEnvelopeAttributes(attributes pcommon.Map, envelope *loggregator_v2.Env
 	if envelope.InstanceId != "" {
 		attributes.PutStr(attributeNamePrefix+"instance_id", envelope.InstanceId)
 	}
+}
+
+func getEnvelopeDataAttributes(envelope *loggregator_v2.Envelope) pcommon.Map {
+	attrs := pcommon.NewMap()
+	for key, value := range envelope.Tags {
+		if !slices.Contains(ResourceAttributesKeys, key) {
+			attrs.PutStr(attributeNamePrefix+key, value)
+		}
+	}
+	return attrs
+}
+
+func getEnvelopeResourceAttributes(envelope *loggregator_v2.Envelope) pcommon.Map {
+	attrs := pcommon.NewMap()
+	for key, value := range envelope.Tags {
+		if slices.Contains(ResourceAttributesKeys, key) {
+			attrs.PutStr(attributeNamePrefix+key, value)
+		}
+	}
+	if envelope.SourceId != "" {
+		attrs.PutStr(attributeNamePrefix+"source_id", envelope.SourceId)
+	}
+	if envelope.InstanceId != "" {
+		attrs.PutStr(attributeNamePrefix+"instance_id", envelope.InstanceId)
+	}
+	return attrs
 }

@@ -5,6 +5,7 @@
 package awsutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 
 import (
+	"context"
 	"crypto/tls"
 	"crypto/x509"
 	"errors"
@@ -15,6 +16,8 @@ import (
 	"time"
 
 	override "github.com/amazon-contributing/opentelemetry-collector-contrib/override/aws"
+	awsv2 "github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go/aws"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/client"
@@ -95,17 +98,12 @@ const (
 
 // newHTTPClient returns new HTTP client instance with provided configuration.
 func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify bool,
-	proxyAddress string, certificateFilePath string,
+	proxyAddress string,
 ) (*http.Client, error) {
 	logger.Debug("Using proxy address: ",
 		zap.String("proxyAddr", proxyAddress),
 	)
-	rootCA, certPoolError := loadCertPool(certificateFilePath)
-	if certificateFilePath != "" && certPoolError != nil {
-		logger.Warn("could not create root ca from", zap.String("file", certificateFilePath), zap.Error(certPoolError))
-	}
-	tlsConfig := &tls.Config{
-		RootCAs:            rootCA,
+	tls := &tls.Config{
 		InsecureSkipVerify: noVerify,
 	}
 
@@ -117,7 +115,7 @@ func newHTTPClient(logger *zap.Logger, maxIdle int, requestTimeout int, noVerify
 	}
 	transport := &http.Transport{
 		MaxIdleConnsPerHost: maxIdle,
-		TLSClientConfig:     tlsConfig,
+		TLSClientConfig:     tls,
 		Proxy:               http.ProxyURL(proxyURL),
 	}
 
@@ -180,7 +178,7 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 	var s *session.Session
 	var err error
 	var awsRegion string
-	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress, cfg.CertificateFilePath)
+	http, err := newHTTPClient(logger, cfg.NumberOfWorkers, cfg.RequestTimeoutSeconds, cfg.NoVerifySSL, cfg.ProxyAddress)
 	if err != nil {
 		logger.Error("unable to obtain proxy URL", zap.Error(err))
 		return nil, nil, err
@@ -194,13 +192,13 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 	case cfg.Region != "":
 		awsRegion = cfg.Region
 		logger.Debug("Fetch region from commandline/config file", zap.String("region", awsRegion))
-	case !cfg.LocalMode:
+	case !cfg.NoVerifySSL:
 		var es *session.Session
 		es, err = GetDefaultSession(logger, cfg)
 		if err != nil {
 			logger.Error("Unable to retrieve default session", zap.Error(err))
 		} else {
-			awsRegion, err = cn.getEC2Region(es, cfg.IMDSRetries)
+			awsRegion, err = cn.getEC2Region(es, 3)
 			if err != nil {
 				logger.Error("Unable to retrieve the region from the EC2 instance", zap.Error(err))
 			} else {
@@ -220,14 +218,43 @@ func GetAWSConfigSession(logger *zap.Logger, cn ConnAttr, cfg *AWSSessionSetting
 	}
 
 	config := &aws.Config{
-		Region:                        aws.String(awsRegion),
-		DisableParamValidation:        aws.Bool(true),
-		MaxRetries:                    aws.Int(cfg.MaxRetries),
-		Endpoint:                      aws.String(cfg.Endpoint),
-		HTTPClient:                    http,
-		CredentialsChainVerboseErrors: aws.Bool(true),
+		Region:                 aws.String(awsRegion),
+		DisableParamValidation: aws.Bool(true),
+		MaxRetries:             aws.Int(cfg.MaxRetries),
+		Endpoint:               aws.String(cfg.Endpoint),
+		HTTPClient:             http,
 	}
 	return config, s, nil
+}
+
+// GetAWSConfig returns AWS config and session instances.
+func GetAWSConfig(logger *zap.Logger, settings *AWSSessionSettings) (awsv2.Config, error) {
+	http, err := newHTTPClient(logger, settings.NumberOfWorkers, settings.RequestTimeoutSeconds, settings.NoVerifySSL, settings.ProxyAddress)
+	if err != nil {
+		logger.Error("unable to obtain proxy URL", zap.Error(err))
+		return awsv2.Config{}, err
+	}
+
+	cfg, err := config.LoadDefaultConfig(context.Background())
+	if err != nil {
+		return awsv2.Config{}, err
+	}
+
+	if settings.Region != "" {
+		cfg.Region = settings.Region
+		logger.Debug("Fetch region from commandline/config file", zap.String("region", settings.Region))
+	}
+
+	if cfg.Region == "" {
+		logger.Error("cannot fetch region variable from config file, environment variables and ec2 metadata")
+		return awsv2.Config{}, errors.New("cannot fetch region variable from config file, environment variables and ec2 metadata")
+	}
+
+	cfg.HTTPClient = http
+	cfg.RetryMaxAttempts = settings.MaxRetries
+	cfg.BaseEndpoint = aws.String(settings.Endpoint)
+
+	return cfg, nil
 }
 
 // ProxyServerTransport configures HTTP transport for TCP Proxy Server.

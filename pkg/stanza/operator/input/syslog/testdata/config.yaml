@@ -21,6 +21,7 @@ udp:
   type: syslog_input
   protocol: rfc5424
   location: foo
+  on_error: send_quiet
   udp:
     listen_address: 10.0.0.1:9000
     add_attributes: true

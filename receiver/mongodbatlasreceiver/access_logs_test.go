@@ -17,15 +17,16 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer/consumertest"
-	"go.opentelemetry.io/collector/extension/experimental/storage"
+	"go.opentelemetry.io/collector/extension/xextension/storage"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/zap/zaptest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mongodbatlasreceiver/internal/metadata"
 )
 
 var (
@@ -276,7 +277,7 @@ func TestAccessLogsRetrieval(t *testing.T) {
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			logSink := &consumertest.LogsSink{}
-			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), tc.config(), logSink)
+			rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), tc.config(), logSink)
 			tc.setup(rcvr)
 
 			err := rcvr.Start(context.Background(), componenttest.NewNopHost(), storage.NewNopClient())
@@ -313,7 +314,7 @@ func TestCheckpointing(t *testing.T) {
 	}
 
 	logSink := &consumertest.LogsSink{}
-	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(), config, logSink)
+	rcvr := newAccessLogsReceiver(receivertest.NewNopSettings(metadata.Type), config, logSink)
 	rcvr.client = simpleAccessLogClient()
 
 	// First cluster checkpoint should be nil

@@ -1,0 +1,13 @@
+type: kafkatopics_observer
+
+status:
+  class: extension
+  stability:
+    alpha: [extension]
+  codeowners:
+    active: [MovieStoreGuy]
+  distributions: [contrib]
+
+tests:
+  skip_lifecycle: true
+  skip_shutdown: true

@@ -7,7 +7,7 @@
 |               | [beta]: metrics   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fk8scluster%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fk8scluster) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fk8scluster%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fk8scluster) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@povilasv](https://www.github.com/povilasv), [@ChrsMark](https://www.github.com/ChrsMark) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
@@ -45,11 +45,9 @@ In addition, metadata of all entities is collected periodically even if no chang
 This setting controls the interval between periodic collections.
 Setting the duration to 0 will disable periodic collection (however will not impact
 metadata collection on changes).
-- `node_conditions_to_report` (default = `[Ready]`): An array of node
-conditions this receiver should report. See
-[here](https://kubernetes.io/docs/concepts/architecture/nodes/#condition) for
-list of node conditions. The receiver will emit one metric per entry in the
-array.
+- `node_conditions_to_report` (default = `[Ready]`): An array of [node
+conditions](https://kubernetes.io/docs/concepts/architecture/nodes/#condition)
+this receiver should report. The receiver will emit one metric per entry in the array.
 - `distribution` (default = `kubernetes`): The Kubernetes distribution being used
 by the cluster. Currently supported versions are `kubernetes` and `openshift`. Setting
 the value to `openshift` enables OpenShift specific metrics in addition to standard
@@ -79,8 +77,8 @@ Example:
         enabled: false
 ```
 
-The full list of settings exposed for this receiver are documented [here](./config.go)
-with detailed sample configurations [here](./testdata/config.yaml).
+The full list of settings exposed for this receiver are documented in [config.go](./config.go)
+with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).
 
 ### node_conditions_to_report
 
@@ -123,11 +121,11 @@ type MetadataDelta struct {
 }
 ```
 
-See [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
+See [experimentalmetricmetadata/metadata.go](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/pkg/experimentalmetricmetadata/metadata.go) for details about the above types.
 
 The same metadata will be also emitted as entity events in the form of log records if
 this receiver is connected to a logs pipeline.
-See [here](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
+See [opentelemetry-collector-contrib#23565](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/23565)
 for the format of emitted log records. 
 
 ## Example

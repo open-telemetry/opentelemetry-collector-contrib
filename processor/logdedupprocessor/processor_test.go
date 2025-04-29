@@ -20,6 +20,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor/internal/metadata"
 )
 
 func Test_newProcessor(t *testing.T) {
@@ -58,7 +59,7 @@ func Test_newProcessor(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
 			logsSink := &consumertest.LogsSink{}
-			settings := processortest.NewNopSettings()
+			settings := processortest.NewNopSettings(metadata.Type)
 
 			if tc.expected != nil {
 				tc.expected.nextConsumer = logsSink
@@ -84,7 +85,7 @@ func TestProcessorShutdownCtxError(t *testing.T) {
 	cancel()
 
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -110,7 +111,7 @@ func TestProcessorCapabilities(t *testing.T) {
 
 func TestShutdownBeforeStart(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -132,7 +133,7 @@ func TestShutdownBeforeStart(t *testing.T) {
 
 func TestProcessorConsume(t *testing.T) {
 	logsSink := &consumertest.LogsSink{}
-	settings := processortest.NewNopSettings()
+	settings := processortest.NewNopSettings(metadata.Type)
 	cfg := &Config{
 		LogCountAttribute: defaultLogCountAttribute,
 		Interval:          1 * time.Second,
@@ -185,7 +186,7 @@ func Test_unsetLogsAreExportedOnShutdown(t *testing.T) {
 	}
 
 	// Create & start a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 	err = p.Start(context.Background(), componenttest.NewNopHost())
 	require.NoError(t, err)
@@ -222,7 +223,7 @@ func TestProcessorConsumeCondition(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -272,7 +273,7 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 	}
 
 	// Create a processor
-	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(), cfg, logsSink)
+	p, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), cfg, logsSink)
 	require.NoError(t, err)
 
 	err = p.Start(context.Background(), componenttest.NewNopHost())
@@ -306,5 +307,106 @@ func TestProcessorConsumeMultipleConditions(t *testing.T) {
 
 	// Cleanup
 	err = p.Shutdown(context.Background())
+	require.NoError(t, err)
+}
+
+func TestProcessorIncludeFields(t *testing.T) {
+	testCases := []struct {
+		name string
+		cfg  *Config
+	}{
+		{
+			name: "attribute field",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"attributes.dedup_key"},
+			},
+		},
+		{
+			name: "body field",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"body.dedup_key"},
+			},
+		},
+		{
+			name: "multiple fields",
+			cfg: &Config{
+				LogCountAttribute: defaultLogCountAttribute,
+				Timezone:          defaultTimezone,
+				Interval:          1 * time.Second,
+				Conditions:        []string{},
+				ExcludeFields:     []string{},
+				IncludeFields:     []string{"attributes.dedup_key", "body.dedup_key"},
+			},
+		},
+	}
+
+	for _, tt := range testCases {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			logsSink := &consumertest.LogsSink{}
+			settings := processortest.NewNopSettings(metadata.Type)
+
+			// Create a processor
+			p, err := createLogsProcessor(context.Background(), settings, tt.cfg, logsSink)
+			require.NoError(t, err)
+
+			err = p.Start(context.Background(), componenttest.NewNopHost())
+			require.NoError(t, err)
+
+			logs, err := golden.ReadLogs(filepath.Join("testdata", "input", "includeFieldsLogs.yaml"))
+			require.NoError(t, err)
+
+			// Consume the payload
+			err = p.ConsumeLogs(context.Background(), logs)
+			require.NoError(t, err)
+
+			// Wait for the logs to be emitted
+			require.Eventually(t, func() bool {
+				return logsSink.LogRecordCount() > 0
+			}, 3*time.Second, 200*time.Millisecond)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", "expected", "includeFieldsLogs.yaml"))
+			require.NoError(t, err)
+
+			allSinkLogs := logsSink.AllLogs()
+			require.Len(t, allSinkLogs, 1)
+
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, allSinkLogs[0], plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp(), plogtest.IgnoreLogRecordAttributeValue("first_observed_timestamp"), plogtest.IgnoreLogRecordAttributeValue("last_observed_timestamp")))
+
+			// Cleanup
+			err = p.Shutdown(context.Background())
+			require.NoError(t, err)
+		})
+	}
+}
+
+func TestProcessorConfigValidate(t *testing.T) {
+	t.Parallel()
+	invalidCfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          -1,
+		Timezone:          "",
+	}
+
+	_, err := createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), invalidCfg, consumertest.NewNop())
+	require.Error(t, err)
+
+	validCfg := &Config{
+		LogCountAttribute: defaultLogCountAttribute,
+		Interval:          defaultInterval,
+		Timezone:          defaultTimezone,
+	}
+
+	_, err = createLogsProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), validCfg, consumertest.NewNop())
 	require.NoError(t, err)
 }

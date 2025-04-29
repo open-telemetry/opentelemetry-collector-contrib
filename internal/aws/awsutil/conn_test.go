@@ -36,7 +36,7 @@ func (c *mockConn) getEC2Region(_ *session.Session, _ int) (string, error) {
 	return ec2Region, nil
 }
 
-func (c *mockConn) newAWSSession(_ *zap.Logger, _ *AWSSessionSettings, _ string) (*session.Session, error) {
+func (c *mockConn) newAWSSession(_ *zap.Logger, _ string, _ string, _ string) (*session.Session, error) {
 	return c.sn, nil
 }
 
@@ -133,6 +133,7 @@ func TestNewAWSSessionWithErr(t *testing.T) {
 	_, err = conn.getEC2Region(se, aWSSessionSettings.IMDSRetries)
 	assert.Error(t, err)
 }
+
 
 func TestGetSTSCredsFromPrimaryRegionEndpoint(t *testing.T) {
 	logger := zap.NewNop()

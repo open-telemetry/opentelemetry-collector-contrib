@@ -32,6 +32,13 @@ type Config struct {
 	Format                   string        `mapstructure:"format"`
 	ConsumerGroup            string        `mapstructure:"group"`
 	ApplySemanticConventions bool          `mapstructure:"apply_semantic_conventions"`
+	TimeFormats              TimeFormat    `mapstructure:"time_formats"`
+}
+
+type TimeFormat struct {
+	Logs    []string `mapstructure:"logs"`
+	Metrics []string `mapstructure:"metrics"`
+	Traces  []string `mapstructure:"traces"`
 }
 
 func isValidFormat(format string) bool {
@@ -53,6 +60,9 @@ func (config *Config) Validate() error {
 	}
 	if !isValidFormat(config.Format) {
 		return fmt.Errorf("invalid format; must be one of %#v", validFormats)
+	}
+	if config.Partition == "" && config.Offset != "" {
+		return errors.New("cannot use 'offset' without 'partition'")
 	}
 	return nil
 }

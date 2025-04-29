@@ -32,19 +32,17 @@ type consumerProvider[C any] func(...pipeline.ID) (C, error)
 // parameter C is expected to be one of: consumer.Traces, consumer.Metrics, or
 // consumer.Logs.
 type router[C any] struct {
-	logger          *zap.Logger
-	resourceParser  ottl.Parser[ottlresource.TransformContext]
-	spanParser      ottl.Parser[ottlspan.TransformContext]
-	metricParser    ottl.Parser[ottlmetric.TransformContext]
-	dataPointParser ottl.Parser[ottldatapoint.TransformContext]
-	logParser       ottl.Parser[ottllog.TransformContext]
-
-	table      []RoutingTableItem
-	routes     map[string]routingItem[C]
-	routeSlice []routingItem[C]
-
+	resourceParser   ottl.Parser[ottlresource.TransformContext]
+	spanParser       ottl.Parser[ottlspan.TransformContext]
+	metricParser     ottl.Parser[ottlmetric.TransformContext]
+	dataPointParser  ottl.Parser[ottldatapoint.TransformContext]
+	logParser        ottl.Parser[ottllog.TransformContext]
 	defaultConsumer  C
+	logger           *zap.Logger
+	routes           map[string]routingItem[C]
 	consumerProvider consumerProvider[C]
+	table            []RoutingTableItem
+	routeSlice       []routingItem[C]
 }
 
 // newRouter creates a new router instance with based on type parameters C and K.
@@ -75,13 +73,13 @@ func newRouter[C any](
 
 type routingItem[C any] struct {
 	consumer           C
-	statementContext   string
 	requestCondition   *requestCondition
 	resourceStatement  *ottl.Statement[ottlresource.TransformContext]
 	spanStatement      *ottl.Statement[ottlspan.TransformContext]
 	metricStatement    *ottl.Statement[ottlmetric.TransformContext]
 	dataPointStatement *ottl.Statement[ottldatapoint.TransformContext]
 	logStatement       *ottl.Statement[ottllog.TransformContext]
+	statementContext   string
 }
 
 func (r *router[C]) buildParsers(table []RoutingTableItem, settings component.TelemetrySettings) error {

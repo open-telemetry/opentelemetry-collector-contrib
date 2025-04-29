@@ -5,7 +5,7 @@ package azure
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"regexp"
 	"testing"
 
@@ -22,7 +22,7 @@ import (
 
 func TestNewDetector(t *testing.T) {
 	dcfg := CreateDefaultConfig()
-	d, err := NewDetector(processortest.NewNopSettings(), dcfg)
+	d, err := NewDetector(processortest.NewNopSettings(processortest.NopType), dcfg)
 	require.NoError(t, err)
 	assert.NotNil(t, d)
 }
@@ -85,7 +85,7 @@ func TestDetectAzureAvailable(t *testing.T) {
 
 func TestDetectError(t *testing.T) {
 	mp := &azure.MockProvider{}
-	mp.On("Metadata").Return(&azure.ComputeMetadata{}, fmt.Errorf("mock error"))
+	mp.On("Metadata").Return(&azure.ComputeMetadata{}, errors.New("mock error"))
 	detector := &Detector{
 		provider: mp,
 		logger:   zap.NewNop(),

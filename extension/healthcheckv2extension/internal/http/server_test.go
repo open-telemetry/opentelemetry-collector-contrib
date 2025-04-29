@@ -2570,7 +2570,7 @@ func TestStatus(t *testing.T) {
 			},
 		},
 		{
-			name:         "pipeline non-existent",
+			name:         "pipeline nonexistent",
 			legacyConfig: LegacyConfig{UseV2: true},
 			config: &Config{
 				ServerConfig: confighttp.ServerConfig{

@@ -7,6 +7,9 @@ on:
       - "v[0-9]+.[0-9]+.[0-9]+*"
   merge_group:
   pull_request:
+
+permissions: read-all
+
 env:
   TEST_RESULTS: testbed/tests/results/junit/results.xml
   # Make sure to exit early if cache segment download times out after 2 minutes.
@@ -27,7 +30,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -95,7 +98,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -165,7 +168,7 @@ jobs:
       - name: Setup Go
         uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -189,7 +192,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -222,6 +225,10 @@ jobs:
         run: |
           make crosslink
           git diff --exit-code || (echo 'Replace statements are out of date, please run "make crosslink" and commit the changes in this PR.' && exit 1)
+      - name: tidylist
+        run: |
+          make tidylist
+          git diff --exit-code || (echo 'Tidylist is out of date, please run "make tidylist" and commit the changes in this PR.' && exit 1)
       - name: Check for go mod dependency changes
         run: |
           make gotidy
@@ -230,14 +237,13 @@ jobs:
         run: |
           make gendistributions
           git diff -s --exit-code || (echo 'Generated code is out of date, please run "make gendistributions" and commit the changes in this PR.' && exit 1)
-      - name: Gen CODEOWNERS
-        if: (github.ref == 'refs/heads/main' || startsWith(github.ref, 'refs/tags/v')) && github.repository == 'open-telemetry/opentelemetry-collector-contrib'
+      - name: Gen labels
         run: |
-          GITHUB_TOKEN=${{ secrets.READ_ORG_AND_USER_TOKEN }} make gengithub
-          git diff -s --exit-code || (echo 'Generated code is out of date, please apply this diff and commit the changes in this PR.' && git diff && exit 1)
+          make genlabels
+          git diff -s --exit-code || (echo '.github/component_labels.txt is out of date, please run "make genlabels" and commit the changes in this PR.' && exit 1)
       - name: CodeGen
         run: |
-          make -j2 generate
+          make generate
           if [[ -n $(git status -s) ]]; then
             echo 'Generated code is out of date, please run "make generate" and commit the changes in this PR.'
             exit 1
@@ -252,8 +258,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        go-version: ["1.23.0", "1.22.12"] # 1.20 is interpreted as 1.2 without quotes
-        runner: [ubuntu-latest]
+        go-version: ["~1.24", "~1.23"] # 1.20 is interpreted as 1.2 without quotes
+        runner: [ubuntu-24.04]
         group:
           - receiver-0
           - receiver-1
@@ -280,6 +286,7 @@ jobs:
         with:
           go-version: ${{ matrix.go-version }}
           cache: false
+          check-latest: true # Since we're using "~" in the version, check we're using latest
       - name: Cache Go
         id: go-cache
         timeout-minutes: 5
@@ -302,13 +309,16 @@ jobs:
           path: ~/.cache/go-build
           key: go-test-build-${{ runner.os }}-${{ matrix.go-version }}-${{ matrix.runner }}-${{ hashFiles('**/go.sum') }}
       - name: Run Unit Tests
-        if: startsWith( matrix.go-version, '1.22' ) != true
+        id: tests
+        if: github.ref != 'refs/heads/main' # Runs on every PR and both go versions
         run: make gotest GROUP=${{ matrix.group }}
-      - name: Run Unit Tests With Coverage
-        if: startsWith( matrix.go-version, '1.22' ) # only run coverage on one version
-        run: make gotest-with-cover GROUP=${{ matrix.group }}
-      - uses: actions/upload-artifact@v4
-        if: startsWith( matrix.go-version, '1.22' ) # only upload artifact for one version
+      - name: Run Unit Tests With JUnit and Coverage
+        id: tests-with-junit
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only run junit/coverage on one version and only on main
+        continue-on-error: true # Allow uploading artifacts even if the test fails
+        run: make gotest-with-junit-and-cover GROUP=${{ matrix.group }}
+      - uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4
+        if: startsWith( matrix.go-version, '~1.23' ) && github.ref == 'refs/heads/main' && github.event_name == 'push' # only upload artifact for one version and only on main
         with:
           name: coverage-artifacts-${{ matrix.go-version }}-${{ matrix.runner }}-${{ matrix.group }}
           path: ${{ matrix.group }}-coverage.txt
@@ -369,7 +379,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -408,7 +418,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -435,7 +445,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -507,7 +517,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Cache Go
         id: go-cache
@@ -557,7 +567,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-go@v5
         with:
-          go-version: "1.22.12"
+          go-version: "1.23.8"
           cache: false
       - name: Mkdir bin and dist
         run: |
@@ -623,7 +633,7 @@ jobs:
         run: ./.github/workflows/scripts/set_release_tag.sh
       - name: Create Github Release
         run: |
-          gh release create $RELEASE_TAG -t $RELEASE_TAG -n "The OpenTelemetry Collector Contrib contains everything in the [opentelemetry-collector release](https://github.com/open-telemetry/opentelemetry-collector/releases/tag/$RELEASE_TAG), be sure to check the release notes there as well."
+          gh release create $RELEASE_TAG -t $RELEASE_TAG -F release-notes.md
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ steps.github_tag.outputs.tag }}

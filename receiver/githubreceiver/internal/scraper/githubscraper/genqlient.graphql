@@ -18,6 +18,7 @@ query getRepoDataBySearch(
         defaultBranchRef {
           name
         }
+        url
       }
     }
     pageInfo {
@@ -130,6 +131,7 @@ query getPullRequestData(
           }
         }
         headRefName
+        # last: 1 returns the very first review
         reviews(states: APPROVED, last: 1) {
           totalCount
           nodes {

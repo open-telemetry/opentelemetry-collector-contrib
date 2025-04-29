@@ -62,8 +62,9 @@ type azureTracesRecord struct {
 var _ ptrace.Unmarshaler = (*TracesUnmarshaler)(nil)
 
 type TracesUnmarshaler struct {
-	Version string
-	Logger  *zap.Logger
+	Version     string
+	Logger      *zap.Logger
+	TimeFormats []string
 }
 
 func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
@@ -95,7 +96,7 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 
 		resource.Attributes().PutStr("service.name", azureTrace.AppRoleName)
 
-		nanos, err := asTimestamp(azureTrace.Time)
+		nanos, err := asTimestamp(azureTrace.Time, r.TimeFormats...)
 		if err != nil {
 			r.Logger.Warn("Invalid Timestamp", zap.String("time", azureTrace.Time))
 			continue
@@ -145,6 +146,12 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 		span.Attributes().PutStr("http.client_country", azureTrace.ClientCountryOrRegion)
 		span.Attributes().PutStr("http.scheme", scheme)
 		span.Attributes().PutStr("http.method", azureTrace.Properties["HTTP Method"])
+
+		for key, value := range azureTrace.Properties {
+			if key != "HTTP Method" { // HTTP Method is already mapped to http.method
+				span.Attributes().PutStr(key, value)
+			}
+		}
 
 		span.SetKind(ptrace.SpanKindServer)
 		span.SetName(azureTrace.Name)

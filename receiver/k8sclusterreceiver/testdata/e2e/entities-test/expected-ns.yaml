@@ -1,0 +1,42 @@
+resourceLogs:
+  - scopeLogs:
+      - scope:
+          attributes:
+            - key: otel.entity.event_as_log
+              value:
+                boolValue: true
+        logRecords:
+          - timeUnixNano: "1738160303151735394"
+            body: {}
+            attributes:
+              - key: otel.entity.id
+                value:
+                  kvlistValue:
+                    values:
+                      - key: k8s.namespace.uid
+                        value:
+                          stringValue: entity-id
+              - key: otel.entity.event.type
+                value:
+                  stringValue: entity_state
+              - key: otel.entity.type
+                value:
+                  stringValue: k8s.namespace
+              - key: otel.entity.interval
+                value:
+                  intValue: "300000"
+              - key: otel.entity.attributes
+                value:
+                  kvlistValue:
+                    values:
+                      - key: k8s.namespace.name
+                        value:
+                          stringValue: test-entities-ns
+                      - key: k8s.namespace.phase
+                        value:
+                          stringValue: active
+                      - key: k8s.namespace.creation_timestamp
+                        value:
+                          stringValue: "2025-01-01T00:00:00Z"
+            traceId: ""
+            spanId: ""

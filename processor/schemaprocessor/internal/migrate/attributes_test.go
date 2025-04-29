@@ -100,7 +100,6 @@ func TestAttributeChangeSetApply(t *testing.T) {
 			errVal: "value \"service.name\" already exists",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -110,7 +109,7 @@ func TestAttributeChangeSetApply(t *testing.T) {
 			} else {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error string")
 			}
-			assert.EqualValues(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
+			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}
 }
@@ -175,7 +174,6 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 			errVal: "value \"application.name\" already exists",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -185,7 +183,7 @@ func TestAttributeChangeSetRollback(t *testing.T) {
 			} else {
 				assert.EqualError(t, err, tc.errVal, "Must match the expected error string")
 			}
-			assert.EqualValues(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
+			assert.Equal(t, tc.expect.AsRaw(), tc.attrs.AsRaw(), "Must match the expected values")
 		})
 	}
 }

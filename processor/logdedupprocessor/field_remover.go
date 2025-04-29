@@ -15,7 +15,7 @@ const (
 	// fieldDelimiter is the delimiter used to split a field key into its parts.
 	fieldDelimiter = "."
 
-	// fieldEscapeKeyReplacement is the string used to temporarily replace escaped delimters while splitting a field key.
+	// fieldEscapeKeyReplacement is the string used to temporarily replace escaped delimiters while splitting a field key.
 	fieldEscapeKeyReplacement = "{TEMP_REPLACE}"
 )
 

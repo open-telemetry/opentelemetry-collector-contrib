@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/component"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/decode"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/textutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/operator"
 )
 
@@ -25,7 +25,7 @@ func (c *Config) Build(set component.TelemetrySettings) (operator.Operator, erro
 		return nil, err
 	}
 
-	enc, err := decode.LookupEncoding(c.Encoding)
+	enc, err := textutils.LookupEncoding(c.Encoding)
 	if err != nil {
 		return nil, fmt.Errorf("failed to lookup encoding %q: %w", c.Encoding, err)
 	}

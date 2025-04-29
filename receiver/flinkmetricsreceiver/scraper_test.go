@@ -19,6 +19,7 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/mocks"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver/internal/models"
 )
@@ -247,7 +248,7 @@ func TestScraperScrape(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.desc, func(t *testing.T) {
-			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings())
+			scraper := newflinkScraper(createDefaultConfig().(*Config), receivertest.NewNopSettings(metadata.Type))
 			scraper.client = tc.setupMockClient(t)
 			actualMetrics, err := scraper.scrape(context.Background())
 

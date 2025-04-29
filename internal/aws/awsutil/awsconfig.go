@@ -34,6 +34,8 @@ type AWSSessionSettings struct {
 	CertificateFilePath string `mapstructure:"certificate_file_path"`
 	// How many times should we retry imds v2
 	IMDSRetries int `mapstructure:"imds_retries"`
+	// External ID to verify third party role assumption
+	ExternalID string `mapstructure:"external_id"`
 }
 
 func CreateDefaultSessionConfig() AWSSessionSettings {

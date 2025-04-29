@@ -17,7 +17,7 @@ func TestMarshalUnmarshal(t *testing.T) {
 			Mode: JSONEncodingModeBody,
 		},
 	}
-	json := `{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}`
+	json := `[{"example":"example valid json to test that the unmarshaler is correctly returning a plog value"}]`
 	ld, err := e.UnmarshalLogs([]byte(json))
 	assert.NoError(t, err)
 	assert.Equal(t, 1, ld.LogRecordCount())
@@ -47,7 +47,7 @@ func TestInvalidUnmarshal(t *testing.T) {
 		},
 	}
 	_, err := e.UnmarshalLogs([]byte("NOT A JSON"))
-	assert.ErrorContains(t, err, "ReadMapCB: expect { or n, but found N")
+	assert.ErrorContains(t, err, "json: slice unexpected end of JSON input")
 }
 
 func TestPrettyLogProcessor(t *testing.T) {

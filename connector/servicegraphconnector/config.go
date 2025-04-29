@@ -44,11 +44,17 @@ type Config struct {
 
 	// MetricsFlushInterval is the interval at which metrics are flushed to the exporter.
 	// If set to 0, metrics are flushed on every received batch of traces.
-	MetricsFlushInterval time.Duration `mapstructure:"metrics_flush_interval"`
+	// Default is 60s if unset.
+	MetricsFlushInterval *time.Duration `mapstructure:"metrics_flush_interval"`
 
 	// DatabaseNameAttribute is the attribute name used to identify the database name from span attributes.
 	// The default value is db.name.
+	// Deprecated: [v0.124.0] Use database_name_attributes instead.
 	DatabaseNameAttribute string `mapstructure:"database_name_attribute"`
+
+	// DatabaseNameAttributes is the attribute name list of attributes need to match used to identify the database name from span attributes, the higher the front, the higher the priority.
+	// The default value is {"db.name"}.
+	DatabaseNameAttributes []string `mapstructure:"database_name_attributes"`
 }
 
 type StoreConfig struct {

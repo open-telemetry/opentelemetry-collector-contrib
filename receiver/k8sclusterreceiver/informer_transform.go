@@ -8,7 +8,7 @@ import (
 	batchv1 "k8s.io/api/batch/v1"
 	corev1 "k8s.io/api/core/v1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/demonset"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/daemonset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/deployment"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/jobs"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/node"
@@ -33,7 +33,7 @@ func transformObject(object any) (any, error) {
 	case *appsv1.Deployment:
 		return deployment.Transform(o), nil
 	case *appsv1.DaemonSet:
-		return demonset.Transform(o), nil
+		return daemonset.Transform(o), nil
 	case *appsv1.StatefulSet:
 		return statefulset.Transform(o), nil
 	case *corev1.Service:

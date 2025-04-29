@@ -6,16 +6,25 @@ package reader
 import (
 	"context"
 	"fmt"
+	"os"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
+	"golang.org/x/text/encoding/unicode"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/filetest"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/attrs"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/emit"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/fingerprint"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/fileconsumer/internal/scanner"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/filetest"
 	internaltime "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/internal/time"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/split"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/trim"
 )
 
 func TestFileReader_FingerprintUpdated(t *testing.T) {
@@ -57,7 +66,6 @@ func TestFingerprintGrowsAndStops(t *testing.T) {
 	lineLens := []int{3, 5, 7, 11, 13, 17, 19, 23, 27}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
@@ -118,7 +126,6 @@ func TestFingerprintChangeSize(t *testing.T) {
 	lineLens := []int{3, 4, 5, 6, 7, 8, 11, 12, 13, 17, 19, 23, 27, 36}
 
 	for _, lineLen := range lineLens {
-		lineLen := lineLen
 		t.Run(fmt.Sprintf("%d", lineLen), func(t *testing.T) {
 			t.Parallel()
 
@@ -191,6 +198,7 @@ func TestFingerprintChangeSize(t *testing.T) {
 func TestFlushPeriodEOF(t *testing.T) {
 	tempDir := t.TempDir()
 	temp := filetest.OpenTemp(t, tempDir)
+
 	// Create a long enough initial token, so the scanner can't read the whole file at once
 	aContentLength := 2 * 16 * 1024
 	content := []byte(strings.Repeat("a", aContentLength))
@@ -198,17 +206,183 @@ func TestFlushPeriodEOF(t *testing.T) {
 	_, err := temp.WriteString(string(content))
 	require.NoError(t, err)
 
-	// Make sure FlushPeriod is small, so it is guaranteed to expire
-	f, sink := testFactory(t, withFlushPeriod(5*time.Nanosecond))
+	flushPeriod := time.Millisecond
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
 	fp, err := f.NewFingerprint(temp)
 	require.NoError(t, err)
 	r, err := f.NewReader(temp, fp)
 	require.NoError(t, err)
 	assert.Equal(t, int64(0), r.Offset)
 
-	internaltime.Now = internaltime.NewAlwaysIncreasingClock().Now
-	defer func() { internaltime.Now = time.Now }()
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// First ReadToEnd should not emit only the terminated token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, content[0:aContentLength])
+
+	// Advance time past the flush period
+	clock.Advance(2 * flushPeriod)
+
+	// Second ReadToEnd should emit the unterminated token because of flush timeout
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, []byte{'b'})
+}
+
+func TestUntermintedLongLogEntry(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+
+	// Create a log entry longer than DefaultBufferSize (16KB) but shorter than maxLogSize
+	content := filetest.TokenWithLength(20 * 1024) // 20KB
+	_, err := temp.WriteString(string(content))    // no newline
+	require.NoError(t, err)
+
+	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
+	// a few times during a call to ReadToEnd.
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	flushPeriod := time.Second
+
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	// First ReadToEnd should not emit anything as flush period hasn't expired
+	r.ReadToEnd(context.Background())
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Second ReadToEnd should emit the full untruncated token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, content)
+
+	sink.ExpectNoCalls(t)
+}
+
+func TestUntermintedLogEntryGrows(t *testing.T) {
+	tempDir := t.TempDir()
+	temp := filetest.OpenTemp(t, tempDir)
+
+	// Create a log entry longer than DefaultBufferSize (16KB) but shorter than maxLogSize
+	content := filetest.TokenWithLength(20 * 1024) // 20KB
+	_, err := temp.WriteString(string(content))    // no newline
+	require.NoError(t, err)
+
+	// Use a controlled clock. It advances by 1ns each time Now() is called, which may happen
+	// a few times during a call to ReadToEnd.
+	clock := internaltime.NewAlwaysIncreasingClock()
+	internaltime.Now = clock.Now
+	internaltime.Since = clock.Since
+	defer func() {
+		internaltime.Now = time.Now
+		internaltime.Since = time.Since
+	}()
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	flushPeriod := time.Second
+
+	f, sink := testFactory(t, withFlushPeriod(flushPeriod))
+	fp, err := f.NewFingerprint(temp)
+	require.NoError(t, err)
+	r, err := f.NewReader(temp, fp)
+	require.NoError(t, err)
+	assert.Equal(t, int64(0), r.Offset)
+
+	// First ReadToEnd should not emit anything as flush period hasn't expired
+	r.ReadToEnd(context.Background())
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Write additional unterminated content to ensure all is picked up in the same token
+	// The flusher should notice new data and not return anything on the next call
+	additionalContext := filetest.TokenWithLength(1024)
+	_, err = temp.WriteString(string(additionalContext)) // no newline
+	require.NoError(t, err)
 
 	r.ReadToEnd(context.Background())
-	sink.ExpectTokens(t, content[0:aContentLength], []byte{'b'})
+	sink.ExpectNoCalls(t)
+
+	// Advance time past the flush period to test behavior after timer is expired
+	clock.Advance(2 * flushPeriod)
+
+	// Finally, since we haven't seen new data, flusher should emit the token
+	r.ReadToEnd(context.Background())
+	sink.ExpectToken(t, append(content, additionalContext...))
+
+	sink.ExpectNoCalls(t)
+}
+
+func BenchmarkFileRead(b *testing.B) {
+	tempDir := b.TempDir()
+
+	temp := filetest.OpenTemp(b, tempDir)
+	// Initialize the file to ensure a unique fingerprint
+	_, err := temp.WriteString(temp.Name() + "\n")
+	require.NoError(b, err)
+	// Write half the content before starting the benchmark
+	for i := 0; i < 100; i++ {
+		_, err := temp.WriteString(string(filetest.TokenWithLength(999)) + "\n")
+		require.NoError(b, err)
+	}
+
+	// Use a long flush period to ensure it does not expire DURING a ReadToEnd
+	counter := atomic.Int64{}
+	f := newTestFactory(b, func(_ context.Context, tokens [][]byte, _ map[string]any, _ int64) error {
+		counter.Add(int64(len(tokens)))
+		return nil
+	})
+	b.ReportAllocs()
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		file, err := os.OpenFile(temp.Name(), os.O_CREATE|os.O_RDWR, 0o600)
+		require.NoError(b, err)
+		fp, err := f.NewFingerprint(file)
+		require.NoError(b, err)
+		reader, err := f.NewReader(file, fp)
+		require.NoError(b, err)
+		reader.ReadToEnd(context.Background())
+		assert.EqualValues(b, (i+1)*101, counter.Load())
+		reader.Close()
+	}
+}
+
+func newTestFactory(tb testing.TB, callback emit.Callback) *Factory {
+	splitFunc, err := split.Config{}.Func(unicode.UTF8, false, defaultMaxLogSize)
+	require.NoError(tb, err)
+
+	return &Factory{
+		TelemetrySettings: componenttest.NewNopTelemetrySettings(),
+		FromBeginning:     true,
+		FingerprintSize:   fingerprint.DefaultSize,
+		InitialBufferSize: scanner.DefaultBufferSize,
+		MaxLogSize:        defaultMaxLogSize,
+		Encoding:          unicode.UTF8,
+		SplitFunc:         splitFunc,
+		TrimFunc:          trim.Whitespace,
+		FlushTimeout:      defaultFlushPeriod,
+		EmitFunc:          callback,
+		Attributes: attrs.Resolver{
+			IncludeFileName: true,
+		},
+	}
 }
