@@ -77,17 +77,17 @@ func (rb *ResourceBuilder) SetK8sNamespaceName(val string) {
 	}
 }
 
-// SetK8sNodeAnnotations sets provided value as "k8s.node.annotations" attribute.
-func (rb *ResourceBuilder) SetK8sNodeAnnotations(val map[string]any) {
-	if rb.config.K8sNodeAnnotations.Enabled {
-		rb.res.Attributes().PutEmptyMap("k8s.node.annotations").FromRaw(val)
+// SetK8sNodeAnnotation sets provided attribute key with template prefix "k8s.node.annotation".
+func (rb *ResourceBuilder) SetK8sNodeAnnotation(key, val string) {
+	if rb.config.K8sNodeAnnotation.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.annotation."+key, val)
 	}
 }
 
-// SetK8sNodeLabels sets provided value as "k8s.node.labels" attribute.
-func (rb *ResourceBuilder) SetK8sNodeLabels(val map[string]any) {
-	if rb.config.K8sNodeLabels.Enabled {
-		rb.res.Attributes().PutEmptyMap("k8s.node.labels").FromRaw(val)
+// SetK8sNodeLabel sets provided attribute key with template prefix "k8s.node.label".
+func (rb *ResourceBuilder) SetK8sNodeLabel(key, val string) {
+	if rb.config.K8sNodeLabel.Enabled {
+		rb.res.Attributes().PutStr("k8s.node.label."+key, val)
 	}
 }
 
@@ -145,22 +145,4 @@ func (rb *ResourceBuilder) Emit() pcommon.Resource {
 	r := rb.res
 	rb.res = pcommon.NewResource()
 	return r
-}
-
-// SetK8sNodeAnnotation sets provided value as "k8s.node.annotation.*" attribute.
-func (rb *ResourceBuilder) SetK8sNodeAnnotation(val map[string]string) {
-	if rb.config.K8sNodeAnnotations.Enabled {
-		for k,v := range val {
-			rb.res.Attributes().PutStr("k8s.node.annotation."+k, v)
-		}
-	}
-}
-
-// SetK8sNodeLabel sets provided value as "k8s.node.label.*" attribute.
-func (rb *ResourceBuilder) SetK8sNodeLabel(val map[string]string) {
-	if rb.config.K8sNodeLabels.Enabled {
-		for k,v := range val {
-			rb.res.Attributes().PutStr("k8s.node.label."+k, v)
-		}
-	}
 }
