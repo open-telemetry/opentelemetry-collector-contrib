@@ -157,7 +157,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		if cfg.Histogram.Exponential.MaxSize != 0 {
 			maxSize = cfg.Histogram.Exponential.MaxSize
 		}
-		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint)
+		return metrics.NewExponentialHistogramMetrics(maxSize, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 	}
 
 	var bounds []float64
@@ -175,7 +175,7 @@ func initHistogramMetrics(cfg Config) metrics.HistogramMetrics {
 		}
 	}
 
-	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint)
+	return metrics.NewExplicitHistogramMetrics(bounds, cfg.Exemplars.MaxPerDataPoint, cfg.AggregationCardinalityLimit)
 }
 
 // unitDivider returns a unit divider to convert nanoseconds to milliseconds or seconds.
@@ -391,47 +391,25 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 				}
 
 				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
-				var attributesFun metrics.BuildAttributesFun
-
-				// Note: we check cardinality limit here for sums metrics but it is the same
-				// for histograms because both use the same key and attributes.
-				if rm.sums.IsCardinalityLimitReached() {
-					attributesFun = func() pcommon.Map {
-						attributes := pcommon.NewMap()
-						for _, d := range p.dimensions {
-							if v, exists := utilattri.GetDimensionValue(d, span.Attributes(), resourceAttr); exists {
-								v.CopyTo(attributes.PutEmpty(d.Name))
-							}
-						}
-						attributes.PutBool(overflowKey, true)
-
-						return attributes
-					}
-				} else {
-					attributesFun = func() pcommon.Map {
-						attributes := p.buildAttributes(
-							serviceName,
-							span,
-							resourceAttr,
-							p.dimensions,
-							ils.Scope(),
-						)
-						return attributes
-					}
+				attributesFun := func() pcommon.Map {
+					return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
 				}
 
-				if !p.config.Histogram.Disable {
-					// aggregate histogram metrics
-					h := histograms.GetOrCreate(key, attributesFun, startTimestamp)
-					p.addExemplar(span, duration, h)
-					h.Observe(duration)
-				}
 				// aggregate sums metrics
-				s := sums.GetOrCreate(key, attributesFun, startTimestamp)
-				if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+				s, limitReached := sums.GetOrCreate(key, attributesFun, startTimestamp)
+				if !limitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 					s.AddExemplar(span.TraceID(), span.SpanID(), duration)
 				}
 				s.Add(1)
+
+				// aggregate histogram metrics
+				if !p.config.Histogram.Disable {
+					h, durationLimitReached := histograms.GetOrCreate(key, attributesFun, startTimestamp)
+					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+						p.addExemplar(span, duration, h)
+					}
+					h.Observe(duration)
+				}
 
 				// aggregate events metrics
 				if p.events.Enabled {
@@ -451,21 +429,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 						})
 
 						eKey := p.buildKey(serviceName, span, eDimensions, rscAndEventAttrs)
-						if rm.events.IsCardinalityLimitReached() {
-							attributesFun = func() pcommon.Map {
-								attributes := pcommon.NewMap()
-								rscAndEventAttrs.CopyTo(attributes)
-								attributes.PutBool(overflowKey, true)
-
-								return attributes
-							}
-						} else {
-							attributesFun = func() pcommon.Map {
-								return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
-							}
+						attributesFun = func() pcommon.Map {
+							return p.buildAttributes(serviceName, span, rscAndEventAttrs, eDimensions, ils.Scope())
 						}
-						e := events.GetOrCreate(eKey, attributesFun, startTimestamp)
-						if p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
+						e, eventLimitReached := events.GetOrCreate(eKey, attributesFun, startTimestamp)
+						if !eventLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 							e.AddExemplar(span.TraceID(), span.SpanID(), duration)
 						}
 						e.Add(1)
