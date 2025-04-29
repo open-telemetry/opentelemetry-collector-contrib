@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 	"go.opentelemetry.io/collector/scraper/scrapertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -135,6 +136,29 @@ func TestScrape_Errors(t *testing.T) {
 			assert.Equal(t, test.expectedUtilizationFreeValue, pagingUtilizationMetric.Gauge().DataPoints().At(1).DoubleValue())
 		})
 	}
+}
+
+func TestPagingScrapeWithRealData(t *testing.T) {
+	config := Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start the paging scraper")
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics")
+	require.NotNil(t, metrics, "Metrics cannot be nil")
+
+	// Expected metric names for paging scraper.
+	// Note: the `system.paging.faults` is enabled by default, but is not being collected on Windows.
+	expectedMetrics := map[string]bool{
+		"system.paging.operations": false,
+		"system.paging.usage":      false,
+	}
+
+	internal.AssertExpectedMetrics(t, expectedMetrics, metrics)
 }
 
 func TestStart_Error(t *testing.T) {
