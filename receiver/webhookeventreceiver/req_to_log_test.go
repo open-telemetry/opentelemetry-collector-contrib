@@ -252,6 +252,58 @@ func TestReqToLog(t *testing.T) {
 				})
 			},
 		},
+		{
+			desc: "multiple JSON objects in one scan due to missing newline split",
+			sc: func() *bufio.Scanner {
+				// Simulate input where two JSON objects are separated by a newline,
+				// but the scanner is not splitting at newlines.
+				reader := io.NopCloser(bytes.NewReader([]byte(`{ "name": "francis", "city": "newyork" }
+{ "name": "john", "city": "paris" }`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                 defaultPath,
+				HealthPath:           defaultHealthPath,
+				ReadTimeout:          defaultReadTimeout,
+				WriteTimeout:         defaultWriteTimeout,
+				RequiredHeader:       RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				HeaderAttributeRegex: "",
+				SplitLogsAtNewLine:   true,
+			},
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, _ receiver.Settings) {
+				// If the bug is present, reqLen will be 1 (both objects in one log record).
+				// The correct behavior is reqLen == 2 (each object in its own log record).
+				require.Equal(t, 2, reqLen)
+			},
+		},
+		{
+			desc: "multiple JSON objects in split at JSON boundary",
+			sc: func() *bufio.Scanner {
+				// Simulate input where two JSON objects are separated by a newline,
+				// but the scanner is not splitting at newlines.
+				reader := io.NopCloser(bytes.NewReader([]byte(`{
+				  "name": "francis", 
+				  "city": "newyork" 
+				}
+                { "name": "john", "city": "paris" }{ "name": "tim", "city": "london" }`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                    defaultPath,
+				HealthPath:              defaultHealthPath,
+				ReadTimeout:             defaultReadTimeout,
+				WriteTimeout:            defaultWriteTimeout,
+				RequiredHeader:          RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				HeaderAttributeRegex:    "",
+				SplitLogsAtNewLine:      false,
+				SplitLogsAtJSONBoundary: true,
+			},
+			tt: func(t *testing.T, _ plog.Logs, reqLen int, _ receiver.Settings) {
+				// If the bug is present, reqLen will be 1 (both objects in one log record).
+				// The correct behavior is reqLen == 2 (each object in its own log record).
+				require.Equal(t, 3, reqLen)
+			},
+		},
 	}
 
 	for _, test := range tests {
