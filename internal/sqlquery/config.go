@@ -8,24 +8,40 @@ import (
 	"fmt"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
+type DataSourceConfig struct {
+	Host             string              `mapstructure:"host"`
+	Port             int                 `mapstructure:"port"`
+	Database         string              `mapstructure:"database"`
+	Username         string              `mapstructure:"username"`
+	Password         configopaque.String `mapstructure:"password"`
+	AdditionalParams map[string]any      `mapstructure:"additional_params"`
+}
+
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
-	Driver                         string          `mapstructure:"driver"`
-	DataSource                     string          `mapstructure:"datasource"`
-	Queries                        []Query         `mapstructure:"queries"`
-	StorageID                      *component.ID   `mapstructure:"storage"`
-	Telemetry                      TelemetryConfig `mapstructure:"telemetry"`
+	Driver                         string           `mapstructure:"driver"`
+	DataSource                     DataSourceConfig `mapstructure:"datasource"`
+	Queries                        []Query          `mapstructure:"queries"`
+	StorageID                      *component.ID    `mapstructure:"storage"`
+	Telemetry                      TelemetryConfig  `mapstructure:"telemetry"`
 }
 
 func (c Config) Validate() error {
 	if c.Driver == "" {
 		return errors.New("'driver' cannot be empty")
 	}
-	if c.DataSource == "" {
-		return errors.New("'datasource' cannot be empty")
+	if c.DataSource.Host == "" {
+		return errors.New("'datasource.host' must be specified")
+	}
+	if c.DataSource.Port == 0 {
+		return errors.New("'datasource.port' must be specified")
+	}
+	if c.DataSource.Database == "" {
+		return errors.New("'datasource.database' must be specified")
 	}
 	if len(c.Queries) == 0 {
 		return errors.New("'queries' cannot be empty")
