@@ -20,6 +20,7 @@ logs, or metrics).
 | traces | metrics | [alpha] |
 | logs | metrics | [alpha] |
 | metrics | metrics | [alpha] |
+| profiles | metrics | [alpha] |
 
 [Exporter Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#exporter-pipeline-type
 [Receiver Pipeline Type]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/connector/README.md#receiver-pipeline-type
@@ -53,6 +54,11 @@ signaltometrics:
       description: Count of log records
       sum:
         value: "1" # increment by 1 for each log record
+  profiles:
+    - name: profile.count
+      description: Count of profiles
+      sum:
+        value: "1" # increment by 1 for each profile
 ```
 
 ### Metrics types

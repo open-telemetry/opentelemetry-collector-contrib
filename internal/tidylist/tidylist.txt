@@ -2,6 +2,7 @@ cmd/codecovgen
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
+cmd/golden
 internal/coreinternal
 pkg/ottl
 connector/routingconnector
