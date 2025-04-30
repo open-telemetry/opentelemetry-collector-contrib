@@ -55,7 +55,7 @@ type dbEngineUnderTest struct {
 	Port               string
 	SQLParameter       func(position int) string
 	CheckCompatibility func(t *testing.T)
-	DataSourceConfig   func(host string, externalPort nat.Port) sqlquery.DataSourceConfig
+	ConnectionString   func(host string, externalPort nat.Port) string
 	Driver             string
 	ConvertColumnName  func(string) string
 	ContainerRequest   testcontainers.ContainerRequest
@@ -70,17 +70,8 @@ var (
 		CheckCompatibility: func(_ *testing.T) {
 			// No compatibility checks needed for Postgres
 		},
-		DataSourceConfig: func(host string, externalPort nat.Port) sqlquery.DataSourceConfig {
-			return sqlquery.DataSourceConfig{
-				Host:     host,
-				Port:     externalPort.Int(),
-				Database: "otel",
-				Username: "otel",
-				Password: "otel",
-				AdditionalParams: map[string]any{
-					"sslmode": "disable",
-				},
-			}
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("host=%s port=%s user=otel password=otel sslmode=disable", host, externalPort.Port())
 		},
 		Driver:            "postgres",
 		ConvertColumnName: func(name string) string { return name },
@@ -109,14 +100,8 @@ var (
 		CheckCompatibility: func(_ *testing.T) {
 			// No compatibility checks needed for MySQL
 		},
-		DataSourceConfig: func(host string, externalPort nat.Port) sqlquery.DataSourceConfig {
-			return sqlquery.DataSourceConfig{
-				Host:     host,
-				Port:     externalPort.Int(),
-				Database: "otel",
-				Username: "otel",
-				Password: "otel",
-			}
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("otel:otel@tcp(%s:%s)/otel", host, externalPort.Port())
 		},
 		Driver:            "mysql",
 		ConvertColumnName: func(name string) string { return name },
@@ -145,14 +130,8 @@ var (
 		CheckCompatibility: func(t *testing.T) {
 			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
 		},
-		DataSourceConfig: func(host string, externalPort nat.Port) sqlquery.DataSourceConfig {
-			return sqlquery.DataSourceConfig{
-				Host:     host,
-				Port:     externalPort.Int(),
-				Database: "FREEPDB1",
-				Username: "otel",
-				Password: "otel",
-			}
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("oracle://otel:otel@%s:%s/FREEPDB1", host, externalPort.Port())
 		},
 		Driver:            "oracle",
 		ConvertColumnName: strings.ToUpper,
@@ -186,14 +165,8 @@ var (
 			}
 			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
 		},
-		DataSourceConfig: func(host string, externalPort nat.Port) sqlquery.DataSourceConfig {
-			return sqlquery.DataSourceConfig{
-				Host:     host,
-				Port:     externalPort.Int(),
-				Database: "otel",
-				Username: "otel",
-				Password: "YourStrong!Passw0rd",
-			}
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("sqlserver://otel:YourStrong%%21Passw0rd@%s:%s?database=otel", host, externalPort.Port())
 		},
 		Driver:            "sqlserver",
 		ConvertColumnName: func(name string) string { return name },
@@ -217,14 +190,8 @@ var (
 		CheckCompatibility: func(t *testing.T) {
 			t.Skip("Skipping the test until https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/27577 is fixed")
 		},
-		DataSourceConfig: func(host string, externalPort nat.Port) sqlquery.DataSourceConfig {
-			return sqlquery.DataSourceConfig{
-				Host:     host,
-				Port:     externalPort.Int(),
-				Database: "otel",
-				Username: "otel",
-				Password: "otel1234",
-			}
+		ConnectionString: func(host string, externalPort nat.Port) string {
+			return fmt.Sprintf("tds://otel:otel1234@%s:%s/otel", host, externalPort.Port())
 		},
 		Driver:            "tds",
 		ConvertColumnName: func(name string) string { return name },
@@ -359,7 +326,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 	trackingStartValue := "0"
 
 	receiverCreateSettings := receivertest.NewNopSettings(metadata.Type)
-	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.DataSourceConfig(dbHost, dbPort), receiverCreateSettings)
+	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Telemetry.Logs.Query = true
 	config.StorageID = &storageExtension.ID
@@ -398,7 +365,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 	require.Equal(t, initialLogCount, consumer.LogRecordCount())
 	testAllSimpleLogs(t, consumer.AllLogs(), engine.ConvertColumnName("attribute"))
 
-	receiver, config, consumer = createTestLogsReceiver(t, engine.Driver, engine.DataSourceConfig(dbHost, dbPort), receiverCreateSettings)
+	receiver, config, consumer = createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Telemetry.Logs.Query = true
 	config.StorageID = &storageExtension.ID
@@ -429,7 +396,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 	insertSimpleLogs(t, engine, container, initialLogCount, newLogCount)
 	defer cleanupSimpleLogs(t, engine, container, initialLogCount)
 
-	receiver, config, consumer = createTestLogsReceiver(t, engine.Driver, engine.DataSourceConfig(dbHost, dbPort), receiverCreateSettings)
+	receiver, config, consumer = createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = time.Second
 	config.Telemetry.Logs.Query = true
 	config.StorageID = &storageExtension.ID
@@ -468,7 +435,7 @@ func runTestForLogTrackingWithStorage(t *testing.T, engine dbEngineUnderTest, co
 func runTestForLogTrackingWithoutStorage(t *testing.T, engine dbEngineUnderTest, container testcontainers.Container, trackingColumn, trackingStartValue, sqlQuery string) {
 	receiverCreateSettings := receivertest.NewNopSettings(metadata.Type)
 	dbHost, dbPort := getContainerHostAndPort(t, container, engine.Port)
-	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.DataSourceConfig(dbHost, dbPort), receiverCreateSettings)
+	receiver, config, consumer := createTestLogsReceiver(t, engine.Driver, engine.ConnectionString(dbHost, dbPort), receiverCreateSettings)
 	config.CollectionInterval = 100 * time.Millisecond
 	config.Telemetry.Logs.Query = true
 
@@ -547,11 +514,7 @@ func openDatabase(t *testing.T, engine dbEngineUnderTest, container testcontaine
 	host, err := container.Host(context.Background())
 	require.NoError(t, err)
 
-	dataSource := engine.DataSourceConfig(host, externalPort)
-	dataSourceStr, err := sqlquery.BuildDataSourceString(engine.Driver, dataSource)
-	require.NoError(t, err)
-
-	db, err := sql.Open(engine.Driver, dataSourceStr)
+	db, err := sql.Open(engine.Driver, engine.ConnectionString(host, externalPort))
 	require.NoError(t, err)
 	return db
 }
@@ -562,7 +525,7 @@ func prepareStatement(t *testing.T, db *sql.DB, query string) *sql.Stmt {
 	return stmt
 }
 
-func createTestLogsReceiver(t *testing.T, driver string, dataSource sqlquery.DataSourceConfig, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
+func createTestLogsReceiver(t *testing.T, driver, dataSource string, receiverCreateSettings receiver.Settings) (*logsReceiver, *Config, *consumertest.LogsSink) {
 	factory := NewFactory()
 	config := factory.CreateDefaultConfig().(*Config)
 	config.Driver = driver
@@ -617,7 +580,7 @@ func TestPostgresqlIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = Postgres.Driver
-				rCfg.DataSource = Postgres.DataSourceConfig(ci.Host(t), nat.Port(ci.MappedPort(t, Postgres.Port)))
+				rCfg.DataSource = Postgres.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, Postgres.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
@@ -716,7 +679,7 @@ func TestOracleDBIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = Oracle.Driver
-				rCfg.DataSource = Oracle.DataSourceConfig(ci.Host(t), nat.Port(ci.MappedPort(t, Oracle.Port)))
+				rCfg.DataSource = Oracle.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, Oracle.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre",
@@ -757,7 +720,7 @@ func TestMysqlIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = MySQL.Driver
-				rCfg.DataSource = MySQL.DataSourceConfig(ci.Host(t), nat.Port(ci.MappedPort(t, MySQL.Port)))
+				rCfg.DataSource = MySQL.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, MySQL.Port)))
 				rCfg.MaxOpenConn = 5
 				rCfg.Queries = []sqlquery.Query{
 					{
@@ -845,7 +808,7 @@ func TestSQLServerIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = SQLServer.Driver
-				rCfg.DataSource = SQLServer.DataSourceConfig(ci.Host(t), nat.Port(ci.MappedPort(t, SQLServer.Port)))
+				rCfg.DataSource = SQLServer.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, SQLServer.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "select genre, count(*) as count, avg(imdb_rating) as avg from movie group by genre order by genre",
@@ -887,7 +850,7 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
 				rCfg := cfg.(*Config)
 				rCfg.Driver = SapASE.Driver
-				rCfg.DataSource = SapASE.DataSourceConfig(ci.Host(t), nat.Port(ci.MappedPort(t, SapASE.Port)))
+				rCfg.DataSource = SapASE.ConnectionString(ci.Host(t), nat.Port(ci.MappedPort(t, SapASE.Port)))
 				rCfg.Queries = []sqlquery.Query{
 					{
 						SQL: "SELECT genre, COUNT(*) AS movie_count, AVG(imdb_rating) AS movie_avg FROM movie GROUP BY genre ORDER BY genre",
@@ -916,6 +879,111 @@ func TestSapASEIntegrationMetrics(t *testing.T) {
 		scraperinttest.WithCompareOptions(
 			pmetrictest.IgnoreTimestamp(),
 			pmetrictest.IgnoreMetricsOrder(),
+		),
+	).Run(t)
+}
+
+func TestPostgresqlDataSourceConfigIntegrationMetrics(t *testing.T) {
+	Postgres.CheckCompatibility(t)
+	scraperinttest.NewIntegrationTest(
+		NewFactory(),
+		scraperinttest.WithContainerRequest(
+			Postgres.ContainerRequest),
+		scraperinttest.WithCustomConfig(
+			func(t *testing.T, cfg component.Config, ci *scraperinttest.ContainerInfo) {
+				rCfg := cfg.(*Config)
+				rCfg.Driver = Postgres.Driver
+				rCfg.DataSourceConfig = sqlquery.DataSourceConfig{
+					Host:     ci.Host(t),
+					Port:     nat.Port(ci.MappedPort(t, Postgres.Port)).Int(),
+					Database: "otel",
+					Username: "otel",
+					Password: "otel",
+					AdditionalParams: map[string]any{
+						"sslmode": "disable",
+					},
+				}
+				rCfg.Queries = []sqlquery.Query{
+					{
+						SQL: "select genre, count(*), avg(imdb_rating) from movie group by genre",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:       "genre.count",
+								ValueColumn:      "count",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeInt,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:       "genre.imdb",
+								ValueColumn:      "avg",
+								AttributeColumns: []string{"genre"},
+								ValueType:        sqlquery.MetricValueTypeDouble,
+								DataType:         sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+					{
+						SQL: "select 1::smallint as a, 2::integer as b, 3::bigint as c, 4.1::decimal as d," +
+							" 4.2::numeric as e, 4.3::real as f, 4.4::double precision as g, null as h",
+						Metrics: []sqlquery.MetricCfg{
+							{
+								MetricName:  "a",
+								ValueColumn: "a",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "b",
+								ValueColumn: "b",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "c",
+								ValueColumn: "c",
+								ValueType:   sqlquery.MetricValueTypeInt,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "d",
+								ValueColumn: "d",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "e",
+								ValueColumn: "e",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "f",
+								ValueColumn: "f",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "g",
+								ValueColumn: "g",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+							{
+								MetricName:  "h",
+								ValueColumn: "h",
+								ValueType:   sqlquery.MetricValueTypeDouble,
+								DataType:    sqlquery.MetricTypeGauge,
+							},
+						},
+					},
+				}
+			}),
+		scraperinttest.WithExpectedFile(
+			filepath.Join("testdata", "integration", "postgresql", "expected.yaml"),
+		),
+		scraperinttest.WithCompareOptions(
+			pmetrictest.IgnoreTimestamp(),
 		),
 	).Run(t)
 }
