@@ -8,8 +8,7 @@ component: netflowreceiver
 note: Add `send_raw` option to send logs as a raw string in the log body instead of parsed into attributes.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
-issues:
-  - [38920]
+issues: [38920]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
