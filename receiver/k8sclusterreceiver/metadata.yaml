@@ -330,28 +330,28 @@ metrics:
 
   k8s.hpa.max_replicas:
     enabled: true
-    description: Maximum number of replicas to which the autoscaler can scale up.
+    description: Maximum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#horizontalpodautoscalerspec-v1-autoscaling for details.
     unit: "{pod}"
     gauge:
       value_type: int
 
   k8s.hpa.min_replicas:
     enabled: true
-    description: Minimum number of replicas to which the autoscaler can scale up.
+    description: Minimum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#horizontalpodautoscalerspec-v1-autoscaling for details.
     unit: "{pod}"
     gauge:
       value_type: int
 
   k8s.hpa.current_replicas:
     enabled: true
-    description: Current number of pod replicas managed by this autoscaler.
+    description: Current number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#horizontalpodautoscalerstatus-v1-autoscaling for details.
     unit: "{pod}"
     gauge:
       value_type: int
 
   k8s.hpa.desired_replicas:
     enabled: true
-    description: Desired number of pod replicas managed by this autoscaler.
+    description: Desired number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.23/#horizontalpodautoscalerstatus-v1-autoscaling for details.
     unit: "{pod}"
     gauge:
       value_type: int
