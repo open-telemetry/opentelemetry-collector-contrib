@@ -170,10 +170,10 @@ func TestPipeHasDataAtStartup(t *testing.T) {
 	require.NoError(t, unix.Mkfifo(conf.Path, conf.Permissions))
 
 	pipe, err := os.OpenFile(conf.Path, os.O_RDWR|os.O_APPEND, os.ModeNamedPipe)
+	require.NoError(t, err)
 	defer func() {
 		require.NoError(t, pipe.Close())
 	}()
-	require.NoError(t, err)
 
 	logs := []string{"log1\n", "log2\n"}
 

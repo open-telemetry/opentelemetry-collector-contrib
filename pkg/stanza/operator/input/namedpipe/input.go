@@ -98,8 +98,7 @@ func (i *Input) readLoop(ctx context.Context) {
 		case <-ctx.Done():
 			return
 		default:
-			err := i.process(ctx, pipe)
-			if err != nil {
+			if err := i.process(ctx, pipe); err != nil {
 				i.Logger().Error("error processing named pipe", zap.Error(err))
 			}
 
@@ -108,6 +107,7 @@ func (i *Input) readLoop(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-time.After(ReadTimeout):
+				i.Logger().Warn("processing named pipe is interrupted, retrying the process now", zap.String("path", i.path))
 			}
 		}
 	}
