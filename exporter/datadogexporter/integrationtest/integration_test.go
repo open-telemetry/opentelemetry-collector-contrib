@@ -538,7 +538,7 @@ func TestIntegrationLogs(t *testing.T) {
 
 func sendLogs(t *testing.T, numLogs int, endpoint string) {
 	ctx := context.Background()
-	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithEndpoint(endpoint))
+	logExporter, err := otlploghttp.New(ctx, otlploghttp.WithInsecure(), otlploghttp.WithEndpoint(endpoint))
 	assert.NoError(t, err)
 	lr := make([]log.Record, numLogs)
 	assert.NoError(t, logExporter.Export(ctx, lr))
