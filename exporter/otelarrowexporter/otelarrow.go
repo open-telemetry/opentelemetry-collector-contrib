@@ -6,6 +6,7 @@ package otelarrowexporter // import "github.com/open-telemetry/opentelemetry-col
 import (
 	"context"
 	"errors"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"time"
 
 	arrowRecord "github.com/open-telemetry/otel-arrow/pkg/otel/arrow_record"
@@ -23,7 +24,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/ptrace/ptraceotlp"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/credentials"
