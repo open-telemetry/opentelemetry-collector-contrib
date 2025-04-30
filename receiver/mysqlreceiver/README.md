@@ -58,7 +58,9 @@ The following settings are optional:
   - mysql.query.rows.returned
   - mysql.query.time.total
   - mysql.query.calls
-- `top_query_metrics_max: (default = 200): The maximum number of top queries to be collected. The receiver will collect the top queries based on the `mysql.statement_events.count` metric. The value must be a positive integer. If set to 0, no top queries will be collected.
+- `top_query_collection` : 
+  - `enabled` (default = `false`): Enables the collection and reporting of top queries.
+  - `top_query_count` (default = 200): The maximum number of top queries to be collected.  The value must be a positive integer. If set to 0, no top queries will be collected.
 ### Example Configuration
 
 ```yaml
