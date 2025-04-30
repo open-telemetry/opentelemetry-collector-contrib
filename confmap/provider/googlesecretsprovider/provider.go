@@ -60,7 +60,7 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 	if err != nil {
 		var apiErr *apierror.APIError
 		apiErr, ok := apierror.FromError(err)
-		errorMsg := "failed to access secret version:"
+		errorMsg := "failed to access secret version"
 		if !ok {
 			return nil, fmt.Errorf(errorMsg+": %w", err)
 		}
