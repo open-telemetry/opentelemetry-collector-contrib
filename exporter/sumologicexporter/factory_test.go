@@ -32,7 +32,7 @@ func TestCreateDefaultConfig(t *testing.T) {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = 30 * time.Second
 	clientConfig.Compression = "gzip"
-	clientConfig.Auth = &configauth.Authentication{
+	clientConfig.Auth = &configauth.Config{
 		AuthenticatorID: component.NewID(metadata.Type),
 	}
 	assert.Equal(t, &Config{
