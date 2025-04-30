@@ -334,8 +334,8 @@ run:
 
 .PHONY: docker-component # Not intended to be used directly
 docker-component: check-component
-	GOOS=linux GOARCH=amd64 $(MAKE) $(COMPONENT)
-	cp ./bin/$(COMPONENT)_linux_amd64 ./cmd/$(COMPONENT)/$(COMPONENT)
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) $(COMPONENT)
+	cp ./bin/$(COMPONENT)_linux_$(GOARCH) ./cmd/$(COMPONENT)/$(COMPONENT)
 	docker build -t $(COMPONENT) ./cmd/$(COMPONENT)/
 	rm ./cmd/$(COMPONENT)/$(COMPONENT)
 
@@ -348,6 +348,10 @@ endif
 .PHONY: docker-otelcontribcol
 docker-otelcontribcol:
 	COMPONENT=otelcontribcol $(MAKE) docker-component
+
+.PHONY: docker-supervisor-otelcontribcol
+docker-supervisor-otelcontribcol: docker-otelcontribcol
+	COMPONENT=opampsupervisor $(MAKE) docker-component
 
 .PHONY: docker-telemetrygen
 docker-telemetrygen:
@@ -368,6 +372,9 @@ gengithub: $(GITHUBGEN)
 .PHONY: gendistributions
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
+
+gencodecov: $(CODECOVGEN)
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
@@ -433,6 +440,18 @@ telemetrygen:
 telemetrygenlite:
 	cd ./cmd/telemetrygen && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/telemetrygen_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) -ldflags $(GO_BUILD_LDFLAGS) .
+
+# Build the Supervisor executable.
+.PHONY: opampsupervisor
+opampsupervisor:
+	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
+# Build the golden executable.
+.PHONY: golden
+golden:
+	cd ./cmd/golden && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/golden_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
 
 MODULES="internal/buildscripts/modules"
 .PHONY: update-core-modules

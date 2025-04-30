@@ -2,6 +2,7 @@ k8sobjects:
   objects:
     - name: pods
       mode: pull
+      interval: 1h
       label_selector: environment in (production),tier in (frontend)
       field_selector: status.phase=Running
     - name: events
@@ -13,9 +14,11 @@ k8sobjects/pull_with_resource:
   objects:
     - name: pods
       mode: pull
+      interval: 1h
       resource_version: "1"
     - name: events
       mode: pull
+      interval: 1h
 k8sobjects/watch_with_resource:
   objects:
     - name: events
@@ -36,3 +39,7 @@ k8sobjects/exclude_deleted_with_pull:
     - name: events
       mode: pull
       exclude_watch_type: [DELETED]
+k8sobjects/invalid_mode:
+  objects:
+    - name: pods
+      mode: invalid_mode
