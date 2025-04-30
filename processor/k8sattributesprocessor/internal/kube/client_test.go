@@ -1454,8 +1454,8 @@ func TestDeploymentExtractionRules(t *testing.T) {
 				},
 			},
 			attributes: map[string]string{
-				"k8s.deployment.label.l1":      "lv1",
-				"k8s.deployment.annotation.a1": "av1",
+				"l1": "lv1",
+				"a1": "av1",
 			},
 		},
 		{
