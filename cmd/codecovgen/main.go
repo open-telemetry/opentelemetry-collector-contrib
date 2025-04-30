@@ -125,11 +125,9 @@ var (
 	defaultSuffixList = []string{
 		"receiver",
 		"exporter",
-		"encodingextension", // needs to be before "extension"
 		"extension",
 		"processor",
 		"connector",
-		"provider",
 		"scraper",
 	}
 )

@@ -370,7 +370,7 @@ gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
 gencodecov: $(CODECOVGEN)
-	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
