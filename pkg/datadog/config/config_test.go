@@ -31,7 +31,7 @@ func TestValidate(t *testing.T) {
 	maxConnPerHost := 250
 	ty, err := component.NewType("ty")
 	assert.NoError(t, err)
-	auth := configauth.Authentication{AuthenticatorID: component.NewID(ty)}
+	auth := configauth.Config{AuthenticatorID: component.NewID(ty)}
 
 	tests := []struct {
 		name string
