@@ -27,15 +27,14 @@ func Test_SpanFunctions(t *testing.T) {
 	}
 }
 
-type TestSpanFuncArguments[K any] struct {
-}
+type TestSpanFuncArguments[K any] struct{}
 
 func NewTestSpanFuncFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TestSpanFunc", &TestSpanFuncArguments[K]{}, createTestSpanFunc[K])
 }
 
-func createTestSpanFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (any, error) {
+func createTestSpanFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, tCtx K) (any, error) {
 		return nil, nil
 	}, nil
 }

@@ -1425,7 +1425,7 @@ func Test_NewProcessor_AdditionalSpanFuncs(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestSpanFunc())`},
 				},
 			},
-			wantErrorWith:       fmt.Sprintf(`undefined function "TestSpanFunc"`),
+			wantErrorWith:       `undefined function "TestSpanFunc"`,
 			additionalSpanFuncs: EmptyAdditionalSpanFuncs,
 		},
 	}

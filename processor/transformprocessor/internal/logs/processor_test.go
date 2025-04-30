@@ -1302,7 +1302,7 @@ func Test_NewProcessor_AdditionalLogFuncs(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestLogFunc())`},
 				},
 			},
-			wantErrorWith:      fmt.Sprintf(`undefined function "TestLogFunc"`),
+			wantErrorWith:      `undefined function "TestLogFunc"`,
 			additionalLogFuncs: EmptyAdditionalLogFuncs,
 		},
 	}

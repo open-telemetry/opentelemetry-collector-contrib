@@ -24,15 +24,14 @@ func Test_LogFunctions(t *testing.T) {
 	}
 }
 
-type TestLogFuncArguments[K any] struct {
-}
+type TestLogFuncArguments[K any] struct{}
 
 func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TestLogFunc", &TestLogFuncArguments[K]{}, createTestLogFunc[K])
 }
 
-func createTestLogFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (any, error) {
+func createTestLogFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, tCtx K) (any, error) {
 		return nil, nil
 	}, nil
 }
@@ -45,7 +44,7 @@ func Test_LogFunctions_AdditionalLogFuncs(t *testing.T) {
 	additionalLogFuncs := []ottl.Factory[ottllog.TransformContext]{testLogFuncFactory}
 	actual := LogFunctions(additionalLogFuncs)
 
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}

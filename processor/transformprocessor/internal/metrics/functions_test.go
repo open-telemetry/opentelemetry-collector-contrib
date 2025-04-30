@@ -69,15 +69,14 @@ func Test_MetricFunctions(t *testing.T) {
 	}
 }
 
-type TestMetricFuncArguments[K any] struct {
-}
+type TestMetricFuncArguments[K any] struct{}
 
 func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
 	return ottl.NewFactory("TestMetricFunc", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
 }
 
-func createTestMetricFunc[K any](_ ottl.FunctionContext, oArgs ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(ctx context.Context, tCtx K) (any, error) {
+func createTestMetricFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, tCtx K) (any, error) {
 		return nil, nil
 	}, nil
 }
@@ -99,7 +98,7 @@ func Test_MetricFunctions_AdditionalMetricFuncs(t *testing.T) {
 	additionalMetricFuncs := []ottl.Factory[ottlmetric.TransformContext]{testMetricFuncFactory}
 	actual := MetricFunctions(additionalMetricFuncs)
 
-	require.Equal(t, len(expected), len(actual))
+	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
 	}

@@ -2038,7 +2038,7 @@ func Test_NewProcessor_AdditionalMetricFuncs(t *testing.T) {
 					Statements: []string{`set(cache["attr"], TestMetricFunc())`},
 				},
 			},
-			wantErrorWith:         fmt.Sprintf(`undefined function "TestMetricFunc"`),
+			wantErrorWith:         `undefined function "TestMetricFunc"`,
 			additionalMetricFuncs: EmptyAdditionalMetricFuncs,
 		},
 	}
