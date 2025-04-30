@@ -66,6 +66,7 @@ func TestScrape(t *testing.T) {
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeCPU.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeLock.Enabled = true
 		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeTotal.Enabled = true
+		cfg.TopQueryCollection.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
 		scraper.sqlclient = &mockClient{
@@ -88,16 +89,6 @@ func TestScrape(t *testing.T) {
 		expectedFile := filepath.Join("testdata", "scraper", "expected.yaml")
 		expectedMetrics, err := golden.ReadMetrics(expectedFile)
 		require.NoError(t, err)
-
-		//expectedNames := make([]string, expectedMetrics.MetricCount())
-		//for _, nm := range expectedMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
-		//	expectedNames = append(expectedNames, nm.Name())
-		//}
-		//for _, nm := range actualMetrics.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().All() {
-		//	if !slices.Contains(expectedNames, nm.Name()) {
-		//		t.Errorf("Unexpected metric name: %s", nm.Name())
-		//	}
-		//}
 
 		require.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, actualMetrics, pmetrictest.IgnoreMetricsOrder(),
 			pmetrictest.IgnoreMetricDataPointsOrder(), pmetrictest.IgnoreStartTimestamp(), pmetrictest.IgnoreTimestamp()))
@@ -514,7 +505,7 @@ func (c *mockClient) getQueryStats(since int64, topCount int) ([]QueryStats, err
 	return stats, nil
 }
 func (c *mockClient) getExplainPlanAsJsonForDigestQuery(digest string) (string, error) {
-	return "TEST EXPLAIN PLAN", nil
+	return "{\"query\": \"none\", \"query_plan\": {}}", nil
 }
 func (c *mockClient) checkPerformanceCollectionSettings() {}
 
