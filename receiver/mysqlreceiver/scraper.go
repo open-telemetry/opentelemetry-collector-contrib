@@ -4,8 +4,10 @@
 package mysqlreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -598,12 +600,36 @@ Note that individual metric values are tracked and reported similarly to the que
 */
 func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) plog.Logs {
 	m.logger.Debug("scrapeQueryLogs called")
-	const eventNameKey = "db.server.top_query"
-	const executionCountKey = "mysql.execution_count"
-	const totalRowsKey = "mysql.total_rows"
-	const totalElapsedTimeKey = "mysql.total_elapsed_time"
-	const queryTextKey = "db.query.text"
-	const queryHashKey = "mysql.query_hash"
+	if !m.config.TopQueryCollection.Enabled {
+		m.logger.Debug("Top query collection is disabled, skipping")
+		return plog.Logs{}
+	}
+	const (
+		eventNameKey         = "db.server.top_query"
+		executionCountKey    = "mysql.execution_count"
+		fullJoinsKey         = "mysql.query.full_joins"
+		fullRangeJoinsKey    = "mysql.query.full_range_joins"
+		noGoodIndexUsedKey   = "mysql.query.no_good_indexes_used"
+		noIndexUsedKey       = "mysql.query.no_indexes_used"
+		queryDbsKey          = "mysql.query.dbs"
+		queryHashKey         = "mysql.query_hash"
+		queryHostsKey        = "mysql.query.hosts"
+		querySchemasKey      = "mysql.query.schemas"
+		queryTextKey         = "db.query.text"
+		queryUsersKey        = "mysql.query.users"
+		rowsAffectedKey      = "mysql.query.rows.affected"
+		rowsReturnedKey      = "mysql.query.rows.returned"
+		selectRangeChecksKey = "mysql.query.select_range_checks"
+		selectRangesKey      = "mysql.query.select_ranges"
+		selectScansKey       = "mysql.query.select_scans"
+		sortMergePassesKey   = "mysql.query.sort.merge_passes"
+		sortRangesKey        = "mysql.query.sort.ranges"
+		sortScansKey         = "mysql.query.sort.scans"
+		timeCpuKey           = "mysql.query.time.cpu"
+		timeLockKey          = "mysql.query.time.lock"
+		totalElapsedTimeKey  = "mysql.total_elapsed_time"
+		totalRowsKey         = "mysql.total_rows"
+	)
 	queryStats, err := m.sqlclient.getQueryStats(m.lastLogsQueryMetricsGatheringTime, m.config.TopQueryCollection.TopQueryCount)
 	m.lastLogsQueryMetricsGatheringTime = now.AsTime().UnixNano()
 	if err != nil {
@@ -647,6 +673,34 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 		atts.PutDouble(totalElapsedTimeKey, s.totalDuration)
 		atts.PutStr(queryTextKey, s.queryText)
 		atts.PutStr(queryHashKey, s.queryDigest)
+		atts.PutInt(rowsReturnedKey, s.rowsReturned)
+		atts.PutDouble(timeCpuKey, s.cpuTime)
+		atts.PutDouble(timeLockKey, s.lockTime)
+		// Additional values added for good measure
+		atts.PutInt(rowsAffectedKey, s.rowsAffected)
+		atts.PutInt(fullJoinsKey, s.fullJoins)
+		atts.PutInt(fullRangeJoinsKey, s.fullRangeJoins)
+		atts.PutInt(selectRangesKey, s.selectRanges)
+		atts.PutInt(selectRangeChecksKey, s.selectRangesChecks)
+		atts.PutInt(selectScansKey, s.selectScans)
+		atts.PutInt(sortMergePassesKey, s.sortMergePasses)
+		atts.PutInt(sortRangesKey, s.sortRanges)
+		atts.PutInt(sortScansKey, s.sortScans)
+		atts.PutInt(noIndexUsedKey, s.noIndexUsed)
+		atts.PutInt(noGoodIndexUsedKey, s.noGoodIndexUsed)
+		if s.schema != "" {
+			atts.PutStr(querySchemasKey, s.schema)
+		}
+		if s.users != "" {
+			atts.PutStr(queryUsersKey, s.users)
+		}
+		if s.hosts != "" {
+			atts.PutStr(queryHostsKey, s.hosts)
+		}
+		if s.dbs != "" {
+			atts.PutStr(queryDbsKey, s.dbs)
+		}
+
 	}
 	// wait until all of the explain plan go-routines have returned
 	wg.Wait()
@@ -656,11 +710,11 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 
 func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
 	defer wg.Done()
-	const plan_key = "mysql.query_plan"
-	const plan_hash_key = "mysql.query_plan_hash"
+	const planKey = "mysql.query_plan"
+	const planHashKey = "mysql.query_plan_hash"
 	// if the query string ends with "...", it means that the query is truncated and cannot be used to derive a plan
 	if strings.LastIndex(queryString, "...") == len(queryString)-3 {
-		log.Attributes().PutStr(plan_key, "INCOMPLETE QUERY; UNABLE TO DERIVE PLAN")
+		log.Attributes().PutStr(planKey, "Truncated example query; unable to derive EXPLAIN plan. ")
 		return
 	}
 	queryPlan, err := m.sqlclient.getExplainPlanAsJsonForDigestQuery(queryString)
@@ -669,18 +723,23 @@ func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryStri
 		return
 	}
 	if len(queryPlan) == 0 {
-		log.Attributes().PutStr(plan_key, "NO EXPLAIN PLAN FOUND")
+		log.Attributes().PutStr(planKey, "NO EXPLAIN PLAN FOUND")
 		return
 	}
-	log.Attributes().PutStr(plan_key, queryPlan)
+	buffer := &bytes.Buffer{}
+	if err = json.Compact(buffer, []byte(queryPlan)); err != nil {
+		m.logger.Error("Failed to compact query plan JSON", zap.Error(err))
+	}
+	log.Attributes().PutStr(planKey, buffer.String())
 
 	planHash := sha256.New()
 	_, err = planHash.Write([]byte(queryPlan))
 	if err != nil {
 		m.logger.Error("Failed to hash query plan", zap.Error(err))
+		log.Attributes().PutStr(planHashKey, "UNABLE TO HASH QUERY PLAN")
 		return
 	}
-	log.Attributes().PutStr(plan_hash_key, fmt.Sprintf("%x", planHash.Sum(nil)))
+	log.Attributes().PutStr(planHashKey, fmt.Sprintf("%x", planHash.Sum(nil)))
 }
 
 func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QueryStats {
@@ -710,6 +769,10 @@ func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QuerySta
 }
 
 func (m *mySQLScraper) scrapeQueryMetrics(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	if !m.config.TopQueryCollection.Enabled {
+		m.logger.Debug("Top query collection is disabled, skipping")
+		return
+	}
 	queryStats, err := m.sqlclient.getQueryStats(m.lastMetricsQueryMetricsGatheringTime, int(m.config.TopQueryCollection.TopQueryCount))
 	m.lastMetricsQueryMetricsGatheringTime = now.AsTime().UnixNano()
 	if err != nil {
