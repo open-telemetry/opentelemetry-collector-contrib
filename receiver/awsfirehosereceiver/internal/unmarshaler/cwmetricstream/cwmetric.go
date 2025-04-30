@@ -75,7 +75,7 @@ func (v *cWMetricValue) UnmarshalJSON(data []byte) error {
 		v.Count = count
 	}
 
-	v.Percentiles = make(map[string]float64)
+	v.Percentiles = make(map[string]float64, 0, len(rawFields)-4)
 
 	// Extract any percentile fields (fields starting with 'p')
 	for key, value := range rawFields {
