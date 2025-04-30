@@ -459,7 +459,7 @@ func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K]
 				return err
 			}
 			v := pcommon.NewValueEmpty()
-			if err = v.FromRaw(val); err != nil {
+			if err = ctxutil.SetIndexableValue[K](ctx, tCtx, v, val, key[1:]); err != nil {
 				return err
 			}
 			return PutAttribute(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile(), *newKey, v)
