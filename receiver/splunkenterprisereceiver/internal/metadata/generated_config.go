@@ -109,7 +109,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkHealth: MetricConfig{
-			Enabled: false,
+			Enabled: true,
 		},
 		SplunkIndexerAvgRate: MetricConfig{
 			Enabled: false,
