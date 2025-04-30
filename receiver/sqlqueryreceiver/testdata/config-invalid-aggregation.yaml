@@ -1,14 +1,7 @@
 sqlquery:
   collection_interval: 10s
-  driver: postgres
-  datasource:
-    host: localhost
-    port: 5432
-    database: mydb
-    username: me
-    password: s3cr3t
-    additional_params:
-      sslmode: disable
+  driver: mydriver
+  datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
   queries:
     - sql: "select count(*) as count, type from mytable group by type"
       metrics:
