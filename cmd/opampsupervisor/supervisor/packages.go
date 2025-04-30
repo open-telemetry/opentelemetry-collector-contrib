@@ -210,7 +210,7 @@ func (p *packageManager) UpdateContent(ctx context.Context, packageName string, 
 	tar := tar.NewReader(gzipReader)
 	h, err := tar.Next()
 	if err != nil {
-		return fmt.Errorf("read tarball for collector: %w", err)
+		return fmt.Errorf("first tarball read for collector: %w", err)
 	}
 
 	for h.Name != "otelcol-contrib" {

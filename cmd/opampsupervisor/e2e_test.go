@@ -1970,8 +1970,8 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	server := newOpAMPServer(
 		t,
 		defaultConnectingHandler,
-		types.ConnectionCallbacks{
-			OnMessage: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
+		server.ConnectionCallbacksStruct{
+			OnMessageFunc: func(_ context.Context, _ types.Connection, message *protobufs.AgentToServer) *protobufs.ServerToAgent {
 				select {
 				case agentIDChan <- message.InstanceUid:
 				default:
@@ -2009,18 +2009,19 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 
 	t.Logf("Supervisor connected")
 
-	agentVersion := "0.121.0"
-	agentName := fmt.Sprintf("otelcol-contrib_0.121.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
-	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s", agentName)
-	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s.sig", agentName)
-	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.121.0/%s.pem", agentName)
+	agentVersion := "0.110.0"
+	agentHash := []byte{0xab, 0x90, 0x7a, 0xe9, 0xce, 0x1, 0xa5, 0x5d, 0xd9, 0x35, 0x6c, 0x79, 0x7e, 0x82, 0x7b, 0x53, 0x1c, 0x72, 0xea, 0x40, 0xd6, 0x44, 0xca, 0xc1, 0xb, 0x73, 0xee, 0x4e, 0x4e, 0x2b, 0x10, 0x4c}
+	agentName := fmt.Sprintf("otelcol-contrib_0.110.0_%s_%s.tar.gz", runtime.GOOS, runtime.GOARCH)
+	agentURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s", agentName)
+	agentSigURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.sig", agentName)
+	agentCertURL := fmt.Sprintf("https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v0.110.0/%s.pem", agentName)
 
-	agentHash := getHTTPBodyHash(t, agentURL)
-	cert := getHTTPBodyContents(t, agentCertURL)
-	sig := getHTTPBodyContents(t, agentSigURL)
+	cert := getFileContents(t, agentCertURL)
+	sig := getFileContents(t, agentSigURL)
 
 	signatureField := bytes.Join([][]byte{cert, sig}, []byte(" "))
 
+	// TODO: Verify intital package statuses makes sense
 	<-packageStatusesChan
 	<-agentDescriptionChan
 	agentID := <-agentIDChan
@@ -2030,7 +2031,7 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 			Packages: map[string]*protobufs.PackageAvailable{
 				"": {
 					Type:    protobufs.PackageType_PackageType_TopLevel,
-					Version: agentVersion,
+					Version: "v" + agentVersion,
 					Hash:    []byte{0x01, 0x02},
 					File: &protobufs.DownloadableFile{
 						DownloadUrl: agentURL,
@@ -2048,10 +2049,12 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 	require.Equal(t, &protobufs.PackageStatuses{
 		Packages: map[string]*protobufs.PackageStatus{
 			"": {
+				// TODO: Should initital version be filled in?
+				// What about the hash?
 				Name:                 "",
 				AgentHasVersion:      "",
 				AgentHasHash:         nil,
-				ServerOfferedVersion: agentVersion,
+				ServerOfferedVersion: "v" + agentVersion,
 				ServerOfferedHash:    []byte{0x01, 0x02},
 				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installing,
 			},
@@ -2064,9 +2067,9 @@ func TestSupervisorUpgradesAgent(t *testing.T) {
 		Packages: map[string]*protobufs.PackageStatus{
 			"": {
 				Name:                 "",
-				AgentHasVersion:      agentVersion,
+				AgentHasVersion:      "v" + agentVersion,
 				AgentHasHash:         []byte{0x01, 0x02},
-				ServerOfferedVersion: agentVersion,
+				ServerOfferedVersion: "v" + agentVersion,
 				ServerOfferedHash:    []byte{0x01, 0x02},
 				Status:               protobufs.PackageStatusEnum_PackageStatusEnum_Installed,
 			},
@@ -2205,7 +2208,7 @@ func TestSupervisorEmitBootstrapTelemetry(t *testing.T) {
 	require.Equal(t, ptrace.StatusCodeOk, mockBackend.ReceivedTraces[0].ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0).Status().Code())
 }
 
-func getHTTPBodyContents(t *testing.T, url string) []byte {
+func getFileContents(t *testing.T, url string) []byte {
 	r, err := http.Get(url)
 	require.NoError(t, err)
 	defer r.Body.Close()
@@ -2214,17 +2217,6 @@ func getHTTPBodyContents(t *testing.T, url string) []byte {
 	require.NoError(t, err)
 
 	return by
-}
-
-func getHTTPBodyHash(t *testing.T, url string) []byte {
-	resp, err := http.Get(url)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	hasher := sha256.New()
-	_, err = io.Copy(hasher, resp.Body)
-	require.NoError(t, err)
-	return hasher.Sum(nil)
 }
 
 func copyFile(t *testing.T, from, to string) {
