@@ -199,17 +199,32 @@ type ReplicaStatusStats struct {
 }
 
 type QueryStats struct {
-	queryText     string  // The MySQL normalized query text
-	queryDigest   string  // The MySQL query digest against the normalized query text
-	schema        string  // schemas the query was run against
-	count         int64   // The number of times the query was run since the provided timestamp
-	lockTime      float64 // The total lock time for the query since the provided timestamp
-	cpuTime       float64 // The total CPU time for the query since the provided timestamp
-	rowsExamined  int64   // The total number of rows examined for the query since the provided timestamp
-	rowsReturned  int64   // The total number of rows returned for the query since the provided timestamp
-	totalDuration float64 // The total duration of all calls to this query since the provided timestamp
-	totalWait     int64   // The total wait time for all calls to this query since the database last started
-	querySample   string  // A sample of a literal query text for use in an EXPLAIN call
+	queryText          string  // The MySQL normalized query text
+	queryDigest        string  // The MySQL query digest against the normalized query text
+	schema             string  // schemas the query was run against
+	count              int64   // The number of times the query was run since the provided timestamp
+	lockTime           float64 // The total lock time for the query since the provided timestamp
+	cpuTime            float64 // The total CPU time for the query since the provided timestamp
+	rowsExamined       int64   // The total number of rows examined for the query since the provided timestamp
+	rowsReturned       int64   // The total number of rows returned for the query since the provided timestamp
+	totalDuration      float64 // The total duration of all calls to this query since the provided timestamp
+	totalWait          int64   // The total wait time for all calls to this query since the database last started
+	rowsAffected       int64   // The total number of rows affected for the query since the provided timestamp
+	fullJoins          int64   // The total number of full joins for the query since the provided timestamp
+	fullRangeJoins     int64   // The total number of full range joins for the query since the provided timestamp
+	selectRanges       int64   // The total number of select ranges for the query since the provided timestamp
+	selectRangesChecks int64   // The total number of select range checks for the query since the provided timestamp
+	selectScans        int64   // The total number of select scans for the query since the provided timestamp
+	sortMergePasses    int64   // The total number of sort merge passes for the query since the provided timestamp
+	sortRanges         int64   // The total number of sort ranges for the query since the provided timestamp
+	sortRows           int64   // The total number of sort rows for the query since the provided timestamp
+	sortScans          int64   // The total number of sort scans for the query since the provided timestamp
+	noIndexUsed        int64   // The total number of times no index was used for the query since the provided timestamp
+	noGoodIndexUsed    int64   // The total number of times no good index was used for the query since the provided timestamp
+	users              string  // The users that ran the query since the provided timestamp
+	hosts              string  // The hosts that ran the query since the provided timestamp
+	dbs                string  // The databases that ran the query since the provided timestamp
+	querySample        string  // A sample of a literal query text for use in an EXPLAIN call
 
 	diffTime int64 // only used during sort, not in scan
 }
@@ -709,14 +724,31 @@ func (c *mySQLClient) getQueryStats(since int64, topCount int) ([]QueryStats, er
 		"sum(A.timer_wait)/1e12 AS duration, " +
 		"sum(A.rows_sent) AS rows_returned, " +
 		"sum(B.sum_timer_wait) AS total_wait, " +
+		"sum(A.rows_affected) AS rows_affected, " +
+		"sum(A.select_full_join) AS full_joins, " +
+		"sum(A.select_full_range_join) AS full_range_joins, " +
+		"sum(A.select_range) AS select_ranges, " +
+		"sum(A.select_range_check) AS select_range_checks, " +
+		"sum(A.select_scan) AS select_scans, " +
+		"sum(A.sort_merge_passes) AS sort_merge_passes, " +
+		"sum(A.sort_range) AS sort_ranges, " +
+		"sum(A.sort_rows) AS sort_rows, " +
+		"sum(A.sort_scan) AS sort_scans, " +
+		"sum(A.no_index_used) AS no_index_used, " +
+		"sum(A.no_good_index_used) AS no_good_index_used, " +
+		"JSON_ARRAYAGG(C.processlist_user) AS users, " +
+		"JSON_ARRAYAGG(C.processlist_host) AS hosts, " +
+		"JSON_ARRAYAGG(C.processlist_db) AS dbs, " +
 		"ANY_VALUE(A.SQL_TEXT) AS literal_query_sample " +
 		"FROM performance_schema.events_statements_history AS A, " +
-		"performance_schema.events_statements_summary_by_digest AS B " +
+		"performance_schema.events_statements_summary_by_digest AS B, " +
+		"performance_schema.threads AS C " +
 		"WHERE A.event_name = 'statement/sql/select' " +
 		"AND A.digest_text IS NOT NULL " +
 		"AND A.digest_text NOT LIKE 'EXPLAIN%' " +
 		"AND A.timer_start > " + strconv.FormatInt(since*1000, 10) + " " + // MySQL stores the info as Picoseconds
 		"AND A.digest = B.digest " +
+		"AND A.thread_id = C.thread_id " +
 		"GROUP BY hash, query_text " +
 		"ORDER BY duration desc " +
 		"LIMIT " + strconv.FormatInt(int64(topCount), 10) + ";"
@@ -730,6 +762,9 @@ func (c *mySQLClient) getQueryStats(since int64, topCount int) ([]QueryStats, er
 	for rows.Next() {
 		var s QueryStats
 		var schemas sql.NullString
+		var users sql.NullString
+		var hosts sql.NullString
+		var dbs sql.NullString
 		err := rows.Scan(
 			&s.queryText,
 			&s.queryDigest,
@@ -741,9 +776,27 @@ func (c *mySQLClient) getQueryStats(since int64, topCount int) ([]QueryStats, er
 			&s.totalDuration,
 			&s.rowsReturned,
 			&s.totalWait,
+			&s.rowsAffected,
+			&s.fullJoins,
+			&s.fullRangeJoins,
+			&s.selectRanges,
+			&s.selectRangesChecks,
+			&s.selectScans,
+			&s.sortMergePasses,
+			&s.sortRanges,
+			&s.sortRows,
+			&s.sortScans,
+			&s.noIndexUsed,
+			&s.noGoodIndexUsed,
+			&users,
+			&hosts,
+			&dbs,
 			&s.querySample,
 		)
 		s.schema = stringifyJsonStringArray(schemas)
+		s.users = stringifyJsonStringArray(users)
+		s.hosts = stringifyJsonStringArray(hosts)
+		s.dbs = stringifyJsonStringArray(dbs)
 
 		if err != nil {
 			return nil, err
@@ -756,13 +809,31 @@ func (c *mySQLClient) getQueryStats(since int64, topCount int) ([]QueryStats, er
 func (c *mySQLClient) getExplainPlanAsJsonForDigestQuery(query string) (string, error) {
 	// The EXPLAIN FORMAT=JSON statement is used to get the execution plan for a query in JSON format.
 	// This is useful for analyzing how MySQL will execute the query and can help identify performance issues.
-	explainQuery := fmt.Sprintf("EXPLAIN FORMAT=JSON %s", query)
-	rows, err := c.client.Query(explainQuery)
+	tx, err := c.client.Begin()
+	defer func(tx *sql.Tx) {
+		err := tx.Rollback()
+		if err != nil {
+			c.logger.Error("MySQL EXPLAIN transaction rollback failed", zap.Error(err))
+		}
+	}(tx)
+	if err != nil {
+		c.logger.Error("MySQL EXPLAIN transaction begin failed", zap.Error(err))
+		return "", err
+	}
+
+	_, err = tx.Query("SET explain_json_format_version=2")
+	if err != nil {
+		c.logger.Warn("MySQL SET explain_json_format_version=2 returned an error", zap.Error(err))
+		return "", err
+	}
+
+	explainQuery := fmt.Sprintf("EXPLAIN ANALYZE FORMAT=JSON %s;", query)
+	rows, err := tx.Query(explainQuery)
 	if err != nil {
 		// errors are typically gathered and handled by the caller, but in this case we want to be sure we see the updated
 		// query that caused the error in the logs.
 		// NOTE
-		c.logger.Warn("MySQL EXPLAIN returned an error for query", zap.String("query", query), zap.Error(err))
+		c.logger.Warn("MySQL EXPLAIN returned an error for query", zap.String("query", explainQuery), zap.Error(err))
 		return "", err
 	}
 	defer rows.Close()
@@ -817,6 +888,15 @@ func (c *mySQLClient) checkPerformanceCollectionSettings() {
 			}
 		}
 	}
+	var colname string
+	var digestTextLen int
+	err = c.client.QueryRow("show variables like 'performance_schema_max_sql_text_length';").Scan(&colname, &digestTextLen)
+	if err != nil {
+		c.logger.Error("Error checking setup_consumers", zap.Error(err))
+		return
+	}
+	c.logger.Info("Performance schema max SQL text length; EXPLAIN plans expected for queries longer than this value cannot be generated.", zap.Int("performance_schema_max_sql_text_length", digestTextLen))
+
 }
 
 func stringifyJsonStringArray(input sql.NullString) string {
@@ -826,7 +906,7 @@ func stringifyJsonStringArray(input sql.NullString) string {
 	// take out quotes, brackets, and spaces
 	str := stringArrayRegex.ReplaceAllString(input.String, "")
 	str = strings.ReplaceAll(str, "null", "")
-	//split on commas
+	// split on commas
 	strSlice := strings.Split(str, ",")
 	// sort so that Compact works
 	slices.Sort(strSlice)
