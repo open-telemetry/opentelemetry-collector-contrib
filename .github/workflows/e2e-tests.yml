@@ -131,6 +131,7 @@ jobs:
           - processor/k8sattributesprocessor
           - receiver/kubeletstatsreceiver
           - receiver/k8sobjectsreceiver
+          - extension/observer/k8sobserver
     runs-on: ubuntu-24.04
     needs: docker-build
     steps:

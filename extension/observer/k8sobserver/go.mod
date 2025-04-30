@@ -160,3 +160,5 @@ retract (
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatautil => ../../../pkg/pdatautil
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
+
+replace google.golang.org/genproto => google.golang.org/genproto v0.0.0-20200526211855-cb27e3aa2013
