@@ -7,7 +7,7 @@ sqlquery:
       metrics:
         - metric_name: val.count
           value_column: "count"
-          attribute_columns: ["type"]
+          attribute_columns: [ "type" ]
           data_type: xyzgauge
           value_type: int
           monotonic: false
