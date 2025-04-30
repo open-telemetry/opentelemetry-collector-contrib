@@ -1,6 +1,0 @@
-change_type: bug_fix
-component: sqlqueryreceiver
-issues: [39270]
-change_logs: [user]
-
-note: respect `max_open_conn` configuration for multiple queries

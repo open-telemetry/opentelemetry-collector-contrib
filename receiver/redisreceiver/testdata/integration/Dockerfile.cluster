@@ -1,5 +1,5 @@
 # Use the official Redis image as the base
-FROM redis:7.4.2
+FROM redis:7.4.3
 
 RUN apt update && apt install --assume-yes socat
 

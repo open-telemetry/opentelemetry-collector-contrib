@@ -45,7 +45,7 @@ func createDefaultConfig() component.Config {
 		MaximumNumberOfMetricsInACall:     20,
 		MaximumNumberOfRecordsPerResource: 10,
 		Services:                          monitorServices,
-		Authentication:                    servicePrincipal,
+		Credentials:                       servicePrincipal,
 		Cloud:                             defaultCloud,
 	}
 }
