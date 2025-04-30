@@ -20,8 +20,8 @@ sqlquery:
           # Note that COUNT and GENRE are now all capital letters, the queries will return nothing if this isn't
           # accounted for.
           value_column: "COUNT"
-          attribute_columns: [GENRE]
+          attribute_columns: [ GENRE ]
         - metric_name: genre.imdb
           value_column: "AVG"
-          attribute_columns: [GENRE]
+          attribute_columns: [ GENRE ]
           value_type: "double"
