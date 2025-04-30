@@ -1,0 +1,8 @@
+type: googlesecretsprovider
+
+status:
+  class: provider
+  stability:
+    development: [provider]
+  codeowners:
+    active: [dashpole, XuechunHou]
