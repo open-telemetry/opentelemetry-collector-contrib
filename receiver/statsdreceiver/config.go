@@ -6,6 +6,7 @@ package statsdreceiver // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/lightstep/go-expohisto/structure"
@@ -24,6 +25,8 @@ type Config struct {
 	EnableSimpleTags        bool                             `mapstructure:"enable_simple_tags"`
 	IsMonotonicCounter      bool                             `mapstructure:"is_monotonic_counter"`
 	TimerHistogramMapping   []protocol.TimerHistogramMapping `mapstructure:"timer_histogram_mapping"`
+	// Will only be used when transport set to 'unixgram'.
+	SocketPermissions os.FileMode `mapstructure:"socket_permissions"`
 }
 
 func (c *Config) Validate() error {
