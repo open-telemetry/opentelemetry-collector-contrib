@@ -21,18 +21,17 @@ tests:
         # https://github.com/snowflakedb/gosnowflake/issues/1369
         - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"
   config:
-    tests::config:
-      driver: postgres
-      datasource:
-        host: localhost
-        port: 5432
-        database: test
-        username: test
-        password: test
-      queries:
-        - sql: "SELECT 1"
-          metrics:
-            - metric_name: test_metric
-              value_column: "1"
-              value_type: int
-              data_type: gauge
+    driver: postgres
+    datasource:
+      host: localhost
+      port: 5432
+      database: test
+      username: test
+      password: test
+    queries:
+      - sql: "SELECT 1"
+        metrics:
+          - metric_name: test_metric
+            value_column: "1"
+            value_type: int
+            data_type: gauge
