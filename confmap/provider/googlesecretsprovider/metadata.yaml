@@ -5,4 +5,4 @@ status:
   stability:
     development: [provider]
   codeowners:
-    active: [dashpole, XuechunHou]
+    active: [dashpole]
