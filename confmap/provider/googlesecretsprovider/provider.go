@@ -48,7 +48,6 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 	if p.client == nil {
 		client, err := secretmanager.NewClient(ctx)
 		if err != nil {
-
 			return nil, fmt.Errorf("failed to create a Google secret manager client: %w", err)
 		}
 		defer client.Close()
@@ -58,16 +57,15 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 		Name: secretName,
 	}
 	resp, err := p.client.AccessSecretVersion(ctx, req)
-
 	if err != nil {
 		var apiErr *apierror.APIError
 		apiErr, ok := apierror.FromError(err)
+		errorMsg := "failed to access secret version:"
 		if !ok {
-			return nil, fmt.Errorf("failed to access secret version: %w", err)
+			return nil, fmt.Errorf(errorMsg+": %w", err)
 		}
-		return nil, fmt.Errorf("failed to access secret version: %v", apiErr.Error())
+		return nil, fmt.Errorf(errorMsg+": %v", apiErr.Error())
 	}
-
 	return confmap.NewRetrieved(string(resp.GetPayload().GetData()))
 }
 

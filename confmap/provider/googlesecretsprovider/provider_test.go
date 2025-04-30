@@ -80,7 +80,6 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 		uri               string
 		testSecretManager *mockSecretsManagerClient
 	}{
-
 		{
 			name: "Invalid scheme",
 			uri:  "invalidscheme" + ":projects/my-project/secrets/test-secret-id/versions/1",
@@ -99,7 +98,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 		},
 		{
 			name: "invalid secret name",
-			uri:  schemeName + ":projects/my-project/secrets-invalid/non-existent/versions-invalid/1",
+			uri:  schemeName + ":projects/my-project/invalid-secret/test-secret-id/versions/1",
 			testSecretManager: &mockSecretsManagerClient{
 				err:          errors.New("secret name is invalid"),
 				secretString: "test-secret-value",
@@ -120,6 +119,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 		})
 	}
 }
+
 func TestFactory(t *testing.T) {
 	p := NewFactory().Create(confmap.ProviderSettings{})
 	_, ok := p.(*provider)
