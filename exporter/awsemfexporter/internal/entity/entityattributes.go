@@ -15,6 +15,7 @@ const (
 	AttributeEntityServiceNameSource     = AWSEntityPrefix + "service.name.source"
 	AttributeEntityPlatformType          = AWSEntityPrefix + "platform.type"
 	AttributeEntityInstanceID            = AWSEntityPrefix + "instance.id"
+	AttributeEntityAutoScalingGroup      = AWSEntityPrefix + "auto.scaling.group"
 
 	// Entity fields in EMF log
 	Service              = "Service"
@@ -27,6 +28,7 @@ const (
 	AWSServiceNameSource = "AWS.ServiceNameSource"
 	PlatformType         = "PlatformType"
 	InstanceID           = "EC2.InstanceId"
+	AutoscalingGroup     = "EC2.AutoScalingGroup"
 
 	// Possible values for PlatformType
 	AttributeEntityEKSPlatform = "AWS::EKS"
@@ -42,6 +44,7 @@ var attributeEntityToFieldMap = map[string]string{
 	AttributeEntityK8sNodeName:           K8sNode,
 	AttributeEntityPlatformType:          PlatformType,
 	AttributeEntityInstanceID:            InstanceID,
+	AttributeEntityAutoScalingGroup:      AutoscalingGroup,
 	AttributeEntityServiceNameSource:     AWSServiceNameSource,
 }
 
