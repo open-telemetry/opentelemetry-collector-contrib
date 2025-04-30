@@ -6,7 +6,7 @@ sqlquery:
     - sql: "select count(*) as count, type from mytable group by type"
       metrics:
         - metric_name: val.count
-          attribute_columns: ["type"]
+          attribute_columns: [ "type" ]
           data_type: gauge
           value_type: int
           monotonic: false
