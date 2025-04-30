@@ -37,12 +37,13 @@ func createDefaultConfig() component.Config {
 	scfg.Timeout = defaultMaxSearchWaitTime
 
 	return &Config{
-		IdxEndpoint:          httpCfg,
-		SHEndpoint:           httpCfg,
-		CMEndpoint:           httpCfg,
-		ControllerConfig:     scfg,
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
-		VersionInfo:          false,
+		IdxEndpoint:                  httpCfg,
+		SHEndpoint:                   httpCfg,
+		CMEndpoint:                   httpCfg,
+		ControllerConfig:             scfg,
+		MetricsBuilderConfig:         metadata.DefaultMetricsBuilderConfig(),
+		VersionInfo:                  false,
+		EnableHealthFeatureRecursion: false,
 	}
 }
 
