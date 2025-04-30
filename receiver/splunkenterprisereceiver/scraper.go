@@ -1798,12 +1798,26 @@ func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, i
 	if !s.conf.Metrics.SplunkHealth.Enabled {
 		return
 	}
-	i := info[typeCm].Entries[0].Content
+
+	var eptType string
+
+	if s.conf.IdxEndpoint.Endpoint != "" {
+		eptType = typeIdx
+	} else if s.conf.SHEndpoint.Endpoint != "" {
+		eptType = typeSh
+	} else if s.conf.CMEndpoint.Endpoint != "" {
+		eptType = typeCm
+	} else {
+		errs <- fmt.Errorf("no endpoint set for scraping")
+		return
+	}
+
+	i := info[eptType].Entries[0].Content
 
 	ept := apiDict[`SplunkHealth`]
 	var ha healthArtifacts
 
-	req, err := s.splunkClient.createAPIRequest(typeCm, ept)
+	req, err := s.splunkClient.createAPIRequest(eptType, ept)
 	if err != nil {
 		errs <- err
 		return
@@ -1832,15 +1846,21 @@ func (s *splunkScraper) traverseHealthDetailFeatures(details healthDetails, now 
 		return
 	}
 
+	healthColors := []string{"green", "yellow", "red"}
+
 	for k, feature := range details.Features {
-		if feature.Health != "red" {
-			s.settings.Logger.Debug(feature.Health)
-			s.mb.RecordSplunkHealthDataPoint(now, 1, k, feature.Health, i.Build, i.Version)
-		} else {
-			s.settings.Logger.Debug(feature.Health)
-			s.mb.RecordSplunkHealthDataPoint(now, 0, k, feature.Health, i.Build, i.Version)
+		// record metric for each Health color type for each feature
+		for _, color := range healthColors {
+			if color == feature.Health {
+				s.mb.RecordSplunkHealthDataPoint(now, 1, k, color, i.Build, i.Version)
+			} else {
+				s.mb.RecordSplunkHealthDataPoint(now, 0, k, color, i.Build, i.Version)
+			}
 		}
-		s.traverseHealthDetailFeatures(feature, now, i)
+
+		if s.conf.EnableHealthFeatureRecursion {
+			s.traverseHealthDetailFeatures(feature, now, i)
+		}
 	}
 }
 
