@@ -73,23 +73,7 @@ type point struct {
 	Value     float64
 }
 
-func TestIntegration_NativeOTelAPMStatsIngest(t *testing.T) {
-	previousVal := datadogconnector.NativeIngestFeatureGate.IsEnabled()
-	err := featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), true)
-	require.NoError(t, err)
-	defer func() {
-		err = featuregate.GlobalRegistry().Set(datadogconnector.NativeIngestFeatureGate.ID(), previousVal)
-		require.NoError(t, err)
-	}()
-
-	testIntegration(t)
-}
-
-func TestIntegration_LegacyOTelAPMStatsIngest(t *testing.T) {
-	testIntegration(t)
-}
-
-func testIntegration(t *testing.T) {
+func TestIntegration(t *testing.T) {
 	// 1. Set up mock Datadog server
 	// See also https://github.com/DataDog/datadog-agent/blob/49c16e0d4deab396626238fa1d572b684475a53f/cmd/trace-agent/test/backend.go
 	apmstatsRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.APMStatsEndpoint, ReqChan: make(chan []byte)}
@@ -238,7 +222,7 @@ func sendTraces(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithEndpoint(endpoint))
+	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))
@@ -407,7 +391,7 @@ func sendTracesComputeTopLevelBySpanKind(t *testing.T, endpoint string) {
 	ctx := context.Background()
 
 	// Set up OTel-Go SDK and exporter
-	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithEndpoint(endpoint))
+	traceExporter, err := otlptracehttp.New(ctx, otlptracehttp.WithInsecure(), otlptracehttp.WithEndpoint(endpoint))
 	require.NoError(t, err)
 	bsp := sdktrace.NewBatchSpanProcessor(traceExporter)
 	r1, _ := resource.New(ctx, resource.WithAttributes(attribute.String("k8s.node.name", "aaaa")))

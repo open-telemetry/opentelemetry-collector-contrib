@@ -12,7 +12,6 @@ connectors:
 
 exporters:
   debug:
-    verbosity: detailed
   datadog:
     api:
       key: "aaa"
