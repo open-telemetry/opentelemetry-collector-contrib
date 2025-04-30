@@ -31,7 +31,7 @@ func NewTestLogFuncFactory[K any]() ottl.Factory[K] {
 }
 
 func createTestLogFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
-	return func(_ context.Context, tCtx K) (any, error) {
+	return func(_ context.Context, _ K) (any, error) {
 		return nil, nil
 	}, nil
 }
