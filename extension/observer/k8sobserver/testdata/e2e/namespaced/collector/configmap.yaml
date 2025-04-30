@@ -34,14 +34,14 @@ data:
               endpoint: '`endpoint`:`"prometheus.io/port" in annotations ? annotations["prometheus.io/port"] : 8888`'
             resource_attributes:
               source: pod
-          prometheus_simple:
-            # Configure prometheus scraping if standard prometheus annotations are set on the pod.
-            rule: type == "k8s.service"
-            config:
-              metrics_path: "/metrics"
-              endpoint: '`endpoint`:8888'
-            resource_attributes:
-              source: service
+          #prometheus_simple:
+          #  # Configure prometheus scraping if standard prometheus annotations are set on the pod.
+          #  rule: type == "k8s.service"
+          #  config:
+          #    metrics_path: "/metrics"
+          #    endpoint: '`endpoint`:8888'
+          #  resource_attributes:
+          #    source: service
     service:
       telemetry:
         metrics:
