@@ -1801,14 +1801,15 @@ func (s *splunkScraper) scrapeHealth(_ context.Context, now pcommon.Timestamp, i
 
 	var eptType string
 
-	if s.conf.IdxEndpoint.Endpoint != "" {
+	switch {
+	case s.conf.IdxEndpoint.Endpoint != "":
 		eptType = typeIdx
-	} else if s.conf.SHEndpoint.Endpoint != "" {
+	case s.conf.SHEndpoint.Endpoint != "":
 		eptType = typeSh
-	} else if s.conf.CMEndpoint.Endpoint != "" {
+	case s.conf.CMEndpoint.Endpoint != "":
 		eptType = typeCm
-	} else {
-		errs <- fmt.Errorf("no endpoint set for scraping")
+	default:
+		errs <- errors.New("no endpoint set for scraping")
 		return
 	}
 
