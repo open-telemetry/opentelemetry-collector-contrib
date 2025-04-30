@@ -19,21 +19,6 @@ func TestNewFactory(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig().(*Config)
 	cfg.Driver = "postgres"
-	cfg.DataSource = "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
-	cfg.Queries = []sqlquery.Query{
-		{
-			SQL: "SELECT 1",
-			Metrics: []sqlquery.MetricCfg{
-				{
-					MetricName:  "test_metric",
-					ValueColumn: "1",
-					ValueType:   sqlquery.MetricValueTypeInt,
-					DataType:    sqlquery.MetricTypeGauge,
-				},
-			},
-		},
-	}
-
 	_, err := factory.CreateMetrics(
 		context.Background(),
 		receivertest.NewNopSettings(metadata.Type),
