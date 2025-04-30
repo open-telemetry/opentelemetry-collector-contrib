@@ -33,6 +33,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "missing required metric name"),
 				fullErrorForSignal(t, "datapoints", "missing required metric name"),
 				fullErrorForSignal(t, "logs", "missing required metric name"),
+				fullErrorForSignal(t, "profiles", "missing required metric name"),
 			},
 		},
 		{
@@ -41,6 +42,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "attributes validation failed"),
 				fullErrorForSignal(t, "datapoints", "attributes validation failed"),
 				fullErrorForSignal(t, "logs", "attributes validation failed"),
+				fullErrorForSignal(t, "profiles", "attributes validation failed"),
 			},
 		},
 		{
@@ -49,6 +51,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "attributes validation failed"),
 				fullErrorForSignal(t, "datapoints", "attributes validation failed"),
 				fullErrorForSignal(t, "logs", "attributes validation failed"),
+				fullErrorForSignal(t, "profiles", "attributes validation failed"),
 			},
 		},
 		{
@@ -57,6 +60,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "attributes validation failed: only one of default_value or optional should be set"),
 				fullErrorForSignal(t, "datapoints", "attributes validation failed: only one of default_value or optional should be set"),
 				fullErrorForSignal(t, "logs", "attributes validation failed: only one of default_value or optional should be set"),
+				fullErrorForSignal(t, "profiles", "attributes validation failed: only one of default_value or optional should be set"),
 			},
 		},
 		{
@@ -65,6 +69,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "histogram validation failed"),
 				fullErrorForSignal(t, "datapoints", "histogram validation failed"),
 				fullErrorForSignal(t, "logs", "histogram validation failed"),
+				fullErrorForSignal(t, "profiles", "histogram validation failed"),
 			},
 		},
 		{
@@ -73,6 +78,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "histogram validation failed"),
 				fullErrorForSignal(t, "datapoints", "histogram validation failed"),
 				fullErrorForSignal(t, "logs", "histogram validation failed"),
+				fullErrorForSignal(t, "profiles", "histogram validation failed"),
 			},
 		},
 		{
@@ -81,6 +87,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "sum validation failed"),
 				fullErrorForSignal(t, "datapoints", "sum validation failed"),
 				fullErrorForSignal(t, "logs", "sum validation failed"),
+				fullErrorForSignal(t, "profiles", "sum validation failed"),
 			},
 		},
 		{
@@ -89,6 +96,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "exactly one of the metrics must be defined"),
 				fullErrorForSignal(t, "datapoints", "exactly one of the metrics must be defined"),
 				fullErrorForSignal(t, "logs", "exactly one of the metrics must be defined"),
+				fullErrorForSignal(t, "profiles", "exactly one of the metrics must be defined"),
 			},
 		},
 		{
@@ -97,6 +105,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "failed to parse value OTTL expression"),
 				fullErrorForSignal(t, "datapoints", "failed to parse value OTTL expression"),
 				fullErrorForSignal(t, "logs", "failed to parse value OTTL expression"),
+				fullErrorForSignal(t, "profiles", "failed to parse value OTTL expression"),
 			},
 		},
 		{
@@ -105,6 +114,7 @@ func TestConfig(t *testing.T) {
 				fullErrorForSignal(t, "spans", "failed to parse OTTL conditions"),
 				fullErrorForSignal(t, "datapoints", "failed to parse OTTL conditions"),
 				fullErrorForSignal(t, "logs", "failed to parse OTTL conditions"),
+				fullErrorForSignal(t, "profiles", "failed to parse OTTL conditions"),
 			},
 		},
 		{
@@ -187,6 +197,24 @@ func TestConfig(t *testing.T) {
 						},
 					},
 				},
+				Profiles: []MetricInfo{
+					{
+						Name:                      "profile.sum",
+						Description:               "Sum",
+						Unit:                      "1",
+						IncludeResourceAttributes: []Attribute{{Key: "key.1", DefaultValue: "foo"}},
+						Attributes: []Attribute{
+							{Key: "key.2", DefaultValue: "bar"},
+							{Key: "key.3", Optional: true},
+						},
+						Conditions: []string{
+							`duration_unix_nano > 0`,
+						},
+						Sum: &Sum{
+							Value: "1",
+						},
+					},
+				},
 			},
 		},
 	} {
@@ -220,7 +248,7 @@ func fullErrorForSignal(t *testing.T, signal, errMsg string) string {
 	t.Helper()
 
 	switch signal {
-	case "spans", "datapoints", "logs":
+	case "spans", "datapoints", "logs", "profiles":
 		return fmt.Sprintf(validationMsgFormat, signal, errMsg)
 	default:
 		panic("unhandled signal type")

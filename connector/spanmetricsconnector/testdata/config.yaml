@@ -14,7 +14,6 @@ spanmetrics/full:
       buckets: [ 10ms, 100ms, 250ms ]
   exemplars:
     enabled: true
-  dimensions_cache_size: 1500
   resource_metrics_cache_size: 1600
 
   # Additional list of dimensions on top of:
