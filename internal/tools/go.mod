@@ -10,6 +10,7 @@ require (
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen v0.0.0-00010101000000-000000000000
 	go.opentelemetry.io/build-tools/checkapi v0.23.0
 	go.opentelemetry.io/build-tools/checkfile v0.23.0
 	go.opentelemetry.io/build-tools/chloggen v0.23.0
@@ -58,7 +59,7 @@ require (
 	github.com/bitfield/gotestdox v0.2.2 // indirect
 	github.com/bkielbasa/cyclop v1.2.3 // indirect
 	github.com/blizzy78/varnamelen v0.8.0 // indirect
-	github.com/bmatcuk/doublestar/v4 v4.6.1 // indirect
+	github.com/bmatcuk/doublestar/v4 v4.8.1 // indirect
 	github.com/bombsimon/wsl/v4 v4.7.0 // indirect
 	github.com/breml/bidichk v0.3.3 // indirect
 	github.com/breml/errchkjson v0.4.1 // indirect
@@ -293,3 +294,5 @@ retract (
 	v0.76.1
 	v0.65.0
 )
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen => ../../cmd/codecovgen
