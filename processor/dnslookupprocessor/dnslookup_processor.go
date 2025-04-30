@@ -205,7 +205,7 @@ func (dp *dnsLookupProcessor) processLookup(
 	// Found a valid target. Try to resolve it
 	result, err := lookupFn(ctx, target)
 	if err != nil {
-		dp.logger.Error(fmt.Sprintf("Failed to lookup %s from %s", logKey, target), zap.Error(err))
+		dp.logger.Debug(fmt.Sprintf("Failed to lookup %s %s", logKey, target), zap.Error(err))
 		return err
 	}
 
