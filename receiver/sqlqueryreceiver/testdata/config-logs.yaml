@@ -8,4 +8,4 @@ sqlquery:
       tracking_column: log_id
       logs:
         - body_column: log_body
-          attribute_columns: ["log_attribute_1", "log_attribute_2"]
+          attribute_columns: [ "log_attribute_1", "log_attribute_2" ]
