@@ -1,6 +1,8 @@
 sqlquery:
   collection_interval: 10s
-  datasource: "host=localhost port=5432 user=me password=s3cr3t sslmode=disable"
+  driver: mydriver
+  datasource_config:
+    host: localhost
   queries:
     - sql: "select count(*) as count, type from mytable group by type"
       metrics:

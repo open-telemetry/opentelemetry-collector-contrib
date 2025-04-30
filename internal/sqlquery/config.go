@@ -24,7 +24,8 @@ type DataSourceConfig struct {
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	Driver                         string           `mapstructure:"driver"`
-	DataSource                     DataSourceConfig `mapstructure:"datasource"`
+	DataSource                     string           `mapstructure:"datasource"`
+	DataSourceConfig               DataSourceConfig `mapstructure:"datasource_config"`
 	Queries                        []Query          `mapstructure:"queries"`
 	StorageID                      *component.ID    `mapstructure:"storage"`
 	Telemetry                      TelemetryConfig  `mapstructure:"telemetry"`
@@ -34,15 +35,18 @@ func (c Config) Validate() error {
 	if c.Driver == "" {
 		return errors.New("'driver' cannot be empty")
 	}
-	if c.DataSource.Host == "" {
-		return errors.New("'datasource.host' must be specified")
+	if c.DataSource == "" {
+		if c.DataSourceConfig.Host == "" {
+			return errors.New("'datasource_config.host' must be specified")
+		}
+		if c.DataSourceConfig.Port == 0 {
+			return errors.New("'datasource_config.port' must be specified")
+		}
+		if c.DataSourceConfig.Database == "" {
+			return errors.New("'datasource_config.database' must be specified")
+		}
 	}
-	if c.DataSource.Port == 0 {
-		return errors.New("'datasource.port' must be specified")
-	}
-	if c.DataSource.Database == "" {
-		return errors.New("'datasource.database' must be specified")
-	}
+
 	if len(c.Queries) == 0 {
 		return errors.New("'queries' cannot be empty")
 	}
