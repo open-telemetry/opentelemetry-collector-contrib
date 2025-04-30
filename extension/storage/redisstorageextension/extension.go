@@ -79,18 +79,39 @@ func (rc redisClient) Delete(ctx context.Context, key string) error {
 
 func (rc redisClient) Batch(ctx context.Context, ops ...*storage.Operation) error {
 	p := rc.client.Pipeline()
-	for _, op := range ops {
+	commands := make(map[int]redis.Cmder)
+
+	// Queue commands
+	for i, op := range ops {
 		switch op.Type {
 		case storage.Delete:
-			p.Del(ctx, rc.prefix+op.Key)
+			commands[i] = p.Del(ctx, rc.prefix+op.Key)
 		case storage.Get:
-			p.Get(ctx, rc.prefix+op.Key)
+			commands[i] = p.Get(ctx, rc.prefix+op.Key)
 		case storage.Set:
-			p.Set(ctx, rc.prefix+op.Key, op.Value, rc.expiration)
+			commands[i] = p.Set(ctx, rc.prefix+op.Key, op.Value, rc.expiration)
 		}
 	}
+
+	// Execute pipeline
 	_, err := p.Exec(ctx)
-	return err
+	if err != nil {
+		return err
+	}
+
+	// Process results
+	for i, cmd := range commands {
+		if ops[i].Type == storage.Get {
+			if getCmd, ok := cmd.(*redis.StringCmd); ok {
+				result, err := getCmd.Bytes()
+				if err == nil || errors.Is(err, redis.Nil) {
+					ops[i].Value = result
+				}
+			}
+		}
+	}
+
+	return nil
 }
 
 func (rc redisClient) Close(_ context.Context) error {
