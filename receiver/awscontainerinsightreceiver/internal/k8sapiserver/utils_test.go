@@ -14,14 +14,14 @@ import (
 )
 
 func TestUtils_parseDeploymentFromReplicaSet(t *testing.T) {
-	assert.Equal(t, "", parseDeploymentFromReplicaSet("cloudwatch-agent"))
+	assert.Empty(t, parseDeploymentFromReplicaSet("cloudwatch-agent"))
 	assert.Equal(t, "cloudwatch-agent", parseDeploymentFromReplicaSet("cloudwatch-agent-42kcz"))
 }
 
 func TestUtils_parseCronJobFromJob(t *testing.T) {
-	assert.Equal(t, "", parseCronJobFromJob("hello-123"))
+	assert.Empty(t, parseCronJobFromJob("hello-123"))
 	assert.Equal(t, "hello", parseCronJobFromJob("hello-1234567890"))
-	assert.Equal(t, "", parseCronJobFromJob("hello-123456789a"))
+	assert.Empty(t, parseCronJobFromJob("hello-123456789a"))
 }
 
 func TestPodStore_addPodStatusMetrics(t *testing.T) {

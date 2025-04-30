@@ -200,7 +200,9 @@ type FieldsAndTagsPair struct {
 	Tags   map[string]string
 }
 
-// ConvertToFieldsAndTags converts OTLP metric to a field containing metric values and a tag containing for decoration
+// ConvertToOTLPMetrics converts a field containing metric values and tags containing the relevant labels to OTLP metrics.
+// For legacy reasons, the timestamp is stored in the tags map with the key "Timestamp", but, unlike other tags,
+// it is not added as a resource attribute to avoid high-cardinality metrics.
 func ConvertToFieldsAndTags(m pmetric.Metric, logger *zap.Logger) []FieldsAndTagsPair {
 	var converted []FieldsAndTagsPair
 	if m.Name() == "" {

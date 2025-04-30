@@ -70,7 +70,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 	emfExporter := &emfExporter{
 		config:                config,
 		metricTranslator:      newMetricTranslator(*config),
-		retryCnt:              config.AWSSessionSettings.MaxRetries,
+		retryCnt:              config.MaxRetries,
 		collectorID:           collectorIdentifier.String(),
 		pusherMap:             map[cwlogs.StreamKey]cwlogs.Pusher{},
 		processResourceLabels: func(map[string]string) {},

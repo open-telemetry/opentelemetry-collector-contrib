@@ -240,19 +240,18 @@ func (p *PodStore) Decorate(ctx context.Context, metric CIMetric, kubernetesBlob
 		}
 
 		// If the entry is not a placeholder, decorate the pod
-		if entry.pod.Name != "" {
-			p.decorateCPU(metric, &entry.pod)
-			p.decorateMem(metric, &entry.pod)
-			p.decorateGPU(metric, &entry.pod)
-			p.addStatus(metric, &entry.pod)
-			addContainerCount(metric, &entry.pod)
-			addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
-			p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
-			addLabels(&entry.pod, kubernetesBlob)
-		} else {
+		if entry.pod.Name == "" {
 			p.logger.Warn("no pod information is found in podstore for pod " + podKey)
 			return false
 		}
+		p.decorateCPU(metric, &entry.pod)
+		p.decorateMem(metric, &entry.pod)
+		p.decorateGPU(metric, &entry.pod)
+		p.addStatus(metric, &entry.pod)
+		addContainerCount(metric, &entry.pod)
+		addContainerID(&entry.pod, metric, kubernetesBlob, p.logger)
+		p.addPodOwnersAndPodName(metric, &entry.pod, kubernetesBlob)
+		addLabels(&entry.pod, kubernetesBlob)
 	}
 	return true
 }
@@ -766,7 +765,9 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 		if owner.Kind != "" && owner.Name != "" {
 			kind := owner.Kind
 			name := owner.Name
-			if owner.Kind == ci.ReplicaSet {
+
+			switch owner.Kind {
+			case ci.ReplicaSet:
 				if p.k8sClient != nil {
 					replicaSetClient := p.k8sClient.GetReplicaSetClient()
 					rsToDeployment := replicaSetClient.ReplicaSetToDeployment()
@@ -778,7 +779,7 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 						name = parent
 					}
 				}
-			} else if owner.Kind == ci.Job {
+			case ci.Job:
 				if parent := parseCronJobFromJob(owner.Name); parent != "" {
 					kind = ci.CronJob
 					name = parent
@@ -786,19 +787,19 @@ func (p *PodStore) addPodOwnersAndPodName(metric CIMetric, pod *corev1.Pod, kube
 					name = getJobNamePrefix(name)
 				}
 			}
+
 			owners = append(owners, map[string]string{"owner_kind": kind, "owner_name": name})
 
 			if podName == "" {
-				if owner.Kind == ci.StatefulSet {
+				switch owner.Kind {
+				case ci.StatefulSet:
 					podName = pod.Name
-				} else if owner.Kind == ci.DaemonSet || owner.Kind == ci.Job ||
-					owner.Kind == ci.ReplicaSet || owner.Kind == ci.ReplicationController {
+				case ci.DaemonSet, ci.Job, ci.ReplicaSet, ci.ReplicationController:
 					podName = name
 				}
 			}
 		}
 	}
-
 	if len(owners) > 0 {
 		kubernetesBlob["pod_owners"] = owners
 	}

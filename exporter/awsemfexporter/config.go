@@ -85,7 +85,7 @@ type Config struct {
 	// Setting this to true adds fields such as Service, Environment, etc.
 	AddEntity bool `mapstructure:"add_entity"`
 
-	// ResourceToTelemetrySettings is an option for converting resource attrihutes to telemetry attributes.
+	// ResourceToTelemetrySettings is an option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`

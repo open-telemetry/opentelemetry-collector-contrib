@@ -177,8 +177,8 @@ func TestUtils_addKubernetesInfoRetainContainerNameTag(t *testing.T) {
 	kubernetesBlob := map[string]any{}
 	AddKubernetesInfo(metric, kubernetesBlob, true)
 	assert.Equal(t, "testContainer", metric.GetTag(ci.ContainerNamekey))
-	assert.Equal(t, "", metric.GetTag(ci.K8sPodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.PodIDKey))
+	assert.Empty(t, metric.GetTag(ci.K8sPodNameKey))
+	assert.Empty(t, metric.GetTag(ci.PodIDKey))
 	assert.Equal(t, "testNamespace", metric.GetTag(ci.K8sNamespace))
 	assert.Equal(t, "testService", metric.GetTag(ci.TypeService))
 	assert.Equal(t, "testNode", metric.GetTag(ci.NodeNameKey))

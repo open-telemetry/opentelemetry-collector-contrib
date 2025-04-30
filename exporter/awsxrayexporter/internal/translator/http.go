@@ -16,20 +16,6 @@ import (
 	awsxray "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 )
 
-const (
-	AttributeHTTPRequestMethod      = "http.request.method"
-	AttributeHTTPResponseStatusCode = "http.response.status_code"
-	AttributeServerAddress          = "server.address"
-	AttributeServerPort             = "server.port"
-	AttributeNetworkPeerAddress     = "network.peer.address"
-	AttributeClientAddress          = "client.address"
-	AttributeURLScheme              = "url.scheme"
-	AttributeURLFull                = "url.full"
-	AttributeURLPath                = "url.path"
-	AttributeURLQuery               = "url.query"
-	AttributeUserAgentOriginal      = "user_agent.original"
-)
-
 func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	var (
 		info = awsxray.HTTPData{

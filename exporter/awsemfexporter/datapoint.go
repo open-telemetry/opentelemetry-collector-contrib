@@ -105,14 +105,16 @@ type summaryMetricEntry struct {
 	count uint64
 }
 
+// dataPointSplit is a structure used to manage segments of data points split from a histogram.
+// It is not safe for concurrent use.
 type dataPointSplit struct {
 	cWMetricHistogram *cWMetricHistogram
 	length            int
 	capacity          int
 }
 
-func (split *dataPointSplit) isNotFull() bool {
-	return split.length < split.capacity
+func (split *dataPointSplit) isFull() bool {
+	return split.length >= split.capacity
 }
 
 func (split *dataPointSplit) setMax(maxVal float64) {
@@ -183,7 +185,7 @@ func (dps numberDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 
 // CalculateDeltaDatapoints retrieves the HistogramDataPoint at the given index.
 func (dps histogramDataPointSlice) CalculateDeltaDatapoints(i int, _ string, _ bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.HistogramDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes())
 	timestamp := unixNanoToMilliseconds(metric.Timestamp())
 
@@ -240,13 +242,14 @@ func (dps histogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommon.Map) {
 // CalculateDeltaDatapoints retrieves the ExponentialHistogramDataPoint at the given index.
 // As CloudWatch EMF logs allows in maximum of 100 target members, the exponential histogram metric are split into multiple data points as needed,
 // each containing a maximum of 100 buckets, to comply with CloudWatch EMF log constraints.
+// Note that the number of values and counts in each split may not be less than splitThreshold as we are only adding non-zero bucket counts.
 //
 // For each split data point:
 // - Min and Max values are recalculated based on the bucket boundary within that specific split.
 // - Sum is only assigned to the first split to ensure the total sum of the datapoints after aggregation is correct.
 // - Count is accumulated based on the bucket counts within each split.
 func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, _ string, _ bool, _ *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.ExponentialHistogramDataPointSlice.At(idx)
+	metric := dps.At(idx)
 
 	const splitThreshold = 100
 	currentBucketIndex := 0
@@ -261,10 +264,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 
 	for currentBucketIndex < totalBucketLen {
 		// Create a new dataPointSplit with a capacity of up to splitThreshold buckets
-		capacity := splitThreshold
-		if totalBucketLen-currentBucketIndex < splitThreshold {
-			capacity = totalBucketLen - currentBucketIndex
-		}
+		capacity := min(splitThreshold, totalBucketLen-currentBucketIndex)
 
 		sum := 0.0
 		// Only assign `Sum` if this is the first split to make sure the total sum of the datapoints after aggregation is correct.
@@ -327,7 +327,7 @@ func (dps exponentialHistogramDataPointSlice) CalculateDeltaDatapoints(idx int, 
 }
 
 func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentPositiveIndex int) (int, int) {
-	if !split.isNotFull() || currentPositiveIndex < 0 {
+	if split.isFull() || currentPositiveIndex < 0 {
 		return currentBucketIndex, currentPositiveIndex
 	}
 
@@ -339,7 +339,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 	bucketBegin := 0.0
 	bucketEnd := 0.0
 
-	for split.isNotFull() && currentPositiveIndex >= 0 {
+	for !split.isFull() && currentPositiveIndex >= 0 {
 		index := currentPositiveIndex + int(positiveOffset)
 		if bucketEnd == 0 {
 			bucketEnd = math.Pow(base, float64(index+1))
@@ -356,7 +356,7 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if !split.isNotFull() {
+			if split.isFull() {
 				split.setMin(bucketBegin)
 			}
 		}
@@ -368,14 +368,14 @@ func collectDatapointsWithPositiveBuckets(split *dataPointSplit, metric pmetric.
 }
 
 func collectDatapointsWithZeroBucket(split *dataPointSplit, metric pmetric.ExponentialHistogramDataPoint, currentBucketIndex int, currentZeroIndex int) (int, int) {
-	if metric.ZeroCount() > 0 && split.isNotFull() && currentZeroIndex == 0 {
+	if metric.ZeroCount() > 0 && !split.isFull() && currentZeroIndex == 0 {
 		split.appendMetricData(0, metric.ZeroCount())
 
 		// The value are append from high to low, set Max from the first bucket (highest value) and Min from the last bucket (lowest value)
 		if split.length == 1 {
 			split.setMax(0)
 		}
-		if !split.isNotFull() {
+		if split.isFull() {
 			split.setMin(0)
 		}
 		currentZeroIndex++
@@ -391,7 +391,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 	// However, the negative support is defined in metrics data model.
 	// https://opentelemetry.io/docs/specs/otel/metrics/data-model/#exponentialhistogram
 	// The negative is also supported but only verified with unit test.
-	if !split.isNotFull() || currentNegativeIndex >= metric.Negative().BucketCounts().Len() {
+	if split.isFull() || currentNegativeIndex >= metric.Negative().BucketCounts().Len() {
 		return currentBucketIndex, currentNegativeIndex
 	}
 
@@ -403,7 +403,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 	bucketBegin := 0.0
 	bucketEnd := 0.0
 
-	for split.isNotFull() && currentNegativeIndex < metric.Negative().BucketCounts().Len() {
+	for !split.isFull() && currentNegativeIndex < metric.Negative().BucketCounts().Len() {
 		index := currentNegativeIndex + int(negativeOffset)
 		if bucketEnd == 0 {
 			bucketEnd = -math.Pow(base, float64(index))
@@ -420,7 +420,7 @@ func collectDatapointsWithNegativeBuckets(split *dataPointSplit, metric pmetric.
 			if split.length == 1 {
 				split.setMax(bucketEnd)
 			}
-			if !split.isNotFull() {
+			if split.isFull() {
 				split.setMin(bucketBegin)
 			}
 		}
@@ -450,7 +450,7 @@ func (dps exponentialHistogramDataPointSlice) IsStaleNaNInf(i int) (bool, pcommo
 
 // CalculateDeltaDatapoints retrieves the SummaryDataPoint at the given index and perform calculation with sum and count while retain the quantile value.
 func (dps summaryDataPointSlice) CalculateDeltaDatapoints(i int, _ string, detailedMetrics bool, calculators *emfCalculators) ([]dataPoint, bool) {
-	metric := dps.SummaryDataPointSlice.At(i)
+	metric := dps.At(i)
 	labels := createLabels(metric.Attributes())
 	timestampMs := unixNanoToMilliseconds(metric.Timestamp())
 

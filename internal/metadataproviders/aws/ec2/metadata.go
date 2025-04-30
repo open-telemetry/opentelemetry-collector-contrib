@@ -10,10 +10,12 @@ import (
 
 	"github.com/aws/aws-sdk-go-v2/aws"
 	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go/aws/request"
 )
 
 type Provider interface {
 	Get(ctx context.Context) (imds.InstanceIdentityDocument, error)
+	GetHandlers() *request.Handlers
 	Hostname(ctx context.Context) (string, error)
 	InstanceID(ctx context.Context) (string, error)
 }
@@ -60,4 +62,9 @@ func (c *metadataClient) Get(ctx context.Context) (imds.InstanceIdentityDocument
 	}
 
 	return output.InstanceIdentityDocument, nil
+}
+
+func (c *metadataClient) GetHandlers() *request.Handlers {
+	handlers := &request.Handlers{}
+	return handlers
 }

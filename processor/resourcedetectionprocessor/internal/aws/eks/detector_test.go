@@ -121,7 +121,6 @@ func TestEKSResourceDetection_ForCloudAccountID(t *testing.T) {
 
 			eksResourceDetector := &detector{
 				utils: detectorUtils,
-				err:   nil,
 				ra:    tt.ra,
 				rb:    metadata.NewResourceBuilder(tt.ra),
 			}

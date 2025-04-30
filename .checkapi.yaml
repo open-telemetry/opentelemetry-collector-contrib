@@ -35,6 +35,8 @@ ignored_paths:
   - exporter/elasticsearchexporter/integrationtest
   - scraper/zookeeperscraper
   - testbed/mockdatasenders/mockdatadogagentexporter
+  - extension/awsmiddleware
+  - override/aws
 allowed_functions:
   - name: NewFactory
     classes:

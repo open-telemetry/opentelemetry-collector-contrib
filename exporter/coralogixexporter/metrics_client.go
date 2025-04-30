@@ -7,7 +7,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"runtime"
 	"time"
 
@@ -20,6 +19,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/pmetric/pmetricotlp"
 	"go.uber.org/zap"
+	"google.golang.org/genproto/googleapis/rpc/errdetails"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/metadata"

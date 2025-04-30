@@ -269,6 +269,7 @@ func TestRawLogEmfOnlyCombination(t *testing.T) {
 			Test:      "Invalid Combination Raw Log false Emf Only true",
 		},
 	}
+
 	for _, tt := range tests {
 		t.Run(tt.Test, func(t *testing.T) {
 			defaultBackOffConfig := configretry.NewDefaultBackOffConfig()
@@ -279,7 +280,7 @@ func TestRawLogEmfOnlyCombination(t *testing.T) {
 				Endpoint:           "",
 				LogRetention:       365,
 				AWSSessionSettings: awsutil.CreateDefaultSessionConfig(),
-				QueueSettings: exporterhelper.QueueConfig{
+				QueueSettings: exporterhelper.QueueBatchConfig{
 					Enabled:      true,
 					NumConsumers: 1,
 					QueueSize:    exporterhelper.NewDefaultQueueConfig().QueueSize,
@@ -287,10 +288,12 @@ func TestRawLogEmfOnlyCombination(t *testing.T) {
 				RawLog:  tt.RawLog,
 				EmfOnly: tt.EmfOnly,
 			}
+
+			err := xconfmap.Validate(cfg)
 			if tt.wantError {
-				assert.Error(t, component.ValidateConfig(cfg))
+				assert.Error(t, err)
 			} else {
-				assert.NoError(t, component.ValidateConfig(cfg))
+				assert.NoError(t, err)
 			}
 		})
 	}

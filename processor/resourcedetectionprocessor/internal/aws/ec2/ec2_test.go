@@ -34,9 +34,11 @@ type mockMetadata struct {
 	retHostname    string
 	retErrHostname error
 
-	retHandlers *request.Handlers
-
 	isAvailable bool
+}
+
+func (mm mockMetadata) GetHandlers() *request.Handlers {
+	panic("implement me")
 }
 
 var _ ec2provider.Provider = (*mockMetadata)(nil)
@@ -65,10 +67,6 @@ func (mm mockMetadata) Get(_ context.Context) (imds.InstanceIdentityDocument, er
 		return imds.InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
-}
-
-func (mm mockMetadata) GetHandlers() *request.Handlers {
-	return mm.retHandlers
 }
 
 func (mm mockMetadata) Hostname(_ context.Context) (string, error) {

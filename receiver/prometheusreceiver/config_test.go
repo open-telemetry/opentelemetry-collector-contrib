@@ -112,7 +112,7 @@ func TestLoadTargetAllocatorConfig(t *testing.T) {
 	t.Setenv("POD_NAME", "collector-1")
 	cfg = factory.CreateDefaultConfig()
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, xconfmap.Validate(cfg))
 
 	r3 := cfg.(*Config)
 	assert.Equal(t, "https://target-allocator-service:80", r3.TargetAllocator.Endpoint)

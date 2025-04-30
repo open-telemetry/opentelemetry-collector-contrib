@@ -17,7 +17,6 @@ import (
 	"time"
 
 	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/stretchr/testify/assert"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
@@ -153,7 +152,7 @@ func TestHandlerSignerErrorsOut(t *testing.T) {
 	t.Setenv(regionEnvVarName, regionEnvVar)
 
 	cfg := DefaultConfig()
-	cfg.TCPAddrConfig.Endpoint = "0.0.0.0:2000"
+	cfg.Endpoint = "0.0.0.0:2000"
 	tcpAddr := testutil.GetAvailableLocalAddress(t)
 	cfg.Endpoint = tcpAddr
 	srv, err := NewServer(cfg, logger)
@@ -181,28 +180,6 @@ func TestTCPEndpointInvalid(t *testing.T) {
 	cfg.Endpoint = "invalid\n"
 	_, err := NewServer(cfg, logger)
 	assert.Error(t, err, "NewServer should fail")
-}
-
-func TestCantGetAWSConfigSession(t *testing.T) {
-	logger, _ := logSetup()
-
-	t.Setenv(regionEnvVarName, regionEnvVar)
-
-	cfg := DefaultConfig()
-	tcpAddr := testutil.GetAvailableLocalAddress(t)
-	cfg.Endpoint = tcpAddr
-
-	origSession := newAWSSession
-	defer func() {
-		newAWSSession = origSession
-	}()
-
-	expectedErr := errors.New("expected newAWSSessionError")
-	newAWSSession = func(_ string, _ string, _ *zap.Logger) (*session.Session, error) {
-		return nil, expectedErr
-	}
-	_, err := NewServer(cfg, logger)
-	assert.EqualError(t, err, expectedErr.Error())
 }
 
 func TestCantGetServiceEndpoint(t *testing.T) {

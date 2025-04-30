@@ -118,6 +118,6 @@ func (akr *awsContainerInsightsKueueReceiver) Shutdown(context.Context) error {
 func (akr *awsContainerInsightsKueueReceiver) collectData() {
 	if akr.kueueScraper != nil {
 		// this does not return any metrics, it just ensures scraping is running
-		akr.kueueScraper.GetMetrics() //nolint:errcheck
+		akr.kueueScraper.GetMetrics()
 	}
 }

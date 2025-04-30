@@ -80,6 +80,7 @@ func NewClientProvider(endpoint string, cfg *ClientConfig, logger *zap.Logger) (
 		return &saClientProvider{
 			endpoint:           endpoint,
 			caCertPath:         caCertPath,
+			cfg:                cfg,
 			tokenPath:          svcAcctTokenPath,
 			insecureSkipVerify: cfg.InsecureSkipVerify,
 			logger:             logger,
@@ -130,7 +131,6 @@ func (p *kubeConfigClientProvider) BuildClient() (Client, error) {
 	}
 
 	joinPath, err := url.JoinPath(authConf.Host, "/api/v1/nodes/", p.endpoint, "/proxy/")
-
 	if err != nil {
 		return nil, err
 	}
@@ -193,11 +193,12 @@ func (p *tlsClientProvider) BuildClient() (Client, error) {
 }
 
 type saClientProvider struct {
-	endpoint   string
-	caCertPath string
-	cfg        *ClientConfig
-	tokenPath  string
-	logger     *zap.Logger
+	endpoint           string
+	caCertPath         string
+	cfg                *ClientConfig
+	tokenPath          string
+	insecureSkipVerify bool
+	logger             *zap.Logger
 }
 
 func (p *saClientProvider) BuildClient() (Client, error) {

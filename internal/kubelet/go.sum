@@ -247,8 +247,8 @@ go.opentelemetry.io/collector/config/configopaque v1.30.0 h1:vR2UxmzLwmkmQwyh16w
 go.opentelemetry.io/collector/config/configopaque v1.30.0/go.mod h1:GYQiC8IejBcwE8z0O4DwbBR/Hf6U7d8DTf+cszyqwFs=
 go.opentelemetry.io/collector/config/configtls v1.30.0 h1:wLTRV5hn/FWKWNjZ/9/ckkeD2mqWzAtwzP1kQv1YZZE=
 go.opentelemetry.io/collector/config/configtls v1.30.0/go.mod h1:yCM4ZYkLvc1VjpT/1DQIVoGmzEBHOhZltYQ7A30BMyM=
-go.opentelemetry.io/collector/pdata v1.31.0 h1:P5WuLr1l2JcIvr6Dw2hl01ltp2ZafPnC4Isv+BLTBqU=
-go.opentelemetry.io/collector/pdata v1.31.0/go.mod h1:m41io9nWpy7aCm/uD1L9QcKiZwOP0ldj83JEA34dmlk=
+go.opentelemetry.io/collector/pdata v1.30.0 h1:j3jyq9um436r6WzWySzexP2nLnFdmL5uVBYAlyr9nDM=
+go.opentelemetry.io/collector/pdata v1.30.0/go.mod h1:0Bxu1ktuj4wE7PIASNSvd0SdBscQ1PLtYasymJ13/Cs=
 go.opentelemetry.io/otel v1.34.0 h1:zRLXxLCgL1WyKsPVrgbSdMN4c0FMkDAskSTQP+0hdUY=
 go.opentelemetry.io/otel v1.34.0/go.mod h1:OWFPOQ+h4G8xpyjgqo4SxJYdDQ/qmRH+wivy7zzx9oI=
 go.opentelemetry.io/otel/metric v1.34.0 h1:+eTR3U0MyfWjRDhmFMxe2SsW64QrZ84AOhvqS7Y+PoQ=

@@ -26,7 +26,6 @@ const (
 	ExceptionEventName              = "exception"
 	AwsIndividualHTTPEventName      = "HTTP request failure"
 	AwsIndividualHTTPErrorEventType = "aws.http.error.event"
-	AwsIndividualHTTPErrorCodeAttr  = "http.response.status_code"
 	AwsIndividualHTTPErrorMsgAttr   = "aws.http.error_message"
 )
 

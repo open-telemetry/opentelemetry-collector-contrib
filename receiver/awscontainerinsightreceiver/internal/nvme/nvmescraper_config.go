@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package nvme // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/gpu"
+package nvme // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/nvme"
 
 import (
 	"os"
@@ -31,12 +31,13 @@ type hostInfoProvider interface {
 
 func GetScraperConfig(hostInfoProvider hostInfoProvider) *config.ScrapeConfig {
 	return &config.ScrapeConfig{
-		ScrapeInterval:  model.Duration(collectionInterval),
-		ScrapeTimeout:   model.Duration(collectionInterval),
-		ScrapeProtocols: config.DefaultScrapeProtocols,
-		JobName:         jobName,
-		Scheme:          "http",
-		MetricsPath:     scraperMetricsPath,
+		ScrapeInterval:         model.Duration(collectionInterval),
+		ScrapeTimeout:          model.Duration(collectionInterval),
+		ScrapeProtocols:        config.DefaultScrapeProtocols,
+		JobName:                jobName,
+		Scheme:                 "http",
+		MetricsPath:            scraperMetricsPath,
+		ScrapeFallbackProtocol: config.PrometheusText0_0_4,
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
 				Role: kubernetes.RoleService,

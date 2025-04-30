@@ -46,9 +46,9 @@ func TestLoadTargetAllocatorK8Config(t *testing.T) {
 	sub, err := cm.Sub("target_allocator")
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
-	require.NoError(t, component.ValidateConfig(cfg))
+	require.NoError(t, cfg.Validate())
 
-	assert.Equal(t, "http://target-allocator-service:80", cfg.ClientConfig.Endpoint)
+	assert.Equal(t, "http://target-allocator-service:80", cfg.Endpoint)
 	assert.Equal(t, "collector-1", cfg.CollectorID)
 }
 

@@ -94,13 +94,14 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 				CredentialsFile: serviceAccountTokenDefaultPath,
 			},
 		},
-		ScrapeInterval:  model.Duration(kmCollectionInterval),
-		ScrapeTimeout:   model.Duration(kmCollectionInterval),
-		ScrapeProtocols: config.DefaultScrapeProtocols,
-		JobName:         kmJobName,
-		HonorTimestamps: true,
-		Scheme:          "https",
-		MetricsPath:     "/metrics",
+		ScrapeInterval:         model.Duration(kmCollectionInterval),
+		ScrapeTimeout:          model.Duration(kmCollectionInterval),
+		ScrapeProtocols:        config.DefaultScrapeProtocols,
+		ScrapeFallbackProtocol: config.PrometheusText0_0_4,
+		JobName:                kmJobName,
+		HonorTimestamps:        true,
+		Scheme:                 "https",
+		MetricsPath:            "/metrics",
 		ServiceDiscoveryConfigs: discovery.Configs{
 			&kubernetes.SDConfig{
 				Role: kubernetes.RoleService,
@@ -126,7 +127,7 @@ func NewKueuePrometheusScraper(opts KueuePrometheusScraperOpts) (*KueuePrometheu
 	}
 
 	params := receiver.Settings{
-		ID:                component.MustNewID(kmJobName),
+		ID:                component.MustNewID("prometheus"),
 		TelemetrySettings: opts.TelemetrySettings,
 	}
 

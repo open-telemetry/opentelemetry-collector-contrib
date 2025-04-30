@@ -130,11 +130,13 @@ tidylist: $(CROSSLINK)
 		tidylist.txt
 
 # internal/tidylist/tidylist.txt lists modules in topological order, to ensure `go mod tidy` converges.
+
 .PHONY: gotidy
 gotidy:
-	@for mod in $$(cat internal/tidylist/tidylist.txt); do \
-		echo "Tidying $$mod"; \
-		(cd $$mod && rm -rf go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $?; \
+	@find . -name 'go.mod' | while read modfile; do \
+		dir=$$(dirname $$modfile); \
+		echo "Tidying $$dir"; \
+		(cd $$dir && rm -f go.sum && $(GOCMD) mod tidy -compat=1.22.0) || exit $$?; \
 	done
 
 .PHONY: remove-toolchain

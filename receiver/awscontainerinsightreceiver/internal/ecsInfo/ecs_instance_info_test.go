@@ -80,5 +80,5 @@ func TestECSInstanceInfo(t *testing.T) {
 	assert.NotNil(t, ecsinstanceinfo)
 
 	assert.Equal(t, "override-cluster", ecsinstanceinfo.GetClusterName())
-	assert.Equal(t, "", ecsinstanceinfo.GetContainerInstanceID())
+	assert.Empty(t, ecsinstanceinfo.GetContainerInstanceID())
 }

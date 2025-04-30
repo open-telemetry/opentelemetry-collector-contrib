@@ -174,7 +174,7 @@ func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) 
 	// 2. ensure documents can be decoded back
 	unmarshaler := &ptrace.ProtoUnmarshaler{}
 	for i, document := range documents {
-		assert.EqualValues(t, "T1S", (*document)[0:3], "ensure protocol prefix")
+		assert.Equal(t, "T1S", (*document)[0:3], "ensure protocol prefix")
 		decodedBytes, err := base64.StdEncoding.DecodeString((*document)[3:])
 		assert.NoError(t, err)
 
@@ -185,7 +185,7 @@ func testEncodingOtlpFormatWithIndexConfiguration(t *testing.T, config *Config) 
 
 		// 3. ensure index configurations are carried
 		injectIndexConfigIntoOtlpPayload(td.ResourceSpans().At(i), config)
-		assert.EqualValues(t, td.ResourceSpans().At(i), trace.ResourceSpans().At(0))
+		assert.Equal(t, td.ResourceSpans().At(i), trace.ResourceSpans().At(0))
 	}
 }
 
@@ -196,15 +196,15 @@ func TestEncodingOtlpFormatWithEmptySpans(t *testing.T) {
 	assert.Empty(t, documents, "expect 0 document")
 }
 
-func BenchmarkForTracesExporter(b *testing.B) {
-	traceExporter := initializeTracesExporter(b, generateConfig(b), telemetrytest.NewNopRegistry())
-	for i := 0; i < b.N; i++ {
-		b.StopTimer()
+func BenchmarkForTracesExporter(tb *testing.B) {
+	traceExporter := initializeTracesExporter(tb, generateConfig(tb), telemetrytest.NewNopRegistry())
+	for i := 0; i < tb.N; i++ {
+		tb.StopTimer()
 		ctx := context.Background()
 		td := constructSpanData()
-		b.StartTimer()
+		tb.StartTimer()
 		err := traceExporter.ConsumeTraces(ctx, td)
-		assert.Error(b, err)
+		assert.Error(tb, err)
 	}
 }
 
@@ -216,8 +216,8 @@ func (m *mockHost) GetExtensions() map[component.ID]component.Component {
 	return nil
 }
 
-func initializeTracesExporter(t testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
-	t.Helper()
+func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
+	tb.Helper()
 	mconn := new(awsutil.Conn)
 	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(metadata.Type), mconn, registry)
 	if err != nil {

@@ -110,8 +110,8 @@ func TestIncludeMetadataLocalMode(t *testing.T) {
 	assert.NotPanics(t, func() {
 		opts := ToOptions(cfg, nil, set)
 		sender := newSender(&mockClient{}, opts...)
-		assert.Equal(t, "", sender.hostname)
-		assert.Equal(t, "", sender.instanceID)
+		assert.Empty(t, sender.hostname)
+		assert.Empty(t, sender.instanceID)
 		assert.Equal(t, "session_arn", sender.resourceARN)
 	})
 }

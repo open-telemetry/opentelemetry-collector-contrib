@@ -10,11 +10,10 @@ import (
 	"regexp"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/aws/retry"
 	"github.com/aws/aws-sdk-go-v2/config"
 	"github.com/aws/aws-sdk-go-v2/service/ec2"
 	"github.com/aws/aws-sdk-go-v2/service/ec2/types"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/processor"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
@@ -62,7 +61,13 @@ type Detector struct {
 
 func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal.Detector, error) {
 	cfg := dcfg.(Config)
-	sess, err := session.NewSession()
+	awsConfig, err := config.LoadDefaultConfig(context.Background())
+	awsConfig.Retryer = func() aws.Retryer {
+		return retry.NewStandard(func(options *retry.StandardOptions) {
+			options.MaxAttempts = cfg.MaxAttempts
+			options.MaxBackoff = cfg.MaxBackoff
+		})
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -72,7 +77,7 @@ func NewDetector(set processor.Settings, dcfg internal.DetectorConfig) (internal
 	}
 
 	return &Detector{
-		metadataProvider: ec2provider.NewProvider(sess),
+		metadataProvider:      ec2provider.NewProvider(awsConfig),
 		tagKeyRegexes:         tagKeyRegexes,
 		logger:                set.Logger,
 		rb:                    metadata.NewResourceBuilder(cfg.ResourceAttributes),
@@ -128,10 +133,6 @@ func (d *Detector) Detect(ctx context.Context) (resource pcommon.Resource, schem
 		}
 	}
 	return res, conventions.SchemaURL, nil
-}
-
-func (d *Detector) ExposeHandlers() (handlers *request.Handlers) {
-	return d.metadataProvider.GetHandlers()
 }
 
 func getClientConfig(ctx context.Context, logger *zap.Logger) *http.Client {

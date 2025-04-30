@@ -7,6 +7,7 @@
 package kubeletutil // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awscontainerinsightreceiver/internal/stores/kubeletutil"
 
 import (
+	"errors"
 	"fmt"
 	"os"
 	"syscall"
@@ -15,7 +16,7 @@ import (
 func checkPodResourcesSocketPermissions(info os.FileInfo) error {
 	stat, ok := info.Sys().(*syscall.Stat_t)
 	if !ok {
-		return fmt.Errorf("couldn't check permissions")
+		return errors.New("couldn't check permissions")
 	}
 
 	if stat.Uid != 0 {
