@@ -18,6 +18,7 @@
 
 # Start components list
 
+cmd/codecovgen/                                                  @open-telemetry/collector-contrib-approvers @mx-psi
 cmd/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers

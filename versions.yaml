@@ -9,6 +9,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/golden
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor
       - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/telemetrygen
+      - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/codecovgen
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider
       - github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider
