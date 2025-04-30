@@ -35,7 +35,8 @@ type Config struct {
 }
 
 type TopQueryCollection struct {
-	TopQueryCount int `mapstructure:"top_query_count"`
+	Enabled       bool `mapstructure:"enabled"`
+	TopQueryCount int  `mapstructure:"top_query_count"`
 }
 
 type StatementEventsConfig struct {
