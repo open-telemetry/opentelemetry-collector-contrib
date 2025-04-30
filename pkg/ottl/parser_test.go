@@ -2131,7 +2131,7 @@ func testParseEnum(val *EnumSymbol) (*Enum, error) {
 	return nil, errors.New("enum symbol not provided")
 }
 
-func Test_parseValueExpression_full(t *testing.T) {
+func Test_ParseValueExpression_full(t *testing.T) {
 	time1 := time.Now()
 	time2 := time1.Add(5 * time.Second)
 	tests := []struct {
@@ -2253,6 +2253,34 @@ func Test_parseValueExpression_full(t *testing.T) {
 			require.NoError(t, err)
 			assert.Equal(t, tt.expected(), v)
 		})
+	}
+}
+
+func Test_ParseValueExpressions_Error(t *testing.T) {
+	expressions := []string{
+		`123abc`,
+		`1+`,
+	}
+
+	p, _ := NewParser(
+		CreateFactoryMap[any](),
+		testParsePath[any],
+		componenttest.NewNopTelemetrySettings(),
+	)
+
+	_, err := p.ParseValueExpressions(expressions)
+	assert.Error(t, err)
+
+	var e interface{ Unwrap() []error }
+	if errors.As(err, &e) {
+		uw := e.Unwrap()
+		assert.Len(t, uw, len(expressions), "ParseValueExpressions didn't return an error per expression")
+
+		for i, exprErr := range uw {
+			assert.ErrorContains(t, exprErr, fmt.Sprintf("unable to parse OTTL expression %q", expressions[i]))
+		}
+	} else {
+		assert.Fail(t, "ParseValueExpressions didn't return an error per expression")
 	}
 }
 
