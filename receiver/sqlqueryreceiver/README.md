@@ -38,16 +38,20 @@ The configuration supports the following top-level fields:
   - [sqlserver](https://github.com/microsoft/go-mssqldb) - `sqlserver://username:user_password@localhost:1433?database=db_name`
   - [tds](https://github.com/thda/tds) - `tds://username:user_password@localhost:5000/db_name`
 - `datasource_config` (optional): Used in place of the `datasource` string. Contains separate values that are processed separately, and then concatenated into the connection string.
-    ```yaml
-    host: localhost
-    port: 5432
-    database: mydb
-    username: myuser
-    password: ${DB_PASSWORD}
-    additional_options:
-      sslmode: disable
-      application_name: myapp
-    ```
+  ```yaml
+  host: localhost
+  port: 5432
+  database: mydb
+  username: myuser
+  password: ${DB_PASSWORD}
+  additional_options:
+    sslmode: disable
+    application_name: myapp
+  ```
+  - The `username` will be properly escaped and securely handled when building the connection string. Special characters in passwords (such as #, @, %, etc.) are automatically URL-encoded to ensure proper connection string formatting.
+  - The `password` field supports sensitive value handling through environment variables or other secure value sources. The value will be properly escaped and securely handled when building the connection string.
+  - The `additional_options` map can contain additional driver-specific connection parameters. These will be properly escaped and appended to the connection string.
+  - For the `sqlserver` driver, an instance appended to the hostname (e.g. `hostname1/instance1`) will be parsed properly into this connection string: `sqlserver://username:password@host:port/instance`.
 - `queries`(required): A list of queries, where a query is a sql statement and one or more `logs` and/or `metrics` sections (details below).
 - `collection_interval`(optional): The time interval between query executions. Defaults to _10s_.
 - `storage` (optional, default `""`): The ID of a [storage][storage_extension] extension to be used to [track processed results](#tracking-processed-results).
@@ -221,8 +225,7 @@ either case, the receiver will continue to operate.
 Refer to the config file [provided](./testdata/oracledb-receiver-config.yaml) for an example of using the
 Oracle DB driver to connect and query the same table schema and contents as the example above.
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
-Another usage example is the `go_ora`
-example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
+For more information about connecting to Oracle Database, see [Connecting a Go Application to Oracle Database](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database).
 
 #### MySQL Datasource Format Example
 
