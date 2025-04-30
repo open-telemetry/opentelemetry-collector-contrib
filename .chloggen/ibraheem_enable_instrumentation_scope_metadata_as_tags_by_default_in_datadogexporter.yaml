@@ -11,3 +11,7 @@ note: Enable instrumentation_scope_metadata_as_tags by default in datadogexporte
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39767]
+
+subtext: |
+  If you have too many unique values for instrumentation scope attributes, this may cause cardinality issues.
+  If this is a concern, you can disable this by setting `datadog.metrics.instrumentation_scope_metadata_as_tags` to `false`.
