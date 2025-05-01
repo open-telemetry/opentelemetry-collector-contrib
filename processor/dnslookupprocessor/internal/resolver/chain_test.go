@@ -33,6 +33,11 @@ func (m *MockResolver) Name() string {
 	return args.String(0)
 }
 
+func (m *MockResolver) Close() error {
+	args := m.Called()
+	return args.Error(0)
+}
+
 func TestNewChainResolver(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
@@ -312,4 +317,42 @@ func TestChainResolver_Reverse(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestChainResolver_Close(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	t.Run("Successful close", func(t *testing.T) {
+		mock1 := new(MockResolver)
+		mock1.On("Close").Return(nil).Once()
+
+		mock2 := new(MockResolver)
+		mock2.On("Close").Return(nil).Once()
+
+		chainResolver := NewChainResolver([]Resolver{mock1, mock2}, logger)
+
+		err := chainResolver.Close()
+		assert.NoError(t, err)
+
+		mock1.AssertExpectations(t)
+		mock2.AssertExpectations(t)
+	})
+
+	t.Run("Multiple errors", func(t *testing.T) {
+		errorMock1 := new(MockResolver)
+		errorMock1.On("Close").Return(errors.New("error 1")).Once()
+
+		errorMock2 := new(MockResolver)
+		errorMock2.On("Close").Return(errors.New("error 2")).Once()
+
+		chainResolver := NewChainResolver([]Resolver{errorMock1, errorMock2}, logger)
+
+		err := chainResolver.Close()
+		assert.Error(t, err)
+		assert.Contains(t, err.Error(), "error 1")
+		assert.Contains(t, err.Error(), "error 2")
+
+		errorMock1.AssertExpectations(t)
+		errorMock2.AssertExpectations(t)
+	})
 }

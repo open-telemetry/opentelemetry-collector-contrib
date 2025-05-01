@@ -78,6 +78,28 @@ func (r *CacheResolver) Name() string {
 	return r.name
 }
 
+// Close releases resources used by the cache and the underlying chain resolver
+// Known issue: The deleteExpired goroutinue of LRU cache never exits. The Close() method is not called.
+// https://github.com/hashicorp/golang-lru/issues/159
+func (r *CacheResolver) Close() error {
+	if r.hitCache != nil {
+		r.hitCache.Purge()
+		// r.hitCache.Close()
+	}
+	if r.missCache != nil {
+		r.missCache.Purge()
+		// r.missCache.Close()
+	}
+
+	if r.nextResolver != nil {
+		if err := r.nextResolver.Close(); err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+
 // resolveWithCache searches target in miss cache and hit cache.
 // If not found, it falls back to the underlying chain resolver. Stores the result in cache.
 func (r *CacheResolver) resolveWithCache(

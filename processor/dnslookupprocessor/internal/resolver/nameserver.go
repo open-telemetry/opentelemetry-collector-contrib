@@ -155,6 +155,11 @@ func (r *NameserverResolver) Name() string {
 	return r.name
 }
 
+func (r *NameserverResolver) Close() error {
+	r.resolvers = nil
+	return nil
+}
+
 func NewExponentialBackOff() *backoff.ExponentialBackOff {
 	expBackOff := backoff.ExponentialBackOff{
 		InitialInterval:     50 * time.Millisecond,

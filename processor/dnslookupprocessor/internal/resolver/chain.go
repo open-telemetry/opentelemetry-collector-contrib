@@ -46,6 +46,17 @@ func (c *ChainResolver) Name() string {
 	return c.name
 }
 
+// Close closes all resolvers in the chain
+func (c *ChainResolver) Close() error {
+	var errs []error
+	for _, r := range c.resolvers {
+		if err := r.Close(); err != nil {
+			errs = append(errs, err)
+		}
+	}
+	return errors.Join(errs...)
+}
+
 // resolveInSequence attempts to resolveInSequence the given hostname/IP using the chain of resolvers.
 // It returns the first successful IP/hostname. No resolution is considered a success.
 // If one of the resolvers fails, the resolver follows up with retries with exponential backoff.

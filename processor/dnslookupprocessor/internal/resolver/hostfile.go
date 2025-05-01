@@ -152,3 +152,9 @@ func (r *HostFileResolver) Reverse(_ context.Context, ip string) (string, error)
 func (r *HostFileResolver) Name() string {
 	return r.name
 }
+
+func (r *HostFileResolver) Close() error {
+	r.hostnameToIP = nil
+	r.ipToHostname = nil
+	return nil
+}

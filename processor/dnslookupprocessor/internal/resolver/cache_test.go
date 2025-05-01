@@ -375,3 +375,35 @@ func TestCacheResolver_Reverse(t *testing.T) {
 		})
 	}
 }
+
+func TestCacheResolver_Close(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	mockResolver := new(MockResolver)
+	mockResolver.On("Close").Return(nil).Once()
+
+	resolver, err := NewCacheResolver(
+		mockResolver,
+		10,
+		1*time.Minute,
+		10,
+		1*time.Minute,
+		logger,
+	)
+	require.NoError(t, err)
+
+	// Add data to the caches
+	resolver.hitCache.Add("test.com", "192.168.1.1")
+	resolver.missCache.Add("nonexistent.com", struct{}{})
+
+	// Close the resolver
+	err = resolver.Close()
+	assert.NoError(t, err)
+	mockResolver.AssertExpectations(t)
+
+	// Check that the caches are empty
+	_, hitFound := resolver.hitCache.Get("test.com")
+	assert.False(t, hitFound, "Hit cache should be empty after Close()")
+	_, missFound := resolver.missCache.Get("nonexistent.com")
+	assert.False(t, missFound, "Miss cache should be empty after Close()")
+}

@@ -38,4 +38,7 @@ type Resolver interface {
 	Reverse(ctx context.Context, ip string) (string, error)
 
 	Name() string
+
+	// Close releases any resources used by the resolver
+	Close() error
 }

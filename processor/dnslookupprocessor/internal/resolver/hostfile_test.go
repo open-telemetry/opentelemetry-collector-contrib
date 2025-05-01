@@ -357,6 +357,26 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 	}
 }
 
+func TestHostFileResolver_Close(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	hostFilePath := createTempHostFile(t, validHostFileContent)
+	resolver, err := NewHostFileResolver([]string{hostFilePath}, logger)
+	require.NoError(t, err)
+
+	// Verify maps were populated
+	assert.Greater(t, len(resolver.hostnameToIP), 0)
+	assert.Greater(t, len(resolver.ipToHostname), 0)
+
+	// Close the resolver
+	err = resolver.Close()
+	assert.NoError(t, err)
+
+	// Verify maps were cleared
+	assert.Nil(t, resolver.hostnameToIP)
+	assert.Nil(t, resolver.ipToHostname)
+}
+
 // createTempHostFile create a temporary hostfile
 func createTempHostFile(t *testing.T, content string) string {
 	tempDir := t.TempDir()

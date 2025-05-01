@@ -11,6 +11,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
 )
 
@@ -484,4 +485,17 @@ func TestNormalizeNameserverAddresses(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestNameserverResolver_Close(t *testing.T) {
+	logger := zaptest.NewLogger(t)
+
+	resolver, err := NewNameserverResolver([]string{"8.8.8.8"}, testTimeout, 1, logger)
+	require.NoError(t, err)
+	assert.Equal(t, 1, len(resolver.resolvers))
+	assert.NotNil(t, resolver.resolvers[0])
+
+	err = resolver.Close()
+	assert.NoError(t, err)
+	assert.Nil(t, resolver.resolvers)
 }

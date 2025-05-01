@@ -118,6 +118,13 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	return chainResolver, nil
 }
 
+func (dp *dnsLookupProcessor) shutdown(_ context.Context) error {
+	if dp.resolver != nil {
+		return dp.resolver.Close()
+	}
+	return nil
+}
+
 // createProcessPairs creates a list of ProcessPair based on the configuration.
 func (dp *dnsLookupProcessor) createProcessPairs() []ProcessPair {
 	if dp.config.Resolve.Enabled && dp.config.Reverse.Enabled &&

@@ -57,7 +57,7 @@ func createMetricsProcessor(ctx context.Context, set processor.Settings, cfg com
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, dp.processMetrics, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewMetrics(ctx, set, cfg, nextConsumer, dp.processMetrics, processorhelper.WithShutdown(dp.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createTracesProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Traces) (processor.Traces, error) {
@@ -66,7 +66,7 @@ func createTracesProcessor(ctx context.Context, set processor.Settings, cfg comp
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, dp.processTraces, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewTraces(ctx, set, cfg, nextConsumer, dp.processTraces, processorhelper.WithShutdown(dp.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
 
 func createLogsProcessor(ctx context.Context, set processor.Settings, cfg component.Config, nextConsumer consumer.Logs) (processor.Logs, error) {
@@ -75,5 +75,5 @@ func createLogsProcessor(ctx context.Context, set processor.Settings, cfg compon
 	if err != nil {
 		return nil, err
 	}
-	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, dp.processLogs, processorhelper.WithCapabilities(processorCapabilities))
+	return processorhelper.NewLogs(ctx, set, cfg, nextConsumer, dp.processLogs, processorhelper.WithShutdown(dp.shutdown), processorhelper.WithCapabilities(processorCapabilities))
 }
