@@ -8,16 +8,16 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/xray/types"
 	"github.com/aws/aws-sdk-go/aws/awserr"
 	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/service/xray"
 )
 
 type Recorder interface {
 	// Rotate the current record by swapping it out with a new one. Returns
 	// the rotated record.
-	Rotate() *xray.TelemetryRecord
+	Rotate() types.TelemetryRecord
 	// HasRecording indicates whether any of the record functions were called
 	// with the current record.
 	HasRecording() bool
@@ -36,7 +36,7 @@ type Recorder interface {
 
 type telemetryRecorder struct {
 	// record is the pointer to the count metrics for the current period.
-	record *xray.TelemetryRecord
+	record types.TelemetryRecord
 	// hasRecording is set to true when any count is updated. Indicates
 	// that telemetry data is available.
 	hasRecording *atomic.Bool
@@ -52,19 +52,19 @@ func NewRecorder() Recorder {
 
 // NewRecord creates a new xray.TelemetryRecord with all of its fields initialized
 // and set to 0.
-func NewRecord() *xray.TelemetryRecord {
-	return &xray.TelemetryRecord{
-		SegmentsReceivedCount:  aws.Int64(0),
-		SegmentsRejectedCount:  aws.Int64(0),
-		SegmentsSentCount:      aws.Int64(0),
-		SegmentsSpilloverCount: aws.Int64(0),
-		BackendConnectionErrors: &xray.BackendConnectionErrors{
-			HTTPCode4XXCount:       aws.Int64(0),
-			HTTPCode5XXCount:       aws.Int64(0),
-			ConnectionRefusedCount: aws.Int64(0),
-			OtherCount:             aws.Int64(0),
-			TimeoutCount:           aws.Int64(0),
-			UnknownHostCount:       aws.Int64(0),
+func NewRecord() types.TelemetryRecord {
+	return types.TelemetryRecord{
+		SegmentsReceivedCount:  aws.Int32(0),
+		SegmentsRejectedCount:  aws.Int32(0),
+		SegmentsSentCount:      aws.Int32(0),
+		SegmentsSpilloverCount: aws.Int32(0),
+		BackendConnectionErrors: &types.BackendConnectionErrors{
+			HTTPCode4XXCount:       aws.Int32(0),
+			HTTPCode5XXCount:       aws.Int32(0),
+			ConnectionRefusedCount: aws.Int32(0),
+			OtherCount:             aws.Int32(0),
+			TimeoutCount:           aws.Int32(0),
+			UnknownHostCount:       aws.Int32(0),
 		},
 	}
 }
@@ -75,40 +75,44 @@ func (tr *telemetryRecorder) HasRecording() bool {
 
 // Rotate the current record and swaps it out with a new record.
 // Sets the timestamp and returns the old record.
-func (tr *telemetryRecorder) Rotate() *xray.TelemetryRecord {
-	snapshot := NewRecord()
-	snapshot.SetSegmentsSentCount(atomic.SwapInt64(tr.record.SegmentsSentCount, 0))
-	snapshot.SetSegmentsReceivedCount(atomic.SwapInt64(tr.record.SegmentsReceivedCount, 0))
-	snapshot.SetSegmentsRejectedCount(atomic.SwapInt64(tr.record.SegmentsRejectedCount, 0))
-	snapshot.SetSegmentsSpilloverCount(atomic.SwapInt64(tr.record.SegmentsSpilloverCount, 0))
-	snapshot.BackendConnectionErrors.SetHTTPCode4XXCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 0))
-	snapshot.BackendConnectionErrors.SetHTTPCode5XXCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 0))
-	snapshot.BackendConnectionErrors.SetTimeoutCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.TimeoutCount, 0))
-	snapshot.BackendConnectionErrors.SetConnectionRefusedCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.ConnectionRefusedCount, 0))
-	snapshot.BackendConnectionErrors.SetUnknownHostCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.UnknownHostCount, 0))
-	snapshot.BackendConnectionErrors.SetOtherCount(atomic.SwapInt64(tr.record.BackendConnectionErrors.OtherCount, 0))
-	snapshot.SetTimestamp(time.Now())
+func (tr *telemetryRecorder) Rotate() types.TelemetryRecord {
+	snapshot := types.TelemetryRecord{
+		Timestamp: aws.Time(time.Now()),
+		BackendConnectionErrors: &types.BackendConnectionErrors{
+			HTTPCode4XXCount:       aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 0)),
+			HTTPCode5XXCount:       aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 0)),
+			ConnectionRefusedCount: aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.ConnectionRefusedCount, 0)),
+			OtherCount:             aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.OtherCount, 0)),
+			TimeoutCount:           aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.TimeoutCount, 0)),
+			UnknownHostCount:       aws.Int32(atomic.SwapInt32(tr.record.BackendConnectionErrors.UnknownHostCount, 0)),
+		},
+		SegmentsReceivedCount:  aws.Int32(atomic.SwapInt32(tr.record.SegmentsReceivedCount, 0)),
+		SegmentsRejectedCount:  aws.Int32(atomic.SwapInt32(tr.record.SegmentsRejectedCount, 0)),
+		SegmentsSentCount:      aws.Int32(atomic.SwapInt32(tr.record.SegmentsSentCount, 0)),
+		SegmentsSpilloverCount: aws.Int32(atomic.SwapInt32(tr.record.SegmentsSpilloverCount, 0)),
+	}
+
 	tr.hasRecording.Store(false)
 	return snapshot
 }
 
 func (tr *telemetryRecorder) RecordSegmentsReceived(count int) {
-	atomic.AddInt64(tr.record.SegmentsReceivedCount, int64(count))
+	atomic.AddInt32(tr.record.SegmentsReceivedCount, int32(count))
 	tr.hasRecording.Store(true)
 }
 
 func (tr *telemetryRecorder) RecordSegmentsSent(count int) {
-	atomic.AddInt64(tr.record.SegmentsSentCount, int64(count))
+	atomic.AddInt32(tr.record.SegmentsSentCount, int32(count))
 	tr.hasRecording.Store(true)
 }
 
 func (tr *telemetryRecorder) RecordSegmentsSpillover(count int) {
-	atomic.AddInt64(tr.record.SegmentsSpilloverCount, int64(count))
+	atomic.AddInt32(tr.record.SegmentsSpilloverCount, int32(count))
 	tr.hasRecording.Store(true)
 }
 
 func (tr *telemetryRecorder) RecordSegmentsRejected(count int) {
-	atomic.AddInt64(tr.record.SegmentsRejectedCount, int64(count))
+	atomic.AddInt32(tr.record.SegmentsRejectedCount, int32(count))
 	tr.hasRecording.Store(true)
 }
 
@@ -120,25 +124,25 @@ func (tr *telemetryRecorder) RecordConnectionError(err error) {
 	if ok := errors.As(err, &requestFailure); ok {
 		switch requestFailure.StatusCode() / 100 {
 		case 5:
-			atomic.AddInt64(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
+			atomic.AddInt32(tr.record.BackendConnectionErrors.HTTPCode5XXCount, 1)
 		case 4:
-			atomic.AddInt64(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
+			atomic.AddInt32(tr.record.BackendConnectionErrors.HTTPCode4XXCount, 1)
 		default:
-			atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
+			atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	} else {
 		var awsError awserr.Error
 		if ok = errors.As(err, &awsError); ok {
 			switch awsError.Code() {
 			case request.ErrCodeResponseTimeout:
-				atomic.AddInt64(tr.record.BackendConnectionErrors.TimeoutCount, 1)
+				atomic.AddInt32(tr.record.BackendConnectionErrors.TimeoutCount, 1)
 			case request.ErrCodeRequestError:
-				atomic.AddInt64(tr.record.BackendConnectionErrors.UnknownHostCount, 1)
+				atomic.AddInt32(tr.record.BackendConnectionErrors.UnknownHostCount, 1)
 			default:
-				atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
+				atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
 			}
 		} else {
-			atomic.AddInt64(tr.record.BackendConnectionErrors.OtherCount, 1)
+			atomic.AddInt32(tr.record.BackendConnectionErrors.OtherCount, 1)
 		}
 	}
 	tr.hasRecording.Store(true)
