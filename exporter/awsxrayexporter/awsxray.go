@@ -6,9 +6,10 @@ package awsxrayexporter // import "github.com/open-telemetry/opentelemetry-colle
 import (
 	"context"
 	"errors"
+	"fmt"
 
-	"github.com/aws/aws-sdk-go/aws/awserr"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	"github.com/aws/smithy-go"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
@@ -28,31 +29,23 @@ const (
 
 // newTracesExporter creates an exporter.Traces that converts to an X-Ray PutTraceSegments
 // request and then posts the request to the configured region's X-Ray endpoint.
-func newTracesExporter(
-	cfg *Config,
-	set exporter.Settings,
-	cn awsutil.ConnAttr,
-	registry telemetry.Registry,
-) (exporter.Traces, error) {
+func newTracesExporter(ctx context.Context, cfg *Config, set exporter.Settings, registry telemetry.Registry) (exporter.Traces, error) {
 	typeLog := zap.String("type", set.ID.Type().String())
 	nameLog := zap.String("name", set.ID.String())
 	logger := set.Logger
-	awsConfig, session, err := awsutil.GetAWSConfigSession(logger, cn, &cfg.AWSSessionSettings)
+	awsConfig, err := awsutil.GetAWSConfig(logger, &cfg.AWSSessionSettings)
 	if err != nil {
 		return nil, err
 	}
-	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo, session)
+	xrayClient := awsxray.NewXRayClient(logger, awsConfig, set.BuildInfo)
 	sender := telemetry.NewNopSender()
 	if cfg.TelemetryConfig.Enabled {
-		opts := telemetry.ToOptions(cfg.TelemetryConfig, session, &cfg.AWSSessionSettings)
+		opts := telemetry.ToOptions(ctx, cfg.TelemetryConfig, awsConfig, &cfg.AWSSessionSettings)
 		opts = append(opts, telemetry.WithLogger(set.Logger))
 		sender = registry.Register(set.ID, cfg.TelemetryConfig, xrayClient, opts...)
 	}
-	return exporterhelper.NewTraces(
-		context.TODO(),
-		set,
-		cfg,
-		func(_ context.Context, td ptrace.Traces) error {
+	return exporterhelper.NewTraces(context.Background(), set, cfg,
+		func(ctx context.Context, td ptrace.Traces) error {
 			var err error
 			logger.Debug("TracesExporter", typeLog, nameLog, zap.Int("#spans", td.SpanCount()))
 
@@ -65,9 +58,9 @@ func newTracesExporter(
 				} else {
 					nextOffset = offset + maxSegmentsPerPut
 				}
-				input := xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
-				logger.Debug("request: " + input.String())
-				output, localErr := xrayClient.PutTraceSegments(&input)
+				input := &xray.PutTraceSegmentsInput{TraceSegmentDocuments: documents[offset:nextOffset]}
+				logger.Debug("request: " + fmt.Sprintf("%+v", input))
+				output, localErr := xrayClient.PutTraceSegments(ctx, input)
 				if localErr != nil {
 					logger.Debug("response error", zap.Error(localErr))
 					err = wrapErrorIfBadRequest(localErr) // record error
@@ -76,7 +69,7 @@ func newTracesExporter(
 					sender.RecordSegmentsSent(len(input.TraceSegmentDocuments))
 				}
 				if output != nil {
-					logger.Debug("response: " + output.String())
+					logger.Debug("response: " + fmt.Sprintf("%+v", output))
 				}
 				if err != nil {
 					break
@@ -85,7 +78,7 @@ func newTracesExporter(
 			return err
 		},
 		exporterhelper.WithStart(func(context.Context, component.Host) error {
-			sender.Start()
+			sender.Start(ctx)
 			return nil
 		}),
 		exporterhelper.WithShutdown(func(context.Context) error {
@@ -96,8 +89,8 @@ func newTracesExporter(
 	)
 }
 
-func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []*string {
-	documents := make([]*string, 0, td.SpanCount())
+func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace.Traces) []string {
+	documents := make([]string, 0, td.SpanCount())
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rspans := td.ResourceSpans().At(i)
@@ -117,9 +110,7 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 					continue
 				}
 
-				for l := range documentsForSpan {
-					documents = append(documents, &documentsForSpan[l])
-				}
+				documents = append(documents, documentsForSpan...)
 			}
 		}
 	}
@@ -127,9 +118,10 @@ func extractResourceSpans(config component.Config, logger *zap.Logger, td ptrace
 }
 
 func wrapErrorIfBadRequest(err error) error {
-	var rfErr awserr.RequestFailure
-	if errors.As(err, &rfErr) && rfErr.StatusCode() < 500 {
+	var ae smithy.APIError
+	if errors.As(err, &ae) && ae.ErrorFault() == smithy.FaultClient {
 		return consumererror.NewPermanent(err)
 	}
+
 	return err
 }
