@@ -211,7 +211,7 @@ func (s *azureScraper) loadCredentials(host component.Host) (err error) {
 			return err
 		}
 	default:
-		return fmt.Errorf("unknown authentication %v", s.cfg.Authentication)
+		return fmt.Errorf("unknown credentials %v", s.cfg.Credentials)
 	}
 	return nil
 }

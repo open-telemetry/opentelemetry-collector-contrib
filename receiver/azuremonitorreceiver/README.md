@@ -23,9 +23,7 @@ The following settings are required:
 
 The following settings are optional:
 
-- `credentials` to get valid credentials for azure. It should be the id of an `azureauthextension` component.
-- `auth` (deprecated), if `credentials` are not specified (default = service_principal). Specifies the used authentication method:
-  - Supported values for `auth` are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
+- `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
@@ -128,7 +126,7 @@ Using [Azure Workload Identity](https://learn.microsoft.com/en-us/azure/develope
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "workload_identity"
+    credentials: "workload_identity"
     tenant_id: "${env:AZURE_TENANT_ID}"
     client_id: "${env:AZURE_CLIENT_ID}"
     federated_token_file: "${env:AZURE_FEDERATED_TOKEN_FILE}"
@@ -140,7 +138,7 @@ Using [Managed Identity](https://learn.microsoft.com/en-us/azure/developer/go/az
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "managed_identity"
+    credentials: "managed_identity"
     client_id: "${env:AZURE_CLIENT_ID}"
 ```
 
@@ -150,7 +148,7 @@ Using [Environment Variables](https://learn.microsoft.com/en-us/azure/developer/
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    auth: "default_credentials"
+    credentials: "default_credentials"
 ```
 
 [Using `azureauthextension`](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension#azure-authenticator-extension) for authentication:

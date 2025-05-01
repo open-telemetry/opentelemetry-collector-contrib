@@ -259,8 +259,8 @@ type Config struct {
 	// useless.
 	Credentials string `mapstructure:"credentials"`
 
-	// Authentication is deprecated.
-	Authentication     string `mapstructure:"auth"`
+	// Credentials is deprecated.
+	Credentials                       string                        `mapstructure:"credentials"`
 	TenantID           string `mapstructure:"tenant_id"`
 	ClientID           string `mapstructure:"client_id"`
 	ClientSecret       string `mapstructure:"client_secret"`
@@ -280,13 +280,14 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	if c.Credentials == "" {
+	//if c.Credentials == "" {
 		// only matters if there is no token provider configured
-		switch c.Authentication {
-		case servicePrincipal:
-			if c.TenantID == "" {
-				err = multierr.Append(err, errMissingTenantID)
-			}
+		
+	switch c.Credentials {
+	case servicePrincipal:
+		if c.TenantID == "" {
+			err = multierr.Append(err, errMissingTenantID)
+		}
 
 			if c.ClientID == "" {
 				err = multierr.Append(err, errMissingClientID)
@@ -308,11 +309,10 @@ func (c Config) Validate() (err error) {
 				err = multierr.Append(err, errMissingFedTokenFile)
 			}
 
-		case managedIdentity:
-		case defaultCredentials:
-		default:
-			return fmt.Errorf("authentication %q is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
-		}
+	case managedIdentity:
+	case defaultCredentials:
+	default:
+		return fmt.Errorf("credentials %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Credentials, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {
