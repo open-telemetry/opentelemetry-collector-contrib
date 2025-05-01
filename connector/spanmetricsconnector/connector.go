@@ -438,6 +438,7 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
 						resourceAttr.CopyTo(rscAndEventAttrs)
+						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
 						event.Attributes().Range(func(k string, v pcommon.Value) bool {
 							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
 							return true
