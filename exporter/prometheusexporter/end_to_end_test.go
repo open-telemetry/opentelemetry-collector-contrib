@@ -129,13 +129,13 @@ func TestUTF8EscapingWithSuffixes(t *testing.T) {
 	}
 
 	// Declare a dotted metric and label name.
-	escapedResponse := `
+	rawResponse := `
 # HELP "my.metric" an escaped metric name.
 # TYPE "my.metric" counter
 {"my.metric", "my.label"="my.value"} 20.0
 `
 
-	server := NewE2ETestServer(t, escapedResponse)
+	server := NewE2ETestServer(t, rawResponse)
 	defer server.Close()
 	srvURL, err := url.Parse(server.URL)
 	require.NoError(t, err)
@@ -196,13 +196,13 @@ func TestUTF8EscapingNoSuffixes(t *testing.T) {
 	}
 
 	// Declare a dotted metric and label name.
-	escapedResponse := `
+	rawResponse := `
 # HELP "my.metric" an escaped metric name.
 # TYPE "my.metric" counter
 {"my.metric", "my.label"="my.value"} 20.0
 `
 
-	server := NewE2ETestServer(t, escapedResponse)
+	server := NewE2ETestServer(t, rawResponse)
 	defer server.Close()
 	srvURL, err := url.Parse(server.URL)
 	require.NoError(t, err)
@@ -264,12 +264,12 @@ type e2eTestServer struct {
 	wg                 sync.WaitGroup
 }
 
-func NewE2ETestServer(t *testing.T, response string) *e2eTestServer {
+func NewE2ETestServer(t *testing.T, injectResponse string) *e2eTestServer {
 	// 1. Create the Prometheus scrape endpoint.
 	var server e2eTestServer
 	server.Server = httptest.NewServer(http.HandlerFunc(func(rw http.ResponseWriter, _ *http.Request) {
 		// Serve back the metrics as if they were from DropWizard.
-		_, err := rw.Write([]byte(response))
+		_, err := rw.Write([]byte(injectResponse))
 		assert.NoError(t, err)
 		server.currentScrapeIndex++
 		if server.currentScrapeIndex == 8 { // We shall let the Prometheus receiver scrape the DropWizard mock server, at least 8 times.
