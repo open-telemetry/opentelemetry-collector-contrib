@@ -129,8 +129,9 @@ func TestUTF8EscapingWithSuffixes(t *testing.T) {
 		ServerConfig: confighttp.ServerConfig{
 			Endpoint: "localhost:8787",
 		},
-		SendTimestamps:    true,
-		MetricExpiration:  2 * time.Hour,
+		SendTimestamps:   true,
+		MetricExpiration: 2 * time.Hour,
+		// Add suffixes
 		AddMetricSuffixes: true,
 	}
 
@@ -185,6 +186,7 @@ func TestUTF8EscapingNoSuffixes(t *testing.T) {
 		SendTimestamps:    true,
 		MetricExpiration:  2 * time.Hour,
 		EnableOpenMetrics: true,
+		// Do not add suffixes
 		AddMetricSuffixes: false,
 	}
 
