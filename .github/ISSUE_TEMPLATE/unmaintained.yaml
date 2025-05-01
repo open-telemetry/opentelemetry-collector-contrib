@@ -135,6 +135,7 @@ body:
       - extension/storage/filestorage
       - extension/storage/redisstorage
       - extension/sumologic
+      - extension/targetallocator
       - extension/tpm
       - internal/aws
       - internal/collectd

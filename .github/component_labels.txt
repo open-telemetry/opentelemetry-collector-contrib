@@ -113,6 +113,7 @@ extension/storage/dbstorage extension/storage/dbstorage
 extension/storage/filestorage extension/storage/filestorage
 extension/storage/redisstorageextension extension/storage/redisstorage
 extension/sumologicextension extension/sumologic
+extension/targetallocatorextension extension/targetallocator
 extension/tpmextension extension/tpm
 internal/aws internal/aws
 internal/collectd internal/collectd

@@ -432,6 +432,10 @@ component_management:
     name: extension_sumologic
     paths:
     - extension/sumologicextension/**
+  - component_id: extension_targetallocator
+    name: extension_targetallocator
+    paths:
+    - extension/targetallocatorextension/**
   - component_id: extension_tpm
     name: extension_tpm
     paths:
