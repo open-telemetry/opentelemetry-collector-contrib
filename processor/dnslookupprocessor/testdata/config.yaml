@@ -1,0 +1,13 @@
+dnslookup/invalid_attributes:
+  resolve:
+    attributes: []
+    resolved_attribute: "custom.ip"
+dnslookup/custom_attributes:
+  resolve:
+    enabled: true
+    attributes: ["custom.address", "proxy.address"]
+    resolved_attribute: "custom.ip"
+  reverse:
+    enabled: true
+    attributes: ["custom.address", "proxy.address"]
+    resolved_attribute: "custom.ip"
