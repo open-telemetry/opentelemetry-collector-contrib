@@ -71,6 +71,15 @@ jvm_gc_collection_seconds_sum{gc="G1 Old Generation",} 0.0`
                 - targets: ['%s']
         `, srvURL.Host)
 
+	exporterCfg := &Config{
+		Namespace: "test",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:8787",
+		},
+		SendTimestamps:   true,
+		MetricExpiration: 2 * time.Hour,
+	}
+
 	wantLineRegexps := []string{
 		`. HELP test_jvm_gc_collection_seconds Time spent in a given JVM garbage collector in seconds.`,
 		`. TYPE test_jvm_gc_collection_seconds summary`,
@@ -111,10 +120,10 @@ jvm_gc_collection_seconds_sum{gc="G1 Old Generation",} 0.0`
 		`test_target_info.http_scheme=\"http\",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*,server_port=".*",url_scheme="http". 1`,
 	}
 
-	server.RunTest(t, scrapeConfig, wantLineRegexps)
+	server.RunTest(t, scrapeConfig, exporterCfg, wantLineRegexps)
 }
 
-func TestUTF8Escaping(t *testing.T) {
+func TestUTF8EscapingWithSuffixes(t *testing.T) {
 	if testing.Short() {
 		t.Skip("This test can take a couple of seconds")
 	}
@@ -139,14 +148,91 @@ func TestUTF8Escaping(t *testing.T) {
             - job_name: 'otel-collector'
               scrape_interval: 50ms
               scrape_timeout: 50ms
-              add_metric_suffixes: true
               static_configs:
                 - targets: ['%s']
         `, srvURL.Host)
 
+	exporterCfg := &Config{
+		Namespace: "test",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:8787",
+		},
+		SendTimestamps:    true,
+		MetricExpiration:  2 * time.Hour,
+		AddMetricSuffixes: true,
+	}
+
 	// Confirm that metric and label names are escaped.
 	want := []string{
-		`# HELP test_my_metric an escaped metric name.xx`,
+		`# HELP test_my_metric_total an escaped metric name.`,
+		`# TYPE test_my_metric_total counter`,
+		`test_my_metric_total{instance="127.0.0.1:[0-9]*",job="otel-collector",my_label="my.value"} 20 .*`,
+		`# HELP test_scrape_duration_seconds Duration of the scrape`,
+		`# TYPE test_scrape_duration_seconds gauge`,
+		`test_scrape_duration_seconds{instance="127.0.0.1:[0-9]*",job="otel-collector"} .* .*`,
+		`# HELP test_scrape_samples_post_metric_relabeling The number of samples remaining after metric relabeling was applied`,
+		`# TYPE test_scrape_samples_post_metric_relabeling gauge`,
+		`test_scrape_samples_post_metric_relabeling{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
+		`# HELP test_scrape_samples_scraped The number of samples the target exposed`,
+		`# TYPE test_scrape_samples_scraped gauge`,
+		`test_scrape_samples_scraped{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
+		`# HELP test_scrape_series_added The approximate number of new series in this scrape`,
+		`# TYPE test_scrape_series_added gauge`,
+		`test_scrape_series_added{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
+		`# HELP test_target_info Target metadata`,
+		`# TYPE test_target_info gauge`,
+		`test_target_info{http_scheme="http",instance="127.0.0.1:[0-9]*",job="otel-collector",net_host_port="[0-9]*",server_port="[0-9]*",url_scheme="http"} 1`,
+		`# HELP test_up The scraping was successful`,
+		`# TYPE test_up gauge`,
+		`test_up{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
+	}
+
+	server.RunTest(t, scrapeConfig, exporterCfg, want)
+}
+
+func TestUTF8EscapingNoSuffixes(t *testing.T) {
+	if testing.Short() {
+		t.Skip("This test can take a couple of seconds")
+	}
+
+	// Declare a dotted metric and label name.
+	escapedResponse := `
+# HELP "my.metric" an escaped metric name.
+# TYPE "my.metric" counter
+{"my.metric", "my.label"="my.value"} 20.0
+`
+
+	server := NewE2ETestServer(t, escapedResponse)
+	defer server.Close()
+	srvURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	scrapeConfig := fmt.Sprintf(`
+        global:
+          scrape_interval: 2ms
+
+        scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 50ms
+              scrape_timeout: 50ms
+              static_configs:
+                - targets: ['%s']
+        `, srvURL.Host)
+
+	exporterCfg := &Config{
+		Namespace: "test",
+		ServerConfig: confighttp.ServerConfig{
+			Endpoint: "localhost:8787",
+		},
+		SendTimestamps:    true,
+		MetricExpiration:  2 * time.Hour,
+		EnableOpenMetrics: true,
+		AddMetricSuffixes: false,
+	}
+
+	// Confirm that metric and label names are escaped.
+	want := []string{
+		`# HELP test_my_metric an escaped metric name.`,
 		`# TYPE test_my_metric counter`,
 		`test_my_metric{instance="127.0.0.1:[0-9]*",job="otel-collector",my_label="my.value"} 20 .*`,
 		`# HELP test_scrape_duration_seconds Duration of the scrape`,
@@ -169,7 +255,7 @@ func TestUTF8Escaping(t *testing.T) {
 		`test_up{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
 	}
 
-	server.RunTest(t, scrapeConfig, want)
+	server.RunTest(t, scrapeConfig, exporterCfg, want)
 }
 
 type e2eTestServer struct {
@@ -194,23 +280,14 @@ func NewE2ETestServer(t *testing.T, response string) *e2eTestServer {
 	return &server
 }
 
-func (s *e2eTestServer) RunTest(t *testing.T, scrapeConfig string, wantLineRegexps []string) {
+func (s *e2eTestServer) RunTest(t *testing.T, scrapeConfig string, exporterConfig *Config, wantLineRegexps []string) {
 	s.wg.Add(1) // scrape one endpoint
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
-	// 2. Create the Prometheus metrics exporter that'll receive and verify the metrics produced.
-	exporterCfg := &Config{
-		Namespace: "test",
-		ServerConfig: confighttp.ServerConfig{
-			Endpoint: "localhost:8787",
-		},
-		SendTimestamps:   true,
-		MetricExpiration: 2 * time.Hour,
-	}
 	exporterFactory := NewFactory()
 	set := exportertest.NewNopSettings(metadata.Type)
-	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterCfg)
+	exporter, err := exporterFactory.CreateMetrics(ctx, set, exporterConfig)
 	require.NoError(t, err)
 	require.NoError(t, exporter.Start(ctx, nil), "Failed to start the Prometheus exporter")
 	t.Cleanup(func() { require.NoError(t, exporter.Shutdown(ctx)) })
@@ -235,7 +312,7 @@ func (s *e2eTestServer) RunTest(t *testing.T, scrapeConfig string, wantLineRegex
 	// 4. Scrape from the Prometheus receiver to ensure that we export summary metrics
 	s.wg.Wait()
 
-	req, err := http.NewRequest("GET", "http://"+exporterCfg.Endpoint+"/metrics", nil)
+	req, err := http.NewRequest("GET", "http://"+exporterConfig.Endpoint+"/metrics", nil)
 	require.NoError(t, err, "Failed to construct request")
 	req.Header.Add("Accept", "text/plain; version=1.0.0; charset=utf-8; escaping=allow-utf-8")
 	client := &http.Client{}
