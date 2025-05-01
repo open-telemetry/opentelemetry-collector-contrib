@@ -232,7 +232,7 @@ receiver/collectdreceiver/                                       @open-telemetry
 receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
 receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
-receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni
+receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni @VihasMakwana @rogercoll
 receiver/envoyalsreceiver/                                       @open-telemetry/collector-contrib-approvers @evan-bradley @zirain
 receiver/expvarreceiver/                                         @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/faroreceiver/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk

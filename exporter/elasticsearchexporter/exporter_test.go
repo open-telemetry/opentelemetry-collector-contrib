@@ -2369,7 +2369,7 @@ func TestExporterAuth(t *testing.T) {
 	done := make(chan struct{}, 1)
 	testauthID := component.NewID(component.MustNewType("authtest"))
 	exporter := newUnstartedTestLogsExporter(t, "http://testing.invalid", func(cfg *Config) {
-		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
 	})
 	err := exporter.Start(context.Background(), &mockHost{
 		extensions: map[component.ID]component.Component{
@@ -2402,7 +2402,7 @@ func TestExporterBatcher(t *testing.T) {
 			BatcherConfig: batcherCfg,
 			enabledSet:    true,
 		}
-		cfg.Auth = &configauth.Authentication{AuthenticatorID: testauthID}
+		cfg.Auth = &configauth.Config{AuthenticatorID: testauthID}
 		cfg.Retry.Enabled = false
 	})
 	err := exporter.Start(context.Background(), &mockHost{
