@@ -242,7 +242,7 @@ type Config struct {
 	Cloud                             string                        `mapstructure:"cloud"`
 	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
 	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
-	Authentication                    string                        `mapstructure:"auth"`
+	Credentials                       string                        `mapstructure:"credentials"`
 	TenantID                          string                        `mapstructure:"tenant_id"`
 	ClientID                          string                        `mapstructure:"client_id"`
 	ClientSecret                      string                        `mapstructure:"client_secret"`
@@ -272,7 +272,7 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	switch c.Authentication {
+	switch c.Credentials {
 	case servicePrincipal:
 		if c.TenantID == "" {
 			err = multierr.Append(err, errMissingTenantID)
@@ -301,7 +301,7 @@ func (c Config) Validate() (err error) {
 	case managedIdentity:
 	case defaultCredentials:
 	default:
-		return fmt.Errorf("authentication %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Authentication, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		return fmt.Errorf("credentials %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Credentials, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {

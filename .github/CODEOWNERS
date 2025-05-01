@@ -18,6 +18,8 @@
 
 # Start components list
 
+cmd/codecovgen/                                                  @open-telemetry/collector-contrib-approvers @mx-psi
+cmd/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
@@ -230,7 +232,7 @@ receiver/collectdreceiver/                                       @open-telemetry
 receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
 receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
-receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni
+receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni @VihasMakwana @rogercoll
 receiver/envoyalsreceiver/                                       @open-telemetry/collector-contrib-approvers @evan-bradley @zirain
 receiver/expvarreceiver/                                         @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/faroreceiver/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
@@ -288,7 +290,7 @@ receiver/otlpjsonfilereceiver/                                   @open-telemetry
 receiver/podmanreceiver/                                         @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers @antonblock
 receiver/pprofreceiver/                                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
-receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @krajorama
 receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure

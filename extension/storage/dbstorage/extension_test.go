@@ -12,6 +12,7 @@ import (
 	"runtime"
 	"sync"
 	"testing"
+	"time"
 
 	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/docker/go-connections/nat"
@@ -54,8 +55,15 @@ func TestExtensionIntegrityWithPostgres(t *testing.T) {
 
 func testExtensionIntegrity(t *testing.T, se storage.Extension) {
 	ctx := context.Background()
-	err := se.Start(context.Background(), componenttest.NewNopHost())
-	assert.NoError(t, err)
+
+	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/37079
+	// DB instantiation fails if we instantly try to connect to it, give it some time to start
+	var err error
+	require.Eventuallyf(t, func() bool {
+		err = se.Start(context.Background(), componenttest.NewNopHost())
+		return err == nil
+	}, 30*time.Second, 100*time.Millisecond, "timeout waiting for db: %v", err)
+
 	defer func() {
 		err = se.Shutdown(context.Background())
 		assert.NoError(t, err)
