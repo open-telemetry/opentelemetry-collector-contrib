@@ -56,20 +56,6 @@ jvm_gc_collection_seconds_sum{gc="G1 Old Generation",} 0.0`
 
 	server := NewE2ETestServer(t, dropWizardResponse)
 	defer server.Close()
-	srvURL, err := url.Parse(server.URL)
-	require.NoError(t, err)
-
-	scrapeConfig := fmt.Sprintf(`
-        global:
-          scrape_interval: 2ms
-
-        scrape_configs:
-            - job_name: 'otel-collector'
-              scrape_interval: 50ms
-              scrape_timeout: 50ms
-              static_configs:
-                - targets: ['%s']
-        `, srvURL.Host)
 
 	exporterCfg := &Config{
 		Namespace: "test",
@@ -120,7 +106,7 @@ jvm_gc_collection_seconds_sum{gc="G1 Old Generation",} 0.0`
 		`test_target_info.http_scheme=\"http\",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*,server_port=".*",url_scheme="http". 1`,
 	}
 
-	server.RunTest(t, scrapeConfig, exporterCfg, wantLineRegexps)
+	server.RunTest(t, exporterCfg, wantLineRegexps)
 }
 
 func TestUTF8EscapingWithSuffixes(t *testing.T) {
@@ -137,20 +123,6 @@ func TestUTF8EscapingWithSuffixes(t *testing.T) {
 
 	server := NewE2ETestServer(t, rawResponse)
 	defer server.Close()
-	srvURL, err := url.Parse(server.URL)
-	require.NoError(t, err)
-
-	scrapeConfig := fmt.Sprintf(`
-        global:
-          scrape_interval: 2ms
-
-        scrape_configs:
-            - job_name: 'otel-collector'
-              scrape_interval: 50ms
-              scrape_timeout: 50ms
-              static_configs:
-                - targets: ['%s']
-        `, srvURL.Host)
 
 	exporterCfg := &Config{
 		Namespace: "test",
@@ -187,7 +159,7 @@ func TestUTF8EscapingWithSuffixes(t *testing.T) {
 		`test_up{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
 	}
 
-	server.RunTest(t, scrapeConfig, exporterCfg, want)
+	server.RunTest(t, exporterCfg, want)
 }
 
 func TestUTF8EscapingNoSuffixes(t *testing.T) {
@@ -204,20 +176,6 @@ func TestUTF8EscapingNoSuffixes(t *testing.T) {
 
 	server := NewE2ETestServer(t, rawResponse)
 	defer server.Close()
-	srvURL, err := url.Parse(server.URL)
-	require.NoError(t, err)
-
-	scrapeConfig := fmt.Sprintf(`
-        global:
-          scrape_interval: 2ms
-
-        scrape_configs:
-            - job_name: 'otel-collector'
-              scrape_interval: 50ms
-              scrape_timeout: 50ms
-              static_configs:
-                - targets: ['%s']
-        `, srvURL.Host)
 
 	exporterCfg := &Config{
 		Namespace: "test",
@@ -255,11 +213,12 @@ func TestUTF8EscapingNoSuffixes(t *testing.T) {
 		`test_up{instance="127.0.0.1:[0-9]*",job="otel-collector"} 1 .*`,
 	}
 
-	server.RunTest(t, scrapeConfig, exporterCfg, want)
+	server.RunTest(t, exporterCfg, want)
 }
 
 type e2eTestServer struct {
 	*httptest.Server
+	scrapeConfig       string
 	currentScrapeIndex int
 	wg                 sync.WaitGroup
 }
@@ -277,10 +236,25 @@ func NewE2ETestServer(t *testing.T, injectResponse string) *e2eTestServer {
 		}
 	}))
 
+	srvURL, err := url.Parse(server.URL)
+	require.NoError(t, err)
+
+	server.scrapeConfig = fmt.Sprintf(`
+        global:
+          scrape_interval: 2ms
+
+        scrape_configs:
+            - job_name: 'otel-collector'
+              scrape_interval: 50ms
+              scrape_timeout: 50ms
+              static_configs:
+                - targets: ['%s']
+        `, srvURL.Host)
+
 	return &server
 }
 
-func (s *e2eTestServer) RunTest(t *testing.T, scrapeConfig string, exporterConfig *Config, wantLineRegexps []string) {
+func (s *e2eTestServer) RunTest(t *testing.T, exporterConfig *Config, wantLineRegexps []string) {
 	s.wg.Add(1) // scrape one endpoint
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
@@ -294,7 +268,7 @@ func (s *e2eTestServer) RunTest(t *testing.T, scrapeConfig string, exporterConfi
 
 	// 3. Create the Prometheus receiver scraping from the DropWizard mock server and
 	// it'll feed scraped and converted metrics then pass them to the Prometheus exporter.
-	yamlConfig := []byte(scrapeConfig)
+	yamlConfig := []byte(s.scrapeConfig)
 	receiverConfig := new(prometheusreceiver.PromConfig)
 	require.NoError(t, yaml.Unmarshal(yamlConfig, receiverConfig))
 
