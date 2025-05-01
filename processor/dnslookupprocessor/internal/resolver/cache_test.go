@@ -34,9 +34,9 @@ func TestNewCacheResolver(t *testing.T) {
 			name:            "Valid configuration with both caches",
 			nextResolver:    mockResolver,
 			hitCacheSize:    100,
-			hitCacheTTL:     1 * time.Minute,
+			hitCacheTTL:     0,
 			missCacheSize:   50,
-			missCacheTTL:    30 * time.Second,
+			missCacheTTL:    0,
 			expectError:     false,
 			expectHitCache:  true,
 			expectMissCache: true,
@@ -45,9 +45,9 @@ func TestNewCacheResolver(t *testing.T) {
 			name:            "Valid configuration with only hit cache",
 			nextResolver:    mockResolver,
 			hitCacheSize:    100,
-			hitCacheTTL:     1 * time.Minute,
+			hitCacheTTL:     0,
 			missCacheSize:   0,
-			missCacheTTL:    30 * time.Second,
+			missCacheTTL:    0,
 			expectError:     false,
 			expectHitCache:  true,
 			expectMissCache: false,
@@ -56,9 +56,9 @@ func TestNewCacheResolver(t *testing.T) {
 			name:            "Valid configuration with only miss cache",
 			nextResolver:    mockResolver,
 			hitCacheSize:    0,
-			hitCacheTTL:     1 * time.Minute,
+			hitCacheTTL:     0,
 			missCacheSize:   50,
-			missCacheTTL:    30 * time.Second,
+			missCacheTTL:    0,
 			expectError:     false,
 			expectHitCache:  false,
 			expectMissCache: true,
@@ -67,9 +67,9 @@ func TestNewCacheResolver(t *testing.T) {
 			name:            "Valid configuration with no caches",
 			nextResolver:    mockResolver,
 			hitCacheSize:    0,
-			hitCacheTTL:     1 * time.Minute,
+			hitCacheTTL:     0,
 			missCacheSize:   0,
-			missCacheTTL:    30 * time.Second,
+			missCacheTTL:    0,
 			expectError:     false,
 			expectHitCache:  false,
 			expectMissCache: false,
@@ -78,9 +78,9 @@ func TestNewCacheResolver(t *testing.T) {
 			name:            "No next resolver",
 			nextResolver:    nil,
 			hitCacheSize:    100,
-			hitCacheTTL:     1 * time.Minute,
+			hitCacheTTL:     0,
 			missCacheSize:   50,
-			missCacheTTL:    30 * time.Second,
+			missCacheTTL:    0,
 			expectError:     true,
 			expectHitCache:  false,
 			expectMissCache: false,
@@ -142,7 +142,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hostname:      "example.com",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Resolve", ctx, "example.com").Return("192.168.1.1", nil).Once()
 			},
@@ -154,7 +154,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hostname:      "cached.com",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(_ *MockResolver) {
 			},
 			expectedIP:  "10.0.0.1",
@@ -168,7 +168,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hostname:      "notfound.com",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(_ *MockResolver) {
 			},
 			expectedIP:  "",
@@ -182,7 +182,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hostname:      "nocache.com",
 			hitCacheSize:  0,
 			missCacheSize: 0,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Resolve", ctx, "nocache.com").Return("172.16.0.1", nil).Once()
 			},
@@ -194,7 +194,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hostname:      "error.com",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Resolve", ctx, "error.com").Return("", errors.New("dns error")).Once()
 			},
@@ -270,7 +270,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			ip:            "192.168.1.1",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Reverse", ctx, "192.168.1.1").Return("example.com", nil).Once()
 			},
@@ -282,7 +282,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			ip:            "10.0.0.1",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(_ *MockResolver) {
 			},
 			expectedHostname: "cached.com",
@@ -296,7 +296,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			ip:            "1.1.1.1",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(_ *MockResolver) {
 			},
 			expectedHostname: "",
@@ -310,7 +310,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			ip:            "172.16.0.1",
 			hitCacheSize:  0,
 			missCacheSize: 0,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Reverse", ctx, "172.16.0.1").Return("nocache.com", nil).Once()
 			},
@@ -322,7 +322,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			ip:            "169.254.0.1",
 			hitCacheSize:  10,
 			missCacheSize: 10,
-			cacheTTL:      1 * time.Minute,
+			cacheTTL:      0,
 			setupMock: func(m *MockResolver) {
 				m.On("Reverse", ctx, "169.254.0.1").Return("", errors.New("dns error")).Once()
 			},
@@ -385,9 +385,9 @@ func TestCacheResolver_Close(t *testing.T) {
 	resolver, err := NewCacheResolver(
 		mockResolver,
 		10,
-		1*time.Minute,
+		0,
 		10,
-		1*time.Minute,
+		0,
 		logger,
 	)
 	require.NoError(t, err)

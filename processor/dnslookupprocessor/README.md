@@ -40,7 +40,9 @@ Some notable settings include:
 - `resolved_attribute`: The attribute name where the resolved result will be stored.
   - `source.ip` is the default for forward resolution.
   - [`source.address`](https://github.com/open-telemetry/semantic-conventions/blob/v1.32.0/docs/general/attributes.md#source) is the default for reverse resolution.
-
+- `*_cache_size`: Maximum number of entries in cache. 0 means disabled cache.
+- `*_cache_ttl`: Time-to-live in seconds for cache entries. 0 turns expiration off.
+- `timeout`: Timeout in seconds for each DNS lookup. Default is 0.5 seconds.
 
 ```yaml
 processors:
@@ -67,13 +69,13 @@ processors:
       # Attribute to store the resolved hostname.
       resolved_attribute: "source.address"
 
-    # Maximum number of failed resolutions to cache.
+    # Maximum number of failed resolutions to cache. 0 means no cache.
     miss_cache_size: 1000
-    # Time-to-live (seconds) for failed resolution cache entries.
+    # Time-to-live (seconds) for failed resolution cache entries. 0 means no expiration.
     miss_cache_ttl: 60
-    # Maximum number of successful resolutions to cache.
+    # Maximum number of successful resolutions to cache. 0 means no cache.
     hit_cache_size: 10000 
-    # Time-to-live (seconds) for successful resolution cache entries.
+    # Time-to-live (seconds) for successful resolution cache entries. 0 means no expiration.
     hit_cache_ttl: 300
     # Maximum number of retry attempts for DNS lookups.
     max_retries: 1

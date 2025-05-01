@@ -365,8 +365,8 @@ func TestHostFileResolver_Close(t *testing.T) {
 	require.NoError(t, err)
 
 	// Verify maps were populated
-	assert.Greater(t, len(resolver.hostnameToIP), 0)
-	assert.Greater(t, len(resolver.ipToHostname), 0)
+	assert.NotEmpty(t, resolver.hostnameToIP)
+	assert.NotEmpty(t, resolver.ipToHostname)
 
 	// Close the resolver
 	err = resolver.Close()

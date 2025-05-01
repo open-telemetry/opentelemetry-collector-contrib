@@ -492,7 +492,7 @@ func TestNameserverResolver_Close(t *testing.T) {
 
 	resolver, err := NewNameserverResolver([]string{"8.8.8.8"}, testTimeout, 1, logger)
 	require.NoError(t, err)
-	assert.Equal(t, 1, len(resolver.resolvers))
+	assert.Len(t, resolver.resolvers, 1)
 	assert.NotNil(t, resolver.resolvers[0])
 
 	err = resolver.Close()

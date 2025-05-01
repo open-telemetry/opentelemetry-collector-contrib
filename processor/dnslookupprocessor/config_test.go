@@ -213,8 +213,8 @@ func TestConfig_Validate(t *testing.T) {
 			mutateConfigFunc: func(cfg *Config) {
 				cfg.HitCacheTTL = 0
 			},
-			expectError: true,
-			errorMsg:    "hit_cache_ttl must be positive",
+			expectError: false,
+			errorMsg:    "hit_cache_ttl must be non-negative",
 		},
 		{
 			name: "Negative hit cache TTL",
@@ -222,15 +222,14 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.HitCacheTTL = -1
 			},
 			expectError: true,
-			errorMsg:    "hit_cache_ttl must be positive",
+			errorMsg:    "hit_cache_ttl must be non-negative",
 		},
 		{
 			name: "Zero miss cache TTL",
 			mutateConfigFunc: func(cfg *Config) {
 				cfg.MissCacheTTL = 0
 			},
-			expectError: true,
-			errorMsg:    "miss_cache_ttl must be positive",
+			expectError: false,
 		},
 		{
 			name: "Negative miss cache TTL",
@@ -238,7 +237,7 @@ func TestConfig_Validate(t *testing.T) {
 				cfg.MissCacheTTL = -1
 			},
 			expectError: true,
-			errorMsg:    "miss_cache_ttl must be positive",
+			errorMsg:    "miss_cache_ttl must be non-negative",
 		},
 		{
 			name: "No resolver configured",

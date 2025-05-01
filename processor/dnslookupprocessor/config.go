@@ -123,12 +123,12 @@ func (cfg *Config) Validate() error {
 		return fmt.Errorf("miss_cache_size must be non-negative, got: %d", cfg.MissCacheSize)
 	}
 
-	if cfg.HitCacheTTL <= 0 {
-		return fmt.Errorf("hit_cache_ttl must be positive, got: %d", cfg.HitCacheTTL)
+	if cfg.HitCacheTTL < 0 {
+		return fmt.Errorf("hit_cache_ttl must be non-negative, got: %d", cfg.HitCacheTTL)
 	}
 
-	if cfg.MissCacheTTL <= 0 {
-		return fmt.Errorf("miss_cache_ttl must be positive, got: %d", cfg.MissCacheTTL)
+	if cfg.MissCacheTTL < 0 {
+		return fmt.Errorf("miss_cache_ttl must be non-negative, got: %d", cfg.MissCacheTTL)
 	}
 
 	if !cfg.EnableSystemResolver && len(cfg.Hostfiles) == 0 && len(cfg.Nameservers) == 0 {
