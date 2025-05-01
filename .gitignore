@@ -9,6 +9,9 @@ vendor/
 .vscode
 *.code-workspace
 
+# Cursor
+.cursor
+
 # Project IDX
 .idx/
 

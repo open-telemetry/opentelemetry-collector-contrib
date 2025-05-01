@@ -1,0 +1,246 @@
+mode: daemonset
+image:
+  repository: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  tag: ""
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+resources:
+  limits:
+    cpu: 512m
+    memory: 2Gi
+useGOMEMLIMIT: true
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: true
+    storeCheckpoints: false
+  hostMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+  kubernetesEvents:
+    enabled: true
+  kubeletMetrics:
+    enabled: true
+extraEnvs:
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: "k8s.pod.ip=$(POD_IP)"
+  - name: DD_API_KEY
+    valueFrom:
+      secretKeyRef:
+        name: datadog-secrets
+        key: api-key
+        optional: false
+  - name: OTEL_K8S_NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace
+config:
+  receivers:
+    jaeger: null
+    zipkin: null
+    hostmetrics:
+      scrapers:
+        paging:
+          metrics:
+            system.paging.utilization:
+              enabled: true
+        cpu:
+          metrics:
+            system.cpu.utilization:
+              enabled: true
+            system.cpu.physical.count:
+              enabled: true
+            system.cpu.logical.count:
+              enabled: true
+            system.cpu.frequency:
+              enabled: true
+        disk:
+        load:
+        memory:
+        network:
+        processes:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  exporters:
+    debug:
+      verbosity: detailed
+    datadog:
+      host_metadata:
+        tags: ['env:${env:OTEL_K8S_NAMESPACE}']
+      metrics:
+        resource_attributes_as_tags: true
+        histograms:
+          mode: counters
+          send_count_sum_metrics: true
+      traces:
+        span_name_as_resource_name: true
+        compute_stats_by_span_kind: true
+        peer_service_aggregation: true
+        trace_buffer: 1000
+      api:
+        key: "${env:DD_API_KEY}"
+  processors:
+    attributes:
+      actions:
+        - key: log.file.path
+          pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<service_name>.*?)-.*
+          action: extract
+        - key: log.file.path
+          pattern: \/var\/log\/pods\/otel_opentelemetry-demo-(?P<source>.*?)-.*
+          action: extract
+        - key: service
+          from_attribute: service_name
+          action: upsert
+    transform:
+      metric_statements: &statements
+        - context: resource
+          statements:
+            - set(attributes["datadog.host.use_as_metadata"],true)
+            - set(attributes["datadog.host.tag.foo"],"bar")
+      trace_statements: *statements
+      log_statements: *statements
+    attributes/kafkasrc:
+      include:
+        match_type: regexp
+        attributes:
+          - {key: "source", value: 'kafka|frauddetectionservice|orderproducer'}
+      actions:
+        # this makes sure the source for logs that come from kafka|frauddetectionservice|orderproducer is
+        # set to kafka. The OOTB box kafka dashboard filters logs on source:kafka. This will still not work
+        # as it will be a log attribute and can only be searched by @source:kafka. We would need to support
+        # attributes_as_tags or find another solution for this to work.
+        - key: source
+          action: update
+          value: "kafka"
+    memory_limiter:
+      check_interval: 1s
+      limit_mib: 500
+    resourcedetection:
+      # ensures host.name and other important resource tags
+      # get picked up
+      detectors: [env, gcp, ecs, ec2, azure, system]
+      timeout: 5s
+      override: false
+      system:
+        # Enable optional system attributes
+        resource_attributes:
+          os.type:
+            enabled: true
+          os.description:
+            enabled: true
+          host.ip:
+            enabled: true
+          host.mac:
+            enabled: true
+          host.arch:
+            enabled: true
+          host.cpu.vendor.id:
+            enabled: true
+          host.cpu.model.name:
+            enabled: true
+          host.cpu.family:
+            enabled: true
+          host.cpu.model.id:
+            enabled: true
+          host.cpu.stepping:
+            enabled: true
+          host.cpu.cache.l2.size:
+            enabled: true
+          host.id:
+            enabled: false
+    # adds various tags related to k8s
+    # adds various tags related to k8s
+    k8sattributes:
+      passthrough: false
+      auth_type: "serviceAccount"
+      pod_association:
+        - sources:
+            - from: resource_attribute
+              name: k8s.pod.ip
+      extract:
+        metadata:
+          - k8s.pod.name
+          - k8s.pod.uid
+          - k8s.deployment.name
+          - k8s.node.name
+          - k8s.namespace.name
+          - k8s.pod.start_time
+          - k8s.replicaset.name
+          - k8s.replicaset.uid
+          - k8s.daemonset.name
+          - k8s.daemonset.uid
+          - k8s.job.name
+          - k8s.job.uid
+          - k8s.cronjob.name
+          - k8s.statefulset.name
+          - k8s.statefulset.uid
+          - container.image.name
+          - container.image.tag
+          - container.id
+          - k8s.container.name
+          - container.image.name
+          - container.image.tag
+          - container.id
+        labels:
+          - tag_name: kube_app_name
+            key: app.kubernetes.io/name
+            from: pod
+          - tag_name: kube_app_instance
+            key: app.kubernetes.io/instance
+            from: pod
+          - tag_name: kube_app_version
+            key: app.kubernetes.io/version
+            from: pod
+          - tag_name: kube_app_component
+            key: app.kubernetes.io/component
+            from: pod
+          - tag_name: kube_app_part_of
+            key: app.kubernetes.io/part-of
+            from: pod
+          - tag_name: kube_app_managed_by
+            key: app.kubernetes.io/managed-by
+            from: pod
+    batch:
+      send_batch_max_size: 1000
+      send_batch_size: 100
+      timeout: 10s
+    probabilistic_sampler:
+      hash_seed: 22
+      sampling_percentage: 15.3
+  connectors:
+    datadog/connector:
+      traces:
+        span_name_as_resource_name: true
+  service:
+    telemetry:
+      logs:
+        encoding: "json"
+        initial_fields:
+          - service: "otel-collector"
+    pipelines:
+      metrics:
+        receivers: [otlp, hostmetrics, prometheus, datadog/connector]
+        processors: [resourcedetection, k8sattributes, transform, batch]
+        exporters: [datadog]
+      traces:
+        receivers: [otlp]
+        processors: [resourcedetection, k8sattributes, transform, batch]
+        exporters: [datadog/connector]
+      traces/sampled:
+        receivers: [datadog/connector]
+        processors: [probabilistic_sampler, batch]
+        exporters: [datadog, debug]
+      logs:
+        processors: [memory_limiter, resourcedetection, k8sattributes, attributes, attributes/kafkasrc, transform, batch]
+        exporters: [datadog]

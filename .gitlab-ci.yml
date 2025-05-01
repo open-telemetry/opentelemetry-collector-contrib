@@ -1,0 +1,205 @@
+# ENV VARS
+variables:
+  CI_IMAGE: registry.ddbuild.io/ci/opentelemetry-collector-contrib:ci-image-2
+  BUILD_DD_REGISTRY: registry.ddbuild.io/ci/opentelemetry-collector-contrib
+  BUILD_DEMO_REGISTRY: 172597598159.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  BUILD_SANDBOX_REGISTRY: 601427279990.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  SANDBOX_CLUSTER_NAME: dd-otel
+  DEMO_CLUSTER_NAME: prod-eks-otel-a-us-east-1
+  SANDBOX_CLUSTER_ARN: "arn:aws:eks:us-east-1:601427279990:cluster/dd-otel"
+  DEMO_CLUSTER_ARN: "arn:aws:eks:us-east-1:172597598159:cluster/prod-eks-otel-a-us-east-1"
+  DEPLOY_SCRIPT: "./ci/scripts/ci-deploy.sh"
+  # To use images from test-infra-definitions dev branches, set the SUFFIX variable to -dev
+  # and check the job creating the image to make sure you have the right SHA prefix
+  TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX: ""
+  # Make sure to update test-infra-definitions version in go.mod as well
+  TEST_INFRA_DEFINITIONS_BUILDIMAGES: d610d4c9aa4b
+
+
+# BUILD STAGES
+stages:
+  - build-and-push-ci-image
+  - build-collector-image
+  - push-collector-image
+  - e2e
+  - staging-deploy
+  - prod-deploy
+
+# BUILD IMAGES
+build-ci-image:
+  stage: build-and-push-ci-image
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  script:
+    - TAG=ci-image-2
+    - docker build --file ci/Dockerfile.gitlab --tag $BUILD_DD_REGISTRY:$TAG .
+    - docker push $BUILD_DD_REGISTRY:$TAG
+
+.build-collector-image: &build-collector-image
+  stage: build-collector-image
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  script:
+    - IMAGE_TAG_PREFIX=otelcolcontrib
+    - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
+    - docker build --file ci/Dockerfile --tag $BUILD_REGISTRY:$TAG --label target=staging .
+    - docker push $BUILD_REGISTRY:$TAG
+build-collector-image-main:
+  !!merge <<: *build-collector-image
+  variables:
+    BUILD_REGISTRY: $BUILD_DD_REGISTRY
+
+# PUSH IMAGES
+.push-collector-image: &push-collector-image
+  stage: push-collector-image
+  tags: ["runner:docker"]
+  image: $CI_IMAGE
+  dependencies:
+    - build-collector-image-main
+  script:
+    - IMAGE_TAG_PREFIX=otelcolcontrib
+    - TAG="$IMAGE_TAG_PREFIX-v$CI_COMMIT_SHORT_SHA"
+    - docker pull $BUILD_DD_REGISTRY:$TAG
+    - docker tag $BUILD_DD_REGISTRY:$TAG $BUILD_REGISTRY:$TAG
+    - docker push $BUILD_REGISTRY:$TAG
+push-collector-image-demo:
+  !!merge <<: *push-collector-image
+  variables:
+    BUILD_REGISTRY: $BUILD_DEMO_REGISTRY
+push-collector-image-staging:
+  !!merge <<: *push-collector-image
+  variables:
+    BUILD_REGISTRY: $BUILD_SANDBOX_REGISTRY
+push-collector-image-agent-qa:
+  stage: push-collector-image
+  needs: ['build-collector-image-main']
+  trigger:
+    project: DataDog/public-images
+    branch: main
+    strategy: depend
+  variables:
+    IMG_SOURCES: $BUILD_DD_REGISTRY:otelcolcontrib-v${CI_COMMIT_SHORT_SHA}
+    IMG_DESTINATIONS: otel-collector-contrib:${CI_PIPELINE_ID}-${CI_COMMIT_SHORT_SHA}
+    IMG_REGISTRIES: agent-qa
+
+# DEPLOY COLLECTOR STAGING
+.staging-deploy: &staging-deploy
+  stage: staging-deploy
+  tags: ["runner:docker", "size:large"]
+  image: $CI_IMAGE
+  dependencies:
+    - push-collector-image-staging
+  rules:
+    - if: '$CI_COMMIT_REF_NAME =~ /-staging$/'
+  script:
+    - >-
+      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-api-key --with-decryption --query Parameter.Value --out text)
+    - >-
+      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.sand-eks-deploy-access-key --with-decryption --query Parameter.Value --out text)
+    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
+    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
+    - bash $DEPLOY_SCRIPT
+#env:otel-staging
+staging-deploy:
+  !!merge <<: *staging-deploy
+  variables:
+    CLUSTER_NAME: $SANDBOX_CLUSTER_NAME
+    CLUSTER_ARN: $SANDBOX_CLUSTER_ARN
+    NAMESPACE: otel-staging
+    NODE_GROUP: ng-3
+    MODE: daemonset
+    REPLICA_COUNT: 1
+    CLUSTER_ROLE: opentelemetry-collector
+    REGISTRY: $BUILD_SANDBOX_REGISTRY
+
+#env:otel-gateway
+staging-deploy-gateway:
+  !!merge <<: *staging-deploy
+  variables:
+    CLUSTER_NAME: $SANDBOX_CLUSTER_NAME
+    CLUSTER_ARN: $SANDBOX_CLUSTER_ARN
+    NAMESPACE: otel-gateway
+    NODE_GROUP: ng-5
+    MODE: deployment
+    REPLICA_COUNT: 3
+    CLUSTER_ROLE: opentelemetry-collector-gateway
+    REGISTRY: $BUILD_SANDBOX_REGISTRY
+
+#env:otel-ds-gateway
+staging-deploy-ds-gateway:
+  !!merge <<: *staging-deploy
+  variables:
+    CLUSTER_NAME: $SANDBOX_CLUSTER_NAME
+    CLUSTER_ARN: $SANDBOX_CLUSTER_ARN
+    NAMESPACE: otel-ds-gateway
+    NODE_GROUP: ng-6
+    MODE: deployment
+    REPLICA_COUNT: 3
+    CLUSTER_ROLE: opentelemetry-collector-ds-gateway
+    REGISTRY: $BUILD_SANDBOX_REGISTRY
+
+# DEPLOY COLLECTOR PROD
+.prod-deploy: &prod-deploy-demo-eks
+  stage: prod-deploy
+  tags: ["runner:docker", "size:large"]
+  image: $CI_IMAGE
+  dependencies:
+    - push-collector-image-demo
+  rules:
+    # changing to staging for testing purposes.
+    - if: '$CI_COMMIT_REF_NAME == "prod"'
+  script:
+    - >-
+      TEMP_AWS_ACCESS_KEY_ID=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.eks_access_key --with-decryption --query Parameter.Value --out text)
+    - >-
+      TEMP_AWS_SECRET_ACCESS_KEY=$(aws ssm get-parameter --region us-east-1 --name ci.opentelemetry-collector-contrib.eks_secret_access_key --with-decryption --query Parameter.Value --out text)
+    - export AWS_ACCESS_KEY_ID=$TEMP_AWS_ACCESS_KEY_ID
+    - export AWS_SECRET_ACCESS_KEY=$TEMP_AWS_SECRET_ACCESS_KEY
+    - bash $DEPLOY_SCRIPT
+#env:otel
+prod-deploy:
+  !!merge <<: *prod-deploy-demo-eks
+  variables:
+    CLUSTER_NAME: $DEMO_CLUSTER_NAME
+    CLUSTER_ARN: $DEMO_CLUSTER_ARN
+    NAMESPACE: otel
+    NODE_GROUP:
+    MODE: daemonset
+    REPLICA_COUNT: 1
+    CLUSTER_ROLE: opentelemetry-collector
+    REGISTRY: $BUILD_DEMO_REGISTRY
+
+.new_e2e_template:
+  stage: e2e
+  image: 486234852809.dkr.ecr.us-east-1.amazonaws.com/ci/test-infra-definitions/runner$TEST_INFRA_DEFINITIONS_BUILDIMAGES_SUFFIX:$TEST_INFRA_DEFINITIONS_BUILDIMAGES
+  tags: ["arch:amd64"]
+  before_script:
+    # Setup AWS Credentials
+    - mkdir -p ~/.aws
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.agent-qa-profile" --with-decryption --query "Parameter.Value" --output text >> ~/.aws/config
+    - export AWS_PROFILE=agent-qa-ci
+    # Now all `aws` commands target the agent-qa profile
+    - aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_public_key" --with-decryption --query "Parameter.Value" --output text > $E2E_AWS_PUBLIC_KEY_PATH
+    - touch $E2E_AWS_PRIVATE_KEY_PATH && chmod 600 $E2E_AWS_PRIVATE_KEY_PATH && aws ssm get-parameter --region us-east-1 --name "ci.opentelemetry-collector-contrib.ssh_private_key" --with-decryption --query "Parameter.Value" --output text > $E2E_AWS_PRIVATE_KEY_PATH
+    # Use S3 backend
+    - pulumi login "s3://dd-pulumi-state?region=us-east-1&awssdk=v2&profile=$AWS_PROFILE"
+  variables:
+    KUBERNETES_MEMORY_REQUEST: 12Gi
+    KUBERNETES_MEMORY_LIMIT: 16Gi
+    KUBERNETES_CPU_REQUEST: 6
+    E2E_PIPELINE_ID: $CI_PIPELINE_ID
+    E2E_COMMIT_SHORT_SHA: $CI_COMMIT_SHORT_SHA
+    E2E_AWS_PUBLIC_KEY_PATH: /tmp/agent-qa-ssh-key.pub
+    E2E_AWS_PRIVATE_KEY_PATH: /tmp/agent-qa-ssh-key
+    E2E_KEY_PAIR_NAME: ci.open-telemetry-collector-contrib
+    E2E_OUTPUT_DIR: $CI_PROJECT_DIR/e2e-output
+    E2E_PULUMI_VERBOSE_PROGRESS_STREAMS: true
+  script:
+    - cd e2etests && go test $TARGETS/... -v -timeout 0 --args -docker_secret $(aws ecr get-login-password)
+
+new-e2e-otel-collector:
+  extends: .new_e2e_template
+  needs: ['push-collector-image-agent-qa']
+  variables:
+    TARGETS: ./tests
+    TEAM: otel

@@ -1,0 +1,39 @@
+mode: daemonset
+image:
+  repository: 669783387624.dkr.ecr.us-east-1.amazonaws.com/otel-collector-contrib
+  tag: "otelcolcontrib-v6bc4add4"
+securityContext:
+  runAsUser: 0
+  runAsGroup: 0
+resources:
+  limits:
+    cpu: 512m
+    memory: 2Gi
+useGOMEMLIMIT: true
+presets:
+  logsCollection:
+    enabled: true
+    includeCollectorLogs: true
+    storeCheckpoints: false
+  hostMetrics:
+    enabled: true
+  kubernetesAttributes:
+    enabled: true
+  kubernetesEvents:
+    enabled: true
+  kubeletMetrics:
+    enabled: true
+extraEnvs:
+  - name: POD_IP
+    valueFrom:
+      fieldRef:
+        fieldPath: status.podIP
+  - name: OTEL_RESOURCE_ATTRIBUTES
+    value: "k8s.pod.ip=$(POD_IP)"
+  - name: DD_API_KEY
+    value: "abcdef"
+  - name: OTEL_K8S_NAMESPACE
+    valueFrom:
+      fieldRef:
+        apiVersion: v1
+        fieldPath: metadata.namespace

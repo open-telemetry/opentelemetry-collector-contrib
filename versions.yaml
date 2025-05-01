@@ -324,6 +324,7 @@ module-sets:
       - github.com/open-telemetry/opentelemetry-collector-contrib/testbed/mockdatasenders/mockdatadogagentexporter
 
 excluded-modules:
+  - github.com/DataDog/opentelemetry-collector-contrib/e2etests
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/otelcontribcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/cmd/oteltestbedcol
   - github.com/open-telemetry/opentelemetry-collector-contrib/internal/tools

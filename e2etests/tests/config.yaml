@@ -1,0 +1,36 @@
+  receivers:
+    otlp:
+      protocols:
+        grpc:
+          endpoint: 0.0.0.0:4317
+        http:
+          endpoint: 0.0.0.0:4318
+  exporters:
+    debug:
+      verbosity: detailed
+    datadog:
+      api:
+        key: "${DD_API_KEY}"
+        fail_on_invalid_key: false
+      metrics:
+        resource_attributes_as_tags: true
+  processors:
+    batch:
+  connectors:
+    datadog/connector:
+      traces:
+        span_name_as_resource_name: true
+  service:
+    pipelines:
+      metrics:
+        receivers: [otlp, datadog/connector]
+        processors: [batch]
+        exporters: [datadog, debug]
+      traces:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [datadog/connector, datadog]
+      logs:
+        receivers: [otlp]
+        processors: [batch]
+        exporters: [datadog]

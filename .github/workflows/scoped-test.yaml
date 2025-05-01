@@ -26,7 +26,7 @@ jobs:
         shell: bash
         id: changes
         run: |
-          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD | grep -v -E '^e2etests/')
           echo changed_files
           echo $changed_files
 
