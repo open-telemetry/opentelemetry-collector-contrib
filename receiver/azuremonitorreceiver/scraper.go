@@ -158,36 +158,29 @@ func (s *azureScraper) unloadSubscription(id string) {
 	delete(s.subscriptions, id)
 }
 
-func loadTokenProvider(host component.Host, cType string) (azcore.TokenCredential, error) {
-	componentType, err := component.NewType(cType)
-	if err != nil {
-		return nil, fmt.Errorf("invalid component type: %w", err)
-	}
-	id := component.NewID(componentType)
-	authExtension, ok := host.GetExtensions()[id]
+func loadTokenProvider(host component.Host, idAuth component.ID) (azcore.TokenCredential, error) {
+	authExtension, ok := host.GetExtensions()[idAuth]
 	if !ok {
-		return nil, fmt.Errorf("unknown azureauth extension %q", cType)
+		return nil, fmt.Errorf("unknown azureauth extension %q", idAuth.String())
 	}
 	credential, ok := authExtension.(azcore.TokenCredential)
 	if !ok {
-		return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", cType)
+		return nil, fmt.Errorf("extension %q does not implement azcore.TokenCredential", idAuth.String())
 	}
 	return credential, nil
 }
 
 func (s *azureScraper) loadCredentials(host component.Host) (err error) {
-	// if token provider is specified, it takes priority
-	// over auth
-	if s.cfg.Credentials != "" {
-		s.settings.Logger.Info("'token_provider' will be used to get the token credential")
-		if s.cred, err = loadTokenProvider(host, s.cfg.Credentials); err != nil {
+	if s.cfg.Authentication != nil {
+		s.settings.Logger.Info("'auth.authenticator' will be used to get the token credential")
+		if s.cred, err = loadTokenProvider(host, s.cfg.Authentication.AuthenticatorID); err != nil {
 			return err
 		}
 		return nil
 	}
 
-	s.settings.Logger.Warn("'auth' is deprecated, use 'credentials' instead")
-	switch s.cfg.Authentication {
+	s.settings.Logger.Warn("'credentials' is deprecated, use 'auth.authenticator' instead")
+	switch s.cfg.Credentials {
 	case defaultCredentials:
 		if s.cred, err = s.azDefaultCredentialsFunc(nil); err != nil {
 			return err

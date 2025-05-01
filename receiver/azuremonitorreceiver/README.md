@@ -21,9 +21,10 @@ The following settings are required:
 - `subscription_ids`: list of subscriptions on which the resource's metrics are collected
 - or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
-The following settings are optional:
+The following settings are optional:azcore.TokenCredential
 
-- `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
+- `auth.authenticator`: Specifies the component ID to use to authenticate requests to azure monitor. It must implement interface `azcore.TokenCredential`.
+- (Deprecated, use `auth` instead) `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
@@ -157,7 +158,8 @@ receivers:
 receivers:
   azuremonitor:
     subscription_ids: ["${subscription_id}"]
-    credentials: azureauth
+    auth:
+      authenticator: azureauth
 
 extensions:
   azureauth:

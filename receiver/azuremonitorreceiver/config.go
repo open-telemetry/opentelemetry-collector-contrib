@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
 	"go.uber.org/multierr"
 
@@ -253,18 +254,25 @@ type Config struct {
 	UseBatchAPI                       bool                          `mapstructure:"use_batch_api"`
 	Dimensions                        DimensionsConfig              `mapstructure:"dimensions"`
 
-	// Credentials accepts the component azureauthextension,
+	// Authentication accepts the component azureauthextension,
 	// and uses it to get an access token to make requests.
-	// Using this, `auth` and any related fields become
+	// Using this, `credentials` and any related fields become
 	// useless.
-	Credentials string `mapstructure:"credentials"`
+	Authentication *AuthConfig `mapstructure:"auth"`
 
 	// Credentials is deprecated.
-	Credentials                       string                        `mapstructure:"credentials"`
+	Credentials        string `mapstructure:"credentials"`
 	TenantID           string `mapstructure:"tenant_id"`
 	ClientID           string `mapstructure:"client_id"`
 	ClientSecret       string `mapstructure:"client_secret"`
 	FederatedTokenFile string `mapstructure:"federated_token_file"`
+}
+
+// AuthConfig defines the auth settings for the azure receiver.
+type AuthConfig struct {
+	// AuthenticatorID specifies the name of the azure extension to authenticate the
+	// requests to azure monitor.
+	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
 }
 
 const (
@@ -280,14 +288,13 @@ func (c Config) Validate() (err error) {
 		err = multierr.Append(err, errMissingSubscriptionIDs)
 	}
 
-	//if c.Credentials == "" {
-		// only matters if there is no token provider configured
-		
-	switch c.Credentials {
-	case servicePrincipal:
-		if c.TenantID == "" {
-			err = multierr.Append(err, errMissingTenantID)
-		}
+	if c.Authentication == nil {
+		// only matters if there is no auth specified
+		switch c.Credentials {
+		case servicePrincipal:
+			if c.TenantID == "" {
+				err = multierr.Append(err, errMissingTenantID)
+			}
 
 			if c.ClientID == "" {
 				err = multierr.Append(err, errMissingClientID)
@@ -309,10 +316,11 @@ func (c Config) Validate() (err error) {
 				err = multierr.Append(err, errMissingFedTokenFile)
 			}
 
-	case managedIdentity:
-	case defaultCredentials:
-	default:
-		return fmt.Errorf("credentials %v is not supported. supported authentications include [%v,%v,%v,%v]", c.Credentials, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		case managedIdentity:
+		case defaultCredentials:
+		default:
+			return fmt.Errorf("credentials %q is not supported. supported authentications include [%v,%v,%v,%v]", c.Credentials, servicePrincipal, workloadIdentity, managedIdentity, defaultCredentials)
+		}
 	}
 
 	if c.Cloud != azureCloud && c.Cloud != azureGovernmentCloud && c.Cloud != azureChinaCloud {

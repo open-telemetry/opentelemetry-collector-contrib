@@ -33,7 +33,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.SubscriptionIDs = []string{"test"}
-				cfg.Authentication = defaultCredentials
+				cfg.Credentials = defaultCredentials
 				return cfg
 			}(),
 		},
@@ -42,7 +42,7 @@ func TestLoadConfig(t *testing.T) {
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.DiscoverSubscriptions = true
-				cfg.Authentication = defaultCredentials
+				cfg.Credentials = defaultCredentials
 				return cfg
 			}(),
 		},
@@ -82,16 +82,30 @@ func TestLoadConfig(t *testing.T) {
 			),
 		},
 		{
-			id:          component.NewIDWithName(metadata.Type, "invalid_auth"),
-			expectedErr: `authentication "invalid" is not supported`,
+			id:          component.NewIDWithName(metadata.Type, "invalid_credentials"),
+			expectedErr: `credentials "invalid" is not supported`,
 		},
 		{
-			id: component.NewIDWithName(metadata.Type, "credentials"),
+			id: component.NewIDWithName(metadata.Type, "valid_authenticator"),
 			expected: func() component.Config {
 				cfg := createDefaultConfig().(*Config)
 				cfg.DiscoverSubscriptions = true
-				cfg.Authentication = "does-not-matter"
-				cfg.Credentials = "test"
+				cfg.Authentication = &AuthConfig{
+					AuthenticatorID: component.MustNewIDWithName("azureauth", "monitor"),
+				}
+				cfg.Credentials = "does-not-matter"
+				return cfg
+			}(),
+		},
+		{
+			id: component.NewIDWithName(metadata.Type, "valid_authenticator_2"),
+			expected: func() component.Config {
+				cfg := createDefaultConfig().(*Config)
+				cfg.DiscoverSubscriptions = true
+				cfg.Authentication = &AuthConfig{
+					AuthenticatorID: component.MustNewID("azureauth"),
+				}
+				cfg.Credentials = "does-not-matter"
 				return cfg
 			}(),
 		},
