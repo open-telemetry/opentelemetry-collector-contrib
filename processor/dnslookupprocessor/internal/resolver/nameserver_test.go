@@ -70,7 +70,7 @@ func TestNewNameserverResolver(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, resolver)
-				assert.Equal(t, len(tc.nameservers), len(resolver.resolvers))
+				assert.Len(t, tc.nameservers, len(resolver.resolvers))
 			}
 		})
 	}

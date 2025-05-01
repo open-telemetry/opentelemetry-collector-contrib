@@ -54,7 +54,6 @@ func NewHostFileResolver(hostFilePaths []string, logger *zap.Logger) (*HostFileR
 // parseHostFile parses a host file and builds resolver maps
 func (r *HostFileResolver) parseHostFile(path string) error {
 	file, err := os.Open(path)
-	defer file.Close()
 	if err != nil {
 		if os.IsNotExist(err) {
 			return ErrInvalidHostFilePath
@@ -65,6 +64,7 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 			zap.Error(err))
 		return err
 	}
+	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 	lineNum := 0
@@ -108,16 +108,16 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 
 		// Process all hostnames for this IP
 		for _, hostname := range fields[1:] {
-			hostname, err := ParseHostname(NormalizeHostname(hostname))
+			normalizedHostname, err := ParseHostname(NormalizeHostname(hostname))
 			if err != nil {
 				r.logger.Debug("Invalid hostname in host file",
 					zap.String("path", path),
 					zap.Int("line", lineNum),
-					zap.String("hostname", hostname))
+					zap.String("hostname", normalizedHostname))
 				continue
 			}
-			r.hostnameToIP[hostname] = ip
-			r.ipToHostname[ip] = hostname
+			r.hostnameToIP[normalizedHostname] = ip
+			r.ipToHostname[ip] = normalizedHostname
 		}
 	}
 
@@ -132,7 +132,7 @@ func (r *HostFileResolver) parseHostFile(path string) error {
 }
 
 // Resolve performs a forward DNS lookup (hostname to IP) using the loaded host files
-func (r *HostFileResolver) Resolve(ctx context.Context, hostname string) (string, error) {
+func (r *HostFileResolver) Resolve(_ context.Context, hostname string) (string, error) {
 	if ip, found := r.hostnameToIP[hostname]; found {
 		return ip, nil
 	}
@@ -141,7 +141,7 @@ func (r *HostFileResolver) Resolve(ctx context.Context, hostname string) (string
 }
 
 // Reverse performs a reverse DNS lookup (IP to hostname) using the loaded host files
-func (r *HostFileResolver) Reverse(ctx context.Context, ip string) (string, error) {
+func (r *HostFileResolver) Reverse(_ context.Context, ip string) (string, error) {
 	if hostname, found := r.ipToHostname[ip]; found {
 		return hostname, nil
 	}

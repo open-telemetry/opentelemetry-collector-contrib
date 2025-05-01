@@ -99,8 +99,8 @@ func TestNewHostFileResolver(t *testing.T) {
 			} else {
 				assert.NoError(t, err)
 				assert.NotNil(t, resolver)
-				assert.Greater(t, len(resolver.hostnameToIP), 0)
-				assert.Greater(t, len(resolver.ipToHostname), 0)
+				assert.NotEmpty(t, resolver.hostnameToIP)
+				assert.NotEmpty(t, resolver.ipToHostname)
 			}
 		})
 	}
@@ -190,8 +190,8 @@ func TestHostFileResolver_ParseHostFile(t *testing.T) {
 			}
 
 			// Check that there are no extra entries
-			assert.Equal(t, len(tt.expectedHostnameIPs), len(resolver.hostnameToIP))
-			assert.Equal(t, len(tt.expectedIPHostnames), len(resolver.ipToHostname))
+			assert.Len(t, tt.expectedHostnameIPs, len(resolver.hostnameToIP))
+			assert.Len(t, tt.expectedIPHostnames, len(resolver.ipToHostname))
 		})
 	}
 }
@@ -362,7 +362,7 @@ func createTempHostFile(t *testing.T, content string) string {
 	tempDir := t.TempDir()
 	tempFile := filepath.Join(tempDir, "hosts")
 
-	err := os.WriteFile(tempFile, []byte(content), 0o644)
+	err := os.WriteFile(tempFile, []byte(content), 0o600)
 	require.NoError(t, err)
 
 	return tempFile

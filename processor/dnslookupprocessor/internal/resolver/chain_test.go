@@ -65,7 +65,7 @@ func TestNewChainResolver(t *testing.T) {
 			chainResolver := NewChainResolver(tt.resolvers, logger)
 			assert.NotNil(t, chainResolver)
 			assert.Equal(t, "chain", chainResolver.Name())
-			assert.Equal(t, len(tt.resolvers), len(chainResolver.resolvers))
+			assert.Len(t, tt.resolvers, len(chainResolver.resolvers))
 		})
 	}
 }

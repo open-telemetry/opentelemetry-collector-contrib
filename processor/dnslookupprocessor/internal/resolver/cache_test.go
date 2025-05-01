@@ -155,7 +155,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      1 * time.Minute,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(_ *MockResolver) {
 			},
 			expectedIP:  "10.0.0.1",
 			expectError: false,
@@ -169,7 +169,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      1 * time.Minute,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(_ *MockResolver) {
 			},
 			expectedIP:  "",
 			expectError: false,
@@ -283,7 +283,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      1 * time.Minute,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(_ *MockResolver) {
 			},
 			expectedHostname: "cached.com",
 			expectError:      false,
@@ -297,7 +297,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      1 * time.Minute,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(_ *MockResolver) {
 			},
 			expectedHostname: "",
 			expectError:      false,

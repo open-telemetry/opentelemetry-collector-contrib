@@ -94,7 +94,7 @@ func createResolverChain(config *Config, logger *zap.Logger) (resolver.Resolver,
 	}
 
 	if len(resolvers) == 0 {
-		return nil, fmt.Errorf("no DNS resolver configuration available: either hostfile, nameserver, or system resolver must be enabled")
+		return nil, errors.New("no DNS resolver configuration available: either hostfile, nameserver, or system resolver must be enabled")
 	}
 
 	chainResolver = resolver.NewChainResolver(resolvers, logger)
@@ -224,11 +224,12 @@ func targetStrFromAttributes(attributes []string, pMap pcommon.Map, parseFn func
 
 	for _, attr := range attributes {
 		if val, found := pMap.Get(attr); found {
-			if parsedStr, err := parseFn(val.Str()); err == nil {
+			parsedStr, err := parseFn(val.Str())
+			if err == nil {
 				return parsedStr, nil
-			} else {
-				lastErr = err
 			}
+
+			lastErr = err
 		}
 	}
 

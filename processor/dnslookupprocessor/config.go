@@ -3,6 +3,7 @@
 
 package dnslookupprocessor // import "github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor"
 import (
+	"errors"
 	fmt "fmt"
 	"strings"
 
@@ -87,10 +88,10 @@ func (cfg *Config) Validate() error {
 			return nil
 		}
 		if len(lc.Attributes) == 0 {
-			return fmt.Errorf("at least one attribute must be specified for DNS resolution")
+			return errors.New("at least one attribute must be specified for DNS resolution")
 		}
 		if lc.ResolvedAttribute == "" {
-			return fmt.Errorf("resolved_attribute must be specified for DNS resolution")
+			return errors.New("resolved_attribute must be specified for DNS resolution")
 		}
 		if lc.Context != resource && lc.Context != record {
 			return fmt.Errorf("context must be either 'resource' or 'record', got: %s", lc.Context)
@@ -131,7 +132,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if !cfg.EnableSystemResolver && len(cfg.Hostfiles) == 0 && len(cfg.Nameservers) == 0 {
-		return fmt.Errorf("at least one of enable_system_resolver, hostfiles, or nameservers must be specified")
+		return errors.New("at least one of enable_system_resolver, hostfiles, or nameservers must be specified")
 	}
 
 	return nil

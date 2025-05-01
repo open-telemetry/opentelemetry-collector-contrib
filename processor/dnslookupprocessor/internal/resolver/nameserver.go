@@ -31,7 +31,7 @@ func NewNetResolver(nameserver string, timeout time.Duration) *NetResolver {
 	return &NetResolver{
 		Resolver: net.Resolver{
 			PreferGo: true,
-			Dial: func(ctx context.Context, network, address string) (net.Conn, error) {
+			Dial: func(ctx context.Context, _, _ string) (net.Conn, error) {
 				d := net.Dialer{Timeout: timeout}
 				return d.DialContext(ctx, "udp", nameserver)
 			},
@@ -82,8 +82,8 @@ func NewNameserverResolver(nameservers []string, timeout time.Duration, maxRetri
 
 	resolvers := make([]Lookup, len(normalizeNameservers))
 	for i, ns := range normalizeNameservers {
-		ns := ns // copy to local
-		resolvers[i] = NewNetResolver(ns, timeout)
+		nameserver := ns // copy to local
+		resolvers[i] = NewNetResolver(nameserver, timeout)
 	}
 
 	r := &NameserverResolver{
@@ -175,7 +175,7 @@ func NewExponentialBackOff() *backoff.ExponentialBackOff {
 func (r *NameserverResolver) lookupWithNameservers(
 	ctx context.Context,
 	target string,
-	logKey string,
+	_ string,
 	lookupFn func(resolver Lookup, fnCtx context.Context) (string, error),
 ) (string, error) {
 	var lastErr error
@@ -184,7 +184,6 @@ func (r *NameserverResolver) lookupWithNameservers(
 		expBackOff := NewExponentialBackOff()
 
 		for attempt := 0; attempt <= r.maxRetries; attempt++ {
-
 			result, err := func() (string, error) {
 				lookupCtx, cancel := context.WithTimeout(ctx, r.timeout)
 				defer cancel()
@@ -238,9 +237,7 @@ func (r *NameserverResolver) lookupWithNameservers(
 				}
 			}
 		}
-
 	}
-
 	return "", lastErr
 }
 
