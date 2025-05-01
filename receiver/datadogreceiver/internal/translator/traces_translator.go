@@ -5,6 +5,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -43,6 +44,17 @@ const (
 	// Examples: '228114450199004348'
 	attributeDatadogSpanID = "datadog.span.id"
 )
+
+var spanProcessor = map[string]func(*pb.Span, *ptrace.Span) error{
+	// HTTP
+	"servlet.request": processHTTPSpan,
+
+	// Internal
+	"spring.handler": processInternalSpan,
+
+	// Database
+	"postgresql.query": processDBSpan,
+}
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
@@ -88,15 +100,48 @@ func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.T
 	return pcommon.TraceID{}, nil
 }
 
-// getSpanName returns a better suited span name on specific conditions
-// see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/36924
-func getSpanName(span *pb.Span) string {
-	if span.Name == "servlet.request" || span.Name == "spring.handler" {
-		return span.Resource
-	} else if span.Name == "postgresql.query" {
-		return span.Resource
+func processInternalSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	newSpan.SetName(span.Resource)
+	newSpan.SetKind(ptrace.SpanKindInternal)
+	return nil
+}
+
+func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name
+	// We assume that http.route coming from datadog is low cardinality
+	if val, ok := span.Meta["http.method"]; ok {
+		if suffix, ok := span.Meta["http.route"]; ok {
+			newSpan.SetName(val + " " + suffix)
+		} else {
+			newSpan.SetName(val)
+		}
 	}
-	return span.Name
+	return nil
+}
+
+func processDBSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
+	if val, ok := span.Meta["db.query.summary"]; ok {
+		newSpan.SetName(val)
+	} else {
+		if val, ok = span.Meta["db.operation"]; ok {
+			newSpan.SetName(val)
+			suffix := cmp.Or(span.Meta["db.instance"], span.Meta["db.namespace"], span.Meta["peer.hostname"])
+			if suffix != "" {
+				newSpan.SetName(val + " " + suffix)
+			}
+		} else if val, ok = span.Meta["db.type"]; ok {
+			newSpan.SetName(val)
+		}
+	}
+	return nil
+}
+
+func processSpanByName(span *pb.Span, newSpan *ptrace.Span) error {
+	if processor, ok := spanProcessor[span.Name]; ok {
+		return processor(span, newSpan)
+	}
+	return nil
 }
 
 func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
@@ -166,7 +211,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))
 			newSpan.SetParentSpanID(uInt64ToSpanID(span.ParentID))
-			newSpan.SetName(getSpanName(span))
+			newSpan.SetName(span.Name)
 			newSpan.Status().SetCode(ptrace.StatusCodeOk)
 			newSpan.Attributes().PutStr("dd.span.Resource", span.Resource)
 			if samplingPriority, ok := span.Metrics["_sampling_priority_v1"]; ok {
@@ -209,6 +254,9 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 					newSpan.SetKind(ptrace.SpanKindUnspecified)
 				}
 			}
+
+			// Some spans need specific processing (http, db, ...)
+			_ = processSpanByName(span, &newSpan)
 		}
 	}
 
