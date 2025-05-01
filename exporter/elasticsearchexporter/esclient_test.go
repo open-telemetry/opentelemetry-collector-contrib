@@ -38,7 +38,10 @@ func TestComponentStatus(t *testing.T) {
 	}
 
 	// Pass in an http error status and make sure it's sent to the component status reporter
-	_ = esLogger.LogRoundTrip(&http.Request{URL: &url.URL{}}, &http.Response{StatusCode: 401, Status: "401 Unauthorized"}, nil, time.Now(), 0)
+	_ = esLogger.LogRoundTrip(
+		&http.Request{URL: &url.URL{}},
+		&http.Response{StatusCode: http.StatusUnauthorized, Status: "401 Unauthorized"},
+		nil, time.Now(), 0)
 	select {
 	case event := <-statusChan:
 		err := event.Err()
@@ -50,7 +53,9 @@ func TestComponentStatus(t *testing.T) {
 	}
 
 	// Pass in an http success status and make sure the component status returns to OK
-	_ = esLogger.LogRoundTrip(&http.Request{URL: &url.URL{}}, &http.Response{StatusCode: 200}, nil, time.Now(), 0)
+	_ = esLogger.LogRoundTrip(
+		&http.Request{URL: &url.URL{}},
+		&http.Response{StatusCode: http.StatusOK}, nil, time.Now(), 0)
 	select {
 	case event := <-statusChan:
 		assert.NoError(t, event.Err(), "LogRoundTrip with a success status shouldn't report a component status error")

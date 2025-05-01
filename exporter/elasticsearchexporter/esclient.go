@@ -67,9 +67,9 @@ func (cl *clientLogger) LogRoundTrip(requ *http.Request, resp *http.Response, cl
 		zl.Debug("Request roundtrip completed.", fields...)
 		if resp.StatusCode == http.StatusOK {
 			// Success
-			componentstatus.ReportStatus(cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
-		} else if resp.StatusCode >= 300 {
-			// Error results
+			componentstatus.ReportStatus(
+				cl.componentHost, componentstatus.NewEvent(componentstatus.StatusOK))
+		} else if httpRecoverableErrorStatus(resp.StatusCode) {
 			err := fmt.Errorf("Elasticsearch request failed: %v", resp.Status)
 			componentstatus.ReportStatus(
 				cl.componentHost, componentstatus.NewRecoverableErrorEvent(err))
@@ -184,4 +184,12 @@ func createElasticsearchBackoffFunc(config *RetrySettings) func(int) time.Durati
 
 		return expBackoff.NextBackOff()
 	}
+}
+
+func httpRecoverableErrorStatus(statusCode int) bool {
+	// Elasticsearch uses 409 conflict to report duplicates, which aren't really
+	// an error state, so those return false (but if we were already in an error
+	// state, we will still wait until we get an actual 200 OK before changing
+	// our state back).
+	return statusCode >= 300 && statusCode != http.StatusConflict
 }
