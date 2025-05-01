@@ -225,10 +225,7 @@ either case, the receiver will continue to operate.
 Refer to the config file [provided](./testdata/oracledb-receiver-config.yaml) for an example of using the
 Oracle DB driver to connect and query the same table schema and contents as the example above.
 The Oracle DB driver documentation can be found [here.](https://github.com/sijms/go-ora)
-
-<!-- Using a shortened version of this URL: https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database to pass the check links check. -->
-
-Another usage example is the `go_ora` example [here.](https://shorturl.at/ziKwE)
+Another usage example is the `go_ora` example [here.](https://blogs.oracle.com/developers/post/connecting-a-go-application-to-oracle-database)
 
 #### MySQL Datasource Format Example
 
