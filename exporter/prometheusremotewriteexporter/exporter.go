@@ -332,7 +332,9 @@ func (prwe *prwExporter) export(ctx context.Context, requests []*prompb.WriteReq
 					defer bufferPool.Put(buf)
 
 					if errMarshal := buf.protobuf.Marshal(request); errMarshal != nil {
+						mu.Lock()
 						errs = multierr.Append(errs, consumererror.NewPermanent(errMarshal))
+						mu.Unlock()
 						return
 					}
 
