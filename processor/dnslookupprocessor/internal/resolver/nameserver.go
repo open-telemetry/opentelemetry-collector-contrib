@@ -10,6 +10,7 @@ import (
 	"net"
 	"time"
 
+	"github.com/asaskevich/govalidator"
 	"github.com/cenkalti/backoff/v5"
 	"go.uber.org/zap"
 )
@@ -261,10 +262,11 @@ func validateAndFormatNameservers(nameservers []string) ([]string, error) {
 		}
 
 		// validate the address
-		host, _, _ := net.SplitHostPort(nns)
+		host, port, _ := net.SplitHostPort(nns)
 		_, ipErr := ParseIP(host)
 		_, hostErr := ParseHostname(host)
-		if ipErr != nil && hostErr != nil {
+		isPort := govalidator.IsPort(port)
+		if !isPort || (ipErr != nil && hostErr != nil) {
 			return nil, fmt.Errorf("invalid nameserver address: %s", ns)
 		}
 

@@ -466,8 +466,20 @@ func TestNormalizeNameserverAddresses(t *testing.T) {
 			expectError: false,
 		},
 		{
+			name:        "hostname with port",
+			input:       []string{"dns-server.net:53"},
+			expected:    []string{"dns-server.net:53"},
+			expectError: false,
+		},
+		{
 			name:        "invalid address",
 			input:       []string{"invalid:host:port"},
+			expected:    nil,
+			expectError: true,
+		},
+		{
+			name:        "invalid port",
+			input:       []string{"invalid:port"},
 			expected:    nil,
 			expectError: true,
 		},
