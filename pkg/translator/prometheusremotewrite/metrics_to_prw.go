@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/multierr"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 type Settings struct {
@@ -74,7 +74,7 @@ func (c *prometheusConverter) fromMetrics(md pmetric.Metrics, settings Settings)
 					continue
 				}
 
-				promName := prometheustranslator.BuildCompliantName(metric, settings.Namespace, settings.AddMetricSuffixes)
+				promName := prometheustranslator.BuildCompliantMetricName(metric, settings.Namespace, settings.AddMetricSuffixes)
 
 				// handle individual metrics based on type
 				//exhaustive:enforce

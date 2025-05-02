@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.25.0"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 const (
@@ -313,18 +313,18 @@ func getPromExemplars[T exemplarType](pt T) []prompb.Exemplar {
 		}
 		if traceID := exemplar.TraceID(); !traceID.IsEmpty() {
 			val := hex.EncodeToString(traceID[:])
-			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarTraceIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(exemplarTraceIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  prometheustranslator.ExemplarTraceIDKey,
+				Name:  exemplarTraceIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
 		}
 		if spanID := exemplar.SpanID(); !spanID.IsEmpty() {
 			val := hex.EncodeToString(spanID[:])
-			exemplarRunes += utf8.RuneCountInString(prometheustranslator.ExemplarSpanIDKey) + utf8.RuneCountInString(val)
+			exemplarRunes += utf8.RuneCountInString(exemplarSpanIDKey) + utf8.RuneCountInString(val)
 			promLabel := prompb.Label{
-				Name:  prometheustranslator.ExemplarSpanIDKey,
+				Name:  exemplarSpanIDKey,
 				Value: val,
 			}
 			promExemplar.Labels = append(promExemplar.Labels, promLabel)
@@ -514,7 +514,7 @@ func addResourceTargetInfo(resource pcommon.Resource, settings Settings, timesta
 		return
 	}
 
-	name := prometheustranslator.TargetInfoMetricName
+	name := targetInfoMetricName
 	if len(settings.Namespace) > 0 {
 		name = settings.Namespace + "_" + name
 	}

@@ -15,7 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 type expectedBucketLayout struct {
@@ -743,7 +743,7 @@ func TestPrometheusConverter_addExponentialHistogramDataPoints(t *testing.T) {
 				metric.ExponentialHistogram().DataPoints(),
 				pcommon.NewResource(),
 				Settings{},
-				prometheustranslator.BuildCompliantName(metric, "", true),
+				prometheustranslator.BuildCompliantMetricName(metric, "", true),
 			))
 
 			assert.Equal(t, tt.wantSeries(), converter.unique)
