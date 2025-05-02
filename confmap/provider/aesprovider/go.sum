@@ -25,10 +25,10 @@ github.com/rogpeppe/go-internal v1.10.0 h1:TMyTOH3F/DB16zRVcYyreMH6GnZZrwQVAoYjR
 github.com/rogpeppe/go-internal v1.10.0/go.mod h1:UQnix2H7Ngw/k4C5ijL5+65zddjncjaFoBhdsK/akog=
 github.com/stretchr/testify v1.10.0 h1:Xv5erBjTwe/5IxqUQTdXv5kgmIvbHo3QQyRwhJsOfJA=
 github.com/stretchr/testify v1.10.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
-go.opentelemetry.io/collector/confmap v1.31.1-0.20250430101735-2ecd0b7f95cd h1:KhHyiGHDy5G1w+dhGfX93/S039XsOFgcG3/eHiw3ONM=
-go.opentelemetry.io/collector/confmap v1.31.1-0.20250430101735-2ecd0b7f95cd/go.mod h1:TdutQlIoHDPXcZ2xZ0QWGRkSFC8oTKO61zTx569dvrY=
-go.opentelemetry.io/collector/featuregate v1.31.1-0.20250430101735-2ecd0b7f95cd h1:BToFCRQGV+9fXNXPg69+jQbFsrHe0IFkdgXQ5EqXgfM=
-go.opentelemetry.io/collector/featuregate v1.31.1-0.20250430101735-2ecd0b7f95cd/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
+go.opentelemetry.io/collector/confmap v1.31.1-0.20250501194116-727ae96d6214 h1:01lplOfiaifjxDbnQKjL1CEKdAOXfnr9II6GGdKogcY=
+go.opentelemetry.io/collector/confmap v1.31.1-0.20250501194116-727ae96d6214/go.mod h1:TdutQlIoHDPXcZ2xZ0QWGRkSFC8oTKO61zTx569dvrY=
+go.opentelemetry.io/collector/featuregate v1.31.1-0.20250501194116-727ae96d6214 h1:f8wB3x5xULcF0zfsT4NTcmK9qokIynXnO51betgUeBg=
+go.opentelemetry.io/collector/featuregate v1.31.1-0.20250501194116-727ae96d6214/go.mod h1:Y/KsHbvREENKvvN9RlpiWk/IGBK+CATBYzIIpU7nccc=
 go.uber.org/goleak v1.3.0 h1:2K3zAYmnTNqV73imy9J1T3WC+gmCePx2hEGkimedGto=
 go.uber.org/goleak v1.3.0/go.mod h1:CoHD4mav9JJNrW/WLlf7HGZPjdw8EucARQHekz1X6bE=
 go.uber.org/multierr v1.11.0 h1:blXXJkSxSSfBVBlC76pxqeO+LN3aDfLQo+309xJstO0=
