@@ -54,6 +54,7 @@ var spanProcessor = map[string]func(*pb.Span, *ptrace.Span) error{
 
 	// Database
 	"postgresql.query": processDBSpan,
+	"redis.query":      processDBSpan,
 }
 
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {

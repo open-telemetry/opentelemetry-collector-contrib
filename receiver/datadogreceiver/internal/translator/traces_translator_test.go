@@ -435,6 +435,16 @@ func TestProcessSpanByName(t *testing.T) {
 			},
 		},
 		{
+			"db-redis",
+			"redis",
+			pb.Span{
+				Name: "redis.query",
+				Meta: map[string]string{
+					"db.type": "redis",
+				},
+			},
+		},
+		{
 			"internal-spring-handler",
 			"ShippingController.shipOrder",
 			pb.Span{
