@@ -7,8 +7,8 @@ require (
 	github.com/grafana/loki/pkg/push v0.0.0-20240514112848-a1b1eeb09583
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.125.0
 	github.com/prometheus/common v0.62.0
+	github.com/prometheus/otlptranslator v0.0.0-20250501145537-53ceaec28820
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250501194116-727ae96d6214
@@ -23,7 +23,6 @@ require (
 	github.com/dennwc/varint v1.0.0 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/grafana/regexp v0.0.0-20240518133315-a468a5bfb3bc // indirect
-	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/json-iterator/go v1.1.12 // indirect
 	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
 	github.com/modern-go/reflect2 v1.0.2 // indirect
@@ -33,7 +32,6 @@ require (
 	github.com/prometheus/client_golang v1.20.5 // indirect
 	github.com/prometheus/client_model v0.6.1 // indirect
 	github.com/prometheus/procfs v0.15.1 // indirect
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250501194116-727ae96d6214 // indirect
 	go.uber.org/atomic v1.11.0 // indirect
 	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/exp v0.0.0-20240325151524-a685a6edb6d8 // indirect
@@ -45,8 +43,6 @@ require (
 	google.golang.org/protobuf v1.36.6 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )
-
-replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus => ../../../pkg/translator/prometheus
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest => ../../../pkg/pdatatest
 
