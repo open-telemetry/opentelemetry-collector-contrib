@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -44,13 +45,13 @@ func NewAdjuster(set component.TelemetrySettings, gcInterval time.Duration) *Adj
 // timeseries for reset detection.
 //
 // If a point has not been seen before, it will be dropped and cached as the
-// reference point.  For each subsequent point, it will normalize against the
-// reference cached point reporting the delta.  If a reset is detected, the
+// reference point. For each subsequent point, it will normalize against the
+// reference cached point reporting the delta. If a reset is detected, the
 // current point will be reported as is, and the reference point will be
-// updated.  The function returns a new pmetric.Metrics containing the adjusted
+// updated. The function returns a new pmetric.Metrics containing the adjusted
 // metrics.
 func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pmetric.Metrics, error) {
-	// Create a copy of metrics to store the results
+	// Create a copy of metrics to store the results.
 	resultMetrics := pmetric.NewMetrics()
 	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
 		rm := metrics.ResourceMetrics().At(i)
@@ -107,8 +108,7 @@ func (a *Adjuster) AdjustMetrics(_ context.Context, metrics pmetric.Metrics) (pm
 					fallthrough
 
 				default:
-					// this shouldn't happen
-					a.set.Logger.Info("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
+					a.set.Logger.Error("Adjust - skipping unexpected point", zap.String("type", dataType.String()))
 				}
 			}
 		}
@@ -132,10 +132,16 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		pointStartTime := currentDist.StartTimestamp()
+		if pointStartTime != 0 && pointStartTime != currentDist.Timestamp() {
+			// Report point as is.
+			currentDist.CopyTo(resHistogram.DataPoints().AppendEmpty())
+			continue
+		}
 
 		referenceTsi, found := referenceTsm.Get(current, currentDist.Attributes())
 		if !found {
-			// initialize everything. Don't add the datapoint to the result.
+			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
 			currentDist.CopyTo(referenceTsi.Histogram)
 			continue
@@ -145,10 +151,8 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 		adjustedPoint := pmetric.NewHistogramDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Histogram.StartTimestamp())
-		if currentDist.Flags().NoRecordedValue() {
-			// TODO: Investigate why this does not reset.
-			tmp := resHistogram.DataPoints().AppendEmpty()
-			adjustedPoint.CopyTo(tmp)
+		if adjustedPoint.Flags().NoRecordedValue() {
+			adjustedPoint.CopyTo(resHistogram.DataPoints().AppendEmpty())
 			continue
 		}
 		subtractHistogramDataPoint(adjustedPoint, referenceTsi.Histogram)
@@ -159,6 +163,9 @@ func adjustMetricHistogram(referenceTsm, previousValueTsm *datapointstorage.Time
 			previousTsi.Histogram = pmetric.NewHistogramDataPoint()
 		} else if previousTsi.IsResetHistogram(adjustedPoint) {
 			// reset re-initialize everything and use the non adjusted points start time.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentDist.SetStartTimestamp(resetStartTimeStamp)
+
 			referenceTsi.Histogram = pmetric.NewHistogramDataPoint()
 			referenceTsi.Histogram.SetStartTimestamp(currentDist.StartTimestamp())
 
@@ -187,10 +194,16 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 	currentPoints := histogram.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
 		currentDist := currentPoints.At(i)
+		pointStartTime := currentDist.StartTimestamp()
+		if pointStartTime != 0 && pointStartTime != currentDist.Timestamp() {
+			// Report point as is.
+			currentDist.CopyTo(resExpHistogram.DataPoints().AppendEmpty())
+			continue
+		}
 
 		referenceTsi, found := referenceTsm.Get(current, currentDist.Attributes())
 		if !found {
-			// initialize everything. Don't add the datapoint to the result.
+			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
 			currentDist.CopyTo(referenceTsi.ExponentialHistogram)
 			continue
@@ -200,10 +213,8 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 		adjustedPoint := pmetric.NewExponentialHistogramDataPoint()
 		currentDist.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.ExponentialHistogram.StartTimestamp())
-		if currentDist.Flags().NoRecordedValue() {
-			// TODO: Investigate why this does not reset.
-			tmp := resExpHistogram.DataPoints().AppendEmpty()
-			adjustedPoint.CopyTo(tmp)
+		if adjustedPoint.Flags().NoRecordedValue() {
+			adjustedPoint.CopyTo(resExpHistogram.DataPoints().AppendEmpty())
 			continue
 		}
 		subtractExponentialHistogramDataPoint(adjustedPoint, referenceTsi.ExponentialHistogram)
@@ -214,6 +225,9 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 			previousTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
 		} else if previousTsi.IsResetExponentialHistogram(adjustedPoint) {
 			// reset re-initialize everything and use the non adjusted points start time.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentDist.SetStartTimestamp(resetStartTimeStamp)
+
 			referenceTsi.ExponentialHistogram = pmetric.NewExponentialHistogramDataPoint()
 			referenceTsi.ExponentialHistogram.SetStartTimestamp(currentDist.StartTimestamp())
 
@@ -230,44 +244,56 @@ func adjustMetricExponentialHistogram(referenceTsm, previousValueTsm *datapoints
 }
 
 func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resSum pmetric.Sum) {
-	resSum.SetAggregationTemporality(current.Sum().AggregationTemporality())
-	resSum.SetIsMonotonic(current.Sum().IsMonotonic())
+	sum := current.Sum()
+	if sum.AggregationTemporality() != pmetric.AggregationTemporalityCumulative {
+		sum.CopyTo(resSum)
+		return
+	}
+	resSum.SetAggregationTemporality(sum.AggregationTemporality())
+	resSum.SetIsMonotonic(sum.IsMonotonic())
 
-	currentPoints := current.Sum().DataPoints()
+	currentPoints := sum.DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
-		currentDist := currentPoints.At(i)
+		currentSum := currentPoints.At(i)
+		pointStartTime := currentSum.StartTimestamp()
+		if pointStartTime != 0 && pointStartTime != currentSum.Timestamp() {
+			// Report point as is.
+			currentSum.CopyTo(resSum.DataPoints().AppendEmpty())
+			continue
+		}
 
-		referenceTsi, found := referenceTsm.Get(current, currentDist.Attributes())
+		referenceTsi, found := referenceTsm.Get(current, currentSum.Attributes())
 		if !found {
-			// initialize everything. Don't add the datapoint to the result.
+			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
-			currentDist.CopyTo(referenceTsi.Number)
+			currentSum.CopyTo(referenceTsi.Number)
 			continue
 		}
 
 		// Adjust the datapoint based on the reference value.
 		adjustedPoint := pmetric.NewNumberDataPoint()
-		currentDist.CopyTo(adjustedPoint)
+		currentSum.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Number.StartTimestamp())
-		if currentDist.Flags().NoRecordedValue() {
-			// TODO: Investigate why this does not reset.
-			tmp := resSum.DataPoints().AppendEmpty()
-			adjustedPoint.CopyTo(tmp)
+		if adjustedPoint.Flags().NoRecordedValue() {
+			adjustedPoint.CopyTo(resSum.DataPoints().AppendEmpty())
 			continue
 		}
 		adjustedPoint.SetDoubleValue(adjustedPoint.DoubleValue() - referenceTsi.Number.DoubleValue())
 
-		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
+		previousTsi, found := previousValueTsm.Get(current, currentSum.Attributes())
 		if !found {
 			// First point after the reference. Not a reset.
 			previousTsi.Number = pmetric.NewNumberDataPoint()
 		} else if previousTsi.IsResetSum(adjustedPoint) {
 			// reset re-initialize everything and use the non adjusted points start time.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentSum.SetStartTimestamp(resetStartTimeStamp)
+
 			referenceTsi.Number = pmetric.NewNumberDataPoint()
-			referenceTsi.Number.SetStartTimestamp(currentDist.StartTimestamp())
+			referenceTsi.Number.SetStartTimestamp(currentSum.StartTimestamp())
 
 			tmp := resSum.DataPoints().AppendEmpty()
-			currentDist.CopyTo(tmp)
+			currentSum.CopyTo(tmp)
 			continue
 		}
 
@@ -281,40 +307,47 @@ func adjustMetricSum(referenceTsm, previousValueTsm *datapointstorage.Timeseries
 func adjustMetricSummary(referenceTsm, previousValueTsm *datapointstorage.TimeseriesMap, current pmetric.Metric, resSummary pmetric.Summary) {
 	currentPoints := current.Summary().DataPoints()
 	for i := 0; i < currentPoints.Len(); i++ {
-		currentDist := currentPoints.At(i)
+		currentSummary := currentPoints.At(i)
+		pointStartTime := currentSummary.StartTimestamp()
+		if pointStartTime != 0 && pointStartTime != currentSummary.Timestamp() {
+			// Report point as is.
+			currentSummary.CopyTo(resSummary.DataPoints().AppendEmpty())
+			continue
+		}
 
-		referenceTsi, found := referenceTsm.Get(current, currentDist.Attributes())
+		referenceTsi, found := referenceTsm.Get(current, currentSummary.Attributes())
 		if !found {
-			// initialize everything. Don't add the datapoint to the result.
+			// First time we see this point. Skip it and use as a reference point for the next points.
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
-			currentDist.CopyTo(referenceTsi.Summary)
+			currentSummary.CopyTo(referenceTsi.Summary)
 			continue
 		}
 
 		// Adjust the datapoint based on the reference value.
 		adjustedPoint := pmetric.NewSummaryDataPoint()
-		currentDist.CopyTo(adjustedPoint)
+		currentSummary.CopyTo(adjustedPoint)
 		adjustedPoint.SetStartTimestamp(referenceTsi.Summary.StartTimestamp())
-		if currentDist.Flags().NoRecordedValue() {
-			// TODO: Investigate why this does not reset.
-			tmp := resSummary.DataPoints().AppendEmpty()
-			adjustedPoint.CopyTo(tmp)
+		if adjustedPoint.Flags().NoRecordedValue() {
+			adjustedPoint.CopyTo(resSummary.DataPoints().AppendEmpty())
 			continue
 		}
 		adjustedPoint.SetCount(adjustedPoint.Count() - referenceTsi.Summary.Count())
 		adjustedPoint.SetSum(adjustedPoint.Sum() - referenceTsi.Summary.Sum())
 
-		previousTsi, found := previousValueTsm.Get(current, currentDist.Attributes())
+		previousTsi, found := previousValueTsm.Get(current, currentSummary.Attributes())
 		if !found {
 			// First point after the reference. Not a reset.
 			previousTsi.Summary = pmetric.NewSummaryDataPoint()
 		} else if previousTsi.IsResetSummary(adjustedPoint) {
 			// reset re-initialize everything and use the non adjusted points start time.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentSummary.SetStartTimestamp(resetStartTimeStamp)
+
 			referenceTsi.Summary = pmetric.NewSummaryDataPoint()
-			referenceTsi.Summary.SetStartTimestamp(currentDist.StartTimestamp())
+			referenceTsi.Summary.SetStartTimestamp(currentSummary.StartTimestamp())
 
 			tmp := resSummary.DataPoints().AppendEmpty()
-			currentDist.CopyTo(tmp)
+			currentSummary.CopyTo(tmp)
 			continue
 		}
 

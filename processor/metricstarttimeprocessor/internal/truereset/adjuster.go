@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
@@ -111,6 +112,8 @@ func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, cu
 
 		if tsi.IsResetHistogram(currentDist) {
 			// reset re-initialize everything.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentDist.SetStartTimestamp(resetStartTimeStamp)
 			currentDist.CopyTo(tsi.Histogram)
 			continue
 		}
@@ -148,6 +151,8 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timese
 
 		if tsi.IsResetExponentialHistogram(currentDist) {
 			// reset re-initialize everything.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentDist.SetStartTimestamp(resetStartTimeStamp)
 			currentDist.CopyTo(tsi.ExponentialHistogram)
 			continue
 		}
@@ -179,6 +184,8 @@ func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current 
 
 		if tsi.IsResetSum(currentSum) {
 			// reset re-initialize everything.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentSum.SetStartTimestamp(resetStartTimeStamp)
 			currentSum.CopyTo(tsi.Number)
 			continue
 		}
@@ -211,6 +218,8 @@ func (a *Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, curr
 
 		if tsi.IsResetSummary(currentSummary) {
 			// reset re-initialize everything.
+			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
+			currentSummary.SetStartTimestamp(resetStartTimeStamp)
 			currentSummary.CopyTo(tsi.Summary)
 			continue
 		}

@@ -407,7 +407,7 @@ chlog-update: $(CHLOGGEN)
 .PHONY: genotelcontribcol
 genotelcontribcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh otelcontribcol
-	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config-replaced.yaml
+	$(BUILDER) --skip-compilation --config cmd/otelcontribcol/builder-config.yaml
 
 # Build the Collector executable.
 .PHONY: otelcontribcol
@@ -424,7 +424,7 @@ otelcontribcollite: genotelcontribcol
 .PHONY: genoteltestbedcol
 genoteltestbedcol: $(BUILDER)
 	./internal/buildscripts/ocb-add-replaces.sh oteltestbedcol
-	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config-replaced.yaml
+	$(BUILDER) --skip-compilation --config cmd/oteltestbedcol/builder-config.yaml
 
 # Build the Collector executable, with only components used in testbed.
 .PHONY: oteltestbedcol
