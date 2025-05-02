@@ -12,7 +12,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"strconv"
 	"strings"
 	"sync"
 	"testing"
@@ -54,7 +53,6 @@ import (
 	pkgdatadog "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/tailsamplingprocessor"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 )
 
 // seriesSlice represents an unmarshalled series payload
@@ -99,9 +97,6 @@ func testIntegration(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -171,7 +166,6 @@ func getIntegrationTestComponents(t *testing.T) otelcol.Factories {
 	factories.Receivers, err = otelcol.MakeFactoryMap[receiver.Factory](
 		[]receiver.Factory{
 			otlpreceiver.NewFactory(),
-			prometheusreceiver.NewFactory(),
 			hostmetricsreceiver.NewFactory(),
 		}...,
 	)
@@ -296,9 +290,6 @@ func TestIntegrationComputeTopLevelBySpanKind(t *testing.T) {
 	server := testutil.DatadogServerMock(apmstatsRec.HandlerFunc, tracesRec.HandlerFunc)
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -487,9 +478,6 @@ func TestIntegrationLogs(t *testing.T) {
 	})
 	defer server.Close()
 	t.Setenv("SERVER_URL", server.URL)
-	promPort := strconv.Itoa(commonTestutil.GetAvailablePort(t))
-	t.Setenv("PROM_SERVER_PORT", promPort)
-	t.Setenv("PROM_SERVER", fmt.Sprintf("localhost:%s", promPort))
 	t.Setenv("OTLP_HTTP_SERVER", commonTestutil.GetAvailableLocalAddress(t))
 	otlpGRPCEndpoint := commonTestutil.GetAvailableLocalAddress(t)
 	t.Setenv("OTLP_GRPC_SERVER", otlpGRPCEndpoint)
@@ -497,10 +485,16 @@ func TestIntegrationLogs(t *testing.T) {
 	// 2. Start in-process collector
 	factories := getIntegrationTestComponents(t)
 	app := getIntegrationTestCollector(t, "integration_test_logs_config.yaml", factories)
+	var wg sync.WaitGroup
+	wg.Add(1)
 	go func() {
-		assert.NoError(t, app.Run(context.Background()))
+		_ = app.Run(context.Background()) // ignore shutdown error
+		wg.Done()
 	}()
-	defer app.Shutdown()
+	defer func() {
+		app.Shutdown()
+		wg.Wait()
+	}()
 
 	waitForReadiness(app)
 
@@ -508,7 +502,7 @@ func TestIntegrationLogs(t *testing.T) {
 	sendLogs(t, 5, otlpGRPCEndpoint)
 
 	// 4. Validate logs and metrics from the mock server
-	// Wait until `doneChannel` is closed and prometheus metrics are received.
+	// Wait until `doneChannel` is closed and internal metrics are received.
 	var metricMap seriesSlice
 	for len(metricMap.Series) < 4 {
 		select {
@@ -558,7 +552,6 @@ func sendLogs(t *testing.T, numLogs int, endpoint string) {
 }
 
 func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
-	t.Skip("Flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39585")
 	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), false))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
@@ -583,7 +576,6 @@ func TestIntegrationHostMetrics_WithRemapping_LegacyMetricClient(t *testing.T) {
 }
 
 func TestIntegrationHostMetrics_WithoutRemapping_LegacyMetricClient(t *testing.T) {
-	t.Skip("Flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39632")
 	prevVal := pkgdatadog.MetricRemappingDisabledFeatureGate.IsEnabled()
 	require.NoError(t, featuregate.GlobalRegistry().Set(pkgdatadog.MetricRemappingDisabledFeatureGate.ID(), true))
 	require.NoError(t, featuregate.GlobalRegistry().Set("exporter.datadogexporter.metricexportserializerclient", false))
