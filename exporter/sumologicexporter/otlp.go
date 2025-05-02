@@ -87,7 +87,13 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 			bucketDataPoint := bucketsDatapoints.AppendEmpty()
 			bound := histogramBounds.At(j)
 			histogramDataPoint.Attributes().CopyTo(bucketDataPoint.Attributes())
-			bucketDataPoint.Attributes().PutDouble(prometheusLeTag, bound)
+
+			if math.IsInf(bound, 1) {
+				bucketDataPoint.Attributes().PutStr(prometheusLeTag, prometheusInfValue)
+			} else {
+				bucketDataPoint.Attributes().PutDouble(prometheusLeTag, bound)
+			}
+
 			bucketDataPoint.SetStartTimestamp(histogramDataPoint.StartTimestamp())
 			bucketDataPoint.SetTimestamp(histogramDataPoint.Timestamp())
 			cumulative += histogramDataPoint.BucketCounts().At(j)
@@ -97,7 +103,7 @@ func getHistogramBucketsMetric(metric pmetric.Metric) pmetric.Metric {
 		// need to add one more bucket at +Inf
 		bucketDataPoint := bucketsDatapoints.AppendEmpty()
 		histogramDataPoint.Attributes().CopyTo(bucketDataPoint.Attributes())
-		bucketDataPoint.Attributes().PutDouble(prometheusLeTag, math.Inf(1))
+		bucketDataPoint.Attributes().PutStr(prometheusLeTag, prometheusInfValue)
 		bucketDataPoint.SetStartTimestamp(histogramDataPoint.StartTimestamp())
 		bucketDataPoint.SetTimestamp(histogramDataPoint.Timestamp())
 		cumulative += histogramDataPoint.BucketCounts().At(histogramDataPoint.ExplicitBounds().Len())
