@@ -9,34 +9,10 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/testutil"
 )
-
-// MockResolver implements the Resolver interface for testing
-type MockResolver struct {
-	mock.Mock
-}
-
-func (m *MockResolver) Resolve(ctx context.Context, hostname string) (string, error) {
-	args := m.Called(ctx, hostname)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockResolver) Reverse(ctx context.Context, ip string) (string, error) {
-	args := m.Called(ctx, ip)
-	return args.String(0), args.Error(1)
-}
-
-func (m *MockResolver) Name() string {
-	args := m.Called()
-	return args.String(0)
-}
-
-func (m *MockResolver) Close() error {
-	args := m.Called()
-	return args.Error(0)
-}
 
 func TestNewChainResolver(t *testing.T) {
 	logger := zaptest.NewLogger(t)
@@ -52,15 +28,15 @@ func TestNewChainResolver(t *testing.T) {
 		{
 			name: "Single resolver",
 			resolvers: []Resolver{
-				&MockResolver{},
+				&testutil.MockResolver{},
 			},
 		},
 		{
 			name: "Multiple netResolvers",
 			resolvers: []Resolver{
-				&MockResolver{},
-				&MockResolver{},
-				&MockResolver{},
+				&testutil.MockResolver{},
+				&testutil.MockResolver{},
+				&testutil.MockResolver{},
 			},
 		},
 	}
@@ -91,12 +67,12 @@ func TestChainResolver_Resolve(t *testing.T) {
 			name:     "First resolver succeeds",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Name").Return("mock1")
 				r1.On("Resolve", ctx, "example.com").Return("192.168.1.10", nil)
 
 				// Second resolver should not be called
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
@@ -107,10 +83,10 @@ func TestChainResolver_Resolve(t *testing.T) {
 			name:     "First resolver fails with a standard error, second succeeds",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Resolve", ctx, "example.com").Return("", errors.New("first resolver error"))
 
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
 				r2.On("Resolve", ctx, "example.com").Return("192.168.1.20", nil)
 
@@ -123,13 +99,13 @@ func TestChainResolver_Resolve(t *testing.T) {
 			name:     "First resolver returns ErrNoResolution, chain stops",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Name").Return("mock1")
 				r1.On("Resolve", ctx, "example.com").Return("", ErrNoResolution)
 
 				// ErrNoResolution is treated as success
 				// Second resolver should not be called
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
@@ -140,10 +116,10 @@ func TestChainResolver_Resolve(t *testing.T) {
 			name:     "All netResolvers fail",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Resolve", ctx, "example.com").Return("", errors.New("first resolver error"))
 
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Resolve", ctx, "example.com").Return("", errors.New("second resolver error"))
 
 				return []Resolver{r1, r2}
@@ -156,11 +132,11 @@ func TestChainResolver_Resolve(t *testing.T) {
 			name:     "ErrNotInHostFiles should continue to next resolver",
 			hostname: "example.com",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Resolve", ctx, "example.com").Return("", ErrNotInHostFiles)
 
 				// Second resolver should be called
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
 				r2.On("Resolve", ctx, "example.com").Return("192.168.1.20", nil)
 
@@ -180,7 +156,7 @@ func TestChainResolver_Resolve(t *testing.T) {
 
 			// Verify resolver mock expectations
 			for _, r := range resolvers {
-				mockResolver, ok := r.(*MockResolver)
+				mockResolver, ok := r.(*testutil.MockResolver)
 				if ok {
 					mockResolver.AssertExpectations(t)
 				}
@@ -213,12 +189,12 @@ func TestChainResolver_Reverse(t *testing.T) {
 			name: "First resolver succeeds",
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Name").Return("mock1")
 				r1.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
 
 				// Second resolver should not be called
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
@@ -229,10 +205,10 @@ func TestChainResolver_Reverse(t *testing.T) {
 			name: "First resolver fails with standard error, second succeeds",
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("first resolver error"))
 
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
 				r2.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
 
@@ -245,13 +221,13 @@ func TestChainResolver_Reverse(t *testing.T) {
 			name: "First resolver returns ErrNoResolution, chain stops",
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Name").Return("mock1")
 				r1.On("Reverse", ctx, "192.168.1.10").Return("", ErrNoResolution)
 
 				// ErrNoResolution is treated as success
 				// Second resolver should not be called
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 
 				return []Resolver{r1, r2}
 			},
@@ -262,10 +238,10 @@ func TestChainResolver_Reverse(t *testing.T) {
 			name: "All resolvers fail",
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("first resolver error"))
 
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Reverse", ctx, "192.168.1.10").Return("", errors.New("second resolver error"))
 
 				return []Resolver{r1, r2}
@@ -278,11 +254,11 @@ func TestChainResolver_Reverse(t *testing.T) {
 			name: "ErrNotInHostFiles should continue to next resolver",
 			ip:   "192.168.1.10",
 			setupResolvers: func() []Resolver {
-				r1 := new(MockResolver)
+				r1 := new(testutil.MockResolver)
 				r1.On("Reverse", ctx, "192.168.1.10").Return("", ErrNotInHostFiles)
 
 				// Second resolver should be called since
-				r2 := new(MockResolver)
+				r2 := new(testutil.MockResolver)
 				r2.On("Name").Return("mock2")
 				r2.On("Reverse", ctx, "192.168.1.10").Return("example.com", nil)
 
@@ -302,7 +278,7 @@ func TestChainResolver_Reverse(t *testing.T) {
 
 			// Verify resolver mock expectations
 			for _, r := range resolvers {
-				mockResolver, ok := r.(*MockResolver)
+				mockResolver, ok := r.(*testutil.MockResolver)
 				if ok {
 					mockResolver.AssertExpectations(t)
 				}
@@ -323,10 +299,10 @@ func TestChainResolver_Close(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
 	t.Run("Successful close", func(t *testing.T) {
-		mock1 := new(MockResolver)
+		mock1 := new(testutil.MockResolver)
 		mock1.On("Close").Return(nil).Once()
 
-		mock2 := new(MockResolver)
+		mock2 := new(testutil.MockResolver)
 		mock2.On("Close").Return(nil).Once()
 
 		chainResolver := NewChainResolver([]Resolver{mock1, mock2}, logger)
@@ -339,10 +315,10 @@ func TestChainResolver_Close(t *testing.T) {
 	})
 
 	t.Run("Multiple errors", func(t *testing.T) {
-		errorMock1 := new(MockResolver)
+		errorMock1 := new(testutil.MockResolver)
 		errorMock1.On("Close").Return(errors.New("error 1")).Once()
 
-		errorMock2 := new(MockResolver)
+		errorMock2 := new(testutil.MockResolver)
 		errorMock2.On("Close").Return(errors.New("error 2")).Once()
 
 		chainResolver := NewChainResolver([]Resolver{errorMock1, errorMock2}, logger)

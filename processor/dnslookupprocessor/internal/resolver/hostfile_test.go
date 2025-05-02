@@ -5,13 +5,13 @@ package resolver
 
 import (
 	"context"
-	"os"
-	"path/filepath"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/testutil"
 )
 
 // valid hosts file with uppercase and lowercase
@@ -58,12 +58,12 @@ func TestNewHostFileResolver(t *testing.T) {
 	}{
 		{
 			name:          "Valid hostfile",
-			hostFilePaths: []string{createTempHostFile(t, validHostFileContent)},
+			hostFilePaths: []string{testutil.CreateTempHostFile(t, validHostFileContent)},
 			expectError:   false,
 		},
 		{
 			name:          "Multiple valid hostfiles",
-			hostFilePaths: []string{createTempHostFile(t, validHostFileContent), createTempHostFile(t, validHostFileContent2)},
+			hostFilePaths: []string{testutil.CreateTempHostFile(t, validHostFileContent), testutil.CreateTempHostFile(t, validHostFileContent2)},
 			expectError:   false,
 		},
 		{
@@ -80,7 +80,7 @@ func TestNewHostFileResolver(t *testing.T) {
 		},
 		{
 			name:          "One valid, one invalid hostfile",
-			hostFilePaths: []string{createTempHostFile(t, validHostFileContent), "/non/existent/path"},
+			hostFilePaths: []string{testutil.CreateTempHostFile(t, validHostFileContent), "/non/existent/path"},
 			expectError:   true,
 			expectedError: ErrInvalidHostFilePath,
 		},
@@ -163,7 +163,7 @@ func TestHostFileResolver_ParseHostFile(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tempHostFile := createTempHostFile(t, tt.hostFileContent)
+			tempHostFile := testutil.CreateTempHostFile(t, tt.hostFileContent)
 
 			resolver := &HostFileResolver{
 				name:         "hostfiles",
@@ -360,7 +360,7 @@ func TestHostFileResolver_Reverse(t *testing.T) {
 func TestHostFileResolver_Close(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
-	hostFilePath := createTempHostFile(t, validHostFileContent)
+	hostFilePath := testutil.CreateTempHostFile(t, validHostFileContent)
 	resolver, err := NewHostFileResolver([]string{hostFilePath}, logger)
 	require.NoError(t, err)
 
@@ -375,15 +375,4 @@ func TestHostFileResolver_Close(t *testing.T) {
 	// Verify maps were cleared
 	assert.Nil(t, resolver.hostnameToIP)
 	assert.Nil(t, resolver.ipToHostname)
-}
-
-// createTempHostFile create a temporary hostfile
-func createTempHostFile(t *testing.T, content string) string {
-	tempDir := t.TempDir()
-	tempFile := filepath.Join(tempDir, "hosts")
-
-	err := os.WriteFile(tempFile, []byte(content), 0o600)
-	require.NoError(t, err)
-
-	return tempFile
 }

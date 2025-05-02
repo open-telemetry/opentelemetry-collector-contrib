@@ -12,11 +12,13 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.uber.org/zap/zaptest"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/dnslookupprocessor/internal/testutil"
 )
 
 func TestNewCacheResolver(t *testing.T) {
 	logger := zaptest.NewLogger(t)
-	mockResolver := new(MockResolver)
+	mockResolver := new(testutil.MockResolver)
 	mockResolver.On("Name").Return("mock_resolver")
 
 	tests := []struct {
@@ -130,7 +132,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 		hitCacheSize     int
 		missCacheSize    int
 		cacheTTL         time.Duration
-		setupMock        func(*MockResolver)
+		setupMock        func(*testutil.MockResolver)
 		expectedIP       string
 		expectError      bool
 		expectedError    error
@@ -143,7 +145,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "example.com").Return("192.168.1.1", nil).Once()
 			},
 			expectedIP:  "192.168.1.1",
@@ -155,7 +157,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(_ *MockResolver) {
+			setupMock: func(_ *testutil.MockResolver) {
 			},
 			expectedIP:  "10.0.0.1",
 			expectError: false,
@@ -169,7 +171,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(_ *MockResolver) {
+			setupMock: func(_ *testutil.MockResolver) {
 			},
 			expectedIP:  "",
 			expectError: false,
@@ -183,7 +185,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  0,
 			missCacheSize: 0,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "nocache.com").Return("172.16.0.1", nil).Once()
 			},
 			expectedIP:  "172.16.0.1",
@@ -195,7 +197,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Resolve", ctx, "error.com").Return("", errors.New("dns error")).Once()
 			},
 			expectedIP:    "",
@@ -206,7 +208,7 @@ func TestCacheResolver_Resolve(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockResolver := new(MockResolver)
+			mockResolver := new(testutil.MockResolver)
 			tt.setupMock(mockResolver)
 
 			resolver, err := NewCacheResolver(
@@ -258,7 +260,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 		hitCacheSize     int
 		missCacheSize    int
 		cacheTTL         time.Duration
-		setupMock        func(*MockResolver)
+		setupMock        func(*testutil.MockResolver)
 		expectedHostname string
 		expectError      bool
 		expectedError    error
@@ -271,7 +273,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "192.168.1.1").Return("example.com", nil).Once()
 			},
 			expectedHostname: "example.com",
@@ -283,7 +285,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(_ *MockResolver) {
+			setupMock: func(_ *testutil.MockResolver) {
 			},
 			expectedHostname: "cached.com",
 			expectError:      false,
@@ -297,7 +299,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(_ *MockResolver) {
+			setupMock: func(_ *testutil.MockResolver) {
 			},
 			expectedHostname: "",
 			expectError:      false,
@@ -311,7 +313,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  0,
 			missCacheSize: 0,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "172.16.0.1").Return("nocache.com", nil).Once()
 			},
 			expectedHostname: "nocache.com",
@@ -323,7 +325,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 			hitCacheSize:  10,
 			missCacheSize: 10,
 			cacheTTL:      0,
-			setupMock: func(m *MockResolver) {
+			setupMock: func(m *testutil.MockResolver) {
 				m.On("Reverse", ctx, "169.254.0.1").Return("", errors.New("dns error")).Once()
 			},
 			expectedHostname: "",
@@ -334,7 +336,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			mockResolver := new(MockResolver)
+			mockResolver := new(testutil.MockResolver)
 			tt.setupMock(mockResolver)
 
 			resolver, err := NewCacheResolver(
@@ -379,7 +381,7 @@ func TestCacheResolver_Reverse(t *testing.T) {
 func TestCacheResolver_Close(t *testing.T) {
 	logger := zaptest.NewLogger(t)
 
-	mockResolver := new(MockResolver)
+	mockResolver := new(testutil.MockResolver)
 	mockResolver.On("Close").Return(nil).Once()
 
 	resolver, err := NewCacheResolver(
