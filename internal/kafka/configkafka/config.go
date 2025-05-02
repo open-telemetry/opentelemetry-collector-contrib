@@ -8,9 +8,8 @@ import (
 	"fmt"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configcompression"
-
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )

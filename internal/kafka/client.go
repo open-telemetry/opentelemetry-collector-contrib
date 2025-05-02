@@ -8,9 +8,8 @@ import (
 	"crypto/tls"
 	"time"
 
-	"go.opentelemetry.io/collector/config/configcompression"
-
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
