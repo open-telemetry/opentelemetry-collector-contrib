@@ -373,6 +373,9 @@ gengithub: $(GITHUBGEN)
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
 
+gencodecov: $(CODECOVGEN)
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
+
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
 	$(MAKE) genlabels
@@ -442,6 +445,12 @@ telemetrygenlite:
 .PHONY: opampsupervisor
 opampsupervisor:
 	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
+# Build the golden executable.
+.PHONY: golden
+golden:
+	cd ./cmd/golden && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/golden_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 MODULES="internal/buildscripts/modules"

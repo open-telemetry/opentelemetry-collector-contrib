@@ -2,6 +2,7 @@ CREATE USER otelu WITH PASSWORD 'otelp';
 GRANT SELECT ON pg_stat_database TO otelu;
 GRANT pg_monitor TO otelu;
 
+
 CREATE TABLE table1 (
     id serial PRIMARY KEY
 );
@@ -25,3 +26,6 @@ CREATE INDEX otel2index ON test2(id);
 INSERT INTO test2 (id)
 VALUES(67);
 SELECT * FROM test2; 
+
+
+CREATE EXTENSION pg_stat_statements;

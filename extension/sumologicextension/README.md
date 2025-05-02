@@ -30,10 +30,10 @@ It manages:
 
 It implements [`HTTPClientAuthenticator`][httpclientauthenticator]
 and can be used as an authenticator for the
-[`configauth.Authentication`][configauth_authentication] option for HTTP clients.
+[`configauth.Config`][configauth_config] option for HTTP clients.
 
 [httpclientauthenticator]: https://github.com/open-telemetry/opentelemetry-collector/blob/2e84285efc665798d76773b9901727e8836e9d8f/config/configauth/clientauth.go#L34-L39
-[configauth_authentication]: https://github.com/open-telemetry/opentelemetry-collector/blob/3f5c7180c51ed67a6f54158ede5e523822e9659e/config/configauth/configauth.go#L29-L33
+[configauth_config]: https://github.com/open-telemetry/opentelemetry-collector/blob/045488fddebb78b6ddd690700440507e6dfbfa47/config/configauth/configauth.go#L29-L34
 
 ## Configuration
 
