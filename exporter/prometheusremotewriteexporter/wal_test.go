@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -166,7 +167,8 @@ func TestExportWithWALEnabled(t *testing.T) {
 		WAL: &WALConfig{
 			Directory: t.TempDir(),
 		},
-		TargetInfo: &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		TargetInfo:          &TargetInfo{}, // Declared just to avoid nil pointer dereference.
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",

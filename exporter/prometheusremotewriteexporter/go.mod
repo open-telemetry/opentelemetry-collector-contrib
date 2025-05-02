@@ -8,9 +8,9 @@ require (
 	github.com/golang/snappy v1.0.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/resourcetotelemetry v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus v0.125.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.115.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheusremotewrite v0.125.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/wal v1.1.8
@@ -95,17 +95,17 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/client v1.31.1-0.20250430101735-2ecd0b7f95cd // indirect
-	go.opentelemetry.io/collector/config/configauth v0.125.0 // indirect
-	go.opentelemetry.io/collector/config/configcompression v1.31.0 // indirect
-	go.opentelemetry.io/collector/config/configmiddleware v0.125.0 // indirect
+	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/config/configmiddleware v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
-	go.opentelemetry.io/collector/exporter/xexporter v0.125.0 // indirect
-	go.opentelemetry.io/collector/extension v1.31.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionauth v1.31.0 // indirect
-	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.0 // indirect
-	go.opentelemetry.io/collector/extension/xextension v0.125.0 // indirect
+	go.opentelemetry.io/collector/exporter/xexporter v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
+	go.opentelemetry.io/collector/extension/xextension v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect
 	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250430101735-2ecd0b7f95cd // indirect

@@ -5,6 +5,7 @@ package prometheusremotewriteexporter
 
 import (
 	"context"
+	"github.com/prometheus/prometheus/config"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -109,7 +110,8 @@ func Test_PushMetricsConcurrent(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		BackOffConfig: retrySettings,
+		BackOffConfig:       retrySettings,
+		RemoteWriteProtoMsg: config.RemoteWriteProtoMsgV1,
 	}
 
 	assert.NotNil(t, cfg)
