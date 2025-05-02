@@ -5,10 +5,10 @@ go 1.23.3
 require (
 	github.com/grafana/faro/pkg/go v0.0.0-20250314155512-06a06da3b8bc
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component/componentstatus v0.125.0
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250501194116-727ae96d6214
 	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.0
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250501194116-727ae96d6214
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250505155216-829157cef7bb
 	go.uber.org/goleak v1.3.0
 )
