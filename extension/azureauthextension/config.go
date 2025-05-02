@@ -31,17 +31,23 @@ type Config struct {
 	Workload         *WorkloadIdentity `mapstructure:"workload_identity"`
 	ServicePrincipal *ServicePrincipal `mapstructure:"service_principal"`
 	UseDefault       bool              `mapstructure:"use_default"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ManagedIdentity struct {
 	// if left empty, then it is system managed
 	ClientID string `mapstructure:"client_id"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type WorkloadIdentity struct {
 	ClientID           string `mapstructure:"client_id"`
 	TenantID           string `mapstructure:"tenant_id"`
 	FederatedTokenFile string `mapstructure:"federated_token_file"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type ServicePrincipal struct {
@@ -49,6 +55,8 @@ type ServicePrincipal struct {
 	ClientID              string `mapstructure:"client_id"`
 	ClientSecret          string `mapstructure:"client_secret"`
 	ClientCertificatePath string `mapstructure:"client_certificate_path"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 var _ component.Config = (*Config)(nil)

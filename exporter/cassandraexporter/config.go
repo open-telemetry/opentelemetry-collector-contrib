@@ -23,13 +23,19 @@ type Config struct {
 type Replication struct {
 	Class             string `mapstructure:"class"`
 	ReplicationFactor int    `mapstructure:"replication_factor"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Compression struct {
 	Algorithm string `mapstructure:"algorithm"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Auth struct {
 	UserName string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

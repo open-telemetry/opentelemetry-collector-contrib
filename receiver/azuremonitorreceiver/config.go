@@ -273,6 +273,8 @@ type AuthConfig struct {
 	// AuthenticatorID specifies the name of the azure extension to authenticate the
 	// requests to azure monitor.
 	AuthenticatorID component.ID `mapstructure:"authenticator,omitempty"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 const (

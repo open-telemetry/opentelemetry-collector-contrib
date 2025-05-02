@@ -11,6 +11,9 @@ import (
 type Config struct {
 	// List of delta sum metrics to convert to rates
 	Metrics []string `mapstructure:"metrics"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Validate checks whether the input configuration has all of the required fields for the processor.
