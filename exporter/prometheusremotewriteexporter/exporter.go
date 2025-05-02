@@ -39,11 +39,21 @@ import (
 type prwTelemetry interface {
 	recordTranslationFailure(ctx context.Context)
 	recordTranslatedTimeSeries(ctx context.Context, numTS int)
+	recordRemoteWriteSentBatch(ctx context.Context)
+	setNumberConsumer(ctx context.Context, n int64)
 }
 
 type prwTelemetryOtel struct {
 	telemetryBuilder *metadata.TelemetryBuilder
 	otelAttrs        []attribute.KeyValue
+}
+
+func (p *prwTelemetryOtel) setNumberConsumer(ctx context.Context, n int64) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteConsumers.Add(ctx, n, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwTelemetryOtel) recordRemoteWriteSentBatch(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteSentBatches.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func (p *prwTelemetryOtel) recordTranslationFailure(ctx context.Context) {
@@ -89,7 +99,7 @@ type prwExporter struct {
 	RemoteWriteProtoMsg  config.RemoteWriteProtoMsg
 }
 
-func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
+func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
 	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
 	if err != nil {
 		return nil, err
@@ -99,6 +109,7 @@ func newPRWTelemetry(set exporter.Settings) (prwTelemetry, error) {
 		telemetryBuilder: telemetryBuilder,
 		otelAttrs: []attribute.KeyValue{
 			attribute.String("exporter", set.ID.String()),
+			attribute.String("endpoint", endpointURL.String()),
 		},
 	}, nil
 }
@@ -115,7 +126,7 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		return nil, errors.New("invalid endpoint")
 	}
 
-	prwTelemetry, err := newPRWTelemetry(set)
+	telemetry, err := newPRWTelemetry(set, endpointURL)
 	if err != nil {
 		return nil, err
 	}
@@ -125,6 +136,17 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 	}
 
 	userAgentHeader := fmt.Sprintf("%s/%s", strings.ReplaceAll(strings.ToLower(set.BuildInfo.Description), " ", "-"), set.BuildInfo.Version)
+
+	concurrency := 5
+	if !enableMultipleWorkersFeatureGate.IsEnabled() {
+		concurrency = cfg.RemoteWriteQueue.NumConsumers
+	}
+	if cfg.MaxBatchRequestParallelism != nil {
+		concurrency = *cfg.MaxBatchRequestParallelism
+	}
+
+	// Set the desired number of consumers as a metric for the exporter.
+	telemetry.setNumberConsumer(context.Background(), int64(concurrency))
 
 	prwe := &prwExporter{
 		endpointURL:         endpointURL,
@@ -139,12 +161,11 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		retryOnHTTP429:      retryOn429FeatureGate.IsEnabled(),
 		RemoteWriteProtoMsg: cfg.RemoteWriteProtoMsg,
 		exporterSettings: prometheusremotewrite.Settings{
-			Namespace:           cfg.Namespace,
-			ExternalLabels:      sanitizedLabels,
-			DisableTargetInfo:   !cfg.TargetInfo.Enabled,
-			ExportCreatedMetric: cfg.CreatedMetric.Enabled,
-			AddMetricSuffixes:   cfg.AddMetricSuffixes,
-			SendMetadata:        cfg.SendMetadata,
+			Namespace:         cfg.Namespace,
+			ExternalLabels:    sanitizedLabels,
+			DisableTargetInfo: !cfg.TargetInfo.Enabled,
+			AddMetricSuffixes: cfg.AddMetricSuffixes,
+			SendMetadata:      cfg.SendMetadata,
 		},
 		telemetry:            prwTelemetry,
 		batchTimeSeriesState: newBatchTimeSericesState(),
@@ -241,7 +262,7 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	sanitizedLabels := make(map[string]string)
 	for key, value := range cfg.ExternalLabels {
 		if key == "" || value == "" {
-			return nil, fmt.Errorf("prometheus remote write: external labels configuration contains an empty key or value")
+			return nil, errors.New("prometheus remote write: external labels configuration contains an empty key or value")
 		}
 		sanitizedLabels[prometheustranslator.NormalizeLabel(key)] = value
 	}
@@ -255,7 +276,7 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 		return nil
 	}
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, &prwe.batchTimeSeriesState)
+	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
 		return err
 	}
@@ -374,10 +395,14 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 		}
 
 		resp, err := prwe.client.Do(req)
+		prwe.telemetry.recordRemoteWriteSentBatch(ctx)
 		if err != nil {
 			return err
 		}
-		defer resp.Body.Close()
+		defer func() {
+			_, _ = io.Copy(io.Discard, resp.Body)
+			resp.Body.Close()
+		}()
 
 		// 2xx status code is considered a success
 		// 5xx errors are recoverable and the exporter should retry

@@ -174,7 +174,7 @@ The number of values transmitted by the Directory Replication Agent per second.
 | Name | Description | Values |
 | ---- | ----------- | ------ |
 | direction | The direction of data flow. | Str: ``sent``, ``received`` |
-| type | The type of value sent. | Str: ``distingushed_names``, ``other`` |
+| type | The type of value sent. | Str: ``distinguished_names``, ``other`` |
 
 ### active_directory.ds.security_descriptor_propagations_event.queued
 

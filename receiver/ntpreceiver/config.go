@@ -9,7 +9,7 @@ import (
 	"net"
 	"time"
 
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/ntpreceiver/internal/metadata"
 )
@@ -29,8 +29,8 @@ func (c *Config) Validate() error {
 		errs = append(errs, err)
 	}
 	// respect terms of service https://www.pool.ntp.org/tos.html
-	if c.ControllerConfig.CollectionInterval < 30*time.Minute {
-		errs = append(errs, fmt.Errorf("collection interval %v is less than minimum 30m", c.ControllerConfig.CollectionInterval))
+	if c.CollectionInterval < 30*time.Minute {
+		errs = append(errs, fmt.Errorf("collection interval %v is less than minimum 30m", c.CollectionInterval))
 	}
 	return errors.Join(errs...)
 }

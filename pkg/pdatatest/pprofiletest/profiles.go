@@ -5,6 +5,7 @@ package pprofiletest // import "github.com/open-telemetry/opentelemetry-collecto
 
 import (
 	"bytes"
+	"errors"
 	"fmt"
 	"reflect"
 
@@ -181,32 +182,38 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	var outOfOrderErrs error
 	for e := 0; e < numProfiles; e++ {
 		elr := expected.Profiles().At(e)
+		errs = multierr.Append(errs, ValidateProfile(elr))
+		em := profileAttributesToMap(elr)
+
 		var foundMatch bool
 		for a := 0; a < numProfiles; a++ {
 			alr := actual.Profiles().At(a)
+			errs = multierr.Append(errs, ValidateProfile(alr))
 			if _, ok := matchingProfiles[alr]; ok {
 				continue
 			}
-			if reflect.DeepEqual(elr.Attributes().AsRaw(), alr.Attributes().AsRaw()) {
+			am := profileAttributesToMap(alr)
+
+			if reflect.DeepEqual(em, am) {
 				foundMatch = true
 				matchingProfiles[alr] = elr
 				if e != a {
 					outOfOrderErrs = multierr.Append(outOfOrderErrs,
 						fmt.Errorf(`profiles are out of order: profile "%v" expected at index %d, found at index %d`,
-							elr.Attributes().AsRaw(), e, a))
+							em, e, a))
 				}
 				break
 			}
 		}
 		if !foundMatch {
-			errs = multierr.Append(errs, fmt.Errorf("missing expected profile: %v", elr.Attributes().AsRaw()))
+			errs = multierr.Append(errs, fmt.Errorf("missing expected profile: %v", em))
 		}
 	}
 
 	for i := 0; i < numProfiles; i++ {
 		if _, ok := matchingProfiles[actual.Profiles().At(i)]; !ok {
 			errs = multierr.Append(errs, fmt.Errorf("unexpected profile: %v",
-				actual.Profiles().At(i).Attributes().AsRaw()))
+				profileAttributesToMap(actual.Profiles().At(i))))
 		}
 	}
 
@@ -218,15 +225,26 @@ func CompareScopeProfiles(expected, actual pprofile.ScopeProfiles) error {
 	}
 
 	for alr, elr := range matchingProfiles {
-		errPrefix := fmt.Sprintf(`profile "%v"`, elr.Attributes().AsRaw())
+		errPrefix := fmt.Sprintf(`profile "%v"`, profileAttributesToMap(elr))
 		errs = multierr.Append(errs, internal.AddErrPrefix(errPrefix, CompareProfile(elr, alr)))
 	}
 	return errs
 }
 
+func compareAttributes(a, b pprofile.Profile) error {
+	aa := profileAttributesToMap(a)
+	ba := profileAttributesToMap(b)
+
+	if !reflect.DeepEqual(aa, ba) {
+		return fmt.Errorf("attributes don't match expected: %v, actual: %v", aa, ba)
+	}
+
+	return nil
+}
+
 func CompareProfile(expected, actual pprofile.Profile) error {
 	errs := multierr.Combine(
-		internal.CompareAttributes(expected.Attributes(), actual.Attributes()),
+		compareAttributes(expected, actual),
 		internal.CompareDroppedAttributesCount(expected.DroppedAttributesCount(), actual.DroppedAttributesCount()),
 	)
 
@@ -239,11 +257,11 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	}
 
 	if !reflect.DeepEqual(expected.LocationIndices(), actual.LocationIndices()) {
-		errs = multierr.Append(errs, fmt.Errorf("locationIndicies do not match expected"))
+		errs = multierr.Append(errs, errors.New("locationIndicies do not match expected"))
 	}
 
 	if !reflect.DeepEqual(expected.CommentStrindices(), actual.CommentStrindices()) {
-		errs = multierr.Append(errs, fmt.Errorf("comment does not match expected"))
+		errs = multierr.Append(errs, errors.New("comment does not match expected"))
 	}
 
 	if expected.Time() != actual.Time() {
@@ -251,7 +269,7 @@ func CompareProfile(expected, actual pprofile.Profile) error {
 	}
 
 	if !reflect.DeepEqual(expected.StringTable(), actual.StringTable()) {
-		errs = multierr.Append(errs, fmt.Errorf("stringTable does not match expected"))
+		errs = multierr.Append(errs, fmt.Errorf("stringTable '%v' does not match expected '%v'", actual.StringTable().AsRaw(), expected.StringTable().AsRaw()))
 	}
 
 	if expected.OriginalPayloadFormat() != actual.OriginalPayloadFormat() {

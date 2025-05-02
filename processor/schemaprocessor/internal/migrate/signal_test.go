@@ -60,7 +60,6 @@ func TestSignalApply(t *testing.T) {
 			expect: "instance.uptime",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
@@ -118,7 +117,6 @@ func TestSignalRollback(t *testing.T) {
 			expect: "system.uptime",
 		},
 	} {
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 

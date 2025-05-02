@@ -21,8 +21,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	conventions127 "go.opentelemetry.io/collector/semconv/v1.27.0"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/datadogexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
+	datadogconfig "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/datadog/config"
 )
 
 const timeFormatString = "2006-01-02T15:04:05.000Z07:00"
@@ -219,20 +221,20 @@ func TestLogsExporter(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			server := testutil.DatadogLogServerMock()
 			defer server.Close()
-			cfg := &Config{
-				Metrics: MetricsConfig{
+			cfg := &datadogconfig.Config{
+				Metrics: datadogconfig.MetricsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,
 					},
 				},
-				Logs: LogsConfig{
+				Logs: datadogconfig.LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,
 					},
 				},
 			}
 
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)
@@ -586,8 +588,8 @@ func TestLogsAgentExporter(t *testing.T) {
 				}
 			})
 			defer server.Close()
-			cfg := &Config{
-				Logs: LogsConfig{
+			cfg := &datadogconfig.Config{
+				Logs: datadogconfig.LogsConfig{
 					TCPAddrConfig: confignet.TCPAddrConfig{
 						Endpoint: server.URL,
 					},
@@ -596,7 +598,7 @@ func TestLogsAgentExporter(t *testing.T) {
 					BatchWait:        1,
 				},
 			}
-			params := exportertest.NewNopSettings()
+			params := exportertest.NewNopSettings(metadata.Type)
 			f := NewFactory()
 			ctx := context.Background()
 			exp, err := f.CreateLogs(ctx, params, cfg)

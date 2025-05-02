@@ -14,11 +14,15 @@ const (
 	K8sKeyReplicationControllerUID = "k8s.replicationcontroller.uid"
 	K8sKeyResourceQuotaUID         = "k8s.resourcequota.uid"
 	K8sKeyClusterResourceQuotaUID  = "openshift.clusterquota.uid"
+	K8sKeyPodUID                   = "k8s.pod.uid"
 
 	// Resource labels keys for Name.
 	K8sKeyReplicationControllerName = "k8s.replicationcontroller.name"
 	K8sKeyResourceQuotaName         = "k8s.resourcequota.name"
 	K8sKeyClusterResourceQuotaName  = "openshift.clusterquota.name"
+	K8sKeyNamespaceName             = "k8s.namespace.name"
+	K8sKeyPodName                   = "k8s.pod.name"
+	K8sKeyNodeName                  = "k8s.node.name"
 
 	// Kubernetes resource kinds
 	K8sKindCronJob               = "CronJob"

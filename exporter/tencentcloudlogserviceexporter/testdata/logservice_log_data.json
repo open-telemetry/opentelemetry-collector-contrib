@@ -10,7 +10,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -64,7 +64,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -118,7 +118,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -172,7 +172,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -226,7 +226,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -280,7 +280,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -334,7 +334,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -388,7 +388,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",
@@ -442,7 +442,7 @@
     },
     {
       "Key": "resource",
-      "Value": "{\"resouceKey\":\"resourceValue\"}"
+      "Value": "{\"resourceKey\":\"resourceValue\"}"
     },
     {
       "Key": "otlp.name",

@@ -3,10 +3,10 @@ resourceMetrics:
       attributes:
         - key: azuremonitor.subscription_id
           value:
-            stringValue: ""
+            stringValue: subscriptionId1
         - key: azuremonitor.tenant_id
           value:
-            stringValue: ""
+            stringValue: fake-tenant-id
     scopeMetrics:
       - metrics:
           - gauge:
@@ -15,62 +15,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: metadata_dimension2
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric5_minimum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric6_average
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -96,111 +41,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric1_minimum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric3_average
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric3_count
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric3_maximum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -215,7 +56,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric4_count
+            name: azure_metric4_average
             unit: unit1
           - gauge:
               dataPoints:
@@ -223,13 +64,10 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId3
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
                     - key: name
                       value:
                         stringValue: name1
@@ -241,7 +79,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric7_count
+            name: azure_metric4_maximum
             unit: unit1
           - gauge:
               dataPoints:
@@ -249,195 +87,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric2_average
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric2_total
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric6_maximum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: metadata_dimension2
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric5_total
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric1_count
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId1
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: tags_tagName1
-                      value:
-                        stringValue: tagValue1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric3_minimum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: metadata_dimension1
-                      value:
-                        stringValue: dimension value
-                    - key: metadata_dimension2
-                      value:
-                        stringValue: dimension value
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric5_maximum
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -463,7 +113,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -481,7 +131,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric1_total
+            name: azure_metric3_minimum
             unit: unit1
           - gauge:
               dataPoints:
@@ -489,7 +139,137 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric3_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric6_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric1_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric2_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric2_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -515,7 +295,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -544,7 +324,33 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric6_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -562,7 +368,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric2_minimum
+            name: azure_metric1_minimum
             unit: unit1
           - gauge:
               dataPoints:
@@ -570,7 +376,65 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric5_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric5_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -596,7 +460,189 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric2_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId3
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric7_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: metadata_dimension2
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric5_total
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric2_average
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric3_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric4_minimum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: metadata_dimension1
+                      value:
+                        stringValue: dimension value
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric6_maximum
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -619,7 +665,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -648,30 +694,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric4_average
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -697,7 +720,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -715,7 +738,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric2_maximum
+            name: azure_metric1_total
             unit: unit1
           - gauge:
               dataPoints:
@@ -723,7 +746,7 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId1
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -741,7 +764,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric3_total
+            name: azure_metric3_average
             unit: unit1
           - gauge:
               dataPoints:
@@ -749,7 +772,33 @@ resourceMetrics:
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId1
+                    - key: location
+                      value:
+                        stringValue: location1
+                    - key: name
+                      value:
+                        stringValue: name1
+                    - key: resource_group
+                      value:
+                        stringValue: group1
+                    - key: tags_tagName1
+                      value:
+                        stringValue: tagValue1
+                    - key: type
+                      value:
+                        stringValue: type1
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: azure_metric3_count
+            unit: unit1
+          - gauge:
+              dataPoints:
+                - asDouble: 1
+                  attributes:
+                    - key: azuremonitor.resource_id
+                      value:
+                        stringValue: /subscriptions/subscriptionId1/resourceGroups/group1/resourceId2
                     - key: location
                       value:
                         stringValue: location1
@@ -764,15 +813,28 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric4_minimum
+            name: azure_metric4_count
             unit: unit1
+        scope:
+          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver
+          version: latest
+  - resource:
+      attributes:
+        - key: azuremonitor.subscription_id
+          value:
+            stringValue: subscriptionId3
+        - key: azuremonitor.tenant_id
+          value:
+            stringValue: fake-tenant-id
+    scopeMetrics:
+      - metrics:
           - gauge:
               dataPoints:
                 - asDouble: 1
                   attributes:
                     - key: azuremonitor.resource_id
                       value:
-                        stringValue: /resourceGroups/group1/resourceId2
+                        stringValue: /subscriptions/subscriptionId3/resourceGroups/group1/resourceId1
                     - key: location
                       value:
                         stringValue: location1
@@ -790,30 +852,7 @@ resourceMetrics:
                         stringValue: type1
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
-            name: azure_metric6_count
-            unit: unit1
-          - gauge:
-              dataPoints:
-                - asDouble: 1
-                  attributes:
-                    - key: azuremonitor.resource_id
-                      value:
-                        stringValue: /resourceGroups/group1/resourceId2
-                    - key: location
-                      value:
-                        stringValue: location1
-                    - key: name
-                      value:
-                        stringValue: name1
-                    - key: resource_group
-                      value:
-                        stringValue: group1
-                    - key: type
-                      value:
-                        stringValue: type1
-                  startTimeUnixNano: "1000000"
-                  timeUnixNano: "2000000"
-            name: azure_metric4_maximum
+            name: azure_metric7_count
             unit: unit1
         scope:
           name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/azuremonitorreceiver

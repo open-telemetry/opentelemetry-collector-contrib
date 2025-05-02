@@ -57,6 +57,7 @@ func TestUnmarshal(t *testing.T) {
 					cfg := NewConfig()
 					cfg.Protocol = "rfc5424"
 					cfg.Location = "foo"
+					cfg.OnError = "send_quiet"
 					cfg.UDP = &udp.NewConfig().BaseConfig
 					cfg.UDP.ListenAddress = "10.0.0.1:9000"
 					cfg.UDP.AddAttributes = true

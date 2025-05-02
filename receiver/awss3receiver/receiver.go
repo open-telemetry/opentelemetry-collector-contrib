@@ -251,11 +251,11 @@ func newEncodingExtensions(encodingsConfig []Encoding, host component.Host) (enc
 	encodings := make(encodingExtensions, 0)
 	extensions := host.GetExtensions()
 	for _, configItem := range encodingsConfig {
-		if e, ok := extensions[configItem.Extension]; ok {
-			encodings = append(encodings, encodingExtension{extension: e, suffix: configItem.Suffix})
-		} else {
+		e, ok := extensions[configItem.Extension]
+		if !ok {
 			return nil, fmt.Errorf("extension %q not found", configItem.Extension)
 		}
+		encodings = append(encodings, encodingExtension{extension: e, suffix: configItem.Suffix})
 	}
 	return encodings, nil
 }

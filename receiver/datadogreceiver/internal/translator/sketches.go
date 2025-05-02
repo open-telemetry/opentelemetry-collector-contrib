@@ -152,7 +152,7 @@ func mapSketchBucketsToHistogramBuckets(sketchKeys []int32, sketchCounts []uint3
 			continue
 		}
 		if sketchKeys[i] >= maxIndex {
-			// This should not happen, as sketches that contain bucket(s) with an index higher than the max
+			// This should not happen, as sketches that contain bucket(s) with an index greater than the max
 			// limit should have already been discarded. However, if there happens to be an index > maxIndex,
 			// it can cause an infinite loop within the below inner for loop on some operating systems. Therefore,
 			// throw an error for sketches that have an index above the max limit

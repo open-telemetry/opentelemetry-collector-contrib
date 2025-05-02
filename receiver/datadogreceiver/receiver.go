@@ -161,7 +161,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	}
 
 	var err error
-	ddr.server, err = ddr.config.ServerConfig.ToServer(
+	ddr.server, err = ddr.config.ToServer(
 		ctx,
 		host,
 		ddr.params.TelemetrySettings,
@@ -170,7 +170,7 @@ func (ddr *datadogReceiver) Start(ctx context.Context, host component.Host) erro
 	if err != nil {
 		return fmt.Errorf("failed to create server definition: %w", err)
 	}
-	hln, err := ddr.config.ServerConfig.ToListener(ctx)
+	hln, err := ddr.config.ToListener(ctx)
 	if err != nil {
 		return fmt.Errorf("failed to create datadog listener: %w", err)
 	}
@@ -215,7 +215,7 @@ func (ddr *datadogReceiver) handleInfo(w http.ResponseWriter, _ *http.Request, i
 }
 
 func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Request) {
-	if req.ContentLength == 0 { // Ping mecanism of Datadog SDK perform http request with empty body when GET /info not implemented.
+	if req.ContentLength == 0 { // Ping mechanism of Datadog SDK perform http request with empty body when GET /info not implemented.
 		http.Error(w, "Fake featuresdiscovery", http.StatusBadRequest) // The response code should be different of 404 to be considered ok by Datadog SDK.
 		return
 	}

@@ -27,7 +27,7 @@ func createInsertXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 	args, ok := oArgs.(*InsertXMLArguments[K])
 
 	if !ok {
-		return nil, fmt.Errorf("InsertXML args must be of type *InsertXMLAguments[K]")
+		return nil, errors.New("InsertXML args must be of type *InsertXMLAguments[K]")
 	}
 
 	if err := validateXPath(args.XPath); err != nil {
@@ -42,8 +42,15 @@ func createInsertXMLFunction[K any](_ ottl.FunctionContext, oArgs ottl.Arguments
 func insertXML[K any](target ottl.StringGetter[K], xPath string, subGetter ottl.StringGetter[K]) ottl.ExprFunc[K] {
 	return func(ctx context.Context, tCtx K) (any, error) {
 		var doc *xmlquery.Node
-		if targetVal, err := target.Get(ctx, tCtx); err != nil {
+		targetVal, err := target.Get(ctx, tCtx)
+		if err != nil {
 			return nil, err
+		}
+		if targetVal == "" {
+			doc = &xmlquery.Node{
+				Type: xmlquery.ElementNode,
+				Data: targetVal,
+			}
 		} else if doc, err = parseNodesXML(targetVal); err != nil {
 			return nil, err
 		}

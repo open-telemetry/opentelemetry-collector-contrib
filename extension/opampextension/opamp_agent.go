@@ -5,6 +5,7 @@ package opampextension // import "github.com/open-telemetry/opentelemetry-collec
 
 import (
 	"context"
+	"crypto/sha256"
 	"errors"
 	"fmt"
 	"net/http"
@@ -25,7 +26,9 @@ import (
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensioncapabilities"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 	"golang.org/x/exp/maps"
 	"golang.org/x/text/cases"
@@ -50,8 +53,9 @@ type opampAgent struct {
 	cfg    *Config
 	logger *zap.Logger
 
-	agentType    string
-	agentVersion string
+	agentType     string
+	agentVersion  string
+	resourceAttrs map[string]string
 
 	instanceID uuid.UUID
 
@@ -66,7 +70,8 @@ type opampAgent struct {
 
 	capabilities Capabilities
 
-	agentDescription *protobufs.AgentDescription
+	agentDescription    *protobufs.AgentDescription
+	availableComponents *protobufs.AvailableComponents
 
 	opampClient client.OpAMPClient
 
@@ -86,7 +91,24 @@ var (
 	_ extensioncapabilities.ConfigWatcher          = (*opampAgent)(nil)
 	_ extensioncapabilities.PipelineWatcher        = (*opampAgent)(nil)
 	_ componentstatus.Watcher                      = (*opampAgent)(nil)
+
+	// identifyingAttributes is the list of semantic convention keys that are used
+	// for the agent description's identifying attributes.
+	identifyingAttributes = map[string]struct{}{
+		semconv.AttributeServiceName:       {},
+		semconv.AttributeServiceVersion:    {},
+		semconv.AttributeServiceInstanceID: {},
+	}
 )
+
+// moduleInfo exposes the internal collector moduleInfo interface
+// This functionality will be exposed in the collector by https://github.com/open-telemetry/opentelemetry-collector/pull/12375,
+// and once it is merged, this interface should be replaced by the new non-internal interface
+type moduleInfo interface {
+	// GetModuleInfos returns the module information for the host
+	// i.e. Receivers, Processors, Exporters, Extensions, and Connectors
+	GetModuleInfos() service.ModuleInfos
+}
 
 func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 	o.reportFunc = func(event *componentstatus.Event) {
@@ -98,7 +120,7 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		header.Set(k, string(v))
 	}
 
-	tls, err := o.cfg.Server.GetTLSSetting().LoadTLSConfig(ctx)
+	tls, err := o.cfg.Server.GetTLSConfig(ctx)
 	if err != nil {
 		return err
 	}
@@ -118,20 +140,20 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 		TLSConfig:      tls,
 		OpAMPServerURL: o.cfg.Server.GetEndpoint(),
 		InstanceUid:    types.InstanceUid(o.instanceID),
-		Callbacks: types.CallbacksStruct{
-			OnConnectFunc: func(_ context.Context) {
+		Callbacks: types.Callbacks{
+			OnConnect: func(_ context.Context) {
 				o.logger.Debug("Connected to the OpAMP server")
 			},
-			OnConnectFailedFunc: func(_ context.Context, err error) {
+			OnConnectFailed: func(_ context.Context, err error) {
 				o.logger.Error("Failed to connect to the OpAMP server", zap.Error(err))
 			},
-			OnErrorFunc: func(_ context.Context, err *protobufs.ServerErrorResponse) {
+			OnError: func(_ context.Context, err *protobufs.ServerErrorResponse) {
 				o.logger.Error("OpAMP server returned an error response", zap.String("message", err.ErrorMessage))
 			},
-			GetEffectiveConfigFunc: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
+			GetEffectiveConfig: func(_ context.Context) (*protobufs.EffectiveConfig, error) {
 				return o.composeEffectiveConfig(), nil
 			},
-			OnMessageFunc: o.onMessage,
+			OnMessage: o.onMessage,
 		},
 		Capabilities: o.capabilities.toAgentCapabilities(),
 	}
@@ -142,6 +164,16 @@ func (o *opampAgent) Start(ctx context.Context, host component.Host) error {
 
 	if err := o.opampClient.SetAgentDescription(o.agentDescription); err != nil {
 		return err
+	}
+
+	if mi, ok := host.(moduleInfo); ok {
+		o.initAvailableComponents(mi.GetModuleInfos())
+	}
+
+	if o.availableComponents != nil {
+		if err := o.opampClient.SetAvailableComponents(o.availableComponents); err != nil {
+			return err
+		}
 	}
 
 	o.logger.Debug("Starting OpAMP client...")
@@ -281,6 +313,11 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 			}
 		}
 	}
+	resourceAttrs := make(map[string]string, set.Resource.Attributes().Len())
+	set.Resource.Attributes().Range(func(k string, v pcommon.Value) bool {
+		resourceAttrs[k] = v.Str()
+		return true
+	})
 
 	opampClient := cfg.Server.GetClient(set.Logger)
 	agent := &opampAgent{
@@ -291,6 +328,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 		instanceID:               uid,
 		capabilities:             cfg.Capabilities,
 		opampClient:              opampClient,
+		resourceAttrs:            resourceAttrs,
 		statusSubscriptionWg:     &sync.WaitGroup{},
 		componentHealthWg:        &sync.WaitGroup{},
 		readyCh:                  make(chan struct{}),
@@ -352,6 +390,15 @@ func (o *opampAgent) createAgentDescription() error {
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v
+	}
+	if o.cfg.AgentDescription.IncludeResourceAttributes {
+		for k, v := range o.resourceAttrs {
+			// skip the attributes that are being used in the identifying attributes.
+			if _, ok := identifyingAttributes[k]; ok {
+				continue
+			}
+			nonIdentifyingAttributeMap[k] = v
+		}
 	}
 
 	// Sort the non identifying attributes to give them a stable order for tests
@@ -470,6 +517,83 @@ func (o *opampAgent) initHealthReporting() {
 	o.componentStatusCh = make(chan *eventSourcePair)
 	o.componentHealthWg.Add(1)
 	go o.componentHealthEventLoop()
+}
+
+func (o *opampAgent) initAvailableComponents(moduleInfos service.ModuleInfos) {
+	if !o.capabilities.ReportsAvailableComponents {
+		return
+	}
+
+	o.availableComponents = &protobufs.AvailableComponents{
+		Hash: generateAvailableComponentsHash(moduleInfos),
+		Components: map[string]*protobufs.ComponentDetails{
+			"receivers": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Receiver),
+			},
+			"processors": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Processor),
+			},
+			"exporters": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Exporter),
+			},
+			"extensions": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Extension),
+			},
+			"connectors": {
+				SubComponentMap: createComponentTypeAvailableComponentDetails(moduleInfos.Connector),
+			},
+		},
+	}
+}
+
+func generateAvailableComponentsHash(moduleInfos service.ModuleInfos) []byte {
+	var builder strings.Builder
+
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Receiver, "receiver")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Processor, "processor")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Exporter, "exporter")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Extension, "extension")
+	addComponentTypeComponentsToStringBuilder(&builder, moduleInfos.Connector, "connector")
+
+	// Compute the SHA-256 hash of the serialized representation.
+	hash := sha256.Sum256([]byte(builder.String()))
+	return hash[:]
+}
+
+func addComponentTypeComponentsToStringBuilder(builder *strings.Builder, componentTypeComponents map[component.Type]service.ModuleInfo, componentType string) {
+	// Collect components and sort them to ensure deterministic ordering.
+	components := make([]component.Type, 0, len(componentTypeComponents))
+	for k := range componentTypeComponents {
+		components = append(components, k)
+	}
+	sort.Slice(components, func(i, j int) bool {
+		return components[i].String() < components[j].String()
+	})
+
+	// Append the component type and its sorted key-value pairs.
+	builder.WriteString(componentType + ":")
+	for _, k := range components {
+		builder.WriteString(k.String() + "=" + componentTypeComponents[k].BuilderRef + ";")
+	}
+}
+
+func createComponentTypeAvailableComponentDetails(componentTypeComponents map[component.Type]service.ModuleInfo) map[string]*protobufs.ComponentDetails {
+	availableComponentDetails := map[string]*protobufs.ComponentDetails{}
+	for componentType, r := range componentTypeComponents {
+		availableComponentDetails[componentType.String()] = &protobufs.ComponentDetails{
+			Metadata: []*protobufs.KeyValue{
+				{
+					Key: "code.namespace",
+					Value: &protobufs.AnyValue{
+						Value: &protobufs.AnyValue_StringValue{
+							StringValue: r.BuilderRef,
+						},
+					},
+				},
+			},
+		}
+	}
+	return availableComponentDetails
 }
 
 func (o *opampAgent) componentHealthEventLoop() {

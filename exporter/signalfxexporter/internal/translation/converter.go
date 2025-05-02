@@ -144,18 +144,17 @@ func resourceToDimensions(res pcommon.Resource) []*sfxpb.Dimension {
 		})
 	}
 
-	res.Attributes().Range(func(k string, val pcommon.Value) bool {
+	for k, val := range res.Attributes().All() {
 		// Never send the SignalFX token
 		if k == splunk.SFxAccessTokenLabel {
-			return true
+			continue
 		}
 
 		dims = append(dims, &sfxpb.Dimension{
 			Key:   k,
 			Value: val.AsString(),
 		})
-		return true
-	})
+	}
 
 	return dims
 }
@@ -254,7 +253,7 @@ func (dpv *datapointValidator) isValidMetricName(name string) bool {
 
 func (dpv *datapointValidator) isValidNumberOfDimension(dp *sfxpb.DataPoint) bool {
 	if len(dp.Dimensions) > maxNumberOfDimensions {
-		dpv.logger.Debug("dropping datapoint",
+		dpv.logger.Warn("dropping datapoint",
 			zap.String("reason", invalidNumberOfDimensions),
 			zap.Stringer("datapoint", dp),
 			zap.Int("number_of_dimensions", len(dp.Dimensions)),

@@ -13,11 +13,41 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/diskscraper/internal/metadata"
 )
+
+// TestDiskScrapeWithRealData validates that the disk scraper can collect actual disk metrics from Windows performance counters.
+func TestDiskScrapeWithRealData(t *testing.T) {
+	config := Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+	require.NoError(t, err, "Failed to create disk scraper")
+
+	err = scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start the disk scraper")
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics")
+	require.NotNil(t, metrics, "Metrics cannot be nil")
+
+	// Expected metric names for disk scraper. Note that these metrics are not all enabled by the default configuration.
+	// These are the metrics collected by the Windows disk scraper.scrape.
+	expectedMetrics := map[string]bool{
+		"system.disk.io":                 false,
+		"system.disk.io_time":            false,
+		"system.disk.operation_time":     false,
+		"system.disk.operations":         false,
+		"system.disk.pending_operations": false,
+	}
+
+	internal.AssertExpectedMetrics(t, expectedMetrics, metrics)
+}
 
 func TestScrape_Error(t *testing.T) {
 	type testCase struct {
@@ -48,7 +78,7 @@ func TestScrape_Error(t *testing.T) {
 
 	for _, test := range testCases {
 		t.Run(test.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopSettings(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(test.scrapeErr, test.getObjectErr, test.getValuesErr, nil)
@@ -92,7 +122,7 @@ func TestStart_Error(t *testing.T) {
 
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
-			scraper, err := newDiskScraper(context.Background(), receivertest.NewNopSettings(), &Config{})
+			scraper, err := newDiskScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{})
 			require.NoError(t, err, "Failed to create disk scraper: %v", err)
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)

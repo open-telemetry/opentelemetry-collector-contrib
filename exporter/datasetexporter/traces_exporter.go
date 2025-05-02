@@ -53,7 +53,7 @@ func buildEventFromSpan(
 	}
 
 	attrs["sca:schema"] = "tracing"
-	attrs["sca:schemVer"] = 1
+	attrs["sca:schemaVer"] = 1
 	attrs["sca:type"] = "span"
 
 	attrs["name"] = span.Name()

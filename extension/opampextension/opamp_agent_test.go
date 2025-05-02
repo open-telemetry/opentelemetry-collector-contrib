@@ -5,7 +5,7 @@ package opampextension
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -25,6 +25,7 @@ import (
 	"go.opentelemetry.io/collector/extension"
 	"go.opentelemetry.io/collector/extension/extensiontest"
 	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	"go.opentelemetry.io/collector/service"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/status"
@@ -33,7 +34,7 @@ import (
 
 func TestNewOpampAgent(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
@@ -49,7 +50,7 @@ func TestNewOpampAgent(t *testing.T) {
 
 func TestNewOpampAgentAttributes(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	set.BuildInfo = component.BuildInfo{Version: "test version", Command: "otelcoltest"}
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceName, "otelcol-distro")
 	set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, "distro.0")
@@ -70,6 +71,8 @@ func TestCreateAgentDescription(t *testing.T) {
 	serviceName := "otelcol-distrot"
 	serviceVersion := "distro.0"
 	serviceInstanceUUID := "f8999bc1-4c9b-4619-9bae-7f009d2411ec"
+	extraResourceAttrKey := "hello"
+	extraResourceAttrValue := "world"
 
 	testCases := []struct {
 		name string
@@ -139,6 +142,26 @@ func TestCreateAgentDescription(t *testing.T) {
 				},
 			},
 		},
+		{
+			name: "Set IncludeResourceAttributes",
+			cfg: func(c *Config) {
+				c.AgentDescription.IncludeResourceAttributes = true
+			},
+			expected: &protobufs.AgentDescription{
+				IdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(semconv.AttributeServiceInstanceID, serviceInstanceUUID),
+					stringKeyValue(semconv.AttributeServiceName, serviceName),
+					stringKeyValue(semconv.AttributeServiceVersion, serviceVersion),
+				},
+				NonIdentifyingAttributes: []*protobufs.KeyValue{
+					stringKeyValue(extraResourceAttrKey, extraResourceAttrValue),
+					stringKeyValue(semconv.AttributeHostArch, runtime.GOARCH),
+					stringKeyValue(semconv.AttributeHostName, hostname),
+					stringKeyValue(semconv.AttributeOSDescription, description),
+					stringKeyValue(semconv.AttributeOSType, runtime.GOOS),
+				},
+			},
+		},
 	}
 
 	for _, tc := range testCases {
@@ -146,10 +169,11 @@ func TestCreateAgentDescription(t *testing.T) {
 			cfg := createDefaultConfig().(*Config)
 			tc.cfg(cfg)
 
-			set := extensiontest.NewNopSettings()
+			set := extensiontest.NewNopSettings(extensiontest.NopType)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceName, serviceName)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceVersion, serviceVersion)
 			set.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, serviceInstanceUUID)
+			set.Resource.Attributes().PutStr(extraResourceAttrKey, extraResourceAttrValue)
 
 			o, err := newOpampAgent(cfg, set)
 			require.NoError(t, err)
@@ -165,7 +189,7 @@ func TestCreateAgentDescription(t *testing.T) {
 
 func TestUpdateAgentIdentity(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -182,7 +206,7 @@ func TestUpdateAgentIdentity(t *testing.T) {
 
 func TestComposeEffectiveConfig(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 	assert.Empty(t, o.effectiveConfig)
@@ -207,7 +231,7 @@ func TestComposeEffectiveConfig(t *testing.T) {
 
 func TestShutdown(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -217,7 +241,7 @@ func TestShutdown(t *testing.T) {
 
 func TestStart(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -225,9 +249,174 @@ func TestStart(t *testing.T) {
 	assert.NoError(t, o.Shutdown(context.Background()))
 }
 
+func TestStartAvailableComponents(t *testing.T) {
+	cfg := createDefaultConfig()
+	agentConfig := cfg.(*Config)
+	agentConfig.Capabilities.ReportsAvailableComponents = true
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
+	o, err := newOpampAgent(agentConfig, set)
+	o.opampClient = mockOpAMPClient{}
+	assert.NoError(t, err)
+
+	assert.NoError(t, o.Start(context.Background(), newAvailableComponentsHost(t)))
+	assert.Equal(t, generateTestAvailableComponents(), o.availableComponents)
+	assert.NoError(t, o.Shutdown(context.Background()))
+}
+
+// availableComponentsHost mocks a receiver.ReceiverHost for test purposes.
+type availableComponentsHost struct {
+	t *testing.T
+}
+
+// NewNopHost returns a new instance of nopHost with proper defaults for most tests.
+func newAvailableComponentsHost(t *testing.T) component.Host {
+	return &availableComponentsHost{
+		t: t,
+	}
+}
+
+func (ach *availableComponentsHost) GetFactory(component.Kind, component.Type) component.Factory {
+	return nil
+}
+
+func (ach *availableComponentsHost) GetExtensions() map[component.ID]component.Component {
+	return nil
+}
+
+func (ach *availableComponentsHost) GetModuleInfos() service.ModuleInfos {
+	return generateTestModuleInfo(ach.t)
+}
+
+func generateTestModuleInfo(t *testing.T) service.ModuleInfos {
+	return service.ModuleInfos{
+		Receiver: map[component.Type]service.ModuleInfo{
+			componentNewTypeNoErr(t, "otlp"):        {BuilderRef: "otlp@v0.117.0"},        // Receiver type and version
+			componentNewTypeNoErr(t, "apachespark"): {BuilderRef: "apachespark@v0.117.0"}, // Receiver type and version
+		},
+		Processor: map[component.Type]service.ModuleInfo{
+			componentNewTypeNoErr(t, "batch"): {BuilderRef: "batch@v0.117.0"}, // Processor type and version
+		},
+		Exporter: map[component.Type]service.ModuleInfo{
+			componentNewTypeNoErr(t, "logging"): {BuilderRef: "logging@v0.117.0"}, // Exporter type and version
+		},
+		Extension: map[component.Type]service.ModuleInfo{
+			componentNewTypeNoErr(t, "health_check"): {BuilderRef: "health_check@v0.117.0"}, // Extension type and version
+		},
+		Connector: map[component.Type]service.ModuleInfo{
+			componentNewTypeNoErr(t, "routing"): {BuilderRef: "routing@v0.117.0"}, // Connector type and version
+		},
+	}
+}
+
+func componentNewTypeNoErr(t *testing.T, typeName string) component.Type {
+	newType, err := component.NewType(typeName)
+	require.NoError(t, err)
+	return newType
+}
+
+func generateTestAvailableComponents() *protobufs.AvailableComponents {
+	return &protobufs.AvailableComponents{
+		Hash: []byte("(L\f|m.\xfb\x14n\xe9>ѱ퀜\xf5NEg\xa4\xca\f\x0f\xe0P6\xb3\x96\x04\xb0\xc9"),
+		Components: map[string]*protobufs.ComponentDetails{
+			"receivers": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"otlp": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "otlp@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+					"apachespark": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "apachespark@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"processors": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"batch": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "batch@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"exporters": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"logging": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "logging@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"extensions": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"health_check": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "health_check@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			"connectors": {
+				SubComponentMap: map[string]*protobufs.ComponentDetails{
+					"routing": {
+						Metadata: []*protobufs.KeyValue{
+							{
+								Key: "code.namespace",
+								Value: &protobufs.AnyValue{
+									Value: &protobufs.AnyValue_StringValue{
+										StringValue: "routing@v0.117.0",
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+}
+
 func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
 
@@ -307,14 +496,14 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 	statusUpdateChannel <- &status.AggregateStatus{
 		Event: &mockStatusEvent{
 			status:    componentstatus.StatusPermanentError,
-			err:       fmt.Errorf("unexpected error"),
+			err:       errors.New("unexpected error"),
 			timestamp: now,
 		},
 		ComponentStatusMap: map[string]*status.AggregateStatus{
 			"test-receiver": {
 				Event: &mockStatusEvent{
 					status:    componentstatus.StatusPermanentError,
-					err:       fmt.Errorf("unexpected error"),
+					err:       errors.New("unexpected error"),
 					timestamp: now,
 				},
 			},
@@ -335,7 +524,7 @@ func TestHealthReportingReceiveUpdateFromAggregator(t *testing.T) {
 
 func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 
 	mtx := &sync.RWMutex{}
 
@@ -420,7 +609,7 @@ func TestHealthReportingForwardComponentHealthToAggregator(t *testing.T) {
 
 func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 
 	statusUpdateChannel := make(chan *status.AggregateStatus)
 	sa := &mockStatusAggregator{
@@ -496,7 +685,7 @@ func TestHealthReportingExitsOnClosedContext(t *testing.T) {
 
 func TestHealthReportingDisabled(t *testing.T) {
 	cfg := createDefaultConfig()
-	set := extensiontest.NewNopSettings()
+	set := extensiontest.NewNopSettings(extensiontest.NopType)
 	o, err := newOpampAgent(cfg.(*Config), set)
 	assert.NoError(t, err)
 
@@ -657,6 +846,10 @@ func (m mockOpAMPClient) SendCustomMessage(_ *protobufs.CustomMessage) (messageS
 }
 
 func (m mockOpAMPClient) SetFlags(_ protobufs.AgentToServerFlags) {}
+
+func (m mockOpAMPClient) SetAvailableComponents(_ *protobufs.AvailableComponents) error {
+	return nil
+}
 
 type mockStatusEvent struct {
 	status    componentstatus.Status

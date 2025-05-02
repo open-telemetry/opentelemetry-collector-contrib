@@ -67,9 +67,6 @@ func TestConnectorConsumeTraces(t *testing.T) {
 	}
 
 	for _, tc := range testcases {
-		// Since parallelism is enabled in these tests, to avoid flaky behavior,
-		// instantiate a copy of the test case for t.Run's closure to use.
-		tc := tc
 		t.Run(tc.name, func(t *testing.T) {
 			msink := &consumertest.MetricsSink{}
 
@@ -222,7 +219,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 		exceptionTypeKey:    pcommon.NewValueStr("Exception"),
 		exceptionMessageKey: pcommon.NewValueStr("Exception message"),
 	}
-	dp.Attributes().Range(func(k string, v pcommon.Value) bool {
+	for k, v := range dp.Attributes().All() {
 		switch k {
 		case serviceNameKey:
 			mID.service = v.Str()
@@ -238,8 +235,7 @@ func verifyMetricLabels(tb testing.TB, dp metricDataPoint, seenMetricIDs map[met
 			assert.Equal(tb, wantDimensions[k], v)
 			delete(wantDimensions, k)
 		}
-		return true
-	})
+	}
 	assert.Empty(tb, wantDimensions, "Did not see all expected dimensions in metric. Missing: ", wantDimensions)
 
 	// Service/kind should be a unique metric.

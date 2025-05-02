@@ -1,10 +1,9 @@
 module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter
 
-go 1.22.0
+go 1.23.0
 
 require (
 	github.com/cenkalti/backoff/v4 v4.3.0
-	github.com/fsnotify/fsnotify v1.8.0
 	github.com/gogo/protobuf v1.3.2
 	github.com/golang/snappy v0.0.4
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.115.0
@@ -15,27 +14,31 @@ require (
 	github.com/prometheus/prometheus v0.54.1
 	github.com/stretchr/testify v1.10.0
 	github.com/tidwall/wal v1.1.8
-	go.opentelemetry.io/collector/component v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/component/componenttest v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/config/confighttp v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/config/configopaque v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/config/configretry v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/config/configtelemetry v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/config/configtls v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/confmap v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/consumer/consumererror v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/exporter v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/exporter/exportertest v0.115.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/featuregate v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/collector/pdata v1.21.1-0.20241216091623-8ac40a01a5ff
-	go.opentelemetry.io/otel v1.32.0
-	go.opentelemetry.io/otel/metric v1.32.0
-	go.opentelemetry.io/otel/sdk/metric v1.32.0
-	go.opentelemetry.io/otel/trace v1.32.0
+	go.opentelemetry.io/collector/component v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/config/configretry v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/exporter v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/exporter/exportertest v0.125.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250430101735-2ecd0b7f95cd
+	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.60.0
+	go.opentelemetry.io/otel v1.35.0
+	go.opentelemetry.io/otel/metric v1.35.0
+	go.opentelemetry.io/otel/sdk v1.35.0
+	go.opentelemetry.io/otel/sdk/metric v1.35.0
+	go.opentelemetry.io/otel/trace v1.35.0
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
+
+require github.com/fsnotify/fsnotify v1.9.0 // indirect
 
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/azcore v1.13.0 // indirect

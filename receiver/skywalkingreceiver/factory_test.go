@@ -41,14 +41,14 @@ func TestCreateReceiver(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 	// have to enable at least one protocol for the skywalking receiver to be created
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	traceSink := new(consumertest.TracesSink)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "trace receiver creation failed")
 	assert.NotNil(t, tReceiver, "trace receiver creation failed")
@@ -69,7 +69,7 @@ func TestCreateReceiverGeneralConfig(t *testing.T) {
 	require.NoError(t, err)
 	require.NoError(t, sub.Unmarshal(cfg))
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	tReceiver, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "trace receiver creation failed")
@@ -85,14 +85,14 @@ func TestCreateDefaultGRPCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
 		},
 	}
 	traceSink := new(consumertest.TracesSink)
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	r, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "unexpected error creating receiver")
 	assert.Equal(t, 11800, r.(*sharedcomponent.SharedComponent).
@@ -103,7 +103,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.GRPC = &configgrpc.ServerConfig{
+	cfg.(*Config).GRPC = &configgrpc.ServerConfig{
 		NetAddr: confignet.AddrConfig{
 			Endpoint:  "0.0.0.0:11800",
 			Transport: confignet.TransportTypeTCP,
@@ -115,7 +115,7 @@ func TestCreateTLSGPRCEndpoint(t *testing.T) {
 			},
 		},
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	_, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
@@ -125,7 +125,7 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
 		TLSSetting: &configtls.ServerConfig{
 			Config: configtls.Config{
@@ -135,7 +135,7 @@ func TestCreateTLSHTTPEndpoint(t *testing.T) {
 		},
 	}
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	_, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "tls-enabled receiver creation failed")
@@ -145,10 +145,10 @@ func TestCreateInvalidHTTPEndpoint(t *testing.T) {
 	factory := NewFactory()
 	cfg := factory.CreateDefaultConfig()
 
-	cfg.(*Config).Protocols.HTTP = &confighttp.ServerConfig{
+	cfg.(*Config).HTTP = &confighttp.ServerConfig{
 		Endpoint: "0.0.0.0:12800",
 	}
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(metadata.Type)
 	traceSink := new(consumertest.TracesSink)
 	r, err := factory.CreateTraces(context.Background(), set, cfg, traceSink)
 	assert.NoError(t, err, "unexpected error creating receiver")

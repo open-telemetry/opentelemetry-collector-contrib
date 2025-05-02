@@ -6,12 +6,12 @@ package internal // import "github.com/open-telemetry/opentelemetry-collector-co
 import (
 	"context"
 	"database/sql"
+	"errors"
 	"fmt"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -109,20 +109,22 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 		}()
 
 		for _, model := range g.gaugeModels {
-			serviceName, _ := model.metadata.ResAttr.Get(conventions.AttributeServiceName)
+			resAttr := AttributesToMap(model.metadata.ResAttr)
+			scopeAttr := AttributesToMap(model.metadata.ScopeInstr.Attributes())
+			serviceName := GetServiceName(model.metadata.ResAttr)
 
 			for i := 0; i < model.gauge.DataPoints().Len(); i++ {
 				dp := model.gauge.DataPoints().At(i)
 				attrs, times, values, traceIDs, spanIDs := convertExemplars(dp.Exemplars())
 				_, err = statement.ExecContext(ctx,
-					AttributesToMap(model.metadata.ResAttr),
+					resAttr,
 					model.metadata.ResURL,
 					model.metadata.ScopeInstr.Name(),
 					model.metadata.ScopeInstr.Version(),
-					AttributesToMap(model.metadata.ScopeInstr.Attributes()),
+					scopeAttr,
 					model.metadata.ScopeInstr.DroppedAttributesCount(),
 					model.metadata.ScopeURL,
-					serviceName.AsString(),
+					serviceName,
 					model.metricName,
 					model.metricDescription,
 					model.metricUnit,
@@ -155,7 +157,7 @@ func (g *gaugeMetrics) insert(ctx context.Context, db *sql.DB) error {
 func (g *gaugeMetrics) Add(resAttr pcommon.Map, resURL string, scopeInstr pcommon.InstrumentationScope, scopeURL string, metrics any, name string, description string, unit string) error {
 	gauge, ok := metrics.(pmetric.Gauge)
 	if !ok {
-		return fmt.Errorf("metrics param is not type of Gauge")
+		return errors.New("metrics param is not type of Gauge")
 	}
 	g.count += gauge.DataPoints().Len()
 	g.gaugeModels = append(g.gaugeModels, &gaugeModel{

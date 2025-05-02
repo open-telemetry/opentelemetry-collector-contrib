@@ -10,7 +10,7 @@ OpenTelemetry community members, issue authors, and anyone else who would like t
 
 #### Triagers
 
-Contributors with [triager](https://github.com/open-telemetry/opentelemetry-collector-contrib/#contributing) permissions can help move
+Contributors with [triager](/#Contributing) permissions can help move
 issues along by adding missing component labels, which help organize issues and trigger automations to notify code owners. They can
 also use their familiarity with the Collector and its components to investigate issues themselves. Alternatively, they may point issue
 authors to another resource or someone else who may know more.
@@ -26,7 +26,7 @@ is fit to be added to a component. Code owners will be notified by repository au
 
 Code owners may not have triager permissions on the repository,
 so they can help triage through investigation and by participating in discussions. They can also help organize issues by
-[adding labels via comments](#adding-labels-via-comments).
+[adding labels via comments](/CONTRIBUTING.md#adding-labels-via-comments).
 
 #### Community Members
 
@@ -71,3 +71,58 @@ triaged and is ready for work. If someone who is assigned to an issue is no long
 | `Sponsor Needed`     | A new component has been proposed, but implementation is not ready to begin. This can be because a sponsor has not yet been decided, or because some details on the component still need to be decided.        |
 | `Accepted Component` | A sponsor has elected to take on a component and implementation is ready to begin.                                                                                                                             |
 | `Vendor Specific Component` | This should be applied to any component proposal where the functionality for the component is particular to a vendor.                                                                                          |
+
+### State diagram
+
+Here is a diagram outlining the potential issue states and how issues move through different stages:
+
+```mermaid
+flowchart TD
+    n0(["New issue has been opened"]) --> n1
+    n1(["Needs Triage"]) --> n2["Has good repro steps <br>and/or description?"]
+  subgraph graph2["**waiting-for-codeowners**"]
+        n3["Waiting for Codeowners<br>to further validate the issue"]
+  end
+  subgraph graph3["**waiting-for-author**"]
+        n4["Waiting for author to provide more details"]
+  end
+  subgraph graph4["**help-wanted**"]
+        n8["Waiting on community"]
+  end
+  subgraph graph5["**closed**"]
+        n10(["Close the issue and provide details as needed"])
+  end
+    n2 -- Yes --> n3
+    n2 -- No/Need more details --> n4
+    n2 -- Invalid configuration/alternative available --> n10
+    n3 -- Invalid Issue --> n10
+    n3 -- Valid Issue -->  n6["Codeowner has time<br>to fix it?"]
+    n6 -- Assign it to codeowner --> n7["Issue in being worked upon"]
+    n6 -- No --> n8
+    n7 -- Once PR is merged --> n10
+    n8 -- When someone volunteers to provide a fix --> n11["Assign it to the person"]
+    n12 -- Any activity on the issue --> n8
+    n8 -. Issue becomes stale due to lack of activity .-> n12["Issue is inactive"]
+    n11 --> n7
+    n12 -- Closed automatically after 120 days due to lack of activity --> n10
+    n4 -- Once enough details are available --> n2
+
+    n3@{ shape: rect}
+    n4@{ shape: rect}
+    n2@{ shape: diam}
+    n6@{ shape: diam}
+
+     n1:::Aqua
+     n3:::Ash
+     n4:::Ash
+     n8:::Ash
+     n2:::Ash
+     n2:::Peach
+     n6:::Peach
+     n7:::Ash
+     n10:::Rose
+    classDef Rose stroke-width:1px, stroke-dasharray:none, stroke:#FF5978, fill:#FFDFE5, color:#8E2236
+    classDef Aqua stroke-width:1px, stroke-dasharray:none, stroke:#46EDC8, fill:#DEFFF8, color:#378E7A
+    classDef Peach stroke-width:1px, stroke-dasharray:none, stroke:#FBB35A, fill:#FFEFDB, color:#8F632D
+    classDef Ash stroke-width:1px, stroke-dasharray:none, stroke:#999999, fill:#EEEEEE, color:#000000
+```

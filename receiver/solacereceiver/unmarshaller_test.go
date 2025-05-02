@@ -10,6 +10,7 @@ import (
 	"github.com/Azure/go-amqp"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	"go.opentelemetry.io/otel/attribute"
@@ -36,7 +37,7 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 		err     error
 	}{
 		{
-			name: "Unknown Topic Stirng",
+			name: "Unknown Topic String",
 			message: &inboundMessage{
 				Properties: &amqp.MessageProperties{
 					To: &invalidTopicString,
@@ -320,10 +321,9 @@ func TestSolaceMessageUnmarshallerUnmarshal(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			tel := setupTestTelemetry()
-			telemetryBuilder, err := metadata.NewTelemetryBuilder(tel.NewSettings().TelemetrySettings)
+			telemetryBuilder, err := metadata.NewTelemetryBuilder(componenttest.NewNopTelemetrySettings())
 			require.NoError(t, err)
-			metricAttr := attribute.NewSet(attribute.String("receiver_name", tel.NewSettings().ID.Name()))
+			metricAttr := attribute.NewSet(attribute.String("receiver_name", metadata.Type.String()))
 			u := newTracesUnmarshaller(zap.NewNop(), telemetryBuilder, metricAttr)
 			traces, err := u.unmarshal(tt.message)
 			if tt.err != nil {

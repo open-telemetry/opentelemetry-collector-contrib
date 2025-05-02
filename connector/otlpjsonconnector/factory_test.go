@@ -11,6 +11,8 @@ import (
 	"go.opentelemetry.io/collector/connector/connectortest"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/pdata/plog"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/connector/otlpjsonconnector/internal/metadata"
 )
 
 func TestNewFactory(t *testing.T) {
@@ -23,7 +25,7 @@ func TestNewFactory(t *testing.T) {
 
 	factory := NewFactory()
 	conn, err := factory.CreateLogsToLogs(context.Background(),
-		connectortest.NewNopSettings(), cfg, lc)
+		connectortest.NewNopSettings(metadata.Type), cfg, lc)
 
 	assert.NoError(t, err)
 	assert.NotNil(t, conn)

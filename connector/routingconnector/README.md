@@ -5,7 +5,8 @@
 | ------------- |-----------|
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aconnector%2Frouting%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aconnector%2Frouting) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aconnector%2Frouting%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aconnector%2Frouting) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@mwear](https://www.github.com/mwear) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@mwear](https://www.github.com/mwear) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -26,21 +27,6 @@
 
 Routes logs, metrics or traces based on resource attributes to specific pipelines using [OpenTelemetry Transformation Language (OTTL)](../../pkg/ottl/README.md) statements as routing conditions.
 
-## Notice
-
-The `match_once` field is deprecated as of `v0.116.0`. The deprecation schedule is planned as follows:
-
-- `v0.116.0`: The field is deprecated. If `false` is used, a warning will be logged.
-- `v0.117.0`: The default value will change from `false` to `true`. If `false` is used, an error will be logged.
-- `v0.118.0`: The field will be disconnected from behavior of the connector.
-- `v0.120.0`: The field will be removed.
-
-### Migration
-
-It is recommended to set `match_once: true` until `v0.117.0` and then remove all usage of the field before `v0.120.0`.
-
-For detailed guidance on how to migrate configuration from `match_once: false` to `match_once: true`, see [Config Migration](#config-migration.md).
-
 ## Configuration
 
 If you are not already familiar with connectors, you may find it helpful to first visit the [Connectors README].
@@ -54,79 +40,26 @@ The following settings are available:
 - `table.pipelines (required)`: the list of pipelines to use when the routing condition is met.
 - `default_pipelines (optional)`: contains the list of pipelines to use when a record does not meet any of specified conditions.
 - `error_mode (optional)`: determines how errors returned from OTTL statements are handled. Valid values are `propagate`, `ignore` and `silent`. If `ignore` or `silent` is used and a statement's condition has an error then the payload will be routed to the default pipelines. When `silent` is used the error is not logged. If not supplied, `propagate` is used.
-- `match_once (optional, default: false)`: determines whether the connector matches multiple statements or not. If enabled, the payload will be routed to the first pipeline in the `table` whose routing condition is met. May only be `false` when used with `resource` context.
 
 ### Limitations
 
-- The `match_once` setting is only supported when using the `resource` context. If any routes use `span`, `metric`, `datapoint`, `log` or `request` context, `match_once` must be set to `true`.
 - The `request` context requires use of the `condition` setting, and relies on a very limited grammar. Conditions must be in the form of `request["key"] == "value"` or `request["key"] != "value"`. (In the future, this grammar may be expanded to support more complex conditions.)
 
 ### Supported [OTTL] functions
 
-- [IsMatch](../../pkg/ottl/ottlfuncs/README.md#IsMatch)
+- [Standard OTTL Converter Functions](../../pkg/ottl/ottlfuncs/README.md#converters)
 - [delete_key](../../pkg/ottl/ottlfuncs/README.md#delete_key)
 - [delete_matching_keys](../../pkg/ottl/ottlfuncs/README.md#delete_matching_keys)
 
 ## Additional Settings
 
-The full list of settings exposed for this connector are documented [here](./config.go) with detailed sample configuration files:
+The full list of settings exposed for this connector are documented in [config.go](./config.go) with detailed sample configuration files:
 
 - [logs](./testdata/config/logs.yaml)
 - [metrics](./testdata/config/metrics.yaml)
 - [traces](./testdata/config/traces.yaml)
 
 ## Examples
-
-Route traces based on an attribute:
-
-```yaml
-receivers:
-    otlp:
-
-exporters:
-  jaeger:
-    endpoint: localhost:14250
-  jaeger/acme:
-    endpoint: localhost:24250
-  jaeger/ecorp:
-    endpoint: localhost:34250
-
-connectors:
-  routing:
-    default_pipelines: [traces/jaeger]
-    error_mode: ignore
-    match_once: false
-    table:
-      - statement: route() where attributes["X-Tenant"] == "acme"
-        pipelines: [traces/jaeger-acme]
-      - statement: delete_key(attributes, "X-Tenant") where IsMatch(attributes["X-Tenant"], ".*corp")
-        pipelines: [traces/jaeger-ecorp]
-
-  routing/match_once:
-    default_pipelines: [traces/jaeger]
-    error_mode: ignore
-    match_once: true
-    table:
-      - statement: route() where attributes["X-Tenant"] == "acme"
-        pipelines: [traces/jaeger-acme]
-      - statement: route() where attributes["X-Tenant"] == ".*acme"
-        pipelines: [traces/jaeger-ecorp]
-
-service:
-  pipelines:
-    traces/in:
-      receivers: [otlp]
-      exporters: [routing]
-    traces/jaeger:
-      receivers: [routing]
-      exporters: [jaeger]
-    traces/jaeger-acme:
-      receivers: [routing]
-      exporters: [jaeger/acme]
-    traces/jaeger-ecorp:
-      receivers: [routing]
-      exporters: [jaeger/ecorp]
-```
 
 Route logs based on tenant:
 
@@ -144,7 +77,6 @@ exporters:
 
 connectors:
   routing:
-    match_once: true
     default_pipelines: [logs/other]
     table:
       - context: request
@@ -186,7 +118,6 @@ exporters:
 
 connectors:
   routing:
-    match_once: true
     default_pipelines: [logs/other]
     table:
       - context: log
@@ -228,7 +159,6 @@ exporters:
 
 connectors:
   routing:
-    match_once: true
     table:
       - context: log
         condition: severity_number < SEVERITY_NUMBER_ERROR
@@ -272,7 +202,6 @@ exporters:
 
 connectors:
   routing:
-    match_once: true
     table:
       - context: log
         condition: severity_number < SEVERITY_NUMBER_ERROR
@@ -300,9 +229,11 @@ service:
       exporters: [file/ecorp]
 ```
 
-## Config Migration
+## `match_once`
 
-The following examples demonstrate some strategies for migrating a configuration to `match_once: true`.
+The `match_once` field was deprecated as of `v0.116.0` and removed in `v0.120.0`.
+
+The following examples demonstrate some strategies for migrating a configuration from `match_once`.
 
 ### Example without `default_pipelines`
 
@@ -336,14 +267,12 @@ result in each receiving an independent handle to the data. The same data can th
 
 ```yaml
 routing/env:
-  match_once: true
   table:
     - condition: attributes["env"] == "prod"
        pipelines: [ logs/prod ]
     - condition: attributes["env"] == "dev"
        pipelines: [ logs/dev ]
 routing/region:
-  match_once: true
   table:
     - condition: attributes["region"] == "east"
        pipelines: [ logs/east ]
@@ -391,7 +320,6 @@ If the number of routes are limited, you may be able to articulate a route for e
 
 ```yaml
 routing:
-  match_once: true
   default_pipelines: [ logs/default ]
   table:
     - condition: attributes["env"] == "prod" and attributes["region"] == "east"
@@ -420,7 +348,6 @@ in the first and second layers must be kept in sync.
 ```yaml
 # First layer separates logs that match no routes
 routing:
-  match_once: true
   default_pipelines: [ logs/default ]
   table: # all routes forward to second layer
     - condition: attributes["env"] == "prod"
@@ -434,14 +361,12 @@ routing:
 
 # Second layer routes logs based on environment and region
 routing/env:
-  match_once: true
   table:
     - condition: attributes["env"] == "prod"
        pipelines: [ logs/prod ]
     - condition: attributes["env"] == "dev"
        pipelines: [ logs/dev ]
 routing/region:
-  match_once: true
   table:
     - condition: attributes["region"] == "east"
        pipelines: [ logs/east ]

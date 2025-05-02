@@ -40,7 +40,7 @@ func TestMetricTracker_Convert(t *testing.T) {
 	future := time.Now().Add(1 * time.Hour)
 
 	keepSubsequentTest := subTest{
-		name: "keep subsequet value",
+		name: "keep subsequent value",
 		value: ValuePoint{
 			ObservedTimestamp: pcommon.NewTimestampFromTime(future.Add(time.Minute)),
 			FloatValue:        225,
@@ -334,7 +334,7 @@ func Test_metricTracker_sweeper(t *testing.T) {
 		assert.LessOrEqual(t, tr.maxStaleness, time.Since(staleBefore.AsTime()))
 	}
 	cancel()
-	for range sweepEvent { // nolint
+	for range sweepEvent { //nolint:revive
 	}
 	assert.True(t, closed.Load(), "Sweeper did not terminate.")
 }

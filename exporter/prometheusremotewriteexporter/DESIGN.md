@@ -225,7 +225,7 @@ This method creates the default configuration for Prometheus remote write/Cortex
 
     createMetricsExporter
 
-This method constructs a new http.Client with interceptors that add headers to any request it sends. Then, this method initializes a new Prometheus remote write exporter/Cortex exporter with the http.Client. This method constructs a collector Prometheus remote write/Cortex exporter exporter with the created SDK exporter 
+This method constructs a new http.Client with interceptors that add headers to any request it sends. Then, this method initializes a new Prometheus remote write exporter/Cortex exporter with the http.Client. This method constructs a collector Prometheus remote write/Cortex exporter with the created SDK exporter 
 
 
 

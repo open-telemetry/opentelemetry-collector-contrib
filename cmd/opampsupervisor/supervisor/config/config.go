@@ -15,10 +15,13 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opamp-go/protobufs"
+	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/provider/envprovider"
 	"go.opentelemetry.io/collector/confmap/provider/fileprovider"
+	"go.opentelemetry.io/collector/service/telemetry"
+	config "go.opentelemetry.io/contrib/otelconf/v0.3.0"
 	"go.uber.org/zap/zapcore"
 )
 
@@ -93,8 +96,11 @@ type Capabilities struct {
 	AcceptsOpAMPConnectionSettings bool `mapstructure:"accepts_opamp_connection_settings"`
 	ReportsEffectiveConfig         bool `mapstructure:"reports_effective_config"`
 	ReportsOwnMetrics              bool `mapstructure:"reports_own_metrics"`
+	ReportsOwnLogs                 bool `mapstructure:"reports_own_logs"`
+	ReportsOwnTraces               bool `mapstructure:"reports_own_traces"`
 	ReportsHealth                  bool `mapstructure:"reports_health"`
 	ReportsRemoteConfig            bool `mapstructure:"reports_remote_config"`
+	ReportsAvailableComponents     bool `mapstructure:"reports_available_components"`
 }
 
 func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
@@ -112,6 +118,14 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics
 	}
 
+	if c.ReportsOwnLogs {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs
+	}
+
+	if c.ReportsOwnTraces {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces
+	}
+
 	if c.AcceptsRemoteConfig {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig
 	}
@@ -126,6 +140,10 @@ func (c Capabilities) SupportedCapabilities() protobufs.AgentCapabilities {
 
 	if c.AcceptsOpAMPConnectionSettings {
 		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings
+	}
+
+	if c.ReportsAvailableComponents {
+		supportedCapabilities |= protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents
 	}
 
 	return supportedCapabilities
@@ -162,14 +180,17 @@ func (o OpAMPServer) Validate() error {
 }
 
 type Agent struct {
-	Executable              string           `mapstructure:"executable"`
-	OrphanDetectionInterval time.Duration    `mapstructure:"orphan_detection_interval"`
-	Description             AgentDescription `mapstructure:"description"`
-	ConfigApplyTimeout      time.Duration    `mapstructure:"config_apply_timeout"`
-	BootstrapTimeout        time.Duration    `mapstructure:"bootstrap_timeout"`
-	HealthCheckPort         int              `mapstructure:"health_check_port"`
-	OpAMPServerPort         int              `mapstructure:"opamp_server_port"`
-	PassthroughLogs         bool             `mapstructure:"passthrough_logs"`
+	Executable              string            `mapstructure:"executable"`
+	OrphanDetectionInterval time.Duration     `mapstructure:"orphan_detection_interval"`
+	Description             AgentDescription  `mapstructure:"description"`
+	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
+	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	HealthCheckPort         int               `mapstructure:"health_check_port"`
+	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
+	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
+	ConfigFiles             []string          `mapstructure:"config_files"`
+	Arguments               []string          `mapstructure:"args"`
+	Env                     map[string]string `mapstructure:"env"`
 }
 
 func (a Agent) Validate() error {
@@ -213,12 +234,24 @@ type AgentDescription struct {
 type Telemetry struct {
 	// TODO: Add more telemetry options
 	// Issue here: https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35582
-	Logs Logs `mapstructure:"logs"`
+	Logs    Logs                   `mapstructure:"logs"`
+	Metrics Metrics                `mapstructure:"metrics"`
+	Traces  telemetry.TracesConfig `mapstructure:"traces"`
+
+	Resource map[string]*string `mapstructure:"resource"`
 }
 
 type Logs struct {
 	Level       zapcore.Level `mapstructure:"level"`
 	OutputPaths []string      `mapstructure:"output_paths"`
+	// Processors allow configuration of log record processors to emit logs to
+	// any number of supported backends.
+	Processors []config.LogRecordProcessor `mapstructure:"processors,omitempty"`
+}
+
+type Metrics struct {
+	Level   configtelemetry.Level `mapstructure:"level"`
+	Readers []config.MetricReader `mapstructure:"readers"`
 }
 
 // DefaultSupervisor returns the default supervisor config
@@ -243,8 +276,11 @@ func DefaultSupervisor() Supervisor {
 			AcceptsOpAMPConnectionSettings: false,
 			ReportsEffectiveConfig:         true,
 			ReportsOwnMetrics:              true,
+			ReportsOwnLogs:                 false,
+			ReportsOwnTraces:               false,
 			ReportsHealth:                  true,
 			ReportsRemoteConfig:            false,
+			ReportsAvailableComponents:     false,
 		},
 		Storage: Storage{
 			Directory: defaultStorageDir,

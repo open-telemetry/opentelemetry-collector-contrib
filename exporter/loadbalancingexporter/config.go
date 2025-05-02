@@ -20,6 +20,7 @@ const (
 	metricNameRouting
 	resourceRouting
 	streamIDRouting
+	attrRouting
 )
 
 const (
@@ -28,17 +29,26 @@ const (
 	metricNameRoutingStr = "metric"
 	resourceRoutingStr   = "resource"
 	streamIDRoutingStr   = "streamID"
+	attrRoutingStr       = "attributes"
 )
 
 // Config defines configuration for the exporter.
 type Config struct {
 	TimeoutSettings           exporterhelper.TimeoutConfig `mapstructure:",squash"`
 	configretry.BackOffConfig `mapstructure:"retry_on_failure"`
-	QueueSettings             exporterhelper.QueueConfig `mapstructure:"sending_queue"`
+	QueueSettings             exporterhelper.QueueBatchConfig `mapstructure:"sending_queue"`
 
-	Protocol   Protocol         `mapstructure:"protocol"`
-	Resolver   ResolverSettings `mapstructure:"resolver"`
-	RoutingKey string           `mapstructure:"routing_key"`
+	Protocol Protocol         `mapstructure:"protocol"`
+	Resolver ResolverSettings `mapstructure:"resolver"`
+
+	// RoutingKey is a single routing key value
+	RoutingKey string `mapstructure:"routing_key"`
+
+	// RoutingAttributes creates a composite routing key, based on several resource attributes of the application.
+	//
+	// Supports all attributes available (both resource and span), as well as the pseudo attributes "span.kind" and
+	// "span.name".
+	RoutingAttributes []string `mapstructure:"routing_attributes"`
 }
 
 // Protocol holds the individual protocol-specific settings. Only OTLP is supported at the moment.

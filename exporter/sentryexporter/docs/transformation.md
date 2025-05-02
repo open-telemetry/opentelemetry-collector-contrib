@@ -1,10 +1,8 @@
 # OpenTelemetry to Sentry Transformation
 
-This document aims to define the transformations between an OpenTelemetry span and a Sentry Span. It will also describe how a Sentry transaction is created from a set of Sentry spans.
+This document aims to define the transformations between an OpenTelemetry span and a [Sentry Span](https://develop.sentry.dev/sdk/event-payloads/span/). It will also describe how a Sentry transaction is created from a set of Sentry spans.
 
 ## Spans
-
-The interface for a Sentry Span can be found [here](https://develop.sentry.dev/sdk/event-payloads/span/)
 
 | Sentry              | OpenTelemetry                           | Notes                                                                                                             |
 | ------------------- | --------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
@@ -18,7 +16,7 @@ The interface for a Sentry Span can be found [here](https://develop.sentry.dev/s
 | Span.EndTimestamp   | span.EndTime                            |                                                                                                                   |
 | Span.Status         | Span.Status                             |                                                                                                                   |
 
-As can be seen by the table above, the OpenTelemetry span and Sentry span map fairly reasonably. Currently the OpenTelemtry `Span.Link` and `Span.TraceState` properties are not used when constructing a `SentrySpan`
+As can be seen by the table above, the OpenTelemetry span and Sentry span map fairly reasonably. Currently the OpenTelemetry `Span.Link` and `Span.TraceState` properties are not used when constructing a `SentrySpan`
 
 ## Transactions
 
@@ -34,7 +32,7 @@ After this first iteration, we are left with two structures, an array of transac
 
 We can then try again to classify these orphan spans, but if not possible, we can assume these orphan spans to be a root span (as we could not find their parent in the trace). Those root spans generated from orphan spans can be also be then used to create their respective transactions.
 
-The interface for a Sentry Transaction can be found [here](https://develop.sentry.dev/sdk/event-payloads/transaction/)
+For more information, see the [interface for a Sentry Transaction](https://develop.sentry.dev/sdk/event-payloads/transaction/)
 
 | Sentry                        | Used to generate                               |
 | ----------------------------- | ---------------------------------------------- |

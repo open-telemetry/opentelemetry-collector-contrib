@@ -13,9 +13,10 @@ import (
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
-	"go.opentelemetry.io/collector/receiver/receivertest"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.opentelemetry.io/collector/scraper/scrapertest"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/perfcounters"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/pagingscraper/internal/metadata"
 )
@@ -89,7 +90,7 @@ func TestScrape_Errors(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 			if test.getPageFileStats != nil {
 				scraper.pageFileStats = test.getPageFileStats
 			}
@@ -137,6 +138,29 @@ func TestScrape_Errors(t *testing.T) {
 	}
 }
 
+func TestPagingScrapeWithRealData(t *testing.T) {
+	config := Config{
+		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+	}
+	scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &config)
+
+	err := scraper.start(context.Background(), componenttest.NewNopHost())
+	require.NoError(t, err, "Failed to start the paging scraper")
+
+	metrics, err := scraper.scrape(context.Background())
+	require.NoError(t, err, "Failed to scrape metrics")
+	require.NotNil(t, metrics, "Metrics cannot be nil")
+
+	// Expected metric names for paging scraper.
+	// Note: the `system.paging.faults` is enabled by default, but is not being collected on Windows.
+	expectedMetrics := map[string]bool{
+		"system.paging.operations": false,
+		"system.paging.usage":      false,
+	}
+
+	internal.AssertExpectedMetrics(t, expectedMetrics, metrics)
+}
+
 func TestStart_Error(t *testing.T) {
 	testCases := []struct {
 		name               string
@@ -161,7 +185,7 @@ func TestStart_Error(t *testing.T) {
 			metricsConfig := metadata.DefaultMetricsBuilderConfig()
 			metricsConfig.Metrics.SystemPagingUtilization.Enabled = true
 
-			scraper := newPagingScraper(context.Background(), receivertest.NewNopSettings(), &Config{MetricsBuilderConfig: metricsConfig})
+			scraper := newPagingScraper(context.Background(), scrapertest.NewNopSettings(metadata.Type), &Config{MetricsBuilderConfig: metricsConfig})
 
 			scraper.perfCounterScraper = perfcounters.NewMockPerfCounterScraperError(nil, nil, nil, tc.initError)
 

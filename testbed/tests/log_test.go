@@ -50,7 +50,7 @@ func TestLog10kDPS(t *testing.T) {
 		},
 		{
 			name:     "filelog",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
@@ -58,14 +58,16 @@ func TestLog10kDPS(t *testing.T) {
 			},
 		},
 		{
-			name:     "filelog checkpoints",
-			sender:   datasenders.NewFileLogWriter(),
+			name: "filelog checkpoints",
+			sender: datasenders.NewFileLogWriter(t).WithStorage(`
+    storage: file_storage
+`),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			resourceSpec: testbed.ResourceSpec{
 				ExpectedMaxCPU: 50,
 				ExpectedMaxRAM: 120,
 			},
-			extensions: datasenders.NewLocalFileStorageExtension(),
+			extensions: datasenders.NewLocalFileStorageExtension(t),
 		},
 		{
 			name:     "kubernetes containers",
@@ -260,7 +262,7 @@ func TestLogLargeFiles(t *testing.T) {
 			 * this results in a file size of approximately 2GB over its lifetime.
 			 */
 			name:     "filelog-largefiles-2Gb-lifetime",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 200000,
@@ -280,7 +282,7 @@ func TestLogLargeFiles(t *testing.T) {
 			 * this results in a file size of approximately 6GB over its lifetime.
 			 */
 			name:     "filelog-largefiles-6GB-lifetime",
-			sender:   datasenders.NewFileLogWriter(),
+			sender:   datasenders.NewFileLogWriter(t),
 			receiver: testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t)),
 			loadOptions: testbed.LoadOptions{
 				DataItemsPerSecond: 330000,
@@ -328,7 +330,7 @@ func TestLargeFileOnce(t *testing.T) {
 	}
 	resultDir, err := filepath.Abs(path.Join("results", t.Name()))
 	require.NoError(t, err)
-	sender := datasenders.NewFileLogWriter()
+	sender := datasenders.NewFileLogWriter(t)
 	receiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
 	loadOptions := testbed.LoadOptions{
 		DataItemsPerSecond: 1,
@@ -346,7 +348,7 @@ func TestLargeFileOnce(t *testing.T) {
 	agentProc := testbed.NewChildProcessCollector(testbed.WithEnvVar("GOMAXPROCS", "2"))
 
 	configStr := createConfigYaml(t, sender, receiver, resultDir, processors, nil)
-	configCleanup, err := agentProc.PrepareConfig(configStr)
+	configCleanup, err := agentProc.PrepareConfig(t, configStr)
 	require.NoError(t, err)
 	defer configCleanup()
 
@@ -371,41 +373,61 @@ func TestLargeFileOnce(t *testing.T) {
 }
 
 func TestMemoryLimiterHit(t *testing.T) {
-	otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
-	otlpreceiver.WithRetry(`
+	tests := []struct {
+		name   string
+		sender testbed.DataSender
+	}{
+		{
+			name:   "otlp",
+			sender: testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
+		},
+		{
+			name: "filelog",
+			sender: datasenders.NewFileLogWriter(t).WithRetry(`
+    retry_on_failure:
+      enabled: true
+`),
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			otlpreceiver := testbed.NewOTLPDataReceiver(testutil.GetAvailablePort(t))
+			otlpreceiver.WithRetry(`
     retry_on_failure:
       enabled: true
       max_interval: 5s
 `)
-	otlpreceiver.WithQueue(`
+			otlpreceiver.WithQueue(`
     sending_queue:
-      enabled: true
-      queue_size: 100000
-      num_consumers: 20
+       enabled: true
+       queue_size: 100000
+       num_consumers: 20
 `)
-	otlpreceiver.WithTimeout(`
+			otlpreceiver.WithTimeout(`
     timeout: 0s
 `)
-	processors := []ProcessorNameAndConfigBody{
-		{
-			Name: "memory_limiter",
-			Body: `
+			processors := []ProcessorNameAndConfigBody{
+				{
+					Name: "memory_limiter",
+					Body: `
   memory_limiter:
     check_interval: 1s
     limit_mib: 300
     spike_limit_mib: 150
 `,
-		},
+				},
+			}
+			ScenarioMemoryLimiterHit(
+				t,
+				test.sender,
+				otlpreceiver,
+				testbed.LoadOptions{
+					DataItemsPerSecond: 100000,
+					ItemsPerBatch:      1000,
+					Parallel:           1,
+					MaxDelay:           20 * time.Second,
+				},
+				performanceResultsSummary, 100, processors)
+		})
 	}
-	ScenarioMemoryLimiterHit(
-		t,
-		testbed.NewOTLPLogsDataSender(testbed.DefaultHost, testutil.GetAvailablePort(t)),
-		otlpreceiver,
-		testbed.LoadOptions{
-			DataItemsPerSecond: 100000,
-			ItemsPerBatch:      1000,
-			Parallel:           1,
-			MaxDelay:           20 * time.Second,
-		},
-		performanceResultsSummary, 100, processors)
 }

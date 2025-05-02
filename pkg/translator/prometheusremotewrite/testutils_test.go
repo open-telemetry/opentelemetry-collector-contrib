@@ -58,10 +58,11 @@ var (
 	floatVal1       = 1.0
 	floatVal2       = 2.0
 
-	lbs1         = getAttributes(label11, value11, label12, value12)
-	lbs3         = getAttributes(label11, value11, label12, value12, label51, value51)
-	lbs1Dirty    = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
-	lbsColliding = getAttributes(colliding1, value11, colliding2, value12)
+	lbs1                  = getAttributes(label11, value11, label12, value12)
+	lbs3                  = getAttributes(label11, value11, label12, value12, label51, value51)
+	lbs1Dirty             = getAttributes(label11+dirty1, value11, dirty2+label12, value12)
+	lbsColliding          = getAttributes(colliding1, value11, colliding2, value12)
+	lbsCollidingSameValue = getAttributes(colliding1, value11, colliding2, value11)
 
 	exlbs1 = map[string]string{label41: value41}
 	exlbs2 = map[string]string{label11: value41}
@@ -305,10 +306,9 @@ func getSummaryMetric(name string, attributes pcommon.Map, ts uint64, sum float6
 	}
 	dp.SetCount(count)
 	dp.SetSum(sum)
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		v.CopyTo(dp.Attributes().PutEmpty(k))
-		return true
-	})
+	}
 
 	dp.SetTimestamp(pcommon.Timestamp(ts))
 

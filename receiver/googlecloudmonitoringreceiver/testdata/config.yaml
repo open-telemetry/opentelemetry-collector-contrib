@@ -4,3 +4,4 @@ googlecloudmonitoring:
   metrics_list:
     - metric_name: "compute.googleapis.com/instance/cpu/usage_time"
     - metric_name: "connectors.googleapis.com/flex/instance/cpu/usage_time"
+    - metric_descriptor_filter: "metric.type = starts_with(\"compute.googleapis.com\")"

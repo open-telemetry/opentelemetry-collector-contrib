@@ -18,6 +18,7 @@ import (
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
@@ -57,8 +58,9 @@ func TestLoadConfig(t *testing.T) {
 		{
 			id: component.NewIDWithName(metadata.Type, "2"),
 			expected: &Config{
-				MaxBatchSizeBytes: 3000000,
-				TimeoutSettings:   exporterhelper.NewDefaultTimeoutConfig(),
+				MaxBatchSizeBytes:          3000000,
+				MaxBatchRequestParallelism: toPtr(10),
+				TimeoutSettings:            exporterhelper.NewDefaultTimeoutConfig(),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
 					InitialInterval:     10 * time.Second,
@@ -92,6 +94,14 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "negative_num_consumers"),
 			errorMessage: "remote write consumer number can't be negative",
 		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "less_than_1_max_batch_request_parallelism"),
+			errorMessage: "max_batch_request_parallelism can't be set to below 1",
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "non_snappy_compression_type"),
+			errorMessage: "compression type must be snappy",
+		},
 	}
 
 	for _, tt := range tests {
@@ -104,10 +114,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}
@@ -137,4 +147,8 @@ func TestDisabledTargetInfo(t *testing.T) {
 	require.NoError(t, sub.Unmarshal(cfg))
 
 	assert.False(t, cfg.(*Config).TargetInfo.Enabled)
+}
+
+func toPtr[T any](val T) *T {
+	return &val
 }

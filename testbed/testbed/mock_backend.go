@@ -7,7 +7,7 @@ import (
 	"context"
 	"errors"
 	"log"
-	"math/rand"
+	"math/rand/v2"
 	"os"
 	"sync"
 	"sync/atomic"
@@ -154,6 +154,12 @@ func (mb *MockBackend) ClearReceivedItems() {
 	mb.ReceivedTraces = nil
 	mb.ReceivedMetrics = nil
 	mb.ReceivedLogs = nil
+}
+
+func (mb *MockBackend) GetReceivedLogs() []plog.Logs {
+	mb.recordMutex.Lock()
+	defer mb.recordMutex.Unlock()
+	return mb.ReceivedLogs
 }
 
 func (mb *MockBackend) ConsumeTrace(td ptrace.Traces) {

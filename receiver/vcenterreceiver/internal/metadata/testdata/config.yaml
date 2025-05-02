@@ -55,6 +55,8 @@ all_set:
       enabled: true
     vcenter.host.disk.throughput:
       enabled: true
+    vcenter.host.memory.capacity:
+      enabled: true
     vcenter.host.memory.usage:
       enabled: true
     vcenter.host.memory.utilization:
@@ -95,6 +97,8 @@ all_set:
       enabled: true
     vcenter.vm.cpu.readiness:
       enabled: true
+    vcenter.vm.cpu.time:
+      enabled: true
     vcenter.vm.cpu.usage:
       enabled: true
     vcenter.vm.cpu.utilization:
@@ -111,6 +115,8 @@ all_set:
       enabled: true
     vcenter.vm.memory.ballooned:
       enabled: true
+    vcenter.vm.memory.granted:
+      enabled: true
     vcenter.vm.memory.swapped:
       enabled: true
     vcenter.vm.memory.swapped_ssd:
@@ -118,6 +124,10 @@ all_set:
     vcenter.vm.memory.usage:
       enabled: true
     vcenter.vm.memory.utilization:
+      enabled: true
+    vcenter.vm.network.broadcast.packet.rate:
+      enabled: true
+    vcenter.vm.network.multicast.packet.rate:
       enabled: true
     vcenter.vm.network.packet.drop.rate:
       enabled: true
@@ -214,6 +224,8 @@ none_set:
       enabled: false
     vcenter.host.disk.throughput:
       enabled: false
+    vcenter.host.memory.capacity:
+      enabled: false
     vcenter.host.memory.usage:
       enabled: false
     vcenter.host.memory.utilization:
@@ -254,6 +266,8 @@ none_set:
       enabled: false
     vcenter.vm.cpu.readiness:
       enabled: false
+    vcenter.vm.cpu.time:
+      enabled: false
     vcenter.vm.cpu.usage:
       enabled: false
     vcenter.vm.cpu.utilization:
@@ -270,6 +284,8 @@ none_set:
       enabled: false
     vcenter.vm.memory.ballooned:
       enabled: false
+    vcenter.vm.memory.granted:
+      enabled: false
     vcenter.vm.memory.swapped:
       enabled: false
     vcenter.vm.memory.swapped_ssd:
@@ -277,6 +293,10 @@ none_set:
     vcenter.vm.memory.usage:
       enabled: false
     vcenter.vm.memory.utilization:
+      enabled: false
+    vcenter.vm.network.broadcast.packet.rate:
+      enabled: false
+    vcenter.vm.network.multicast.packet.rate:
       enabled: false
     vcenter.vm.network.packet.drop.rate:
       enabled: false

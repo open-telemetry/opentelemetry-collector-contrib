@@ -29,9 +29,9 @@ type accumulatedValue struct {
 	scope pcommon.InstrumentationScope
 }
 
-// accumulator stores aggragated values of incoming metrics
+// accumulator stores aggregated values of incoming metrics
 type accumulator interface {
-	// Accumulate stores aggragated metric values
+	// Accumulate stores aggregated metric values
 	Accumulate(resourceMetrics pmetric.ResourceMetrics) (processed int)
 	// Collect returns a slice with relevant aggregated metrics and their resource attributes.
 	// The number or metrics and attributes returned will be the same.
@@ -261,15 +261,14 @@ func (a *lastValueAccumulator) accumulateHistogram(metric pmetric.Metric, il pco
 					zap.String("pp_timestamp", pp.Timestamp().String()),
 					zap.String("ip_timestamp", ip.Timestamp().String()),
 				).Warn("Misaligned starting timestamps")
-				if ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
-					a.logger.Debug("treating it like reset")
-					ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
-				} else {
+				if !ip.StartTimestamp().AsTime().After(pp.Timestamp().AsTime()) {
 					a.logger.With(
 						zap.String("metric_name", metric.Name()),
 					).Warn("Dropped misaligned histogram datapoint")
 					continue
 				}
+				a.logger.Debug("treating it like reset")
+				ip.CopyTo(m.Histogram().DataPoints().AppendEmpty())
 			} else {
 				a.logger.Debug("Accumulate another histogram datapoint")
 				accumulateHistogramValues(pp, ip, m.Histogram().DataPoints().AppendEmpty())
@@ -321,10 +320,9 @@ func timeseriesSignature(ilmName string, metric pmetric.Metric, attributes pcomm
 	b.WriteString("*" + ilmName)
 	b.WriteString("*" + metric.Name())
 	attrs := make([]string, 0, attributes.Len())
-	attributes.Range(func(k string, v pcommon.Value) bool {
+	for k, v := range attributes.All() {
 		attrs = append(attrs, k+"*"+v.AsString())
-		return true
-	})
+	}
 	sort.Strings(attrs)
 	b.WriteString("*" + strings.Join(attrs, "*"))
 	if job, ok := extractJob(resourceAttrs); ok {

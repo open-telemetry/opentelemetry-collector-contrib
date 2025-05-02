@@ -14,6 +14,12 @@ Response latency in ms for the backends.
 | ---- | ----------- | ---------- |
 | ms | Histogram | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| endpoint | The endpoint of the backend | Any Str |
+
 ### otelcol_loadbalancer_backend_outcome
 
 Number of successes and failures for each endpoint.
@@ -21,6 +27,12 @@ Number of successes and failures for each endpoint.
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {outcomes} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| success | Whether an outcome was successful | Any Bool |
 
 ### otelcol_loadbalancer_num_backend_updates
 
@@ -30,6 +42,12 @@ Number of times the list of backends was updated.
 | ---- | ----------- | ---------- | --------- |
 | {updates} | Sum | Int | true |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |
+
 ### otelcol_loadbalancer_num_backends
 
 Current number of backends in use.
@@ -38,6 +56,12 @@ Current number of backends in use.
 | ---- | ----------- | ---------- |
 | {backends} | Gauge | Int |
 
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |
+
 ### otelcol_loadbalancer_num_resolutions
 
 Number of times the resolver has triggered new resolutions.
@@ -45,3 +69,10 @@ Number of times the resolver has triggered new resolutions.
 | Unit | Metric Type | Value Type | Monotonic |
 | ---- | ----------- | ---------- | --------- |
 | {resolutions} | Sum | Int | true |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| success | Whether an outcome was successful | Any Bool |
+| resolver | Resolver used | Str: ``aws``, ``dns``, ``k8s``, ``static`` |

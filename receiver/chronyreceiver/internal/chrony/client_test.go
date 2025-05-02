@@ -66,7 +66,6 @@ func TestNew(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 			cl, err := New(tc.addr, time.Second)
@@ -207,7 +206,6 @@ func TestGettingTrackingData(t *testing.T) {
 	}
 
 	for _, tc := range tests {
-		tc := tc
 		t.Run(tc.scenario, func(t *testing.T) {
 			t.Parallel()
 
@@ -223,7 +221,7 @@ func TestGettingTrackingData(t *testing.T) {
 			require.NoError(t, err, "Must not error when creating client")
 
 			data, err := client.GetTrackingData(context.Background())
-			assert.EqualValues(t, tc.data, data, "Must match the expected data")
+			assert.Equal(t, tc.data, data, "Must match the expected data")
 			assert.ErrorIs(t, err, tc.err, "Must match the expected error")
 		})
 	}

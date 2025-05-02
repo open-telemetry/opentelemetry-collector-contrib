@@ -6,11 +6,14 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/require"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 )
 
+var typ = component.MustNewType("awsxray")
+
 func TestComponentFactoryType(t *testing.T) {
-	require.Equal(t, "awsxray", NewFactory().Type().String())
+	require.Equal(t, typ, NewFactory().Type())
 }
 
 func TestComponentConfigStruct(t *testing.T) {

@@ -6,15 +6,14 @@ package loadbalancingexporter // import "github.com/open-telemetry/opentelemetry
 import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/collector/exporter/exportertest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/loadbalancingexporter/internal/metadata"
 )
 
 func getTelemetryAssets(t require.TestingT) (exporter.Settings, *metadata.TelemetryBuilder) {
-	s := setupTestTelemetry()
-	st := s.NewSettings()
-	ts := st.TelemetrySettings
-	tb, err := metadata.NewTelemetryBuilder(ts)
+	s := exportertest.NewNopSettings(metadata.Type)
+	tb, err := metadata.NewTelemetryBuilder(s.TelemetrySettings)
 	require.NoError(t, err)
-	return st, tb
+	return s, tb
 }

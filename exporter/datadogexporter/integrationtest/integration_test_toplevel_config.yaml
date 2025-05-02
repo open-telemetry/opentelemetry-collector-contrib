@@ -3,9 +3,9 @@ receivers:
   otlp:
     protocols:
       http:
-        endpoint: "localhost:4318"
+        endpoint: ${env:OTLP_HTTP_SERVER}
       grpc:
-        endpoint: "localhost:4317"
+        endpoint: ${env:OTLP_GRPC_SERVER}
 
 connectors:
   datadog/connector:

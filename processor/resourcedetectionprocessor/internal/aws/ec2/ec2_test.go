@@ -10,9 +10,10 @@ import (
 	"regexp"
 	"testing"
 
-	"github.com/aws/aws-sdk-go/aws/ec2metadata"
-	"github.com/aws/aws-sdk-go/service/ec2"
-	"github.com/aws/aws-sdk-go/service/ec2/ec2iface"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/feature/ec2/imds"
+	"github.com/aws/aws-sdk-go-v2/service/ec2"
+	ec2types "github.com/aws/aws-sdk-go-v2/service/ec2/types"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -26,7 +27,7 @@ import (
 var errUnavailable = errors.New("ec2metadata unavailable")
 
 type mockMetadata struct {
-	retIDDoc    ec2metadata.EC2InstanceIdentityDocument
+	retIDDoc    imds.InstanceIdentityDocument
 	retErrIDDoc error
 
 	retHostname    string
@@ -39,13 +40,13 @@ var _ ec2provider.Provider = (*mockMetadata)(nil)
 
 type mockClientBuilder struct{}
 
-func (e *mockClientBuilder) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+func (e *mockClientBuilder) buildClient(_ context.Context, _ string, _ *http.Client) (ec2.DescribeTagsAPIClient, error) {
 	return &mockEC2Client{}, nil
 }
 
 type mockClientBuilderError struct{}
 
-func (e *mockClientBuilderError) buildClient(_ string, _ *http.Client) (ec2iface.EC2API, error) {
+func (e *mockClientBuilderError) buildClient(_ context.Context, _ string, _ *http.Client) (ec2.DescribeTagsAPIClient, error) {
 	return &mockEC2ClientError{}, nil
 }
 
@@ -56,9 +57,9 @@ func (mm mockMetadata) InstanceID(_ context.Context) (string, error) {
 	return "", nil
 }
 
-func (mm mockMetadata) Get(_ context.Context) (ec2metadata.EC2InstanceIdentityDocument, error) {
+func (mm mockMetadata) Get(_ context.Context) (imds.InstanceIdentityDocument, error) {
 	if mm.retErrIDDoc != nil {
-		return ec2metadata.EC2InstanceIdentityDocument{}, mm.retErrIDDoc
+		return imds.InstanceIdentityDocument{}, mm.retErrIDDoc
 	}
 	return mm.retIDDoc, nil
 }
@@ -98,7 +99,7 @@ func TestNewDetector(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			detector, err := NewDetector(processortest.NewNopSettings(), tt.cfg)
+			detector, err := NewDetector(processortest.NewNopSettings(processortest.NopType), tt.cfg)
 			if tt.shouldError {
 				assert.Error(t, err)
 				assert.Nil(t, detector)
@@ -111,36 +112,35 @@ func TestNewDetector(t *testing.T) {
 }
 
 // Define a mock client to mock connecting to an EC2 instance
-type mockEC2ClientError struct {
-	ec2iface.EC2API
-}
+type mockEC2ClientError struct{}
 
 // override the DescribeTags function to mock the output from an actual EC2 instance
-func (m *mockEC2ClientError) DescribeTags(_ *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
+func (m *mockEC2ClientError) DescribeTags(_ context.Context, _ *ec2.DescribeTagsInput, _ ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
 	return nil, errors.New("Error fetching tags")
 }
 
-type mockEC2Client struct {
-	ec2iface.EC2API
-}
+type mockEC2Client struct{}
 
 // override the DescribeTags function to mock the output from an actual EC2 instance
-func (m *mockEC2Client) DescribeTags(input *ec2.DescribeTagsInput) (*ec2.DescribeTagsOutput, error) {
-	if *input.Filters[0].Values[0] == "error" {
+func (m *mockEC2Client) DescribeTags(_ context.Context, input *ec2.DescribeTagsInput, _ ...func(*ec2.Options)) (*ec2.DescribeTagsOutput, error) {
+	if len(input.Filters) > 0 && len(input.Filters[0].Values) > 0 && input.Filters[0].Values[0] == "error" {
 		return nil, errors.New("error")
 	}
 
-	tag1 := "tag1"
-	tag2 := "tag2"
-	resource1 := "resource1"
-	val1 := "val1"
-	val2 := "val2"
-	resourceType := "type"
-
 	return &ec2.DescribeTagsOutput{
-		Tags: []*ec2.TagDescription{
-			{Key: &tag1, ResourceId: &resource1, ResourceType: &resourceType, Value: &val1},
-			{Key: &tag2, ResourceId: &resource1, ResourceType: &resourceType, Value: &val2},
+		Tags: []ec2types.TagDescription{
+			{
+				Key:          aws.String("tag1"),
+				ResourceId:   aws.String("resource1"),
+				ResourceType: "type",
+				Value:        aws.String("val1"),
+			},
+			{
+				Key:          aws.String("tag2"),
+				ResourceId:   aws.String("resource1"),
+				ResourceType: "type",
+				Value:        aws.String("val2"),
+			},
 		},
 	}, nil
 }
@@ -153,18 +153,19 @@ func TestDetector_Detect(t *testing.T) {
 		ctx context.Context
 	}
 	tests := []struct {
-		name          string
-		fields        fields
-		tagKeyRegexes []*regexp.Regexp
-		args          args
-		want          pcommon.Resource
-		wantErr       bool
-		tagsProvider  ec2ifaceBuilder
+		name                  string
+		fields                fields
+		tagKeyRegexes         []*regexp.Regexp
+		args                  args
+		want                  pcommon.Resource
+		wantErr               bool
+		tagsProvider          ec2ifaceBuilder
+		failOnMissingMetadata bool
 	}{
 		{
 			name: "success",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
 					AccountID:        "account1234",
 					AvailabilityZone: "us-west-2a",
@@ -194,7 +195,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "success with tags",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
 					AccountID:        "account1234",
 					AvailabilityZone: "us-west-2a",
@@ -228,7 +229,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "success without tags returned from describeTags",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc: ec2metadata.EC2InstanceIdentityDocument{
+				retIDDoc: imds.InstanceIdentityDocument{
 					Region:           "us-west-2",
 					AccountID:        "account1234",
 					AvailabilityZone: "us-west-2a",
@@ -259,7 +260,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "endpoint not available",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("should not be called"),
 				isAvailable: false,
 			}},
@@ -268,9 +269,21 @@ func TestDetector_Detect(t *testing.T) {
 			wantErr: false,
 		},
 		{
+			name: "endpoint not available, with fail_on_missing_metadata",
+			fields: fields{metadataProvider: &mockMetadata{
+				retIDDoc:    imds.InstanceIdentityDocument{},
+				retErrIDDoc: errors.New("should not be called"),
+				isAvailable: false,
+			}},
+			args:                  args{ctx: context.Background()},
+			want:                  pcommon.NewResource(),
+			wantErr:               true,
+			failOnMissingMetadata: true,
+		},
+		{
 			name: "get fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:    ec2metadata.EC2InstanceIdentityDocument{},
+				retIDDoc:    imds.InstanceIdentityDocument{},
 				retErrIDDoc: errors.New("get failed"),
 				isAvailable: true,
 			}},
@@ -281,7 +294,7 @@ func TestDetector_Detect(t *testing.T) {
 		{
 			name: "hostname fails",
 			fields: fields{metadataProvider: &mockMetadata{
-				retIDDoc:       ec2metadata.EC2InstanceIdentityDocument{},
+				retIDDoc:       imds.InstanceIdentityDocument{},
 				retHostname:    "",
 				retErrHostname: errors.New("hostname failed"),
 				isAvailable:    true,
@@ -294,11 +307,12 @@ func TestDetector_Detect(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			d := &Detector{
-				metadataProvider: tt.fields.metadataProvider,
-				logger:           zap.NewNop(),
-				rb:               metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
-				tagKeyRegexes:    tt.tagKeyRegexes,
-				ec2ClientBuilder: tt.tagsProvider,
+				metadataProvider:      tt.fields.metadataProvider,
+				logger:                zap.NewNop(),
+				rb:                    metadata.NewResourceBuilder(metadata.DefaultResourceAttributesConfig()),
+				tagKeyRegexes:         tt.tagKeyRegexes,
+				ec2ClientBuilder:      tt.tagsProvider,
+				failOnMissingMetadata: tt.failOnMissingMetadata,
 			}
 			got, _, err := d.Detect(tt.args.ctx)
 
@@ -354,7 +368,7 @@ func TestEC2Tags(t *testing.T) {
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			m := &mockEC2Client{}
-			output, err := fetchEC2Tags(m, tt.resourceID, tt.tagKeyRegexes)
+			output, err := fetchEC2Tags(context.Background(), m, tt.resourceID, tt.tagKeyRegexes)
 			if tt.shouldError {
 				assert.Error(t, err)
 				return

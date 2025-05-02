@@ -6,6 +6,7 @@ package clickhouseexporter
 import (
 	"context"
 	"database/sql/driver"
+	"errors"
 	"fmt"
 	"strings"
 	"sync/atomic"
@@ -23,6 +24,7 @@ import (
 
 func TestMetricsClusterConfig(t *testing.T) {
 	testClusterConfig(t, func(t *testing.T, dsn string, clusterTest clusterTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestMetricsExporter(t, dsn, fns...)
 		clusterTest.verifyConfig(t, exporter.cfg)
 	})
@@ -30,6 +32,7 @@ func TestMetricsClusterConfig(t *testing.T) {
 
 func TestMetricsTableEngineConfig(t *testing.T) {
 	testTableEngineConfig(t, func(t *testing.T, dsn string, engineTest tableEngineTestConfig, fns ...func(*Config)) {
+		fns = append(fns, withDriverName(t.Name()))
 		exporter := newTestMetricsExporter(t, dsn, fns...)
 		engineTest.verifyConfig(t, exporter.cfg.TableEngine)
 	})
@@ -65,7 +68,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultEndpoint)
+		exporter := newTestMetricsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, int32(15), items.Load())
@@ -73,11 +76,11 @@ func TestExporter_pushMetricsData(t *testing.T) {
 	t.Run("push failure", func(t *testing.T) {
 		initClickhouseTestServer(t, func(query string, _ []driver.Value) error {
 			if strings.HasPrefix(query, "INSERT") {
-				return fmt.Errorf("mock insert error")
+				return errors.New("mock insert error")
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultEndpoint)
+		exporter := newTestMetricsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		err := exporter.pushMetricsData(context.TODO(), simpleMetrics(2))
 		require.Error(t, err)
 	})
@@ -129,7 +132,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultEndpoint)
+		exporter := newTestMetricsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 
 		require.Equal(t, int32(15), items.Load())
@@ -154,7 +157,7 @@ func TestExporter_pushMetricsData(t *testing.T) {
 			}
 			return nil
 		})
-		exporter := newTestMetricsExporter(t, defaultEndpoint)
+		exporter := newTestMetricsExporter(t, defaultEndpoint, withDriverName(t.Name()))
 		mustPushMetricsData(t, exporter, simpleMetrics(1))
 	})
 }
@@ -294,7 +297,7 @@ func simpleMetrics(count int) pmetric.Metrics {
 	}
 
 	rm = metrics.ResourceMetrics().AppendEmpty()
-	rm.Resource().Attributes().PutStr("service.name", "demo 2")
+	// Removed service.name from second metric to test both with/without ServiceName cases
 	rm.Resource().Attributes().PutStr("Resource Attributes 2", "value2")
 	rm.Resource().SetDroppedAttributesCount(20)
 	rm.SetSchemaUrl("Resource SchemaUrl 2")
@@ -518,7 +521,6 @@ func mustPushMetricsData(t *testing.T, exporter *metricsExporter, md pmetric.Met
 	require.NoError(t, err)
 }
 
-// nolint:unparam // not need to check this func
 func newTestMetricsExporter(t *testing.T, dsn string, fns ...func(*Config)) *metricsExporter {
 	exporter, err := newMetricsExporter(zaptest.NewLogger(t), withTestExporterConfig(fns...)(dsn))
 	require.NoError(t, err)

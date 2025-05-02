@@ -6,8 +6,9 @@ package logzioexporter // import "github.com/open-telemetry/opentelemetry-collec
 import (
 	"encoding/json"
 
-	"github.com/jaegertracing/jaeger/model"
-	"github.com/jaegertracing/jaeger/plugin/storage/es/spanstore/dbmodel"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/logzioexporter/internal/dbmodel"
 )
 
 const (
@@ -45,8 +46,8 @@ func getTagsValues(tags []model.KeyValue) []string {
 // transformToLogzioSpanBytes receives a Jaeger span, converts it to logzio span and returns it as a byte array.
 // The main differences between Jaeger span and logzio span are arrays which are represented as maps
 func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
-	spanConverter := dbmodel.NewFromDomain(true, getTagsValues(span.Tags), tagDotReplacementCharacter)
-	jsonSpan := spanConverter.FromDomainEmbedProcess(span)
+	spanConverter := newFromDomain(true, getTagsValues(span.Tags), tagDotReplacementCharacter)
+	jsonSpan := spanConverter.fromDomainEmbedProcess(span)
 	newSpan := logzioSpan{
 		TraceID:         jsonSpan.TraceID,
 		OperationName:   jsonSpan.OperationName,
@@ -64,22 +65,4 @@ func transformToLogzioSpanBytes(span *model.Span) ([]byte, error) {
 		Type:            spanLogType,
 	}
 	return json.Marshal(newSpan)
-}
-
-// transformToDbModelSpan coverts logz.io span to ElasticSearch span
-func (span *logzioSpan) transformToDbModelSpan() *dbmodel.Span {
-	return &dbmodel.Span{
-		OperationName:   span.OperationName,
-		Process:         span.Process,
-		Tags:            span.Tags,
-		Tag:             span.Tag,
-		References:      span.References,
-		Logs:            span.Logs,
-		Duration:        span.Duration,
-		StartTimeMillis: span.StartTimeMillis,
-		StartTime:       span.StartTime,
-		Flags:           span.Flags,
-		SpanID:          span.SpanID,
-		TraceID:         span.TraceID,
-	}
 }

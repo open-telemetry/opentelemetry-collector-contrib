@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"math"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -28,15 +29,18 @@ import (
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/config/configretry"
-	"go.opentelemetry.io/collector/config/configtelemetry"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter"
 	"go.opentelemetry.io/collector/exporter/exporterhelper"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pmetric"
+	"go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp"
 	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/instrumentation"
+	sdkmetric "go.opentelemetry.io/otel/sdk/metric"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
+	"go.opentelemetry.io/otel/sdk/metric/metricdata/metricdatatest"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
@@ -53,15 +57,12 @@ func Test_NewPRWExporter(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
 	tests := []struct {
@@ -150,15 +151,12 @@ func Test_Start(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 	}
 	buildInfo := component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 
 	clientConfig := confighttp.NewDefaultClientConfig()
@@ -167,7 +165,7 @@ func Test_Start(t *testing.T) {
 	clientConfigTLS.Endpoint = "https://some.url:9411/api/prom/push"
 	clientConfigTLS.TLSSetting = configtls.ClientConfig{
 		Config: configtls.Config{
-			CAFile:   "non-existent file",
+			CAFile:   "nonexistent file",
 			CertFile: "",
 			KeyFile:  "",
 		},
@@ -372,7 +370,7 @@ func runExportPipeline(ts *prompb.TimeSeries, endpoint *url.URL) error {
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
 	}
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = buildInfo
 	// after this, instantiate a CortexExporter with the current HTTP client and endpoint set to passed in endpoint
 	prwe, err := newPRWExporter(cfg, set)
@@ -510,7 +508,7 @@ func Test_PushMetrics(t *testing.T) {
 			name:               "intSum_case",
 			metrics:            intSumBatch,
 			reqTestFunc:        checkFunc,
-			expectedTimeSeries: 4,
+			expectedTimeSeries: 2,
 			httpResponseCode:   http.StatusAccepted,
 		},
 		{
@@ -747,9 +745,6 @@ func Test_PushMetrics(t *testing.T) {
 						TargetInfo: &TargetInfo{
 							Enabled: true,
 						},
-						CreatedMetric: &CreatedMetric{
-							Enabled: true,
-						},
 						BackOffConfig: retrySettings,
 					}
 
@@ -769,15 +764,24 @@ func Test_PushMetrics(t *testing.T) {
 					}
 
 					assert.NotNil(t, cfg)
-					buildInfo := component.BuildInfo{
+					tel := componenttest.NewTelemetry(
+						componenttest.WithMetricOptions(sdkmetric.WithView(
+							// Drop otelhttp metrics
+							sdkmetric.NewView(
+								sdkmetric.Instrument{
+									Scope: instrumentation.Scope{Name: otelhttp.ScopeName},
+								},
+								sdkmetric.Stream{
+									Aggregation: sdkmetric.AggregationDrop{},
+								},
+							))),
+					)
+					t.Cleanup(func() { require.NoError(t, tel.Shutdown(context.Background())) })
+					set := metadatatest.NewSettings(tel)
+					set.BuildInfo = component.BuildInfo{
 						Description: "OpenTelemetry Collector",
 						Version:     "1.0",
 					}
-					tel := setupTestTelemetry()
-					set := tel.NewSettings()
-					// detailed level enables otelhttp client instrumentation which we dont want to test here
-					set.MetricsLevel = configtelemetry.LevelBasic
-					set.BuildInfo = buildInfo
 
 					prwe, nErr := newPRWExporter(cfg, set)
 
@@ -793,42 +797,22 @@ func Test_PushMetrics(t *testing.T) {
 						assert.Error(t, err)
 						return
 					}
-					expectedMetrics := []metricdata.Metrics{}
+					assert.NoError(t, err)
 					if tt.expectedFailedTranslations > 0 {
-						expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-							Name:        "otelcol_exporter_prometheusremotewrite_failed_translations",
-							Description: "Number of translation operations that failed to translate metrics from Otel to Prometheus",
-							Unit:        "1",
-							Data: metricdata.Sum[int64]{
-								Temporality: metricdata.CumulativeTemporality,
-								IsMonotonic: true,
-								DataPoints: []metricdata.DataPoint[int64]{
-									{
-										Value:      int64(tt.expectedFailedTranslations),
-										Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
-									},
-								},
+						metadatatest.AssertEqualExporterPrometheusremotewriteFailedTranslations(t, tel, []metricdata.DataPoint[int64]{
+							{
+								Value:      int64(tt.expectedFailedTranslations),
+								Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
 							},
-						})
+						}, metricdatatest.IgnoreTimestamp())
 					}
 
-					expectedMetrics = append(expectedMetrics, metricdata.Metrics{
-						Name:        "otelcol_exporter_prometheusremotewrite_translated_time_series",
-						Description: "Number of Prometheus time series that were translated from OTel metrics",
-						Unit:        "1",
-						Data: metricdata.Sum[int64]{
-							Temporality: metricdata.CumulativeTemporality,
-							IsMonotonic: true,
-							DataPoints: []metricdata.DataPoint[int64]{
-								{
-									Value:      int64(tt.expectedTimeSeries),
-									Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite")),
-								},
-							},
+					metadatatest.AssertEqualExporterPrometheusremotewriteTranslatedTimeSeries(t, tel, []metricdata.DataPoint[int64]{
+						{
+							Value:      int64(tt.expectedTimeSeries),
+							Attributes: attribute.NewSet(attribute.String("exporter", "prometheusremotewrite"), attribute.String("endpoint", clientConfig.Endpoint)),
 						},
-					})
-					tel.assertMetrics(t, expectedMetrics)
-					assert.NoError(t, err)
+					}, metricdatatest.IgnoreTimestamp())
 				})
 			}
 		})
@@ -932,7 +916,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.Equal(t, tt.expectedLabels, newLabels)
 			assert.NoError(t, err)
 		})
 	}
@@ -947,7 +931,7 @@ func Test_validateAndSanitizeExternalLabels(t *testing.T) {
 				assert.Error(t, err)
 				return
 			}
-			assert.EqualValues(t, tt.expectedLabels, newLabels)
+			assert.Equal(t, tt.expectedLabels, newLabels)
 			assert.NoError(t, err)
 		})
 	}
@@ -994,12 +978,9 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 		TargetInfo: &TargetInfo{
 			Enabled: true,
 		},
-		CreatedMetric: &CreatedMetric{
-			Enabled: false,
-		},
 	}
 
-	set := exportertest.NewNopSettings()
+	set := exportertest.NewNopSettings(metadata.Type)
 	set.BuildInfo = component.BuildInfo{
 		Description: "OpenTelemetry Collector",
 		Version:     "1.0",
@@ -1034,7 +1015,7 @@ func TestWALOnExporterRoundTrip(t *testing.T) {
 	errs := prwe.handleExport(ctx, tsMap, nil)
 	assert.NoError(t, errs)
 	// Shutdown after we've written to the WAL. This ensures that our
-	// exported data in-flight will flushed flushed to the WAL before exiting.
+	// exported data in-flight will be flushed to the WAL before exiting.
 	require.NoError(t, prwe.Shutdown(ctx))
 
 	// 3. Let's now read back all of the WAL records and ensure
@@ -1199,6 +1180,11 @@ func TestRetries(t *testing.T) {
 			endpointURL, err := url.Parse(mockServer.URL)
 			require.NoError(t, err)
 
+			// Create the telemetry
+			testTel := componenttest.NewTelemetry()
+			telemetry, err := newPRWTelemetry(exporter.Settings{TelemetrySettings: testTel.NewTelemetrySettings()}, endpointURL)
+			require.NoError(t, err)
+
 			// Create the prwExporter
 			exporter := &prwExporter{
 				endpointURL:    endpointURL,
@@ -1207,6 +1193,7 @@ func TestRetries(t *testing.T) {
 				retrySettings: configretry.BackOffConfig{
 					Enabled: true,
 				},
+				telemetry: telemetry,
 			}
 			buf := bufferPool.Get().(*buffer)
 			buf.protobuf.Reset()
@@ -1324,6 +1311,81 @@ func benchmarkExecute(b *testing.B, numSample int) {
 			return
 		}
 		err := exporter.execute(ctx, buf)
+		require.NoError(b, err)
+	}
+}
+
+func BenchmarkPushMetrics(b *testing.B) {
+	for _, numMetrics := range []int{10, 100, 1000, 10000} {
+		b.Run(fmt.Sprintf("numMetrics=%d", numMetrics), func(b *testing.B) {
+			benchmarkPushMetrics(b, numMetrics, 1)
+		})
+	}
+}
+
+func BenchmarkPushMetricsVaryingMetrics(b *testing.B) {
+	benchmarkPushMetrics(b, -1, 1)
+}
+
+// benchmarkPushMetrics benchmarks the PushMetrics method with a given number of metrics.
+// If numMetrics is -1, it will benchmark with varying number of metrics, from 10 up to 10000.
+func benchmarkPushMetrics(b *testing.B, numMetrics, numConsumers int) {
+	mockServer := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	}))
+	defer mockServer.Close()
+	endpointURL, err := url.Parse(mockServer.URL)
+	require.NoError(b, err)
+
+	set := exportertest.NewNopSettings(metadata.Type)
+	// Adjusted retry settings for faster testing
+	retrySettings := configretry.BackOffConfig{
+		Enabled:         true,
+		InitialInterval: 100 * time.Millisecond, // Shorter initial interval
+		MaxInterval:     1 * time.Second,        // Shorter max interval
+		MaxElapsedTime:  2 * time.Second,        // Shorter max elapsed time
+	}
+	clientConfig := confighttp.NewDefaultClientConfig()
+	clientConfig.Endpoint = endpointURL.String()
+	clientConfig.ReadBufferSize = 0
+	clientConfig.WriteBufferSize = 512 * 1024
+	cfg := &Config{
+		Namespace:         "",
+		ClientConfig:      clientConfig,
+		MaxBatchSizeBytes: 3000,
+		RemoteWriteQueue:  RemoteWriteQueue{NumConsumers: numConsumers},
+		BackOffConfig:     retrySettings,
+		TargetInfo:        &TargetInfo{Enabled: true},
+	}
+	exporter, err := newPRWExporter(cfg, set)
+	require.NoError(b, err)
+
+	var metrics []pmetric.Metrics
+	for n := 0; n < b.N; n++ {
+		actualNumMetrics := numMetrics
+		if numMetrics == -1 {
+			actualNumMetrics = int(math.Pow(10, float64(n%4+1)))
+		}
+		m := testdata.GenerateMetricsManyMetricsSameResource(actualNumMetrics)
+		for i := 0; i < m.MetricCount(); i++ {
+			dp := m.ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(i).Sum().DataPoints().AppendEmpty()
+			dp.SetIntValue(int64(i))
+			// We add a random key to the attributes to ensure that we create a new time series during translation for each metric.
+			dp.Attributes().PutInt("random_key", int64(i))
+		}
+		metrics = append(metrics, m)
+	}
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+	require.NoError(b, exporter.Start(ctx, componenttest.NewNopHost()))
+	defer func() {
+		require.NoError(b, exporter.Shutdown(ctx))
+	}()
+	b.ReportAllocs()
+	b.ResetTimer()
+	for _, m := range metrics {
+		err := exporter.PushMetrics(ctx, m)
 		require.NoError(b, err)
 	}
 }

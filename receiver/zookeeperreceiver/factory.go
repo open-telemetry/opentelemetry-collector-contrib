@@ -8,21 +8,20 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
-	"go.opentelemetry.io/collector/config/confignet"
 	"go.opentelemetry.io/collector/consumer"
 	"go.opentelemetry.io/collector/receiver"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
-	"go.opentelemetry.io/collector/scraper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/zookeeperreceiver/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/scraper/zookeeperscraper"
 )
 
 const (
-	defaultPort               = 2181
 	defaultCollectionInterval = 10 * time.Second
 	defaultTimeout            = 10 * time.Second
 )
+
+var sFact = zookeeperscraper.NewFactory()
 
 func NewFactory() receiver.Factory {
 	return receiver.NewFactory(
@@ -39,10 +38,7 @@ func createDefaultConfig() component.Config {
 
 	return &Config{
 		ControllerConfig: cfg,
-		TCPAddrConfig: confignet.TCPAddrConfig{
-			Endpoint: testutil.EndpointForPort(defaultPort),
-		},
-		MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+		Config:           *sFact.CreateDefaultConfig().(*zookeeperscraper.Config),
 	}
 }
 
@@ -54,23 +50,10 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	rConfig := config.(*Config)
-	zms, err := newZookeeperMetricsScraper(params, rConfig)
-	if err != nil {
-		return nil, err
-	}
-
-	scrp, err := scraper.NewMetrics(
-		zms.scrape,
-		scraper.WithShutdown(zms.shutdown),
-	)
-	if err != nil {
-		return nil, err
-	}
-
-	return scraperhelper.NewScraperControllerReceiver(
+	return scraperhelper.NewMetricsController(
 		&rConfig.ControllerConfig,
 		params,
 		consumer,
-		scraperhelper.AddScraper(metadata.Type, scrp),
+		scraperhelper.AddFactoryWithConfig(sFact, &rConfig.Config),
 	)
 }

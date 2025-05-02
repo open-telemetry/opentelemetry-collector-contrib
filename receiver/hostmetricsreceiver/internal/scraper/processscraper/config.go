@@ -7,7 +7,6 @@ import (
 	"time"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/processscraper/internal/metadata"
 )
 
@@ -15,7 +14,6 @@ import (
 type Config struct {
 	// MetricsBuilderConfig allows to customize scraped metrics/attributes representation.
 	metadata.MetricsBuilderConfig `mapstructure:",squash"`
-	internal.ScraperConfig
 	// Include specifies a filter on the process names that should be included from the generated metrics.
 	// Exclude specifies a filter on the process names that should be excluded from the generated metrics.
 	// If neither `include` or `exclude` are set, process metrics will be generated for all processes.

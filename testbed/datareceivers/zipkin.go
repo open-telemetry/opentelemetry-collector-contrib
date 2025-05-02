@@ -33,7 +33,7 @@ func (zr *zipkinDataReceiver) Start(tc consumer.Traces, _ consumer.Metrics, _ co
 	cfg := factory.CreateDefaultConfig().(*zipkinreceiver.Config)
 	cfg.Endpoint = fmt.Sprintf("127.0.0.1:%d", zr.Port)
 
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	var err error
 	zr.receiver, err = factory.CreateTraces(context.Background(), set, cfg, tc)
 	if err != nil {

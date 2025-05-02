@@ -4,13 +4,13 @@
 package jaeger // import "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/jaeger"
 
 import (
-	"github.com/jaegertracing/jaeger/model"
+	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/idutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
+	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
 
 // ProtoFromTraces translates internal trace data into the Jaeger Proto for GRPC.
@@ -97,13 +97,12 @@ func appendTagsFromResourceAttributes(dest []model.KeyValue, attrs pcommon.Map) 
 		return dest
 	}
 
-	attrs.Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range attrs.All() {
 		if key == conventions.AttributeServiceName {
-			return true
+			continue
 		}
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-		return true
-	})
+	}
 	return dest
 }
 
@@ -111,10 +110,9 @@ func appendTagsFromAttributes(dest []model.KeyValue, attrs pcommon.Map) []model.
 	if attrs.Len() == 0 {
 		return dest
 	}
-	attrs.Range(func(key string, attr pcommon.Value) bool {
+	for key, attr := range attrs.All() {
 		dest = append(dest, attributeToJaegerProtoTag(key, attr))
-		return true
-	})
+	}
 	return dest
 }
 

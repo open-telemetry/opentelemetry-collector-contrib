@@ -13,6 +13,7 @@ oauth2client/withtls:
   token_url: https://example2.com/oauth2/default/v1/token
   scopes: ["api.metrics"]
   timeout: 1s
+  expiry_buffer: 15s
   # tls settings for the token client
   tls:
     insecure: true

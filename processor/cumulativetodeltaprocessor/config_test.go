@@ -4,6 +4,7 @@
 package cumulativetodeltaprocessor
 
 import (
+	"fmt"
 	"path/filepath"
 	"testing"
 	"time"
@@ -12,6 +13,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/cumulativetodeltaprocessor/internal/metadata"
@@ -83,6 +85,45 @@ func TestLoadConfig(t *testing.T) {
 			},
 		},
 		{
+			id: component.NewIDWithName(metadata.Type, "metric_type_filter"),
+			expected: &Config{
+				Include: MatchMetrics{
+					Metrics: []string{
+						"a*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						"sum",
+					},
+				},
+				Exclude: MatchMetrics{
+					Metrics: []string{
+						"b*",
+					},
+					Config: filterset.Config{
+						MatchType:    "regexp",
+						RegexpConfig: nil,
+					},
+					MetricTypes: []string{
+						"histogram",
+					},
+				},
+				MaxStaleness: 10 * time.Second,
+				InitialValue: tracking.InitialValueAuto,
+			},
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_include_metric_type_filter"),
+			errorMessage: fmt.Sprintf("found invalid metric type in include.metric_types: gauge. Valid values are %s", validMetricTypeList),
+		},
+		{
+			id:           component.NewIDWithName(metadata.Type, "invalid_exclude_metric_type_filter"),
+			errorMessage: fmt.Sprintf("found invalid metric type in exclude.metric_types: Invalid. Valid values are %s", validMetricTypeList),
+		},
+		{
 			id:           component.NewIDWithName(metadata.Type, "missing_match_type"),
 			errorMessage: "match_type must be set if metrics are supplied",
 		},
@@ -123,10 +164,10 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, sub.Unmarshal(cfg))
 
 			if tt.expected == nil {
-				assert.EqualError(t, component.ValidateConfig(cfg), tt.errorMessage)
+				assert.EqualError(t, xconfmap.Validate(cfg), tt.errorMessage)
 				return
 			}
-			assert.NoError(t, component.ValidateConfig(cfg))
+			assert.NoError(t, xconfmap.Validate(cfg))
 			assert.Equal(t, tt.expected, cfg)
 		})
 	}

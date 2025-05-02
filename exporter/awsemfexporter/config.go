@@ -45,12 +45,12 @@ type Config struct {
 
 	// LogRetention is the option to set the log retention policy for the CloudWatch Log Group. Defaults to Never Expire if not specified or set to 0
 	// Possible values are 1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 2192, 2557, 2922, 3288, or 3653
-	LogRetention int64 `mapstructure:"log_retention"`
+	LogRetention int32 `mapstructure:"log_retention"`
 
 	// Tags is the option to set tags for the CloudWatch Log Group.  If specified, please add at most 50 tags.  Input is a string to string map like so: { 'key': 'value' }
 	// Keys must be between 1-128 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]+)$
 	// Values must be between 1-256 characters and follow the regex pattern: ^([\p{L}\p{Z}\p{N}_.:/=+\-@]*)$
-	Tags map[string]*string `mapstructure:"tags"`
+	Tags map[string]string `mapstructure:"tags"`
 
 	// ParseJSONEncodedAttributeValues is an array of attribute keys whose corresponding values are JSON-encoded as strings.
 	// Those strings will be decoded to its original json structure.
@@ -73,7 +73,7 @@ type Config struct {
 	// Note that at the moment in order to use this feature the value "kubernetes" must also be added to the ParseJSONEncodedAttributeValues array in order to be used
 	EKSFargateContainerInsightsEnabled bool `mapstructure:"eks_fargate_container_insights_enabled"`
 
-	// ResourceToTelemetrySettings is an option for converting resource attrihutes to telemetry attributes.
+	// ResourceToTelemetrySettings is an option for converting resource attributes to telemetry attributes.
 	// "Enabled" - A boolean field to enable/disable this option. Default is `false`.
 	// If enabled, all the resource attributes will be converted to metric labels by default.
 	ResourceToTelemetrySettings resourcetotelemetry.Settings `mapstructure:"resource_to_telemetry_conversion"`
@@ -124,7 +124,7 @@ func (config *Config) Validate() error {
 		if _, ok := eMFSupportedUnits[descriptor.Unit]; ok {
 			validDescriptors = append(validDescriptors, descriptor)
 		} else {
-			config.logger.Warn("Dropped unsupported metric desctriptor.", zap.String("unit", descriptor.Unit))
+			config.logger.Warn("Dropped unsupported metric descriptor.", zap.String("unit", descriptor.Unit))
 		}
 	}
 	config.MetricDescriptors = validDescriptors

@@ -57,7 +57,7 @@ func TestMetricsBuilder(t *testing.T) {
 			start := pcommon.Timestamp(1_000_000_000)
 			ts := pcommon.Timestamp(1_000_001_000)
 			observedZapCore, observedLogs := observer.New(zap.WarnLevel)
-			settings := receivertest.NewNopSettings()
+			settings := receivertest.NewNopSettings(receivertest.NopType)
 			settings.Logger = zap.New(observedZapCore)
 			mb := NewMetricsBuilder(loadMetricsBuilderConfig(t, tt.name), settings, WithStartTime(start))
 
@@ -152,7 +152,7 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, int64(1), dp.IntValue())
 					attrVal, ok := dp.Attributes().Get("file.permissions")
 					assert.True(t, ok)
-					assert.EqualValues(t, "file.permissions-val", attrVal.Str())
+					assert.Equal(t, "file.permissions-val", attrVal.Str())
 				case "file.mtime":
 					assert.False(t, validatedMetrics["file.mtime"], "Found a duplicate in the metrics slice: file.mtime")
 					validatedMetrics["file.mtime"] = true

@@ -19,6 +19,8 @@ all_set:
       enabled: true
     splunk.data.indexes.extended.total.size:
       enabled: true
+    splunk.health:
+      enabled: true
     splunk.indexer.avg.rate:
       enabled: true
     splunk.indexer.cpu.time:
@@ -58,6 +60,14 @@ all_set:
     splunk.scheduler.avg.run.time:
       enabled: true
     splunk.scheduler.completion.ratio:
+      enabled: true
+    splunk.search.duration:
+      enabled: true
+    splunk.search.initiation:
+      enabled: true
+    splunk.search.status:
+      enabled: true
+    splunk.search.success:
       enabled: true
     splunk.server.introspection.queues.current:
       enabled: true
@@ -101,6 +111,8 @@ none_set:
       enabled: false
     splunk.data.indexes.extended.total.size:
       enabled: false
+    splunk.health:
+      enabled: false
     splunk.indexer.avg.rate:
       enabled: false
     splunk.indexer.cpu.time:
@@ -140,6 +152,14 @@ none_set:
     splunk.scheduler.avg.run.time:
       enabled: false
     splunk.scheduler.completion.ratio:
+      enabled: false
+    splunk.search.duration:
+      enabled: false
+    splunk.search.initiation:
+      enabled: false
+    splunk.search.status:
+      enabled: false
+    splunk.search.success:
       enabled: false
     splunk.server.introspection.queues.current:
       enabled: false

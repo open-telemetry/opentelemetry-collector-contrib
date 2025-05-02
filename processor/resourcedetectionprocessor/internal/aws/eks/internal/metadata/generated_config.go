@@ -27,6 +27,7 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/eks resource attributes.
 type ResourceAttributesConfig struct {
+	CloudAccountID ResourceAttributeConfig `mapstructure:"cloud.account.id"`
 	CloudPlatform  ResourceAttributeConfig `mapstructure:"cloud.platform"`
 	CloudProvider  ResourceAttributeConfig `mapstructure:"cloud.provider"`
 	K8sClusterName ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
@@ -34,6 +35,9 @@ type ResourceAttributesConfig struct {
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
+		CloudAccountID: ResourceAttributeConfig{
+			Enabled: false,
+		},
 		CloudPlatform: ResourceAttributeConfig{
 			Enabled: true,
 		},

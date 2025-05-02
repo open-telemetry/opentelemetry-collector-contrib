@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/config/configopaque"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
+	"go.opentelemetry.io/collector/confmap/xconfmap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/opensearchexporter/internal/metadata"
 )
@@ -62,9 +63,9 @@ func TestLoadConfig(t *testing.T) {
 					config.Headers = map[string]configopaque.String{
 						"myheader": "test",
 					}
-					config.MaxIdleConns = &maxIdleConns
-					config.IdleConnTimeout = &idleConnTimeout
-					config.Auth = &configauth.Authentication{AuthenticatorID: component.MustNewID("sample_basic_auth")}
+					config.MaxIdleConns = maxIdleConns
+					config.IdleConnTimeout = idleConnTimeout
+					config.Auth = &configauth.Config{AuthenticatorID: component.MustNewID("sample_basic_auth")}
 				}),
 				BackOffConfig: configretry.BackOffConfig{
 					Enabled:             true,
@@ -124,7 +125,7 @@ func TestLoadConfig(t *testing.T) {
 			require.NoError(t, err)
 			require.NoError(t, sub.Unmarshal(cfg))
 
-			vv := component.ValidateConfig(cfg)
+			vv := xconfmap.Validate(cfg)
 			tt.configValidateAssert(t, vv)
 			assert.Equal(t, tt.expected, cfg)
 		})

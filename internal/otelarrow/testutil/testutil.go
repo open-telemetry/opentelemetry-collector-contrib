@@ -101,7 +101,7 @@ func createExclusionsList(tb testing.TB, exclusionsText string) []portpair {
 	return exclusions
 }
 
-// UInt64ToTraceID is from collector-contrib/internal/idutils
+// UInt64ToTraceID is from collector-contrib/internal/xidutils
 func UInt64ToTraceID(high, low uint64) pcommon.TraceID {
 	traceID := [16]byte{}
 	binary.BigEndian.PutUint64(traceID[:8], high)
@@ -109,7 +109,7 @@ func UInt64ToTraceID(high, low uint64) pcommon.TraceID {
 	return traceID
 }
 
-// UInt64ToSpanID is from collector-contrib/internal/idutils
+// UInt64ToSpanID is from collector-contrib/internal/xidutils
 func UInt64ToSpanID(id uint64) pcommon.SpanID {
 	spanID := [8]byte{}
 	binary.BigEndian.PutUint64(spanID[:8], id)

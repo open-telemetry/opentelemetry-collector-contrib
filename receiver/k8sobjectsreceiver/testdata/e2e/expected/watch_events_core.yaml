@@ -1,5 +1,9 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: k8s.namespace.name
+          value:
+            stringValue: default
     scopeLogs:
       - scope: {}
         logRecords:

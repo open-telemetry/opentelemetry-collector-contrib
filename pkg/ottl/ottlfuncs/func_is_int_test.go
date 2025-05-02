@@ -74,7 +74,7 @@ func Test_IsInt(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_IsInt_Error(t *testing.T) {
 	exprFunc := isInt[any](&ottl.StandardIntGetter[any]{
 		Getter: func(context.Context, any) (any, error) {

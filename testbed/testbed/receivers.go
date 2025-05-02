@@ -66,11 +66,11 @@ func (bor *BaseOTLPDataReceiver) Start(tc consumer.Traces, mc consumer.Metrics, 
 		cfg.GRPC.NetAddr = confignet.AddrConfig{Endpoint: fmt.Sprintf("127.0.0.1:%d", bor.Port), Transport: confignet.TransportTypeTCP}
 		cfg.HTTP = nil
 	} else {
-		cfg.HTTP.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
+		cfg.HTTP.ServerConfig.Endpoint = fmt.Sprintf("127.0.0.1:%d", bor.Port)
 		cfg.GRPC = nil
 	}
 	var err error
-	set := receivertest.NewNopSettings()
+	set := receivertest.NewNopSettings(factory.Type())
 	if bor.traceReceiver, err = factory.CreateTraces(context.Background(), set, cfg, tc); err != nil {
 		return err
 	}

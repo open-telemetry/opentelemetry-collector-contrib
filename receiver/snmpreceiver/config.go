@@ -10,7 +10,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/config/configopaque"
-	"go.opentelemetry.io/collector/receiver/scraperhelper"
+	"go.opentelemetry.io/collector/scraper/scraperhelper"
 )
 
 // Config Defaults
@@ -164,7 +164,7 @@ type AttributeConfig struct {
 	// This contains a list of possible values that can be associated with this attribute
 	Enum []string `mapstructure:"enum"`
 	// OID is required only if Enum and IndexedValuePrefix are not defined.
-	// This is the column OID which will provide indexed values to be uased for this attribute (alongside a metric with ColumnOIDs)
+	// This is the column OID which will provide indexed values to be used for this attribute (alongside a metric with ColumnOIDs)
 	OID string `mapstructure:"oid"`
 	// IndexedValuePrefix is required only if Enum and OID are not defined.
 	// This is used alongside metrics with ColumnOIDs to assign attribute values using this prefix + the OID index of the metric value
@@ -190,7 +190,7 @@ type MetricConfig struct {
 
 // GaugeMetric contains info about the value of the gauge metric
 type GaugeMetric struct {
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 
@@ -200,7 +200,7 @@ type SumMetric struct {
 	Aggregation string `mapstructure:"aggregation"`
 	// Monotonic is required and can be true or false
 	Monotonic bool `mapstructure:"monotonic"`
-	// ValueType is required can can be either int or double
+	// ValueType is required and can be either int or double
 	ValueType string `mapstructure:"value_type"`
 }
 

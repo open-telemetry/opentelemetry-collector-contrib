@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"time"
 
-	"github.com/shirou/gopsutil/v4/common"
 	"github.com/shirou/gopsutil/v4/cpu"
 	"github.com/shirou/gopsutil/v4/host"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	"go.opentelemetry.io/collector/receiver"
+	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/cpuscraper/internal/metadata"
@@ -28,7 +27,7 @@ const (
 
 // cpuScraper for CPU Metrics
 type cpuScraper struct {
-	settings receiver.Settings
+	settings scraper.Settings
 	config   *Config
 	mb       *metadata.MetricsBuilder
 	ucal     *ucal.CPUUtilizationCalculator
@@ -45,12 +44,11 @@ type cpuInfo struct {
 }
 
 // newCPUScraper creates a set of CPU related metrics
-func newCPUScraper(_ context.Context, settings receiver.Settings, cfg *Config) *cpuScraper {
+func newCPUScraper(_ context.Context, settings scraper.Settings, cfg *Config) *cpuScraper {
 	return &cpuScraper{settings: settings, config: cfg, bootTime: host.BootTimeWithContext, times: cpu.TimesWithContext, ucal: &ucal.CPUUtilizationCalculator{}, now: time.Now}
 }
 
 func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	bootTime, err := s.bootTime(ctx)
 	if err != nil {
 		return err
@@ -60,7 +58,6 @@ func (s *cpuScraper) start(ctx context.Context, _ component.Host) error {
 }
 
 func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
-	ctx = context.WithValue(ctx, common.EnvKey, s.config.EnvMap)
 	now := pcommon.NewTimestampFromTime(s.now())
 	cpuTimes, err := s.times(ctx, true /*percpu=*/)
 	if err != nil {
@@ -76,7 +73,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPUPhysicalCount.Enabled {
+	if s.config.Metrics.SystemCPUPhysicalCount.Enabled {
 		numCPU, err := cpu.Counts(false)
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -84,7 +81,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordSystemCPUPhysicalCountDataPoint(now, int64(numCPU))
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPULogicalCount.Enabled {
+	if s.config.Metrics.SystemCPULogicalCount.Enabled {
 		numCPU, err := cpu.Counts(true)
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)
@@ -92,7 +89,7 @@ func (s *cpuScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.mb.RecordSystemCPULogicalCountDataPoint(now, int64(numCPU))
 	}
 
-	if s.config.MetricsBuilderConfig.Metrics.SystemCPUFrequency.Enabled {
+	if s.config.Metrics.SystemCPUFrequency.Enabled {
 		cpuInfos, err := s.getCPUInfo()
 		if err != nil {
 			return pmetric.NewMetrics(), scrapererror.NewPartialScrapeError(err, metricsLen)

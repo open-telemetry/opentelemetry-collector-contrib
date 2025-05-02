@@ -13,7 +13,7 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-// AttributeVcsChangeState specifies the a value vcs.change.state attribute.
+// AttributeVcsChangeState specifies the value vcs.change.state attribute.
 type AttributeVcsChangeState int
 
 const (
@@ -39,7 +39,7 @@ var MapAttributeVcsChangeState = map[string]AttributeVcsChangeState{
 	"merged": AttributeVcsChangeStateMerged,
 }
 
-// AttributeVcsLineChangeType specifies the a value vcs.line_change.type attribute.
+// AttributeVcsLineChangeType specifies the value vcs.line_change.type attribute.
 type AttributeVcsLineChangeType int
 
 const (
@@ -65,7 +65,7 @@ var MapAttributeVcsLineChangeType = map[string]AttributeVcsLineChangeType{
 	"removed": AttributeVcsLineChangeTypeRemoved,
 }
 
-// AttributeVcsRefHeadType specifies the a value vcs.ref.head.type attribute.
+// AttributeVcsRefHeadType specifies the value vcs.ref.head.type attribute.
 type AttributeVcsRefHeadType int
 
 const (
@@ -91,7 +91,7 @@ var MapAttributeVcsRefHeadType = map[string]AttributeVcsRefHeadType{
 	"tag":    AttributeVcsRefHeadTypeTag,
 }
 
-// AttributeVcsRevisionDeltaDirection specifies the a value vcs.revision_delta.direction attribute.
+// AttributeVcsRevisionDeltaDirection specifies the value vcs.revision_delta.direction attribute.
 type AttributeVcsRevisionDeltaDirection int
 
 const (
@@ -115,6 +115,56 @@ func (av AttributeVcsRevisionDeltaDirection) String() string {
 var MapAttributeVcsRevisionDeltaDirection = map[string]AttributeVcsRevisionDeltaDirection{
 	"ahead":  AttributeVcsRevisionDeltaDirectionAhead,
 	"behind": AttributeVcsRevisionDeltaDirectionBehind,
+}
+
+var MetricsInfo = metricsInfo{
+	VcsChangeCount: metricInfo{
+		Name: "vcs.change.count",
+	},
+	VcsChangeDuration: metricInfo{
+		Name: "vcs.change.duration",
+	},
+	VcsChangeTimeToApproval: metricInfo{
+		Name: "vcs.change.time_to_approval",
+	},
+	VcsChangeTimeToMerge: metricInfo{
+		Name: "vcs.change.time_to_merge",
+	},
+	VcsContributorCount: metricInfo{
+		Name: "vcs.contributor.count",
+	},
+	VcsRefCount: metricInfo{
+		Name: "vcs.ref.count",
+	},
+	VcsRefLinesDelta: metricInfo{
+		Name: "vcs.ref.lines_delta",
+	},
+	VcsRefRevisionsDelta: metricInfo{
+		Name: "vcs.ref.revisions_delta",
+	},
+	VcsRefTime: metricInfo{
+		Name: "vcs.ref.time",
+	},
+	VcsRepositoryCount: metricInfo{
+		Name: "vcs.repository.count",
+	},
+}
+
+type metricsInfo struct {
+	VcsChangeCount          metricInfo
+	VcsChangeDuration       metricInfo
+	VcsChangeTimeToApproval metricInfo
+	VcsChangeTimeToMerge    metricInfo
+	VcsContributorCount     metricInfo
+	VcsRefCount             metricInfo
+	VcsRefLinesDelta        metricInfo
+	VcsRefRevisionsDelta    metricInfo
+	VcsRefTime              metricInfo
+	VcsRepositoryCount      metricInfo
+}
+
+type metricInfo struct {
+	Name string
 }
 
 type metricVcsChangeCount struct {
@@ -687,7 +737,6 @@ func WithStartTime(startTime pcommon.Timestamp) MetricBuilderOption {
 		mb.startTime = startTime
 	})
 }
-
 func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, options ...MetricBuilderOption) *MetricsBuilder {
 	mb := &MetricsBuilder{
 		config:                         mbc,
@@ -786,7 +835,7 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	rm := pmetric.NewResourceMetrics()
 	rm.SetSchemaUrl(conventions.SchemaURL)
 	ils := rm.ScopeMetrics().AppendEmpty()
-	ils.Scope().SetName("github.com/open-telemetry/opentelemetry-collector-contrib/receiver/githubreceiver")
+	ils.Scope().SetName(ScopeName)
 	ils.Scope().SetVersion(mb.buildInfo.Version)
 	ils.Metrics().EnsureCapacity(mb.metricsCapacity)
 	mb.metricVcsChangeCount.emit(ils.Metrics())

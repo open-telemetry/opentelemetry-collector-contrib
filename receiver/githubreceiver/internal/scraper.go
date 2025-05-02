@@ -11,7 +11,7 @@ import (
 )
 
 type ScraperFactory interface {
-	// Create the default configuration for the sub sccraper.
+	// Create the default configuration for the sub scraper.
 	CreateDefaultConfig() Config
 	// Create a scraper based on the configuration passed or return an error if not valid.
 	CreateMetricsScraper(ctx context.Context, params receiver.Settings, cfg Config) (scraper.Metrics, error)

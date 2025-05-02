@@ -140,6 +140,7 @@ cluster_enabled:0
 # Keyspace
 db0:keys=1,expires=2,avg_ttl=3
 db1:keys=4,expires=5,avg_ttl=6
+db3:keys=5,expires=10,avg_ttl=85
 
 # Commandstats
 cmdstat_ssubscribe:calls=0,usec=0,usec_per_call=0.00,rejected_calls=3,failed_calls=0

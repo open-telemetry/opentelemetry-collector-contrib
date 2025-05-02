@@ -40,11 +40,11 @@ func TestPodAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(metadata.DefaultMetricsBuilderConfig(), receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 	expected, err := golden.ReadMetrics(filepath.Join("testdata", "expected.yaml"))
@@ -63,7 +63,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	pod := testutils.NewPodWithContainer(
 		"1",
 		testutils.NewPodSpecWithContainer("container-name"),
-		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPreifx("container-id")),
+		testutils.NewEvictedTerminatedPodStatusWithContainer("container-name", containerIDWithPrefix("container-id")),
 	)
 
 	mbc := metadata.DefaultMetricsBuilderConfig()
@@ -71,7 +71,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	mbc.ResourceAttributes.K8sPodQosClass.Enabled = true
 	mbc.ResourceAttributes.K8sContainerStatusLastTerminatedReason.Enabled = true
 	ts := pcommon.Timestamp(time.Now().UnixNano())
-	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings())
+	mb := metadata.NewMetricsBuilder(mbc, receivertest.NewNopSettings(metadata.Type))
 	RecordMetrics(zap.NewNop(), mb, pod, ts)
 	m := mb.Emit()
 
@@ -87,7 +87,7 @@ func TestPodStatusReasonAndContainerMetricsReportCPUMetrics(t *testing.T) {
 	)
 }
 
-var containerIDWithPreifx = func(containerID string) string {
+var containerIDWithPrefix = func(containerID string) string {
 	return "docker://" + containerID
 }
 
@@ -186,7 +186,7 @@ func TestDataCollectorSyncMetadataForPodWorkloads(t *testing.T) {
 			name := fmt.Sprintf("(%s) - %s", kind, tt.name)
 			t.Run(name, func(t *testing.T) {
 				actual := GetMetadata(testCase.resource, testCase.metadataStore, logger)
-				require.Equal(t, len(testCase.want), len(actual))
+				require.Len(t, actual, len(testCase.want))
 
 				for key, item := range testCase.want {
 					got, exists := actual[key]
@@ -235,8 +235,10 @@ func testCaseForPodWorkload(to testCaseOptions) testCase {
 
 func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetadata.ResourceID]*metadata.KubernetesMetadata {
 	podUIDLabel := "test-pod-0-uid"
+	podNameLabel := "test-pod-0"
 	kindLower := strings.ToLower(to.kind)
 	kindObjName := fmt.Sprintf("test-%s-0", kindLower)
+	namespaceLabel := "test-namespace"
 	kindObjUID := fmt.Sprintf("test-%s-0-uid", kindLower)
 	kindNameLabel := fmt.Sprintf("k8s.%s.name", kindLower)
 	kindUIDLabel := fmt.Sprintf("k8s.%s.uid", kindLower)
@@ -247,8 +249,11 @@ func expectedKubernetesMetadata(to testCaseOptions) map[experimentalmetricmetada
 			ResourceIDKey: "k8s.pod.uid",
 			ResourceID:    experimentalmetricmetadata.ResourceID(podUIDLabel),
 			Metadata: map[string]string{
-				kindNameLabel: kindObjName,
-				kindUIDLabel:  kindObjUID,
+				kindNameLabel:        kindObjName,
+				kindUIDLabel:         kindObjUID,
+				"k8s.pod.phase":      "Unknown", // Default value when phase is not set.
+				"k8s.namespace.name": namespaceLabel,
+				"k8s.pod.name":       podNameLabel,
 			},
 		},
 	}
@@ -415,6 +420,7 @@ func TestTransform(t *testing.T) {
 		},
 		Status: corev1.PodStatus{
 			Phase:     corev1.PodRunning,
+			Reason:    "Evicted",
 			HostIP:    "192.168.1.100",
 			PodIP:     "10.244.0.5",
 			StartTime: &v1.Time{Time: v1.Now().Add(-5 * time.Minute)},
@@ -463,7 +469,8 @@ func TestTransform(t *testing.T) {
 			},
 		},
 		Status: corev1.PodStatus{
-			Phase: corev1.PodRunning,
+			Phase:  corev1.PodRunning,
+			Reason: "Evicted",
 			ContainerStatuses: []corev1.ContainerStatus{
 				{
 					Name:         "my-container",
@@ -477,4 +484,77 @@ func TestTransform(t *testing.T) {
 		},
 	}
 	assert.Equal(t, wantPod, Transform(originalPod))
+}
+
+func TestPodMetadata(t *testing.T) {
+	tests := []struct {
+		name             string
+		podName          string
+		namespace        string
+		statusPhase      corev1.PodPhase
+		statusReason     string
+		expectedMetadata map[string]string
+	}{
+		{
+			name:         "Pod with status reason",
+			statusPhase:  corev1.PodFailed,
+			statusReason: "Evicted",
+			expectedMetadata: map[string]string{
+				"k8s.pod.name":          "test-pod-0",
+				"k8s.namespace.name":    "test-namespace",
+				"k8s.pod.phase":         "Failed",
+				"k8s.pod.status_reason": "Evicted",
+				"k8s.workload.kind":     "Deployment",
+				"k8s.workload.name":     "test-deployment-0",
+				"k8s.replicaset.name":   "test-replicaset-0",
+				"k8s.replicaset.uid":    "test-replicaset-0-uid",
+				"k8s.deployment.name":   "test-deployment-0",
+				"k8s.deployment.uid":    "test-deployment-0-uid",
+			},
+		},
+		{
+			name:         "Pod without status reason",
+			statusPhase:  corev1.PodRunning,
+			statusReason: "",
+			expectedMetadata: map[string]string{
+				"k8s.pod.name":        "test-pod-0",
+				"k8s.namespace.name":  "test-namespace",
+				"k8s.pod.phase":       "Running",
+				"k8s.workload.kind":   "Deployment",
+				"k8s.workload.name":   "test-deployment-0",
+				"k8s.replicaset.name": "test-replicaset-0",
+				"k8s.replicaset.uid":  "test-replicaset-0-uid",
+				"k8s.deployment.name": "test-deployment-0",
+				"k8s.deployment.uid":  "test-deployment-0-uid",
+			},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			pod := podWithOwnerReference("ReplicaSet")
+			pod.Status.Phase = tt.statusPhase
+			pod.Status.Reason = tt.statusReason
+
+			metadataStore := mockMetadataStore(testCaseOptions{
+				kind:         "ReplicaSet",
+				withParentOR: true,
+			})
+			logger := zap.NewNop()
+			meta := GetMetadata(pod, metadataStore, logger)
+
+			require.NotNil(t, meta)
+			require.Contains(t, meta, experimentalmetricmetadata.ResourceID("test-pod-0-uid"))
+			podMeta := meta["test-pod-0-uid"].Metadata
+
+			allExpectedMetadata := make(map[string]string)
+			for key, value := range commonPodMetadata {
+				allExpectedMetadata[key] = value
+			}
+			for key, value := range tt.expectedMetadata {
+				allExpectedMetadata[key] = value
+			}
+			assert.Equal(t, allExpectedMetadata, podMeta)
+		})
+	}
 }

@@ -1,7 +1,7 @@
 azuredataexplorer:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
-  # Client Id
+  # Client ID
   application_id: "f80da32c-108c-415c-a19e-643f461a677a"
   # The client secret for the client
   application_key: "xx-xx-xx-xx"
@@ -20,7 +20,7 @@ azuredataexplorer:
 azuredataexplorer/2:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
-  # Client Id
+  # Client ID
   application_id: ""
   # The client secret for the client
   application_key: "xx-xx-xx-xx"
@@ -40,7 +40,7 @@ azuredataexplorer/2:
 azuredataexplorer/3:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
-  # Client Id
+  # Client ID
   application_id: "f80da32c-108c-415c-a19e-643f461a677a"
   # The client secret for the client
   application_key: "xx-xx-xx-xx"
@@ -119,7 +119,7 @@ azuredataexplorer/7:
 azuredataexplorer/8:
   # Kusto cluster uri
   cluster_uri: "https://CLUSTER.kusto.windows.net"
-  # Client Id
+  # Client ID
   application_id: "f80da32c-108c-415c-a19e-643f461a677a"
   # The client secret for the client
   application_key: "xx-xx-xx-xx"

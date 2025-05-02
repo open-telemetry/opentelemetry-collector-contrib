@@ -5,7 +5,7 @@ package ottl
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"testing"
 	"time"
 
@@ -342,7 +342,7 @@ func Test_newGetter(t *testing.T) {
 					},
 				},
 			},
-			want: 1,
+			want: int64(1),
 		},
 		{
 			name: "function call nested SliceFloat",
@@ -641,6 +641,16 @@ func Test_newGetter(t *testing.T) {
 																Int: ottltest.Intp(1),
 															},
 														},
+														{
+															Map: &mapValue{
+																Values: []mapItem{
+																	{
+																		Key:   ottltest.Strp("stringAttr"),
+																		Value: &value{String: ottltest.Strp("value")},
+																	},
+																},
+															},
+														},
 													},
 												},
 											},
@@ -660,7 +670,7 @@ func Test_newGetter(t *testing.T) {
 					"foo": map[string]any{
 						"test": "value",
 					},
-					"listAttr": []any{"test0", int64(1)},
+					"listAttr": []any{"test0", int64(1), map[string]any{"stringAttr": "value"}},
 				},
 				"stringAttr": "value",
 				"intAttr":    int64(3),
@@ -711,7 +721,7 @@ func Test_newGetter(t *testing.T) {
 				// the comparison of pcommon.Map
 				assert.EqualValues(t, tt.want, v.AsRaw())
 			default:
-				assert.EqualValues(t, tt.want, v)
+				assert.Equal(t, tt.want, v)
 			}
 		})
 	}
@@ -742,7 +752,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("key not found in map"),
+			err: errors.New("key not found in map"),
 		},
 		{
 			name: "key not in map",
@@ -758,7 +768,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("key not found in map"),
+			err: errors.New("key not found in map"),
 		},
 		{
 			name: "index too large for pcommon slice",
@@ -774,7 +784,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index 100 out of bounds"),
+			err: errors.New("index 100 out of bounds"),
 		},
 		{
 			name: "negative for pcommon slice",
@@ -790,7 +800,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "index too large for Go slice",
@@ -806,7 +816,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index 100 out of bounds"),
+			err: errors.New("index 100 out of bounds"),
 		},
 		{
 			name: "negative for Go slice",
@@ -822,7 +832,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("index -1 out of bounds"),
+			err: errors.New("index -1 out of bounds"),
 		},
 		{
 			name: "invalid int indexing type",
@@ -838,7 +848,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("type, string, does not support int indexing"),
+			err: errors.New("type, string, does not support int indexing"),
 		},
 		{
 			name: "invalid string indexing type",
@@ -854,7 +864,7 @@ func Test_exprGetter_Get_Invalid(t *testing.T) {
 					},
 				},
 			},
-			err: fmt.Errorf("type, string, does not support string indexing"),
+			err: errors.New("type, string, does not support string indexing"),
 		},
 	}
 
@@ -1050,7 +1060,7 @@ func Test_FunctionGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringGetter_WrappedError(t *testing.T) {
 	getter := StandardStringGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1197,7 +1207,7 @@ func Test_StandardStringLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardStringLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardStringLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1274,7 +1284,7 @@ func Test_StandardFloatGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1451,7 +1461,7 @@ func Test_StandardFloatLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardFloatLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardFloatLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1528,7 +1538,7 @@ func Test_StandardIntGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntGetter_WrappedError(t *testing.T) {
 	getter := StandardIntGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1705,7 +1715,7 @@ func Test_StandardIntLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardIntLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardIntLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1904,7 +1914,7 @@ func Test_StandardByteSliceLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardByteSliceLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardByteSliceLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -1981,7 +1991,7 @@ func Test_StandardBoolGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2137,7 +2147,7 @@ func Test_StandardBoolLikeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardBoolLikeGetter_WrappedError(t *testing.T) {
 	getter := StandardBoolLikeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2224,7 +2234,7 @@ func Test_StandardPMapGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardPMapGetter_WrappedError(t *testing.T) {
 	getter := StandardPMapGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2329,7 +2339,7 @@ func Test_StandardDurationGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardDurationGetter_WrappedError(t *testing.T) {
 	getter := StandardDurationGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
@@ -2418,7 +2428,7 @@ func Test_StandardTimeGetter(t *testing.T) {
 	}
 }
 
-// nolint:errorlint
+//nolint:errorlint
 func Test_StandardTimeGetter_WrappedError(t *testing.T) {
 	getter := StandardTimeGetter[any]{
 		Getter: func(_ context.Context, _ any) (any, error) {
