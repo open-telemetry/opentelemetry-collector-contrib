@@ -74,36 +74,6 @@ func TestGauge(t *testing.T) {
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
 }
 
-func TestDifferentStartTimes(t *testing.T) {
-	script := []*testhelper.MetricsAdjusterTest{
-		{
-			Description: "Sum with created timestamps",
-			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44))),
-			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44))),
-		},
-		{
-			Description: "Histogram with created timestamps",
-			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{7, 4, 2, 12}))),
-			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{7, 4, 2, 12}))),
-		},
-		{
-			Description: "Exponential Histogram with created timestamps",
-			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
-			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
-		},
-		{
-			Description: "Summary with created timestamps",
-			Metrics: testhelper.Metrics(
-				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
-			),
-			Adjusted: testhelper.Metrics(
-				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
-			),
-		},
-	}
-	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
-}
-
 func TestSum(t *testing.T) {
 	script := []*testhelper.MetricsAdjusterTest{
 		{
@@ -619,6 +589,90 @@ func TestEmptyLabels(t *testing.T) {
 			Description: "EmptyLabels: round 4 - three explicitly empty labels, instance adjusted based on round 1",
 			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1vEmptyk2vEmptyk3vEmpty, t3, t3, 88))),
 			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1vEmptyk2vEmptyk3vEmpty, t1, t3, 44))),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}
+
+func TestDifferentStartTimes(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Sum with created timestamps",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 44))),
+		},
+		{
+			Description: "Histogram with created timestamps",
+			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{7, 4, 2, 12}))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{7, 4, 2, 12}))),
+		},
+		{
+			Description: "Exponential Histogram with created timestamps",
+			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+		},
+		{
+			Description: "Summary with created timestamps",
+			Metrics: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+		},
+	}
+	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)
+}
+
+func TestResetAfterInitialStart(t *testing.T) {
+	script := []*testhelper.MetricsAdjusterTest{
+		{
+			Description: "Sum round 1: with reference point",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t1, 44))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1)),
+		},
+		{
+			Description: "Sum round 2: with reset point",
+			Metrics:     testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t2, t2, 22))),
+			Adjusted:    testhelper.Metrics(testhelper.SumMetric(sum1, testhelper.DoublePoint(k1v1k2v2, t1, t2, 22))),
+		},
+		{
+			Description: "Histogram round 1: with reference point",
+			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t1, bounds0, []uint64{7, 4, 2, 12}))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1)),
+		},
+		{
+			Description: "Histogram round 2: with reset point",
+			Metrics:     testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t2, t2, bounds0, []uint64{6, 3, 1, 11}))),
+			Adjusted:    testhelper.Metrics(testhelper.HistogramMetric(histogram1, testhelper.HistogramPoint(k1v1k2v2, t1, t2, bounds0, []uint64{6, 3, 1, 11}))),
+		},
+		{
+			Description: "Exponential Histogram round 1: with reference point",
+			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t1, 3, 1, 0, []uint64{}, -2, []uint64{4, 2, 3, 7}))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1)),
+		},
+		{
+			Description: "Exponential Histogram round 2: with reset point",
+			Metrics:     testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t2, t2, 3, 1, 0, []uint64{}, -2, []uint64{3, 1, 2, 6}))),
+			Adjusted:    testhelper.Metrics(testhelper.ExponentialHistogramMetric(exponentialHistogram1, testhelper.ExponentialHistogramPoint(k1v1k2v2, t1, t2, 3, 1, 0, []uint64{}, -2, []uint64{3, 1, 2, 6}))),
+		},
+		{
+			Description: "Summary round 1: with reference point",
+			Metrics: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t1, 10, 40, percent0, []float64{1, 5, 8})),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1),
+			),
+		},
+		{
+			Description: "Summary round 2: with reset point",
+			Metrics: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t2, t2, 1, 4, percent0, []float64{1, 5, 8})),
+			),
+			Adjusted: testhelper.Metrics(
+				testhelper.SummaryMetric(summary1, testhelper.SummaryPoint(k1v1k2v2, t1, t2, 1, 4, percent0, []float64{1, 5, 8})),
+			),
 		},
 	}
 	testhelper.RunScript(t, NewAdjuster(componenttest.NewNopTelemetrySettings(), time.Minute), script)

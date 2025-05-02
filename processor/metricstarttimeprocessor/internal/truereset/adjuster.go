@@ -22,6 +22,9 @@ import (
 // This involves setting the start time using the following strategy:
 //   - The initial point in a series has its start time set to that point's end time.
 //   - All subsequent points in the series have their start time set to the initial point's end time.
+//
+// Note that when a reset is detected (eg: value of a counter is decreasing) - the strategy will set the
+// start time of the reset point as point timestamp - 1ms.
 const Type = "true_reset_point"
 
 // Adjuster takes a map from a metric instance to the initial point in the metrics instance
@@ -110,7 +113,7 @@ func (a *Adjuster) adjustMetricHistogram(tsm *datapointstorage.TimeseriesMap, cu
 			continue
 		}
 
-		if tsi.IsResetHistogram(currentDist) {
+		if datapointstorage.IsResetHistogram(currentDist, tsi.Histogram) {
 			// reset re-initialize everything.
 			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
@@ -149,7 +152,7 @@ func (a *Adjuster) adjustMetricExponentialHistogram(tsm *datapointstorage.Timese
 			continue
 		}
 
-		if tsi.IsResetExponentialHistogram(currentDist) {
+		if datapointstorage.IsResetExponentialHistogram(currentDist, tsi.ExponentialHistogram) {
 			// reset re-initialize everything.
 			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentDist.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
 			currentDist.SetStartTimestamp(resetStartTimeStamp)
@@ -182,7 +185,7 @@ func (a *Adjuster) adjustMetricSum(tsm *datapointstorage.TimeseriesMap, current 
 			continue
 		}
 
-		if tsi.IsResetSum(currentSum) {
+		if datapointstorage.IsResetSum(currentSum, tsi.Number) {
 			// reset re-initialize everything.
 			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSum.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSum.SetStartTimestamp(resetStartTimeStamp)
@@ -216,7 +219,7 @@ func (a *Adjuster) adjustMetricSummary(tsm *datapointstorage.TimeseriesMap, curr
 			continue
 		}
 
-		if tsi.IsResetSummary(currentSummary) {
+		if datapointstorage.IsResetSummary(currentSummary, tsi.Summary) {
 			// reset re-initialize everything.
 			resetStartTimeStamp := pcommon.NewTimestampFromTime(currentSummary.StartTimestamp().AsTime().Add(-1 * time.Millisecond))
 			currentSummary.SetStartTimestamp(resetStartTimeStamp)
