@@ -9,6 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 )
@@ -24,10 +25,11 @@ type TestStringAttributeCfg struct {
 
 func TestStringTagFilter(t *testing.T) {
 	cases := []struct {
-		Desc      string
-		Trace     *TraceData
-		filterCfg *TestStringAttributeCfg
-		Decision  Decision
+		Desc                string
+		Trace               *TraceData
+		filterCfg           *TestStringAttributeCfg
+		Decision            Decision
+		DisableInvertSample bool
 	}{
 		{
 			Desc:      "nonmatching node attribute key",
@@ -197,10 +199,28 @@ func TestStringTagFilter(t *testing.T) {
 			filterCfg: &TestStringAttributeCfg{Key: "example", Values: []string{}, EnabledRegexMatching: true, InvertMatch: true},
 			Decision:  InvertSampled,
 		},
+		{
+			Desc:                "invert matching node attribute key with DisableInvertSample",
+			Trace:               newTraceStringAttrs(map[string]any{"example": "value"}, "", ""),
+			filterCfg:           &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
+			Decision:            NotSampled,
+			DisableInvertSample: true,
+		},
+		{
+			Desc:                "invert nonmatching node attribute key with DisableInvertSample",
+			Trace:               newTraceStringAttrs(map[string]any{"non_matching": "value"}, "", ""),
+			filterCfg:           &TestStringAttributeCfg{Key: "example", Values: []string{"value"}, EnabledRegexMatching: false, CacheMaxSize: defaultCacheSize, InvertMatch: true},
+			Decision:            Sampled,
+			DisableInvertSample: true,
+		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
+			if c.DisableInvertSample {
+				featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
+				defer featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+			}
 			filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
 			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)
 			assert.NoError(t, err)
