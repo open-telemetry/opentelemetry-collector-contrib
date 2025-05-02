@@ -708,11 +708,7 @@ func Test_PushMetrics(t *testing.T) {
 			name = "WAL"
 		}
 		t.Run(name, func(t *testing.T) {
-			if useWAL {
-				t.Skip("Flaky test, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/9124")
-			}
-			for _, ttt := range tests {
-				tt := ttt
+			for _, tt := range tests {
 				// skip WAL for rw2 cases as rw2 doesn't currently support WAL
 				if useWAL && (tt.skipForWAL || tt.enableSendingRW2) {
 					t.Skip("test not supported when using WAL")

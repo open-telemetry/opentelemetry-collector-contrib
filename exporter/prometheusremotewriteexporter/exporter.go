@@ -276,6 +276,9 @@ func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*pro
 	if len(tsMap) == 0 {
 		return nil
 	}
+
+	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
+	defer prwe.batchStatePool.Put(state)
 	// Calls the helper function to convert and batch the TsMap to the desired format
 	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
