@@ -20,7 +20,7 @@ import (
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 var separatorString = string([]byte{model.SeparatorByte})
@@ -46,7 +46,7 @@ func newCollector(config *Config, logger *zap.Logger) *collector {
 	return &collector{
 		accumulator:       newAccumulator(logger, config.MetricExpiration),
 		logger:            logger,
-		namespace:         prometheustranslator.CleanUpString(config.Namespace),
+		namespace:         prometheustranslator.NormalizeLabel(config.Namespace),
 		sendTimestamps:    config.SendTimestamps,
 		constLabels:       config.ConstLabels,
 		addMetricSuffixes: config.AddMetricSuffixes,
@@ -63,11 +63,11 @@ func convertExemplars(exemplars pmetric.ExemplarSlice) []prometheus.Exemplar {
 		exemplarLabels := make(prometheus.Labels, 0)
 
 		if traceID := e.TraceID(); !traceID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarTraceIDKey] = hex.EncodeToString(traceID[:])
+			exemplarLabels[exemplarTraceIDKey] = hex.EncodeToString(traceID[:])
 		}
 
 		if spanID := e.SpanID(); !spanID.IsEmpty() {
-			exemplarLabels[prometheustranslator.ExemplarSpanIDKey] = hex.EncodeToString(spanID[:])
+			exemplarLabels[exemplarSpanIDKey] = hex.EncodeToString(spanID[:])
 		}
 
 		var value float64
@@ -116,7 +116,7 @@ func (c *collector) convertMetric(metric pmetric.Metric, resourceAttrs pcommon.M
 }
 
 func (c *collector) getMetricMetadata(metric pmetric.Metric, mType *dto.MetricType, attributes pcommon.Map, resourceAttrs pcommon.Map) (*prometheus.Desc, []string, error) {
-	name := prometheustranslator.BuildCompliantName(metric, c.namespace, c.addMetricSuffixes)
+	name := prometheustranslator.BuildCompliantMetricName(metric, c.namespace, c.addMetricSuffixes)
 	help, err := c.validateMetrics(name, metric.Description(), mType)
 	if err != nil {
 		return nil, nil, err
@@ -158,7 +158,7 @@ func (c *collector) convertGauge(metric pmetric.Metric, resourceAttrs pcommon.Ma
 		value = ip.DoubleValue()
 	}
 	metricType := prometheus.GaugeValue
-	originalType, ok := metric.Metadata().Get(prometheustranslator.MetricMetadataTypeKey)
+	originalType, ok := metric.Metadata().Get(metricMetadataTypeKey)
 	if ok && originalType.Str() == string(model.MetricTypeUnknown) {
 		metricType = prometheus.UntypedValue
 	}
@@ -366,7 +366,7 @@ func (c *collector) createTargetInfoMetrics(resourceAttrs []pcommon.Map) ([]prom
 			labels[model.InstanceLabel] = instance
 		}
 
-		name := prometheustranslator.TargetInfoMetricName
+		name := targetInfoMetricName
 		if len(c.namespace) > 0 {
 			name = c.namespace + "_" + name
 		}
@@ -404,7 +404,7 @@ func (c *collector) Collect(ch chan<- prometheus.Metric) {
 
 	targetMetrics, err := c.createTargetInfoMetrics(resourceAttrs)
 	if err != nil {
-		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", prometheustranslator.TargetInfoMetricName, err.Error()))
+		c.logger.Error(fmt.Sprintf("failed to convert metric %s: %s", targetInfoMetricName, err.Error()))
 	}
 	for _, m := range targetMetrics {
 		ch <- m
