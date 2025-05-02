@@ -8,3 +8,6 @@ signaltometrics:
   logs:
     - sum:
         value: "1"
+  profiles:
+    - sum:
+        value: "1"

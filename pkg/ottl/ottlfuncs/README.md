@@ -500,6 +500,7 @@ Available Converters:
 - [ParseKeyValue](#parsekeyvalue)
 - [ParseSimplifiedXML](#parsesimplifiedxml)
 - [ParseXML](#parsexml)
+- [ProfileID](#profileid)
 - [RemoveXML](#removexml)
 - [Second](#second)
 - [Seconds](#seconds)
@@ -1713,6 +1714,18 @@ Examples:
 - `ParseXML(log.attributes["xml"])`
 
 - `ParseXML("<HostInfo hostname=\"example.com\" zone=\"east-1\" cloudprovider=\"aws\" />")`
+
+### ProfileID
+
+`ProfileID(bytes)`
+
+The `ProfileID` Converter returns a `pprofile.ProfileID` struct from the given byte slice.
+
+`bytes` is a byte slice of exactly 16 bytes.
+
+Examples:
+
+- `ProfileID(0x00112233445566778899aabbccddeeff)`
 
 ### RemoveXML
 

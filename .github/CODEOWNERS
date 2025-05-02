@@ -18,6 +18,8 @@
 
 # Start components list
 
+cmd/codecovgen/                                                  @open-telemetry/collector-contrib-approvers @mx-psi
+cmd/golden/                                                      @open-telemetry/collector-contrib-approvers @atoulme
 cmd/opampsupervisor/                                             @open-telemetry/collector-contrib-approvers @evan-bradley @atoulme @tigrannajaryan
 cmd/otelcontribcol/                                              @open-telemetry/collector-contrib-approvers
 cmd/oteltestbedcol/                                              @open-telemetry/collector-contrib-approvers
@@ -35,7 +37,7 @@ connector/roundrobinconnector/                                   @open-telemetry
 connector/routingconnector/                                      @open-telemetry/collector-contrib-approvers @mwear
 connector/servicegraphconnector/                                 @open-telemetry/collector-contrib-approvers @mapno @JaredTan95
 connector/signaltometricsconnector/                              @open-telemetry/collector-contrib-approvers @ChrsMark @lahsivjar
-connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen
+connector/spanmetricsconnector/                                  @open-telemetry/collector-contrib-approvers @portertech @Frapschen @iblancasa
 connector/sumconnector/                                          @open-telemetry/collector-contrib-approvers @greatestusername @shalper2 @crobert-1
 exporter/alertmanagerexporter/                                   @open-telemetry/collector-contrib-approvers @sokoide @mcube8
 exporter/alibabacloudlogserviceexporter/                         @open-telemetry/collector-contrib-approvers @shabicheng @kongluoxing @qiansheng91
@@ -91,6 +93,7 @@ extension/azureauthextension/                                    @open-telemetry
 extension/basicauthextension/                                    @open-telemetry/collector-contrib-approvers @frzifus
 extension/bearertokenauthextension/                              @open-telemetry/collector-contrib-approvers @frzifus
 extension/cgroupruntimeextension/                                @open-telemetry/collector-contrib-approvers @mx-psi @rogercoll
+extension/datadogextension/                                      @open-telemetry/collector-contrib-approvers @jackgopack4 @dineshg13 @mx-psi @songy23
 extension/encoding/                                              @open-telemetry/collector-contrib-approvers @atoulme @dao-jun @dmitryax @MovieStoreGuy @VihasMakwana
 extension/encoding/avrologencodingextension/                     @open-telemetry/collector-contrib-approvers @thmshmm
 extension/encoding/awscloudwatchmetricstreamsencodingextension/  @open-telemetry/collector-contrib-approvers @axw @constanca-m
@@ -229,7 +232,7 @@ receiver/collectdreceiver/                                       @open-telemetry
 receiver/couchdbreceiver/                                        @open-telemetry/collector-contrib-approvers @antonblock
 receiver/datadogreceiver/                                        @open-telemetry/collector-contrib-approvers @boostchicken @gouthamve @MovieStoreGuy
 receiver/dockerstatsreceiver/                                    @open-telemetry/collector-contrib-approvers @jamesmoessis
-receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni
+receiver/elasticsearchreceiver/                                  @open-telemetry/collector-contrib-approvers @jsirianni @VihasMakwana @rogercoll
 receiver/envoyalsreceiver/                                       @open-telemetry/collector-contrib-approvers @evan-bradley @zirain
 receiver/expvarreceiver/                                         @open-telemetry/collector-contrib-approvers @jamesmoessis @MovieStoreGuy
 receiver/faroreceiver/                                           @open-telemetry/collector-contrib-approvers @dehaansa @rlankfo @mar4uk
@@ -287,7 +290,7 @@ receiver/otlpjsonfilereceiver/                                   @open-telemetry
 receiver/podmanreceiver/                                         @open-telemetry/collector-contrib-approvers @rogercoll
 receiver/postgresqlreceiver/                                     @open-telemetry/collector-contrib-approvers @antonblock
 receiver/pprofreceiver/                                          @open-telemetry/collector-contrib-approvers @MovieStoreGuy @atoulme
-receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole
+receiver/prometheusreceiver/                                     @open-telemetry/collector-contrib-approvers @Aneurysm9 @dashpole @ArthurSens @krajorama
 receiver/prometheusremotewritereceiver/                          @open-telemetry/collector-contrib-approvers @dashpole @ArthurSens
 receiver/pulsarreceiver/                                         @open-telemetry/collector-contrib-approvers @dmitryax @dao-jun
 receiver/purefareceiver/                                         @open-telemetry/collector-contrib-approvers @dgoscn @chrroberts-pure
@@ -324,8 +327,8 @@ receiver/windowseventlogreceiver/                                @open-telemetry
 receiver/windowsperfcountersreceiver/                            @open-telemetry/collector-contrib-approvers @dashpole @alxbl @pjanotti
 receiver/windowsservicereceiver/                                 @open-telemetry/collector-contrib-approvers @pjanotti @shalper2
 receiver/zipkinreceiver/                                         @open-telemetry/collector-contrib-approvers @MovieStoreGuy @andrzej-stencel @crobert-1
-receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
-scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock
+receiver/zookeeperreceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock @akats7
+scraper/zookeeperscraper/                                        @open-telemetry/collector-contrib-approvers @antonblock @akats7
 testbed/                                                         @open-telemetry/collector-contrib-approvers @open-telemetry/collector-approvers
 testbed/mockdatasenders/mockdatadogagentexporter/                @open-telemetry/collector-contrib-approvers @boostchicken
 
