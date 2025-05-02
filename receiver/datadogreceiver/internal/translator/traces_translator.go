@@ -256,6 +256,18 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 				}
 			}
 
+			// For client/producer/consumer spans, if we have `peer.hostname`, and `server.address` is unset, set
+			// `server.address` to `peer.hostname`.
+			if newSpan.Kind() == ptrace.SpanKindClient ||
+				newSpan.Kind() == ptrace.SpanKindProducer ||
+				newSpan.Kind() == ptrace.SpanKindConsumer {
+				if _, ok := newSpan.Attributes().Get("server.address"); !ok {
+					if val, ok := span.Meta["peer.hostname"]; ok {
+						newSpan.Attributes().PutStr("server.address", val)
+					}
+				}
+			}
+
 			// Some spans need specific processing (http, db, ...)
 			_ = processSpanByName(span, &newSpan)
 		}

@@ -483,3 +483,87 @@ func TestProcessSpanByName(t *testing.T) {
 		})
 	}
 }
+
+func TestToTracesServerAddress(t *testing.T) {
+	cases := []struct {
+		name                  string
+		expectedServerAddress string
+		spans                 []pb.Span
+	}{
+		{
+			name:                  "client-server-address-already-set",
+			expectedServerAddress: "serverAddress",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":      "client",
+						"server.address": "serverAddress",
+						"peer.hostname":  "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "client-no-server-address",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "client",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "consumer",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "consumer",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+		{
+			name:                  "producer",
+			expectedServerAddress: "peerHostname",
+			spans: []pb.Span{
+				{
+					Name: "span",
+					Meta: map[string]string{
+						"span.kind":     "consumer",
+						"peer.hostname": "peerHostname",
+					},
+				},
+			},
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := &pb.TracerPayload{
+				Chunks: traceChunksFromSpans(tt.spans),
+			}
+
+			req := &http.Request{
+				Header: http.Header{},
+			}
+
+			traces := ToTraces(payload, req)
+			for _, rs := range traces.ResourceSpans().All() {
+				for _, ss := range rs.ScopeSpans().All() {
+					for _, span := range ss.Spans().All() {
+						val, _ := span.Attributes().Get("server.address")
+						assert.Equal(t, tt.expectedServerAddress, val.Str())
+					}
+				}
+			}
+		})
+	}
+}
