@@ -12,7 +12,7 @@ require (
 	github.com/twmb/franz-go/pkg/kfake v0.0.0-20250320172111-35ab5e5f5327
 	github.com/xdg-go/scram v1.1.2
 	go.opentelemetry.io/collector/component v1.31.1-0.20250430101735-2ecd0b7f95cd
-	go.opentelemetry.io/collector/config/configcompression v1.31.0
+	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250430101735-2ecd0b7f95cd
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250430101735-2ecd0b7f95cd
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250430101735-2ecd0b7f95cd
 	go.opentelemetry.io/collector/confmap v1.31.1-0.20250430101735-2ecd0b7f95cd
