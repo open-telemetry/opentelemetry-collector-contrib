@@ -400,8 +400,8 @@ func initSpan(span span, s ptrace.Span) {
 	s.Attributes().PutEmpty(nullAttrName)
 	s.Attributes().PutEmptyMap(mapAttrName)
 	s.Attributes().PutEmptySlice(arrayAttrName)
-	s.SetTraceID(pcommon.TraceID(span.traceID))
-	s.SetSpanID(pcommon.SpanID(span.spanID))
+	s.SetTraceID(span.traceID)
+	s.SetSpanID(span.spanID)
 
 	e := s.Events().AppendEmpty()
 	e.SetName("exception")
@@ -1869,6 +1869,46 @@ func TestDeltaTimestampCacheExpiry(t *testing.T) {
 	serviceATimestamp1 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[0].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).Timestamp()
 	serviceAStartTimestamp2 := p.metricsConsumer.(*consumertest.MetricsSink).AllMetrics()[2].ResourceMetrics().At(0).ScopeMetrics().At(0).Metrics().At(0).Sum().DataPoints().At(0).StartTimestamp()
 	assert.Greater(t, serviceAStartTimestamp2, serviceATimestamp1) // These would be the same if nothing was evicted from the cache
+}
+
+func TestSeparateDimensions(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig().(*Config)
+	cfg.Namespace = ""
+	cfg.Dimensions = []Dimension{{Name: stringAttrName, Default: nil}}
+	cfg.CallsDimensions = []Dimension{{Name: intAttrName, Default: stringp("0")}}
+	cfg.Histogram.Dimensions = []Dimension{{Name: doubleAttrName, Default: stringp("0.0")}}
+	c, err := newConnector(zaptest.NewLogger(t), cfg, clockwork.NewFakeClock())
+	require.NoError(t, err)
+	err = c.ConsumeTraces(context.Background(), buildSampleTrace())
+	require.NoError(t, err)
+	metrics := c.buildMetrics()
+	for i := 0; i < metrics.ResourceMetrics().Len(); i++ {
+		rm := metrics.ResourceMetrics().At(i)
+		ism := rm.ScopeMetrics()
+		for ilmC := 0; ilmC < ism.Len(); ilmC++ {
+			m := ism.At(ilmC).Metrics()
+			for mC := 0; mC < m.Len(); mC++ {
+				metric := m.At(mC)
+				if metric.Name() == metricNameCalls {
+					assert.Equal(t, pmetric.MetricTypeSum, metric.Type())
+					for idp := 0; idp < metric.Sum().DataPoints().Len(); idp++ {
+						attrs := metric.Sum().DataPoints().At(idp).Attributes()
+						assert.Contains(t, attrs.AsRaw(), stringAttrName)
+						assert.Contains(t, attrs.AsRaw(), intAttrName) // only in traces.span.metrics.calls metric
+					}
+				}
+				if metric.Name() == metricNameDuration {
+					assert.Equal(t, pmetric.MetricTypeHistogram, metric.Type())
+					for idp := 0; idp < metric.Histogram().DataPoints().Len(); idp++ {
+						attrs := metric.Histogram().DataPoints().At(idp).Attributes()
+						assert.Contains(t, attrs.AsRaw(), stringAttrName)
+						assert.Contains(t, attrs.AsRaw(), doubleAttrName) // only in traces.span.metrics.duration
+					}
+				}
+			}
+		}
+	}
 }
 
 // Clock where Now() always returns a greater value than the previous return value

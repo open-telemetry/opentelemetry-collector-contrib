@@ -92,19 +92,22 @@ The following settings can be optionally configured:
   - `disable` (default: `false`): Disable all histogram metrics.
   - `unit` (default: `ms`): The time unit for recording duration measurements.
   calculated from spans duration measurements. One of either: `ms` or `s`.
+  - `dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.duration` metric, 
+  which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
   - `explicit`:
     - `buckets`: the list of durations defining the duration histogram time buckets. Default
       buckets: `[2ms, 4ms, 6ms, 8ms, 10ms, 50ms, 100ms, 200ms, 400ms, 800ms, 1s, 1400ms, 2s, 5s, 10s, 15s]`
   - `exponential`:
     - `max_size` (default: `160`) the maximum number of buckets per positive or negative number range.
-- `dimensions`: the list of dimensions to add together with the default dimensions defined above.
-  
+- `dimensions`: the list of dimensions to add to `traces.span.metrics.calls`, `traces.span.metrics.duration` and `traces.span.metrics.event` metrics with the default dimensions defined above.
   Each additional dimension is defined with a `name` which is looked up in the span's collection of attributes or
   resource attributes (AKA process tags) such as `ip`, `host.name` or `region`.
   
   If the `name`d attribute is missing in the span, the optional provided `default` is used.
   
   If no `default` is provided, this dimension will be **omitted** from the metric.
+- `calls_dimensions`: additional attributes to add as dimensions to the `traces.span.metrics.calls` metric, 
+  which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `exclude_dimensions`: the list of dimensions to be excluded from the default set of dimensions. Use to exclude unneeded data from metrics. 
 - `dimensions_cache_size`: this setting is deprecated, please use aggregation_cardinality_limit instead.
 - `include_instrumentation_scope`: a list of instrumentation scope names to include from the traces.
@@ -120,7 +123,7 @@ The following settings can be optionally configured:
   - `enabled` (default: `false`): enabling will add spans as Exemplars to all metrics. Exemplars are only kept for one flush interval.rom the cache, its next data point will indicate a "reset" in the series. Downstream components converting from delta to cumulative, like `prometheusexporter`, may handle these resets by setting cumulative counters back to 0.
 - `events`: Use to configure the events metric.
   - `enabled`: (default: `false`): enabling will add the events metric.
-  - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the events metric, which will be included _on top of_ the common and configured `dimensions` for span and resource attributes.
+  - `dimensions`: (mandatory if `enabled`) the list of the span's event attributes to add as dimensions to the `traces.span.metrics.events` metric, which will be included _on top of_ the common and configured `dimensions` for span attributes and resource attributes.
 - `resource_metrics_key_attributes`: Filter the resource attributes used to produce the resource metrics key map hash. Use this in case changing resource attributes (e.g. process id) are breaking counter metrics.
 - `aggregation_cardinality_limit` (default: `0`): Defines the maximum number of unique combinations of dimensions that will be tracked for metrics aggregation. When the limit is reached, additional unique combinations will be dropped but registered under a new entry with `otel.metric.overflow="true"`. A value of `0` means no limit is applied.
 
@@ -144,12 +147,18 @@ exporters:
 connectors:
   spanmetrics:
     histogram:
+      dimensions:
+        - name: url.scheme
+          default: https
       explicit:
-        buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]
+        buckets: [100us, 1ms, 2ms, 6ms, 10ms, 100ms, 250ms]  
     dimensions:
       - name: http.method
         default: GET
       - name: http.status_code
+    calls_dimensions:
+      - name: http.url
+        default: /ping
     exemplars:
       enabled: true
     exclude_dimensions: ['status.code']
