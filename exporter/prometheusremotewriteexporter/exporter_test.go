@@ -1197,7 +1197,6 @@ func TestRetries(t *testing.T) {
 			buf.protobuf.Reset()
 			defer bufferPool.Put(buf)
 
-			// Uses proto.Marshal to convert the WriteRequest into bytes array
 			errMarshal := buf.protobuf.Marshal(&prompb.WriteRequest{})
 			if errMarshal != nil {
 				require.NoError(t, errMarshal)
@@ -1302,7 +1301,6 @@ func benchmarkExecute(b *testing.B, numSample int) {
 		buf.protobuf.Reset()
 		defer bufferPool.Put(buf)
 
-		// Uses proto.Marshal to convert the WriteRequest into bytes array
 		errMarshal := buf.protobuf.Marshal(req)
 		if errMarshal != nil {
 			require.NoError(b, errMarshal)
