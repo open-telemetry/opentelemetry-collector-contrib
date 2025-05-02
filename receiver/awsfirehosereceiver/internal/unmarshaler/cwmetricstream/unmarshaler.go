@@ -7,6 +7,7 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
@@ -113,6 +114,33 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		maxQ := dp.QuantileValues().AppendEmpty()
 		maxQ.SetQuantile(1)
 		maxQ.SetValue(cwMetric.Value.Max)
+
+		for key, value := range cwMetric.Value.Percentiles {
+			// Only process percentile fields (those starting with 'p')
+			if len(key) < 2 || key[0] != 'p' {
+				continue
+			}
+
+			// Extract the percentile value from the field name (e.g., "p95" -> 0.95)
+			percentileStr := key[1:]
+			percentileInt, err := strconv.ParseFloat(percentileStr, 64)
+			if err != nil {
+				// Skip if we can't parse the percentile value
+				u.logger.Debug(
+					"Unable to parse percentile",
+					zap.String("percentile", percentileStr),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			// Calculate the quantile value (divide by 100 to get a value between 0 and 1)
+			quantile := percentileInt / 100.0
+
+			q := dp.QuantileValues().AppendEmpty()
+			q.SetQuantile(quantile)
+			q.SetValue(value)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		// Treat this as a non-fatal error, and handle the data below.
