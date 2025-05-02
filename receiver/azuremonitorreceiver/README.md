@@ -21,7 +21,7 @@ The following settings are required:
 - `subscription_ids`: list of subscriptions on which the resource's metrics are collected
 - or `discover_subscriptions`: (default = `false`) If set to true, will collect metrics from all subscriptions in the tenant.
 
-The following settings are optional:azcore.TokenCredential
+The following settings are optional:
 
 - `auth.authenticator`: Specifies the component ID to use to authenticate requests to Azure API. Use [azureauth extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension).
 - (Deprecated, use `auth` instead) `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
@@ -53,10 +53,6 @@ Authenticating using workload identities requires following additional settings:
 Authenticating using managed identities has the following optional settings:
 
 - `client_id`
-
-Authentication using `azureauthextension` requires:
-
-- `credentials`
 
 ### Filtering metrics
 

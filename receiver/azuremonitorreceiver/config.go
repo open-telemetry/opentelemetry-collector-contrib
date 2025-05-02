@@ -243,6 +243,7 @@ type Config struct {
 	Cloud                             string                        `mapstructure:"cloud"`
 	SubscriptionIDs                   []string                      `mapstructure:"subscription_ids"`
 	DiscoverSubscriptions             bool                          `mapstructure:"discover_subscriptions"`
+	TenantID                          string                        `mapstructure:"tenant_id"`
 	ResourceGroups                    []string                      `mapstructure:"resource_groups"`
 	Services                          []string                      `mapstructure:"services"`
 	Metrics                           NestedListAlias               `mapstructure:"metrics"`
@@ -262,7 +263,6 @@ type Config struct {
 
 	// Credentials is deprecated.
 	Credentials        string `mapstructure:"credentials"`
-	TenantID           string `mapstructure:"tenant_id"`
 	ClientID           string `mapstructure:"client_id"`
 	ClientSecret       string `mapstructure:"client_secret"`
 	FederatedTokenFile string `mapstructure:"federated_token_file"`
