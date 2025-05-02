@@ -27,6 +27,13 @@ var retryOn429FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will retry 429 http status code. Requires exporter.prometheusremotewritexporter.metrics.RetryOn429 to be enabled."),
 )
 
+var enableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister(
+	"exporter.prometheusremotewritexporter.EnableMultipleWorkers",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled and settings configured, the Prometheus remote exporter will"+
+		" spawn multiple workers/goroutines to handle incoming metrics batches concurrently"),
+)
+
 var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.enableSendingRW2",
 	featuregate.StageAlpha,
@@ -99,9 +106,11 @@ func createDefaultConfig() component.Config {
 		numConsumers = 1
 	}
 	return &Config{
-		Namespace:           "",
-		ExternalLabels:      map[string]string{},
-		MaxBatchSizeBytes:   3000000,
+		Namespace:         "",
+		ExternalLabels:    map[string]string{},
+		MaxBatchSizeBytes: 3000000,
+		// To set this as default once `exporter.prometheusremotewritexporter.EnableMultipleWorkers` is removed
+		// MaxBatchRequestParallelism: 5,
 		TimeoutSettings:     exporterhelper.NewDefaultTimeoutConfig(),
 		BackOffConfig:       retrySettings,
 		AddMetricSuffixes:   true,

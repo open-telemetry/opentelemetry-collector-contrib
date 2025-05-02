@@ -118,5 +118,9 @@ func (cfg *Config) Validate() error {
 		cfg.MaxBatchSizeBytes = 3000000
 	}
 
+	if len(cfg.ClientConfig.Compression) > 0 && cfg.ClientConfig.Compression != "snappy" {
+		return errors.New("compression type must be snappy")
+	}
+
 	return cfg.RemoteWriteProtoMsg.Validate()
 }

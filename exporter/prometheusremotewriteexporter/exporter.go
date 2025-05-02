@@ -81,22 +81,26 @@ var bufferPool = sync.Pool{
 
 // prwExporter converts OTLP metrics to Prometheus remote write TimeSeries and sends them to a remote endpoint.
 type prwExporter struct {
-	endpointURL          *url.URL
-	client               *http.Client
-	wg                   *sync.WaitGroup
-	closeChan            chan struct{}
-	concurrency          int
-	userAgentHeader      string
-	maxBatchSizeBytes    int
-	clientSettings       *confighttp.ClientConfig
-	settings             component.TelemetrySettings
-	retrySettings        configretry.BackOffConfig
-	retryOnHTTP429       bool
-	wal                  *prweWAL
-	exporterSettings     prometheusremotewrite.Settings
-	telemetry            prwTelemetry
-	batchTimeSeriesState batchTimeSeriesState
-	RemoteWriteProtoMsg  config.RemoteWriteProtoMsg
+	endpointURL         *url.URL
+	client              *http.Client
+	wg                  *sync.WaitGroup
+	closeChan           chan struct{}
+	concurrency         int
+	userAgentHeader     string
+	maxBatchSizeBytes   int
+	clientSettings      *confighttp.ClientConfig
+	settings            component.TelemetrySettings
+	retrySettings       configretry.BackOffConfig
+	retryOnHTTP429      bool
+	wal                 *prweWAL
+	exporterSettings    prometheusremotewrite.Settings
+	telemetry           prwTelemetry
+	RemoteWriteProtoMsg config.RemoteWriteProtoMsg
+
+	// When concurrency is enabled, concurrent goroutines would potentially
+	// fight over the same batchState object. To avoid this, we use a pool
+	// to provide each goroutine with its own state.
+	batchStatePool sync.Pool
 }
 
 func newPRWTelemetry(set exporter.Settings, endpointURL *url.URL) (prwTelemetry, error) {
@@ -167,14 +171,11 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 			AddMetricSuffixes: cfg.AddMetricSuffixes,
 			SendMetadata:      cfg.SendMetadata,
 		},
-		telemetry:            prwTelemetry,
-		batchTimeSeriesState: newBatchTimeSericesState(),
+		telemetry:      telemetry,
+		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
 	}
 
 	prwe.settings.Logger.Info("starting prometheus remote write exporter", zap.Any("ProtoMsg", cfg.RemoteWriteProtoMsg))
-	if prwe.exporterSettings.ExportCreatedMetric {
-		prwe.settings.Logger.Warn("export_created_metric is deprecated and will be removed in a future release")
-	}
 
 	prwe.wal = newWAL(cfg.WAL, prwe.export)
 	return prwe, nil
