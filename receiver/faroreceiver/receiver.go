@@ -132,11 +132,10 @@ func (r *faroReceiver) startHTTPServer(ctx context.Context, host component.Host)
 }
 
 func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Request) {
-	resp.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
-	resp.Header().Set("Access-Control-Allow-Headers", "Content-Type")
-
 	// Preflight request
 	if req.Method == http.MethodOptions {
+		resp.Header().Set("Access-Control-Allow-Methods", "POST, OPTIONS")
+		resp.Header().Set("Access-Control-Allow-Headers", "Content-Type")
 		resp.WriteHeader(http.StatusOK)
 		return
 	}
@@ -167,46 +166,76 @@ func (r *faroReceiver) handleFaroRequest(resp http.ResponseWriter, req *http.Req
 	var errors []string
 
 	if r.nextTraces != nil {
-		traces, err := farotranslator.TranslateToTraces(req.Context(), payload)
-		if err == nil {
-			err = r.nextTraces.ConsumeTraces(req.Context(), traces)
-			if err != nil {
-				errors = append(errors, fmt.Sprintf("failed to push traces: %v", err))
-			}
+		traces, translatorErr := farotranslator.TranslateToTraces(req.Context(), payload)
+		if translatorErr != nil {
+			errors = append(errors, fmt.Sprintf("failed to translate traces: %v", translatorErr))
 		} else {
-			r.settings.Logger.Debug("Faro traces are nil, skipping")
+			if traces.SpanCount() == 0 {
+				r.settings.Logger.Debug("Faro traces are nil, skipping")
+			} else {
+				consumeErr := r.nextTraces.ConsumeTraces(req.Context(), traces)
+				if consumeErr != nil {
+					errors = append(errors, fmt.Sprintf("failed to pass traces to next consumer: %v", consumeErr))
+				}
+			}
 		}
-	} else {
-		r.settings.Logger.Debug("Traces consumer not registered, skipping")
+	}
+
+	if r.failOnErrorsAndLog(errors, payload, resp, req) {
+		return
 	}
 
 	if r.nextLogs != nil {
-		logs, err := farotranslator.TranslateToLogs(req.Context(), payload)
-		if err == nil {
-			err = r.nextLogs.ConsumeLogs(req.Context(), logs)
-			if err != nil {
-				errors = append(errors, fmt.Sprintf("failed to push logs: %v", err))
-			}
+		logs, translatorErr := farotranslator.TranslateToLogs(req.Context(), payload)
+		if translatorErr != nil {
+			errors = append(errors, fmt.Sprintf("failed to translate logs: %v", translatorErr))
 		} else {
-			r.settings.Logger.Debug("Faro logs are nil, skipping")
+			if logs.LogRecordCount() == 0 {
+				r.settings.Logger.Debug("Faro logs are nil, skipping")
+			} else {
+				consumeErr := r.nextLogs.ConsumeLogs(req.Context(), logs)
+				if consumeErr != nil {
+					errors = append(errors, fmt.Sprintf("failed to pass logs to next consumer: %v", consumeErr))
+				}
+			}
 		}
-	} else {
-		r.settings.Logger.Debug("Logs consumer not registered, skipping")
 	}
 
-	if len(errors) > 0 {
-		r.settings.Logger.Error("Failed to process Faro payload", zap.Any("payload", payload), zap.Any("errors", errors))
-		r.errorHandler(resp, req, strings.Join(errors, "\n"), http.StatusInternalServerError)
+	if r.failOnErrorsAndLog(errors, payload, resp, req) {
 		return
 	}
 
 	resp.WriteHeader(http.StatusOK)
 }
 
+type errorResponse struct {
+	Error   string `json:"error"`
+	Code    int    `json:"code"`
+	Message string `json:"message"`
+}
+
 func (r *faroReceiver) errorHandler(w http.ResponseWriter, _ *http.Request, errMsg string, statusCode int) {
-	w.Header().Set("Content-Type", "text/plain")
+	w.Header().Set("Content-Type", "application/json")
 	w.WriteHeader(statusCode)
-	if _, err := w.Write([]byte(errMsg)); err != nil {
-		r.settings.Logger.Error("Could not write response", zap.String("message", errMsg), zap.Error(err))
+
+	resp := errorResponse{
+		Error:   http.StatusText(statusCode),
+		Code:    statusCode,
+		Message: errMsg,
 	}
+
+	if err := json.NewEncoder(w).Encode(resp); err != nil {
+		r.settings.Logger.Error("Could not write JSON response",
+			zap.String("message", errMsg),
+			zap.Error(err))
+	}
+}
+
+func (r *faroReceiver) failOnErrorsAndLog(errors []string, payload interface{}, resp http.ResponseWriter, req *http.Request) bool {
+	if len(errors) > 0 {
+		r.settings.Logger.Error("Failed to process Faro payload", zap.Any("payload", payload), zap.Any("errors", errors))
+		r.errorHandler(resp, req, strings.Join(errors, "\n"), http.StatusInternalServerError)
+		return true
+	}
+	return false
 }

@@ -44,6 +44,14 @@ func NewFactory() receiver.Factory {
 		receiver.WithLogs(createFaroReceiverLogs, metadata.LogsStability))
 }
 
+func newFaroReceiverFactory(fCfg *Config, set *receiver.Settings, err *error) func() component.Component {
+	return func() component.Component {
+		var rcv component.Component
+		rcv, *err = newFaroReceiver(fCfg, set)
+		return rcv
+	}
+}
+
 func createFaroReceiverTraces(
 	_ context.Context,
 	set receiver.Settings,
@@ -55,14 +63,7 @@ func createFaroReceiverTraces(
 		return nil, fmt.Errorf("invalid configuration: %T", cfg)
 	}
 	var err error
-	receiver := receivers.GetOrAdd(
-		fCfg,
-		func() component.Component {
-			var rcv component.Component
-			rcv, err = newFaroReceiver(fCfg, &set)
-			return rcv
-		},
-	)
+	receiver := receivers.GetOrAdd(fCfg, newFaroReceiverFactory(fCfg, &set, &err))
 	if err != nil {
 		return nil, err
 	}
@@ -83,14 +84,7 @@ func createFaroReceiverLogs(
 		return nil, fmt.Errorf("invalid configuration: %T", cfg)
 	}
 	var err error
-	receiver := receivers.GetOrAdd(
-		fCfg,
-		func() component.Component {
-			var rcv component.Component
-			rcv, err = newFaroReceiver(fCfg, &set)
-			return rcv
-		},
-	)
+	receiver := receivers.GetOrAdd(fCfg, newFaroReceiverFactory(fCfg, &set, &err))
 	if err != nil {
 		return nil, err
 	}
