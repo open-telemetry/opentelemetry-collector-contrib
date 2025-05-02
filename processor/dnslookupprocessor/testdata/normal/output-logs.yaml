@@ -1,0 +1,32 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: source.address
+          value:
+            stringValue: example.com
+        - key: source.ip
+          value:
+            stringValue: 192.168.1.20
+        - key: custom.ip
+          value:
+            stringValue: 192.168.1.30
+        - key: custom.address
+          value:
+            stringValue: another.example.com
+        - key: ip
+          value:
+            stringValue: 1.2.2.1
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: host.name
+                value:
+                  stringValue: HOST.ONE
+              - key: log.file.name
+                value:
+                  stringValue: one.log
+            body:
+              stringValue: hello one
+            spanId: ""
+            traceId: ""
+        scope: {}
