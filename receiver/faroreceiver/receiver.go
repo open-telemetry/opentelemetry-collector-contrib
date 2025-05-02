@@ -231,7 +231,7 @@ func (r *faroReceiver) errorHandler(w http.ResponseWriter, _ *http.Request, errM
 	}
 }
 
-func (r *faroReceiver) failOnErrorsAndLog(errors []string, payload interface{}, resp http.ResponseWriter, req *http.Request) bool {
+func (r *faroReceiver) failOnErrorsAndLog(errors []string, payload any, resp http.ResponseWriter, req *http.Request) bool {
 	if len(errors) > 0 {
 		r.settings.Logger.Error("Failed to process Faro payload", zap.Any("payload", payload), zap.Any("errors", errors))
 		r.errorHandler(resp, req, strings.Join(errors, "\n"), http.StatusInternalServerError)
