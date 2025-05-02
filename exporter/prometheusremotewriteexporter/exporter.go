@@ -395,7 +395,7 @@ func (prwe *prwExporter) execute(ctx context.Context, buf *buffer) error {
 			req.Header.Set("Content-Type", "application/x-protobuf;proto=io.prometheus.write.v2.Request")
 			req.Header.Set("X-Prometheus-Remote-Write-Version", "2.0.0")
 		default:
-			return errors.New("proto message validated earlier")
+			return fmt.Errorf("unsupported remote-write protobuf message: %v (should be validated earlier)", prwe.RemoteWriteProtoMsg)
 		}
 
 		resp, err := prwe.client.Do(req)
