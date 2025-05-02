@@ -26,6 +26,8 @@ require (
 )
 
 require (
+	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
+	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
 	github.com/vmihailenco/tagparser/v2 v2.0.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
@@ -38,6 +40,7 @@ require (
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250501194116-727ae96d6214 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
+	golang.org/x/crypto v0.37.0 // indirect
 	sigs.k8s.io/yaml v1.4.0 // indirect
 )
 
