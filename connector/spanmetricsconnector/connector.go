@@ -74,6 +74,12 @@ type connectorImp struct {
 	// Event dimensions to add to the events metric.
 	eDimensions []utilattri.Dimension
 
+	// Calls dimensions to add to the events metric.
+	callsDimensions []utilattri.Dimension
+
+	// duration dimensions to add to the events metric.
+	durationDimensions []utilattri.Dimension
+
 	events EventsConfig
 
 	// Tracks the last TimestampUnixNano for delta metrics so that they represent an uninterrupted series. Unused for cumulative span metrics.
@@ -144,6 +150,8 @@ func newConnector(logger *zap.Logger, config component.Config, clock clockwork.C
 		ticker:                       clock.NewTicker(cfg.MetricsFlushInterval),
 		done:                         make(chan struct{}),
 		eDimensions:                  newDimensions(cfg.Events.Dimensions),
+		callsDimensions:              newDimensions(cfg.CallsDimensions),
+		durationDimensions:           newDimensions(cfg.Histogram.Dimensions),
 		events:                       cfg.Events,
 	}, nil
 }
@@ -390,9 +398,11 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 					duration = float64(endTime-startTime) / float64(unitDivider)
 				}
 
-				key := p.buildKey(serviceName, span, p.dimensions, resourceAttr)
+				callsDimensions := p.dimensions
+				callsDimensions = append(callsDimensions, p.callsDimensions...)
+				key := p.buildKey(serviceName, span, callsDimensions, resourceAttr)
 				attributesFun := func() pcommon.Map {
-					return p.buildAttributes(serviceName, span, resourceAttr, p.dimensions, ils.Scope())
+					return p.buildAttributes(serviceName, span, resourceAttr, callsDimensions, ils.Scope())
 				}
 
 				// aggregate sums metrics
@@ -404,7 +414,13 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 				// aggregate histogram metrics
 				if !p.config.Histogram.Disable {
-					h, durationLimitReached := histograms.GetOrCreate(key, attributesFun, startTimestamp)
+					durationDimensions := p.dimensions
+					durationDimensions = append(durationDimensions, p.durationDimensions...)
+					durationKey := p.buildKey(serviceName, span, durationDimensions, resourceAttr)
+					attributesFun = func() pcommon.Map {
+						return p.buildAttributes(serviceName, span, resourceAttr, durationDimensions, ils.Scope())
+					}
+					h, durationLimitReached := histograms.GetOrCreate(durationKey, attributesFun, startTimestamp)
 					if !durationLimitReached && p.config.Exemplars.Enabled && !span.TraceID().IsEmpty() {
 						p.addExemplar(span, duration, h)
 					}
@@ -422,9 +438,9 @@ func (p *connectorImp) aggregateMetrics(traces ptrace.Traces) {
 
 						rscAndEventAttrs.EnsureCapacity(resourceAttr.Len() + event.Attributes().Len())
 						resourceAttr.CopyTo(rscAndEventAttrs)
-						// We cannot use CopyTo because it overrides the existing keys.
+						// We cannot use event.Attributes().CopyTo(rscAdnEventAttrs) because it overrides the existing keys.
 						event.Attributes().Range(func(k string, v pcommon.Value) bool {
-							rscAndEventAttrs.PutStr(k, v.Str())
+							v.CopyTo(rscAndEventAttrs.PutEmpty(k))
 							return true
 						})
 
