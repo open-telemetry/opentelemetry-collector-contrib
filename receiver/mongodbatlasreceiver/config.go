@@ -53,6 +53,9 @@ type AlertConfig struct {
 type LogConfig struct {
 	Enabled  bool                 `mapstructure:"enabled"`
 	Projects []*LogsProjectConfig `mapstructure:"projects"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // EventsConfig is the configuration options for events collection
@@ -71,6 +74,9 @@ type LogsProjectConfig struct {
 	EnableAuditLogs bool              `mapstructure:"collect_audit_logs"`
 	EnableHostLogs  *bool             `mapstructure:"collect_host_logs"`
 	AccessLogs      *AccessLogsConfig `mapstructure:"access_logs"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type AccessLogsConfig struct {
@@ -96,6 +102,9 @@ type ProjectConfig struct {
 
 type OrgConfig struct {
 	ID string `mapstructure:"id"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (pc *ProjectConfig) populateIncludesAndExcludes() {
