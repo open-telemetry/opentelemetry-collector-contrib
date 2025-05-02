@@ -106,8 +106,7 @@ func (s *splunkScraper) scrape(ctx context.Context) (pmetric.Metrics, error) {
 		s.scrapeSearchArtifacts,
 		s.scrapeHealth,
 		s.scrapeSearch,
-    s.scrapeIndexerClusterManagerStatus,
-
+		s.scrapeIndexerClusterManagerStatus,
 	}
 	errChan := make(chan error, len(metricScrapes))
 
@@ -1935,7 +1934,7 @@ func (s *splunkScraper) scrapeSearch(_ context.Context, now pcommon.Timestamp, i
 	if err != nil {
 		s.recordSplunkSearchDurationDataPoint(now, 0.0, i)
 		s.recordSplunkSearchSuccessDataPoint(now, 0, i)
-    errs <- err
+		errs <- err
 		return
 	}
 
@@ -2062,23 +2061,21 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 
 	return nil
 }
-  
+
 // Scrape Indexer Cluster Manger Status Endpoint
-func (s *splunkScraper) scrapeIndexerClusterManagerStatus(ctx context.Context, now pcommon.Timestamp, errs chan error) {
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
 		return
 	}
 
-	ctx = context.WithValue(ctx, endpointType("type"), typeCm)
-
 	ept := apiDict[`SplunkIndexerClusterManagerStatus`]
 	var icms indexersClusterManagerStatus
 
-	req, err := s.splunkClient.createAPIRequest(ctx, ept)
+	req, err := s.splunkClient.createAPIRequest(typeCm, ept)
 	if err != nil {
 		errs <- err
 		return
-  }
+	}
 	res, err := s.splunkClient.makeRequest(req)
 	if err != nil {
 		errs <- err
