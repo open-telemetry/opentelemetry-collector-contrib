@@ -119,3 +119,18 @@ type PDH_COUNTER_INFO struct {
 	// Start of the string data that is appended to the structure.
 	DataBuffer [1]uint32 // pointer to an extra space
 }
+
+// PDH_RAW_COUNTER structure contains the raw data value of a counter.
+type PDH_RAW_COUNTER struct {
+	CStatus     uint32   // Counter status that indicates if the counter value is valid.
+	TimeStamp   FILETIME // Time at which the sample was taken.
+	FirstValue  int64    // First raw counter value.
+	SecondValue int64    // Second raw counter value (used for some calculations).
+	MultiCount  uint32   // Counter type-specific value.
+}
+
+// PDH_RAW_COUNTER_ITEM structure contains the raw counter value for a specific instance.
+type PDH_RAW_COUNTER_ITEM struct {
+	SzName   *uint16         // Pointer to the instance name.
+	RawValue PDH_RAW_COUNTER // Raw counter value for the instance.
+}
