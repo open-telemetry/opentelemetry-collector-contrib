@@ -88,3 +88,13 @@ spanmetrics/invalid_delta_timestamp_cache_size:
 
 spanmetrics/default_delta_timestamp_cache_size:
   aggregation_temporality: "AGGREGATION_TEMPORALITY_DELTA"
+
+spanmetrics/separate_calls_and_duration_dimensions:
+  histogram:
+    dimensions:
+      - name: http.status_code
+  dimensions:
+    - name: http.method
+      default: GET
+  calls_dimensions:
+    - name: http.url

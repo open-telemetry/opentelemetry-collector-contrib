@@ -360,6 +360,13 @@ docker-telemetrygen:
 	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
 
+.PHONY: docker-golden
+docker-golden:
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) golden
+	cp bin/golden_* cmd/golden/
+	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
+	rm cmd/golden/golden_*
+
 .PHONY: generate
 generate: install-tools
 	PATH="$(ROOT_DIR).tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
