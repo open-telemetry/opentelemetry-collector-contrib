@@ -12,12 +12,12 @@
 
 ## Summary
 
-This Provider component offers Otel users a secure way to reference secrets or sensitive information in their Otel Collector configurations using [Google Secret Manager](https://cloud.google.com/security/products/secret-manager). Users place placeholders in the format `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}` within their configurations. The actual secrets will then be fetched dynamically from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) during Otel Collector initialization.
-## How it works
+This Provider component offers a secure way to reference secrets or sensitive information in collector configurations using [Google Secret Manager](https://cloud.google.com/security/products/secret-manager). Use a placeholder in the format `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}` within your configuration. The actual secrets will then be fetched dynamically from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) during collector initialization.
+## Usage
 
-- Simply replace plaintext secrets within the Otel configurations with the placeholder: `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}`
+- Simply replace plaintext secrets within the collector configurations with the placeholder: `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}`
 
-An example Otel configuration:
+An example collector configuration:
 
 ```
 receivers:
@@ -54,6 +54,6 @@ service:
 
 ### Prerequisites
 1. Make sure to enable access to the [Secret Manager API](https://cloud.google.com/secret-manager/docs/accessing-the-api).
-2. Make sure to [add the secret entries to Google Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart) before referencing them in the Otel configurations. 
+2. Make sure to [add the secret entries to Google Secret Manager](https://cloud.google.com/secret-manager/docs/create-secret-quickstart) before referencing them in the collector configurations. 
 
 
