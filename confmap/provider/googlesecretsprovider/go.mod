@@ -1,4 +1,4 @@
-module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretsprovider
+module github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider
 
 go 1.25
 

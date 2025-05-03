@@ -3,7 +3,7 @@
 
 //go:generate mdatagen metadata.yaml
 
-package googlesecretsprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretsprovider"
+package googlesecretmanagerprovider // import "github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider"
 
 import (
 	"context"
@@ -24,7 +24,7 @@ type secretsManagerClient interface {
 }
 
 const (
-	schemeName = "googlesecretsprovider"
+	schemeName = "googlesecretmanagerprovider"
 )
 
 type provider struct {
