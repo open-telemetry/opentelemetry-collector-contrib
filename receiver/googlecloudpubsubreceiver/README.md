@@ -30,6 +30,9 @@ The following configuration options are supported:
   or switching between [global and regional service endpoints](https://cloud.google.com/pubsub/docs/reference/service_apis_overview#service_endpoints).
 * `insecure` (Optional): allows performing “insecure” SSL connections and transfers, useful when connecting to a local
    emulator instance. Only has effect if Endpoint is not ""
+* `ignore_encoding_error` (Optional): Ignore errors when the configured encoder fails to decoding a PubSub messages.
+  It's advised to set this to `true` when using a custom encoder, and use `receiver.googlecloudpubsub.encoding_error`
+  metric to monitor the number of errors. Ignoring the error will cause the receiver to drop the message.
 
 ```yaml
 receivers:
