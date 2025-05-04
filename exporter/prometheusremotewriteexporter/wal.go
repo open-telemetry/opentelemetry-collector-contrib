@@ -25,8 +25,8 @@ import (
 )
 
 type prwWalTelemetry interface {
-	recordWALWritesTotal(ctx context.Context)
-	recordWALWritesFailuresTotal(ctx context.Context)
+	recordWALWrites(ctx context.Context)
+	recordWALWritesFailures(ctx context.Context)
 }
 
 type prwWalTelemetryOTel struct {
@@ -34,12 +34,12 @@ type prwWalTelemetryOTel struct {
 	otelAttrs        []attribute.KeyValue
 }
 
-func (p *prwWalTelemetryOTel) recordWALWritesTotal(ctx context.Context) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesTotal.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+func (p *prwWalTelemetryOTel) recordWALWrites(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalWrites.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
-func (p *prwWalTelemetryOTel) recordWALWritesFailuresTotal(ctx context.Context) {
-	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesFailuresTotal.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+func (p *prwWalTelemetryOTel) recordWALWritesFailures(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesFailures.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
 }
 
 func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
@@ -349,6 +349,7 @@ func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 	prweWAL.mu.Lock()
 	defer prweWAL.mu.Unlock()
 
+	prweWAL.telemetry.recordWALWrites(context.Background())
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
 	for _, req := range requests {
@@ -365,6 +366,7 @@ func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 	case prweWAL.rNotify <- struct{}{}:
 	default:
 	}
+
 	return prweWAL.wal.WriteBatch(batch)
 }
 
