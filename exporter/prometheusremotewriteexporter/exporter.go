@@ -168,7 +168,10 @@ func newPRWExporter(cfg *Config, set exporter.Settings) (*prwExporter, error) {
 		batchStatePool: sync.Pool{New: func() any { return newBatchTimeServicesState() }},
 	}
 
-	prwe.wal = newWAL(cfg.WAL, prwe.export)
+	prwe.wal, err = newWAL(cfg.WAL, set, prwe.export)
+	if err != nil {
+		return nil, err
+	}
 	return prwe, nil
 }
 
