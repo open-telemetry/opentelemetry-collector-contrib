@@ -15,9 +15,43 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"github.com/prometheus/prometheus/prompb"
 	"github.com/tidwall/wal"
+	"go.opentelemetry.io/collector/exporter"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/metric"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusremotewriteexporter/internal/metadata"
 )
+
+type prwWalTelemetry interface {
+	recordWALWritesTotal(ctx context.Context)
+	recordWALWritesFailuresTotal(ctx context.Context)
+}
+
+type prwWalTelemetryOTel struct {
+	telemetryBuilder *metadata.TelemetryBuilder
+	otelAttrs        []attribute.KeyValue
+}
+
+func (p *prwWalTelemetryOTel) recordWALWritesTotal(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesTotal.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+}
+
+func (p *prwWalTelemetryOTel) recordWALWritesFailuresTotal(ctx context.Context) {
+	p.telemetryBuilder.ExporterPrometheusremotewriteWalWritesFailuresTotal.Add(ctx, 1, metric.WithAttributes(p.otelAttrs...))
+}
+
+func newPRWWalTelemetry(set exporter.Settings) (prwWalTelemetry, error) {
+	telemetryBuilder, err := metadata.NewTelemetryBuilder(set.TelemetrySettings)
+	if err != nil {
+		return nil, err
+	}
+	return &prwWalTelemetryOTel{
+		telemetryBuilder: telemetryBuilder,
+		otelAttrs:        []attribute.KeyValue{},
+	}, nil
+}
 
 type prweWAL struct {
 	wg        sync.WaitGroup // wg waits for the go routines to finish.
@@ -33,6 +67,8 @@ type prweWAL struct {
 	rNotify   chan struct{}
 	rWALIndex *atomic.Uint64
 	wWALIndex *atomic.Uint64
+
+	telemetry prwWalTelemetry
 }
 
 const (
@@ -60,11 +96,16 @@ func (wc *WALConfig) truncateFrequency() time.Duration {
 	return defaultWALTruncateFrequency
 }
 
-func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.WriteRequest) error) *prweWAL {
+func newWAL(walConfig *WALConfig, set exporter.Settings, exportSink func(context.Context, []*prompb.WriteRequest) error) (*prweWAL, error) {
 	if walConfig == nil {
 		// There are cases for which the WAL can be disabled.
 		// TODO: Perhaps log that the WAL wasn't enabled.
-		return nil
+		return nil, nil
+	}
+
+	telemetryPRWWal, err := newPRWWalTelemetry(set)
+	if err != nil {
+		return nil, err
 	}
 
 	return &prweWAL{
@@ -74,7 +115,8 @@ func newWAL(walConfig *WALConfig, exportSink func(context.Context, []*prompb.Wri
 		rNotify:    make(chan struct{}),
 		rWALIndex:  &atomic.Uint64{},
 		wWALIndex:  &atomic.Uint64{},
-	}
+		telemetry:  telemetryPRWWal,
+	}, nil
 }
 
 func (wc *WALConfig) createWAL() (*wal.Log, string, error) {
