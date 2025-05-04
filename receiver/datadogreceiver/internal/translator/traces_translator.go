@@ -120,7 +120,7 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request, traceIDCache *simple
 					hexTraceID := val + strconv.FormatUint(span.TraceID, 16)
 					traceID, err := oteltrace.TraceIDFromHex(hexTraceID)
 					if err != nil {
-						return ptrace.Traces{}, err
+						return ptrace.Traces{}, fmt.Errorf("error converting to a 128bit traceid (_dd.p.tid: %s - span.TraceID: %d): %w", val, span.TraceID, err)
 					}
 					newSpan.SetTraceID(pcommon.TraceID(traceID))
 
@@ -225,14 +225,14 @@ func tagsToSpanLinks(tags map[string]string, dest ptrace.SpanLinkSlice) error {
 		// Convert trace id.
 		rawTrace, errTrace := oteltrace.TraceIDFromHex(span.TraceID)
 		if errTrace != nil {
-			return errTrace
+			return fmt.Errorf("error converting trace id (%s) from hex: %w", span.TraceID, errTrace)
 		}
 		link.SetTraceID(pcommon.TraceID(rawTrace))
 
 		// Convert span id.
 		rawSpan, errSpan := oteltrace.SpanIDFromHex(span.SpanID)
 		if errSpan != nil {
-			return errSpan
+			return fmt.Errorf("error converting span id (%s) from hex: %w", span.SpanID, errTrace)
 		}
 		link.SetSpanID(pcommon.SpanID(rawSpan))
 
