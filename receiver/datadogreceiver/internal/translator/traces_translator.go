@@ -16,6 +16,8 @@ import (
 	"strings"
 	"sync"
 
+	"go.uber.org/zap"
+
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -56,7 +58,38 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
-func ToTraces(payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
+// traceID64to128 reconstructs the 128 bits TraceID, if available or cached.
+//
+// Datadog traces split a 128 bits trace id in two parts: TraceID and Tags._dd_p_tid. This happens if the
+// instrumented service received a TraceContext from an OTel instrumented service. When it happens, we need
+// to concatenate the two into newSpan.TraceID.
+// The traceIDCache keeps track of the TraceIDs we process as only the first span has the upper 64 bits from the 128
+// bits trace ID.
+//
+// Note: This may not be resilient to related spans being flushed separately in datadog's tracing libraries.
+//
+//	It might also not work if multiple datadog instrumented services are chained.
+//
+// This is currently gated by a feature gate (receiver.datadogreceiver.Enable128BitTraceID). If we don't get a cache
+// in traceIDCache, we don't enable this behavior.
+func traceID64to128(span *pb.Span, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (pcommon.TraceID, error) {
+	if val, ok := traceIDCache.Get(span.TraceID); ok {
+		return val, nil
+	} else if val, ok := span.Meta["_dd.p.tid"]; ok {
+		tid, err := strconv.ParseUint(val, 16, 64)
+		if err != nil {
+			return pcommon.TraceID{}, fmt.Errorf("error converting %s to uint64", val)
+		}
+		traceID := uInt64ToTraceID(tid, span.TraceID)
+		// Child spans don't have _dd.p.tid, we cache it.
+		traceIDCache.Add(span.TraceID, traceID)
+
+		return traceID, nil
+	}
+	return pcommon.TraceID{}, nil
+}
+
+func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, traceIDCache *simplelru.LRU[uint64, pcommon.TraceID]) (ptrace.Traces, error) {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
 		traces = append(traces, p.GetSpans())
@@ -103,33 +136,17 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request, traceIDCache *simple
 			_ = tagsToSpanLinks(span.GetMeta(), newSpan.Links())
 
 			newSpan.SetTraceID(uInt64ToTraceID(0, span.TraceID))
-
-			// Datadog traces split a 128 bits trace id in two parts: TraceID and Tags._dd_p_tid. This happens if the
-			// instrumented service received a TraceContext from an OTel instrumented service. When it happens, we need
-			// to concatenate the two into newSpan.TraceID.
-			// The following map keeps track of the TraceIDs we process as only the first span has the upper 64 bits from the
-			// 128 bits trace ID.
-			//
-			// Reconstructing the 128 bits TraceID, if available or cached.
-			// Note: This may not be resilient to related spans being flushed separately in datadog's tracing libraries.
-			//       It might also not work if multiple datadog instrumented services are chained.
-			//
-			// This is currently gated by a feature gate. If we don't get a cache here, we don't enable this behavior.
+			// Try to get the 128-bit traceID, if available.
 			if traceIDCache != nil {
-				if val, ok := span.Meta["_dd.p.tid"]; ok {
-					hexTraceID := val + strconv.FormatUint(span.TraceID, 16)
-					traceID, err := oteltrace.TraceIDFromHex(hexTraceID)
-					if err != nil {
-						return ptrace.Traces{}, fmt.Errorf("error converting to a 128bit traceid (_dd.p.tid: %s - span.TraceID: %d): %w", val, span.TraceID, err)
-					}
-					newSpan.SetTraceID(pcommon.TraceID(traceID))
-
-					// Child spans don't have _dd.p.tid, we cache it.
-					traceIDCache.Add(span.TraceID, pcommon.TraceID(traceID))
-				} else if val, ok := traceIDCache.Get(span.TraceID); ok {
-					newSpan.SetTraceID(val)
+				traceID, err := traceID64to128(span, traceIDCache)
+				if err != nil {
+					logger.Error("error converting trace ID to 128", zap.Error(err))
+				}
+				if !traceID.IsEmpty() {
+					newSpan.SetTraceID(traceID)
 				}
 			}
+
 			newSpan.SetSpanID(uInt64ToSpanID(span.SpanID))
 			newSpan.SetStartTimestamp(pcommon.Timestamp(span.Start))
 			newSpan.SetEndTimestamp(pcommon.Timestamp(span.Start + span.Duration))

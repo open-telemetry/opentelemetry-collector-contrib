@@ -11,6 +11,8 @@ import (
 	"strconv"
 	"testing"
 
+	"go.uber.org/zap"
+
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/stretchr/testify/assert"
@@ -93,7 +95,7 @@ func TestTracePayloadV05Unmarshalling(t *testing.T) {
 	tracePayloads, _ := HandleTracesPayload(req)
 	assert.Len(t, tracePayloads, 1, "Expected one translated payload")
 	tracePayload := tracePayloads[0]
-	translated, _ := ToTraces(tracePayload, req, nil)
+	translated, _ := ToTraces(zap.NewNop(), tracePayload, req, nil)
 	assert.Equal(t, 1, translated.SpanCount(), "Span Count wrong")
 	span := translated.ResourceSpans().At(0).ScopeSpans().At(0).Spans().At(0)
 	assert.NotNil(t, span)
@@ -262,7 +264,7 @@ func TestToTraces64to128bits(t *testing.T) {
 	// Test 1: We reconstructed the 128 bits trace id on both spans
 	cache, _ := simplelru.NewLRU[uint64, pcommon.TraceID](2, func(_ uint64, _ pcommon.TraceID) {})
 
-	traces, _ := ToTraces(payload, req, cache)
+	traces, _ := ToTraces(zap.NewNop(), payload, req, cache)
 	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
 
 	for _, rs := range traces.ResourceSpans().All() {
@@ -274,7 +276,7 @@ func TestToTraces64to128bits(t *testing.T) {
 	}
 
 	// Test 2: TraceID is reconstructed only with the lower 64 bits (previous behavior)
-	traces, _ = ToTraces(payload, req, nil)
+	traces, _ = ToTraces(zap.NewNop(), payload, req, nil)
 	assert.Equal(t, 2, traces.SpanCount(), "Expected 2 spans")
 
 	for _, rs := range traces.ResourceSpans().All() {

@@ -249,7 +249,7 @@ func (ddr *datadogReceiver) handleTraces(w http.ResponseWriter, req *http.Reques
 		return
 	}
 	for _, ddTrace := range ddTraces {
-		otelTraces, err := translator.ToTraces(ddTrace, req, ddr.traceIDCache)
+		otelTraces, err := translator.ToTraces(ddr.params.Logger, ddTrace, req, ddr.traceIDCache)
 		if err != nil {
 			ddr.params.Logger.Error("Error converting traces", zap.Error(err))
 			continue
