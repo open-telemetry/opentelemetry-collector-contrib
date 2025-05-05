@@ -18,7 +18,7 @@ func Test_MergeMaps(t *testing.T) {
 	input := pcommon.NewMap()
 	input.PutStr("attr1", "value1")
 
-	targetGetter := &ottl.StandardPMapGetSetter[pcommon.Map]{
+	target := &ottl.StandardPMapGetSetter[pcommon.Map]{
 		Getter: func(_ context.Context, tCtx pcommon.Map) (pcommon.Map, error) {
 			return tCtx, nil
 		},
@@ -133,7 +133,7 @@ func Test_MergeMaps(t *testing.T) {
 			scenarioMap := pcommon.NewMap()
 			input.CopyTo(scenarioMap)
 
-			exprFunc, err := mergeMaps[pcommon.Map](targetGetter, tt.source, tt.strategy)
+			exprFunc, err := mergeMaps[pcommon.Map](target, tt.source, tt.strategy)
 			assert.NoError(t, err)
 
 			result, err := exprFunc(context.Background(), scenarioMap)
