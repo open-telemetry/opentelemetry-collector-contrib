@@ -2063,8 +2063,8 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 }
 
 // Scrape Indexer Cluster Manger Status Endpoint
-func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
-	if !s.conf.MetricsBuilderConfig.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, _ infoDict, errs chan error) {
+	if !s.conf.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
 		return
 	}
 
