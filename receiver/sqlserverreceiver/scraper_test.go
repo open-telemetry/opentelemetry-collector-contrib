@@ -381,7 +381,7 @@ func TestQueryTextAndPlanQuery(t *testing.T) {
 
 	expectedFile := filepath.Join("testdata", "expectedQueryTextAndPlanQuery.yaml")
 
-	// Uncomment line below to re-generate expected metrics.
+	// Uncomment line below to re-generate expected logs.
 	// golden.WriteLogs(t, expectedFile, actualLogs)
 	expectedLogs, _ := golden.ReadLogs(expectedFile)
 	errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())
@@ -500,6 +500,8 @@ func TestRecordDatabaseSampleQuery(t *testing.T) {
 				assert.NoError(t, err)
 			}
 
+			// Uncomment line below to re-generate expected logs.
+			// golden.WriteLogs(t, filepath.Join("testdata", tc.expectedFile), actualLogs)
 			expectedLogs, err := golden.ReadLogs(filepath.Join("testdata", tc.expectedFile))
 			assert.NoError(t, err)
 			errs := plogtest.CompareLogs(expectedLogs, actualLogs, plogtest.IgnoreTimestamp())

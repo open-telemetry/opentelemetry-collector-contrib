@@ -196,14 +196,14 @@ type healthDetails struct {
 // '/services/server/info'
 type Info struct {
 	Host    string      `json:"origin"`
-	Entries []InfoEntry `json:"entry"`
+	Entries []infoEntry `json:"entry"`
 }
 
-type InfoEntry struct {
-	Content InfoContent `json:"content"`
+type infoEntry struct {
+	Content infoContent `json:"content"`
 }
 
-type InfoContent struct {
+type infoContent struct {
 	Build   string `json:"build"`
 	Version string `json:"version"`
 }

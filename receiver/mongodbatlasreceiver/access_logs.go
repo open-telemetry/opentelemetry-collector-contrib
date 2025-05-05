@@ -53,10 +53,15 @@ type accessLogsReceiver struct {
 	cancel     context.CancelFunc
 }
 
-func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) *accessLogsReceiver {
+func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consumer.Logs) (*accessLogsReceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client for access logs receiver: %w", err)
+	}
+
 	r := &accessLogsReceiver{
 		cancel:        func() {},
-		client:        internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger),
+		client:        client,
 		cfg:           cfg,
 		logger:        settings.Logger,
 		consumer:      consumer,
@@ -80,7 +85,7 @@ func newAccessLogsReceiver(settings rcvr.Settings, cfg *Config, consumer consume
 		}
 	}
 
-	return r
+	return r, nil
 }
 
 func (alr *accessLogsReceiver) Start(ctx context.Context, _ component.Host, storageClient storage.Client) error {

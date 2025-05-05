@@ -101,20 +101,20 @@ func (tsm *TimeseriesMap) GC() {
 	tsm.Mark = false
 }
 
-// IsResetHistogram compares the given histogram datapoint h, to tsi.Histogram
+// IsResetHistogram compares the given histogram datapoint h, to ref
 // and determines whether the metric has been reset based on the values.  It is
 // a reset if any of the bucket boundaries have changed, if any of the bucket
 // counts have decreased or if the total sum or count have decreased.
-func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
-	if h.Count() < tsi.Histogram.Count() {
+func IsResetHistogram(h, ref pmetric.HistogramDataPoint) bool {
+	if h.Count() < ref.Count() {
 		return true
 	}
-	if h.Sum() < tsi.Histogram.Sum() {
+	if h.Sum() < ref.Sum() {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	refBounds := tsi.Histogram.ExplicitBounds().AsRaw()
+	refBounds := ref.ExplicitBounds().AsRaw()
 	hBounds := h.ExplicitBounds().AsRaw()
 	if len(refBounds) != len(hBounds) {
 		return true
@@ -126,11 +126,11 @@ func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if tsi.Histogram.BucketCounts().Len() != h.BucketCounts().Len() {
+	if ref.BucketCounts().Len() != h.BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.Histogram.BucketCounts().Len() {
-		if h.BucketCounts().At(i) < tsi.Histogram.BucketCounts().At(i) {
+	for i := range ref.BucketCounts().Len() {
+		if h.BucketCounts().At(i) < ref.BucketCounts().At(i) {
 			return true
 		}
 	}
@@ -138,38 +138,38 @@ func (tsi *TimeseriesInfo) IsResetHistogram(h pmetric.HistogramDataPoint) bool {
 }
 
 // IsResetExponentialHistogram compares the given exponential histogram
-// datapoint eh, to tsi.ExponentialHistogram and determines whether the metric
+// datapoint eh, to ref and determines whether the metric
 // has been reset based on the values.  It is a reset if any of the bucket
 // boundaries have changed, if any of the bucket counts have decreased or if the
 // total sum or count have decreased.
-func (tsi *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHistogramDataPoint) bool {
+func IsResetExponentialHistogram(eh, ref pmetric.ExponentialHistogramDataPoint) bool {
 	// Same as the histogram implementation
-	if eh.Count() < tsi.ExponentialHistogram.Count() {
+	if eh.Count() < ref.Count() {
 		return true
 	}
-	if eh.Sum() < tsi.ExponentialHistogram.Sum() {
+	if eh.Sum() < ref.Sum() {
 		return true
 	}
 
 	// Guard against bucket boundaries changes.
-	if tsi.ExponentialHistogram.Scale() != eh.Scale() {
+	if ref.Scale() != eh.Scale() {
 		return true
 	}
 
 	// We need to check individual buckets to make sure the counts are all increasing.
-	if tsi.ExponentialHistogram.Positive().BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
+	if ref.Positive().BucketCounts().Len() != eh.Positive().BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.ExponentialHistogram.Positive().BucketCounts().Len() {
-		if eh.Positive().BucketCounts().At(i) < tsi.ExponentialHistogram.Positive().BucketCounts().At(i) {
+	for i := range ref.Positive().BucketCounts().Len() {
+		if eh.Positive().BucketCounts().At(i) < ref.Positive().BucketCounts().At(i) {
 			return true
 		}
 	}
-	if tsi.ExponentialHistogram.Negative().BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
+	if ref.Negative().BucketCounts().Len() != eh.Negative().BucketCounts().Len() {
 		return true
 	}
-	for i := range tsi.ExponentialHistogram.Negative().BucketCounts().Len() {
-		if eh.Negative().BucketCounts().At(i) < tsi.ExponentialHistogram.Negative().BucketCounts().At(i) {
+	for i := range ref.Negative().BucketCounts().Len() {
+		if eh.Negative().BucketCounts().At(i) < ref.Negative().BucketCounts().At(i) {
 			return true
 		}
 	}
@@ -177,18 +177,18 @@ func (tsi *TimeseriesInfo) IsResetExponentialHistogram(eh pmetric.ExponentialHis
 	return false
 }
 
-// IsResetSummary compares the given summary datapoint s to tsi.Summary and
+// IsResetSummary compares the given summary datapoint s to ref and
 // determines whether the metric has been reset based on the values.  It is a
 // reset if the count or sum has decreased.
-func (tsi *TimeseriesInfo) IsResetSummary(s pmetric.SummaryDataPoint) bool {
-	return s.Count() < tsi.Summary.Count() || s.Sum() < tsi.Summary.Sum()
+func IsResetSummary(s, ref pmetric.SummaryDataPoint) bool {
+	return s.Count() < ref.Count() || s.Sum() < ref.Sum()
 }
 
-// IsResetSum compares the given number datapoint s to tsi.Number and determines
+// IsResetSum compares the given number datapoint s to ref and determines
 // whether the metric has been reset based on the values.  It is a reset if the
 // value has decreased.
-func (tsi *TimeseriesInfo) IsResetSum(s pmetric.NumberDataPoint) bool {
-	return s.DoubleValue() < tsi.Number.DoubleValue()
+func IsResetSum(s, ref pmetric.NumberDataPoint) bool {
+	return s.DoubleValue() < ref.DoubleValue()
 }
 
 func newTimeseriesMap() *TimeseriesMap {
