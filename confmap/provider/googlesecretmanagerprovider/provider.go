@@ -54,8 +54,8 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 			return nil, fmt.Errorf("failed to create a Google secret manager client: %w", err)
 		}
 		p.client = client
-		p.mu.Unlock()
 	}
+	p.mu.Unlock()
 	req := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: secretName,
 	}
