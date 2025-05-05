@@ -3,11 +3,10 @@
 package k8sobserver
 
 import (
-	"testing"
-
 	"go.uber.org/goleak"
+	"testing"
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"))
 }

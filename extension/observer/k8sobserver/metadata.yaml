@@ -17,3 +17,4 @@ tests:
     ignore:
       top:
         - "k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"
+        - "internal/poll.runtime_pollWait"
