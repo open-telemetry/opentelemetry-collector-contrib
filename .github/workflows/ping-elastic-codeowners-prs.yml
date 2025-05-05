@@ -28,7 +28,7 @@ jobs:
               -H "Accept: application/vnd.github+json" \
               -H "Authorization: Bearer ${GITHUB_TOKEN}" \
               "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
-              -d "{\"team_reviewers\":[\"${TEAM_NAME}\"]}" \
+              -d "{\"reviewers\":[],\"team_reviewers\":[\"${TEAM_NAME}\"]}" \
               | jq ".message" \
               || echo "jq was unable to parse GitHub's response"
         env:
