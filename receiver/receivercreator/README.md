@@ -605,7 +605,7 @@ the Pod level hints are used as a fallback (see detailed example below).
 
 The current implementation relies on the implementation of `k8sobserver` extension and specifically
 the [pod_endpoint](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/v0.111.0/extension/observer/k8sobserver/pod_endpoint.go).
-The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#Pod Container) that is emitted.
+The hints are evaluated per container by extracting the annotations from each [`Pod Container` endpoint](#pod-container) that is emitted.
 
 
 ### Examples
