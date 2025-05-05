@@ -32,6 +32,7 @@ type MetricsConfig struct {
 	RedisClientsConnected                  MetricConfig `mapstructure:"redis.clients.connected"`
 	RedisClientsMaxInputBuffer             MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer            MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
+	RedisClusterClusterEnabled             MetricConfig `mapstructure:"redis.cluster.cluster_enabled"`
 	RedisCmdCalls                          MetricConfig `mapstructure:"redis.cmd.calls"`
 	RedisCmdLatency                        MetricConfig `mapstructure:"redis.cmd.latency"`
 	RedisCmdUsec                           MetricConfig `mapstructure:"redis.cmd.usec"`
@@ -51,9 +52,12 @@ type MetricsConfig struct {
 	RedisMaxmemory                         MetricConfig `mapstructure:"redis.maxmemory"`
 	RedisMemoryFragmentationRatio          MetricConfig `mapstructure:"redis.memory.fragmentation_ratio"`
 	RedisMemoryLua                         MetricConfig `mapstructure:"redis.memory.lua"`
+	RedisMemoryMemFragmentationBytes       MetricConfig `mapstructure:"redis.memory.mem_fragmentation_bytes"`
 	RedisMemoryPeak                        MetricConfig `mapstructure:"redis.memory.peak"`
 	RedisMemoryRss                         MetricConfig `mapstructure:"redis.memory.rss"`
 	RedisMemoryUsed                        MetricConfig `mapstructure:"redis.memory.used"`
+	RedisMemoryUsedMemoryOverhead          MetricConfig `mapstructure:"redis.memory.used_memory_overhead"`
+	RedisMemoryUsedMemoryStartup           MetricConfig `mapstructure:"redis.memory.used_memory_startup"`
 	RedisNetInput                          MetricConfig `mapstructure:"redis.net.input"`
 	RedisNetOutput                         MetricConfig `mapstructure:"redis.net.output"`
 	RedisRdbChangesSinceLastSave           MetricConfig `mapstructure:"redis.rdb.changes_since_last_save"`
@@ -62,6 +66,7 @@ type MetricsConfig struct {
 	RedisReplicationReplicaOffset          MetricConfig `mapstructure:"redis.replication.replica_offset"`
 	RedisRole                              MetricConfig `mapstructure:"redis.role"`
 	RedisSlavesConnected                   MetricConfig `mapstructure:"redis.slaves.connected"`
+	RedisStatsTrackingTotalKeys            MetricConfig `mapstructure:"redis.stats.tracking_total_keys"`
 	RedisUptime                            MetricConfig `mapstructure:"redis.uptime"`
 }
 
@@ -77,6 +82,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisClientsMaxOutputBuffer: MetricConfig{
+			Enabled: true,
+		},
+		RedisClusterClusterEnabled: MetricConfig{
 			Enabled: true,
 		},
 		RedisCmdCalls: MetricConfig{
@@ -136,6 +144,9 @@ func DefaultMetricsConfig() MetricsConfig {
 		RedisMemoryLua: MetricConfig{
 			Enabled: true,
 		},
+		RedisMemoryMemFragmentationBytes: MetricConfig{
+			Enabled: true,
+		},
 		RedisMemoryPeak: MetricConfig{
 			Enabled: true,
 		},
@@ -143,6 +154,12 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisMemoryUsed: MetricConfig{
+			Enabled: true,
+		},
+		RedisMemoryUsedMemoryOverhead: MetricConfig{
+			Enabled: true,
+		},
+		RedisMemoryUsedMemoryStartup: MetricConfig{
 			Enabled: true,
 		},
 		RedisNetInput: MetricConfig{
@@ -167,6 +184,9 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		RedisSlavesConnected: MetricConfig{
+			Enabled: true,
+		},
+		RedisStatsTrackingTotalKeys: MetricConfig{
 			Enabled: true,
 		},
 		RedisUptime: MetricConfig{

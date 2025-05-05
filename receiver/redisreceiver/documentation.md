@@ -44,6 +44,14 @@ Longest output list among current client connections
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### redis.cluster.cluster_enabled
+
+Indicate Redis cluster is enabled
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| boolean | Gauge | Int |
+
 ### redis.commands
 
 Number of commands processed per second
@@ -188,6 +196,14 @@ Number of bytes used by the Lua engine
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
 
+### redis.memory.mem_fragmentation_bytes
+
+Delta between used_memory_rss and used_memory
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Double |
+
 ### redis.memory.peak
 
 Peak memory consumed by Redis (in bytes)
@@ -211,6 +227,22 @@ Total number of bytes allocated by Redis using its allocator
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
 | By | Gauge | Int |
+
+### redis.memory.used_memory_overhead
+
+The sum in bytes of all overheads that the server allocated for managing its internal data structures
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| bytes | Gauge | Int |
+
+### redis.memory.used_memory_startup
+
+Initial amount of memory consumed by Redis at startup in bytes
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| bytes | Gauge | Int |
 
 ### redis.net.input
 
@@ -259,6 +291,14 @@ Number of connected replicas
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | {replica} | Sum | Int | Cumulative | false |
+
+### redis.stats.tracking_total_keys
+
+Number of keys being tracked by the server
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {key} | Gauge | Int |
 
 ### redis.uptime
 
