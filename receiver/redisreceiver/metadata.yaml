@@ -427,13 +427,6 @@ metrics:
     gauge:
       value_type: int
 
-  redis.memory.mem_fragmentation_bytes:
-    enabled: false
-    description: "Delta between used_memory_rss and used_memory"
-    unit: "1"
-    gauge:
-      value_type: double
-
   redis.memory.peak:
     enabled: true
     description: Peak memory consumed by Redis (in bytes)

@@ -245,9 +245,6 @@ var MetricsInfo = metricsInfo{
 	RedisMemoryLua: metricInfo{
 		Name: "redis.memory.lua",
 	},
-	RedisMemoryMemFragmentationBytes: metricInfo{
-		Name: "redis.memory.mem_fragmentation_bytes",
-	},
 	RedisMemoryPeak: metricInfo{
 		Name: "redis.memory.peak",
 	},
@@ -332,7 +329,6 @@ type metricsInfo struct {
 	RedisMaxmemory                            metricInfo
 	RedisMemoryFragmentationRatio             metricInfo
 	RedisMemoryLua                            metricInfo
-	RedisMemoryMemFragmentationBytes          metricInfo
 	RedisMemoryPeak                           metricInfo
 	RedisMemoryRss                            metricInfo
 	RedisMemoryUsed                           metricInfo
@@ -2165,55 +2161,6 @@ func newMetricRedisMemoryLua(cfg MetricConfig) metricRedisMemoryLua {
 	return m
 }
 
-type metricRedisMemoryMemFragmentationBytes struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills redis.memory.mem_fragmentation_bytes metric with initial data.
-func (m *metricRedisMemoryMemFragmentationBytes) init() {
-	m.data.SetName("redis.memory.mem_fragmentation_bytes")
-	m.data.SetDescription("Delta between used_memory_rss and used_memory")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricRedisMemoryMemFragmentationBytes) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val float64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetDoubleValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisMemoryMemFragmentationBytes) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisMemoryMemFragmentationBytes) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricRedisMemoryMemFragmentationBytes(cfg MetricConfig) metricRedisMemoryMemFragmentationBytes {
-	m := metricRedisMemoryMemFragmentationBytes{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
 type metricRedisMemoryPeak struct {
 	data     pmetric.Metric // data buffer for generated metric.
 	config   MetricConfig   // metric config provided by user.
@@ -3009,7 +2956,6 @@ type MetricsBuilder struct {
 	metricRedisMaxmemory                            metricRedisMaxmemory
 	metricRedisMemoryFragmentationRatio             metricRedisMemoryFragmentationRatio
 	metricRedisMemoryLua                            metricRedisMemoryLua
-	metricRedisMemoryMemFragmentationBytes          metricRedisMemoryMemFragmentationBytes
 	metricRedisMemoryPeak                           metricRedisMemoryPeak
 	metricRedisMemoryRss                            metricRedisMemoryRss
 	metricRedisMemoryUsed                           metricRedisMemoryUsed
@@ -3086,7 +3032,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisMaxmemory:                            newMetricRedisMaxmemory(mbc.Metrics.RedisMaxmemory),
 		metricRedisMemoryFragmentationRatio:             newMetricRedisMemoryFragmentationRatio(mbc.Metrics.RedisMemoryFragmentationRatio),
 		metricRedisMemoryLua:                            newMetricRedisMemoryLua(mbc.Metrics.RedisMemoryLua),
-		metricRedisMemoryMemFragmentationBytes:          newMetricRedisMemoryMemFragmentationBytes(mbc.Metrics.RedisMemoryMemFragmentationBytes),
 		metricRedisMemoryPeak:                           newMetricRedisMemoryPeak(mbc.Metrics.RedisMemoryPeak),
 		metricRedisMemoryRss:                            newMetricRedisMemoryRss(mbc.Metrics.RedisMemoryRss),
 		metricRedisMemoryUsed:                           newMetricRedisMemoryUsed(mbc.Metrics.RedisMemoryUsed),
@@ -3228,7 +3173,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisMaxmemory.emit(ils.Metrics())
 	mb.metricRedisMemoryFragmentationRatio.emit(ils.Metrics())
 	mb.metricRedisMemoryLua.emit(ils.Metrics())
-	mb.metricRedisMemoryMemFragmentationBytes.emit(ils.Metrics())
 	mb.metricRedisMemoryPeak.emit(ils.Metrics())
 	mb.metricRedisMemoryRss.emit(ils.Metrics())
 	mb.metricRedisMemoryUsed.emit(ils.Metrics())
@@ -3453,11 +3397,6 @@ func (mb *MetricsBuilder) RecordRedisMemoryFragmentationRatioDataPoint(ts pcommo
 // RecordRedisMemoryLuaDataPoint adds a data point to redis.memory.lua metric.
 func (mb *MetricsBuilder) RecordRedisMemoryLuaDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisMemoryLua.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordRedisMemoryMemFragmentationBytesDataPoint adds a data point to redis.memory.mem_fragmentation_bytes metric.
-func (mb *MetricsBuilder) RecordRedisMemoryMemFragmentationBytesDataPoint(ts pcommon.Timestamp, val float64) {
-	mb.metricRedisMemoryMemFragmentationBytes.recordDataPoint(mb.startTime, ts, val)
 }
 
 // RecordRedisMemoryPeakDataPoint adds a data point to redis.memory.peak metric.

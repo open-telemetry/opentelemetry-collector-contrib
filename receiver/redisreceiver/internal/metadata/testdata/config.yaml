@@ -73,8 +73,6 @@ all_set:
       enabled: true
     redis.memory.lua:
       enabled: true
-    redis.memory.mem_fragmentation_bytes:
-      enabled: true
     redis.memory.peak:
       enabled: true
     redis.memory.rss:
@@ -185,8 +183,6 @@ none_set:
     redis.memory.fragmentation_ratio:
       enabled: false
     redis.memory.lua:
-      enabled: false
-    redis.memory.mem_fragmentation_bytes:
       enabled: false
     redis.memory.peak:
       enabled: false

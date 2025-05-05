@@ -64,7 +64,6 @@ type MetricsConfig struct {
 	RedisMaxmemory                            MetricConfig `mapstructure:"redis.maxmemory"`
 	RedisMemoryFragmentationRatio             MetricConfig `mapstructure:"redis.memory.fragmentation_ratio"`
 	RedisMemoryLua                            MetricConfig `mapstructure:"redis.memory.lua"`
-	RedisMemoryMemFragmentationBytes          MetricConfig `mapstructure:"redis.memory.mem_fragmentation_bytes"`
 	RedisMemoryPeak                           MetricConfig `mapstructure:"redis.memory.peak"`
 	RedisMemoryRss                            MetricConfig `mapstructure:"redis.memory.rss"`
 	RedisMemoryUsed                           MetricConfig `mapstructure:"redis.memory.used"`
@@ -191,9 +190,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisMemoryLua: MetricConfig{
 			Enabled: true,
-		},
-		RedisMemoryMemFragmentationBytes: MetricConfig{
-			Enabled: false,
 		},
 		RedisMemoryPeak: MetricConfig{
 			Enabled: true,

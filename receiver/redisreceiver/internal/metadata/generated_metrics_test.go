@@ -195,9 +195,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisMemoryLuaDataPoint(ts, 1)
 
-			allMetricsCount++
-			mb.RecordRedisMemoryMemFragmentationBytesDataPoint(ts, 1)
-
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryPeakDataPoint(ts, 1)
@@ -768,18 +765,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.memory.mem_fragmentation_bytes":
-					assert.False(t, validatedMetrics["redis.memory.mem_fragmentation_bytes"], "Found a duplicate in the metrics slice: redis.memory.mem_fragmentation_bytes")
-					validatedMetrics["redis.memory.mem_fragmentation_bytes"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Delta between used_memory_rss and used_memory", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "redis.memory.peak":
 					assert.False(t, validatedMetrics["redis.memory.peak"], "Found a duplicate in the metrics slice: redis.memory.peak")
 					validatedMetrics["redis.memory.peak"] = true

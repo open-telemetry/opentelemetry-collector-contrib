@@ -439,14 +439,6 @@ The value of the maxmemory configuration directive
 | ---- | ----------- | ---------- | --------- |
 | By | Gauge | Int | development |
 
-### redis.memory.mem_fragmentation_bytes
-
-Delta between used_memory_rss and used_memory
-
-| Unit | Metric Type | Value Type |
-| ---- | ----------- | ---------- |
-| 1 | Gauge | Double |
-
 ### redis.memory.used_memory_overhead
 
 The sum in bytes of all overheads that the server allocated for managing its internal data structures
