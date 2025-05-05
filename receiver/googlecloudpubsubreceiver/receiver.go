@@ -183,8 +183,10 @@ func (receiver *pubsubReceiver) setMarshallerFromEncodingID(encodingID buildInEn
 		case otlpProtoLog:
 			receiver.logsUnmarshaler = &plog.ProtoUnmarshaler{}
 		case rawTextLog:
+			receiver.settings.Logger.Warn("build-in raw_text encoding is deprecated and will be removed in v0.132.0, use the text encoding extension instead")
 			receiver.logsUnmarshaler = unmarshalLogStrings{}
 		case cloudLogging:
+			receiver.settings.Logger.Warn("build-in cloud_logging encoding is deprecated and will be removed in v0.132.0, use the googlecloudlogentry encoding extension instead")
 			receiver.logsUnmarshaler = unmarshalCloudLoggingLogEntry{}
 		default:
 			return fmt.Errorf("cannot start receiver: build in encoding %s is not supported for logs", receiver.config.Encoding)

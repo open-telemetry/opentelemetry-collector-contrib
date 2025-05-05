@@ -77,11 +77,12 @@ Extensions. The non OTLP build in encodings will be deprecated as soon as extens
 | raw_text          | Wrap in an OTLP log message                    |
 
 With `cloud_logging`, the receiver can be used to bring Cloud Logging messages into an OpenTelemetry pipeline. You'll
-first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. Note that the `cloud_logging`
-integration is considered **alpha** as the semantic convention on some of the conversion are not stabilized yet.
+first need to [set up a logging sink][sink-docs] with a Pub/Sub topic as its destination. The build-in encoding is
+**deprecated** and will be removed in v0.132.0: Use the `googlecloudlogentry` encoding extension instead.
 
 With `raw_text`, the receiver can be used for ingesting arbitrary text message on a Pubsub subscription, wrapping them
-in OTLP Log messages.
+in OTLP Log messages.  The build-in encoding is **deprecated** and will be removed in v0.132.0: Use the `text` encoding
+extension instead.
 
 When no encoding is specified, the receiver will try to discover the type of the data by looking at the `ce-type` and
 `content-type` attributes of the message. These message attributes are set by the `googlepubsubexporter`.
