@@ -149,8 +149,12 @@ func buildPostgreSQLString(conn DataSourceConfig) (string, error) {
 func buildMySQLString(conn DataSourceConfig) (string, error) {
 	// MySQL connection string format: user:pass@tcp(host:port)/db?param1=value1&param2=value2
 	var auth string
+
+	// MySQL requires no escaping of username and password
 	if conn.Username != "" {
-		auth = fmt.Sprintf("%s:%s@", url.QueryEscape(conn.Username), url.QueryEscape(string(conn.Password)))
+		username := conn.Username
+		password := string(conn.Password)
+		auth = fmt.Sprintf("%s:%s@", username, password)
 	}
 
 	query := url.Values{}
