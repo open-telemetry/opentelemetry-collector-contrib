@@ -109,7 +109,7 @@ func TestFactory(t *testing.T) {
 	require.True(t, ok)
 }
 
-func TestShutDown(t *testing.T) {
+func TestShutdown(t *testing.T) {
 	tests := []struct {
 		name              string
 		testSecretManager *mockSecretsManagerClient
