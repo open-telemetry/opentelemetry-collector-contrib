@@ -9,6 +9,7 @@ import (
 	"testing"
 
 	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
@@ -310,4 +311,81 @@ func Test_SetMapValue_EmptyMap(t *testing.T) {
 func Test_SetMapValue_NilKey(t *testing.T) {
 	err := ctxutil.SetMapValue[any](context.Background(), nil, pcommon.NewMap(), nil, "bar")
 	assert.Error(t, err)
+}
+
+func Test_SetMap(t *testing.T) {
+	createMap := func() pcommon.Map {
+		m := pcommon.NewMap()
+		require.NoError(t, m.FromRaw(map[string]any{"foo": "bar"}))
+		return m
+	}
+	tests := []struct {
+		name string
+		val  any
+		err  error
+	}{
+		{
+			name: "invalid type",
+			val:  "invalid",
+			err:  errors.New("failed to convert type string into pcommon.Map"),
+		},
+		{
+			name: "raw map",
+			val:  map[string]any{"foo": "bar"},
+		},
+		{
+			name: "pcommon.Map",
+			val:  createMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m := pcommon.NewMap()
+			err := ctxutil.SetMap(m, tt.val)
+			if tt.err != nil {
+				require.Equal(t, tt.err, err)
+				return
+			}
+			assert.Equal(t, m, createMap())
+		})
+	}
+}
+
+func Test_GetMap(t *testing.T) {
+	createMap := func() pcommon.Map {
+		m := pcommon.NewMap()
+		require.NoError(t, m.FromRaw(map[string]any{"foo": "bar"}))
+		return m
+	}
+	tests := []struct {
+		name string
+		val  any
+		err  error
+	}{
+		{
+			name: "invalid type",
+			val:  "invalid",
+			err:  errors.New("failed to convert type string into pcommon.Map"),
+		},
+		{
+			name: "raw map",
+			val:  map[string]any{"foo": "bar"},
+		},
+		{
+			name: "pcommon.Map",
+			val:  createMap(),
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			m, err := ctxutil.GetMap(tt.val)
+			if tt.err != nil {
+				require.Equal(t, tt.err, err)
+				return
+			}
+			assert.Equal(t, m, createMap())
+		})
+	}
 }

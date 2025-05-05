@@ -89,5 +89,19 @@ func SetMap(target pcommon.Map, val any) error {
 	if rm, ok := val.(map[string]any); ok {
 		return target.FromRaw(rm)
 	}
-	return nil
+	return fmt.Errorf("failed to convert type %T into pcommon.Map", val)
+}
+
+func GetMap(val any) (pcommon.Map, error) {
+	if m, ok := val.(pcommon.Map); ok {
+		return m, nil
+	}
+	if rm, ok := val.(map[string]any); ok {
+		m := pcommon.NewMap()
+		if err := m.FromRaw(rm); err != nil {
+			return pcommon.Map{}, err
+		}
+		return m, nil
+	}
+	return pcommon.Map{}, fmt.Errorf("failed to convert type %T into pcommon.Map", val)
 }
