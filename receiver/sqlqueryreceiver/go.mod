@@ -4,11 +4,11 @@ go 1.23.0
 
 require (
 	github.com/docker/go-connections v0.5.0
-	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.125.1-0.20250501194116-727ae96d6214
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.1-0.20250501194116-727ae96d6214
-	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.125.1-0.20250501194116-727ae96d6214
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.1-0.20250501194116-727ae96d6214
-	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.125.1-0.20250501194116-727ae96d6214
+	github.com/open-telemetry/opentelemetry-collector-contrib/extension/storage v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sqlquery v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza v0.125.0
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783
