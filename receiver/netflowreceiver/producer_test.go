@@ -4,6 +4,7 @@
 package netflowreceiver
 
 import (
+	"fmt"
 	"net/netip"
 	"testing"
 
@@ -56,7 +57,7 @@ func TestProduce(t *testing.T) {
 	protoProducer, err := protoproducer.CreateProtoProducer(cfgm, protoproducer.CreateSamplingSystem)
 	require.NoError(t, err)
 
-	otelLogsProducer := newOtelLogsProducer(protoProducer, consumertest.NewNop(), zap.NewNop())
+	otelLogsProducer := newOtelLogsProducer(protoProducer, consumertest.NewNop(), zap.NewNop(), false)
 	messages, err := otelLogsProducer.Produce(message, &producer.ProduceArgs{})
 	require.NoError(t, err)
 	require.NotNil(t, messages)
@@ -68,6 +69,85 @@ func TestProduce(t *testing.T) {
 	assert.Equal(t, uint64(1), pm.Packets)
 	assert.Equal(t, uint32(256), pm.ObservationDomainId)
 	assert.Equal(t, uint32(838987416), pm.SequenceNum)
+}
+
+func TestProduceRaw(t *testing.T) {
+	// list of netflow.DataFlowSet
+	message := &netflow.NFv9Packet{
+		Version:        9,
+		Count:          1,
+		SystemUptime:   0xb3bff683,
+		UnixSeconds:    0x618aa3a8,
+		SequenceNumber: 838987416,
+		SourceId:       256,
+		FlowSets: []any{
+			netflow.DataFlowSet{
+				FlowSetHeader: netflow.FlowSetHeader{
+					Id:     260,
+					Length: 1372,
+				},
+				Records: []netflow.DataRecord{
+					{
+						Values: []netflow.DataField{
+							{
+								PenProvided: false,
+								Type:        2,
+								Pen:         0,
+								Value:       []uint8{0x00, 0x00, 0x00, 0x01},
+							},
+						},
+					},
+					{
+						Values: []netflow.DataField{
+							{
+								PenProvided: false,
+								Type:        2,
+								Pen:         0,
+								Value:       []uint8{0x00, 0x00, 0x00, 0x02},
+							},
+						},
+					},
+					{
+						Values: []netflow.DataField{
+							{
+								PenProvided: false,
+								Type:        2,
+								Pen:         0,
+								Value:       []uint8{0x00, 0x00, 0x00, 0x03},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	cfgProducer := &protoproducer.ProducerConfig{}
+	cfgm, err := cfgProducer.Compile()
+	require.NoError(t, err)
+
+	protoProducer, err := protoproducer.CreateProtoProducer(cfgm, protoproducer.CreateSamplingSystem)
+	require.NoError(t, err)
+
+	sink := &consumertest.LogsSink{}
+	otelLogsProducer := newOtelLogsProducer(protoProducer, sink, zap.NewNop(), true)
+
+	messages, err := otelLogsProducer.Produce(message, &producer.ProduceArgs{})
+	require.NoError(t, err)
+	require.NotNil(t, messages)
+	assert.Len(t, messages, 3)
+
+	logs := sink.AllLogs()
+	require.Len(t, logs, 1)
+	records := logs[0].ResourceLogs().At(0).ScopeLogs().At(0).LogRecords()
+	require.Equal(t, 3, records.Len()) // Should have one record per flow record
+
+	// Each record should be a raw string representation of the ProducerMessage
+	for i := 0; i < 3; i++ {
+		record := records.At(i)
+		msg := messages[i]
+		assert.Equal(t, fmt.Sprintf("%+v", msg), record.Body().Str())
+	}
 }
 
 // This PanicProducer replaces the ProtoProducer, to simulate it producing a panic
@@ -90,7 +170,7 @@ func TestProducerPanic(t *testing.T) {
 	mockConsumer := consumertest.NewNop()
 
 	// Wrap a PanicProducer (instead of ProtoProducer) in the OtelLogsProducerWrapper
-	wrapper := newOtelLogsProducer(&PanicProducer{}, mockConsumer, logger)
+	wrapper := newOtelLogsProducer(&PanicProducer{}, mockConsumer, logger, false)
 
 	// Call Produce which should recover from panic
 	messages, err := wrapper.Produce(nil, &producer.ProduceArgs{
