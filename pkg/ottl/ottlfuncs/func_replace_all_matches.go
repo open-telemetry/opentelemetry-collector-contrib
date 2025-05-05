@@ -77,13 +77,11 @@ func replaceAllMatches[K any](target ottl.PMapGetSetter[K], pattern string, repl
 			}
 		}
 
-		updated := pcommon.NewMap()
-		val.CopyTo(updated)
-		for _, value := range updated.All() {
+		for _, value := range val.All() {
 			if value.Type() == pcommon.ValueTypeStr && glob.Match(value.Str()) {
 				value.SetStr(replacementVal)
 			}
 		}
-		return nil, target.Set(ctx, tCtx, updated)
+		return nil, target.Set(ctx, tCtx, val)
 	}, nil
 }
