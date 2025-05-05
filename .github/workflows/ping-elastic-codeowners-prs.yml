@@ -1,0 +1,38 @@
+name: 'Ping Elastic code owners on PRs'
+on:
+  pull_request_target:
+    types: [labeled]
+
+permissions:
+  contents: read
+
+jobs:
+  ping-elastic-owners:
+    permissions:
+      pull-requests: write
+    runs-on: ubuntu-24.04
+    if: startsWith(github.event.label.name, 'team:')
+    steps:
+      - name: ping elastic code owners
+        run: |
+          set -euo pipefail
+          # Given the label with the format "team:team-name", let's extract the team name
+          # and convert it to the GitHub team name format "team-name"
+          TEAM_NAME=$(echo "${LABEL}" | sed -E 's#team:(.+)#\1#')
+
+          # For more: https://github.com/cli/cli/issues/4844
+          echo "Requesting review from code owners: ${TEAM_NAME}"
+
+          curl \
+              -X POST \
+              -H "Accept: application/vnd.github+json" \
+              -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+              "https://api.github.com/repos/${REPO}/pulls/${PR}/requested_reviewers" \
+              -d "{\"team_reviewers\":[\"${TEAM_NAME}\"]}" \
+              | jq ".message" \
+              || echo "jq was unable to parse GitHub's response"
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LABEL: ${{ github.event.label.name }}
+          PR: ${{ github.event.number }}
+          REPO: ${{ github.repository }}
