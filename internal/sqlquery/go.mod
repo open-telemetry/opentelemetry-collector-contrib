@@ -13,10 +13,10 @@ require (
 	github.com/thda/tds v0.1.7
 	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250501194116-727ae96d6214
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/scraper v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.125.1-0.20250505155216-829157cef7bb
-516d1fa (sqlquery breakup data source parameter)
 	go.uber.org/multierr v1.11.0
 	go.uber.org/zap v1.27.0
 )
