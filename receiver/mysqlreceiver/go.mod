@@ -32,6 +32,7 @@ require (
 	github.com/containerd/platforms v0.2.1 // indirect
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/moby/sys/userns v0.1.0 // indirect
 	github.com/shirou/gopsutil/v4 v4.25.1 // indirect

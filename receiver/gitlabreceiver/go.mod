@@ -23,6 +23,7 @@ require (
 	github.com/ebitengine/purego v0.8.2 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
 	github.com/go-ole/go-ole v1.2.6 // indirect
+	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.26.1 // indirect
 	github.com/hashicorp/go-version v1.7.0 // indirect
