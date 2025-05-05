@@ -3,8 +3,8 @@ type: googlecloudlogentry_encoding
 status:
   class: extension
   stability:
-    development: [ extension ]
-  distributions: [ ]
+    alpha: [ extension ]
+  distributions: [ contrib ]
   codeowners:
     active: [ alexvanboxel ]
 
