@@ -1,3 +1,4 @@
+cmd/codecovgen
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest

@@ -527,8 +527,11 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
-Note that this functionality requires a minimum Elasticsearch version of 8.17.6, 8.18.1, 8.19.0, 9.0.1, or 9.1.0.
-If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
+Note that this functionality requires both
+- minimum Elasticsearch Exporter version 0.121.0
+- minimum Elasticsearch version 8.17.6, 8.18.1, 8.19.0, 9.0.1, or 9.1.0
+
+If you are on an earlier version of Elasticsearch, either update your cluster or install this custom component template:
 
 ```shell
 PUT _component_template/metrics-otel@custom
