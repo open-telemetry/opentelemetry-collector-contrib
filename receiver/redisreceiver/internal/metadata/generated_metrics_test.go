@@ -84,6 +84,10 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisClusterClusterEnabledDataPoint(ts, 1)
+
 			allMetricsCount++
 			mb.RecordRedisClusterKnownNodesDataPoint(ts, 1)
 
@@ -194,6 +198,10 @@ func TestMetricsBuilder(t *testing.T) {
 
 			defaultMetricsCount++
 			allMetricsCount++
+			mb.RecordRedisMemoryMemFragmentationBytesDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
 			mb.RecordRedisMemoryPeakDataPoint(ts, 1)
 
 			defaultMetricsCount++
@@ -203,6 +211,14 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisMemoryUsedMemoryOverheadDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisMemoryUsedMemoryStartupDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -233,6 +249,10 @@ func TestMetricsBuilder(t *testing.T) {
 			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
+
+			defaultMetricsCount++
+			allMetricsCount++
+			mb.RecordRedisStatsTrackingTotalKeysDataPoint(ts, 1)
 
 			defaultMetricsCount++
 			allMetricsCount++
@@ -311,6 +331,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Longest output list among current client connections", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.cluster.cluster_enabled":
+					assert.False(t, validatedMetrics["redis.cluster.cluster_enabled"], "Found a duplicate in the metrics slice: redis.cluster.cluster_enabled")
+					validatedMetrics["redis.cluster.cluster_enabled"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Indicate Redis cluster is enabled", ms.At(i).Description())
+					assert.Equal(t, "boolean", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -741,6 +773,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.memory.mem_fragmentation_bytes":
+					assert.False(t, validatedMetrics["redis.memory.mem_fragmentation_bytes"], "Found a duplicate in the metrics slice: redis.memory.mem_fragmentation_bytes")
+					validatedMetrics["redis.memory.mem_fragmentation_bytes"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Delta between used_memory_rss and used_memory", ms.At(i).Description())
+					assert.Equal(t, "1", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
+					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
 				case "redis.memory.peak":
 					assert.False(t, validatedMetrics["redis.memory.peak"], "Found a duplicate in the metrics slice: redis.memory.peak")
 					validatedMetrics["redis.memory.peak"] = true
@@ -772,6 +816,30 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Total number of bytes allocated by Redis using its allocator", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.memory.used_memory_overhead":
+					assert.False(t, validatedMetrics["redis.memory.used_memory_overhead"], "Found a duplicate in the metrics slice: redis.memory.used_memory_overhead")
+					validatedMetrics["redis.memory.used_memory_overhead"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "The sum in bytes of all overheads that the server allocated for managing its internal data structures", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.memory.used_memory_startup":
+					assert.False(t, validatedMetrics["redis.memory.used_memory_startup"], "Found a duplicate in the metrics slice: redis.memory.used_memory_startup")
+					validatedMetrics["redis.memory.used_memory_startup"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Initial amount of memory consumed by Redis at startup in bytes", ms.At(i).Description())
+					assert.Equal(t, "bytes", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
@@ -882,6 +950,18 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.False(t, ms.At(i).Sum().IsMonotonic())
 					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
 					dp := ms.At(i).Sum().DataPoints().At(0)
+					assert.Equal(t, start, dp.StartTimestamp())
+					assert.Equal(t, ts, dp.Timestamp())
+					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
+					assert.Equal(t, int64(1), dp.IntValue())
+				case "redis.stats.tracking_total_keys":
+					assert.False(t, validatedMetrics["redis.stats.tracking_total_keys"], "Found a duplicate in the metrics slice: redis.stats.tracking_total_keys")
+					validatedMetrics["redis.stats.tracking_total_keys"] = true
+					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
+					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
+					assert.Equal(t, "Number of keys being tracked by the server", ms.At(i).Description())
+					assert.Equal(t, "{key}", ms.At(i).Unit())
+					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())

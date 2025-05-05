@@ -109,6 +109,13 @@ metrics:
     gauge:
       value_type: int
 
+  redis.cluster.cluster_enabled:
+    enabled: true
+    description: "Indicate Redis cluster is enabled"
+    unit: boolean
+    gauge:
+      value_type: int
+
   redis.cluster.known_nodes:
     enabled: false
     description: "Number of known nodes in the cluster"
@@ -420,6 +427,13 @@ metrics:
     gauge:
       value_type: int
 
+  redis.memory.mem_fragmentation_bytes:
+    enabled: true
+    description: "Delta between used_memory_rss and used_memory"
+    unit: "1"
+    gauge:
+      value_type: double
+
   redis.memory.peak:
     enabled: true
     description: Peak memory consumed by Redis (in bytes)
@@ -444,6 +458,20 @@ metrics:
     stability:
       level: development
     unit: By
+    gauge:
+      value_type: int
+
+  redis.memory.used_memory_overhead:
+    enabled: true
+    description: "The sum in bytes of all overheads that the server allocated for managing its internal data structures"
+    unit: bytes
+    gauge:
+      value_type: int
+
+  redis.memory.used_memory_startup:
+    enabled: true
+    description: "Initial amount of memory consumed by Redis at startup in bytes"
+    unit: bytes
     gauge:
       value_type: int
 
@@ -519,6 +547,7 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
     attributes: [role]
+
   redis.slaves.connected:
     enabled: true
     description: Number of connected replicas
@@ -530,6 +559,12 @@ metrics:
       monotonic: false
       aggregation_temporality: cumulative
 
+  redis.stats.tracking_total_keys:
+    enabled: true
+    description: "Number of keys being tracked by the server"
+    unit: "{key}"
+    gauge:
+      value_type: int
 
   redis.uptime:
     enabled: true
