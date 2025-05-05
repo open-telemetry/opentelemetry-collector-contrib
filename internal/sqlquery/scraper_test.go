@@ -703,7 +703,7 @@ func TestBpConnectionStringBuilder(t *testing.T) {
 			expected:    "postgresql://user%40domain:pass%23word%40123@localhost:5432/mydb?app=my%23app&sslmode=disable",
 		},
 		{
-			name:        "mysql with invalid username and password",
+			name:        "mysql with invalid username and password, no escaping",
 			driver:      "mysql",
 			host:        "localhost",
 			port:        3306,
@@ -711,7 +711,7 @@ func TestBpConnectionStringBuilder(t *testing.T) {
 			username:    "user@domain+",
 			password:    "pass#word@123",
 			queryParams: map[string]any{"sslmode": "disable", "app": "my#app"},
-			expected:    "user%40domain%2B:pass%23word%40123@tcp(localhost:3306)/mydb?app=my%23app&sslmode=disable",
+			expected:    "user@domain+:pass#word@123@tcp(localhost:3306)/mydb?app=my%23app&sslmode=disable",
 		},
 		{
 			name:        "snowflake with invalid username and password",
