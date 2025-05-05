@@ -7,10 +7,12 @@ package k8sobserver
 
 import (
 	"context"
+	"path/filepath"
+	"strings"
+	"testing"
+	"time"
+
 	"github.com/google/uuid"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
-	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -18,10 +20,10 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/receiver/otlpreceiver"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"path/filepath"
-	"strings"
-	"testing"
-	"time"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/golden"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
+	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
 )
 
 const (
@@ -65,7 +67,7 @@ func TestE2ENamespaced(t *testing.T) {
 	}, 1*time.Minute, 1*time.Second,
 		"Timeout: failed to receive logs in 1 minute")
 
-	//golden.WriteMetrics(t, expectedFile, metricsConsumer.AllMetrics()[0])
+	// golden.WriteMetrics(t, expectedFile, metricsConsumer.AllMetrics()[0])
 
 	var expected pmetric.Metrics
 	expected, err = golden.ReadMetrics(expectedFile)
