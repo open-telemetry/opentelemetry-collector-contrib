@@ -1,4 +1,4 @@
-change_type: enhancement
+change_type: breaking
 
 # The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
 component: googlecloudpubsubreceiver
@@ -10,7 +10,7 @@ issues: [38164]
 
 subtext: |
   Introduce a setting to ignore errors when the configured encoder. It's advised to set this to `true` when using 
-  a custom encoder, and use `receiver.googlecloudpubsub.encoding_error` metric to monitor the number of errors. 
+  a custom encoder, and use the new `receiver.googlecloudpubsub.encoding_error` metric to monitor the number of errors. 
   Ignoring the error will cause the receiver to drop the message.
 
 change_logs: [user]
