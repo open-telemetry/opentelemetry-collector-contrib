@@ -77,6 +77,7 @@ require (
 	github.com/xdg-go/scram v1.1.2 // indirect
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
+	go.opentelemetry.io/collector/config/configcompression v1.31.0 // indirect
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250501194116-727ae96d6214 // indirect
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250501194116-727ae96d6214 // indirect
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250501194116-727ae96d6214 // indirect
