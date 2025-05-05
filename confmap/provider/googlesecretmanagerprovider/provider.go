@@ -9,6 +9,7 @@ import (
 	"context"
 	"fmt"
 	"strings"
+	"sync"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
 	gax "github.com/googleapis/gax-go/v2"
@@ -28,6 +29,7 @@ const (
 )
 
 type provider struct {
+	mu     sync.Mutex
 	client secretsManagerClient
 }
 
@@ -41,24 +43,24 @@ func newProvider(confmap.ProviderSettings) confmap.Provider {
 
 func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return nil, fmt.Errorf("%q uri is not supported by %q provider", uri, schemeName)
+		return nil, fmt.Errorf("%q uri is not supported by Google Secret Manager Provider", uri)
 	}
 	secretName := strings.TrimPrefix(uri, schemeName+":")
-
+	p.mu.Lock()
 	if p.client == nil {
 		client, err := secretmanager.NewClient(ctx)
 		if err != nil {
+			p.mu.Unlock()
 			return nil, fmt.Errorf("failed to create a Google secret manager client: %w", err)
 		}
-		defer client.Close()
 		p.client = client
+		p.mu.Unlock()
 	}
 	req := &secretmanagerpb.AccessSecretVersionRequest{
 		Name: secretName,
 	}
 	resp, err := p.client.AccessSecretVersion(ctx, req)
 	if err != nil {
-		var apiErr *apierror.APIError
 		apiErr, ok := apierror.FromError(err)
 		errorMsg := "failed to access secret version"
 		if !ok {
@@ -73,6 +75,12 @@ func (*provider) Scheme() string {
 	return schemeName
 }
 
-func (*provider) Shutdown(context.Context) error {
+func (p *provider) Shutdown(context.Context) error {
+	p.mu.Lock()
+	if p.client != nil {
+		p.client.Close()
+		p.client = nil
+	}
+	p.mu.Unlock()
 	return nil
 }

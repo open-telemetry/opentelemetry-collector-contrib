@@ -108,3 +108,30 @@ func TestFactory(t *testing.T) {
 	_, ok := p.(*provider)
 	require.True(t, ok)
 }
+
+func TestShutDown(t *testing.T) {
+	tests := []struct {
+		name              string
+		testSecretManager *mockSecretsManagerClient
+	}{
+		{
+			name:              "When secret manager client is non-nil",
+			testSecretManager: &mockSecretsManagerClient{},
+		},
+		{
+			name:              "When secret manager client is nil",
+			testSecretManager: nil,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			testProvider := &provider{
+				client: tc.testSecretManager,
+			}
+			err := testProvider.Shutdown(context.Background())
+			require.NoError(t, err)
+			require.Nil(t, testProvider.client)
+		})
+	}
+}
