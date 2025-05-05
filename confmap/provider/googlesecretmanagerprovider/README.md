@@ -15,7 +15,7 @@
 This Provider component offers a secure way to reference secrets or sensitive information in collector configurations using [Google Secret Manager](https://cloud.google.com/security/products/secret-manager). Use a placeholder in the format `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}` within your configuration. The actual secrets will then be fetched dynamically from [Google Secret Manager](https://cloud.google.com/security/products/secret-manager) during collector initialization.
 ## Usage
 
-- Simply replace plaintext secrets within the collector configurations with the placeholder: `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}`
+- Simply replace plaintext secrets within your collector configuration with the placeholder: `${googlesecretmanagerprovider:projects/<project Id>/secrets/<secret Id>/versions/<version Id>}`
 
 An example collector configuration:
 

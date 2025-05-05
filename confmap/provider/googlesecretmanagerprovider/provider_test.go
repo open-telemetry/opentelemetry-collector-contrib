@@ -71,31 +71,27 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 
 func TestProvider_Retrieve_Failure(t *testing.T) {
 	tests := []struct {
-		name              string
-		uri               string
-		testSecretManager *mockSecretsManagerClient
+		name string
+		uri  string
 	}{
 		{
-			name:              "Invalid scheme",
-			uri:               "invalidscheme" + ":projects/my-project/secrets/test-secret-id/versions/1",
-			testSecretManager: &mockSecretsManagerClient{},
+			name: "Invalid scheme",
+			uri:  "invalidscheme" + ":projects/my-project/secrets/test-secret-id/versions/1",
 		},
 		{
-			name:              "secret entry does not exist in the secret manager",
-			uri:               schemeName + ":projects/my-project/secrets/non-existent/versions/1",
-			testSecretManager: &mockSecretsManagerClient{},
+			name: "secret entry does not exist in the secret manager",
+			uri:  schemeName + ":projects/my-project/secrets/non-existent/versions/1",
 		},
 		{
-			name:              "invalid secret name",
-			uri:               schemeName + ":projects/my-project/versions/1",
-			testSecretManager: &mockSecretsManagerClient{},
+			name: "invalid secret name",
+			uri:  schemeName + ":projects/my-project/versions/1",
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			testProvider := &provider{
-				client: tc.testSecretManager,
+				client: &mockSecretsManagerClient{},
 			}
 			_, err := testProvider.Retrieve(context.Background(), tc.uri, nil)
 			require.Error(t, err)
