@@ -116,7 +116,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 			podSelector = fields.OneTermEqualSelector("spec.nodeName", config.Node)
 		}
 		set.Logger.Debug("observing pods")
-		if config.Namespaces == nil || len(config.Namespaces) == 0 {
+		if len(config.Namespaces) == 0 {
 			podListerWatchers = []cache.ListerWatcher{cache.NewListWatchFromClient(restClient, "pods", v1.NamespaceAll, podSelector)}
 		} else {
 			podListerWatchers = make([]cache.ListerWatcher, len(config.Namespaces))
@@ -131,7 +131,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		serviceSelector := fields.Everything()
 		set.Logger.Debug("observing services")
 
-		if config.Namespaces == nil || len(config.Namespaces) == 0 {
+		if len(config.Namespaces) == 0 {
 			serviceListerWatchers = []cache.ListerWatcher{cache.NewListWatchFromClient(restClient, "services", v1.NamespaceAll, serviceSelector)}
 		} else {
 			serviceListerWatchers = make([]cache.ListerWatcher, len(config.Namespaces))
@@ -139,7 +139,6 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 				serviceListerWatchers[i] = cache.NewListWatchFromClient(restClient, "services", namespace, serviceSelector)
 			}
 		}
-
 	}
 
 	var nodeListerWatcher cache.ListerWatcher
@@ -159,7 +158,7 @@ func newObserver(config *Config, set extension.Settings) (extension.Extension, e
 		ingressSelector := fields.Everything()
 		set.Logger.Debug("observing ingresses")
 
-		if config.Namespaces == nil || len(config.Namespaces) == 0 {
+		if len(config.Namespaces) == 0 {
 			ingressListerWatchers = []cache.ListerWatcher{cache.NewListWatchFromClient(client.NetworkingV1().RESTClient(), "ingresses", v1.NamespaceAll, ingressSelector)}
 		} else {
 			ingressListerWatchers = make([]cache.ListerWatcher, len(config.Namespaces))
