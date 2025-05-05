@@ -84,7 +84,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisClusterClusterEnabledDataPoint(ts, 1)
 
@@ -160,7 +159,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisMemoryLuaDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryMemFragmentationBytesDataPoint(ts, 1)
 
@@ -176,11 +174,9 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedMemoryOverheadDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisMemoryUsedMemoryStartupDataPoint(ts, 1)
 
@@ -214,7 +210,6 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordRedisSlavesConnectedDataPoint(ts, 1)
 
-			defaultMetricsCount++
 			allMetricsCount++
 			mb.RecordRedisStatsTrackingTotalKeysDataPoint(ts, 1)
 

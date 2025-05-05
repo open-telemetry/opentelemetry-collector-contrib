@@ -85,7 +85,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisClusterClusterEnabled: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisCmdCalls: MetricConfig{
 			Enabled: false,
@@ -145,7 +145,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisMemoryMemFragmentationBytes: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisMemoryPeak: MetricConfig{
 			Enabled: true,
@@ -157,10 +157,10 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisMemoryUsedMemoryOverhead: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisMemoryUsedMemoryStartup: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisNetInput: MetricConfig{
 			Enabled: true,
@@ -187,7 +187,7 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: true,
 		},
 		RedisStatsTrackingTotalKeys: MetricConfig{
-			Enabled: true,
+			Enabled: false,
 		},
 		RedisUptime: MetricConfig{
 			Enabled: true,
