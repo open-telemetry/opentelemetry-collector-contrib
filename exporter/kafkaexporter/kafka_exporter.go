@@ -157,7 +157,7 @@ func (e *kafkaTracesMessager) marshalData(td ptrace.Traces) ([]marshaler.Message
 }
 
 func (e *kafkaTracesMessager) getTopic(ctx context.Context, td ptrace.Traces) string {
-	return getTopic(ctx, &e.config, td.ResourceSpans())
+	return getTopic(ctx, &e.config, e.config.Traces.Topic, td.ResourceSpans())
 }
 
 func (e *kafkaTracesMessager) partitionData(td ptrace.Traces) iter.Seq2[[]byte, ptrace.Traces] {
@@ -202,7 +202,7 @@ func (e *kafkaLogsMessager) marshalData(ld plog.Logs) ([]marshaler.Message, erro
 }
 
 func (e *kafkaLogsMessager) getTopic(ctx context.Context, ld plog.Logs) string {
-	return getTopic(ctx, &e.config, ld.ResourceLogs())
+	return getTopic(ctx, &e.config, e.config.Logs.Topic, ld.ResourceLogs())
 }
 
 func (e *kafkaLogsMessager) partitionData(ld plog.Logs) iter.Seq2[[]byte, plog.Logs] {
@@ -245,7 +245,7 @@ func (e *kafkaMetricsMessager) marshalData(md pmetric.Metrics) ([]marshaler.Mess
 }
 
 func (e *kafkaMetricsMessager) getTopic(ctx context.Context, md pmetric.Metrics) string {
-	return getTopic(ctx, &e.config, md.ResourceMetrics())
+	return getTopic(ctx, &e.config, e.config.Metrics.Topic, md.ResourceMetrics())
 }
 
 func (e *kafkaMetricsMessager) partitionData(md pmetric.Metrics) iter.Seq2[[]byte, pmetric.Metrics] {
@@ -274,7 +274,12 @@ type resource interface {
 	Resource() pcommon.Resource
 }
 
-func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSlice[T]) string {
+func getTopic[T resource](
+	ctx context.Context,
+	cfg *Config,
+	defaultTopic string,
+	resources resourceSlice[T],
+) string {
 	if cfg.TopicFromAttribute != "" {
 		for i := 0; i < resources.Len(); i++ {
 			rv, ok := resources.At(i).Resource().Attributes().Get(cfg.TopicFromAttribute)
@@ -287,17 +292,22 @@ func getTopic[T resource](ctx context.Context, cfg *Config, resources resourceSl
 	if ok {
 		return contextTopic
 	}
-	return cfg.Topic
+	return defaultTopic
 }
 
 func makeSaramaMessages(messages []marshaler.Message, topic string) []*sarama.ProducerMessage {
 	saramaMessages := make([]*sarama.ProducerMessage, len(messages))
 	for i, message := range messages {
-		saramaMessages[i] = &sarama.ProducerMessage{
+		msg := &sarama.ProducerMessage{
 			Topic: topic,
-			Key:   sarama.ByteEncoder(message.Key),
-			Value: sarama.ByteEncoder(message.Value),
 		}
+		if message.Key != nil {
+			msg.Key = sarama.ByteEncoder(message.Key)
+		}
+		if message.Value != nil {
+			msg.Value = sarama.ByteEncoder(message.Value)
+		}
+		saramaMessages[i] = msg
 	}
 	return saramaMessages
 }

@@ -1,4 +1,5 @@
 ignored_paths:
+  - cmd/codecovgen
   - cmd/telemetrygen
   - cmd/opampsupervisor
   - exporter/datadogexporter/integrationtest

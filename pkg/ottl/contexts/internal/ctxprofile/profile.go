@@ -6,6 +6,7 @@ package ctxprofile // import "github.com/open-telemetry/opentelemetry-collector-
 import (
 	"context"
 	"encoding/hex"
+	"errors"
 	"time"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
@@ -333,8 +334,11 @@ func accessProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return tCtx.GetProfile().ProfileID(), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			if i, ok := val.(pprofile.ProfileID); ok {
-				tCtx.GetProfile().SetProfileID(i)
+			if id, ok := val.(pprofile.ProfileID); ok {
+				if id.IsEmpty() {
+					return errors.New("profile ids must not be empty")
+				}
+				tCtx.GetProfile().SetProfileID(id)
 			}
 			return nil
 		},
@@ -352,6 +356,9 @@ func accessStringProfileID[K ProfileContext]() ottl.StandardGetSetter[K] {
 				id, err := ctxcommon.ParseProfileID(s)
 				if err != nil {
 					return err
+				}
+				if id.IsEmpty() {
+					return errors.New("profile ids must not be empty")
 				}
 				tCtx.GetProfile().SetProfileID(id)
 			}

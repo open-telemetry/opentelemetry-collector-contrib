@@ -16,11 +16,12 @@ const (
 	categoryFrontdoorWebApplicationFirewallLog = "FrontdoorWebApplicationFirewallLog"
 	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
 	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
-	categoryAppServiceAuthenticationLogs       = "AppServiceAuthenticationLogs"
-	categoryAppServiceConsoleLogs              = "AppServiceConsoleLogs"
-	categoryAppServiceHTTPLogs                 = "AppServiceHTTPLogs"
-	categoryAppServiceIPSecAuditLogs           = "AppServiceIPSecAuditLogs"
-	categoryAppServicePlatformLogs             = "AppServicePlatformLogs"
+	// TODO Add log and expected file to the unit tests for authentication logs
+	categoryAppServiceAuthenticationLogs = "AppServiceAuthenticationLogs"
+	categoryAppServiceConsoleLogs        = "AppServiceConsoleLogs"
+	categoryAppServiceHTTPLogs           = "AppServiceHTTPLogs"
+	categoryAppServiceIPSecAuditLogs     = "AppServiceIPSecAuditLogs"
+	categoryAppServicePlatformLogs       = "AppServicePlatformLogs"
 )
 
 func handleAzureCDNAccessLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {

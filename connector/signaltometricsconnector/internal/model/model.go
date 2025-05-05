@@ -22,9 +22,10 @@ type AttributeKeyValue struct {
 }
 
 type MetricKey struct {
-	Name string
-	Type pmetric.MetricType
-	Unit string
+	Name        string
+	Type        pmetric.MetricType
+	Unit        string
+	Description string
 }
 
 type ExplicitHistogram[K any] struct {
@@ -107,7 +108,6 @@ func (s *Sum[K]) fromConfig(
 
 type MetricDef[K any] struct {
 	Key                       MetricKey
-	Description               string
 	IncludeResourceAttributes []AttributeKeyValue
 	Attributes                []AttributeKeyValue
 	Conditions                *ottl.ConditionSequence[K]
@@ -123,7 +123,7 @@ func (md *MetricDef[K]) FromMetricInfo(
 ) error {
 	md.Key.Name = mi.Name
 	md.Key.Unit = mi.Unit
-	md.Description = mi.Description
+	md.Key.Description = mi.Description
 
 	var err error
 	md.IncludeResourceAttributes, err = parseAttributeConfigs(mi.IncludeResourceAttributes)

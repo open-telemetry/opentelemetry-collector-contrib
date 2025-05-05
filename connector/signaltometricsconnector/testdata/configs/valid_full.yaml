@@ -69,3 +69,19 @@ signaltometrics:
         - attributes["some.optional.1"] != nil
       sum:
         value: "1"
+  profiles:
+    - name: profile.sum
+      description: Sum
+      unit: "1"
+      include_resource_attributes:
+        - key: key.1
+          default_value: foo
+      attributes:
+        - key: key.2
+          default_value: bar
+        - key: key.3
+          optional: true
+      conditions:
+        - duration_unix_nano > 0
+      sum:
+        value: "1"

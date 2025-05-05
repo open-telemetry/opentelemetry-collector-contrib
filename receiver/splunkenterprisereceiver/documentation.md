@@ -509,6 +509,67 @@ Gauge tracking the ratio of completed to skipped scheduled searches
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
 | splunk.splunkd.version | The splunkd version number | Any Str |
 
+### splunk.search.duration
+
+Gauge tracking the duration in seconds of the last search probe call.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.initiation
+
+Gauge tracking whether the last search probe successfully initiated a search.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.status
+
+Gauge tracking the dispatch status of the last search probe.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.search.state | The dispatch state of the search | Any Str |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
+### splunk.search.success
+
+Gauge tracking whether the last search probe call was successful with the dispatch state 'DONE'.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
 ### splunk.server.introspection.queues.current
 
 Gauge tracking current length of queue. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.

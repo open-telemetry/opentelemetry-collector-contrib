@@ -5,6 +5,7 @@ package netflowreceiver // import "github.com/open-telemetry/opentelemetry-colle
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/netsampler/goflow2/v2/producer"
 	"go.opentelemetry.io/collector/consumer"
@@ -19,6 +20,7 @@ type OtelLogsProducerWrapper struct {
 	wrapped     producer.ProducerInterface
 	logConsumer consumer.Logs
 	logger      *zap.Logger
+	sendRaw     bool
 }
 
 // Produce converts the message into a list log records and sends them to log consumer
@@ -47,9 +49,14 @@ func (o *OtelLogsProducerWrapper) Produce(msg any, args *producer.ProduceArgs) (
 	// A single netflow packet can contain multiple flow messages
 	for _, msg := range flowMessageSet {
 		logRecord := logRecords.AppendEmpty()
-		parseErr := addMessageAttributes(msg, &logRecord)
-		if parseErr != nil {
-			continue
+		if o.sendRaw {
+			logRecord.Body().SetStr(fmt.Sprintf("%+v", msg))
+		} else {
+			// Parse the message and add the attributes to the log record
+			err = addMessageAttributes(msg, &logRecord)
+			if err != nil {
+				o.logger.Error("error adding message attributes", zap.Error(err))
+			}
 		}
 	}
 
@@ -73,10 +80,11 @@ func (o *OtelLogsProducerWrapper) Commit(flowMessageSet []producer.ProducerMessa
 	o.wrapped.Commit(flowMessageSet)
 }
 
-func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs, logger *zap.Logger) producer.ProducerInterface {
+func newOtelLogsProducer(wrapped producer.ProducerInterface, logConsumer consumer.Logs, logger *zap.Logger, sendRaw bool) producer.ProducerInterface {
 	return &OtelLogsProducerWrapper{
 		wrapped:     wrapped,
 		logConsumer: logConsumer,
 		logger:      logger,
+		sendRaw:     sendRaw,
 	}
 }

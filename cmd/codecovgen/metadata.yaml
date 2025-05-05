@@ -1,0 +1,6 @@
+type: codecovgen
+
+status:
+  class: cmd
+  codeowners:
+    active: [mx-psi]

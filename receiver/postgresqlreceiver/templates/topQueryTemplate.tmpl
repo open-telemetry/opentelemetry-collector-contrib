@@ -1,0 +1,22 @@
+SELECT
+  calls,
+  datname,
+  shared_blks_dirtied, 
+  shared_blks_hit,
+  shared_blks_read,
+  shared_blks_written,
+  temp_blks_read,
+  temp_blks_written,
+  query,
+  queryid::TEXT,
+  rolname,
+  rows::TEXT,
+  total_exec_time,
+  total_plan_time
+FROM
+  pg_stat_statements as pg_stat_statements
+  LEFT JOIN pg_roles ON pg_stat_statements.userid = pg_roles.oid
+  LEFT JOIN pg_database ON pg_stat_statements.dbid = pg_database.oid
+WHERE
+  query != '<insufficient privilege>'
+LIMIT {{ .limit }};

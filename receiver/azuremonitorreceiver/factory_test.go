@@ -45,7 +45,7 @@ func TestNewFactory(t *testing.T) {
 					CacheResourcesDefinitions:         24 * 60 * 60,
 					MaximumNumberOfMetricsInACall:     20,
 					MaximumNumberOfRecordsPerResource: 10,
-					Authentication:                    servicePrincipal,
+					Credentials:                       servicePrincipal,
 					Cloud:                             defaultCloud,
 				}
 

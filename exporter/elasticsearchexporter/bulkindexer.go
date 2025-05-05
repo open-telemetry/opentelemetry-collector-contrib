@@ -86,7 +86,18 @@ func bulkIndexerConfig(client esapi.Transport, config *Config, requireDataStream
 		RequireDataStream:       requireDataStream,
 		CompressionLevel:        compressionLevel,
 		PopulateFailedDocsInput: config.LogFailedDocsInput,
+		IncludeSourceOnError:    bulkIndexerIncludeSourceOnError(config.IncludeSourceOnError),
 	}
+}
+
+func bulkIndexerIncludeSourceOnError(includeSourceOnError *bool) docappender.Value {
+	if includeSourceOnError == nil {
+		return docappender.Unset
+	}
+	if *includeSourceOnError {
+		return docappender.True
+	}
+	return docappender.False
 }
 
 func newSyncBulkIndexer(logger *zap.Logger, client esapi.Transport, config *Config, requireDataStream bool) *syncBulkIndexer {

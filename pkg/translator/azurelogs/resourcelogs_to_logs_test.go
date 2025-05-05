@@ -316,12 +316,10 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 			logFilename:      "log-bad-level.json",
 			expectedFilename: "log-bad-level-expected.yaml",
 		},
-		// TODO Add unit test again once bug gets fixed.
-		// Bug https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39186#issuecomment-2798517892
-		// "log_maximum": {
-		// 	logFilename:      "log-maximum.json",
-		// 	expectedFilename: "log-maximum-expected.yaml",
-		// },
+		"log_maximum": {
+			logFilename:      "log-maximum.json",
+			expectedFilename: "log-maximum-expected.yaml",
+		},
 		"log_minimum": {
 			logFilename:      "log-minimum.json",
 			expectedFilename: "log-minimum-expected.yaml",
@@ -347,7 +345,7 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 
 			expectedLogs, err := golden.ReadLogs(filepath.Join(expectedDir, test.expectedFilename))
 			require.NoError(t, err)
-			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs))
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
 		})
 	}
 }

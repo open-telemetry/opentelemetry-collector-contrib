@@ -39,7 +39,7 @@ func ReadMetrics(filePath string) (pmetric.Metrics, error) {
 
 // WriteMetrics writes a pmetric.Metrics to the specified file in YAML format.
 func WriteMetrics(tb testing.TB, filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
-	if err := writeMetrics(filePath, metrics, opts...); err != nil {
+	if err := WriteMetricsToFile(filePath, metrics, opts...); err != nil {
 		return err
 	}
 	tb.Logf("Golden file successfully written to %s.", filePath)
@@ -68,8 +68,9 @@ func MarshalMetricsYAML(metrics pmetric.Metrics) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-// writeMetrics writes a pmetric.Metrics to the specified file in YAML format.
-func writeMetrics(filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
+// WriteMetricsToFile writes a pmetric.Metrics to the specified file in YAML format.
+// Prefer using WriteMetrics in tests.
+func WriteMetricsToFile(filePath string, metrics pmetric.Metrics, opts ...WriteMetricsOption) error {
 	optsStruct := writeMetricsOptions{
 		normalizeTimestamps: true,
 	}
@@ -112,7 +113,7 @@ func ReadLogs(filePath string) (plog.Logs, error) {
 
 // WriteLogs writes a plog.Logs to the specified file in YAML format.
 func WriteLogs(tb testing.TB, filePath string, logs plog.Logs) error {
-	if err := writeLogs(filePath, logs); err != nil {
+	if err := WriteLogsToFile(filePath, logs); err != nil {
 		return err
 	}
 	tb.Logf("Golden file successfully written to %s.", filePath)
@@ -121,8 +122,9 @@ func WriteLogs(tb testing.TB, filePath string, logs plog.Logs) error {
 	return nil
 }
 
-// writeLogs writes a plog.Logs to the specified file in YAML format.
-func writeLogs(filePath string, logs plog.Logs) error {
+// WriteLogsToFile writes a plog.Logs to the specified file in YAML format.
+// Prefer using WriteLogs in tests.
+func WriteLogsToFile(filePath string, logs plog.Logs) error {
 	unmarshaler := &plog.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalLogs(logs)
 	if err != nil {
@@ -163,7 +165,7 @@ func ReadTraces(filePath string) (ptrace.Traces, error) {
 
 // WriteTraces writes a ptrace.Traces to the specified file in YAML format.
 func WriteTraces(tb testing.TB, filePath string, traces ptrace.Traces) error {
-	if err := writeTraces(filePath, traces); err != nil {
+	if err := WriteTracesToFile(filePath, traces); err != nil {
 		return err
 	}
 	tb.Logf("Golden file successfully written to %s.", filePath)
@@ -172,8 +174,9 @@ func WriteTraces(tb testing.TB, filePath string, traces ptrace.Traces) error {
 	return nil
 }
 
-// writeTraces writes a ptrace.Traces to the specified file
-func writeTraces(filePath string, traces ptrace.Traces) error {
+// WriteTracesToFile writes a ptrace.Traces to the specified file
+// Prefer using WriteTraces in tests.
+func WriteTracesToFile(filePath string, traces ptrace.Traces) error {
 	unmarshaler := &ptrace.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalTraces(traces)
 	if err != nil {
@@ -214,7 +217,7 @@ func ReadProfiles(filePath string) (pprofile.Profiles, error) {
 
 // WriteProfiles writes a pprofile.Profiles to the specified file in YAML format.
 func WriteProfiles(tb testing.TB, filePath string, profiles pprofile.Profiles) error {
-	if err := writeProfiles(filePath, profiles); err != nil {
+	if err := WriteProfilesToFile(filePath, profiles); err != nil {
 		return err
 	}
 	tb.Logf("Golden file successfully written to %s.", filePath)
@@ -223,8 +226,9 @@ func WriteProfiles(tb testing.TB, filePath string, profiles pprofile.Profiles) e
 	return nil
 }
 
-// writeProfiles writes a pprofile.Profiles to the specified file in YAML format.
-func writeProfiles(filePath string, profiles pprofile.Profiles) error {
+// WriteProfilesToFile writes a pprofile.Profiles to the specified file in YAML format.
+// Prefer using WriteProfiles in tests.
+func WriteProfilesToFile(filePath string, profiles pprofile.Profiles) error {
 	unmarshaler := &pprofile.JSONMarshaler{}
 	fileBytes, err := unmarshaler.MarshalProfiles(profiles)
 	if err != nil {

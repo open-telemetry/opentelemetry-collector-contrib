@@ -30,6 +30,9 @@ type Config struct {
 	// The size of the queue that the listener will use
 	// This is a buffer that will hold flow messages before they are processed by a worker
 	QueueSize int `mapstructure:"queue_size"`
+
+	// SendRaw determines whether to send raw flow messages instead of parsing them
+	SendRaw bool `mapstructure:"send_raw"`
 }
 
 // Validate checks if the receiver configuration is valid

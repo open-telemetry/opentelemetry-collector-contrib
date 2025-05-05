@@ -131,6 +131,19 @@ func TestNewLogsUnmarshaler(t *testing.T) {
 				assert.NoError(t, plogtest.CompareLogs(logs, actual, plogtest.IgnoreObservedTimestamp()))
 			},
 		},
+		{
+			encoding: "text_utf-16", // hyphen in the name
+			input: func() []byte {
+				out, _ := unicode.UTF16(
+					unicode.LittleEndian,
+					unicode.IgnoreBOM,
+				).NewEncoder().Bytes([]byte("hello world"))
+				return out
+			}(),
+			check: func(t *testing.T, actual plog.Logs) {
+				assert.NoError(t, plogtest.CompareLogs(logs, actual, plogtest.IgnoreObservedTimestamp()))
+			},
+		},
 	} {
 		t.Run(tc.encoding, func(t *testing.T) {
 			u := mustNewLogsUnmarshaler(t, tc.encoding, componenttest.NewNopHost())

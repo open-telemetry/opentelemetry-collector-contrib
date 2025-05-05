@@ -61,6 +61,14 @@ all_set:
       enabled: true
     splunk.scheduler.completion.ratio:
       enabled: true
+    splunk.search.duration:
+      enabled: true
+    splunk.search.initiation:
+      enabled: true
+    splunk.search.status:
+      enabled: true
+    splunk.search.success:
+      enabled: true
     splunk.server.introspection.queues.current:
       enabled: true
     splunk.server.introspection.queues.current.bytes:
@@ -144,6 +152,14 @@ none_set:
     splunk.scheduler.avg.run.time:
       enabled: false
     splunk.scheduler.completion.ratio:
+      enabled: false
+    splunk.search.duration:
+      enabled: false
+    splunk.search.initiation:
+      enabled: false
+    splunk.search.status:
+      enabled: false
+    splunk.search.success:
       enabled: false
     splunk.server.introspection.queues.current:
       enabled: false

@@ -6,6 +6,7 @@ package kafkaexporter
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 
 	"github.com/IBM/sarama"
@@ -32,7 +33,14 @@ import (
 func TestTracesPusher(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+		func(msg *sarama.ProducerMessage) error {
+			if msg.Topic != "otlp_spans" {
+				return fmt.Errorf(`expected topic "otlp_spans", got %q`, msg.Topic)
+			}
+			return nil
+		},
+	)
 
 	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
 	require.NoError(t, err)
@@ -148,7 +156,14 @@ func TestTracesPusher_partitioning(t *testing.T) {
 	t.Run("default_partitioning", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		exp, producer := newMockTracesExporter(t, *config, componenttest.NewNopHost())
-		producer.ExpectSendMessageAndSucceed()
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+			func(msg *sarama.ProducerMessage) error {
+				if msg.Key != nil {
+					return errors.New("message key should be nil")
+				}
+				return nil
+			},
+		)
 
 		err := exp.exportData(context.Background(), input)
 		require.NoError(t, err)
@@ -244,7 +259,14 @@ func TestTracesPusher_partitioning(t *testing.T) {
 func TestMetricsDataPusher(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+		func(msg *sarama.ProducerMessage) error {
+			if msg.Topic != "otlp_metrics" {
+				return fmt.Errorf(`expected topic "otlp_metrics", got %q`, msg.Topic)
+			}
+			return nil
+		},
+	)
 
 	err := exp.exportData(context.Background(), testdata.GenerateMetrics(2))
 	require.NoError(t, err)
@@ -353,7 +375,14 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 	t.Run("default_partitioning", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		exp, producer := newMockMetricsExporter(t, *config, componenttest.NewNopHost())
-		producer.ExpectSendMessageAndSucceed()
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+			func(msg *sarama.ProducerMessage) error {
+				if msg.Key != nil {
+					return errors.New("message key should be nil")
+				}
+				return nil
+			},
+		)
 
 		err := exp.exportData(context.Background(), input)
 		require.NoError(t, err)
@@ -402,7 +431,14 @@ func TestMetricsPusher_partitioning(t *testing.T) {
 func TestLogsDataPusher(t *testing.T) {
 	config := createDefaultConfig().(*Config)
 	exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
-	producer.ExpectSendMessageAndSucceed()
+	producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+		func(msg *sarama.ProducerMessage) error {
+			if msg.Topic != "otlp_logs" {
+				return fmt.Errorf(`expected topic "otlp_logs", got %q`, msg.Topic)
+			}
+			return nil
+		},
+	)
 
 	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
 	require.NoError(t, err)
@@ -511,7 +547,14 @@ func TestLogsPusher_partitioning(t *testing.T) {
 	t.Run("default_partitioning", func(t *testing.T) {
 		config := createDefaultConfig().(*Config)
 		exp, producer := newMockLogsExporter(t, *config, componenttest.NewNopHost())
-		producer.ExpectSendMessageAndSucceed()
+		producer.ExpectSendMessageWithMessageCheckerFunctionAndSucceed(
+			func(msg *sarama.ProducerMessage) error {
+				if msg.Key != nil {
+					return errors.New("message key should be nil")
+				}
+				return nil
+			},
+		)
 
 		err := exp.exportData(context.Background(), input)
 		require.NoError(t, err)
@@ -569,7 +612,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid metric attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
@@ -579,7 +621,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid trace attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
@@ -589,7 +630,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid log attribute, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "resource-attr",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
@@ -599,7 +639,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Attribute not found",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				Topic:              "defaultTopic",
 			},
 			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
@@ -610,7 +649,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid metric context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
@@ -620,7 +658,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid trace context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateTraces(1).ResourceSpans(),
@@ -630,7 +667,6 @@ func Test_GetTopic(t *testing.T) {
 			name: "Valid log context, return topic name",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				Topic:              "defaultTopic",
 			},
 			ctx:       topic.WithTopic(context.Background(), "context-topic"),
 			resource:  testdata.GenerateLogs(1).ResourceLogs(),
@@ -641,17 +677,14 @@ func Test_GetTopic(t *testing.T) {
 			name: "Attribute not found",
 			cfg: Config{
 				TopicFromAttribute: "nonexistent_attribute",
-				Topic:              "defaultTopic",
 			},
 			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
 		},
 		{
-			name: "TopicFromAttribute, return default topic",
-			cfg: Config{
-				Topic: "defaultTopic",
-			},
+			name:      "TopicFromAttribute, return default topic",
+			cfg:       Config{},
 			ctx:       context.Background(),
 			resource:  testdata.GenerateMetrics(1).ResourceMetrics(),
 			wantTopic: "defaultTopic",
@@ -663,11 +696,11 @@ func Test_GetTopic(t *testing.T) {
 			topic := ""
 			switch r := tests[i].resource.(type) {
 			case pmetric.ResourceMetricsSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
 			case ptrace.ResourceSpansSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
 			case plog.ResourceLogsSlice:
-				topic = getTopic(tests[i].ctx, &tests[i].cfg, r)
+				topic = getTopic(tests[i].ctx, &tests[i].cfg, "defaultTopic", r)
 			}
 			assert.Equal(t, tests[i].wantTopic, topic)
 		})

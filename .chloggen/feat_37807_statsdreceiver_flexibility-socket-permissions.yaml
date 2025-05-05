@@ -1,8 +1,0 @@
-change_type: enhancement
-component: statsdreceiver
-note: Add new config to customize socket permissions when transport is set to `unixgram`.
-issues:
-  - 37807
-
-subtext:
-change_logs: [user]

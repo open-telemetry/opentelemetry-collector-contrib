@@ -57,6 +57,10 @@ type MetricsConfig struct {
 	SplunkSchedulerAvgExecutionLatency          MetricConfig `mapstructure:"splunk.scheduler.avg.execution.latency"`
 	SplunkSchedulerAvgRunTime                   MetricConfig `mapstructure:"splunk.scheduler.avg.run.time"`
 	SplunkSchedulerCompletionRatio              MetricConfig `mapstructure:"splunk.scheduler.completion.ratio"`
+	SplunkSearchDuration                        MetricConfig `mapstructure:"splunk.search.duration"`
+	SplunkSearchInitiation                      MetricConfig `mapstructure:"splunk.search.initiation"`
+	SplunkSearchStatus                          MetricConfig `mapstructure:"splunk.search.status"`
+	SplunkSearchSuccess                         MetricConfig `mapstructure:"splunk.search.success"`
 	SplunkServerIntrospectionQueuesCurrent      MetricConfig `mapstructure:"splunk.server.introspection.queues.current"`
 	SplunkServerIntrospectionQueuesCurrentBytes MetricConfig `mapstructure:"splunk.server.introspection.queues.current.bytes"`
 	SplunkServerSearchartifactsAdhoc            MetricConfig `mapstructure:"splunk.server.searchartifacts.adhoc"`
@@ -160,6 +164,18 @@ func DefaultMetricsConfig() MetricsConfig {
 			Enabled: false,
 		},
 		SplunkSchedulerCompletionRatio: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchDuration: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchInitiation: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchStatus: MetricConfig{
+			Enabled: false,
+		},
+		SplunkSearchSuccess: MetricConfig{
 			Enabled: false,
 		},
 		SplunkServerIntrospectionQueuesCurrent: MetricConfig{
