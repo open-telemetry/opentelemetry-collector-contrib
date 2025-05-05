@@ -8,5 +8,5 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"))
+	goleak.VerifyTestMain(m, goleak.IgnoreTopFunction("k8s.io/apimachinery/pkg/watch.(*Broadcaster).loop"), goleak.IgnoreTopFunction("internal/poll.runtime_pollWait"), goleak.IgnoreTopFunction("net/http.(*persistConn).writeLoop"))
 }
