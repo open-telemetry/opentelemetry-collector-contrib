@@ -433,9 +433,9 @@ func accessAttributes[K ProfileContext]() ottl.StandardGetSetter[K] {
 			return pprofile.FromAttributeIndices(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile()), nil
 		},
 		Setter: func(_ context.Context, tCtx K, val any) error {
-			m, ok := val.(pcommon.Map)
-			if !ok {
-				return fmt.Errorf("expected pcommon.Map, got %T", val)
+			m, err := ctxutil.GetMap(val)
+			if err != nil {
+				return err
 			}
 			tCtx.GetProfile().AttributeIndices().FromRaw([]int32{})
 			for k, v := range m.All() {
