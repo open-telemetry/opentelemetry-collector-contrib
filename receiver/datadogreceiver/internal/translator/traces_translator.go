@@ -16,14 +16,13 @@ import (
 	"strings"
 	"sync"
 
-	"go.uber.org/zap"
-
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"

@@ -11,8 +11,6 @@ import (
 	"strconv"
 	"testing"
 
-	"go.uber.org/zap"
-
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"github.com/stretchr/testify/assert"
@@ -20,6 +18,7 @@ import (
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/datadogreceiver/internal/translator/header"
