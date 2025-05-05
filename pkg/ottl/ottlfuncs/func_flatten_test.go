@@ -347,7 +347,7 @@ func Test_flatten(t *testing.T) {
 				},
 				Setter: func(_ context.Context, _ any, val any) error {
 					if v, ok := val.(pcommon.Map); ok {
-						v.MoveTo(m)
+						v.CopyTo(m)
 						return nil
 					}
 					return errors.New("expected pcommon.Map")
