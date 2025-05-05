@@ -65,7 +65,6 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 			gotSecretString, err := gotSecret.AsString()
 			require.NoError(t, err)
 			require.Equal(t, tc.wantSecret, gotSecretString)
-
 		})
 	}
 }
