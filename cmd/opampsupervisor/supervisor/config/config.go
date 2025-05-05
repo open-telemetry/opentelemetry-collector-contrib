@@ -185,6 +185,7 @@ type Agent struct {
 	Description             AgentDescription  `mapstructure:"description"`
 	ConfigApplyTimeout      time.Duration     `mapstructure:"config_apply_timeout"`
 	BootstrapTimeout        time.Duration     `mapstructure:"bootstrap_timeout"`
+	HealthCheckHost         string            `mapstructure:"health_check_host"`
 	HealthCheckPort         int               `mapstructure:"health_check_port"`
 	OpAMPServerPort         int               `mapstructure:"opamp_server_port"`
 	PassthroughLogs         bool              `mapstructure:"passthrough_logs"`
