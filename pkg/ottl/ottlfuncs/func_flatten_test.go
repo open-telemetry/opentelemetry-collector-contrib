@@ -345,12 +345,10 @@ func Test_flatten(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
 				},
-				Setter: func(_ context.Context, _ any, m any) error {
-					if v, ok := m.(pcommon.Map); ok {
-						if dst, ok2 := m.(pcommon.Map); ok2 {
-							v.CopyTo(dst)
-							return nil
-						}
+				Setter: func(_ context.Context, _ any, val any) error {
+					if v, ok := val.(pcommon.Map); ok {
+						v.MoveTo(m)
+						return nil
 					}
 					return errors.New("expected pcommon.Map")
 				},
@@ -504,11 +502,9 @@ func Test_flatten_undeterministic(t *testing.T) {
 				Getter: func(_ context.Context, _ any) (pcommon.Map, error) {
 					return m, nil
 				},
-				Setter: func(_ context.Context, tCtx any, m any) error {
-					if v, ok := m.(pcommon.Map); ok {
-						if dst, ok2 := tCtx.(pcommon.Map); ok2 {
-							v.CopyTo(dst)
-						}
+				Setter: func(_ context.Context, _ any, val any) error {
+					if v, ok := val.(pcommon.Map); ok {
+						v.CopyTo(m)
 						return nil
 					}
 					return errors.New("expected pcommon.Map")

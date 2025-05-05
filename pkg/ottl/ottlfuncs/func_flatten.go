@@ -70,9 +70,7 @@ func flatten[K any](target ottl.PMapGetSetter[K], p ottl.Optional[string], d ott
 
 		flattenData := initFlattenData(resolveConflict, depth)
 		flattenData.flattenMap(m, prefix, 0)
-		flattenData.result.MoveTo(m)
-
-		return nil, target.Set(ctx, tCtx, m)
+		return nil, target.Set(ctx, tCtx, flattenData.result)
 	}, nil
 }
 
