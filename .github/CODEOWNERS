@@ -160,7 +160,7 @@ pkg/datadog/                                                     @open-telemetry
 pkg/experimentalmetricmetadata/                                  @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/golden/                                                      @open-telemetry/collector-contrib-approvers @djaglowski @atoulme
 pkg/kafka/topic/                                                 @open-telemetry/collector-contrib-approvers @pavolloffay @MovieStoreGuy
-pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley @edmocosta
+pkg/ottl/                                                        @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 pkg/pdatatest/                                                   @open-telemetry/collector-contrib-approvers @djaglowski @fatsheep9146
 pkg/pdatautil/                                                   @open-telemetry/collector-contrib-approvers @dmitryax
 pkg/resourcetotelemetry/                                         @open-telemetry/collector-contrib-approvers @mx-psi
@@ -210,7 +210,7 @@ processor/schemaprocessor/                                       @open-telemetry
 processor/spanprocessor/                                         @open-telemetry/collector-contrib-approvers @boostchicken
 processor/sumologicprocessor/                                    @open-telemetry/collector-contrib-approvers @rnishtala-sumo @chan-tim-sumo @echlebek @amdprophet
 processor/tailsamplingprocessor/                                 @open-telemetry/collector-contrib-approvers @portertech
-processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @kentquirk @bogdandrutu @evan-bradley @edmocosta
+processor/transformprocessor/                                    @open-telemetry/collector-contrib-approvers @TylerHelmuth @evan-bradley @edmocosta
 receiver/activedirectorydsreceiver/                              @open-telemetry/collector-contrib-approvers @pjanotti
 receiver/aerospikereceiver/                                      @open-telemetry/collector-contrib-approvers @antonblock
 receiver/apachereceiver/                                         @open-telemetry/collector-contrib-approvers @djaglowski
