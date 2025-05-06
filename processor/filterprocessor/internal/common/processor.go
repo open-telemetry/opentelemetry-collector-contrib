@@ -6,7 +6,6 @@ package common // import "github.com/open-telemetry/opentelemetry-collector-cont
 import (
 	"context"
 
-	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/pdata/ptrace"
@@ -33,7 +32,7 @@ func (r resourceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces)
 	var condErr error
 	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
 		tCtx := ottlresource.NewTransformContext(rspans.Resource(), rspans)
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -50,7 +49,7 @@ func (r resourceConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metri
 	var condErr error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		tCtx := ottlresource.NewTransformContext(rmetrics.Resource(), rmetrics)
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -67,7 +66,7 @@ func (r resourceConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error
 	var condErr error
 	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
 		tCtx := ottlresource.NewTransformContext(rlogs.Resource(), rlogs)
-		condition, err := r.BoolExpr.Eval(ctx, tCtx)
+		condition, err := r.Eval(ctx, tCtx)
 		if err != nil {
 			condErr = multierr.Append(condErr, err)
 			return false
@@ -95,7 +94,7 @@ func (s scopeConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 	td.ResourceSpans().RemoveIf(func(rspans ptrace.ResourceSpans) bool {
 		rspans.ScopeSpans().RemoveIf(func(sspans ptrace.ScopeSpans) bool {
 			tCtx := ottlscope.NewTransformContext(sspans.Scope(), rspans.Resource(), sspans)
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -115,7 +114,7 @@ func (s scopeConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics)
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
 			tCtx := ottlscope.NewTransformContext(smetrics.Scope(), rmetrics.Resource(), smetrics)
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -135,7 +134,7 @@ func (s scopeConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 	ld.ResourceLogs().RemoveIf(func(rlogs plog.ResourceLogs) bool {
 		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
 			tCtx := ottlscope.NewTransformContext(slogs.Scope(), rlogs.Resource(), slogs)
-			condition, err := s.BoolExpr.Eval(ctx, tCtx)
+			condition, err := s.Eval(ctx, tCtx)
 			if err != nil {
 				condErr = multierr.Append(condErr, err)
 				return false
@@ -209,19 +208,4 @@ func parseScopeContextConditions[R any](
 	sConditions := ottlscope.NewConditionSequence(parsedConditions, pc.Settings, ottlscope.WithConditionSequenceErrorMode(errorMode))
 	result := (baseContext)(scopeConditions{&sConditions})
 	return result.(R), nil
-}
-
-func parseGlobalExpr[K any, O any](
-	boolExprFunc func([]string, map[string]ottl.Factory[K], ottl.ErrorMode, component.TelemetrySettings, []O) (*ottl.ConditionSequence[K], error),
-	conditions []string,
-	errorMode ottl.ErrorMode,
-	settings component.TelemetrySettings,
-	standardFuncs map[string]ottl.Factory[K],
-	parserOptions []O,
-) (expr.BoolExpr[K], error) {
-	if len(conditions) > 0 {
-		return boolExprFunc(conditions, standardFuncs, errorMode, settings, parserOptions)
-	}
-	// By default, set the global expression to always true unless conditions are specified.
-	return expr.AlwaysTrue[K](), nil
 }

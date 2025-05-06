@@ -37,7 +37,7 @@ func (m metricConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metrics
 		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
 			smetrics.Metrics().RemoveIf(func(metrics pmetric.Metric) bool {
 				tCtx := ottlmetric.NewTransformContext(metrics, smetrics.Metrics(), smetrics.Scope(), rmetrics.Resource(), smetrics, rmetrics)
-				cond, err := m.BoolExpr.Eval(ctx, tCtx)
+				cond, err := m.Eval(ctx, tCtx)
 				if err != nil {
 					condErr = multierr.Append(condErr, err)
 					return false
@@ -67,7 +67,6 @@ func (d dataPointConditions) ConsumeMetrics(ctx context.Context, md pmetric.Metr
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		rmetrics.ScopeMetrics().RemoveIf(func(smetrics pmetric.ScopeMetrics) bool {
 			smetrics.Metrics().RemoveIf(func(metric pmetric.Metric) bool {
-
 				//exhaustive:enforce
 				switch metric.Type() {
 				case pmetric.MetricTypeSum:
@@ -123,7 +122,7 @@ func (d dataPointConditions) handleNumberDataPoints(ctx context.Context, dps pme
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.NumberDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource, scopeMetrics, resourceMetrics)
-		cond, err := d.BoolExpr.Eval(ctx, tCtx)
+		cond, err := d.Eval(ctx, tCtx)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
@@ -137,7 +136,7 @@ func (d dataPointConditions) handleHistogramDataPoints(ctx context.Context, dps 
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.HistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource, scopeMetrics, resourceMetrics)
-		cond, err := d.BoolExpr.Eval(ctx, tCtx)
+		cond, err := d.Eval(ctx, tCtx)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
@@ -151,7 +150,7 @@ func (d dataPointConditions) handleExponentialHistogramDataPoints(ctx context.Co
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.ExponentialHistogramDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource, scopeMetrics, resourceMetrics)
-		cond, err := d.BoolExpr.Eval(ctx, tCtx)
+		cond, err := d.Eval(ctx, tCtx)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false
@@ -165,7 +164,7 @@ func (d dataPointConditions) handleSummaryDataPoints(ctx context.Context, dps pm
 	var errors error
 	dps.RemoveIf(func(datapoint pmetric.SummaryDataPoint) bool {
 		tCtx := ottldatapoint.NewTransformContext(datapoint, metric, metrics, is, resource, scopeMetrics, resourceMetrics)
-		cond, err := d.BoolExpr.Eval(ctx, tCtx)
+		cond, err := d.Eval(ctx, tCtx)
 		if err != nil {
 			errors = multierr.Append(errors, err)
 			return false

@@ -41,18 +41,18 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 	flp.telemetry = fpt
 
 	if len(cfg.LogConditions) > 0 {
-		pc, err := common.NewLogParserCollection(set.TelemetrySettings, common.WithLogParser(filterottl.StandardLogFuncs()))
-		if err != nil {
-			return nil, err
+		pc, collectionErr := common.NewLogParserCollection(set.TelemetrySettings, common.WithLogParser(filterottl.StandardLogFuncs()))
+		if collectionErr != nil {
+			return nil, collectionErr
 		}
 		var errors error
 		for _, cs := range cfg.LogConditions {
-			metricConsumer, err := pc.ParseContextConditions(cs)
-			errors = multierr.Append(errors, err)
+			metricConsumer, parseErr := pc.ParseContextConditions(cs)
+			errors = multierr.Append(errors, parseErr)
 			flp.consumers = append(flp.consumers, metricConsumer)
 		}
 		if errors != nil {
-			return nil, err
+			return nil, errors
 		}
 	}
 

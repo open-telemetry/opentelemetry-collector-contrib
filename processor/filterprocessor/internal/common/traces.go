@@ -38,7 +38,7 @@ func (t traceConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces) er
 			scope := ss.Scope()
 			ss.Spans().RemoveIf(func(span ptrace.Span) bool {
 				tCtx := ottlspan.NewTransformContext(span, scope, resource, ss, rs)
-				cond, err := t.BoolExpr.Eval(ctx, tCtx)
+				cond, err := t.Eval(ctx, tCtx)
 				if err != nil {
 					condErr = multierr.Append(condErr, err)
 					return false
@@ -72,7 +72,7 @@ func (s spanEventConditions) ConsumeTraces(ctx context.Context, td ptrace.Traces
 			sspans.Spans().RemoveIf(func(span ptrace.Span) bool {
 				span.Events().RemoveIf(func(spanEvent ptrace.SpanEvent) bool {
 					tCtx := ottlspanevent.NewTransformContext(spanEvent, span, scope, resource, sspans, rspans)
-					cond, err := s.BoolExpr.Eval(ctx, tCtx)
+					cond, err := s.Eval(ctx, tCtx)
 					if err != nil {
 						condErr = multierr.Append(condErr, err)
 						return false

@@ -43,18 +43,18 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 	fsp.telemetry = fpt
 
 	if len(cfg.TraceConditions) > 0 {
-		pc, err := common.NewTraceParserCollection(set.TelemetrySettings, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
-		if err != nil {
-			return nil, err
+		pc, collectionErr := common.NewTraceParserCollection(set.TelemetrySettings, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+		if collectionErr != nil {
+			return nil, collectionErr
 		}
 		var errors error
 		for _, cs := range cfg.TraceConditions {
-			metricConsumer, err := pc.ParseContextConditions(cs)
-			errors = multierr.Append(errors, err)
+			metricConsumer, parseErr := pc.ParseContextConditions(cs)
+			errors = multierr.Append(errors, parseErr)
 			fsp.consumers = append(fsp.consumers, metricConsumer)
 		}
 		if errors != nil {
-			return nil, err
+			return nil, errors
 		}
 	}
 

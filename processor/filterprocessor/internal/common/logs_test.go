@@ -99,11 +99,12 @@ func TestFilterLogProcessorWithOTTL(t *testing.T) {
 			require.NoError(t, err, "error parsing conditions")
 			finalLogs := constructLogs()
 			consumeErr := got.ConsumeLogs(context.Background(), finalLogs)
-			if tt.filterEverything && !tt.wantErr {
+			switch {
+			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			} else if tt.wantErr {
+			case tt.wantErr:
 				assert.Error(t, consumeErr)
-			} else {
+			default:
 				assert.NoError(t, consumeErr)
 				exTd := constructLogs()
 				tt.want(exTd)

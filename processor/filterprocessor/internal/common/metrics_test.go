@@ -231,11 +231,12 @@ func TestFilterMetricProcessorWithOTTL(t *testing.T) {
 			require.NoError(t, err, "error parsing conditions")
 			finalMetrics := constructMetrics()
 			consumeErr := got.ConsumeMetrics(context.Background(), finalMetrics)
-			if tt.filterEverything && !tt.wantErr {
+			switch {
+			case tt.filterEverything && !tt.wantErr:
 				assert.Equal(t, processorhelper.ErrSkipProcessingData, consumeErr)
-			} else if tt.wantErr {
+			case tt.wantErr:
 				assert.Error(t, consumeErr)
-			} else {
+			default:
 				assert.NoError(t, consumeErr)
 				exTd := constructMetrics()
 				tt.want(exTd)

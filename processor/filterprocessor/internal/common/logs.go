@@ -35,7 +35,7 @@ func (l logConditions) ConsumeLogs(ctx context.Context, ld plog.Logs) error {
 		rlogs.ScopeLogs().RemoveIf(func(slogs plog.ScopeLogs) bool {
 			slogs.LogRecords().RemoveIf(func(logs plog.LogRecord) bool {
 				tCtx := ottllog.NewTransformContext(logs, slogs.Scope(), rlogs.Resource(), slogs, rlogs)
-				cond, err := l.BoolExpr.Eval(ctx, tCtx)
+				cond, err := l.Eval(ctx, tCtx)
 				if err != nil {
 					condErr = multierr.Append(condErr, err)
 					return false
