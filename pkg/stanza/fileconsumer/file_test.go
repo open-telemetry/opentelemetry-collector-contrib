@@ -1608,8 +1608,8 @@ func TestArchive(t *testing.T) {
 	tempDir := t.TempDir()
 	cfg := NewConfig().includeDir(tempDir)
 	cfg.StartAt = "beginning"
-	// store metadata of last 20 poll cycles
-	cfg.PollsToArchive = 20
+	// store metadata of last 50 poll cycles
+	cfg.PollsToArchive = 50
 	cfg.PollInterval = 50 * time.Millisecond
 
 	temp := filetest.OpenTempWithPattern(t, tempDir, "file.log")
@@ -1627,7 +1627,7 @@ func TestArchive(t *testing.T) {
 
 	os.Remove(temp.Name())
 
-	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 100ms and we're waiting 500ms)
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
 	time.Sleep(500 * time.Millisecond)
 
 	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")
@@ -1640,7 +1640,7 @@ func TestArchive(t *testing.T) {
 
 	os.Remove(temp.Name())
 
-	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 100ms and we're waiting 500ms)
+	// this will let the fileconsumer run for ~10 poll cycles (because poll interval is 50ms and we're waiting 500ms)
 	time.Sleep(500 * time.Millisecond)
 
 	temp = filetest.OpenTempWithPattern(t, tempDir, "file.log")

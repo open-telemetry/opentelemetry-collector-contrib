@@ -238,7 +238,6 @@ func (m *Manager) makeReaders(ctx context.Context, paths []string) {
 }
 
 func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
-
 	// Notes:
 	// 1. fp[i] is the fingerprint of file[i], and matchedMetadata[i] (if present) is the corresponding metadata retrieved from the archive.
 	// 2. If matchedMetadata[i] is not nil, a match for file[i] was found in the archive — use this metadata to create the reader.

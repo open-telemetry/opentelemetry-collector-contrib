@@ -219,15 +219,11 @@ func (t *noStateTracker) EndPoll(context.Context) {}
 
 func (t *noStateTracker) TotalReaders() int { return 0 }
 
-func (t *noStateTracker) FindFiles(ctx context.Context, fps []*fingerprint.Fingerprint) []*reader.Metadata {
-	return make([]*reader.Metadata, len(fps))
-}
-
 func (t *noStateTracker) AddUnmatched(file *os.File, fp *fingerprint.Fingerprint) {
 	t.unmatchedFiles = append(t.unmatchedFiles, file)
 	t.unmatchedFps = append(t.unmatchedFps, fp)
 }
 
-func (t *noStateTracker) LookupArchive(ctx context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
+func (t *noStateTracker) LookupArchive(context.Context) ([]*os.File, []*fingerprint.Fingerprint, []*reader.Metadata) {
 	return t.unmatchedFiles, t.unmatchedFps, make([]*reader.Metadata, len(t.unmatchedFps))
 }
