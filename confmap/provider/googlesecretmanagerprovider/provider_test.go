@@ -21,7 +21,7 @@ type mockSecretsManagerClient struct {
 	clientClosed bool
 }
 
-func (m *mockSecretsManagerClient) AccessSecretVersion(_ context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
+func (m *mockSecretsManagerClient) AccessSecretVersion(_ context.Context, req *secretmanagerpb.AccessSecretVersionRequest, _ ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
 	secretString, ok := m.validSecrets[req.Name]
 	if !ok {
 		return nil, fmt.Errorf("secrets entry does not exist, error code: %v", codes.NotFound)
@@ -117,6 +117,6 @@ func TestShutdown(t *testing.T) {
 	}
 	require.False(t, secretManager.clientClosed)
 	err := testProvider.Shutdown(context.Background())
-	require.Nil(t, err)
+	require.NoError(t, err)
 	require.True(t, secretManager.clientClosed)
 }
