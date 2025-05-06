@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
+	prometheustranslator "github.com/prometheus/otlptranslator"
 )
 
 func TestOtelMetricTypeToPromMetricType(t *testing.T) {
@@ -98,7 +98,7 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_sum")
-				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+				metric.Metadata().PutStr(metricMetadataTypeKey, "unknown")
 
 				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(1)
@@ -112,7 +112,7 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_sum")
-				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "info")
+				metric.Metadata().PutStr(metricMetadataTypeKey, "info")
 				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetEmptySum().SetIsMonotonic(false)
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -127,7 +127,7 @@ func TestOtelMetricTypeToPromMetricType(t *testing.T) {
 			metric: func() pmetric.Metric {
 				metric := pmetric.NewMetric()
 				metric.SetName("test_sum")
-				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "stateset")
+				metric.Metadata().PutStr(metricMetadataTypeKey, "stateset")
 				metric.SetEmptySum().SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 				metric.SetEmptySum().SetIsMonotonic(false)
 				dp := metric.Sum().DataPoints().AppendEmpty()
@@ -162,7 +162,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 			want: []*prompb.MetricMetadata{
 				{
 					Type: prompb.MetricMetadata_GAUGE,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestGaugeDoubleMetricName,
 						pcommon.NewMap(),
 						1, ts,
@@ -172,7 +172,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 				{
 					Type: prompb.MetricMetadata_GAUGE,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestGaugeIntMetricName,
 						pcommon.NewMap(),
 						1, ts,
@@ -182,7 +182,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestSumDoubleMetricName,
 						pcommon.NewMap(),
 						1, ts,
@@ -192,7 +192,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 				{
 					Type: prompb.MetricMetadata_COUNTER,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestSumIntMetricName,
 						pcommon.NewMap(),
 						1, ts,
@@ -202,7 +202,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 				{
 					Type: prompb.MetricMetadata_HISTOGRAM,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestDoubleHistogramMetricName,
 						pcommon.NewMap(),
 						1, ts,
@@ -212,7 +212,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 				},
 				{
 					Type: prompb.MetricMetadata_SUMMARY,
-					MetricFamilyName: prometheustranslator.BuildCompliantName(getIntGaugeMetric(
+					MetricFamilyName: prometheustranslator.BuildCompliantMetricName(getIntGaugeMetric(
 						testdata.TestDoubleSummaryMetricName,
 						pcommon.NewMap(),
 						1, ts,

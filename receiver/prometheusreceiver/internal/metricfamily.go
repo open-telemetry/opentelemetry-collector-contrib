@@ -18,8 +18,6 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type metricFamily struct {
@@ -466,12 +464,20 @@ func (mf *metricFamily) appendMetric(metrics pmetric.MetricSlice, trimSuffixes b
 	// Trims type and unit suffixes from metric name
 	name := mf.name
 	if trimSuffixes {
-		name = prometheus.TrimPromSuffixes(name, mf.mtype, mf.metadata.Unit)
+		// TODO: We can't migrate just yet because Prometheus receiver uses the original library in
+		// the opposite direction. It receives Prometheus metrics that follow the Prometheus convention
+		// and converts them to OTLP metrics that follow the OTLP convention (without the suffixes).
+		//
+		// The new library, at this point in time, only supports the reverse direction.
+		// OTLP -> Prometheus.
+		//
+		// name = otlptranslator.TrimPromSuffixes(name, mf.mtype, mf.metadata.Unit)
 	}
 	metric.SetName(name)
 	metric.SetDescription(mf.metadata.Help)
-	metric.SetUnit(prometheus.UnitWordToUCUM(mf.metadata.Unit))
-	metric.Metadata().PutStr(prometheus.MetricMetadataTypeKey, string(mf.metadata.Type))
+	// TODO: Implement UnitWordToUCUM
+	// metric.SetUnit(prometheus.UnitWordToUCUM(mf.metadata.Unit))
+	metric.Metadata().PutStr(metricMetadataTypeKey, string(mf.metadata.Type))
 
 	var pointCount int
 
@@ -545,7 +551,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 	e.FilteredAttributes().EnsureCapacity(pe.Labels.Len())
 	pe.Labels.Range(func(lb labels.Label) {
 		switch strings.ToLower(lb.Name) {
-		case prometheus.ExemplarTraceIDKey:
+		case exemplarTraceIDKey:
 			var tid [16]byte
 			err := decodeAndCopyToLowerBytes(tid[:], []byte(lb.Value))
 			if err == nil {
@@ -553,7 +559,7 @@ func convertExemplar(pe exemplar.Exemplar, e pmetric.Exemplar) {
 			} else {
 				e.FilteredAttributes().PutStr(lb.Name, lb.Value)
 			}
-		case prometheus.ExemplarSpanIDKey:
+		case exemplarSpanIDKey:
 			var sid [8]byte
 			err := decodeAndCopyToLowerBytes(sid[:], []byte(lb.Value))
 			if err == nil {

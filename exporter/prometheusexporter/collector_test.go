@@ -19,8 +19,6 @@ import (
 	"go.uber.org/zap/zapcore"
 	"google.golang.org/protobuf/proto"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 type mockAccumulator struct {
@@ -488,7 +486,7 @@ func TestCollectMetrics(t *testing.T) {
 				metric = pmetric.NewMetric()
 				metric.SetName("test_metric")
 				metric.SetDescription("test description")
-				metric.Metadata().PutStr(prometheustranslator.MetricMetadataTypeKey, "unknown")
+				metric.Metadata().PutStr(metricMetadataTypeKey, "unknown")
 				dp := metric.SetEmptyGauge().DataPoints().AppendEmpty()
 				dp.SetDoubleValue(42.42)
 				dp.Attributes().PutStr("label_1", "1")

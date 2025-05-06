@@ -22,7 +22,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/testdata"
-	prometheustranslator "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/prometheus"
 )
 
 func Test_isValidAggregationTemporality(t *testing.T) {
@@ -473,7 +472,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(exemplarTraceIDKey, traceIDValue1), getLabel(exemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -495,7 +494,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     float64(intVal2),
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
+					Labels:    []prompb.Label{getLabel(exemplarTraceIDKey, traceIDValue1), getLabel(exemplarSpanIDKey, spanIDValue1), getLabel(label11, value11)},
 				},
 			},
 		},
@@ -527,7 +526,7 @@ func Test_getPromExemplars(t *testing.T) {
 				{
 					Value:     floatVal1,
 					Timestamp: timestamp.FromTime(tnow),
-					Labels:    []prompb.Label{getLabel(prometheustranslator.ExemplarTraceIDKey, traceIDValue1), getLabel(prometheustranslator.ExemplarSpanIDKey, spanIDValue1)},
+					Labels:    []prompb.Label{getLabel(exemplarTraceIDKey, traceIDValue1), getLabel(exemplarSpanIDKey, spanIDValue1)},
 				},
 			},
 		},
