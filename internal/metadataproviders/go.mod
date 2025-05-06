@@ -11,7 +11,7 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig v0.125.0
 	github.com/shirou/gopsutil/v4 v4.25.3
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/semconv v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/otel v1.35.0
 	go.opentelemetry.io/otel/sdk v1.35.0
 	go.uber.org/goleak v1.3.0
