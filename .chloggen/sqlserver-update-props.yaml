@@ -7,7 +7,7 @@ change_type: breaking
 component: sqlserverreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: [receiver/sqlserver] Update event property names
+note: Update event properties
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39868]
