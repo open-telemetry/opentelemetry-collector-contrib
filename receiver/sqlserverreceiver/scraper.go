@@ -508,6 +508,7 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Context, topQueryCount uint) (pcommon.Resource, error) {
 	// Constants are the column names of the database status
 	const (
+		eventName      = "db.server.top_query"
 		dbPrefix       = "sqlserver."
 		executionCount = "execution_count"
 		logicalReads   = "total_logical_reads"
@@ -581,7 +582,7 @@ func (s *sqlServerScraperHelper) recordDatabaseQueryTextAndPlan(ctx context.Cont
 
 		record := plog.NewLogRecord()
 		record.SetTimestamp(timestamp)
-		record.SetEventName("top query")
+		record.SetEventName(eventName)
 
 		attributes := []internalAttribute{
 			{
@@ -868,6 +869,7 @@ func setDouble(attributes pcommon.Map, key string, value any) {
 }
 
 func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) (pcommon.Resource, error) {
+	const eventName = "db.server.query_sample"
 	const blockingSessionID = "blocking_session_id"
 	const clientAddress = "client_address"
 	const clientPort = "client_port"
@@ -925,6 +927,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 
 		record := plog.NewLogRecord()
 		record.SetTimestamp(pcommon.NewTimestampFromTime(time.Now()))
+		record.SetEventName(eventName)
 
 		// Attributes sorted alphabetically by key
 		attributes := []internalAttribute{
@@ -1093,7 +1096,7 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 				valueSetter:    setInt,
 			},
 			{
-				key:            dbPrefix + username,
+				key:            "user.name",
 				columnName:     username,
 				valueRetriever: vanillaRetriever,
 				valueSetter:    setString,
@@ -1160,9 +1163,6 @@ func (s *sqlServerScraperHelper) recordDatabaseSampleQuery(ctx context.Context) 
 			record.Attributes().PutStr("client.address", row[clientAddress])
 		}
 
-		record.SetEventName("query sample")
-
-		record.Body().SetStr("sample")
 		s.lb.AppendLogRecord(record)
 
 		if !resourcesAdded {
