@@ -61,8 +61,8 @@ func (f *Factory) NewReader(file *os.File, fp *fingerprint.Fingerprint) (*Reader
 		return nil, err
 	}
 	var filetype string
-	if filepath.Ext(file.Name()) == ".gz" {
-		filetype = ".gz"
+	if filepath.Ext(file.Name()) == gzipExtension {
+		filetype = gzipExtension
 	}
 
 	m := &Metadata{
