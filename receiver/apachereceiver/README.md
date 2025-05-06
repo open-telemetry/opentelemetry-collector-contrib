@@ -17,7 +17,7 @@ This receiver fetches stats from a Apache Web Server instance using the `server-
 
 ## Prerequisites
 
-This receiver supports Apache Web Server version 2.4+
+This receiver supports Apache Web Server version 2.4.13+.
 
 ### mod_status module
 
