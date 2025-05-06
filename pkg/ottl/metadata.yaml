@@ -1,6 +1,7 @@
 type: ottl
 
 status:
+  disable_codecov_badge: true
   class: pkg
   stability:
     alpha: [ traces, metrics, logs ]
