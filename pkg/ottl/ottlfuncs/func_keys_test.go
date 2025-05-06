@@ -27,6 +27,11 @@ func Test_keys(t *testing.T) {
 			},
 			expected: []any{"name", "value"},
 		},
+		{
+			name:     "empty",
+			target:   map[string]any{},
+			expected: []any{},
+		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
