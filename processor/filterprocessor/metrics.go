@@ -24,12 +24,14 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlresource"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterMetricProcessor struct {
 	skipResourceExpr  expr.BoolExpr[ottlresource.TransformContext]
 	skipMetricExpr    expr.BoolExpr[ottlmetric.TransformContext]
 	skipDataPointExpr expr.BoolExpr[ottldatapoint.TransformContext]
+	consumers         []common.MetricsConsumer
 	telemetry         *filterTelemetry
 	logger            *zap.Logger
 }
@@ -45,6 +47,22 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
 	fsp.telemetry = fpt
+
+	if len(cfg.MetricConditions) > 0 {
+		pc, err := common.NewMetricParserCollection(set.TelemetrySettings, common.WithMetricParser(filterottl.StandardMetricFuncs()), common.WithDataPointParser(filterottl.StandardDataPointFuncs()))
+		if err != nil {
+			return nil, err
+		}
+		var errors error
+		for _, cs := range cfg.MetricConditions {
+			metricConsumer, err := pc.ParseContextConditions(cs)
+			errors = multierr.Append(errors, err)
+			fsp.consumers = append(fsp.consumers, metricConsumer)
+		}
+		if errors != nil {
+			return nil, err
+		}
+	}
 
 	if cfg.Metrics.MetricConditions != nil || cfg.Metrics.DataPointConditions != nil {
 		if cfg.Metrics.MetricConditions != nil {
@@ -111,14 +129,7 @@ func newFilterMetricProcessor(set processor.Settings, cfg *Config) (*filterMetri
 	return fsp, nil
 }
 
-// processMetrics filters the given metrics based off the filterMetricProcessor's filters.
-func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
-	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil {
-		return md, nil
-	}
-
-	metricDataPointCountBeforeFilters := md.DataPointCount()
-
+func (fmp *filterMetricProcessor) processExprs(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
 	var errors error
 	md.ResourceMetrics().RemoveIf(func(rmetrics pmetric.ResourceMetrics) bool {
 		resource := rmetrics.Resource()
@@ -172,18 +183,47 @@ func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric
 		})
 		return rmetrics.ScopeMetrics().Len() == 0
 	})
+	return md, errors
+}
 
-	metricDataPointCountAfterFilters := md.DataPointCount()
+func (fmp *filterMetricProcessor) processConditions(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	var errors error
+	for _, consumer := range fmp.consumers {
+		err := consumer.ConsumeMetrics(ctx, md)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+	return md, errors
+}
+
+// processMetrics filters the given metrics based off the filterMetricProcessor's filters.
+func (fmp *filterMetricProcessor) processMetrics(ctx context.Context, md pmetric.Metrics) (pmetric.Metrics, error) {
+	if fmp.skipResourceExpr == nil && fmp.skipMetricExpr == nil && fmp.skipDataPointExpr == nil {
+		return md, nil
+	}
+
+	metricDataPointCountBeforeFilters := md.DataPointCount()
+
+	var errors error
+	var processedMetrics pmetric.Metrics
+	if len(fmp.consumers) > 0 {
+		processedMetrics, errors = fmp.processConditions(ctx, md)
+	} else {
+		processedMetrics, errors = fmp.processExprs(ctx, md)
+	}
+
+	metricDataPointCountAfterFilters := processedMetrics.DataPointCount()
 	fmp.telemetry.record(ctx, int64(metricDataPointCountBeforeFilters-metricDataPointCountAfterFilters))
 
 	if errors != nil {
 		fmp.logger.Error("failed processing metrics", zap.Error(errors))
-		return md, errors
+		return processedMetrics, errors
 	}
-	if md.ResourceMetrics().Len() == 0 {
-		return md, processorhelper.ErrSkipProcessingData
+	if processedMetrics.ResourceMetrics().Len() == 0 {
+		return processedMetrics, processorhelper.ErrSkipProcessingData
 	}
-	return md, nil
+	return processedMetrics, nil
 }
 
 func newSkipResExpr(include *filterconfig.MetricMatchProperties, exclude *filterconfig.MetricMatchProperties) (expr.BoolExpr[ottlresource.TransformContext], error) {

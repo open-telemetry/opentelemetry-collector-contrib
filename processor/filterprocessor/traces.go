@@ -19,9 +19,11 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/filterprocessor/internal/common"
 )
 
 type filterSpanProcessor struct {
+	consumers         []common.TracesConsumer
 	skipSpanExpr      expr.BoolExpr[ottlspan.TransformContext]
 	skipSpanEventExpr expr.BoolExpr[ottlspanevent.TransformContext]
 	telemetry         *filterTelemetry
@@ -39,6 +41,22 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 		return nil, fmt.Errorf("error creating filter processor telemetry: %w", err)
 	}
 	fsp.telemetry = fpt
+
+	if len(cfg.TraceConditions) > 0 {
+		pc, err := common.NewTraceParserCollection(set.TelemetrySettings, common.WithSpanParser(filterottl.StandardSpanFuncs()), common.WithSpanEventParser(filterottl.StandardSpanEventFuncs()))
+		if err != nil {
+			return nil, err
+		}
+		var errors error
+		for _, cs := range cfg.TraceConditions {
+			metricConsumer, err := pc.ParseContextConditions(cs)
+			errors = multierr.Append(errors, err)
+			fsp.consumers = append(fsp.consumers, metricConsumer)
+		}
+		if errors != nil {
+			return nil, err
+		}
+	}
 
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
 		if cfg.Traces.SpanConditions != nil {
@@ -79,14 +97,7 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 	return fsp, nil
 }
 
-// processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
-func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
-	if fsp.skipSpanExpr == nil && fsp.skipSpanEventExpr == nil {
-		return td, nil
-	}
-
-	spanCountBeforeFilters := td.SpanCount()
-
+func (fsp *filterSpanProcessor) processExprs(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
 	var errors error
 	td.ResourceSpans().RemoveIf(func(rs ptrace.ResourceSpans) bool {
 		resource := rs.Resource()
@@ -119,16 +130,45 @@ func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Tra
 		})
 		return rs.ScopeSpans().Len() == 0
 	})
+	return td, errors
+}
 
-	spanCountAfterFilters := td.SpanCount()
+func (fsp *filterSpanProcessor) processConditions(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	var errors error
+	for _, consumer := range fsp.consumers {
+		err := consumer.ConsumeTraces(ctx, td)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+	return td, errors
+}
+
+// processTraces filters the given spans of a traces based off the filterSpanProcessor's filters.
+func (fsp *filterSpanProcessor) processTraces(ctx context.Context, td ptrace.Traces) (ptrace.Traces, error) {
+	if fsp.skipSpanExpr == nil && fsp.skipSpanEventExpr == nil {
+		return td, nil
+	}
+
+	spanCountBeforeFilters := td.SpanCount()
+
+	var errors error
+	var processedTraces ptrace.Traces
+	if len(fsp.consumers) > 0 {
+		processedTraces, errors = fsp.processConditions(ctx, td)
+	} else {
+		processedTraces, errors = fsp.processExprs(ctx, td)
+	}
+
+	spanCountAfterFilters := processedTraces.SpanCount()
 	fsp.telemetry.record(ctx, int64(spanCountBeforeFilters-spanCountAfterFilters))
 
 	if errors != nil {
 		fsp.logger.Error("failed processing traces", zap.Error(errors))
-		return td, errors
+		return processedTraces, errors
 	}
-	if td.ResourceSpans().Len() == 0 {
-		return td, processorhelper.ErrSkipProcessingData
+	if processedTraces.ResourceSpans().Len() == 0 {
+		return processedTraces, processorhelper.ErrSkipProcessingData
 	}
-	return td, nil
+	return processedTraces, nil
 }
