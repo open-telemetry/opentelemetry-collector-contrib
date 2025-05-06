@@ -19,6 +19,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/extension v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/receiver v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250505155216-829157cef7bb
@@ -37,6 +38,8 @@ require (
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
 	github.com/gobwas/glob v0.2.3 // indirect
+	github.com/goccy/go-json v0.10.5 // indirect
+	github.com/gogo/protobuf v1.3.2 // indirect
 	github.com/golang/snappy v1.0.0 // indirect
 	github.com/google/go-tpm v0.9.3 // indirect
 	github.com/google/uuid v1.6.0 // indirect
