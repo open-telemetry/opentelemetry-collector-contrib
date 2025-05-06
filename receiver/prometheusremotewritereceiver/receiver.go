@@ -328,7 +328,7 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 				sum.SetIsMonotonic(true)
 				sum.SetAggregationTemporality(pmetric.AggregationTemporalityCumulative)
 			case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-				metric.SetEmptyHistogram()
+				metric.SetEmptyExponentialHistogram()
 			case writev2.Metadata_METRIC_TYPE_SUMMARY:
 				metric.SetEmptySummary()
 			}
@@ -349,7 +349,9 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			addHistogramDatapoints(metric.Histogram().DataPoints(), ls, ts)
+			// Native histograms are converted to exponential histograms
+			// More: https://opentelemetry.io/blog/2023/exponential-histograms/#opentelemetry-and-prometheus
+			addHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
@@ -388,14 +390,7 @@ func addNumberDatapoints(datapoints pmetric.NumberDataPointSlice, ls labels.Labe
 		dp.SetDoubleValue(sample.Value)
 
 		attributes := dp.Attributes()
-		for _, l := range ls {
-			if l.Name == "instance" || l.Name == "job" || // Become resource attributes
-				l.Name == labels.MetricName || // Becomes metric name
-				l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
-				continue
-			}
-			attributes.PutStr(l.Name, l.Value)
-		}
+		extractAttributes(ls).CopyTo(attributes)
 	}
 }
 
@@ -403,8 +398,51 @@ func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ wr
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(_ pmetric.HistogramDataPointSlice, _ labels.Labels, _ writev2.TimeSeries) {
-	// TODO: Implement this function
+func addHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+	for _, histogram := range ts.Histograms {
+		dp := datapoints.AppendEmpty()
+		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
+		dp.SetTimestamp(pcommon.Timestamp(histogram.Timestamp * int64(time.Millisecond)))
+		dp.SetSum(histogram.Sum)
+		// TODO: Mising steps to finish histogram conversion
+		// Prometheus Native histograms reference https://docs.google.com/document/d/1VhtB_cGnuO2q_zqEMgtoaLDvJ_kFSXRXoE0Wo74JlSY/edit?tab=t.0
+		// OTEL exponential histograms reference https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
+		// - Positive and Negative Buckets
+		// - Positive and Negative Spans
+
+		switch v := histogram.GetCount().(type) {
+		case *writev2.Histogram_CountInt:
+			dp.SetCount(v.CountInt)
+		case *writev2.Histogram_CountFloat:
+			dp.SetCount(uint64(v.CountFloat))
+		}
+
+		switch v := histogram.GetZeroCount().(type) {
+		case *writev2.Histogram_ZeroCountInt:
+			dp.SetZeroCount(v.ZeroCountInt)
+		case *writev2.Histogram_ZeroCountFloat:
+			dp.SetZeroCount(uint64(v.ZeroCountFloat))
+		}
+
+		dp.SetZeroThreshold(histogram.ZeroThreshold)
+
+		attributes := dp.Attributes()
+		extractAttributes(ls).CopyTo(attributes)
+	}
+}
+
+// extractAttributes return all attributes different from job, instance, metric name and scope name/version
+func extractAttributes(ls labels.Labels) pcommon.Map {
+	attrs := pcommon.NewMap()
+	for _, l := range ls {
+		if l.Name == "instance" || l.Name == "job" || // Become resource attributes
+			l.Name == labels.MetricName || // Becomes metric name
+			l.Name == "otel_scope_name" || l.Name == "otel_scope_version" { // Becomes scope name and version
+			continue
+		}
+		attrs.PutStr(l.Name, l.Value)
+	}
+	return attrs
 }
 
 // extractScopeInfo extracts the scope name and version from the labels. If the labels do not contain the scope name/version,
