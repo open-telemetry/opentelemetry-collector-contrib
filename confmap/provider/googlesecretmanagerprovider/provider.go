@@ -12,11 +12,10 @@ import (
 	"strings"
 
 	secretmanager "cloud.google.com/go/secretmanager/apiv1"
+	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 	gax "github.com/googleapis/gax-go/v2"
 	"github.com/googleapis/gax-go/v2/apierror"
 	"go.opentelemetry.io/collector/confmap"
-
-	"cloud.google.com/go/secretmanager/apiv1/secretmanagerpb"
 )
 
 type secretsManagerClient interface {
