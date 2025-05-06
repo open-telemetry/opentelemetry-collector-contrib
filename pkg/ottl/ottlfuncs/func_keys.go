@@ -37,15 +37,11 @@ func keys[K any](target ottl.PMapGetter[K]) ottl.ExprFunc[K] {
 			return nil, err
 		}
 
-		buffer := make([]any, m.Len())
-		i := 0
-		for key := range m.All() {
-			buffer[i] = key
-			i++
-		}
-
 		output := pcommon.NewSlice()
-		err = output.FromRaw(buffer)
+		output.EnsureCapacity(m.Len())
+		for key := range m.All() {
+			output.AppendEmpty().SetStr(key)
+		}
 
 		return output, err
 	}
