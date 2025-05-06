@@ -14,8 +14,12 @@ type Config struct {
 
 	// Audience of the token, used during the verification.
 	// For example: "https://accounts.google.com" or "https://login.salesforce.com".
-	// Required.
+	// Required unless IgnoreAudience is true.
 	Audience string `mapstructure:"audience"`
+
+	// When true, this skips validating the audience field.
+	// Optional.
+	IgnoreAudience bool `mapstructure:"ignore_audience"`
 
 	// The local path for the issuer CA's TLS server cert.
 	// Optional.
@@ -31,7 +35,7 @@ type Config struct {
 }
 
 func (c *Config) Validate() error {
-	if c.Audience == "" {
+	if c.Audience == "" && !c.IgnoreAudience {
 		return errNoAudienceProvided
 	}
 	if c.IssuerURL == "" {
