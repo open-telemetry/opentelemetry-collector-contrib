@@ -28,6 +28,16 @@ type mockPerfCounterWatcher struct {
 	mock.Mock
 }
 
+// ScrapeRawValue implements winperfcounters.PerfCounterWatcher.
+func (_m *mockPerfCounterWatcher) ScrapeRawValue(_ *int64) (bool, error) {
+	panic("unimplemented")
+}
+
+// ScrapeRawValues implements winperfcounters.PerfCounterWatcher.
+func (_m *mockPerfCounterWatcher) ScrapeRawValues() ([]winperfcounters.RawCounterValue, error) {
+	panic("unimplemented")
+}
+
 // Close provides a mock function with given fields:
 func (_m *mockPerfCounterWatcher) Close() error {
 	ret := _m.Called()
