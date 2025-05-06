@@ -79,7 +79,6 @@ func (p *provider) Shutdown(context.Context) error {
 	p.mu.Lock()
 	if p.client != nil {
 		p.client.Close()
-		p.client = nil
 	}
 	p.mu.Unlock()
 	return nil

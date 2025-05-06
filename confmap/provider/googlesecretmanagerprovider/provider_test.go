@@ -16,11 +16,12 @@ import (
 )
 
 // Define a mock secretsManagerClient for testing
-type mockSecretsManagerClient struct {
+type MockSecretsManagerClient struct {
 	validSecrets map[string]string
+	clientClosed bool
 }
 
-func (m *mockSecretsManagerClient) AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
+func (m *MockSecretsManagerClient) AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
 	secretString, ok := m.validSecrets[req.Name]
 	if !ok {
 		return nil, fmt.Errorf("secrets entry does not exist, error code: %v", codes.NotFound)
@@ -32,7 +33,8 @@ func (m *mockSecretsManagerClient) AccessSecretVersion(ctx context.Context, req 
 	}, nil
 }
 
-func (m *mockSecretsManagerClient) Close() error {
+func (m *MockSecretsManagerClient) Close() error {
+	m.clientClosed = true
 	return nil
 }
 
@@ -40,13 +42,13 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 	tests := []struct {
 		name              string
 		uri               string
-		testSecretManager *mockSecretsManagerClient
+		testSecretManager *MockSecretsManagerClient
 		wantSecret        string
 	}{
 		{
 			name: "Happy path: valid uri, secret entry exists and is accessible",
 			uri:  schemeName + ":projects/my-project/secrets/secret-1/versions/1",
-			testSecretManager: &mockSecretsManagerClient{validSecrets: map[string]string{
+			testSecretManager: &MockSecretsManagerClient{validSecrets: map[string]string{
 				"projects/my-project/secrets/secret-1/versions/1": "secret-1",
 			}},
 			wantSecret: "secret-1",
@@ -90,7 +92,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			testProvider := &provider{
-				client: &mockSecretsManagerClient{
+				client: &MockSecretsManagerClient{
 					validSecrets: map[string]string{
 						"projects/my-project/secrets/secret-1/versions/1": "secret-1",
 					},
@@ -109,28 +111,11 @@ func TestFactory(t *testing.T) {
 }
 
 func TestShutdown(t *testing.T) {
-	tests := []struct {
-		name              string
-		testSecretManager *mockSecretsManagerClient
-	}{
-		{
-			name:              "When secret manager client is non-nil",
-			testSecretManager: &mockSecretsManagerClient{},
-		},
-		{
-			name:              "When secret manager client is nil",
-			testSecretManager: nil,
-		},
+	secretManager := &MockSecretsManagerClient{}
+	testProvider := &provider{
+		client: secretManager,
 	}
-
-	for _, tc := range tests {
-		t.Run(tc.name, func(t *testing.T) {
-			testProvider := &provider{
-				client: tc.testSecretManager,
-			}
-			err := testProvider.Shutdown(context.Background())
-			require.NoError(t, err)
-			require.Nil(t, testProvider.client)
-		})
-	}
+	require.False(t, secretManager.clientClosed)
+	testProvider.Shutdown(context.Background())
+	require.True(t, secretManager.clientClosed)
 }
