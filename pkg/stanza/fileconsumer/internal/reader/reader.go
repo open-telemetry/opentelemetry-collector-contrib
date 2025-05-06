@@ -25,6 +25,8 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/stanza/tokenlen"
 )
 
+const gzipExtension = ".gz"
+
 type Metadata struct {
 	Fingerprint     *fingerprint.Fingerprint
 	Offset          int64
@@ -81,7 +83,7 @@ func (r *Reader) ReadToEnd(ctx context.Context) {
 		}()
 	case "auto":
 		// Identifying a filename by its extension may not always be correct. We could have a compressed file without the .gz extension
-		if r.FileType == ".gz" {
+		if r.FileType == gzipExtension {
 			currentEOF, err := r.createGzipReader()
 			if err != nil {
 				return
