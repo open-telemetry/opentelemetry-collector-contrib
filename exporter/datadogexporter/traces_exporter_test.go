@@ -444,17 +444,17 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
-func TestPushTraceData_OperationAndResourceName(t *testing.T) {
+func TestPushTraceDataOperationAndResourceName(t *testing.T) {
 	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
-		testPushTraceData_OperationAndResourceName(t, false)
+		testPushTraceDataOperationAndResourceName(t, false)
 	})
 
 	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
-		testPushTraceData_OperationAndResourceName(t, true)
+		testPushTraceDataOperationAndResourceName(t, true)
 	})
 }
 
-func testPushTraceData_OperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
+func testPushTraceDataOperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
 	if !enableOperationAndResourceNameV2 {
 		prevVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
 		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", false))
