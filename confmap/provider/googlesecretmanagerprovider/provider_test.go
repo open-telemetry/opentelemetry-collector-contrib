@@ -15,16 +15,13 @@ import (
 	"google.golang.org/grpc/codes"
 )
 
-var validSecrets = map[string]string{
-	"projects/my-project/secrets/secret-1/versions/1": "secret-1",
-	"projects/my-project/secrets/secret-2/versions/1": "secret-2",
+// Define a mock secretsManagerClient for testing
+type mockSecretsManagerClient struct {
+	validSecrets map[string]string
 }
 
-// Define a mock secretsManagerClient for testing
-type mockSecretsManagerClient struct{}
-
 func (m *mockSecretsManagerClient) AccessSecretVersion(ctx context.Context, req *secretmanagerpb.AccessSecretVersionRequest, opts ...gax.CallOption) (*secretmanagerpb.AccessSecretVersionResponse, error) {
-	secretString, ok := validSecrets[req.Name]
+	secretString, ok := m.validSecrets[req.Name]
 	if !ok {
 		return nil, fmt.Errorf("secrets entry does not exist, error code: %v", codes.NotFound)
 	}
@@ -47,10 +44,12 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 		wantSecret        string
 	}{
 		{
-			name:              "Happy path: valid uri, secret entry exists and is accessible",
-			uri:               schemeName + ":projects/my-project/secrets/secret-1/versions/1",
-			testSecretManager: &mockSecretsManagerClient{},
-			wantSecret:        "secret-1",
+			name: "Happy path: valid uri, secret entry exists and is accessible",
+			uri:  schemeName + ":projects/my-project/secrets/secret-1/versions/1",
+			testSecretManager: &mockSecretsManagerClient{validSecrets: map[string]string{
+				"projects/my-project/secrets/secret-1/versions/1": "secret-1",
+			}},
+			wantSecret: "secret-1",
 		},
 	}
 
@@ -76,7 +75,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 	}{
 		{
 			name: "Invalid scheme",
-			uri:  "invalidscheme" + ":projects/my-project/secrets/test-secret-id/versions/1",
+			uri:  "invalidscheme:projects/my-project/secrets/test-secret-id/versions/1",
 		},
 		{
 			name: "secret entry does not exist in the secret manager",
@@ -91,7 +90,11 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
 			testProvider := &provider{
-				client: &mockSecretsManagerClient{},
+				client: &mockSecretsManagerClient{
+					validSecrets: map[string]string{
+						"projects/my-project/secrets/secret-1/versions/1": "secret-1",
+					},
+				},
 			}
 			_, err := testProvider.Retrieve(context.Background(), tc.uri, nil)
 			require.Error(t, err)
