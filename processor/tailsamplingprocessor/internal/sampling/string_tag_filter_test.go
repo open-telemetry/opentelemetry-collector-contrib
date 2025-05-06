@@ -218,8 +218,12 @@ func TestStringTagFilter(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			if c.DisableInvertSample {
-				featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
-				defer featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
+				assert.NoError(t, err)
+				defer func() {
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+					assert.NoError(t, err)
+				}()
 			}
 			filter := NewStringAttributeFilter(componenttest.NewNopTelemetrySettings(), c.filterCfg.Key, c.filterCfg.Values, c.filterCfg.EnabledRegexMatching, c.filterCfg.CacheMaxSize, c.filterCfg.InvertMatch)
 			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID([16]byte{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16}), c.Trace)

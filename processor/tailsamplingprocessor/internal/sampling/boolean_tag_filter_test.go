@@ -99,8 +99,12 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
 			if c.DisableInvertSample {
-				featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
-				defer featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
+				assert.NoError(t, err)
+				defer func() {
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+					assert.NoError(t, err)
+				}()
 			}
 			u, _ := uuid.NewRandom()
 			decision, err := filter.Evaluate(context.Background(), pcommon.TraceID(u), c.Trace)
