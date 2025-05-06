@@ -7,7 +7,9 @@ status:
   distributions: [contrib, k8s]
   warnings: [Unsound Transformations, Identity Conflict, Orphaned Telemetry, Other]
   codeowners:
-    active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley, edmocosta]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
+    seeking_new: true
 
 tests:
   config:
