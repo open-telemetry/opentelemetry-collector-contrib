@@ -5,6 +5,7 @@ package googlesecretmanagerprovider
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"testing"
 
@@ -72,20 +73,24 @@ func TestProvider_Retrieve_Success(t *testing.T) {
 
 func TestProvider_Retrieve_Failure(t *testing.T) {
 	tests := []struct {
-		name string
-		uri  string
+		name      string
+		uri       string
+		wantError error
 	}{
 		{
-			name: "Invalid scheme",
-			uri:  "invalidscheme:projects/my-project/secrets/test-secret-id/versions/1",
+			name:      "Invalid scheme",
+			uri:       "invalidscheme:projects/my-project/secrets/test-secret-id/versions/1",
+			wantError: ErrURINotSupported,
 		},
 		{
-			name: "secret entry does not exist in the secret manager",
-			uri:  schemeName + ":projects/my-project/secrets/non-existent/versions/1",
+			name:      "secret entry does not exist in the secret manager",
+			uri:       schemeName + ":projects/my-project/secrets/non-existent/versions/1",
+			wantError: ErrorAccessSecretVersion,
 		},
 		{
-			name: "invalid secret name",
-			uri:  schemeName + ":projects/my-project/versions/1",
+			name:      "invalid secret name",
+			uri:       schemeName + ":projects/my-project/versions/1",
+			wantError: ErrorAccessSecretVersion,
 		},
 	}
 
@@ -100,6 +105,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 			}
 			_, err := testProvider.Retrieve(context.Background(), tc.uri, nil)
 			require.Error(t, err)
+			require.True(t, errors.Is(err, tc.wantError))
 		})
 	}
 }

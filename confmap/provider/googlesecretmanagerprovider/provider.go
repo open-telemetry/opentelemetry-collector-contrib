@@ -7,6 +7,7 @@ package googlesecretmanagerprovider // import "github.com/open-telemetry/opentel
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 	"sync"
@@ -28,6 +29,11 @@ const (
 	schemeName = "googlesecretmanagerprovider"
 )
 
+var (
+	ErrURINotSupported       = errors.New("uri is not supported by Google Secret Manager Provider")
+	ErrorAccessSecretVersion = errors.New("failed to access secret version")
+)
+
 type provider struct {
 	mu     sync.Mutex
 	client secretsManagerClient
@@ -43,7 +49,7 @@ func newProvider(confmap.ProviderSettings) confmap.Provider {
 
 func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFunc) (*confmap.Retrieved, error) {
 	if !strings.HasPrefix(uri, schemeName+":") {
-		return nil, fmt.Errorf("%q uri is not supported by Google Secret Manager Provider", uri)
+		return nil, fmt.Errorf("%q: %w", uri, ErrURINotSupported)
 	}
 	secretName := strings.TrimPrefix(uri, schemeName+":")
 	p.mu.Lock()
@@ -62,11 +68,11 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 	resp, err := p.client.AccessSecretVersion(ctx, req)
 	if err != nil {
 		apiErr, ok := apierror.FromError(err)
-		errorMsg := "failed to access secret version"
+
 		if !ok {
-			return nil, fmt.Errorf(errorMsg+": %w", err)
+			return nil, fmt.Errorf("%w : %w", ErrorAccessSecretVersion, err)
 		}
-		return nil, fmt.Errorf(errorMsg+": %v", apiErr.Error())
+		return nil, fmt.Errorf("%w: %v", ErrorAccessSecretVersion, apiErr.Error())
 	}
 	return confmap.NewRetrieved(string(resp.GetPayload().GetData()))
 }
