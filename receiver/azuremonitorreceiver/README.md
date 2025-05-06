@@ -24,7 +24,7 @@ The following settings are required:
 The following settings are optional:
 
 - `auth.authenticator`: Specifies the component ID to use to authenticate requests to Azure API. Use [azureauth extension](https://github.com/open-telemetry/opentelemetry-collector-contrib/tree/main/extension/azureauthextension).
-- (Deprecated, use `auth` instead) `credentials` (default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
+- `credentials` (Deprecated [v0.126.0]: use `auth` instead)(default = service_principal): Specifies the used authentication method. Supported values are `service_principal`, `workload_identity`, `managed_identity`, `default_credentials`.
 - `resource_groups` (default = none): Filter metrics for specific resource groups, not setting a value will scrape metrics for all resources in the subscription.
 - `services` (default = none): Filter metrics for specific services, not setting a value will scrape metrics for all services integrated with Azure Monitor.
 - `metrics` (default = none): Filter metrics by name and aggregations. Not setting a value will scrape all metrics and their aggregations.
