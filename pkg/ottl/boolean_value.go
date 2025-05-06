@@ -16,7 +16,7 @@ type BoolExpr[K any] struct {
 	boolExpressionEvaluator[K]
 }
 
-// Eval evaluates a OTTL condition
+// Eval evaluates an OTTL condition
 func (e BoolExpr[K]) Eval(ctx context.Context, tCtx K) (bool, error) {
 	return e.boolExpressionEvaluator(ctx, tCtx)
 }

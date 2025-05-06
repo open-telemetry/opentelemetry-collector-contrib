@@ -31,7 +31,7 @@ func (e *ErrorMode) UnmarshalText(text []byte) error {
 	}
 }
 
-// LogicOperation represents the logical operations OTTL understand.
+// LogicOperation represents the logical operations OTTL understands.
 type LogicOperation string
 
 const (
