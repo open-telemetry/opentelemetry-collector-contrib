@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [core, contrib]
   codeowners:
-    active: [Aneurysm9, rapphil, dashpole, ArthurSens]
+    active: [Aneurysm9, rapphil, dashpole, ArthurSens, ywwg]
 
 tests:
   expect_consumer_error: true
