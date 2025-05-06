@@ -12,12 +12,12 @@ require (
 	github.com/testcontainers/testcontainers-go v0.37.0
 	go.opentelemetry.io/collector/client v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/receiver v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/semconv v0.125.1-0.20250505155216-829157cef7bb
@@ -76,10 +76,10 @@ require (
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250505152726-56c7da210783 // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250505152726-56c7da210783 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505155216-829157cef7bb // indirect
+	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/receiver/xreceiver v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.49.0 // indirect

@@ -4,7 +4,7 @@ go 1.23.0
 
 require (
 	github.com/IBM/sarama v1.45.1
-	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.2
+	github.com/aws/aws-msk-iam-sasl-signer-go v1.0.3
 	github.com/aws/aws-sdk-go-v2 v1.36.3
 	github.com/aws/aws-sdk-go-v2/credentials v1.17.67
 	github.com/rcrowley/go-metrics v0.0.0-20201227073835-cf1acfcdf475
@@ -15,7 +15,7 @@ require (
 	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/confmap v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250505155216-829157cef7bb
 	go.uber.org/goleak v1.3.0
 	go.uber.org/multierr v1.11.0
 )
@@ -69,7 +69,7 @@ require (
 	github.com/xdg-go/stringprep v1.0.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505152726-56c7da210783 // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783 // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
