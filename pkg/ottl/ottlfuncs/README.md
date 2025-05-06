@@ -2456,10 +2456,14 @@ Examples:
 ### Keys
 
 `Keys(target)`
-The `Keys` Converter returns a slice of keys from the given map.
-`target` is a `pcommon.Map`. If `target` is not a `pcommon.Map`, an error will be returned.
+
+The `Keys` Converter returns a slice containing all the keys from the given map.
+
+`target` is a `pcommon.Map`. If `target` is another type an error is returned.
+
 The returned type is `pcommon.Slice`.
 
 Examples:
 - 
 - `Keys(resource.attributes)`
+- `Keys({"k1":"v1", "k2": "v2"})`
