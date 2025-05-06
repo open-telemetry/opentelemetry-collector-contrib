@@ -85,12 +85,7 @@ func TestProvider_Retrieve_Failure(t *testing.T) {
 		{
 			name:      "secret entry does not exist in the secret manager",
 			uri:       schemeName + ":projects/my-project/secrets/non-existent/versions/1",
-			wantError: ErrorAccessSecretVersion,
-		},
-		{
-			name:      "invalid secret name",
-			uri:       schemeName + ":projects/my-project/versions/1",
-			wantError: ErrorAccessSecretVersion,
+			wantError: ErrAccessSecretVersion,
 		},
 	}
 

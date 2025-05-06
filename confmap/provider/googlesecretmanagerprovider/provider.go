@@ -29,8 +29,8 @@ const (
 )
 
 var (
-	ErrURINotSupported       = errors.New("uri is not supported by Google Secret Manager Provider")
-	ErrorAccessSecretVersion = errors.New("failed to access secret version")
+	ErrURINotSupported     = errors.New("uri is not supported by Google Secret Manager Provider")
+	ErrAccessSecretVersion = errors.New("failed to access secret version")
 )
 
 type provider struct {
@@ -65,9 +65,9 @@ func (p *provider) Retrieve(ctx context.Context, uri string, _ confmap.WatcherFu
 		apiErr, ok := apierror.FromError(err)
 
 		if !ok {
-			return nil, fmt.Errorf("%w : %w", ErrorAccessSecretVersion, err)
+			return nil, fmt.Errorf("%w : %w", ErrAccessSecretVersion, err)
 		}
-		return nil, fmt.Errorf("%w: %v", ErrorAccessSecretVersion, apiErr.Error())
+		return nil, fmt.Errorf("%w: %v", ErrAccessSecretVersion, apiErr.Error())
 	}
 	return confmap.NewRetrieved(string(resp.GetPayload().GetData()))
 }
