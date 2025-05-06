@@ -23,9 +23,9 @@ require (
 	github.com/DataDog/datadog-agent/pkg/logs/sds v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/logs/sources v0.66.0-devel.0.20250407180930-ebfcfa2817ce
 	github.com/DataDog/datadog-agent/pkg/logs/status/statusinterface v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
-	github.com/DataDog/datadog-agent/pkg/proto v0.66.0-devel.0.20250407180930-ebfcfa2817ce
+	github.com/DataDog/datadog-agent/pkg/proto v0.67.0-devel.0.20250506152405-1c4b973c33fa
 	github.com/DataDog/datadog-agent/pkg/status/health v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
-	github.com/DataDog/datadog-agent/pkg/trace v0.66.0-devel.0.20250407180930-ebfcfa2817ce
+	github.com/DataDog/datadog-agent/pkg/trace v0.67.0-devel.0.20250506141753-8e276a113483
 	github.com/DataDog/datadog-agent/pkg/util/hostname/validate v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/util/startstop v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
@@ -149,6 +149,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/tagger/types v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/tagset v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/telemetry v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
+	github.com/DataDog/datadog-agent/pkg/template v0.67.0-devel.0.20250506141753-8e276a113483 // indirect
 	github.com/DataDog/datadog-agent/pkg/util/backoff v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/util/buf v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/util/cgroups v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
@@ -171,7 +172,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/util/winutil v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/datadog-agent/pkg/version v0.66.0-devel.0.20250407180930-ebfcfa2817ce // indirect
 	github.com/DataDog/dd-sensitive-data-scanner/sds-go/go v0.0.0-20240816154533-f7f9beb53a42 // indirect
-	github.com/DataDog/go-sqllexer v0.1.3 // indirect
+	github.com/DataDog/go-sqllexer v0.1.6 // indirect
 	github.com/DataDog/go-tuf v1.1.0-0.5.2 // indirect
 	github.com/DataDog/mmh3 v0.0.0-20210722141835-012dc69a9e49 // indirect
 	github.com/DataDog/viper v1.14.0 // indirect

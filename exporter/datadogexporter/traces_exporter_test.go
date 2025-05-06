@@ -444,10 +444,23 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
-func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true)
-	if err != nil {
-		t.Fatal(err)
+func TestPushTraceData_OperationAndResourceName(t *testing.T) {
+	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
+		testPushTraceData_OperationAndResourceName(t, false)
+	})
+
+	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
+		testPushTraceData_OperationAndResourceName(t, true)
+	})
+}
+
+func testPushTraceData_OperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
+	if !enableOperationAndResourceNameV2 {
+		prevVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", prevVal))
+		}()
 	}
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -486,7 +499,11 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	require.NoError(t, proto.Unmarshal(slurp, &traces))
 	assert.Len(t, traces.TracerPayloads, 1)
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
-	assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	if enableOperationAndResourceNameV2 {
+		assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	} else {
+		assert.Equal(t, "opentelemetry.server", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	}
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {
@@ -547,6 +564,62 @@ func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *t
 	assert.Empty(t, tracerPayload.Env)
 	assert.Equal(t, "otlpresourcenoservicename", span.Service)
 	assert.Empty(t, span.Meta["version"])
+}
+
+func TestOperationAndResourceNameV2FeatureGateDefault(t *testing.T) {
+	// Get the default value
+	defaultVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
+
+	// Reset the feature gate to its default value
+	require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", defaultVal))
+
+	// Create test server and config
+	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
+	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
+	defer server.Close()
+
+	cfg := &datadogconfig.Config{
+		API: datadogconfig.APIConfig{
+			Key: "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+		},
+		TagsConfig: datadogconfig.TagsConfig{
+			Hostname: "test-host",
+		},
+		Metrics: datadogconfig.MetricsConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+		Traces: datadogconfig.TracesExporterConfig{
+			TCPAddrConfig: confignet.TCPAddrConfig{Endpoint: server.URL},
+		},
+	}
+	cfg.Traces.SetFlushInterval(0.1)
+
+	params := exportertest.NewNopSettings(metadata.Type)
+	f := NewFactory()
+	exp, err := f.CreateTraces(context.Background(), params, cfg)
+	assert.NoError(t, err)
+
+	// Send test traces
+	err = exp.ConsumeTraces(context.Background(), simpleTraces(map[string]any{conventions127.AttributeDeploymentEnvironmentName: "new_env"}, nil, ptrace.SpanKindServer))
+	assert.NoError(t, err)
+
+	// Verify the trace payload
+	reqBytes := <-tracesRec.ReqChan
+	buf := bytes.NewBuffer(reqBytes)
+	reader, err := gzip.NewReader(buf)
+	require.NoError(t, err)
+	slurp, err := io.ReadAll(reader)
+	require.NoError(t, err)
+	var traces pb.AgentPayload
+	require.NoError(t, proto.Unmarshal(slurp, &traces))
+	assert.Len(t, traces.TracerPayloads, 1)
+
+	// Check the span name based on the default feature gate value
+	if defaultVal {
+		assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	} else {
+		assert.Equal(t, "opentelemetry.server", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	}
 }
 
 func simpleTraces(rattrs map[string]any, sattrs map[string]any, kind ptrace.SpanKind) ptrace.Traces {
