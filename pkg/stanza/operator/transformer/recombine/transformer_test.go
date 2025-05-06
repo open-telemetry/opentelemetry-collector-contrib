@@ -283,7 +283,7 @@ func TestTransformer(t *testing.T) {
 			},
 		},
 		{
-			"CombineSplitedUnicode",
+			"CombineSplitUnicode",
 			func() *Config {
 				cfg := NewConfig()
 				cfg.CombineField = entry.NewBodyField("message")
