@@ -316,7 +316,7 @@ func TestTimeseriesInfo_IsResetHistogram(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tsi := tt.setupTsi()
 			h := tt.setupH()
-			assert.Equal(t, tt.expectedReset, tsi.IsResetHistogram(h))
+			assert.Equal(t, tt.expectedReset, IsResetHistogram(h, tsi.Histogram))
 		})
 	}
 }
@@ -518,7 +518,7 @@ func TestTimeseriesInfo_IsResetExponentialHistogram(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tsi := tt.setupTsi()
 			eh := tt.setupEh()
-			assert.Equal(t, tt.expectedReset, tsi.IsResetExponentialHistogram(eh))
+			assert.Equal(t, tt.expectedReset, IsResetExponentialHistogram(eh, tsi.ExponentialHistogram))
 		})
 	}
 }
@@ -604,7 +604,7 @@ func TestTimeseriesInfo_IsResetSummary(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tsi := tt.setupTsi()
 			s := tt.setupS()
-			assert.Equal(t, tt.expectedReset, tsi.IsResetSummary(s))
+			assert.Equal(t, tt.expectedReset, IsResetSummary(s, tsi.Summary))
 		})
 	}
 }
@@ -652,7 +652,7 @@ func TestTimeseriesInfo_IsResetSum(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			tsi := tt.setupTsi()
 			s := tt.setupS()
-			assert.Equal(t, tt.expectedReset, tsi.IsResetSum(s))
+			assert.Equal(t, tt.expectedReset, IsResetSum(s, tsi.Number))
 		})
 	}
 }
