@@ -20,7 +20,11 @@ func TestSetupTelemetry(t *testing.T) {
 	tb, err := metadata.NewTelemetryBuilder(testTel.NewTelemetrySettings())
 	require.NoError(t, err)
 	defer tb.Shutdown()
+	tb.ReceiverGooglecloudpubsubEncodingError.Add(context.Background(), 1)
 	tb.ReceiverGooglecloudpubsubStreamRestarts.Add(context.Background(), 1)
+	AssertEqualReceiverGooglecloudpubsubEncodingError(t, testTel,
+		[]metricdata.DataPoint[int64]{{Value: 1}},
+		metricdatatest.IgnoreTimestamp())
 	AssertEqualReceiverGooglecloudpubsubStreamRestarts(t, testTel,
 		[]metricdata.DataPoint[int64]{{Value: 1}},
 		metricdatatest.IgnoreTimestamp())

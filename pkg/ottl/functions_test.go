@@ -25,6 +25,11 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			functionThatHasAnError,
 		),
 		createFactory[any](
+			"testing_pmapgetsetter",
+			&pMapGetSetterArguments{},
+			functionWithPMapGetSetter,
+		),
+		createFactory[any](
 			"testing_getsetter",
 			&getSetterArguments{},
 			functionWithGetSetter,
@@ -107,6 +112,19 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 					{
 						Value: value{
 							String: (ottltest.Strp("SHA256")),
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "not accessor (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							String: ottltest.Strp("not path"),
 						},
 					},
 				},
@@ -392,6 +410,30 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 			},
 		},
 		{
+			name: "path parts not all used (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+										{
+											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
 			name: "path parts not all used",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -406,6 +448,35 @@ func Test_NewFunctionCall_invalid(t *testing.T) {
 										},
 										{
 											Name: "not-used",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+		{
+			name: "Keys not allowed (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
 										},
 									},
 								},
@@ -805,6 +876,28 @@ func Test_NewFunctionCall(t *testing.T) {
 				},
 			},
 			want: 2,
+		},
+		{
+			name: "pmapgetsetter arg",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "name",
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
 		},
 		{
 			name: "pmapgetter slice arg",
@@ -1453,6 +1546,36 @@ func Test_NewFunctionCall(t *testing.T) {
 			want: nil,
 		},
 		{
+			name: "Complex Indexing (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
+											Keys: []key{
+												{
+													String: ottltest.Strp("foo"),
+												},
+												{
+													String: ottltest.Strp("bar"),
+												},
+											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
 			name: "Complex Indexing",
 			inv: editor{
 				Function: "testing_getsetter",
@@ -1472,6 +1595,28 @@ func Test_NewFunctionCall(t *testing.T) {
 													String: ottltest.Strp("bar"),
 												},
 											},
+										},
+									},
+								},
+							},
+						},
+					},
+				},
+			},
+			want: nil,
+		},
+		{
+			name: "path that allows keys but none have been specified (pmap)",
+			inv: editor{
+				Function: "testing_pmapgetsetter",
+				Arguments: []argument{
+					{
+						Value: value{
+							Literal: &mathExprLiteral{
+								Path: &path{
+									Fields: []field{
+										{
+											Name: "attributes",
 										},
 									},
 								},
@@ -1888,6 +2033,16 @@ func functionWithByteSliceLikeGetter(ByteSliceLikeGetter[any]) (ExprFunc[any], e
 	}, nil
 }
 
+type pMapGetSetterArguments struct {
+	PMapGetSetterArg PMapGetSetter[any]
+}
+
+func functionWithPMapGetSetter(PMapGetSetter[any]) (ExprFunc[any], error) {
+	return func(context.Context, any) (any, error) {
+		return "anything", nil
+	}, nil
+}
+
 type pMapGetterArguments struct {
 	PMapArg PMapGetter[any]
 }
@@ -2108,6 +2263,11 @@ func defaultFunctionsForTests() map[string]Factory[any] {
 			"testing_setter",
 			&setterArguments{},
 			functionWithSetter,
+		),
+		createFactory[any](
+			"testing_pmapgetsetter",
+			&pMapGetSetterArguments{},
+			functionWithPMapGetSetter,
 		),
 		createFactory[any](
 			"testing_getsetter",

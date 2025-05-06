@@ -1,0 +1,16 @@
+change_type: breaking
+
+# The name of the component, or a single word describing the area of concern, (e.g. filelogreceiver)
+component: googlecloudpubsubreceiver
+
+# A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
+note: Add `ignore_encoding_error` configuration to ignore decoding failures from the configured encoder
+
+issues: [38164]
+
+subtext: |
+  Introduce a setting to ignore errors when the configured encoder. It's advised to set this to `true` when using 
+  a custom encoder, and use the new `receiver.googlecloudpubsub.encoding_error` metric to monitor the number of errors. 
+  Ignoring the error will cause the receiver to drop the message.
+
+change_logs: [user]

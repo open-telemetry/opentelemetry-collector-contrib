@@ -369,48 +369,92 @@ func TestSumMetrics_IsCardinalityLimitReached(t *testing.T) {
 
 func TestSumMetrics_GetOrCreate(t *testing.T) {
 	tests := []struct {
-		name            string
-		metrics         map[Key]*Sum
-		key             Key
-		attributes      pcommon.Map
-		expectedCount   int
-		expectedCreated bool
+		name               string
+		metrics            map[Key]*Sum
+		key                Key
+		attributes         pcommon.Map
+		cardinalityLimit   int
+		expectedMetricsLen int
+		expectedSumCount   int
+		expectedCreated    bool
+		limitReached       bool
 	}{
 		{
-			name:            "Create new sum",
-			metrics:         make(map[Key]*Sum),
-			key:             "new-key",
-			attributes:      pcommon.NewMap(),
-			expectedCount:   1,
-			expectedCreated: true,
+			name:               "Create new sum",
+			metrics:            make(map[Key]*Sum),
+			key:                "new-key",
+			attributes:         pcommon.NewMap(),
+			expectedMetricsLen: 1,
+			expectedSumCount:   1,
+			expectedCreated:    true,
 		},
 		{
 			name: "Get existing sum",
 			metrics: map[Key]*Sum{
 				"existing-key": {count: 5},
 			},
-			key:             "existing-key",
-			attributes:      pcommon.NewMap(),
-			expectedCount:   1,
-			expectedCreated: false,
+			key:                "existing-key",
+			attributes:         pcommon.NewMap(),
+			expectedMetricsLen: 1,
+			expectedSumCount:   6,
+			expectedCreated:    false,
+		},
+		{
+			name: "sum reach cardinality limit and create the overflow metric",
+			metrics: map[Key]*Sum{
+				"key-1": {count: 5},
+				"key-2": {count: 6},
+			},
+			key: "key-3",
+			attributes: func() pcommon.Map {
+				attributes := pcommon.NewMap()
+				attributes.PutBool(overflowKey, true)
+				return attributes
+			}(),
+			cardinalityLimit:   2,
+			expectedMetricsLen: 3,
+			expectedCreated:    true,
+			limitReached:       true,
+		},
+		{
+			name: "sum reach cardinality limit and return the existing overflow metric",
+			metrics: map[Key]*Sum{
+				"key-1":                {count: 5},
+				"key-2":                {count: 6},
+				"otel.metric.overflow": {count: 1},
+			},
+			key: "key-3",
+			attributes: func() pcommon.Map {
+				attributes := pcommon.NewMap()
+				attributes.PutBool(overflowKey, true)
+				return attributes
+			}(),
+			cardinalityLimit:   2,
+			expectedMetricsLen: 3,
+			expectedSumCount:   2,
+			expectedCreated:    false,
+			limitReached:       true,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			sm := SumMetrics{
-				metrics: tt.metrics,
+				metrics:          tt.metrics,
+				cardinalityLimit: tt.cardinalityLimit,
 			}
 			attributesFun := func() pcommon.Map {
 				return tt.attributes
 			}
-			sum := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0))
-			assert.Len(t, sm.metrics, tt.expectedCount)
+			sum, limitReached := sm.GetOrCreate(tt.key, attributesFun, pcommon.Timestamp(0))
+			sum.Add(1)
+			assert.Equal(t, tt.limitReached, limitReached)
+			assert.Len(t, sm.metrics, tt.expectedMetricsLen)
 			if tt.expectedCreated {
 				assert.Equal(t, tt.attributes, sum.attributes)
-				assert.Equal(t, uint64(0), sum.count)
+				assert.Equal(t, uint64(1), sum.count)
 			} else {
-				assert.Equal(t, uint64(5), sum.count)
+				assert.Equal(t, uint64(tt.expectedSumCount), sum.count)
 			}
 		})
 	}
