@@ -22,10 +22,6 @@ const (
 	// Constants for OpenTelemetry Specs
 	scopeName = "otelcol/azureresourcelogs"
 
-	// Constants for Azure Log Record Attributes
-	// TODO: Remove once these are available in semconv
-	eventNameValue = "az.resource.log"
-
 	// Constants for Azure Log Record body fields
 	azureCategory          = "category"
 	azureCorrelationID     = "correlation.id"
@@ -114,18 +110,17 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 			lr.SetSeverityText(log.Level.String())
 		}
 
-		lr.Attributes().PutStr(conventions.AttributeCloudResourceID, log.ResourceID)
-		lr.Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
-		lr.Attributes().PutStr(conventions.AttributeEventName, eventNameValue)
-
 		if err := lr.Body().FromRaw(extractRawAttributes(log)); err != nil {
 			return plog.Logs{}, err
 		}
 	}
 
 	l := plog.NewLogs()
-	for _, scopeLogs := range allResourceScopeLogs {
+	for resourceID, scopeLogs := range allResourceScopeLogs {
 		rl := l.ResourceLogs().AppendEmpty()
+		rl.Resource().Attributes().PutStr(conventions.AttributeCloudProvider, conventions.AttributeCloudProviderAzure)
+		rl.Resource().Attributes().PutStr(conventions.AttributeCloudResourceID, resourceID)
+		rl.Resource().Attributes().PutStr(conventions.AttributeEventName, "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())
 	}
 

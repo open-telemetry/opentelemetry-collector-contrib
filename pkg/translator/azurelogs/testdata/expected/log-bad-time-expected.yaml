@@ -1,18 +1,18 @@
 resourceLogs:
-  - resource: {}
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /RESOURCE_ID
+        - key: event.name
+          value:
+            stringValue: az.resource.log
     scopeLogs:
       - logRecords:
-          - attributes:
-              - key: cloud.resource_id
-                value:
-                  stringValue: /RESOURCE_ID
-              - key: cloud.provider
-                value:
-                  stringValue: azure
-              - key: event.name
-                value:
-                  stringValue: az.resource.log
-            body:
+          - body:
               kvlistValue:
                 values:
                   - key: category
@@ -25,93 +25,93 @@ resourceLogs:
                     value:
                       kvlistValue:
                         values:
-                          - key: requestQuery
-                            value:
-                              stringValue: ""
-                          - key: serverResponseLatency
-                            value:
-                              stringValue: "0.028"
-                          - key: httpVersion
-                            value:
-                              stringValue: HTTP/1.1
-                          - key: sentBytes
-                            value:
-                              doubleValue: 466
-                          - key: sslProtocol
-                            value:
-                              stringValue: TLSv1.2
-                          - key: serverRouted
-                            value:
-                              stringValue: 52.239.221.65:443
-                          - key: WAFEvaluationTime
-                            value:
-                              stringValue: "0.000"
-                          - key: sslClientCertificateFingerprint
-                            value:
-                              stringValue: ""
-                          - key: sslClientVerify
-                            value:
-                              stringValue: NONE
-                          - key: serverStatus
-                            value:
-                              stringValue: "200"
-                          - key: instanceId
-                            value:
-                              stringValue: appgw_2
                           - key: clientIP
                             value:
                               stringValue: 185.42.129.24
-                          - key: httpStatus
-                            value:
-                              doubleValue: 200
-                          - key: upstreamSourcePort
-                            value:
-                              stringValue: "21564"
-                          - key: host
-                            value:
-                              stringValue: 20.110.30.194
                           - key: clientResponseTime
                             value:
                               doubleValue: 0
-                          - key: originalRequestUriWithArgs
+                          - key: upstreamSourcePort
+                            value:
+                              stringValue: "21564"
+                          - key: requestUri
                             value:
                               stringValue: /
-                          - key: clientPort
+                          - key: userAgent
                             value:
-                              doubleValue: 45057
+                              stringValue: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36
+                          - key: serverRouted
+                            value:
+                              stringValue: 52.239.221.65:443
+                          - key: serverStatus
+                            value:
+                              stringValue: "200"
+                          - key: receivedBytes
+                            value:
+                              doubleValue: 184
+                          - key: WAFEvaluationTime
+                            value:
+                              stringValue: "0.000"
+                          - key: transactionId
+                            value:
+                              stringValue: 592d1649f75a8d480a3c4dc6a975309d
+                          - key: requestQuery
+                            value:
+                              stringValue: ""
+                          - key: sslProtocol
+                            value:
+                              stringValue: TLSv1.2
+                          - key: httpVersion
+                            value:
+                              stringValue: HTTP/1.1
+                          - key: sslClientCertificateIssuerName
+                            value:
+                              stringValue: ""
+                          - key: sslClientCertificateFingerprint
+                            value:
+                              stringValue: ""
+                          - key: sentBytes
+                            value:
+                              doubleValue: 466
                           - key: httpMethod
                             value:
                               stringValue: GET
-                          - key: originalHost
+                          - key: instanceId
+                            value:
+                              stringValue: appgw_2
+                          - key: host
                             value:
                               stringValue: 20.110.30.194
                           - key: timeTaken
                             value:
                               doubleValue: 0.034
-                          - key: userAgent
+                          - key: originalHost
                             value:
-                              stringValue: Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/52.0.2743.116 Safari/537.36
-                          - key: WAFMode
+                              stringValue: 20.110.30.194
+                          - key: serverResponseLatency
                             value:
-                              stringValue: Detection
-                          - key: transactionId
-                            value:
-                              stringValue: 592d1649f75a8d480a3c4dc6a975309d
+                              stringValue: "0.028"
                           - key: sslEnabled
                             value:
                               stringValue: "on"
-                          - key: sslClientCertificateIssuerName
+                          - key: sslClientVerify
                             value:
-                              stringValue: ""
+                              stringValue: NONE
+                          - key: originalRequestUriWithArgs
+                            value:
+                              stringValue: /
+                          - key: httpStatus
+                            value:
+                              doubleValue: 200
                           - key: sslCipher
                             value:
                               stringValue: ECDHE-RSA-AES256-GCM-SHA384
-                          - key: requestUri
+                          - key: clientPort
                             value:
-                              stringValue: /
-                          - key: receivedBytes
+                              doubleValue: 45057
+                          - key: WAFMode
                             value:
-                              doubleValue: 184
+                              stringValue: Detection
             spanId: ""
             timeUnixNano: "1634249831000000000"
             traceId: ""

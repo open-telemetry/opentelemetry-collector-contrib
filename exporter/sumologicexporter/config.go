@@ -66,7 +66,7 @@ func createDefaultClientConfig() confighttp.ClientConfig {
 	clientConfig := confighttp.NewDefaultClientConfig()
 	clientConfig.Timeout = defaultTimeout
 	clientConfig.Compression = DefaultCompressEncoding
-	clientConfig.Auth = &configauth.Authentication{
+	clientConfig.Auth = &configauth.Config{
 		AuthenticatorID: component.NewID(sumologicextension.NewFactory().Type()),
 	}
 	return clientConfig

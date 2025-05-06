@@ -52,13 +52,13 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errBad,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+					Auth: &configauth.Config{AuthenticatorID: dummyID},
 				},
 				SHEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+					Auth: &configauth.Config{AuthenticatorID: dummyID},
 				},
 				CMEndpoint: confighttp.ClientConfig{
-					Auth: &configauth.Authentication{AuthenticatorID: dummyID},
+					Auth: &configauth.Config{AuthenticatorID: dummyID},
 				},
 			},
 		},
@@ -67,7 +67,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errBad,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+					Auth:     &configauth.Config{AuthenticatorID: dummyID},
 					Endpoint: "123.321.12.1:1",
 				},
 			},
@@ -77,7 +77,7 @@ func TestEndpointCorrectness(t *testing.T) {
 			expected: errScheme,
 			config: &Config{
 				IdxEndpoint: confighttp.ClientConfig{
-					Auth:     &configauth.Authentication{AuthenticatorID: dummyID},
+					Auth:     &configauth.Config{AuthenticatorID: dummyID},
 					Endpoint: "gss://123.124.32.12:90",
 				},
 			},
