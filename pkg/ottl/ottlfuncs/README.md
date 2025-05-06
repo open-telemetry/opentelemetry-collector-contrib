@@ -483,6 +483,7 @@ Available Converters:
 - [IsMatch](#ismatch)
 - [IsList](#islist)
 - [IsString](#isstring)
+- [Keys](#keys)
 - [Len](#len)
 - [Log](#log)
 - [IsValidLuhn](#isvalidluhn)
@@ -532,7 +533,6 @@ Available Converters:
 - [UUID](#UUID)
 - [Weekday](#weekday)
 - [Year](#year)
-- [Keys](#keys)
 
 ### Base64Decode (Deprecated)
 
@@ -1259,6 +1259,21 @@ Examples:
 - `IsString(log.body)`
 
 - `IsString(resource.attributes["maybe a string"])`
+
+### Keys
+
+`Keys(target)`
+
+The `Keys` Converter returns a slice containing all the keys from the given map.
+
+`target` is a `pcommon.Map`. If `target` is another type an error is returned.
+
+The returned type is `pcommon.Slice`.
+
+Examples:
+- 
+- `Keys(resource.attributes)`
+- `Keys({"k1":"v1", "k2": "v2"})`
 
 ### Len
 
@@ -2451,19 +2466,3 @@ The returned type is `int64`.
 Examples:
 
 - `Year(Now())`
-
-
-### Keys
-
-`Keys(target)`
-
-The `Keys` Converter returns a slice containing all the keys from the given map.
-
-`target` is a `pcommon.Map`. If `target` is another type an error is returned.
-
-The returned type is `pcommon.Slice`.
-
-Examples:
-- 
-- `Keys(resource.attributes)`
-- `Keys({"k1":"v1", "k2": "v2"})`
