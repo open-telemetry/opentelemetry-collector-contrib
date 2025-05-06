@@ -180,6 +180,8 @@ var (
 	pdh_ValidatePathW             *syscall.Proc
 	pdh_ExpandWildCardPathW       *syscall.Proc
 	pdh_GetCounterInfoW           *syscall.Proc
+	pdh_GetRawCounterValue        *syscall.Proc
+	pdh_GetRawCounterArrayW       *syscall.Proc
 )
 
 func init() {
@@ -198,6 +200,8 @@ func init() {
 	pdh_ValidatePathW = libpdhDll.MustFindProc("PdhValidatePathW")
 	pdh_ExpandWildCardPathW = libpdhDll.MustFindProc("PdhExpandWildCardPathW")
 	pdh_GetCounterInfoW = libpdhDll.MustFindProc("PdhGetCounterInfoW")
+	pdh_GetRawCounterValue = libpdhDll.MustFindProc("PdhGetRawCounterValue")
+	pdh_GetRawCounterArrayW = libpdhDll.MustFindProc("PdhGetRawCounterArrayW")
 }
 
 // PdhAddCounter adds the specified counter to the query. This is the internationalized version. Preferably, use the
@@ -495,6 +499,48 @@ func PdhGetCounterInfo(hCounter PDH_HCOUNTER, bRetrieveExplainText int, pdwBuffe
 		uintptr(bRetrieveExplainText),
 		uintptr(unsafe.Pointer(pdwBufferSize)),
 		uintptr(unsafe.Pointer(lpBuffer)))
+
+	return uint32(ret)
+}
+
+// PdhGetRawCounterValue retrieves the current raw value of the specified counter.
+// hCounter [in]
+// Handle of the counter from which you want to retrieve the raw value. The PdhAddCounter function returns this handle.
+//
+// lpdwType [out]
+// Pointer to a variable that receives the counter type. For a list of counter types, see the Counter Types section of the Windows Server documentation.
+//
+// pValue [out]
+// Pointer to a PDH_RAW_COUNTER structure that receives the raw counter value.
+func PdhGetRawCounterValue(hCounter PDH_HCOUNTER, lpdwType *uint32, pValue *PDH_RAW_COUNTER) uint32 {
+	ret, _, _ := pdh_GetRawCounterValue.Call(
+		uintptr(hCounter),
+		uintptr(unsafe.Pointer(lpdwType)),
+		uintptr(unsafe.Pointer(pValue)),
+	)
+
+	return uint32(ret)
+}
+
+// PdhGetRawCounterArrayW retrieves an array of raw counter values for all instances of the specified counter.
+// hCounter [in]
+// Handle of the counter from which you want to retrieve the raw values. The PdhAddCounter function returns this handle.
+//
+// lpdwBufferSize [in, out]
+// Pointer to a variable that specifies the size of the buffer, in bytes. If the buffer is too small, the function sets this variable to the required buffer size.
+//
+// lpdwBufferCount [out]
+// Pointer to a variable that receives the number of elements in the buffer.
+//
+// itemBuffer [out]
+// Pointer to a buffer that receives an array of PDH_RAW_COUNTER_ITEM structures. Each structure contains the raw counter value for an instance.
+func PdhGetRawCounterArrayW(hCounter PDH_HCOUNTER, lpdwBufferSize *uint32, lpdwBufferCount *uint32, itemBuffer *byte) uint32 {
+	ret, _, _ := pdh_GetRawCounterArrayW.Call(
+		uintptr(hCounter),
+		uintptr(unsafe.Pointer(lpdwBufferSize)),
+		uintptr(unsafe.Pointer(lpdwBufferCount)),
+		uintptr(unsafe.Pointer(itemBuffer)),
+	)
 
 	return uint32(ret)
 }
