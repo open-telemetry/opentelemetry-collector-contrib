@@ -116,8 +116,7 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthChecker      *healthchecker.HTTPHealthChecker
-	lastHealthCheckErr error
+	healthChecker *healthchecker.HTTPHealthChecker
 
 	// Supervisor's own config.
 	config config.Supervisor
@@ -161,8 +160,6 @@ type Supervisor struct {
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient *protobufs.ComponentHealth
-	// lastHealth is the last health status of the agent.
-	lastHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
