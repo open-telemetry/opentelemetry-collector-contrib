@@ -25,6 +25,8 @@ import (
 // Experimental: *NOTE* this constant is subject to change or removal in the future.
 const ContextName = ctxspan.Name
 
+var _ zapcore.ObjectMarshaler = (*TransformContext)(nil)
+
 // TransformContext represents a span and its associated hierarchy.
 type TransformContext struct {
 	span                 ptrace.Span
