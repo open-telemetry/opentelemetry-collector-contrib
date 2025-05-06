@@ -6,5 +6,6 @@ status:
   stability:
     alpha: [ traces, metrics, logs ]
   codeowners:
-    active: [TylerHelmuth, kentquirk, bogdandrutu, evan-bradley, edmocosta]
+    active: [TylerHelmuth, evan-bradley, edmocosta]
+    emeritus: [anuraaga, kentquirk, bogdandrutu]
     seeking_new: true
