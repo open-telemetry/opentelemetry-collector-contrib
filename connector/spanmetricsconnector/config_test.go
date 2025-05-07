@@ -158,6 +158,22 @@ func TestLoadConfig(t *testing.T) {
 			id:           component.NewIDWithName(metadata.Type, "invalid_delta_timestamp_cache_size"),
 			errorMessage: "invalid delta timestamp cache size: 0, the maximum number of the items in the cache should be positive",
 		},
+		{
+			id: component.NewIDWithName(metadata.Type, "separate_calls_and_duration_dimensions"),
+			expected: &Config{
+				AggregationTemporality: "AGGREGATION_TEMPORALITY_CUMULATIVE",
+				Histogram:              HistogramConfig{Disable: false, Unit: defaultUnit, Dimensions: []Dimension{{Name: "http.status_code", Default: (*string)(nil)}}},
+				Dimensions: []Dimension{
+					{Name: "http.method", Default: &defaultMethod},
+				},
+				CallsDimensions: []Dimension{
+					{Name: "http.url", Default: (*string)(nil)},
+				},
+				ResourceMetricsCacheSize: defaultResourceMetricsCacheSize,
+				MetricsFlushInterval:     60 * time.Second,
+				Namespace:                DefaultNamespace,
+			},
+		},
 	}
 
 	for _, tt := range tests {

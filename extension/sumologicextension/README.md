@@ -5,6 +5,7 @@
 | Stability     | [alpha]  |
 | Distributions | [] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fsumologic%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fsumologic) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fsumologic%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fsumologic) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_sumologic)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_sumologic&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@rnishtala-sumo](https://www.github.com/rnishtala-sumo), [@chan-tim-sumo](https://www.github.com/chan-tim-sumo), [@echlebek](https://www.github.com/echlebek), [@amdprophet](https://www.github.com/amdprophet) |
 | Emeritus      | [@aboguszewski-sumo](https://www.github.com/aboguszewski-sumo), [@kasia-kujawa](https://www.github.com/kasia-kujawa), [@mat-rumian](https://www.github.com/mat-rumian), [@sumo-drosiek](https://www.github.com/sumo-drosiek) |
 
@@ -30,10 +31,10 @@ It manages:
 
 It implements [`HTTPClientAuthenticator`][httpclientauthenticator]
 and can be used as an authenticator for the
-[`configauth.Authentication`][configauth_authentication] option for HTTP clients.
+[`configauth.Config`][configauth_config] option for HTTP clients.
 
 [httpclientauthenticator]: https://github.com/open-telemetry/opentelemetry-collector/blob/2e84285efc665798d76773b9901727e8836e9d8f/config/configauth/clientauth.go#L34-L39
-[configauth_authentication]: https://github.com/open-telemetry/opentelemetry-collector/blob/3f5c7180c51ed67a6f54158ede5e523822e9659e/config/configauth/configauth.go#L29-L33
+[configauth_config]: https://github.com/open-telemetry/opentelemetry-collector/blob/045488fddebb78b6ddd690700440507e6dfbfa47/config/configauth/configauth.go#L29-L34
 
 ## Configuration
 

@@ -90,7 +90,6 @@ func TestNewExporter(t *testing.T) {
 }
 
 func TestNewExporter_Serializer(t *testing.T) {
-	t.Skip("Flaky, see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39601")
 	server := testutil.DatadogServerMock()
 	defer server.Close()
 

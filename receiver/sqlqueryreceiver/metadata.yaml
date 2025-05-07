@@ -16,3 +16,7 @@ tests:
       any:
         # Regarding the godbus/dbus ignore: see https://github.com/99designs/keyring/issues/103
         - "github.com/godbus/dbus.(*Conn).inWorker"
+      top:
+        # Can be removed once the following issue is resolved:
+        # https://github.com/snowflakedb/gosnowflake/issues/1369
+        - "github.com/snowflakedb/gosnowflake.initOCSPCacheClearer.func1"

@@ -15,6 +15,7 @@ import (
 	"github.com/tinylib/msgp/msgp"
 	"go.uber.org/zap"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal/metadata"
 )
 
@@ -125,7 +126,7 @@ func (s *server) handleConn(ctx context.Context, conn net.Conn) error {
 		// messages -- this is the only thing that sends data back to the
 		// client.
 		if event.Chunk() != "" {
-			err := msgp.Encode(conn, AckResponse{Ack: event.Chunk()})
+			err := msgp.Encode(conn, internal.AckResponse{Ack: event.Chunk()})
 			if err != nil {
 				return fmt.Errorf("failed to acknowledge chunk %s: %w", event.Chunk(), err)
 			}

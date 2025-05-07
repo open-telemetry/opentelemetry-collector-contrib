@@ -6,7 +6,7 @@ status:
     beta: [metrics]
   distributions: [contrib]
   codeowners:
-    active: [jsirianni]
+    active: [jsirianni, VihasMakwana, rogercoll]
     emeritus: [djaglowski]
     seeking_new: true
 

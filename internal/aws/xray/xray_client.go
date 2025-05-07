@@ -5,16 +5,18 @@
 package awsxray // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray"
 
 import (
+	"context"
+	"fmt"
 	"os"
 	"runtime"
 	"runtime/debug"
 	"strconv"
 	"time"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/request"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
+	"github.com/aws/smithy-go/middleware"
+	smithyhttp "github.com/aws/smithy-go/transport/http"
 	"go.opentelemetry.io/collector/component"
 	"go.uber.org/zap"
 )
@@ -26,26 +28,10 @@ const (
 	osPrefix      = " OS/"
 )
 
-// XRayClient represents X-Ray client.
+// XRayClient contains the AWS XRay API calls that exporter/awsxrayexporter uses
 type XRayClient interface {
-	// PutTraceSegments makes PutTraceSegments api call on X-Ray client.
-	PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error)
-	// PutTelemetryRecords makes PutTelemetryRecords api call on X-Ray client.
-	PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error)
-}
-
-type xrayClient struct {
-	xRay *xray.XRay
-}
-
-// PutTraceSegments makes PutTraceSegments api call on X-Ray client.
-func (c *xrayClient) PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
-	return c.xRay.PutTraceSegments(input)
-}
-
-// PutTelemetryRecords makes PutTelemetryRecords api call on X-Ray client.
-func (c *xrayClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
-	return c.xRay.PutTelemetryRecords(input)
+	PutTraceSegments(ctx context.Context, params *xray.PutTraceSegmentsInput, optFns ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error)
+	PutTelemetryRecords(ctx context.Context, params *xray.PutTelemetryRecordsInput, optFns ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error)
 }
 
 func getModVersion() string {
@@ -64,40 +50,80 @@ func getModVersion() string {
 }
 
 // NewXRayClient creates a new instance of the XRay client with an AWS configuration and session.
-func NewXRayClient(logger *zap.Logger, awsConfig *aws.Config, buildInfo component.BuildInfo, s *session.Session) XRayClient {
-	x := xray.New(s, awsConfig)
-	logger.Debug("Using Endpoint: %s", zap.String("endpoint", x.Endpoint))
+func NewXRayClient(logger *zap.Logger, cfg aws.Config, buildInfo component.BuildInfo) XRayClient {
+	logger.Debug("Using Endpoint: %s", zap.String("endpoint", *cfg.BaseEndpoint))
 
-	execEnv := os.Getenv("AWS_EXECUTION_ENV")
-	if execEnv == "" {
+	execEnv, ok := os.LookupEnv("AWS_EXECUTION_ENV")
+	if !ok || execEnv == "" {
 		execEnv = "UNKNOWN"
 	}
 
 	osInformation := runtime.GOOS + "-" + runtime.GOARCH
 
-	x.Handlers.Build.PushBackNamed(request.NamedHandler{
-		Name: "tracing.XRayVersionUserAgentHandler",
-		Fn:   request.MakeAddToUserAgentFreeFormHandler(agentPrefix + getModVersion() + execEnvPrefix + execEnv + osPrefix + osInformation),
-	})
+	return xray.NewFromConfig(cfg,
+		AddToUserAgentHeader("tracing.XRayVersionUserAgentHandler", agentPrefix+getModVersion()+execEnvPrefix+execEnv+osPrefix+osInformation, middleware.After),
+		AddToUserAgentHeader("otel.collector.UserAgentHandler", fmt.Sprintf("%s/%s", buildInfo.Command, buildInfo.Version), middleware.Before),
+		WithTimestampRequestHeader(middleware.Before),
+	)
+}
 
-	x.Handlers.Build.PushFrontNamed(newCollectorUserAgentHandler(buildInfo))
+type withTimestampRequestHeader struct{}
 
-	x.Handlers.Sign.PushFrontNamed(request.NamedHandler{
-		Name: "tracing.TimestampHandler",
-		Fn: func(r *request.Request) {
-			r.HTTPRequest.Header.Set("X-Amzn-Xray-Timestamp",
-				strconv.FormatFloat(float64(time.Now().UnixNano())/float64(time.Second), 'f', 9, 64))
-		},
-	})
+var _ middleware.FinalizeMiddleware = (*withTimestampRequestHeader)(nil)
 
-	return &xrayClient{
-		xRay: x,
+func (*withTimestampRequestHeader) ID() string {
+	return "tracing.TimestampHandler"
+}
+
+func (*withTimestampRequestHeader) HandleFinalize(ctx context.Context, in middleware.FinalizeInput, next middleware.FinalizeHandler) (
+	middleware.FinalizeOutput, middleware.Metadata, error,
+) {
+	req, ok := in.Request.(*smithyhttp.Request)
+	if !ok {
+		return middleware.FinalizeOutput{}, middleware.Metadata{}, fmt.Errorf("unreconized transport type: %T", in.Request)
+	}
+
+	req.Header.Set("X-Amzn-Xray-Timestamp", strconv.FormatFloat(float64(time.Now().UnixNano())/float64(time.Second), 'f', 9, 64))
+	return next.HandleFinalize(ctx, in)
+}
+
+func WithTimestampRequestHeader(pos middleware.RelativePosition) func(options *xray.Options) {
+	return func(o *xray.Options) {
+		o.APIOptions = append(o.APIOptions, func(s *middleware.Stack) error {
+			return s.Finalize.Add(&withTimestampRequestHeader{}, pos)
+		})
 	}
 }
 
-func newCollectorUserAgentHandler(buildInfo component.BuildInfo) request.NamedHandler {
-	return request.NamedHandler{
-		Name: "otel.collector.UserAgentHandler",
-		Fn:   request.MakeAddToUserAgentHandler(buildInfo.Command, buildInfo.Version),
+type addToUserAgentHeader struct {
+	id, val string
+}
+
+var _ middleware.SerializeMiddleware = (*addToUserAgentHeader)(nil)
+
+func (a *addToUserAgentHeader) ID() string {
+	return a.id
+}
+
+func (a *addToUserAgentHeader) HandleSerialize(ctx context.Context, in middleware.SerializeInput, next middleware.SerializeHandler) (out middleware.SerializeOutput, metadata middleware.Metadata, err error) {
+	req, ok := in.Request.(*smithyhttp.Request)
+	if !ok {
+		return out, metadata, fmt.Errorf("unreconized transport type: %T", in.Request)
+	}
+
+	val := a.val
+	curUA := req.Header.Get("User-Agent")
+	if len(curUA) > 0 {
+		val = curUA + " " + val
+	}
+	req.Header.Set("User-Agent", val)
+	return next.HandleSerialize(ctx, in)
+}
+
+func AddToUserAgentHeader(id, val string, pos middleware.RelativePosition) func(options *xray.Options) {
+	return func(o *xray.Options) {
+		o.APIOptions = append(o.APIOptions, func(s *middleware.Stack) error {
+			return s.Serialize.Add(&addToUserAgentHeader{id: id, val: val}, pos)
+		})
 	}
 }

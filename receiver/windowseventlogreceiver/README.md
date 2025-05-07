@@ -7,6 +7,7 @@
 | Unsupported Platforms | darwin, linux |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Areceiver%2Fwindowseventlog%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Areceiver%2Fwindowseventlog) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Areceiver%2Fwindowseventlog%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Areceiver%2Fwindowseventlog) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=receiver_windowseventlog)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=receiver_windowseventlog&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@armstrmi](https://www.github.com/armstrmi), [@pjanotti](https://www.github.com/pjanotti) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -35,6 +36,7 @@ Tails and parses logs from windows event log API using the [opentelemetry-log-co
 | `retry_on_failure.max_interval`     | `30 seconds` | Upper bound on retry backoff interval. Once this value is reached the delay between consecutive retries will remain constant at the specified value.                                                                                           |
 | `retry_on_failure.max_elapsed_time` | `5 minutes`  | Maximum amount of time (including retries) spent trying to send a logs batch to a downstream consumer. Once this value is reached, the data is discarded. Retrying never stops if set to `0`.                                                  |
 | `remote`                              | object       | Remote configuration for connecting to a remote machine to collect logs. Includes server (the address of the remote server), with username, password, and optional domain.                                                    |
+| `query`                             | none         | XML query used for filtering events. See [Query Schema](https://learn.microsoft.com/en-us/windows/win32/wes/queryschema-schema)                                                                                                                |
 
 ### Operators
 
@@ -110,4 +112,22 @@ receivers:
             username: "user"
             password: "password"
             domain:   "domain"
+```
+
+#### XML Queries
+
+You can use XML queries to filter events. The query is passed to the `query` field in the configuration. The provided query must be a valid XML string. See [XML Event Queries](https://learn.microsoft.com/en-us/previous-versions/aa385231(v=vs.85)#xml-event-queries)
+
+The following example only forwards logs from the `Application` from `foo` or `bar` providers.
+
+```yaml
+receivers:
+  windowseventlog/query:
+    query: |
+      <QueryList>
+        <Query Id="0">
+          <Select Path="Application">*[System[Provider[@Name='foo']]]</Select>
+          <Select Path="Application">*[System[Provider[@Name='bar']]]</Select>
+        </Query>
+      </QueryList>
 ```

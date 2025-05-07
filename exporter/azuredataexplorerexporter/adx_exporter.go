@@ -9,10 +9,9 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/Azure/azure-kusto-go/kusto"
-	kustoerrors "github.com/Azure/azure-kusto-go/kusto/data/errors"
-	"github.com/Azure/azure-kusto-go/kusto/ingest"
-	"github.com/Azure/azure-kusto-go/kusto/ingest/ingestoptions"
+	"github.com/Azure/azure-kusto-go/azkustodata"
+	"github.com/Azure/azure-kusto-go/azkustoingest"
+	"github.com/Azure/azure-kusto-go/azkustoingest/ingestoptions"
 	jsoniter "github.com/json-iterator/go"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -23,10 +22,9 @@ import (
 
 // adxDataProducer uses the ADX client to perform ingestion
 type adxDataProducer struct {
-	client        *kusto.Client       // client for logs, traces and metrics
-	ingestor      ingest.Ingestor     // ingestion for logs, traces and metrics
-	ingestOptions []ingest.FileOption // options for the ingestion
-	logger        *zap.Logger         // logger for tracing the flow
+	ingestor      azkustoingest.Ingestor     // ingestion for logs, traces and metrics
+	ingestOptions []azkustoingest.FileOption // options for the ingestion
+	logger        *zap.Logger                // logger for tracing the flow
 }
 
 const nextline = "\n"
@@ -127,13 +125,8 @@ func (e *adxDataProducer) tracesDataPusher(_ context.Context, traceData ptrace.T
 }
 
 func (e *adxDataProducer) Close(context.Context) error {
-	var err error
-
-	err = e.ingestor.Close()
-
-	if clientErr := e.client.Close(); clientErr != nil {
-		err = kustoerrors.GetCombinedError(err, clientErr)
-	}
+	// Close the ingestor and client connections
+	err := e.ingestor.Close()
 	if err != nil {
 		e.logger.Warn("Error closing connections", zap.Error(err))
 	} else {
@@ -149,36 +142,31 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 	if err != nil {
 		return nil, err
 	}
-	metricClient, err := buildAdxClient(config, version)
-	if err != nil {
-		return nil, err
-	}
 
-	var ingestor ingest.Ingestor
+	var ingestor azkustoingest.Ingestor
 
-	var ingestOptions []ingest.FileOption
-	ingestOptions = append(ingestOptions, ingest.FileFormat(ingest.JSON))
-	ingestOptions = append(ingestOptions, ingest.CompressionType(ingestoptions.GZIP))
+	var ingestOptions []azkustoingest.FileOption
+	ingestOptions = append(ingestOptions, azkustoingest.FileFormat(azkustoingest.JSON))
+	ingestOptions = append(ingestOptions, azkustoingest.CompressionType(ingestoptions.GZIP))
 	// Expect that this mapping is already existent
 	if refOption := getMappingRef(config, telemetryDataType); refOption != nil {
 		ingestOptions = append(ingestOptions, refOption)
 	}
 	// The exporter could be configured to run in either modes. Using managedstreaming or batched queueing
 	if strings.ToLower(config.IngestionType) == managedIngestType {
-		mi, err := createManagedStreamingIngestor(config, metricClient, tableName)
+		mi, err := createManagedStreamingIngestor(config, version, tableName)
 		if err != nil {
 			return nil, err
 		}
 		ingestor = mi
 	} else {
-		qi, err := createQueuedIngestor(config, metricClient, tableName)
+		qi, err := createQueuedIngestor(config, version, tableName)
 		if err != nil {
 			return nil, err
 		}
 		ingestor = qi
 	}
 	return &adxDataProducer{
-		client:        metricClient,
 		ingestOptions: ingestOptions,
 		ingestor:      ingestor,
 		logger:        logger,
@@ -186,57 +174,62 @@ func newExporter(config *Config, logger *zap.Logger, telemetryDataType int, vers
 }
 
 // Fetches the corresponding ingestionRef if the mapping is provided
-func getMappingRef(config *Config, telemetryDataType int) ingest.FileOption {
+func getMappingRef(config *Config, telemetryDataType int) azkustoingest.FileOption {
 	switch telemetryDataType {
 	case metricsType:
 		if !isEmpty(config.MetricTableMapping) {
-			return ingest.IngestionMappingRef(config.MetricTableMapping, ingest.JSON)
+			return azkustoingest.IngestionMappingRef(config.MetricTableMapping, azkustoingest.JSON)
 		}
 	case tracesType:
 		if !isEmpty(config.TraceTableMapping) {
-			return ingest.IngestionMappingRef(config.TraceTableMapping, ingest.JSON)
+			return azkustoingest.IngestionMappingRef(config.TraceTableMapping, azkustoingest.JSON)
 		}
 	case logsType:
 		if !isEmpty(config.LogTableMapping) {
-			return ingest.IngestionMappingRef(config.LogTableMapping, ingest.JSON)
+			return azkustoingest.IngestionMappingRef(config.LogTableMapping, azkustoingest.JSON)
 		}
 	}
 	return nil
 }
 
-func buildAdxClient(config *Config, version string) (*kusto.Client, error) {
-	client, err := kusto.New(createKcsb(config, version))
-	return client, err
-}
-
-func createKcsb(config *Config, version string) *kusto.ConnectionStringBuilder {
-	var kcsb *kusto.ConnectionStringBuilder
+func createKcsb(config *Config, version string) *azkustodata.ConnectionStringBuilder {
+	var kcsb *azkustodata.ConnectionStringBuilder
 	isManagedIdentity := len(strings.TrimSpace(config.ManagedIdentityID)) > 0
 	isSystemManagedIdentity := strings.EqualFold(strings.TrimSpace(config.ManagedIdentityID), "SYSTEM")
 	// If the user has managed identity done, use it. For System managed identity use the MI as system
 	switch {
 	case config.UseAzureAuth:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithDefaultAzureCredential()
+		kcsb = azkustodata.NewConnectionStringBuilder(config.ClusterURI).WithDefaultAzureCredential()
 	case !isManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
+		kcsb = azkustodata.NewConnectionStringBuilder(config.ClusterURI).WithAadAppKey(config.ApplicationID, string(config.ApplicationKey), config.TenantID)
 	case isManagedIdentity && isSystemManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
+		kcsb = azkustodata.NewConnectionStringBuilder(config.ClusterURI).WithSystemManagedIdentity()
 	case isManagedIdentity && !isSystemManagedIdentity:
-		kcsb = kusto.NewConnectionStringBuilder(config.ClusterURI).WithUserManagedIdentity(config.ManagedIdentityID)
+		kcsb = azkustodata.NewConnectionStringBuilder(config.ClusterURI).WithUserAssignedIdentityClientId(config.ManagedIdentityID)
 	}
-	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", kusto.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
+	kcsb.SetConnectorDetails("OpenTelemetry", version, "", "", false, "", azkustodata.StringPair{Key: "isManagedIdentity", Value: strconv.FormatBool(isManagedIdentity)})
 	return kcsb
 }
 
 // Depending on the table, create separate ingestors
-func createManagedStreamingIngestor(config *Config, adxclient *kusto.Client, tablename string) (*ingest.Managed, error) {
-	ingestor, err := ingest.NewManaged(adxclient, config.Database, tablename)
+func createManagedStreamingIngestor(config *Config, version string, tablename string) (*azkustoingest.Managed, error) {
+	kcsb := createKcsb(config, version)
+	ingestopts := []azkustoingest.Option{
+		azkustoingest.WithDefaultDatabase(config.Database),
+		azkustoingest.WithDefaultTable(tablename),
+	}
+	ingestor, err := azkustoingest.NewManaged(kcsb, ingestopts...)
 	return ingestor, err
 }
 
 // A queued ingestor in case that is provided as the config option
-func createQueuedIngestor(config *Config, adxclient *kusto.Client, tablename string) (*ingest.Ingestion, error) {
-	ingestor, err := ingest.New(adxclient, config.Database, tablename)
+func createQueuedIngestor(config *Config, version string, tablename string) (*azkustoingest.Ingestion, error) {
+	kcsb := createKcsb(config, version)
+	ingestopts := []azkustoingest.Option{
+		azkustoingest.WithDefaultDatabase(config.Database),
+		azkustoingest.WithDefaultTable(tablename),
+	}
+	ingestor, err := azkustoingest.New(kcsb, ingestopts...)
 	return ingestor, err
 }
 

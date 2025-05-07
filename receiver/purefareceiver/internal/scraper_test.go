@@ -47,7 +47,7 @@ func TestToPrometheusConfig(t *testing.T) {
 	cfgs := []ScraperConfig{
 		{
 			Address: "array01",
-			Auth: configauth.Authentication{
+			Auth: configauth.Config{
 				AuthenticatorID: component.MustNewIDWithName("bearertokenauth", "array01"),
 			},
 		},

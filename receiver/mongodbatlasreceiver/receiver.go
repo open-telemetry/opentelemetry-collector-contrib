@@ -35,8 +35,12 @@ type timeconstraints struct {
 	resolution string
 }
 
-func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbatlasreceiver {
-	client := internal.NewMongoDBAtlasClient(cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) (*mongodbatlasreceiver, error) {
+	client, err := internal.NewMongoDBAtlasClient(cfg.BaseURL, cfg.PublicKey, string(cfg.PrivateKey), cfg.BackOffConfig, settings.Logger)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create MongoDB Atlas client receiver: %w", err)
+	}
+
 	for _, p := range cfg.Projects {
 		p.populateIncludesAndExcludes()
 	}
@@ -47,7 +51,7 @@ func newMongoDBAtlasReceiver(settings receiver.Settings, cfg *Config) *mongodbat
 		client:      client,
 		mb:          metadata.NewMetricsBuilder(cfg.MetricsBuilderConfig, settings),
 		stopperChan: make(chan struct{}),
-	}
+	}, nil
 }
 
 func newMongoDBAtlasScraper(recv *mongodbatlasreceiver) (scraper.Metrics, error) {

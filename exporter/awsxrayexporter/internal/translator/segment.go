@@ -14,7 +14,7 @@ import (
 	"strings"
 	"time"
 
-	awsP "github.com/aws/aws-sdk-go/aws"
+	awsP "github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"

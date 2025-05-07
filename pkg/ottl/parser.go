@@ -70,6 +70,7 @@ type Parser[K any] struct {
 	pathContextNames  map[string]struct{}
 }
 
+// NewParser creates a new Parser
 func NewParser[K any](
 	functions map[string]Factory[K],
 	pathParser PathExpressionParser[K],
@@ -93,8 +94,10 @@ func NewParser[K any](
 	return p, nil
 }
 
+// Option is an option for a Parser
 type Option[K any] func(*Parser[K])
 
+// WithEnumParser allows setting the enums a parser can use during parsing.
 func WithEnumParser[K any](parser EnumParser) Option[K] {
 	return func(p *Parser[K]) {
 		p.enumParser = parser
@@ -348,6 +351,7 @@ type StatementSequence[K any] struct {
 	telemetrySettings component.TelemetrySettings
 }
 
+// StatementSequenceOption is an option for a StatementSequence
 type StatementSequenceOption[K any] func(*StatementSequence[K])
 
 // WithStatementSequenceErrorMode sets the ErrorMode of a StatementSequence
@@ -403,6 +407,7 @@ type ConditionSequence[K any] struct {
 	logicOp           LogicOperation
 }
 
+// ConditionSequenceOption is an option for a ConditionSequence
 type ConditionSequenceOption[K any] func(*ConditionSequence[K])
 
 // WithConditionSequenceErrorMode sets the ErrorMode of a ConditionSequence

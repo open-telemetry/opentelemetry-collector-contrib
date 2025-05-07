@@ -29,3 +29,13 @@ signaltometrics:
         value: "1"
       exponential_histogram:
         value: "1"
+  profiles:
+    - name: profile.sum
+      attributes:
+        - key: key.1
+      sum:
+        value: "1"
+      histogram:
+        value: "1"
+      exponential_histogram:
+        value: "1"

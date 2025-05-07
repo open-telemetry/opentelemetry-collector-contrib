@@ -11,10 +11,13 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
+// https://github.com/open-telemetry/opentelemetry-go/blob/3ae002c3caf3e44387f0554dfcbbde2c5aab7909/sdk/metric/internal/aggregate/limit.go#L11C36-L11C50
+const overflowKey = "otel.metric.overflow"
+
 type Key string
 
 type HistogramMetrics interface {
-	GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) Histogram
+	GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (Histogram, bool)
 	BuildMetrics(pmetric.Metric, pcommon.Timestamp, func(Key, pcommon.Timestamp) pcommon.Timestamp, pmetric.AggregationTemporality)
 	ClearExemplars()
 }
@@ -28,12 +31,14 @@ type explicitHistogramMetrics struct {
 	metrics          map[Key]*explicitHistogram
 	bounds           []float64
 	maxExemplarCount *int
+	cardinalityLimit int
 }
 
 type exponentialHistogramMetrics struct {
 	metrics          map[Key]*exponentialHistogram
 	maxSize          int32
 	maxExemplarCount *int
+	cardinalityLimit int
 }
 
 type explicitHistogram struct {
@@ -64,27 +69,51 @@ type exponentialHistogram struct {
 
 type BuildAttributesFun func() pcommon.Map
 
-func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int) HistogramMetrics {
+func NewExponentialHistogramMetrics(maxSize int32, maxExemplarCount *int, cardinalityLimit int) HistogramMetrics {
 	return &exponentialHistogramMetrics{
 		metrics:          make(map[Key]*exponentialHistogram),
 		maxSize:          maxSize,
 		maxExemplarCount: maxExemplarCount,
+		cardinalityLimit: cardinalityLimit,
 	}
 }
 
-func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount *int) HistogramMetrics {
+func NewExplicitHistogramMetrics(bounds []float64, maxExemplarCount *int, cardinalityLimit int) HistogramMetrics {
 	return &explicitHistogramMetrics{
 		metrics:          make(map[Key]*explicitHistogram),
 		bounds:           bounds,
 		maxExemplarCount: maxExemplarCount,
+		cardinalityLimit: cardinalityLimit,
 	}
 }
 
-func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) Histogram {
+func (m *explicitHistogramMetrics) IsCardinalityLimitReached() bool {
+	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
+}
+
+func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (Histogram, bool) {
+	limitReached := false
 	h, ok := m.metrics[key]
 	if !ok {
+		var attributes pcommon.Map
+		if m.IsCardinalityLimitReached() {
+			limitReached = true
+			key = overflowKey
+
+			// check if overflowKey already exists
+			h, ok = m.metrics[key]
+			if ok {
+				return h, limitReached
+			}
+
+			attributes = pcommon.NewMap()
+			attributes.PutBool(overflowKey, true)
+		} else {
+			attributes = attributesFun()
+		}
+
 		h = &explicitHistogram{
-			attributes:       attributesFun(),
+			attributes:       attributes,
 			exemplars:        pmetric.NewExemplarSlice(),
 			bounds:           m.bounds,
 			bucketCounts:     make([]uint64, len(m.bounds)+1),
@@ -93,7 +122,7 @@ func (m *explicitHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttri
 		}
 		m.metrics[key] = h
 	}
-	return h
+	return h, limitReached
 }
 
 func (m *explicitHistogramMetrics) BuildMetrics(
@@ -128,7 +157,12 @@ func (m *explicitHistogramMetrics) ClearExemplars() {
 	}
 }
 
-func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp) Histogram {
+func (m *exponentialHistogramMetrics) IsCardinalityLimitReached() bool {
+	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
+}
+
+func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimeStamp pcommon.Timestamp) (Histogram, bool) {
+	limitReached := false
 	h, ok := m.metrics[key]
 	if !ok {
 		histogram := new(structure.Histogram[float64])
@@ -137,16 +171,33 @@ func (m *exponentialHistogramMetrics) GetOrCreate(key Key, attributesFun BuildAt
 		)
 		histogram.Init(cfg)
 
+		var attributes pcommon.Map
+		if m.IsCardinalityLimitReached() {
+			limitReached = true
+			key = overflowKey
+
+			// check if overflowKey already exists
+			h, ok = m.metrics[key]
+			if ok {
+				return h, limitReached
+			}
+
+			attributes = pcommon.NewMap()
+			attributes.PutBool(overflowKey, true)
+		} else {
+			attributes = attributesFun()
+		}
+
 		h = &exponentialHistogram{
 			histogram:        histogram,
-			attributes:       attributesFun(),
+			attributes:       attributes,
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimeStamp,
 		}
 		m.metrics[key] = h
 	}
-	return h
+	return h, limitReached
 }
 
 func (m *exponentialHistogramMetrics) BuildMetrics(
@@ -279,11 +330,30 @@ func (m *SumMetrics) IsCardinalityLimitReached() bool {
 	return m.cardinalityLimit > 0 && len(m.metrics) >= m.cardinalityLimit
 }
 
-func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) *Sum {
+func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, startTimestamp pcommon.Timestamp) (*Sum, bool) {
+	limitReached := false
 	s, ok := m.metrics[key]
 	if !ok {
+		var attributes pcommon.Map
+		// check when new key coming
+		if m.IsCardinalityLimitReached() {
+			limitReached = true
+			key = overflowKey
+
+			// check if overflowKey already exists
+			s, ok = m.metrics[key]
+			if ok {
+				return s, limitReached
+			}
+
+			attributes = pcommon.NewMap()
+			attributes.PutBool(overflowKey, true)
+		} else {
+			attributes = attributesFun()
+		}
+
 		s = &Sum{
-			attributes:       attributesFun(),
+			attributes:       attributes,
 			exemplars:        pmetric.NewExemplarSlice(),
 			maxExemplarCount: m.maxExemplarCount,
 			startTimestamp:   startTimestamp,
@@ -291,7 +361,8 @@ func (m *SumMetrics) GetOrCreate(key Key, attributesFun BuildAttributesFun, star
 		}
 		m.metrics[key] = s
 	}
-	return s
+
+	return s, limitReached
 }
 
 func (s *Sum) AddExemplar(traceID pcommon.TraceID, spanID pcommon.SpanID, value float64) {

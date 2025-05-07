@@ -150,7 +150,7 @@ func (m *Manager) poll(ctx context.Context) {
 		}
 	}
 	// rotate at end of every poll()
-	m.tracker.EndPoll()
+	m.tracker.EndPoll(ctx)
 }
 
 func (m *Manager) consume(ctx context.Context, paths []string) {

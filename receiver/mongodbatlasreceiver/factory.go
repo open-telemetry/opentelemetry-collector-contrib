@@ -9,6 +9,7 @@ import (
 	"fmt"
 	"time"
 
+	"go.mongodb.org/atlas/mongodbatlas"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/config/configretry"
 	"go.opentelemetry.io/collector/consumer"
@@ -40,7 +41,10 @@ func createMetricsReceiver(
 	consumer consumer.Metrics,
 ) (receiver.Metrics, error) {
 	cfg := rConf.(*Config)
-	recv := newMongoDBAtlasReceiver(params, cfg)
+	recv, err := newMongoDBAtlasReceiver(params, cfg)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create a MongoDB Atlas Receiver instance: %w", err)
+	}
 	ms, err := newMongoDBAtlasScraper(recv)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create a MongoDB Atlas Scraper instance: %w", err)
@@ -75,18 +79,27 @@ func createCombinedLogReceiver(
 	}
 
 	if cfg.Logs.Enabled {
-		recv.logs = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		recv.logs, err = newMongoDBAtlasLogsReceiver(params, cfg, consumer)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Logs Receiver instance: %w", err)
+		}
 		// Confirm at least one project is enabled for access logs before adding
 		for _, project := range cfg.Logs.Projects {
 			if project.AccessLogs != nil && project.AccessLogs.IsEnabled() {
-				recv.accessLogs = newAccessLogsReceiver(params, cfg, consumer)
+				recv.accessLogs, err = newAccessLogsReceiver(params, cfg, consumer)
+				if err != nil {
+					return nil, fmt.Errorf("unable to create a MongoDB Atlas Access Logs Receiver instance: %w", err)
+				}
 				break
 			}
 		}
 	}
 
 	if cfg.Events != nil {
-		recv.events = newEventsReceiver(params, cfg, consumer)
+		recv.events, err = newEventsReceiver(params, cfg, consumer)
+		if err != nil {
+			return nil, fmt.Errorf("unable to create a MongoDB Atlas Events Receiver instance: %w", err)
+		}
 	}
 
 	return recv, nil
@@ -94,6 +107,7 @@ func createCombinedLogReceiver(
 
 func createDefaultConfig() component.Config {
 	c := &Config{
+		BaseURL:              mongodbatlas.CloudURL,
 		ControllerConfig:     scraperhelper.NewDefaultControllerConfig(),
 		Granularity:          defaultGranularity,
 		BackOffConfig:        configretry.NewDefaultBackOffConfig(),
