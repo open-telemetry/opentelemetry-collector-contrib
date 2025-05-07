@@ -3,6 +3,8 @@
 package metadata
 
 import (
+	"fmt"
+	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -3240,8 +3242,13 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pcommon.
 }
 
 // RecordRedisClusterClusterEnabledDataPoint adds a data point to redis.cluster.cluster_enabled metric.
-func (mb *MetricsBuilder) RecordRedisClusterClusterEnabledDataPoint(ts pcommon.Timestamp, val int64) {
+func (mb *MetricsBuilder) RecordRedisClusterClusterEnabledDataPoint(ts pcommon.Timestamp, inputVal string) error {
+	val, err := strconv.ParseInt(inputVal, 10, 64)
+	if err != nil {
+		return fmt.Errorf("failed to parse int64 for RedisClusterClusterEnabled, value was %s: %w", inputVal, err)
+	}
 	mb.metricRedisClusterClusterEnabled.recordDataPoint(mb.startTime, ts, val)
+	return nil
 }
 
 // RecordRedisClusterKnownNodesDataPoint adds a data point to redis.cluster.known_nodes metric.
