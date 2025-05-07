@@ -1,0 +1,35 @@
+signaltometrics:
+  profiles:
+    - name: total.profiles.sum
+      description: Count total number of profiles
+      sum:
+        value: "1"
+    - name: total.profiles.resource.foo.sum
+      description: Count total number of profiles with resource attribute foo
+      include_resource_attributes:
+        - key: resource.foo
+      sum:
+        value: "1"
+    - name: profiles.foo.sum
+      description: Count total number of profiles as per profile.foo attribute
+      attributes:
+        - key: profile.foo
+      sum:
+        value: "1"
+    - name: profiles.bar.sum
+      description: Count total number of profiles as per profiles.bar attribute
+      conditions: # Will evaluate to true
+        - resource.attributes["404.attribute"] != nil
+        - resource.attributes["resource.foo"] != nil
+      attributes:
+        - key: profiles.bar
+      sum:
+        value: "1"
+    - name: ignored.sum
+      description: Will be ignored due to conditions evaluating to false
+      conditions: # Will evaluate to false
+        - resource.attributes["404.attribute"] != nil
+      attributes:
+        - key: profiles.bar
+      sum:
+        value: "2"
