@@ -97,6 +97,11 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		}
 	}
 
+	// Limit scapped applications if ApplicationLimit is set
+	if s.config.ApplicationLimit > 0 && len(allowedApps) > s.config.ApplicationLimit {
+		allowedApps = allowedApps[:s.config.ApplicationLimit]
+	}
+
 	// Get stats from the 'metrics' endpoint
 	clusterStats, err := s.client.ClusterStats()
 	if err != nil {

@@ -36,6 +36,7 @@ The following settings are optional:
 - `endpoint`: (default = `http://localhost:4040`): Apache Spark endpoint to connect to in the form of `[http][://]{host}[:{port}]`
 - `application_names`: An array of Spark application names for which metrics should be collected. If no application names are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
 - `application_ids`: An array of Spark application ids for which metrics should be collected. If no application ids are specified, metrics will be collected for all Spark applications running on the cluster at the specified endpoint.
+- `application_limit`: Limits the number of applications scraped from the Spark history server. If unset, all applications are scraped.
 
 ### Example Configuration
 
@@ -49,6 +50,7 @@ receivers:
     - PythonLR
     application_ids:
     - application_1
+    application_limit: 2
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

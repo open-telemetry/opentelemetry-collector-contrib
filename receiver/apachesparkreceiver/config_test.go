@@ -64,3 +64,12 @@ func TestCreateDefaultConfig(t *testing.T) {
 	assert.NotNil(t, defaultConfig.ApplicationIds)
 	assert.Empty(t, defaultConfig.ApplicationIds)
 }
+
+func TestApplicationLimitConfig(t *testing.T) {
+	cfg := &Config{}
+	// Default should be zero (unlimited)
+	assert.Equal(t, 0, cfg.ApplicationLimit)
+
+	cfg.ApplicationLimit = 2
+	assert.Equal(t, 2, cfg.ApplicationLimit)
+}
