@@ -16,10 +16,11 @@ issues: [39868]
 # These lines will be padded with 2 spaces and then inserted directly into the document.
 # Use pipe (|) for multiline entries.
 subtext: |
-  * Update event name of top query event to `db.server.top_query`
-  * Update event name of query sample event to `db.server.query_sample`
-  * Remove body of query sample event
-  * Rename `sqlserver.username` to `user.name` in query sample event
+  This change only applies to top query events and query sample events:
+    * Update event name of top query event from `top query` to `db.server.top_query`
+    * Update event name of query sample event from `query sample` to `db.server.query_sample`
+    * Remove body of query sample event
+    * Rename `sqlserver.username` to `user.name` in query sample event
 
 # If your change doesn't affect end users or the exported elements of any package,
 # you should instead start your pull request title with [chore] or use the "Skip Changelog" label.
