@@ -112,7 +112,7 @@ metrics:
   redis.cluster.cluster_enabled:
     enabled: false
     description: "Indicate Redis cluster is enabled"
-    unit: boolean
+    unit: "1"
     gauge:
       value_type: int
 

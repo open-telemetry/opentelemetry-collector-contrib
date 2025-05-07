@@ -560,7 +560,7 @@ type metricRedisClusterClusterEnabled struct {
 func (m *metricRedisClusterClusterEnabled) init() {
 	m.data.SetName("redis.cluster.cluster_enabled")
 	m.data.SetDescription("Indicate Redis cluster is enabled")
-	m.data.SetUnit("boolean")
+	m.data.SetUnit("1")
 	m.data.SetEmptyGauge()
 }
 
