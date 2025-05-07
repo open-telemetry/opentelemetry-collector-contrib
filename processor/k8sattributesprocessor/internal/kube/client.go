@@ -37,6 +37,13 @@ var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
 	featuregate.WithRegisterFromVersion("v0.125.0"),
 )
 
+const (
+	K8sPodLabelsKey      = "k8s.pod.labels.%s"
+	K8sPodLabelKey       = "k8s.pod.label.%s"
+	K8sPodAnnotationsKey = "k8s.pod.annotations.%s"
+	K8sPodAnnotationKey  = "k8s.pod.annotation.%s"
+)
+
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
 	m                      sync.RWMutex
@@ -562,18 +569,18 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
-	formatterLabel := "k8s.pod.labels.%s"
+	formatterLabel := K8sPodLabelsKey
 	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterLabel = "k8s.pod.label.%s"
+		formatterLabel = K8sPodLabelKey
 	}
 
 	for _, r := range c.Rules.Labels {
 		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
 	}
 
-	formatterAnnotation := "k8s.pod.annotations.%s"
+	formatterAnnotation := K8sPodAnnotationsKey
 	if allowLabelsAnnotationsSingular.IsEnabled() {
-		formatterAnnotation = "k8s.pod.annotation.%s"
+		formatterAnnotation = K8sPodAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
