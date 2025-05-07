@@ -16,6 +16,7 @@ import (
 	"go.opentelemetry.io/collector/client"
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
+	"go.opentelemetry.io/collector/consumer/consumererror"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
@@ -121,6 +122,27 @@ func TestTracesPusher_err(t *testing.T) {
 
 	err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
 	assert.EqualError(t, err, expErr.Error())
+}
+
+func TestTracesPusher_conf_err(t *testing.T) {
+	t.Run("should return permanent err on config error", func(t *testing.T) {
+		expErr := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: expErr},
+		}
+		host := extensionsHost{
+			component.MustNewID("trace_encoding"): ptraceMarshalerFuncExtension(func(ptrace.Traces) ([]byte, error) {
+				return nil, prodErrs
+			}),
+		}
+		config := createDefaultConfig().(*Config)
+		config.Traces.Encoding = "trace_encoding"
+		exp, _ := newMockTracesExporter(t, *config, host)
+
+		err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
+
+		assert.True(t, consumererror.IsPermanent(err))
+	})
 }
 
 func TestTracesPusher_marshal_error(t *testing.T) {
@@ -349,6 +371,27 @@ func TestMetricsPusher_err(t *testing.T) {
 	assert.EqualError(t, err, expErr.Error())
 }
 
+func TestMetricsPusher_conf_err(t *testing.T) {
+	t.Run("should return permanent err on config error", func(t *testing.T) {
+		expErr := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: expErr},
+		}
+		host := extensionsHost{
+			component.MustNewID("metric_encoding"): ptraceMarshalerFuncExtension(func(ptrace.Traces) ([]byte, error) {
+				return nil, prodErrs
+			}),
+		}
+		config := createDefaultConfig().(*Config)
+		config.Traces.Encoding = "metric_encoding"
+		exp, _ := newMockTracesExporter(t, *config, host)
+
+		err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
+
+		assert.True(t, consumererror.IsPermanent(err))
+	})
+}
+
 func TestMetricsPusher_marshal_error(t *testing.T) {
 	marshalErr := errors.New("failed to marshal")
 	host := extensionsHost{
@@ -519,6 +562,27 @@ func TestLogsPusher_err(t *testing.T) {
 
 	err := exp.exportData(context.Background(), testdata.GenerateLogs(2))
 	assert.EqualError(t, err, expErr.Error())
+}
+
+func TestLogsPusher_conf_err(t *testing.T) {
+	t.Run("should return permanent err on config error", func(t *testing.T) {
+		expErr := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: expErr},
+		}
+		host := extensionsHost{
+			component.MustNewID("log_encoding"): ptraceMarshalerFuncExtension(func(ptrace.Traces) ([]byte, error) {
+				return nil, prodErrs
+			}),
+		}
+		config := createDefaultConfig().(*Config)
+		config.Traces.Encoding = "log_encoding"
+		exp, _ := newMockTracesExporter(t, *config, host)
+
+		err := exp.exportData(context.Background(), testdata.GenerateTraces(2))
+
+		assert.True(t, consumererror.IsPermanent(err))
+	})
 }
 
 func TestLogsPusher_marshal_error(t *testing.T) {
@@ -807,4 +871,65 @@ func newMockLogsExporter(t *testing.T, cfg Config, host component.Host) (*kafkaE
 		assert.NoError(t, exp.Close(context.Background()))
 	})
 	return exp, producer
+}
+
+func TestWrapKafkaProducerError(t *testing.T) {
+	t.Run("should return permanent error on configuration error", func(t *testing.T) {
+		err := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: err},
+		}
+
+		got := wrapKafkaProducerError(prodErrs)
+
+		assert.True(t, consumererror.IsPermanent(got))
+		assert.Contains(t, got.Error(), err.Error())
+	})
+
+	t.Run("should return permanent error whne multiple configuration error", func(t *testing.T) {
+		err := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: err},
+		}
+
+		got := wrapKafkaProducerError(prodErrs)
+
+		assert.True(t, consumererror.IsPermanent(got))
+		assert.Contains(t, got.Error(), err.Error())
+	})
+
+	t.Run("should return not permanent error when at least one not configuration error", func(t *testing.T) {
+		err := sarama.ConfigurationError("configuration error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: err},
+			&sarama.ProducerError{Err: errors.New("other producer error")},
+		}
+
+		got := wrapKafkaProducerError(prodErrs)
+
+		assert.False(t, consumererror.IsPermanent(got))
+		assert.Contains(t, got.Error(), err.Error())
+	})
+
+	t.Run("should return not permanent error on other producer error", func(t *testing.T) {
+		err := errors.New("other producer error")
+		prodErrs := sarama.ProducerErrors{
+			&sarama.ProducerError{Err: err},
+		}
+
+		got := wrapKafkaProducerError(prodErrs)
+
+		assert.False(t, consumererror.IsPermanent(got))
+		assert.Contains(t, got.Error(), err.Error())
+	})
+
+	t.Run("should return not permanent error when other error", func(t *testing.T) {
+		err := errors.New("other error")
+
+		got := wrapKafkaProducerError(err)
+
+		assert.False(t, consumererror.IsPermanent(got))
+		assert.Contains(t, got.Error(), err.Error())
+	})
 }

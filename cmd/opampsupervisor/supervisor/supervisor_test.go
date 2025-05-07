@@ -1096,6 +1096,39 @@ func Test_handleAgentOpAMPMessage(t *testing.T) {
 		assert.Empty(t, s.effectiveConfig.Load())
 		assert.False(t, updatedClientEffectiveConfig)
 	})
+
+	t.Run("ComponentHealth - Component health from agent is set in OpAmpClient", func(t *testing.T) {
+		healthSet := false
+		mc := &mockOpAMPClient{
+			setHealthFunc: func(_ *protobufs.ComponentHealth) {
+				healthSet = true
+			},
+		}
+
+		testUUID := uuid.MustParse("018fee23-4a51-7303-a441-73faed7d9deb")
+		s := Supervisor{
+			telemetrySettings:            newNopTelemetrySettings(),
+			pidProvider:                  defaultPIDProvider{},
+			config:                       config.Supervisor{},
+			hasNewConfig:                 make(chan struct{}, 1),
+			persistentState:              &persistentState{InstanceID: testUUID},
+			agentConfigOwnMetricsSection: &atomic.Value{},
+			effectiveConfig:              &atomic.Value{},
+			agentConn:                    &atomic.Value{},
+			opampClient:                  mc,
+			agentHealthCheckEndpoint:     "localhost:8000",
+			customMessageToServer:        make(chan *protobufs.CustomMessage, 10),
+			doneChan:                     make(chan struct{}),
+		}
+
+		s.handleAgentOpAMPMessage(&mockConn{}, &protobufs.AgentToServer{
+			Health: &protobufs.ComponentHealth{
+				Healthy: true,
+			},
+		})
+
+		assert.True(t, healthSet)
+	})
 }
 
 func TestSupervisor_setAgentDescription(t *testing.T) {
@@ -1229,6 +1262,7 @@ type mockOpAMPClient struct {
 	setCustomCapabilitiesFunc func(customCapabilities *protobufs.CustomCapabilities) error
 	updateEffectiveConfigFunc func(ctx context.Context) error
 	setRemoteConfigStatusFunc func(rcs *protobufs.RemoteConfigStatus) error
+	setHealthFunc             func(health *protobufs.ComponentHealth)
 }
 
 func (mockOpAMPClient) Start(_ context.Context, _ types.StartSettings) error {
@@ -1248,7 +1282,8 @@ func (m mockOpAMPClient) AgentDescription() *protobufs.AgentDescription {
 	return m.agentDesc
 }
 
-func (mockOpAMPClient) SetHealth(_ *protobufs.ComponentHealth) error {
+func (m mockOpAMPClient) SetHealth(h *protobufs.ComponentHealth) error {
+	m.setHealthFunc(h)
 	return nil
 }
 
