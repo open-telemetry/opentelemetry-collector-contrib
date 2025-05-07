@@ -11,10 +11,10 @@ import (
 )
 
 /*
-TimeBox allows for only one metric timeseries per second. It'll generate additional timeseries if the attribute is
+timeBox allows for only one metric timeseries per second. It'll generate additional timeseries if the attribute is
 requested within a one-second window
 */
-type TimeBox struct {
+type timeBox struct {
 	// enforceUnique is set to true if the attribute should be unique
 	// for each second. If false, the attribute will always be 0.
 	enforceUnique bool
@@ -23,7 +23,7 @@ type TimeBox struct {
 	mutex *sync.Mutex
 
 	// used to gracefully shut down the timer
-	shutdown chan struct{}
+	stop chan struct{}
 
 	// The attribute value last used
 	offset int64
@@ -31,8 +31,8 @@ type TimeBox struct {
 
 const attributeName = "timebox"
 
-func NewTimeBox(enforceUnique bool) *TimeBox {
-	tb := &TimeBox{
+func newTimeBox(enforceUnique bool) *timeBox {
+	tb := &timeBox{
 		offset:        0,
 		enforceUnique: enforceUnique,
 		mutex:         &sync.Mutex{},
@@ -42,7 +42,7 @@ func NewTimeBox(enforceUnique bool) *TimeBox {
 	return tb
 }
 
-func (tb *TimeBox) GetAttribute() attribute.KeyValue {
+func (tb *timeBox) getAttribute() attribute.KeyValue {
 	if !tb.enforceUnique {
 		return attribute.Int(attributeName, 0)
 	}
@@ -53,14 +53,14 @@ func (tb *TimeBox) GetAttribute() attribute.KeyValue {
 }
 
 // resetTimer resets the timer to 1 second every time the timer is stopped.
-func (tb *TimeBox) resetTimerLoop(t *time.Timer) {
+func (tb *timeBox) resetTimerLoop(t *time.Timer) {
 	// no-op when enforceUnique is false
 	if !tb.enforceUnique {
 		return
 	}
 	for {
 		select {
-		case <-tb.shutdown:
+		case <-tb.stop:
 			t.Stop()
 			return
 		case <-t.C:
@@ -72,11 +72,11 @@ func (tb *TimeBox) resetTimerLoop(t *time.Timer) {
 	}
 }
 
-func (tb *TimeBox) Shutdown() {
+func (tb *timeBox) shutdown() {
 	tb.mutex.Lock()
 	defer tb.mutex.Unlock()
-	if tb.shutdown != nil {
-		close(tb.shutdown)
-		tb.shutdown = nil
+	if tb.stop != nil {
+		close(tb.stop)
+		tb.stop = nil
 	}
 }

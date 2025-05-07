@@ -83,7 +83,7 @@ var histogramBucketSamples = []struct {
 	},
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *TimeBox) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *timeBox) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	startTime := w.clock.Now()
@@ -91,7 +91,7 @@ func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Expor
 	var i int64
 	for w.running.Load() {
 		if w.enforceUnique {
-			signalAttrs = append(signalAttrs, tb.GetAttribute())
+			signalAttrs = append(signalAttrs, tb.getAttribute())
 		}
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
