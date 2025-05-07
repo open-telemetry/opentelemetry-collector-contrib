@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 	"go.opentelemetry.io/collector/config/configtls"
 	"go.opentelemetry.io/collector/confmap"
 )
@@ -184,6 +185,9 @@ type ProducerConfig struct {
 	// The options are: 'none' (default), 'gzip', 'snappy', 'lz4', and 'zstd'
 	Compression string `mapstructure:"compression"`
 
+	// CompressionParams defines compression parameters for the producer.
+	CompressionParams configcompression.CompressionParams `mapstructure:"compression_params"`
+
 	// The maximum number of messages the producer will send in a single
 	// broker request. Defaults to 0 for unlimited. Similar to
 	// `queue.buffering.max.messages` in the JVM producer.
@@ -192,9 +196,12 @@ type ProducerConfig struct {
 
 func NewDefaultProducerConfig() ProducerConfig {
 	return ProducerConfig{
-		MaxMessageBytes:  1000000,
-		RequiredAcks:     WaitForLocal,
-		Compression:      "none",
+		MaxMessageBytes: 1000000,
+		RequiredAcks:    WaitForLocal,
+		Compression:     "none",
+		CompressionParams: configcompression.CompressionParams{
+			Level: configcompression.DefaultCompressionLevel,
+		},
 		FlushMaxMessages: 0,
 	}
 }
@@ -202,7 +209,13 @@ func NewDefaultProducerConfig() ProducerConfig {
 func (c ProducerConfig) Validate() error {
 	switch c.Compression {
 	case "none", "gzip", "snappy", "lz4", "zstd":
-		// Valid compression
+		ct := configcompression.Type(c.Compression)
+		if !ct.IsCompressed() {
+			return nil
+		}
+		if err := ct.ValidateParams(c.CompressionParams); err != nil {
+			return err
+		}
 	default:
 		return fmt.Errorf(
 			"compression should be one of 'none', 'gzip', 'snappy', 'lz4', or 'zstd'. configured value is %q",
