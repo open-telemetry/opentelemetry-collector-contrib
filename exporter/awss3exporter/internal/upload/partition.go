@@ -10,6 +10,9 @@ import (
 
 	"github.com/itchyny/timefmt-go"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/pdata/pcommon"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awss3exporter/internal/subst"
 )
 
 var compressionFileExtensions = map[configcompression.Type]string{
@@ -19,11 +22,18 @@ var compressionFileExtensions = map[configcompression.Type]string{
 type PartitionKeyBuilder struct {
 	// PartitionPrefix defines the S3 directory (key)
 	// prefix used to write the file
+	// Values in bracket shell-substitution format are replaced
+	// with the specified resource attributes.
 	PartitionPrefix string
 	// PartitionFormat is used to separate values into
 	// different time buckets.
 	// Uses [strftime](https://www.man7.org/linux/man-pages/man3/strftime.3.html) formatting.
+	// Values in bracket shell-substitution format are replaced
+	// with the specified resource attributes.
 	PartitionFormat string
+	// UnknownAttributePlaceholder is the value used for missing attributes in PartitionFormat.
+	// If unset "_unknown_" is used.
+	UnknownAttributePlaceholder string
 	// FilePrefix is used to define the prefix of the file written
 	// to the directory in S3.
 	FilePrefix string
@@ -44,24 +54,20 @@ type PartitionKeyBuilder struct {
 	UniqueKeyFunc func() string
 }
 
-func (pki *PartitionKeyBuilder) Build(ts time.Time, overridePrefix string) string {
-	return pki.bucketKeyPrefix(ts, overridePrefix) + "/" + pki.fileName()
+func (pki *PartitionKeyBuilder) Build(ts time.Time, attrs pcommon.Map) string {
+	return pki.bucketKeyPrefix(ts, attrs) + "/" + pki.fileName(attrs)
 }
 
-func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, overridePrefix string) string {
+func (pki *PartitionKeyBuilder) bucketKeyPrefix(ts time.Time, attrs pcommon.Map) string {
 	// Don't want to overwrite the actual value
-	prefix := pki.PartitionPrefix
-	// Only override when it's not empty string
-	if overridePrefix != "" {
-		prefix = overridePrefix
-	}
+	prefix := pki.substAttrs(pki.PartitionPrefix, attrs)
 	if prefix != "" {
 		prefix += "/"
 	}
-	return prefix + timefmt.Format(ts, pki.PartitionFormat)
+	return prefix + pki.substAttrs(timefmt.Format(ts, pki.PartitionFormat), attrs)
 }
 
-func (pki *PartitionKeyBuilder) fileName() string {
+func (pki *PartitionKeyBuilder) fileName(attrs pcommon.Map) string {
 	var suffix string
 
 	if pki.FileFormat != "" {
@@ -72,7 +78,7 @@ func (pki *PartitionKeyBuilder) fileName() string {
 		suffix += ext
 	}
 
-	return pki.FilePrefix + pki.Metadata + "_" + pki.uniqueKey() + suffix
+	return pki.substAttrs(pki.FilePrefix, attrs) + pki.Metadata + "_" + pki.uniqueKey() + suffix
 }
 
 func (pki *PartitionKeyBuilder) uniqueKey() string {
@@ -88,4 +94,22 @@ func (pki *PartitionKeyBuilder) uniqueKey() string {
 	)
 
 	return strconv.Itoa(minOffset + rand.IntN(uniqueValues-minOffset))
+}
+
+func (pki *PartitionKeyBuilder) substAttrs(s string, attrs pcommon.Map) string {
+	unknown := "_unknown_"
+	if ph := pki.UnknownAttributePlaceholder; ph != "" {
+		unknown = ph
+	}
+	return subst.Subst(s, func(key string) string {
+		val, ok := attrs.Get(key)
+		if !ok {
+			return unknown
+		}
+		str := val.AsString()
+		if str == "" {
+			return unknown
+		}
+		return str
+	})
 }

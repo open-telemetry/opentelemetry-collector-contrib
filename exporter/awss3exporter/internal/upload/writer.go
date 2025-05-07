@@ -14,17 +14,14 @@ import (
 	s3types "github.com/aws/aws-sdk-go-v2/service/s3/types"
 	"github.com/tilinna/clock"
 	"go.opentelemetry.io/collector/config/configcompression"
+	"go.opentelemetry.io/collector/pdata/pcommon"
 )
 
 type Manager interface {
-	Upload(ctx context.Context, data []byte, opts *UploadOptions) error
+	Upload(ctx context.Context, data []byte, attrs pcommon.Map) error
 }
 
 type ManagerOpt func(Manager)
-
-type UploadOptions struct {
-	OverridePrefix string
-}
 
 type s3manager struct {
 	bucket       string
@@ -52,7 +49,7 @@ func NewS3Manager(bucket string, builder *PartitionKeyBuilder, service *s3.Clien
 	return manager
 }
 
-func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOptions) error {
+func (sw *s3manager) Upload(ctx context.Context, data []byte, attrs pcommon.Map) error {
 	if len(data) == 0 {
 		return nil
 	}
@@ -69,14 +66,9 @@ func (sw *s3manager) Upload(ctx context.Context, data []byte, opts *UploadOption
 
 	now := clock.Now(ctx)
 
-	overridePrefix := ""
-	if opts != nil {
-		overridePrefix = opts.OverridePrefix
-	}
-
 	_, err = sw.uploader.Upload(ctx, &s3.PutObjectInput{
 		Bucket:          aws.String(sw.bucket),
-		Key:             aws.String(sw.builder.Build(now, overridePrefix)),
+		Key:             aws.String(sw.builder.Build(now, attrs)),
 		Body:            content,
 		ContentEncoding: aws.String(encoding),
 		StorageClass:    sw.storageClass,
