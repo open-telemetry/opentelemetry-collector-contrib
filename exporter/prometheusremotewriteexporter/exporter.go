@@ -239,18 +239,16 @@ func (prwe *prwExporter) PushMetrics(ctx context.Context, md pmetric.Metrics) er
 		return errors.New("shutdown has been called")
 	default:
 
-		// If feature flag not enabled support only RW1
+		// If feature flag not enabled support only RW1.
 		if !enableSendingRW2FeatureGate.IsEnabled() {
 			return prwe.pushMetricsV1(ctx, md)
 		}
 
-		// If feature flag enabled check if we want to send RW1 or RW2
+		// If feature flag was enabled check if we want to send RW1 or RW2.
 		switch prwe.RemoteWriteProtoMsg {
 		case config.RemoteWriteProtoMsgV1:
-			// Rw1 case
 			return prwe.pushMetricsV1(ctx, md)
 		case config.RemoteWriteProtoMsgV2:
-			// RW2 case
 			return prwe.pushMetricsV2(ctx, md)
 
 		default:
