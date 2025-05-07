@@ -78,6 +78,5 @@ func (tb *timeBox) shutdown() {
 	defer tb.mutex.Unlock()
 	if tb.stop != nil {
 		close(tb.stop)
-		tb.stop = nil
 	}
 }
