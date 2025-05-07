@@ -5,6 +5,7 @@ package translator // import "github.com/open-telemetry/opentelemetry-collector-
 
 import (
 	"bytes"
+	"cmp"
 	"encoding/binary"
 	"encoding/json"
 	"errors"
@@ -19,7 +20,7 @@ import (
 	pb "github.com/DataDog/datadog-agent/pkg/proto/pbgo/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.opentelemetry.io/otel/trace"
 	"google.golang.org/protobuf/proto"
 
@@ -42,6 +43,18 @@ const (
 	attributeDatadogSpanID = "datadog.span.id"
 )
 
+var spanProcessor = map[string]func(*pb.Span, *ptrace.Span) error{
+	// HTTP
+	"servlet.request": processHTTPSpan,
+
+	// Internal
+	"spring.handler": processInternalSpan,
+
+	// Database
+	"postgresql.query": processDBSpan,
+	"redis.query":      processDBSpan,
+}
+
 func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	if ddTracerVersion := req.Header.Get(header.TracerVersion); ddTracerVersion != "" {
 		attrs.PutStr(semconv.AttributeTelemetrySDKVersion, "Datadog-"+ddTracerVersion)
@@ -55,6 +68,50 @@ func upsertHeadersAttributes(req *http.Request, attrs pcommon.Map) {
 	}
 }
 
+func processInternalSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	newSpan.SetName(span.Resource)
+	newSpan.SetKind(ptrace.SpanKindInternal)
+	return nil
+}
+
+func processHTTPSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	// https://opentelemetry.io/docs/specs/semconv/http/http-spans/#name
+	// We assume that http.route coming from datadog is low cardinality
+	if val, ok := span.Meta["http.method"]; ok {
+		if suffix, ok := span.Meta["http.route"]; ok {
+			newSpan.SetName(val + " " + suffix)
+		} else {
+			newSpan.SetName(val)
+		}
+	}
+	return nil
+}
+
+func processDBSpan(span *pb.Span, newSpan *ptrace.Span) error {
+	// https://opentelemetry.io/docs/specs/semconv/database/database-spans/#name
+	if val, ok := span.Meta["db.query.summary"]; ok {
+		newSpan.SetName(val)
+	} else {
+		if val, ok = span.Meta["db.operation"]; ok {
+			newSpan.SetName(val)
+			suffix := cmp.Or(span.Meta["db.instance"], span.Meta["db.namespace"], span.Meta["peer.hostname"])
+			if suffix != "" {
+				newSpan.SetName(val + " " + suffix)
+			}
+		} else if val, ok = span.Meta["db.type"]; ok {
+			newSpan.SetName(val)
+		}
+	}
+	return nil
+}
+
+func processSpanByName(span *pb.Span, newSpan *ptrace.Span) error {
+	if processor, ok := spanProcessor[span.Name]; ok {
+		return processor(span, newSpan)
+	}
+	return nil
+}
+
 func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	var traces pb.Traces
 	for _, p := range payload.GetChunks() {
@@ -62,14 +119,14 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		semconv.AttributeContainerID:           payload.ContainerID,
-		semconv.AttributeTelemetrySDKLanguage:  payload.LanguageName,
-		semconv.AttributeProcessRuntimeVersion: payload.LanguageVersion,
-		semconv.AttributeDeploymentEnvironment: payload.Env,
-		semconv.AttributeHostName:              payload.Hostname,
-		semconv.AttributeServiceVersion:        payload.AppVersion,
-		semconv.AttributeTelemetrySDKName:      "Datadog",
-		semconv.AttributeTelemetrySDKVersion:   payload.TracerVersion,
+		semconv.AttributeContainerID:               payload.ContainerID,
+		semconv.AttributeTelemetrySDKLanguage:      payload.LanguageName,
+		semconv.AttributeProcessRuntimeVersion:     payload.LanguageVersion,
+		semconv.AttributeDeploymentEnvironmentName: payload.Env,
+		semconv.AttributeHostName:                  payload.Hostname,
+		semconv.AttributeServiceVersion:            payload.AppVersion,
+		semconv.AttributeTelemetrySDKName:          "Datadog",
+		semconv.AttributeTelemetrySDKVersion:       payload.TracerVersion,
 	} {
 		if v != "" {
 			sharedAttributes.PutStr(k, v)
@@ -92,6 +149,11 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 
 	for _, trace := range traces {
 		for _, span := range trace {
+			// Restore base service name as the service name.
+			// Without this, internal spans such as postgresql queries have a service.name set to postgresql
+			if val, ok := span.Meta["_dd.base_service"]; ok {
+				span.Service = val
+			}
 			slice, exist := groupByService[span.Service]
 			if !exist {
 				slice = ptrace.NewSpanSlice()
@@ -149,6 +211,21 @@ func ToTraces(payload *pb.TracerPayload, req *http.Request) ptrace.Traces {
 					newSpan.SetKind(ptrace.SpanKindUnspecified)
 				}
 			}
+
+			// For client/producer/consumer spans, if we have `peer.hostname`, and `server.address` is unset, set
+			// `server.address` to `peer.hostname`.
+			if newSpan.Kind() == ptrace.SpanKindClient ||
+				newSpan.Kind() == ptrace.SpanKindProducer ||
+				newSpan.Kind() == ptrace.SpanKindConsumer {
+				if _, ok := newSpan.Attributes().Get("server.address"); !ok {
+					if val, ok := span.Meta["peer.hostname"]; ok {
+						newSpan.Attributes().PutStr("server.address", val)
+					}
+				}
+			}
+
+			// Some spans need specific processing (http, db, ...)
+			_ = processSpanByName(span, &newSpan)
 		}
 	}
 

@@ -8,14 +8,14 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
 // See:
 // https://docs.datadoghq.com/opentelemetry/schema_semantics/semantic_mapping/
 // https://github.com/DataDog/opentelemetry-mapping-go/blob/main/pkg/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
-	"env":     semconv.AttributeDeploymentEnvironment,
+	"env":     semconv.AttributeDeploymentEnvironmentName,
 	"service": semconv.AttributeServiceName,
 	"version": semconv.AttributeServiceVersion,
 
@@ -23,7 +23,7 @@ var datadogKnownResourceAttributes = map[string]string{
 	"container_id":   semconv.AttributeContainerID,
 	"container_name": semconv.AttributeContainerName,
 	"image_name":     semconv.AttributeContainerImageName,
-	"image_tag":      semconv.AttributeContainerImageTag,
+	"image_tag":      semconv.AttributeContainerImageTags,
 	"runtime":        semconv.AttributeContainerRuntime,
 
 	// Cloud-related attributes
@@ -49,6 +49,25 @@ var datadogKnownResourceAttributes = map[string]string{
 	"kube_cronjob":        semconv.AttributeK8SCronJobName,
 	"kube_namespace":      semconv.AttributeK8SNamespaceName,
 	"pod_name":            semconv.AttributeK8SPodName,
+
+	// HTTP
+	"http.client_ip":               semconv.AttributeClientAddress,
+	"http.response.content_length": semconv.AttributeHTTPResponseBodySize,
+	"http.status_code":             semconv.AttributeHTTPResponseStatusCode,
+	"http.request.content_length":  semconv.AttributeHTTPRequestBodySize,
+	"http.referer":                 "http.request.header.referer",
+	"http.method":                  semconv.AttributeHTTPRequestMethod,
+	"http.route":                   semconv.AttributeHTTPRoute,
+	"http.version":                 semconv.AttributeNetworkProtocolVersion,
+	"http.server_name":             semconv.AttributeServerAddress,
+	"http.url":                     semconv.AttributeURLFull,
+	"http.useragent":               semconv.AttributeUserAgentOriginal,
+
+	// DB
+	"db.type":      semconv.AttributeDBSystem,
+	"db.operation": semconv.AttributeDBOperationName,
+	"db.instance":  semconv.AttributeDBCollectionName,
+	"db.pool.name": semconv.AttributeDBClientConnectionPoolName,
 
 	// Other
 	"process_id":       semconv.AttributeProcessPID,
@@ -79,6 +98,15 @@ func translateDatadogTagToKeyValuePair(tag string) (key string, value string) {
 func translateDatadogKeyToOTel(k string) string {
 	if otelKey, ok := datadogKnownResourceAttributes[strings.ToLower(k)]; ok {
 		return otelKey
+	}
+
+	// HTTP dynamic attributes
+	if strings.HasPrefix(k, "http.response.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.response.headers.")
+		return "http.response.header." + header
+	} else if strings.HasPrefix(k, "http.request.headers.") { // type: string[]
+		header := strings.TrimPrefix(k, "http.request.headers.")
+		return "http.request.header." + header
 	}
 	return k
 }
@@ -136,12 +164,21 @@ func tagsToAttributes(tags []string, host string, stringPool *StringPool) attrib
 	for _, tag := range tags {
 		key, val = translateDatadogTagToKeyValuePair(tag)
 		if attr, ok := datadogKnownResourceAttributes[key]; ok {
-			val = stringPool.Intern(val) // No need to intern the key if we already have it
-			attrs.resource.PutStr(attr, val)
+			val = stringPool.Intern(val)                     // No need to intern the key if we already have it
+			if attr == semconv.AttributeContainerImageTags { // type: string[]
+				attrs.resource.PutEmptySlice(attr).AppendEmpty().SetStr(val)
+			} else {
+				attrs.resource.PutStr(attr, val)
+			}
 		} else {
 			key = stringPool.Intern(translateDatadogKeyToOTel(key))
 			val = stringPool.Intern(val)
-			attrs.dp.PutStr(key, val)
+			if strings.HasPrefix(key, "http.request.header.") || strings.HasPrefix(key, "http.response.header.") {
+				// type string[]
+				attrs.resource.PutEmptySlice(key).AppendEmpty().SetStr(val)
+			} else {
+				attrs.dp.PutStr(key, val)
+			}
 		}
 	}
 
