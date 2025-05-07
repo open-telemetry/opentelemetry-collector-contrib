@@ -7,7 +7,9 @@ change_type: breaking
 component: pkg/datadog
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Swtich feature gate datadog.EnableOperationAndResourceNameV2 to beta. This gate affects exporter/datadog and connector/datadog. It modifies the logic for computing operation names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications.
+note: Switch feature gate datadog.EnableOperationAndResourceNameV2 to beta. This gate affects exporter/datadog and connector/datadog. It modifies the logic for computing operation names from OTLP spans to produce shorter, more readable names and improve alignment with OpenTelemetry specifications.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39895]
+
+subtext: Please see the migration guide for more details. https://docs.datadoghq.com/opentelemetry/migrate/migrate_operation_names/?tab=opentelemetrycollector
