@@ -558,10 +558,9 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			histogram: getHistogramDataPointWithExemplars(t, tnow, floatVal1, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     floatVal1,
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      floatVal1,
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
 		},
@@ -570,17 +569,17 @@ func Test_getPromExemplarsV2(t *testing.T) {
 			histogram: getHistogramDataPointWithExemplars(t, tnow, intVal2, traceIDValue1, spanIDValue1, label11, value11),
 			expected: []writev2.Exemplar{
 				{
-					Value:     float64(intVal2),
-					Timestamp: timestamp.FromTime(tnow),
-					// TODO: after deal with examplar labels on getPromExemplarsV2, add the labels here
-					// LabelsRefs: []uint32{},
+					Value:      float64(intVal2),
+					Timestamp:  timestamp.FromTime(tnow),
+					LabelsRefs: []uint32{1, 2, 3, 4, 5, 6},
 				},
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			requests := getPromExemplarsV2(tt.histogram)
+			converter := newPrometheusConverterV2()
+			requests := getPromExemplarsV2(tt.histogram, converter)
 			assert.Exactly(t, tt.expected, requests)
 		})
 	}
