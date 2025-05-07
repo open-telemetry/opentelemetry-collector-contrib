@@ -61,6 +61,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
 
 	tb := newTimeBox(c.EnforceUniqueTimeseries)
+	defer tb.shutdown()
 
 	running := &atomic.Bool{}
 	running.Store(true)
@@ -102,7 +103,6 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 		running.Store(false)
 	}
 	wg.Wait()
-	tb.shutdown()
 	return nil
 }
 

@@ -29,13 +29,14 @@ type timeBox struct {
 	offset int64
 }
 
-const attributeName = "timebox"
+const timeBoxAttributeName = "timebox"
 
 func newTimeBox(enforceUnique bool) *timeBox {
 	tb := &timeBox{
 		offset:        0,
 		enforceUnique: enforceUnique,
 		mutex:         &sync.Mutex{},
+		stop:          make(chan struct{}),
 	}
 
 	go tb.resetTimerLoop(time.NewTimer(time.Second))
@@ -44,12 +45,12 @@ func newTimeBox(enforceUnique bool) *timeBox {
 
 func (tb *timeBox) getAttribute() attribute.KeyValue {
 	if !tb.enforceUnique {
-		return attribute.Int(attributeName, 0)
+		return attribute.Int(timeBoxAttributeName, 0)
 	}
 	tb.mutex.Lock()
 	defer tb.mutex.Unlock()
 	tb.offset++
-	return attribute.Int(attributeName, int(tb.offset))
+	return attribute.Int(timeBoxAttributeName, int(tb.offset))
 }
 
 // resetTimer resets the timer to 1 second every time the timer is stopped.
