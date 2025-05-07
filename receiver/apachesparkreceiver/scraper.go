@@ -61,25 +61,37 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errors.Join(errFailedAppIDCollection, err)
 	}
 
-	// Check apps against allowed app names from config
+	// Check apps against allowed app names and ids from config
 	var allowedApps []models.Application
 
-	// If no app names specified, allow all apps
+	// If no app names/ids specified, allow all apps
 	switch {
-	case len(s.config.ApplicationNames) == 0:
+	case len(s.config.ApplicationNames) == 0 && len(s.config.ApplicationIds) == 0:
 		allowedApps = apps
 	default:
 		// Some allowed app names specified, compare to app names from applications endpoint
-		appMap := make(map[string][]models.Application)
+		nameMap := make(map[string][]models.Application)
+		idMap := make(map[string][]models.Application)
+
 		for _, app := range apps {
-			appMap[app.Name] = append(appMap[app.Name], app)
+			nameMap[app.Name] = append(nameMap[app.Name], app)
+			idMap[app.ApplicationID] = append(idMap[app.ApplicationID], app)
 		}
 
+		// Add apps matching names
 		for _, name := range s.config.ApplicationNames {
-			if apps, ok := appMap[name]; ok {
+			if apps, ok := nameMap[name]; ok {
 				allowedApps = append(allowedApps, apps...)
 			}
 		}
+
+		// Add apps matching IDs
+		for _, id := range s.config.ApplicationIds {
+			if apps, ok := idMap[id]; ok {
+				allowedApps = append(allowedApps, apps...)
+			}
+		}
+
 		if len(allowedApps) == 0 {
 			return pmetric.NewMetrics(), errNoMatchingAllowedApps
 		}

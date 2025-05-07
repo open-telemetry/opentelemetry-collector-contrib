@@ -27,6 +27,7 @@ type Config struct {
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	ApplicationNames               []string `mapstructure:"application_names"`
+	ApplicationIds                 []string `mapstructure:"application_ids"`
 }
 
 // Validate validates missing and invalid configuration fields.
