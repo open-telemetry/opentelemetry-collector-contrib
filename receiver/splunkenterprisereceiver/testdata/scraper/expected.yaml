@@ -148,6 +148,12 @@ resourceMetrics:
                     - key: splunk.searchable.restart
                       value:
                         boolValue: false
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: splunk.indexer.rollingrestart.status
