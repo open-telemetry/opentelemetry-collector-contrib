@@ -18,6 +18,9 @@ var (
 
 type Config struct {
 	HeadersConfig []HeaderConfig `mapstructure:"headers"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type HeaderConfig struct {

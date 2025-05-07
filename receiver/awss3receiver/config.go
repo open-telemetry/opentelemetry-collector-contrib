@@ -28,11 +28,17 @@ type S3DownloaderConfig struct {
 
 type Notifications struct {
 	OpAMP *component.ID `mapstructure:"opampextension"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type Encoding struct {
 	Extension component.ID `mapstructure:"extension"`
 	Suffix    string       `mapstructure:"suffix"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // Config defines the configuration for the file receiver.

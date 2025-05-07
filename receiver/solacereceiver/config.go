@@ -79,18 +79,27 @@ type Authentication struct {
 	PlainText *SaslPlainTextConfig `mapstructure:"sasl_plain"`
 	XAuth2    *SaslXAuth2Config    `mapstructure:"sasl_xauth2"`
 	External  *SaslExternalConfig  `mapstructure:"sasl_external"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // SaslPlainTextConfig defines SASL PLAIN authentication.
 type SaslPlainTextConfig struct {
 	Username string              `mapstructure:"username"`
 	Password configopaque.String `mapstructure:"password"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // SaslXAuth2Config defines the configuration for the SASL XAUTH2 authentication.
 type SaslXAuth2Config struct {
 	Username string `mapstructure:"username"`
 	Bearer   string `mapstructure:"bearer"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // SaslExternalConfig defines the configuration for the SASL External used in conjunction with TLS client authentication.
@@ -99,9 +108,15 @@ type SaslExternalConfig struct{}
 // FlowControl defines the configuration for what to do in backpressure scenarios, e.g. memorylimiter errors
 type FlowControl struct {
 	DelayedRetry *FlowControlDelayedRetry `mapstructure:"delayed_retry"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 // FlowControlDelayedRetry represents the strategy of waiting for a defined amount of time (in time.Duration) and attempt redelivery
 type FlowControlDelayedRetry struct {
 	Delay time.Duration `mapstructure:"delay"`
+
+	// prevent unkeyed literal initialization
+	_ struct{}
 }

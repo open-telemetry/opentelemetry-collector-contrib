@@ -34,6 +34,8 @@ type Config struct {
 type APIToken struct {
 	AccessID  string              `mapstructure:"access_id"`
 	AccessKey configopaque.String `mapstructure:"access_key"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 type MappingOperation string
@@ -58,6 +60,8 @@ func (mop *MappingOperation) UnmarshalText(in []byte) error {
 type LogsConfig struct {
 	// Operation to be performed for resource mapping. Valid values are `and`, `or`.
 	ResourceMappingOperation MappingOperation `mapstructure:"resource_mapping_op"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {
