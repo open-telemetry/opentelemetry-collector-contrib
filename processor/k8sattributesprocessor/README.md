@@ -373,6 +373,8 @@ k8sattributes:
 ```
 With the namespace filter set, the processor will only look up pods and replicasets in the selected namespace. Note that with just a role binding, the processor cannot query metadata such as labels and annotations from k8s `nodes` and `namespaces` which are cluster-scoped objects. This also means that the processor cannot set the value for `k8s.cluster.uid` attribute if enabled, since the `k8s.cluster.uid` attribute is set to the uid of the namespace `kube-system` which is not queryable with namespaced rbac.
 
+Please note, when extracting the workload related attributes, these workloads need to be present in the `Role` with the correct permissions. For example, an extraction of `k8s.deployment.label.*` attributes, `deployments` need to be present in `Role`.
+
 Example `Role` and `RoleBinding` to create in the namespace being watched.
 ```yaml
 apiVersion: v1
