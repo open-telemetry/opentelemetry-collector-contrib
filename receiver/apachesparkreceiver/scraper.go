@@ -63,21 +63,21 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// Limit the number of applications checked
 	appsToCheck := apps
-	if s.config.Limit > 0 && len(apps) > s.config.Limit {
-		appsToCheck = apps[:s.config.Limit]
+	if s.config.Limits.Count > 0 && len(apps) > s.config.Limits.Count {
+		appsToCheck = apps[:s.config.Limits.Count]
 	}
 
-	// Filter out any applications older than StartTimeEpochLimit
+	// Filter out any applications older than StartTimeEpoch
 	var recentApps []models.Application
-	if s.config.StartTimeEpochLimit == 0 {
+	if s.config.Limits.StartTimeEpoch == 0 {
 		recentApps = appsToCheck
 	} else {
-	startTimeEpochLimit:
+	startTimeEpoch:
 		for _, app := range appsToCheck {
 			for _, attempt := range app.Attempts {
-				if s.config.StartTimeEpochLimit < attempt.StartTimeEpoch {
+				if s.config.Limits.StartTimeEpoch < attempt.StartTimeEpoch {
 					recentApps = append(recentApps, app)
-					break startTimeEpochLimit
+					break startTimeEpoch
 				}
 			}
 		}

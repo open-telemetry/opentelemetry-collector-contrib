@@ -40,9 +40,10 @@ The following settings are optional:
 - `start_time_epoch_limit`: Limits application scrapped by startTimeEpoch
 
 The prescedence is the following:
-1. limit
-1. start_time_epoch_limit
-1. application_names and application_ids
+1. limits:
+- count
+- start_time_epoch
+2. application_names and application_ids
 
 
 ### Example Configuration
@@ -57,8 +58,9 @@ receivers:
     - PythonLR
     application_ids:
     - application_1
-    limit: 2
-    start_time_epoch_limit: 23432433
+    limits:
+      count: 2
+      start_time_epoch: 1745976432694
 ```
 
 The full list of settings exposed for this receiver are documented in [config.go](./config.go) with detailed sample configurations in [testdata/config.yaml](./testdata/config.yaml).

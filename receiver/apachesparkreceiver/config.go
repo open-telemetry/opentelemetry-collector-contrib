@@ -21,15 +21,20 @@ const (
 
 var errInvalidEndpoint = errors.New("'endpoint' must be in the form of <scheme>://<hostname>:<port>")
 
+// Define limits for applications scapping
+type ConfigLimits struct {
+	Count          int   `mapstructure:"count"`
+	StartTimeEpoch int64 `mapstructure:"start_time_epoch"`
+}
+
 // Config defines the configuration for the various elements of the receiver agent.
 type Config struct {
 	scraperhelper.ControllerConfig `mapstructure:",squash"`
 	metadata.MetricsBuilderConfig  `mapstructure:",squash"`
 	confighttp.ClientConfig        `mapstructure:",squash"`
-	ApplicationNames               []string `mapstructure:"application_names"`
-	ApplicationIds                 []string `mapstructure:"application_ids"`
-	Limit                          int      `mapstructure:"limit"`
-	StartTimeEpochLimit            int64    `mapstructure:"start_time_epoch_limit"`
+	ApplicationNames               []string     `mapstructure:"application_names"`
+	ApplicationIds                 []string     `mapstructure:"application_ids"`
+	Limits                         ConfigLimits `mapstructure:"limits"`
 }
 
 // Validate validates missing and invalid configuration fields.

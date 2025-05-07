@@ -339,7 +339,9 @@ func TestScraper(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: defaultCollectionInterval,
 				},
-				Limit:                1,
+				Limits: {
+					Count: 1,
+				},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
@@ -390,7 +392,9 @@ func TestScraper(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: defaultCollectionInterval,
 				},
-				StartTimeEpochLimit:  100000,
+				Limits: {
+					StartTimeEpoch: 100000,
+				},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
