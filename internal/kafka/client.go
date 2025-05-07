@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/IBM/sarama"
+	"go.opentelemetry.io/collector/config/configcompression"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka/configkafka"
 )
@@ -19,6 +20,13 @@ var saramaCompressionCodecs = map[string]sarama.CompressionCodec{
 	"snappy": sarama.CompressionSnappy,
 	"lz4":    sarama.CompressionLZ4,
 	"zstd":   sarama.CompressionZSTD,
+}
+
+func convertToSaramaCompressionLevel(p configcompression.Level) int {
+	if p == configcompression.DefaultCompressionLevel {
+		return sarama.CompressionLevelDefault
+	}
+	return int(p)
 }
 
 var saramaInitialOffsets = map[string]int64{
@@ -96,6 +104,7 @@ func NewSaramaSyncProducer(
 	saramaConfig.Producer.RequiredAcks = sarama.RequiredAcks(producerConfig.RequiredAcks)
 	saramaConfig.Producer.Timeout = producerTimeout
 	saramaConfig.Producer.Compression = saramaCompressionCodecs[producerConfig.Compression]
+	saramaConfig.Producer.CompressionLevel = convertToSaramaCompressionLevel(producerConfig.CompressionParams.Level)
 	return sarama.NewSyncProducer(clientConfig.Brokers, saramaConfig)
 }
 
