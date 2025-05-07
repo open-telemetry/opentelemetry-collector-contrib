@@ -2063,10 +2063,12 @@ func (s *splunkScraper) setSearchJobTTLByID(sid string) error {
 }
 
 // Scrape Indexer Cluster Manger Status Endpoint
-func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, _ infoDict, errs chan error) {
+func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now pcommon.Timestamp, info infoDict, errs chan error) {
 	if !s.conf.Metrics.SplunkIndexerRollingrestartStatus.Enabled {
 		return
 	}
+
+	i := info[typeCm].Entries[0].Content
 
 	ept := apiDict[`SplunkIndexerClusterManagerStatus`]
 	var icms indexersClusterManagerStatus
@@ -2090,8 +2092,8 @@ func (s *splunkScraper) scrapeIndexerClusterManagerStatus(_ context.Context, now
 
 	for _, ic := range icms.Entries {
 		if ic.Content.RollingRestartOrUpgrade {
-			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
+			s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 1, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 		}
-		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag)
+		s.mb.RecordSplunkIndexerRollingrestartStatusDataPoint(now, 0, ic.Content.SearchableRolling, ic.Content.RollingRestartFlag, i.Build, i.Version)
 	}
 }

@@ -381,7 +381,7 @@ metrics:
     unit: "{status}"
     gauge:
       value_type: int
-    attributes: [splunk.searchable.restart, splunk.rollingorrestart]
+    attributes: [splunk.searchable.restart, splunk.rollingorrestart, splunk.splunkd.build, splunk.splunkd.version]
 
   # Search Metrics
   splunk.search.duration:

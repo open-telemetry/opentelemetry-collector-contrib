@@ -265,6 +265,8 @@ The status of a rolling restart.
 | ---- | ----------- | ------ |
 | splunk.searchable.restart | Boolean that indicates if a searchable rolling restart/upgrade in progress.t | Any Bool |
 | splunk.rollingorrestart | Boolean that indicates if there is a rolling restart or rolling upgrade in progress. | Any Bool |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
 
 ### splunk.indexer.throughput
 
