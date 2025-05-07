@@ -58,7 +58,7 @@ func TestScraper(t *testing.T) {
 			expectedErr: errors.Join(errFailedAppIDCollection, errors.New("could not retrieve app ids")),
 		},
 		{
-			desc: "No Matching Allowed Apps",
+			desc: "No Matching Allowed Apps by ApplicationNames",
 			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return([]models.Application{}, nil)
@@ -72,6 +72,26 @@ func TestScraper(t *testing.T) {
 					CollectionInterval: defaultCollectionInterval,
 				},
 				ApplicationNames:     []string{"local-123", "local-987"},
+				ClientConfig:         clientConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			expectedErr: errNoMatchingAllowedApps,
+		},
+		{
+			desc: "No Matching Allowed Apps by ApplicationIds",
+			setupMockClient: func(*testing.T) client {
+				mockClient := mocks.MockClient{}
+				mockClient.On("Applications").Return([]models.Application{}, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(*testing.T) pmetric.Metrics {
+				return pmetric.NewMetrics()
+			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
+				ApplicationIds:       []string{"app-123", "app-987"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
@@ -218,6 +238,57 @@ func TestScraper(t *testing.T) {
 					CollectionInterval: defaultCollectionInterval,
 				},
 				ApplicationNames:     []string{"streaming-example"},
+				ClientConfig:         clientConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Successfully allowing apps by ApplicationIds",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				data := loadAPIResponseData(t, clusterStatsResponseFile)
+				var clusterStats *models.ClusterProperties
+				err := json.Unmarshal(data, &clusterStats)
+				require.NoError(t, err)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
+
+				data = loadAPIResponseData(t, appsStatsResponseFile)
+				var apps []models.Application
+				err = json.Unmarshal(data, &apps)
+				require.NoError(t, err)
+				mockClient.On("Applications").Return(apps, nil)
+
+				data = loadAPIResponseData(t, stagesStatsResponseFile)
+				var stages []models.Stage
+				err = json.Unmarshal(data, &stages)
+				require.NoError(t, err)
+				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
+
+				data = loadAPIResponseData(t, executorsStatsResponseFile)
+				var executors []models.Executor
+				err = json.Unmarshal(data, &executors)
+				require.NoError(t, err)
+				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
+
+				data = loadAPIResponseData(t, jobsStatsResponseFile)
+				var jobs []models.Job
+				err = json.Unmarshal(data, &jobs)
+				require.NoError(t, err)
+				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
+				ApplicationIds:       []string{"app-123"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},

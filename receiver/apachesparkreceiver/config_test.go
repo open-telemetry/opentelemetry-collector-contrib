@@ -6,6 +6,7 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"testing"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
@@ -46,4 +47,20 @@ func TestValidate(t *testing.T) {
 			}
 		})
 	}
+}
+
+func TestCreateDefaultConfig(t *testing.T) {
+	factory := NewFactory()
+	cfg := factory.CreateDefaultConfig()
+	assert.NotNil(t, cfg, "failed to create default config")
+
+	// Assert that the default collection interval is set
+	defaultConfig, ok := cfg.(*Config)
+	require.True(t, ok, "expected config to be of type *Config")
+	assert.Equal(t, defaultCollectionInterval, defaultConfig.CollectionInterval)
+	assert.Equal(t, defaultEndpoint, defaultConfig.Endpoint)
+	assert.NotNil(t, defaultConfig.ApplicationNames)
+	assert.Empty(t, defaultConfig.ApplicationNames)
+	assert.NotNil(t, defaultConfig.ApplicationIds)
+	assert.Empty(t, defaultConfig.ApplicationIds)
 }
