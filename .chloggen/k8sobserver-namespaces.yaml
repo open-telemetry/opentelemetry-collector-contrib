@@ -7,7 +7,7 @@ change_type: enhancement
 component: k8sobserver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Add option to filter by namespaces
+note: Add namespaces setting for scoping k8s client to specific namespaces
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39677]
