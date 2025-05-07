@@ -529,7 +529,7 @@ func TestTemporalityStartTimes(t *testing.T) {
 				clock:                  clock,
 			}
 
-			w.simulateMetrics(resource.Default(), m, nil)
+			w.simulateMetrics(resource.Default(), m, nil, nil)
 
 			wg.Wait()
 

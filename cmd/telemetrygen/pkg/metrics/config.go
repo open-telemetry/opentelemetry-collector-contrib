@@ -19,6 +19,7 @@ type Config struct {
 	MetricName             string
 	MetricType             MetricType
 	AggregationTemporality AggregationTemporality
+	DynamicAttributeName   string
 	SpanID                 string
 	TraceID                string
 }
@@ -43,6 +44,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
+	fs.StringVar(&c.DynamicAttributeName, "dynamic-attribute-name", c.DynamicAttributeName, "Dynamic attribute to use for the metric, this keeps timeseries unique within a one second window")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -58,6 +60,8 @@ func (c *Config) SetDefaults() {
 	c.MetricType = MetricTypeGauge
 	// Use cumulative temporality as default.
 	c.AggregationTemporality = AggregationTemporality(metricdata.CumulativeTemporality)
+
+	c.DynamicAttributeName = "timebox"
 
 	c.TraceID = ""
 	c.SpanID = ""

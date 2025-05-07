@@ -82,13 +82,14 @@ var histogramBucketSamples = []struct {
 	},
 }
 
-func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue) {
+func (w worker) simulateMetrics(res *resource.Resource, exporter sdkmetric.Exporter, signalAttrs []attribute.KeyValue, tb *TimeBox) {
 	limiter := rate.NewLimiter(w.limitPerSecond, 1)
 
 	startTime := w.clock.Now()
 
 	var i int64
 	for w.running.Load() {
+		signalAttrs = append(signalAttrs, tb.GetAttribute())
 		var metrics []metricdata.Metrics
 		now := w.clock.Now()
 		if w.aggregationTemporality.AsTemporality() == metricdata.DeltaTemporality {

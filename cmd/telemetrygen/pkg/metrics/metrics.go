@@ -60,6 +60,8 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	wg := sync.WaitGroup{}
 	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
 
+	tb := NewTimeBox(c.DynamicAttributeName)
+
 	running := &atomic.Bool{}
 	running.Store(true)
 
@@ -92,7 +94,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 			}
 		}()
 
-		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes())
+		go w.simulateMetrics(res, exp, c.GetTelemetryAttributes(), tb)
 	}
 	if c.TotalDuration > 0 {
 		time.Sleep(c.TotalDuration)
