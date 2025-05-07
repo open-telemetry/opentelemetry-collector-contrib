@@ -15,13 +15,13 @@ import (
 // Config describes the test scenario.
 type Config struct {
 	common.Config
-	NumMetrics             int
-	MetricName             string
-	MetricType             MetricType
-	AggregationTemporality AggregationTemporality
-	DynamicAttributeName   string
-	SpanID                 string
-	TraceID                string
+	NumMetrics              int
+	MetricName              string
+	MetricType              MetricType
+	AggregationTemporality  AggregationTemporality
+	EnforceUniqueTimeseries bool
+	SpanID                  string
+	TraceID                 string
 }
 
 // NewConfig creates a new Config with default values.
@@ -44,7 +44,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
-	fs.StringVar(&c.DynamicAttributeName, "dynamic-attribute-name", c.DynamicAttributeName, "Dynamic attribute to use for the metric, this keeps timeseries unique within a one second window")
+	fs.BoolVar(&c.EnforceUniqueTimeseries, "enforce-unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within a second, performance impacting")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -61,7 +61,7 @@ func (c *Config) SetDefaults() {
 	// Use cumulative temporality as default.
 	c.AggregationTemporality = AggregationTemporality(metricdata.CumulativeTemporality)
 
-	c.DynamicAttributeName = "timebox"
+	c.EnforceUniqueTimeseries = false
 
 	c.TraceID = ""
 	c.SpanID = ""

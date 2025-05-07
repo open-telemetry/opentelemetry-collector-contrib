@@ -15,21 +15,27 @@ TimeBox allows for only one metric timeseries per second. It'll generate additio
 requested within a one-second window
 */
 type TimeBox struct {
-	// The attribute to use for the timebox
-	Attribute string
+	// enforceUnique is set to true if the attribute should be unique
+	// for each second. If false, the attribute will always be 0.
+	enforceUnique bool
 
 	// locks attribute creation for a moment once a second
 	mutex *sync.Mutex
+
+	// used to gracefully shut down the timer
+	shutdown chan struct{}
 
 	// The attribute value last used
 	offset int64
 }
 
-func NewTimeBox(attribute string) *TimeBox {
+const attributeName = "timebox"
+
+func NewTimeBox(enforceUnique bool) *TimeBox {
 	tb := &TimeBox{
-		Attribute: attribute,
-		offset:    0,
-		mutex:     &sync.Mutex{},
+		offset:        0,
+		enforceUnique: enforceUnique,
+		mutex:         &sync.Mutex{},
 	}
 
 	go tb.resetTimerLoop(time.NewTimer(time.Second))
@@ -37,19 +43,40 @@ func NewTimeBox(attribute string) *TimeBox {
 }
 
 func (tb *TimeBox) GetAttribute() attribute.KeyValue {
+	if !tb.enforceUnique {
+		return attribute.Int(attributeName, 0)
+	}
 	tb.mutex.Lock()
 	defer tb.mutex.Unlock()
 	tb.offset++
-	return attribute.Int(tb.Attribute, int(tb.offset))
+	return attribute.Int(attributeName, int(tb.offset))
 }
 
 // resetTimer resets the timer to 1 second every time the timer is stopped.
-func (tb *TimeBox) resetTimerLoop(t *time.Timer) func() {
+func (tb *TimeBox) resetTimerLoop(t *time.Timer) {
+	// no-op when enforceUnique is false
+	if !tb.enforceUnique {
+		return
+	}
 	for {
-		<-t.C
-		tb.mutex.Lock()
-		tb.offset = 0
-		t.Reset(time.Second)
-		tb.mutex.Unlock()
+		select {
+		case <-tb.shutdown:
+			t.Stop()
+			return
+		case <-t.C:
+			tb.mutex.Lock()
+			tb.offset = 0
+			t.Reset(time.Second)
+			tb.mutex.Unlock()
+		}
+	}
+}
+
+func (tb *TimeBox) Shutdown() {
+	tb.mutex.Lock()
+	defer tb.mutex.Unlock()
+	if tb.shutdown != nil {
+		close(tb.shutdown)
+		tb.shutdown = nil
 	}
 }
