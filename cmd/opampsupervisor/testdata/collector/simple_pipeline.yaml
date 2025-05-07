@@ -12,6 +12,7 @@ extensions:
     endpoint: "localhost:13133"
 
 service:
+  # bug with local config see https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/39931
   extensions: [opamp, health_check]
   pipelines:
     logs:
