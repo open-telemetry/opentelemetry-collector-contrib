@@ -31,6 +31,9 @@ var (
 	loadAvgFactor1m  = 1 / math.Exp(samplingFrequency.Seconds()/time.Minute.Seconds())
 	loadAvgFactor5m  = 1 / math.Exp(samplingFrequency.Seconds()/(5*time.Minute).Seconds())
 	loadAvgFactor15m = 1 / math.Exp(samplingFrequency.Seconds()/(15*time.Minute).Seconds())
+
+	// perfCounterFactory is used to facilitate testing
+	perfCounterFactory = winperfcounters.NewWatcher
 )
 
 var (
@@ -70,8 +73,9 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 	if err != nil {
 		// To keep the same behavior, as previous versions on Windows, error in this case is just logged
 		// and the scraper is not started.
+		scraperCount = 0
 		logger.Error("Failed to init performance counters, load metrics will not be scraped", zap.Error(err))
-		return nil
+		return errPreventScrape
 	}
 
 	samplerInstance.startSamplingTicker()
@@ -79,7 +83,7 @@ func startSampling(_ context.Context, logger *zap.Logger) error {
 }
 
 func newSampler(logger *zap.Logger) (*sampler, error) {
-	perfCounterWatcher, err := winperfcounters.NewWatcher(system, "", processorQueueLength)
+	perfCounterWatcher, err := perfCounterFactory(system, "", processorQueueLength)
 	if err != nil {
 		return nil, err
 	}

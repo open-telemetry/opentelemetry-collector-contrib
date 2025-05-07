@@ -5,6 +5,7 @@ package loadscraper // import "github.com/open-telemetry/opentelemetry-collector
 
 import (
 	"context"
+	"errors"
 	"runtime"
 	"time"
 
@@ -15,11 +16,16 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.opentelemetry.io/collector/scraper"
 	"go.opentelemetry.io/collector/scraper/scrapererror"
+	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/scraper/loadscraper/internal/metadata"
 )
 
 const metricsLen = 3
+
+// errPreventScrape is used to indicate that skip scrape should be set to true
+// when the sampler fails to start.
+var errPreventScrape = errors.New("cannot scrape load metrics")
 
 // scraper for Load Metrics
 type loadScraper struct {
@@ -47,11 +53,13 @@ func (s *loadScraper) start(ctx context.Context, _ component.Host) error {
 
 	s.mb = metadata.NewMetricsBuilder(s.config.MetricsBuilderConfig, s.settings, metadata.WithStartTime(pcommon.Timestamp(bootTime*1e9)))
 	err = startSampling(ctx, s.settings.Logger)
-	if err != nil {
-		return err
+	if errors.Is(err, errPreventScrape) {
+		s.settings.Logger.Error("failed to start load scraper sampler", zap.Error(err))
+		s.skipScrape = true
+		err = nil
 	}
 
-	return nil
+	return err
 }
 
 // shutdown
