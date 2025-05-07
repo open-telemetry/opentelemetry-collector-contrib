@@ -360,6 +360,13 @@ docker-telemetrygen:
 	cd cmd/telemetrygen && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t telemetrygen:latest .
 	rm cmd/telemetrygen/telemetrygen_*
 
+.PHONY: docker-golden
+docker-golden:
+	GOOS=linux GOARCH=$(GOARCH) $(MAKE) golden
+	cp bin/golden_* cmd/golden/
+	cd cmd/golden && docker build --platform linux/$(GOARCH) --build-arg="TARGETOS=$(GOOS)" --build-arg="TARGETARCH=$(GOARCH)" -t golden:latest .
+	rm cmd/golden/golden_*
+
 .PHONY: generate
 generate: install-tools
 	PATH="$(ROOT_DIR).tools:$$PATH" $(MAKE) for-all CMD="$(GOCMD) generate ./..."
@@ -372,6 +379,9 @@ gengithub: $(GITHUBGEN)
 .PHONY: gendistributions
 gendistributions: $(GITHUBGEN)
 	$(GITHUBGEN) distributions
+
+gencodecov: $(CODECOVGEN)
+	$(CODECOVGEN) --base-prefix github.com/open-telemetry/opentelemetry-collector-contrib --skipped-modules **/*test,**/examples/**,pkg/**,cmd/**,internal/**,*/encoding/**
 
 .PHONY: update-codeowners
 update-codeowners: generate gengithub
@@ -442,6 +452,12 @@ telemetrygenlite:
 .PHONY: opampsupervisor
 opampsupervisor:
 	cd ./cmd/opampsupervisor && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/opampsupervisor_$(GOOS)_$(GOARCH)$(EXTENSION) \
+		-tags $(GO_BUILD_TAGS) .
+
+# Build the golden executable.
+.PHONY: golden
+golden:
+	cd ./cmd/golden && GO111MODULE=on CGO_ENABLED=0 $(GOCMD) build -trimpath -o ../../bin/golden_$(GOOS)_$(GOARCH)$(EXTENSION) \
 		-tags $(GO_BUILD_TAGS) .
 
 MODULES="internal/buildscripts/modules"

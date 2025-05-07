@@ -11,6 +11,64 @@ status:
     emeritus: [jpkrohling]
     seeking_new: true
 
+attributes:
+  success:
+    description: Whether an outcome was successful
+    type: bool
+  resolver:
+    description: Resolver used
+    type: string
+    enum:
+      - aws
+      - dns
+      - k8s
+      - static
+  endpoint:
+    description: The endpoint of the backend
+    type: string
+
+telemetry:
+  metrics:
+    loadbalancer_num_resolutions:
+      attributes: [success, resolver]
+      enabled: true
+      description: Number of times the resolver has triggered new resolutions.
+      unit: "{resolutions}"
+      sum:
+        value_type: int
+        monotonic: true
+    loadbalancer_num_backends:
+      attributes: [resolver]
+      enabled: true
+      description: Current number of backends in use.
+      unit: "{backends}"
+      gauge:
+        value_type: int
+    loadbalancer_backend_latency:
+      attributes: [endpoint]
+      enabled: true
+      description: Response latency in ms for the backends.
+      unit: ms
+      histogram:
+        value_type: int
+        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
+    loadbalancer_num_backend_updates:
+      attributes: [resolver]
+      enabled: true
+      description: Number of times the list of backends was updated.
+      unit: "{updates}"
+      sum:
+        value_type: int
+        monotonic: true
+    loadbalancer_backend_outcome:
+      attributes: [success]
+      enabled: true
+      description: Number of successes and failures for each endpoint.
+      unit: "{outcomes}"
+      sum:
+        value_type: int
+        monotonic: true
+    
 tests:
   config:
     routing_key: "service"
@@ -25,40 +83,3 @@ tests:
           - backend-3:4317
           - backend-4:4317
   expect_consumer_error: true
-
-telemetry:
-  metrics:
-    loadbalancer_num_resolutions:
-      enabled: true
-      description: Number of times the resolver has triggered new resolutions.
-      unit: "{resolutions}"
-      sum:
-        value_type: int
-        monotonic: true
-    loadbalancer_num_backends:
-      enabled: true
-      description: Current number of backends in use.
-      unit: "{backends}"
-      gauge:
-        value_type: int
-    loadbalancer_backend_latency:
-      enabled: true
-      description: Response latency in ms for the backends.
-      unit: ms
-      histogram:
-        value_type: int
-        bucket_boundaries: [5, 10, 20, 50, 100, 200, 500, 1000, 2000, 5000]
-    loadbalancer_num_backend_updates:
-      enabled: true
-      description: Number of times the list of backends was updated.
-      unit: "{updates}"
-      sum:
-        value_type: int
-        monotonic: true
-    loadbalancer_backend_outcome:
-      enabled: true
-      description: Number of successes and failures for each endpoint.
-      unit: "{outcomes}"
-      sum:
-        value_type: int
-        monotonic: true
