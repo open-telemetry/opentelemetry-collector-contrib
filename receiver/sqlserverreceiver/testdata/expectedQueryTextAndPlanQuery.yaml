@@ -59,7 +59,7 @@ resourceLogs:
                 value:
                   intValue: "1433"
             body: {}
-            eventName: top query
+            eventName: db.server.top_query
             spanId: ""
             timeUnixNano: "1746443457006291000"
             traceId: ""
