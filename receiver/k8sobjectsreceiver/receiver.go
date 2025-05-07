@@ -138,10 +138,10 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 
 		elector.SetCallBackFuncs(
 			func(_ context.Context) {
-				kr.setting.Logger.Info("Object Receiver started as leader")
 				for _, object := range validConfigs {
 					kr.start(cctx, object)
 				}
+				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
 			func() {
 				kr.setting.Logger.Info("no longer leader, stopping")
@@ -154,10 +154,11 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 		return nil
 	}
 
-	kr.setting.Logger.Info("Object Receiver started")
 	for _, object := range validConfigs {
 		kr.start(cctx, object)
 	}
+
+	kr.setting.Logger.Info("Object Receiver started")
 	return nil
 }
 

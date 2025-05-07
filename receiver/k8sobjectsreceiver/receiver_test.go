@@ -328,12 +328,8 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	kr.consumer = sink
 
 	// Setup k8s resources.
-	numPods := 2
 	mockClient.createPods(
 		generatePod("pod1", "default", map[string]any{
-			"environment": "production",
-		}, "1"),
-		generatePod("pod2", "default", map[string]any{
 			"environment": "production",
 		}, "1"),
 	)
@@ -344,14 +340,35 @@ func TestReceiverWithLeaderElection(t *testing.T) {
 	// elected leader
 	fakeLeaderElection.InvokeOnLeading()
 
-	expectedNumMetrics := numPods
-	var initialLogRecordCount int
 	require.Eventually(t, func() bool {
-		initialLogRecordCount = sink.LogRecordCount()
-		return initialLogRecordCount == expectedNumMetrics
+		// expect get 2 log records
+		return sink.LogRecordCount() == 1
 	}, 20*time.Second, 100*time.Millisecond,
 		"logs not collected")
 
 	// lost election
 	fakeLeaderElection.InvokeOnStopping()
+
+	// mock create pod again which not collected
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	// get back election
+	fakeLeaderElection.InvokeOnLeading()
+
+	// mock create pod finally
+	mockClient.createPods(
+		generatePod("pod1", "default", map[string]any{
+			"environment": "production",
+		}, "1"),
+	)
+
+	require.Eventually(t, func() bool {
+		// expect get 4 log records
+		return sink.LogRecordCount() == 2
+	}, 20*time.Second, 100*time.Millisecond,
+		"logs not collected")
 }
