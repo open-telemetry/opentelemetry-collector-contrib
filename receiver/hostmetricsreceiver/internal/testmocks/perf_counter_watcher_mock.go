@@ -3,7 +3,7 @@
 
 //go:build windows
 
-package testmocks
+package testmocks // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/hostmetricsreceiver/internal/testmocks"
 
 import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/winperfcounters"
