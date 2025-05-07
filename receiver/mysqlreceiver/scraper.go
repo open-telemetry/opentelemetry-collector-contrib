@@ -123,8 +123,6 @@ func (m *mySQLScraper) scrapeMetrics(context.Context) (pmetric.Metrics, error) {
 
 	// collect replicas status metrics.
 	m.scrapeReplicaStatusStats(now)
-	// collect detailed query metrics
-	m.scrapeQueryMetrics(now, errs)
 
 	rb := m.mb.NewResourceBuilder()
 	rb.SetMysqlInstanceEndpoint(m.config.Endpoint)
@@ -137,7 +135,18 @@ func (m *mySQLScraper) scrapeMetrics(context.Context) (pmetric.Metrics, error) {
 func (m *mySQLScraper) scrapeLogs(ctx context.Context) (plog.Logs, error) {
 	m.logger.Debug("scrapeLogs() called")
 	errs := &scrapererror.ScrapeErrors{}
-	return m.scrapeQueryLogs(pcommon.NewTimestampFromTime(time.Now()), errs), errs.Combine()
+	logs := plog.NewLogs()
+	recLogs := logs.ResourceLogs().AppendEmpty()
+	recRes := recLogs.Resource().Attributes()
+	recRes.PutStr("mysql.instance.endpoint", m.config.Endpoint)
+	scopeLogs := recLogs.ScopeLogs().AppendEmpty()
+	scopeLogs.Scope().SetName(metadata.ScopeName)
+	scopeLogs.Scope().SetVersion(m.buildInfo.Version)
+
+	m.scrapeQueryLogs(scopeLogs, pcommon.NewTimestampFromTime(time.Now()), errs)
+	m.scrapeSampleQueryData(scopeLogs, pcommon.NewTimestampFromTime(time.Now()), errs)
+
+	return logs, errs.Combine()
 }
 
 func (m *mySQLScraper) scrapeGlobalStats(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
@@ -598,11 +607,11 @@ func (m *mySQLScraper) scrapeTableLockWaitEventStats(now pcommon.Timestamp, errs
 scrapeQueryLogs collects the top query logs and returns them as plog.Logs.
 Note that individual metric values are tracked and reported similarly to the query logs.
 */
-func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) plog.Logs {
+func (m *mySQLScraper) scrapeQueryLogs(logs plog.ScopeLogs, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
 	m.logger.Debug("scrapeQueryLogs called")
 	if !m.config.TopQueryCollection.Enabled {
 		m.logger.Debug("Top query collection is disabled, skipping")
-		return plog.Logs{}
+		return
 	}
 	const (
 		eventNameKey         = "db.server.top_query"
@@ -635,24 +644,17 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 	if err != nil {
 		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
 		errs.AddPartial(1, err)
-		return plog.Logs{}
+		return
 	}
 	if len(queryStats) == 0 {
 		m.logger.Debug("No query logs stats found")
-		return plog.Logs{}
+		return
 	}
 
-	logs := plog.NewLogs()
-	recLogs := logs.ResourceLogs().AppendEmpty()
-	recRes := recLogs.Resource().Attributes()
-	recRes.PutStr("mysql.instance.endpoint", m.config.Endpoint)
-	scopeLogs := recLogs.ScopeLogs().AppendEmpty()
-	scopeLogs.Scope().SetName(metadata.ScopeName)
-	scopeLogs.Scope().SetVersion(m.buildInfo.Version)
 	matchedStats := m.sortAndReduceTopQueryStats(queryStats)
 	if len(matchedStats) == 0 {
 		m.logger.Debug("No query logs stats found after sorting and reducing")
-		return logs
+		return
 	}
 	// Gathering of explain plans is done via goroutines, so we need to track if we are already in the process of gathering
 	if m.gatheringExplainPlans {
@@ -661,7 +663,7 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 	m.gatheringExplainPlans = true
 	wg := sync.WaitGroup{}
 	for _, s := range matchedStats {
-		log := scopeLogs.LogRecords().AppendEmpty()
+		log := logs.LogRecords().AppendEmpty()
 		wg.Add(1)
 		// This is an additional query, and is peeled off as a separate goroutine while the rest of the metrics are being processed
 		go m.addQueryPlanToLogAttributes(log, s.querySample, &wg)
@@ -705,7 +707,6 @@ func (m *mySQLScraper) scrapeQueryLogs(now pcommon.Timestamp, errs *scrapererror
 	// wait until all of the explain plan go-routines have returned
 	wg.Wait()
 	m.gatheringExplainPlans = false
-	return logs
 }
 
 func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryString string, wg *sync.WaitGroup) {
@@ -731,15 +732,7 @@ func (m *mySQLScraper) addQueryPlanToLogAttributes(log plog.LogRecord, queryStri
 		m.logger.Error("Failed to compact query plan JSON", zap.Error(err))
 	}
 	log.Attributes().PutStr(planKey, buffer.String())
-
-	planHash := sha256.New()
-	_, err = planHash.Write([]byte(queryPlan))
-	if err != nil {
-		m.logger.Error("Failed to hash query plan", zap.Error(err))
-		log.Attributes().PutStr(planHashKey, "UNABLE TO HASH QUERY PLAN")
-		return
-	}
-	log.Attributes().PutStr(planHashKey, fmt.Sprintf("%x", planHash.Sum(nil)))
+	log.Attributes().PutStr(planHashKey, fmt.Sprintf("%x", sha256.Sum256([]byte(queryPlan))))
 }
 
 func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QueryStats {
@@ -768,32 +761,81 @@ func (m *mySQLScraper) sortAndReduceTopQueryStats(stats []QueryStats) []QuerySta
 	return matchedStats
 }
 
-func (m *mySQLScraper) scrapeQueryMetrics(now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
-	if !m.config.TopQueryCollection.Enabled {
-		m.logger.Debug("Top query collection is disabled, skipping")
-		return
-	}
-	queryStats, err := m.sqlclient.getQueryStats(m.lastMetricsQueryMetricsGatheringTime, int(m.config.TopQueryCollection.TopQueryCount))
-	m.lastMetricsQueryMetricsGatheringTime = now.AsTime().UnixNano()
+func (m *mySQLScraper) scrapeSampleQueryData(logs plog.ScopeLogs, now pcommon.Timestamp, errs *scrapererror.ScrapeErrors) {
+	const (
+		eventNameKey           = "db.server.query_sample"
+		currentSchemaKey       = "mysql.current_schema"
+		sqlTextKey             = "mysql.sql_text"
+		digestKey              = "mysql.query_hash"
+		digestTextKey          = "mysql.query_hash_text"
+		endEventIdKey          = "mysql.end_event_id"
+		timerStartKey          = "mysql.timer_start"
+		uptimeKey              = "mysql.uptime"
+		nowKey                 = "mysql.now"
+		timerEndKey            = "mysql.timer_end"
+		timerWaitKey           = "mysql.timer_wait"
+		lockTimeKey            = "mysql.lock_time"
+		rowsAffectedKey        = "mysql.rows_affected"
+		rowsSentKey            = "mysql.rows_sent"
+		rowsExaminedKey        = "mysql.rows_examined"
+		selectFullJoinKey      = "mysql.select_full_join"
+		selectFullRangeJoinKey = "mysql.select_full_range_join"
+		selectRangeKey         = "mysql.select_range"
+		selectRangeCheckKey    = "mysql.select_range_check"
+		selectScanKey          = "mysql.select_scan"
+		sortMergePassesKey     = "mysql.sort_merge_passes"
+		sortRangeKey           = "mysql.sort_range"
+		sortRowsKey            = "mysql.sort_rows"
+		sortScanKey            = "mysql.sort_scan"
+		noGoodIndexUsedKey     = "mysql.no_good_index_used"
+		noIndexUsedKey         = "mysql.no_index_used"
+		processListUserKey     = "mysql.process_list_user"
+		processListHostKey     = "mysql.process_list_host"
+		processListDbKey       = "mysql.process_list_db"
+	)
+	samples, err := m.sqlclient.getQuerySamples(m.config.TopQueryCollection.MaxQuerySampleCount)
 	if err != nil {
-		m.logger.Error("Failed to fetch query logs stats", zap.Error(err))
+		m.logger.Error("Failed to fetch sample query and plan", zap.Error(err))
 		errs.AddPartial(1, err)
 		return
 	}
-	if len(queryStats) == 0 {
-		m.logger.Debug("No query logs stats found")
-		return
-	}
 
-	metricsBuilder := m.mb
-	for _, s := range queryStats {
-		metricsBuilder.RecordMysqlQueryTimeCPUDataPoint(now, float64(s.cpuTime), s.schema)
-		metricsBuilder.RecordMysqlQueryCallsDataPoint(now, s.count, s.schema)
-		metricsBuilder.RecordMysqlQueryTimeLockDataPoint(now, float64(s.lockTime), s.schema)
-		metricsBuilder.RecordMysqlQueryRowsTotalDataPoint(now, s.rowsExamined, s.schema)
-		metricsBuilder.RecordMysqlQueryRowsReturnedDataPoint(now, s.rowsReturned, s.schema)
-		metricsBuilder.RecordMysqlQueryTimeTotalDataPoint(now, float64(s.totalDuration), s.schema)
+	rec := logs.LogRecords().AppendEmpty()
+	rec.SetTimestamp(now)
+	rec.SetEventName(eventNameKey)
+	wg := sync.WaitGroup{}
+	for _, sample := range samples {
+		wg.Add(1)
+		go m.addQueryPlanToLogAttributes(rec, sample.sql_text, &wg)
+		atts := rec.Attributes()
+		atts.PutStr(currentSchemaKey, sample.currentSchema)
+		atts.PutStr(digestKey, sample.digest)
+		atts.PutStr(digestTextKey, sample.digest_query)
+		atts.PutInt(endEventIdKey, sample.end_event_id)
+		atts.PutDouble(timerStartKey, sample.timer_start)
+		atts.PutInt(uptimeKey, sample.uptime)
+		atts.PutDouble(timerEndKey, sample.timer_end)
+		atts.PutDouble(timerWaitKey, sample.timer_wait)
+		atts.PutDouble(lockTimeKey, sample.lock_time)
+		atts.PutInt(rowsAffectedKey, sample.rows_affected)
+		atts.PutInt(rowsSentKey, sample.rows_sent)
+		atts.PutInt(rowsExaminedKey, sample.rows_examined)
+		atts.PutInt(selectFullJoinKey, sample.select_full_join)
+		atts.PutInt(selectFullRangeJoinKey, sample.select_full_range_join)
+		atts.PutInt(selectRangeKey, sample.select_range)
+		atts.PutInt(selectRangeCheckKey, sample.select_range_check)
+		atts.PutInt(selectScanKey, sample.select_scan)
+		atts.PutInt(sortMergePassesKey, sample.sort_merge_passes)
+		atts.PutInt(sortRangeKey, sample.sort_range)
+		atts.PutInt(sortRowsKey, sample.sort_rows)
+		atts.PutInt(sortScanKey, sample.sort_scan)
+		atts.PutInt(noIndexUsedKey, sample.no_index_used)
+		atts.PutInt(noGoodIndexUsedKey, sample.no_good_index_used)
+		atts.PutStr(processListUserKey, sample.processlist_user)
+		atts.PutStr(processListHostKey, sample.processlist_host)
+		atts.PutStr(processListDbKey, sample.processlist_db)
 	}
+	wg.Wait()
 }
 
 func (m *mySQLScraper) scrapeReplicaStatusStats(now pcommon.Timestamp) {

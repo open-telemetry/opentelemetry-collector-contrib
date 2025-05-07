@@ -60,12 +60,6 @@ func TestScrape(t *testing.T) {
 
 		cfg.MetricsBuilderConfig.Metrics.MysqlConnectionCount.Enabled = true
 
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryCalls.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryRowsReturned.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryRowsTotal.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeCPU.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeLock.Enabled = true
-		cfg.MetricsBuilderConfig.Metrics.MysqlQueryTimeTotal.Enabled = true
 		cfg.TopQueryCollection.Enabled = true
 
 		scraper := newMySQLScraper(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -79,6 +73,7 @@ func TestScrape(t *testing.T) {
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
 			queryStatsFile:              "query_stats",
+			querySample:                 "query_sample",
 		}
 
 		scraper.renameCommands = true
@@ -105,6 +100,7 @@ func TestScrape(t *testing.T) {
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats",
 			replicaStatusFile:           "replica_stats",
 			queryStatsFile:              "query_stats",
+			querySample:                 "query_sample",
 		}
 
 		actualLogs, err := scraper.scrapeLogs(context.Background())
@@ -113,7 +109,7 @@ func TestScrape(t *testing.T) {
 		expectedLogs, err := golden.ReadLogs(expectedLogsFile)
 		require.NoError(t, err)
 		require.NoError(t, plogtest.CompareLogs(expectedLogs, actualLogs,
-			plogtest.IgnoreLogRecordsOrder(), plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp()))
+			plogtest.IgnoreObservedTimestamp(), plogtest.IgnoreTimestamp()))
 
 	})
 
@@ -141,6 +137,7 @@ func TestScrape(t *testing.T) {
 			tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 			replicaStatusFile:           "replica_stats_empty",
 			queryStatsFile:              "query_stats_empty",
+			querySample:                 "query_sample",
 		}
 
 		actualMetrics, scrapeErr := scraper.scrapeMetrics(context.Background())
@@ -182,6 +179,7 @@ func TestScrapeBufferPoolPagesMiscOutOfBounds(t *testing.T) {
 		tableLockWaitEventStatsFile: "table_lock_wait_event_stats_empty",
 		replicaStatusFile:           "replica_stats_empty",
 		queryStatsFile:              "query_stats_empty",
+		querySample:                 "query_sample",
 	}
 
 	scraper.renameCommands = true
@@ -204,6 +202,7 @@ type mockClient struct {
 	tableLockWaitEventStatsFile string
 	replicaStatusFile           string
 	queryStatsFile              string
+	querySample                 string
 }
 
 func readFile(fname string) (map[string]string, error) {
@@ -504,8 +503,49 @@ func (c *mockClient) getQueryStats(since int64, topCount int) ([]QueryStats, err
 	}
 	return stats, nil
 }
+
+func (c *mockClient) getQuerySamples(limit uint64) ([]QuerySample, error) {
+	file, err := os.Open(filepath.Join("testdata", "scraper", c.querySample+".txt"))
+	if err != nil {
+		return []QuerySample{}, err
+	}
+	defer file.Close()
+	scanner := bufio.NewScanner(file)
+	scanner.Scan()
+	qs := QuerySample{}
+	text := strings.Split(scanner.Text(), "\t")
+	qs.currentSchema = text[0]
+	// qs.sql_text = text[1] // not needed for testing
+	qs.digest = text[2]
+	qs.digest_query = text[3]
+	qs.end_event_id, _ = strconv.ParseInt(text[4], 10, 64)
+	qs.timer_start, _ = strconv.ParseFloat(text[5], 64) // //////
+	qs.uptime, _ = strconv.ParseInt(text[6], 10, 64)
+	qs.timer_end, _ = strconv.ParseFloat(text[7], 64)
+	qs.timer_wait, _ = strconv.ParseFloat(text[8], 64)
+	qs.lock_time, _ = strconv.ParseFloat(text[9], 64)
+	qs.rows_affected, _ = strconv.ParseInt(text[10], 10, 64)
+	qs.rows_sent, _ = strconv.ParseInt(text[11], 10, 64)
+	qs.rows_examined, _ = strconv.ParseInt(text[12], 10, 64)
+	qs.select_full_join, _ = strconv.ParseInt(text[13], 10, 64)
+	qs.select_full_range_join, _ = strconv.ParseInt(text[14], 10, 64)
+	qs.select_range, _ = strconv.ParseInt(text[15], 10, 64)
+	qs.select_range_check, _ = strconv.ParseInt(text[16], 10, 64)
+	qs.select_scan, _ = strconv.ParseInt(text[17], 10, 64)
+	qs.sort_merge_passes, _ = strconv.ParseInt(text[18], 10, 64)
+	qs.sort_range, _ = strconv.ParseInt(text[19], 10, 64)
+	qs.sort_rows, _ = strconv.ParseInt(text[20], 10, 64)
+	qs.sort_scan, _ = strconv.ParseInt(text[21], 10, 64)
+	qs.no_index_used, _ = strconv.ParseInt(text[22], 10, 64)
+	qs.no_good_index_used, _ = strconv.ParseInt(text[23], 10, 64)
+	qs.processlist_user = text[24]
+	qs.processlist_host = text[25]
+	qs.processlist_db = text[26]
+	return []QuerySample{qs}, nil
+}
+
 func (c *mockClient) getExplainPlanAsJsonForDigestQuery(digest string) (string, error) {
-	return "{\"query\": \"none\", \"query_plan\": {}}", nil
+	return "{\"query\":\"none\",\"query_plan\":{\"test\":\"data\"}}", nil
 }
 func (c *mockClient) checkPerformanceCollectionSettings() {}
 

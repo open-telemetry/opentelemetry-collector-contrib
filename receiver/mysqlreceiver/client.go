@@ -33,6 +33,7 @@ type client interface {
 	getReplicaStatusStats() ([]ReplicaStatusStats, error)
 	getQueryStats(since int64, topCount int) ([]QueryStats, error)
 	getExplainPlanAsJsonForDigestQuery(digest string) (string, error)
+	getQuerySamples(limit uint64) ([]QuerySample, error)
 	Close() error
 }
 
@@ -227,6 +228,36 @@ type QueryStats struct {
 	querySample        string  // A sample of a literal query text for use in an EXPLAIN call
 
 	diffTime int64 // only used during sort, not in scan
+}
+
+type QuerySample struct {
+	currentSchema          string
+	sql_text               string
+	digest                 string
+	digest_query           string
+	end_event_id           int64
+	timer_start            float64
+	uptime                 int64
+	timer_end              float64
+	timer_wait             float64
+	lock_time              float64
+	rows_affected          int64
+	rows_sent              int64
+	rows_examined          int64
+	select_full_join       int64
+	select_full_range_join int64
+	select_range           int64
+	select_range_check     int64
+	select_scan            int64
+	sort_merge_passes      int64
+	sort_range             int64
+	sort_rows              int64
+	sort_scan              int64
+	no_index_used          int64
+	no_good_index_used     int64
+	processlist_user       string
+	processlist_host       string
+	processlist_db         string
 }
 
 var _ client = (*mySQLClient)(nil)
@@ -849,7 +880,113 @@ func (c *mySQLClient) getExplainPlanAsJsonForDigestQuery(query string) (string, 
 			explainPlan = jsonPlan.String
 		}
 	}
-	return explainPlan, nil
+	return strings.TrimSpace(explainPlan), nil
+}
+
+func (c *mySQLClient) getQuerySamples(limit uint64) ([]QuerySample, error) {
+
+	query := "SELECT " +
+		"current_schema, " +
+		"sql_text, " +
+		"digest, " +
+		"digest_text, " +
+		"end_event_id, " +
+		"timer_start/1e12, " +
+		"(SELECT VARIABLE_VALUE FROM performance_schema.global_status WHERE VARIABLE_NAME='UPTIME') as uptime, " +
+		"timer_end/1e12, " +
+		"timer_wait/1e12, " +
+		"lock_time/1e12, " +
+		"rows_affected, " +
+		"rows_sent, " +
+		"rows_examined, " +
+		"select_full_join, " +
+		"select_full_range_join, " +
+		"select_range, " +
+		"select_range_check, " +
+		"select_scan, " +
+		"sort_merge_passes, " +
+		"sort_range, " +
+		"sort_rows, " +
+		"sort_scan, " +
+		"no_index_used, " +
+		"no_good_index_used, " +
+		"processlist_user, " +
+		"processlist_host, " +
+		"processlist_db " +
+		"FROM performance_schema.events_statements_current as E " +
+		"LEFT JOIN performance_schema.threads as T " +
+		"ON E.thread_id = T.thread_id " +
+		"WHERE sql_text IS NOT NULL " +
+		"AND event_name like 'statement/%' " +
+		"AND digest_text IS NOT NULL " +
+		"AND digest_text NOT LIKE 'EXPLAIN %' " +
+		"AND digest_text REGEXP '^(SELECT|TABLE|DELETE|INSERT|REPLACE|UPDATE|WITH).*' " +
+		"ORDER BY timer_wait " + // If this is going to be a sample, then maybe we don't want an order by. Just saying...
+		"LIMIT " + strconv.FormatUint(limit, 10) + ";"
+
+	var s QuerySample
+
+	rows, err := c.client.Query(query)
+	if err != nil {
+		return []QuerySample{}, err
+	}
+	defer rows.Close()
+	var samples []QuerySample
+	for rows.Next() {
+		var currentSchema sql.NullString
+		var endEventId sql.NullInt64
+		var processListDb sql.NullString
+		rows.Scan(
+			&currentSchema,
+			&s.sql_text,
+			&s.digest,
+			&s.digest_query,
+			&endEventId,
+			&s.timer_start,
+			&s.uptime,
+			&s.timer_end,
+			&s.timer_wait,
+			&s.lock_time,
+			&s.rows_affected,
+			&s.rows_sent,
+			&s.rows_examined,
+			&s.select_full_join,
+			&s.select_full_range_join,
+			&s.select_range,
+			&s.select_range_check,
+			&s.select_scan,
+			&s.sort_merge_passes,
+			&s.sort_range,
+			&s.sort_rows,
+			&s.sort_scan,
+			&s.no_index_used,
+			&s.no_good_index_used,
+			&s.processlist_user,
+			&s.processlist_host,
+			&processListDb)
+
+		if err != nil {
+			continue
+		}
+
+		if currentSchema.Valid {
+			s.currentSchema = currentSchema.String
+		} else {
+			s.currentSchema = "NONE"
+		}
+		if processListDb.Valid {
+			s.processlist_db = processListDb.String
+		} else {
+			s.processlist_db = "NONE"
+		}
+		if endEventId.Valid {
+			s.end_event_id = endEventId.Int64
+		} else {
+			s.end_event_id = 0
+		}
+		samples = append(samples, s)
+	}
+	return samples, nil
 }
 
 func (c *mySQLClient) checkPerformanceCollectionSettings() {

@@ -43,8 +43,9 @@ func createDefaultConfig() component.Config {
 			TimeLimit:       defaultStatementEventsTimeLimit,
 		},
 		TopQueryCollection: TopQueryCollection{
-			Enabled:       false,
-			TopQueryCount: 200,
+			Enabled:             false,
+			TopQueryCount:       200,
+			MaxQuerySampleCount: 1000,
 		},
 	}
 }

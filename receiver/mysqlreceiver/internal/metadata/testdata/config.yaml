@@ -47,23 +47,11 @@ all_set:
       enabled: true
     mysql.prepared_statements:
       enabled: true
-    mysql.query.calls:
-      enabled: true
     mysql.query.client.count:
       enabled: true
     mysql.query.count:
       enabled: true
-    mysql.query.rows.returned:
-      enabled: true
-    mysql.query.rows.total:
-      enabled: true
     mysql.query.slow.count:
-      enabled: true
-    mysql.query.time.cpu:
-      enabled: true
-    mysql.query.time.lock:
-      enabled: true
-    mysql.query.time.total:
       enabled: true
     mysql.replica.sql_delay:
       enabled: true
@@ -156,23 +144,11 @@ none_set:
       enabled: false
     mysql.prepared_statements:
       enabled: false
-    mysql.query.calls:
-      enabled: false
     mysql.query.client.count:
       enabled: false
     mysql.query.count:
       enabled: false
-    mysql.query.rows.returned:
-      enabled: false
-    mysql.query.rows.total:
-      enabled: false
     mysql.query.slow.count:
-      enabled: false
-    mysql.query.time.cpu:
-      enabled: false
-    mysql.query.time.lock:
-      enabled: false
-    mysql.query.time.total:
       enabled: false
     mysql.replica.sql_delay:
       enabled: false

@@ -154,38 +154,14 @@ func TestMetricsBuilder(t *testing.T) {
 			allMetricsCount++
 			mb.RecordMysqlPreparedStatementsDataPoint(ts, "1", AttributePreparedStatementsCommandExecute)
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryCallsDataPoint(ts, 1, "schema-val")
-
 			allMetricsCount++
 			mb.RecordMysqlQueryClientCountDataPoint(ts, "1")
 
 			allMetricsCount++
 			mb.RecordMysqlQueryCountDataPoint(ts, "1")
 
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryRowsReturnedDataPoint(ts, 1, "schema-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryRowsTotalDataPoint(ts, 1, "schema-val")
-
 			allMetricsCount++
 			mb.RecordMysqlQuerySlowCountDataPoint(ts, "1")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryTimeCPUDataPoint(ts, 1, "schema-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryTimeLockDataPoint(ts, 1, "schema-val")
-
-			defaultMetricsCount++
-			allMetricsCount++
-			mb.RecordMysqlQueryTimeTotalDataPoint(ts, 1, "schema-val")
 
 			allMetricsCount++
 			mb.RecordMysqlReplicaSQLDelayDataPoint(ts, 1)
@@ -679,23 +655,6 @@ func TestMetricsBuilder(t *testing.T) {
 					attrVal, ok := dp.Attributes().Get("command")
 					assert.True(t, ok)
 					assert.EqualValues(t, "execute", attrVal.Str())
-				case "mysql.query.calls":
-					assert.False(t, validatedMetrics["mysql.query.calls"], "Found a duplicate in the metrics slice: mysql.query.calls")
-					validatedMetrics["mysql.query.calls"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total number of times the query was executed.", ms.At(i).Description())
-					assert.Equal(t, "count", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "mysql.query.client.count":
 					assert.False(t, validatedMetrics["mysql.query.client.count"], "Found a duplicate in the metrics slice: mysql.query.client.count")
 					validatedMetrics["mysql.query.client.count"] = true
@@ -724,40 +683,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mysql.query.rows.returned":
-					assert.False(t, validatedMetrics["mysql.query.rows.returned"], "Found a duplicate in the metrics slice: mysql.query.rows.returned")
-					validatedMetrics["mysql.query.rows.returned"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total number of rows returned by the query.", ms.At(i).Description())
-					assert.Equal(t, "count", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
-				case "mysql.query.rows.total":
-					assert.False(t, validatedMetrics["mysql.query.rows.total"], "Found a duplicate in the metrics slice: mysql.query.rows.total")
-					validatedMetrics["mysql.query.rows.total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total number of rows examined by the query.", ms.At(i).Description())
-					assert.Equal(t, "count", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "mysql.query.slow.count":
 					assert.False(t, validatedMetrics["mysql.query.slow.count"], "Found a duplicate in the metrics slice: mysql.query.slow.count")
 					validatedMetrics["mysql.query.slow.count"] = true
@@ -772,57 +697,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, ts, dp.Timestamp())
 					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
 					assert.Equal(t, int64(1), dp.IntValue())
-				case "mysql.query.time.cpu":
-					assert.False(t, validatedMetrics["mysql.query.time.cpu"], "Found a duplicate in the metrics slice: mysql.query.time.cpu")
-					validatedMetrics["mysql.query.time.cpu"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total CPU time for the query.", ms.At(i).Description())
-					assert.Equal(t, "seconds", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
-				case "mysql.query.time.lock":
-					assert.False(t, validatedMetrics["mysql.query.time.lock"], "Found a duplicate in the metrics slice: mysql.query.time.lock")
-					validatedMetrics["mysql.query.time.lock"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total lock time for the query.", ms.At(i).Description())
-					assert.Equal(t, "seconds", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
-				case "mysql.query.time.total":
-					assert.False(t, validatedMetrics["mysql.query.time.total"], "Found a duplicate in the metrics slice: mysql.query.time.total")
-					validatedMetrics["mysql.query.time.total"] = true
-					assert.Equal(t, pmetric.MetricTypeSum, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Sum().DataPoints().Len())
-					assert.Equal(t, "The total duration of the query.", ms.At(i).Description())
-					assert.Equal(t, "seconds", ms.At(i).Unit())
-					assert.False(t, ms.At(i).Sum().IsMonotonic())
-					assert.Equal(t, pmetric.AggregationTemporalityCumulative, ms.At(i).Sum().AggregationTemporality())
-					dp := ms.At(i).Sum().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeDouble, dp.ValueType())
-					assert.InDelta(t, float64(1), dp.DoubleValue(), 0.01)
-					attrVal, ok := dp.Attributes().Get("schema")
-					assert.True(t, ok)
-					assert.EqualValues(t, "schema-val", attrVal.Str())
 				case "mysql.replica.sql_delay":
 					assert.False(t, validatedMetrics["mysql.replica.sql_delay"], "Found a duplicate in the metrics slice: mysql.replica.sql_delay")
 					validatedMetrics["mysql.replica.sql_delay"] = true
