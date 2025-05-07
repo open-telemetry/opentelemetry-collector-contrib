@@ -28,7 +28,8 @@ type Config struct {
 	confighttp.ClientConfig        `mapstructure:",squash"`
 	ApplicationNames               []string `mapstructure:"application_names"`
 	ApplicationIds                 []string `mapstructure:"application_ids"`
-	ApplicationLimit               int      `mapstructure:"application_limit"`
+	Limit                          int      `mapstructure:"limit"`
+	StartTimeEpochLimit            int64    `mapstructure:"start_time_epoch_limit"`
 }
 
 // Validate validates missing and invalid configuration fields.

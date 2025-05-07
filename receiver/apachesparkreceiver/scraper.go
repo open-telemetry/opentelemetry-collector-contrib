@@ -61,19 +61,37 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		return pmetric.NewMetrics(), errors.Join(errFailedAppIDCollection, err)
 	}
 
-	// Check apps against allowed app names and ids from config
-	var allowedApps []models.Application
+	// Limit the number of applications checked
+	appsToCheck := apps
+	if s.config.Limit > 0 && len(apps) > s.config.Limit {
+		appsToCheck = apps[:s.config.Limit]
+	}
 
-	// If no app names/ids specified, allow all apps
+	// Filter out any applications older than StartTimeEpochLimit
+	var recentApps []models.Application
+	if s.config.StartTimeEpochLimit == 0 {
+		recentApps = appsToCheck
+	} else {
+	startTimeEpochLimit:
+		for _, app := range appsToCheck {
+			for _, attempt := range app.Attempts {
+				if s.config.StartTimeEpochLimit < attempt.StartTimeEpoch {
+					recentApps = append(recentApps, app)
+					break startTimeEpochLimit
+				}
+			}
+		}
+	}
+
+	// Apply ApplicationNames and ApplicationIds filters
+	var allowedApps []models.Application
 	switch {
 	case len(s.config.ApplicationNames) == 0 && len(s.config.ApplicationIds) == 0:
-		allowedApps = apps
+		allowedApps = recentApps
 	default:
-		// Some allowed app names specified, compare to app names from applications endpoint
 		nameMap := make(map[string][]models.Application)
 		idMap := make(map[string][]models.Application)
-
-		for _, app := range apps {
+		for _, app := range recentApps {
 			nameMap[app.Name] = append(nameMap[app.Name], app)
 			idMap[app.ApplicationID] = append(idMap[app.ApplicationID], app)
 		}
@@ -84,22 +102,15 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 				allowedApps = append(allowedApps, apps...)
 			}
 		}
-
 		// Add apps matching IDs
 		for _, id := range s.config.ApplicationIds {
 			if apps, ok := idMap[id]; ok {
 				allowedApps = append(allowedApps, apps...)
 			}
 		}
-
 		if len(allowedApps) == 0 {
 			return pmetric.NewMetrics(), errNoMatchingAllowedApps
 		}
-	}
-
-	// Limit scapped applications if ApplicationLimit is set
-	if s.config.ApplicationLimit > 0 && len(allowedApps) > s.config.ApplicationLimit {
-		allowedApps = allowedApps[:s.config.ApplicationLimit]
 	}
 
 	// Get stats from the 'metrics' endpoint

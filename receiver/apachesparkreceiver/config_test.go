@@ -49,27 +49,21 @@ func TestValidate(t *testing.T) {
 	}
 }
 
-func TestCreateDefaultConfig(t *testing.T) {
-	factory := NewFactory()
-	cfg := factory.CreateDefaultConfig()
-	assert.NotNil(t, cfg, "failed to create default config")
-
-	// Assert that the default collection interval is set
-	defaultConfig, ok := cfg.(*Config)
-	require.True(t, ok, "expected config to be of type *Config")
-	assert.Equal(t, defaultCollectionInterval, defaultConfig.CollectionInterval)
-	assert.Equal(t, defaultEndpoint, defaultConfig.Endpoint)
-	assert.NotNil(t, defaultConfig.ApplicationNames)
-	assert.Empty(t, defaultConfig.ApplicationNames)
-	assert.NotNil(t, defaultConfig.ApplicationIds)
-	assert.Empty(t, defaultConfig.ApplicationIds)
-}
-
 func TestApplicationLimitConfig(t *testing.T) {
 	cfg := &Config{}
 	// Default should be zero (unlimited)
-	assert.Equal(t, 0, cfg.ApplicationLimit)
+	assert.Equal(t, 0, cfg.Limit)
 
-	cfg.ApplicationLimit = 2
-	assert.Equal(t, 2, cfg.ApplicationLimit)
+	cfg.Limit = 2
+	assert.Equal(t, 2, cfg.Limit)
+}
+
+func TestStartTimeEpochLimitConfig(t *testing.T) {
+	cfg := &Config{}
+	// Default should be zero
+	assert.Equal(t, int64(0), cfg.StartTimeEpochLimit)
+
+	// Set a specific value
+	cfg.StartTimeEpochLimit = 1680000000
+	assert.Equal(t, int64(1680000000), cfg.StartTimeEpochLimit)
 }

@@ -288,7 +288,109 @@ func TestScraper(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: defaultCollectionInterval,
 				},
-				ApplicationIds:       []string{"app-123"},
+				ApplicationIds:       []string{"local-1682603253681"},
+				ClientConfig:         clientConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Successfully allowing apps by Limit",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				data := loadAPIResponseData(t, clusterStatsResponseFile)
+				var clusterStats *models.ClusterProperties
+				err := json.Unmarshal(data, &clusterStats)
+				require.NoError(t, err)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
+
+				data = loadAPIResponseData(t, appsStatsResponseFile)
+				var apps []models.Application
+				err = json.Unmarshal(data, &apps)
+				require.NoError(t, err)
+				mockClient.On("Applications").Return(apps, nil)
+
+				data = loadAPIResponseData(t, stagesStatsResponseFile)
+				var stages []models.Stage
+				err = json.Unmarshal(data, &stages)
+				require.NoError(t, err)
+				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
+
+				data = loadAPIResponseData(t, executorsStatsResponseFile)
+				var executors []models.Executor
+				err = json.Unmarshal(data, &executors)
+				require.NoError(t, err)
+				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
+
+				data = loadAPIResponseData(t, jobsStatsResponseFile)
+				var jobs []models.Job
+				err = json.Unmarshal(data, &jobs)
+				require.NoError(t, err)
+				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
+				Limit:                1,
+				ClientConfig:         clientConfig,
+				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
+			},
+			expectedErr: nil,
+		},
+		{
+			desc: "Successfully allowing apps by StartTimeEpochLimit",
+			setupMockClient: func(t *testing.T) client {
+				mockClient := mocks.MockClient{}
+				data := loadAPIResponseData(t, clusterStatsResponseFile)
+				var clusterStats *models.ClusterProperties
+				err := json.Unmarshal(data, &clusterStats)
+				require.NoError(t, err)
+				mockClient.On("ClusterStats").Return(clusterStats, nil)
+
+				data = loadAPIResponseData(t, appsStatsResponseFile)
+				var apps []models.Application
+				err = json.Unmarshal(data, &apps)
+				require.NoError(t, err)
+				mockClient.On("Applications").Return(apps, nil)
+
+				data = loadAPIResponseData(t, stagesStatsResponseFile)
+				var stages []models.Stage
+				err = json.Unmarshal(data, &stages)
+				require.NoError(t, err)
+				mockClient.On("StageStats", mock.Anything).Return(stages, nil)
+
+				data = loadAPIResponseData(t, executorsStatsResponseFile)
+				var executors []models.Executor
+				err = json.Unmarshal(data, &executors)
+				require.NoError(t, err)
+				mockClient.On("ExecutorStats", mock.Anything).Return(executors, nil)
+
+				data = loadAPIResponseData(t, jobsStatsResponseFile)
+				var jobs []models.Job
+				err = json.Unmarshal(data, &jobs)
+				require.NoError(t, err)
+				mockClient.On("JobStats", mock.Anything).Return(jobs, nil)
+				return &mockClient
+			},
+			expectedMetricGen: func(t *testing.T) pmetric.Metrics {
+				goldenPath := filepath.Join("testdata", "expected_metrics", "metrics_golden.yaml")
+				expectedMetrics, err := golden.ReadMetrics(goldenPath)
+				require.NoError(t, err)
+				return expectedMetrics
+			},
+			config: &Config{
+				ControllerConfig: scraperhelper.ControllerConfig{
+					CollectionInterval: defaultCollectionInterval,
+				},
+				StartTimeEpochLimit:  100000,
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
