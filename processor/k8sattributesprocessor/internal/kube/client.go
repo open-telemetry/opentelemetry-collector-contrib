@@ -31,6 +31,18 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
 )
 
+const (
+	K8sPodLabels            = "k8s.pod.labels.%s"
+	K8sPodAnnotations       = "k8s.pod.annotations.%s"
+	K8sNodeLabels           = "k8s.node.labels.%s"
+	K8sNodeAnnotations      = "k8s.node.annotations.%s"
+	K8sNamespaceLabels      = "k8s.namespace.labels.%s"
+	K8sNamespaceAnnotations = "k8s.namespace.annotations.%s"
+	// Semconv attributes https://github.com/open-telemetry/semantic-conventions/blob/main/docs/resource/k8s.md#deployment
+	K8sDeploymentLabel      = "k8s.deployment.label.%s"
+	K8sDeploymentAnnotation = "k8s.deployment.annotation.%s"
+)
+
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
 	m                      sync.RWMutex
@@ -656,7 +668,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
+		r.extractFromPodMetadata(pod.Labels, tags, K8sPodLabels)
 	}
 
 	if c.Rules.ServiceName {
@@ -670,7 +682,7 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
+		r.extractFromPodMetadata(pod.Annotations, tags, K8sPodAnnotations)
 	}
 	return tags
 }
@@ -883,11 +895,11 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, "k8s.namespace.labels.%s")
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, K8sNamespaceLabels)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, "k8s.namespace.annotations.%s")
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, K8sNamespaceAnnotations)
 	}
 
 	return tags
@@ -897,11 +909,11 @@ func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, "k8s.node.labels.%s")
+		r.extractFromNodeMetadata(node.Labels, tags, K8sNodeLabels)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, "k8s.node.annotations.%s")
+		r.extractFromNodeMetadata(node.Annotations, tags, K8sNodeAnnotations)
 	}
 
 	return tags
@@ -911,11 +923,11 @@ func (c *WatchClient) extractDeploymentAttributes(d *apps_v1.Deployment) map[str
 	tags := map[string]string{}
 
 	for _, r := range c.Rules.Labels {
-		r.extractFromDeploymentMetadata(d.Labels, tags, "k8s.deployment.label.%s")
+		r.extractFromDeploymentMetadata(d.Labels, tags, K8sDeploymentLabel)
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromDeploymentMetadata(d.Annotations, tags, "k8s.deployment.annotation.%s")
+		r.extractFromDeploymentMetadata(d.Annotations, tags, K8sDeploymentAnnotation)
 	}
 
 	return tags
