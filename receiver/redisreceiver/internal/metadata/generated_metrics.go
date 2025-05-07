@@ -3,8 +3,6 @@
 package metadata
 
 import (
-	"fmt"
-	"strconv"
 	"time"
 
 	"go.opentelemetry.io/collector/component"
@@ -151,9 +149,6 @@ var MetricsInfo = metricsInfo{
 	RedisClientsMaxOutputBuffer: metricInfo{
 		Name: "redis.clients.max_output_buffer",
 	},
-	RedisClusterClusterEnabled: metricInfo{
-		Name: "redis.cluster.cluster_enabled",
-	},
 	RedisClusterKnownNodes: metricInfo{
 		Name: "redis.cluster.known_nodes",
 	},
@@ -299,7 +294,6 @@ type metricsInfo struct {
 	RedisClientsConnected                     metricInfo
 	RedisClientsMaxInputBuffer                metricInfo
 	RedisClientsMaxOutputBuffer               metricInfo
-	RedisClusterClusterEnabled                metricInfo
 	RedisClusterKnownNodes                    metricInfo
 	RedisClusterLinksBufferLimitExceededCount metricInfo
 	RedisClusterNodeCount                     metricInfo
@@ -545,55 +539,6 @@ func (m *metricRedisClientsMaxOutputBuffer) emit(metrics pmetric.MetricSlice) {
 
 func newMetricRedisClientsMaxOutputBuffer(cfg MetricConfig) metricRedisClientsMaxOutputBuffer {
 	m := metricRedisClientsMaxOutputBuffer{config: cfg}
-	if cfg.Enabled {
-		m.data = pmetric.NewMetric()
-		m.init()
-	}
-	return m
-}
-
-type metricRedisClusterClusterEnabled struct {
-	data     pmetric.Metric // data buffer for generated metric.
-	config   MetricConfig   // metric config provided by user.
-	capacity int            // max observed number of data points added to the metric.
-}
-
-// init fills redis.cluster.cluster_enabled metric with initial data.
-func (m *metricRedisClusterClusterEnabled) init() {
-	m.data.SetName("redis.cluster.cluster_enabled")
-	m.data.SetDescription("Indicate Redis cluster is enabled")
-	m.data.SetUnit("1")
-	m.data.SetEmptyGauge()
-}
-
-func (m *metricRedisClusterClusterEnabled) recordDataPoint(start pcommon.Timestamp, ts pcommon.Timestamp, val int64) {
-	if !m.config.Enabled {
-		return
-	}
-	dp := m.data.Gauge().DataPoints().AppendEmpty()
-	dp.SetStartTimestamp(start)
-	dp.SetTimestamp(ts)
-	dp.SetIntValue(val)
-}
-
-// updateCapacity saves max length of data point slices that will be used for the slice capacity.
-func (m *metricRedisClusterClusterEnabled) updateCapacity() {
-	if m.data.Gauge().DataPoints().Len() > m.capacity {
-		m.capacity = m.data.Gauge().DataPoints().Len()
-	}
-}
-
-// emit appends recorded metric data to a metrics slice and prepares it for recording another set of data points.
-func (m *metricRedisClusterClusterEnabled) emit(metrics pmetric.MetricSlice) {
-	if m.config.Enabled && m.data.Gauge().DataPoints().Len() > 0 {
-		m.updateCapacity()
-		m.data.MoveTo(metrics.AppendEmpty())
-		m.init()
-	}
-}
-
-func newMetricRedisClusterClusterEnabled(cfg MetricConfig) metricRedisClusterClusterEnabled {
-	m := metricRedisClusterClusterEnabled{config: cfg}
 	if cfg.Enabled {
 		m.data = pmetric.NewMetric()
 		m.init()
@@ -2926,7 +2871,6 @@ type MetricsBuilder struct {
 	metricRedisClientsConnected                     metricRedisClientsConnected
 	metricRedisClientsMaxInputBuffer                metricRedisClientsMaxInputBuffer
 	metricRedisClientsMaxOutputBuffer               metricRedisClientsMaxOutputBuffer
-	metricRedisClusterClusterEnabled                metricRedisClusterClusterEnabled
 	metricRedisClusterKnownNodes                    metricRedisClusterKnownNodes
 	metricRedisClusterLinksBufferLimitExceededCount metricRedisClusterLinksBufferLimitExceededCount
 	metricRedisClusterNodeCount                     metricRedisClusterNodeCount
@@ -3002,7 +2946,6 @@ func NewMetricsBuilder(mbc MetricsBuilderConfig, settings receiver.Settings, opt
 		metricRedisClientsConnected:       newMetricRedisClientsConnected(mbc.Metrics.RedisClientsConnected),
 		metricRedisClientsMaxInputBuffer:  newMetricRedisClientsMaxInputBuffer(mbc.Metrics.RedisClientsMaxInputBuffer),
 		metricRedisClientsMaxOutputBuffer: newMetricRedisClientsMaxOutputBuffer(mbc.Metrics.RedisClientsMaxOutputBuffer),
-		metricRedisClusterClusterEnabled:  newMetricRedisClusterClusterEnabled(mbc.Metrics.RedisClusterClusterEnabled),
 		metricRedisClusterKnownNodes:      newMetricRedisClusterKnownNodes(mbc.Metrics.RedisClusterKnownNodes),
 		metricRedisClusterLinksBufferLimitExceededCount: newMetricRedisClusterLinksBufferLimitExceededCount(mbc.Metrics.RedisClusterLinksBufferLimitExceededCount),
 		metricRedisClusterNodeCount:                     newMetricRedisClusterNodeCount(mbc.Metrics.RedisClusterNodeCount),
@@ -3143,7 +3086,6 @@ func (mb *MetricsBuilder) EmitForResource(options ...ResourceMetricsOption) {
 	mb.metricRedisClientsConnected.emit(ils.Metrics())
 	mb.metricRedisClientsMaxInputBuffer.emit(ils.Metrics())
 	mb.metricRedisClientsMaxOutputBuffer.emit(ils.Metrics())
-	mb.metricRedisClusterClusterEnabled.emit(ils.Metrics())
 	mb.metricRedisClusterKnownNodes.emit(ils.Metrics())
 	mb.metricRedisClusterLinksBufferLimitExceededCount.emit(ils.Metrics())
 	mb.metricRedisClusterNodeCount.emit(ils.Metrics())
@@ -3239,16 +3181,6 @@ func (mb *MetricsBuilder) RecordRedisClientsMaxInputBufferDataPoint(ts pcommon.T
 // RecordRedisClientsMaxOutputBufferDataPoint adds a data point to redis.clients.max_output_buffer metric.
 func (mb *MetricsBuilder) RecordRedisClientsMaxOutputBufferDataPoint(ts pcommon.Timestamp, val int64) {
 	mb.metricRedisClientsMaxOutputBuffer.recordDataPoint(mb.startTime, ts, val)
-}
-
-// RecordRedisClusterClusterEnabledDataPoint adds a data point to redis.cluster.cluster_enabled metric.
-func (mb *MetricsBuilder) RecordRedisClusterClusterEnabledDataPoint(ts pcommon.Timestamp, inputVal string) error {
-	val, err := strconv.ParseInt(inputVal, 10, 64)
-	if err != nil {
-		return fmt.Errorf("failed to parse int64 for RedisClusterClusterEnabled, value was %s: %w", inputVal, err)
-	}
-	mb.metricRedisClusterClusterEnabled.recordDataPoint(mb.startTime, ts, val)
-	return nil
 }
 
 // RecordRedisClusterKnownNodesDataPoint adds a data point to redis.cluster.known_nodes metric.

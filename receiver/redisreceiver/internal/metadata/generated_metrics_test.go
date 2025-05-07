@@ -85,9 +85,6 @@ func TestMetricsBuilder(t *testing.T) {
 			mb.RecordRedisClientsMaxOutputBufferDataPoint(ts, 1)
 
 			allMetricsCount++
-			mb.RecordRedisClusterClusterEnabledDataPoint(ts, "1")
-
-			allMetricsCount++
 			mb.RecordRedisClusterKnownNodesDataPoint(ts, 1)
 
 			allMetricsCount++
@@ -323,18 +320,6 @@ func TestMetricsBuilder(t *testing.T) {
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
 					assert.Equal(t, "Longest output list among current client connections", ms.At(i).Description())
 					assert.Equal(t, "By", ms.At(i).Unit())
-					dp := ms.At(i).Gauge().DataPoints().At(0)
-					assert.Equal(t, start, dp.StartTimestamp())
-					assert.Equal(t, ts, dp.Timestamp())
-					assert.Equal(t, pmetric.NumberDataPointValueTypeInt, dp.ValueType())
-					assert.Equal(t, int64(1), dp.IntValue())
-				case "redis.cluster.cluster_enabled":
-					assert.False(t, validatedMetrics["redis.cluster.cluster_enabled"], "Found a duplicate in the metrics slice: redis.cluster.cluster_enabled")
-					validatedMetrics["redis.cluster.cluster_enabled"] = true
-					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
-					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Indicate Redis cluster is enabled", ms.At(i).Description())
-					assert.Equal(t, "1", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
 					assert.Equal(t, ts, dp.Timestamp())

@@ -32,7 +32,6 @@ type MetricsConfig struct {
 	RedisClientsConnected                     MetricConfig `mapstructure:"redis.clients.connected"`
 	RedisClientsMaxInputBuffer                MetricConfig `mapstructure:"redis.clients.max_input_buffer"`
 	RedisClientsMaxOutputBuffer               MetricConfig `mapstructure:"redis.clients.max_output_buffer"`
-	RedisClusterClusterEnabled                MetricConfig `mapstructure:"redis.cluster.cluster_enabled"`
 	RedisClusterKnownNodes                    MetricConfig `mapstructure:"redis.cluster.known_nodes"`
 	RedisClusterLinksBufferLimitExceededCount MetricConfig `mapstructure:"redis.cluster.links_buffer_limit_exceeded.count"`
 	RedisClusterNodeCount                     MetricConfig `mapstructure:"redis.cluster.node.count"`
@@ -94,9 +93,6 @@ func DefaultMetricsConfig() MetricsConfig {
 		},
 		RedisClientsMaxOutputBuffer: MetricConfig{
 			Enabled: true,
-		},
-		RedisClusterClusterEnabled: MetricConfig{
-			Enabled: false,
 		},
 		RedisClusterKnownNodes: MetricConfig{
 			Enabled: false,
