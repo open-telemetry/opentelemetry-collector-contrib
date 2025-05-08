@@ -396,6 +396,14 @@ metrics:
     enabled: true
 ```
 
+### k8s.node.allocatable
+
+The allocatable metrics of a particular Node.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+|  | Gauge | Int |
+
 ### k8s.node.condition
 
 The condition of a particular Node.
