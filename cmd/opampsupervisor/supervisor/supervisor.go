@@ -1384,8 +1384,7 @@ func (s *Supervisor) runAgentProcess() {
 
 			if exitCode == 1 {
 				// get last log line from the agent logs
-				lastError := s.commander.LastErr()
-				if lastError != "" {
+				if lastError := s.commander.LastErr(); lastError != "" {
 					s.telemetrySettings.Logger.Debug("Last error from the agent", zap.String("last_agent_error", lastError))
 					errMsg = fmt.Sprintf("%s: \n%s", errMsg, lastError)
 				} else {
@@ -1422,8 +1421,9 @@ func (s *Supervisor) runAgentProcess() {
 			lastHealth := s.lastHealthFromClient.Load()
 			if lastHealth == nil || !lastHealth.Healthy {
 				errMsg := "Config apply timeout exceeded"
-				if s.commander.LastErr() != "" {
-					errMsg = fmt.Sprintf("%s: \n%s", errMsg, s.commander.LastErr())
+				if lastError := s.commander.LastErr(); lastError != "" {
+					s.telemetrySettings.Logger.Debug("Last error from the agent", zap.String("last_agent_error", lastError))
+					errMsg = fmt.Sprintf("%s: \n%s", errMsg, lastError)
 				}
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, errMsg)
 			} else {
