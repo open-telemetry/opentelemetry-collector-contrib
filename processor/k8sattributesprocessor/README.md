@@ -6,6 +6,7 @@
 |               | [beta]: logs, metrics, traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fk8sattributes%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fk8sattributes) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fk8sattributes%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fk8sattributes) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_k8sattributes)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_k8sattributes&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@fatsheep9146](https://www.github.com/fatsheep9146), [@TylerHelmuth](https://www.github.com/TylerHelmuth), [@ChrsMark](https://www.github.com/ChrsMark) |
 | Emeritus      | [@rmfitzpatrick](https://www.github.com/rmfitzpatrick) |
 
@@ -108,14 +109,14 @@ correctly associate the matching container to the resource:
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
    - container.ports
-   - container.resources.requests.cpu
+   - k8s.container.cpu.request
 2. If the `k8s.container.name` resource attribute is provided, the following additional attributes will be available:
    - container.id (if the `k8s.container.restart_count` resource attribute is not provided, it's not guaranteed to get the right container ID.)
    - container.image.name
    - container.image.tag
    - container.image.repo_digests (if k8s CRI populates [repository digest field](https://github.com/open-telemetry/semantic-conventions/blob/v1.26.0/model/registry/container.yaml#L60-L71))
    - container.ports
-   - container.resources.requests.cpu  
+   - k8s.container.cpu.request
 3. If the `k8s.container.restart_count` resource attribute is provided, it can be used to associate with a particular container
    instance. If it's not set, the latest container instance will be used:
    - container.id (not added by default, has to be specified in `metadata`)

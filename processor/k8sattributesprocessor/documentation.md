@@ -10,9 +10,9 @@
 | container.image.name | Name of the image the container was built on. Requires container.id or k8s.container.name. | Any Str | true |
 | container.image.repo_digests | Repo digests of the container image as provided by the container runtime. | Any Slice | false |
 | container.image.tag | Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name. | Any Str | true |
-| container.ports | List of ports to expose from the container. | Any Slice | false |
-| container.resources.requests.cpu | CPU Request describes the minimum amount of CPU compute resources required. | Any Str | false |
+| container.ports | List of ports to be exposed from the container. | Any Slice | false |
 | k8s.cluster.uid | Gives cluster uid identified with kube-system namespace | Any Str | false |
+| k8s.container.cpu.request | CPU Request describes the minimum amount of CPU compute resources required. | Any Str | false |
 | k8s.container.name | The name of the Container in a Pod template. Requires container.id. | Any Str | false |
 | k8s.cronjob.name | The name of the CronJob. | Any Str | false |
 | k8s.daemonset.name | The name of the DaemonSet. | Any Str | false |

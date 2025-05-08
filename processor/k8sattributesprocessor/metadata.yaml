@@ -115,7 +115,7 @@ resource_attributes:
     description: List of ports to be exposed from the container.
     type: slice
     enabled: false
-  container.resources.requests.cpu:
+  k8s.container.cpu.request:
     description: CPU Request describes the minimum amount of CPU compute resources required.
     type: string
     enabled: false    

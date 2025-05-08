@@ -18,8 +18,8 @@ func TestResourceBuilder(t *testing.T) {
 			rb.SetContainerImageRepoDigests([]any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"})
 			rb.SetContainerImageTag("container.image.tag-val")
 			rb.SetContainerPorts([]any{"container.ports-item1", "container.ports-item2"})
-			rb.SetContainerResourcesRequestsCPU("container.resources.requests.cpu-val")
 			rb.SetK8sClusterUID("k8s.cluster.uid-val")
+			rb.SetK8sContainerCPURequest("k8s.container.cpu.request-val")
 			rb.SetK8sContainerName("k8s.container.name-val")
 			rb.SetK8sCronjobName("k8s.cronjob.name-val")
 			rb.SetK8sDaemonsetName("k8s.daemonset.name-val")
@@ -59,137 +59,137 @@ func TestResourceBuilder(t *testing.T) {
 			val, ok := res.Attributes().Get("container.id")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "container.id-val", val.Str())
+				assert.Equal(t, "container.id-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.image.name-val", val.Str())
+				assert.Equal(t, "container.image.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.image.repo_digests")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, []any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"}, val.Slice().AsRaw())
+				assert.Equal(t, []any{"container.image.repo_digests-item1", "container.image.repo_digests-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("container.image.tag")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "container.image.tag-val", val.Str())
+				assert.Equal(t, "container.image.tag-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("container.ports")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, []any{"container.ports-item1", "container.ports-item2"}, val.Slice().AsRaw())
-			}
-			val, ok = res.Attributes().Get("container.resources.requests.cpu")
-			assert.Equal(t, tt == "all_set", ok)
-			if ok {
-				assert.EqualValues(t, "container.resources.requests.cpu-val", val.Str())
+				assert.Equal(t, []any{"container.ports-item1", "container.ports-item2"}, val.Slice().AsRaw())
 			}
 			val, ok = res.Attributes().Get("k8s.cluster.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.cluster.uid-val", val.Str())
+				assert.Equal(t, "k8s.cluster.uid-val", val.Str())
+			}
+			val, ok = res.Attributes().Get("k8s.container.cpu.request")
+			assert.Equal(t, tt == "all_set", ok)
+			if ok {
+				assert.Equal(t, "k8s.container.cpu.request-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.container.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.container.name-val", val.Str())
+				assert.Equal(t, "k8s.container.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.cronjob.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.cronjob.name-val", val.Str())
+				assert.Equal(t, "k8s.cronjob.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.daemonset.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.daemonset.name-val", val.Str())
+				assert.Equal(t, "k8s.daemonset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.daemonset.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.daemonset.uid-val", val.Str())
+				assert.Equal(t, "k8s.daemonset.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.deployment.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.deployment.name-val", val.Str())
+				assert.Equal(t, "k8s.deployment.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.deployment.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.deployment.uid-val", val.Str())
+				assert.Equal(t, "k8s.deployment.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.job.name-val", val.Str())
+				assert.Equal(t, "k8s.job.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.job.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.job.uid-val", val.Str())
+				assert.Equal(t, "k8s.job.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.namespace.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.namespace.name-val", val.Str())
+				assert.Equal(t, "k8s.namespace.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.node.name-val", val.Str())
+				assert.Equal(t, "k8s.node.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.node.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.node.uid-val", val.Str())
+				assert.Equal(t, "k8s.node.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.hostname")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.hostname-val", val.Str())
+				assert.Equal(t, "k8s.pod.hostname-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.ip")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.ip-val", val.Str())
+				assert.Equal(t, "k8s.pod.ip-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.name")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.name-val", val.Str())
+				assert.Equal(t, "k8s.pod.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.start_time")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.start_time-val", val.Str())
+				assert.Equal(t, "k8s.pod.start_time-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.pod.uid")
 			assert.True(t, ok)
 			if ok {
-				assert.EqualValues(t, "k8s.pod.uid-val", val.Str())
+				assert.Equal(t, "k8s.pod.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.replicaset.name-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.replicaset.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.replicaset.uid-val", val.Str())
+				assert.Equal(t, "k8s.replicaset.uid-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.name")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.statefulset.name-val", val.Str())
+				assert.Equal(t, "k8s.statefulset.name-val", val.Str())
 			}
 			val, ok = res.Attributes().Get("k8s.statefulset.uid")
 			assert.Equal(t, tt == "all_set", ok)
 			if ok {
-				assert.EqualValues(t, "k8s.statefulset.uid-val", val.Str())
+				assert.Equal(t, "k8s.statefulset.uid-val", val.Str())
 			}
 		})
 	}

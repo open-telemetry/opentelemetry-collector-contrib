@@ -56,17 +56,17 @@ func (rb *ResourceBuilder) SetContainerPorts(val []any) {
 	}
 }
 
-// SetContainerResourcesRequestsCPU sets provided value as "container.resources.requests.cpu" attribute.
-func (rb *ResourceBuilder) SetContainerResourcesRequestsCPU(val string) {
-	if rb.config.ContainerResourcesRequestsCPU.Enabled {
-		rb.res.Attributes().PutStr("container.resources.requests.cpu", val)
-	}
-}
-
 // SetK8sClusterUID sets provided value as "k8s.cluster.uid" attribute.
 func (rb *ResourceBuilder) SetK8sClusterUID(val string) {
 	if rb.config.K8sClusterUID.Enabled {
 		rb.res.Attributes().PutStr("k8s.cluster.uid", val)
+	}
+}
+
+// SetK8sContainerCPURequest sets provided value as "k8s.container.cpu.request" attribute.
+func (rb *ResourceBuilder) SetK8sContainerCPURequest(val string) {
+	if rb.config.K8sContainerCPURequest.Enabled {
+		rb.res.Attributes().PutStr("k8s.container.cpu.request", val)
 	}
 }
 
