@@ -28,11 +28,15 @@ func (rac *ResourceAttributeConfig) Unmarshal(parser *confmap.Conf) error {
 // ResourceAttributesConfig provides config for resourcedetectionprocessor/kubeadm resource attributes.
 type ResourceAttributesConfig struct {
 	K8sClusterName ResourceAttributeConfig `mapstructure:"k8s.cluster.name"`
+	K8sClusterUID  ResourceAttributeConfig `mapstructure:"k8s.cluster.uid"`
 }
 
 func DefaultResourceAttributesConfig() ResourceAttributesConfig {
 	return ResourceAttributesConfig{
 		K8sClusterName: ResourceAttributeConfig{
+			Enabled: true,
+		},
+		K8sClusterUID: ResourceAttributeConfig{
 			Enabled: true,
 		},
 	}

@@ -17,12 +17,17 @@ func createRouteFunction[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.
 }
 
 func Functions[K any]() map[string]ottl.Factory[K] {
-	return ottl.CreateFactoryMap(
-		ottlfuncs.NewIsMatchFactory[K](),
-		ottlfuncs.NewDeleteKeyFactory[K](),
-		ottlfuncs.NewDeleteMatchingKeysFactory[K](),
-		// noop function, it is required since the parsing of conditions is not implemented yet,
-		////github.com/open-telemetry/opentelemetry-collector-contrib/issues/13545
-		ottl.NewFactory("route", nil, createRouteFunction[K]),
-	)
+	// standard converters do not transform data, so we can safely use them
+	funcs := ottlfuncs.StandardConverters[K]()
+
+	deleteKey := ottlfuncs.NewDeleteKeyFactory[K]()
+	funcs[deleteKey.Name()] = deleteKey
+
+	deleteMatchingKeys := ottlfuncs.NewDeleteMatchingKeysFactory[K]()
+	funcs[deleteMatchingKeys.Name()] = deleteMatchingKeys
+
+	route := ottl.NewFactory("route", nil, createRouteFunction[K])
+	funcs[route.Name()] = route
+
+	return funcs
 }

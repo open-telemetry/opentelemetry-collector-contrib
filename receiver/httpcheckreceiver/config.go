@@ -40,13 +40,13 @@ func (cfg *targetConfig) Validate() error {
 	var err error
 
 	// Ensure at least one of 'endpoint' or 'endpoints' is specified.
-	if cfg.ClientConfig.Endpoint == "" && len(cfg.Endpoints) == 0 {
+	if cfg.Endpoint == "" && len(cfg.Endpoints) == 0 {
 		err = multierr.Append(err, errMissingEndpoint)
 	}
 
 	// Validate the single endpoint in ClientConfig.
-	if cfg.ClientConfig.Endpoint != "" {
-		if _, parseErr := url.ParseRequestURI(cfg.ClientConfig.Endpoint); parseErr != nil {
+	if cfg.Endpoint != "" {
+		if _, parseErr := url.ParseRequestURI(cfg.Endpoint); parseErr != nil {
 			err = multierr.Append(err, fmt.Errorf("%s: %w", errInvalidEndpoint.Error(), parseErr))
 		}
 	}

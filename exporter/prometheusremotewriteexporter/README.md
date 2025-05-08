@@ -6,7 +6,8 @@
 | Stability     | [beta]: metrics   |
 | Distributions | [core], [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fprometheusremotewrite%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fprometheusremotewrite%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fprometheusremotewrite) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@rapphil](https://www.github.com/rapphil), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_prometheusremotewrite)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_prometheusremotewrite&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@Aneurysm9](https://www.github.com/Aneurysm9), [@rapphil](https://www.github.com/rapphil), [@dashpole](https://www.github.com/dashpole), [@ArthurSens](https://www.github.com/ArthurSens), [@ywwg](https://www.github.com/ywwg) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [core]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol
@@ -59,10 +60,6 @@ The following settings can be optionally configured:
   - `enabled` (default = false): If `enabled` is `true`, all the resource attributes will be converted to metric labels by default.
 - `target_info`: customize `target_info` metric
   - `enabled` (default = true): If `enabled` is `true`, a `target_info` metric will be generated for each resource metric (see https://github.com/open-telemetry/opentelemetry-specification/pull/2381).
-- `export_created_metric`: `WARNING` Deprecated and planned for removal in v0.116.0. See [related issue](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/35003) for more information. 
-  - `enabled` (default = false): If `enabled` is `true`, a `_created` metric is
-    exported for Summary, Histogram, and Monotonic Sum metric points if
-    `StartTimeUnixNano` is set.
 - `max_batch_size_bytes` (default = `3000000` -> `~2.861 mb`): Maximum size of a batch of
   samples to be sent to the remote write endpoint. If the batch size is larger
   than this value, it will be split into multiple batches.
@@ -97,7 +94,7 @@ exporters:
 
 Several helper files are leveraged to provide additional capabilities automatically:
 
-- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md)
+- [HTTP settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/confighttp/README.md), note that the exporter only supports `snappy` compression type as it's [required](https://prometheus.io/docs/specs/remote_write_spec/#protocol) by the Prometheus remote write protocol.
 - [TLS and mTLS settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/config/configtls/README.md)
 - [Retry and timeout settings](https://github.com/open-telemetry/opentelemetry-collector/blob/main/exporter/exporterhelper/README.md), note that the exporter doesn't support `sending_queue` but provides `remote_write_queue`.
 

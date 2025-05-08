@@ -66,16 +66,18 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	for i := 0; i < c.WorkerCount; i++ {
 		wg.Add(1)
 		w := worker{
-			numMetrics:     c.NumMetrics,
-			metricName:     c.MetricName,
-			metricType:     c.MetricType,
-			exemplars:      exemplarsFromConfig(c),
-			limitPerSecond: limit,
-			totalDuration:  c.TotalDuration,
-			running:        running,
-			wg:             &wg,
-			logger:         logger.With(zap.Int("worker", i)),
-			index:          i,
+			numMetrics:             c.NumMetrics,
+			metricName:             c.MetricName,
+			metricType:             c.MetricType,
+			aggregationTemporality: c.AggregationTemporality,
+			exemplars:              exemplarsFromConfig(c),
+			limitPerSecond:         limit,
+			totalDuration:          c.TotalDuration,
+			running:                running,
+			wg:                     &wg,
+			logger:                 logger.With(zap.Int("worker", i)),
+			index:                  i,
+			clock:                  &realClock{},
 		}
 		exp, err := expF()
 		if err != nil {

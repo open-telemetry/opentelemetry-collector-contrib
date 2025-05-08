@@ -7,7 +7,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
@@ -34,7 +34,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 	hasHTTPRequestURLAttributes := false
 	hasNetPeerAddr := false
 
-	span.Attributes().Range(func(key string, value pcommon.Value) bool {
+	for key, value := range span.Attributes().All() {
 		switch key {
 		case conventionsv112.AttributeHTTPMethod, conventions.AttributeHTTPRequestMethod:
 			info.Request.Method = awsxray.String(value.Str())
@@ -121,8 +121,7 @@ func makeHTTP(span ptrace.Span) (map[string]pcommon.Value, *awsxray.HTTPData) {
 		default:
 			filtered[key] = value
 		}
-		return true
-	})
+	}
 
 	if !hasNetPeerAddr && info.Request.ClientIP != nil {
 		info.Request.XForwardedFor = aws.Bool(true)
@@ -199,7 +198,7 @@ func constructClientURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventionsv112.AttributeHTTPTarget]
@@ -247,7 +246,7 @@ func constructServerURL(urlParts map[string]string) string {
 		}
 	}
 	url = scheme + "://" + host
-	if len(port) > 0 && !(scheme == "http" && port == "80") && !(scheme == "https" && port == "443") {
+	if len(port) > 0 && (scheme != "http" || port != "80") && (scheme != "https" || port != "443") {
 		url += ":" + port
 	}
 	target, ok := urlParts[conventionsv112.AttributeHTTPTarget]

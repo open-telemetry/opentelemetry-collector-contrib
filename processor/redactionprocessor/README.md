@@ -7,6 +7,7 @@
 |               | [beta]: traces   |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aprocessor%2Fredaction%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aprocessor%2Fredaction) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aprocessor%2Fredaction%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aprocessor%2Fredaction) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=processor_redaction)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=processor_redaction&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@dmitryax](https://www.github.com/dmitryax), [@mx-psi](https://www.github.com/mx-psi), [@TylerHelmuth](https://www.github.com/TylerHelmuth) |
 | Emeritus      | [@leonsp-ai](https://www.github.com/leonsp-ai) |
 
@@ -73,6 +74,11 @@ processors:
     # Any keys in this list are allowed so they don't need to be in both lists.
     ignored_keys:
       - safe_attribute
+    # blocked_key_patterns is a list of blocked span attribute key patterns. Span attributes
+    # matching the regexes on the list are masked.
+    blocked_key_patterns:
+      - ".*token.*"
+      - ".*api_key.*"
     # blocked_values is a list of regular expressions for blocking values of
     # allowed span attributes. Values that match are masked
     blocked_values:
@@ -82,6 +88,10 @@ processors:
     # blocked span attributes. Values that match are not masked.
     allowed_values:
       - ".+@mycompany.com"
+    # hash_function defines the function for hashing the values instead of
+    # masking them with a fixed string. By default, no hash function is used
+    # and masking with a fixed string is performed.
+    hash_function: md5
     # summary controls the verbosity level of the diagnostic attributes that
     # the processor adds to the spans/logs/datapoints when it redacts or masks other
     # attributes. In some contexts a list of redacted attributes leaks
@@ -110,6 +120,14 @@ If the value of an allowed key matches the regular expression for an allowed val
 part of the value is not masked even if it matches the regular expression for a blocked value.
 If the value matches the regular expression for a blocked value only, the matching
 part of the value is masked with a fixed length of asterisks.
+
+`blocked_key_patterns` applies to the values of the keys matching one of the patterns.
+The value is then masked according to the configuration.
+
+`hash_function` defines the function for hashing values of matched keys or matches in values
+instead of masking them with a fixed string. By default, no hash function is used
+and masking with a fixed string is performed. The supported hash functions
+are `md5`, `sha1` and `sha3` (SHA-256).
 
 For example, if `notes` is on the list of allowed keys, then the `notes`
 attribute is retained. However, if there is a value such as a credit card

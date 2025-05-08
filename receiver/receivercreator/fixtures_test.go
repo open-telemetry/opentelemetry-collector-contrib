@@ -150,6 +150,12 @@ var k8sNodeEndpoint = observer.Endpoint{
 	},
 }
 
+var kafkaTopicsEndpoint = observer.Endpoint{
+	ID:      "topic1",
+	Target:  "topic1",
+	Details: &observer.KafkaTopic{},
+}
+
 var unsupportedEndpoint = observer.Endpoint{
 	ID:      "endpoint-1",
 	Target:  "localhost:1234",

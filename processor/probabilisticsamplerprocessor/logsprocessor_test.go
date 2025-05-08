@@ -151,12 +151,63 @@ func TestLogsSampling(t *testing.T) {
 			received: 29, // probabilistic... doesn't yield the same results as foo
 		},
 		{
-			name: "sampling_priority",
+			name: "sampling_priority_0_record",
 			cfg: &Config{
 				SamplingPercentage: 0,
 				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
 			},
 			received: 25,
+		},
+		{
+			name: "sampling_priority_50_record",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
+			},
+			// Expected value is (0.5*75)+25 == 62.5
+			received: 64,
+		},
+		{
+			name: "sampling_priority_100_record",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				SamplingPriority:   "priority",
+				AttributeSource:    recordAttributeSource,
+				FromAttribute:      "rando",
+			},
+			received: 100,
+		},
+		{
+			name: "sampling_priority_0_traceid",
+			cfg: &Config{
+				SamplingPercentage: 0,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			received: 25,
+		},
+		{
+			name: "sampling_priority_50_traceid",
+			cfg: &Config{
+				SamplingPercentage: 50,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			// Expected value is (0.5*75)+25 == 62.5
+			received: 57,
+		},
+		{
+			name: "sampling_priority_100_traceid",
+			cfg: &Config{
+				SamplingPercentage: 100,
+				SamplingPriority:   "priority",
+				AttributeSource:    traceIDAttributeSource,
+			},
+			received: 100,
 		},
 		{
 			name: "sampling_priority with sampling field",
@@ -185,6 +236,7 @@ func TestLogsSampling(t *testing.T) {
 				// encodes historical behavior, we leave it as-is.
 				traceID := [16]byte{0, 0, 0, 0, 0, 0, 0, 0, ib, ib, ib, ib, ib, ib, ib, ib}
 				record.SetTraceID(traceID)
+				record.Attributes().PutInt("rando", int64(computeHash(traceID[:], 123)))
 				// set half of records with a foo (bytes) and a bar (string) attribute
 				if i%2 == 0 {
 					b := record.Attributes().PutEmptyBytes("foo")
@@ -412,7 +464,7 @@ func TestLogsSamplingState(t *testing.T) {
 
 			if len(tt.log) == 0 {
 				require.Empty(t, observed.All(), "should not have logs: %v", observed.All())
-				require.Equal(t, "", tt.log)
+				require.Empty(t, tt.log)
 			} else {
 				require.Len(t, observed.All(), 1, "should have one log: %v", observed.All())
 				require.Contains(t, observed.All()[0].Message, "logs sampler")

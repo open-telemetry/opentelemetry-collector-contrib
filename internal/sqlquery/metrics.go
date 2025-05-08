@@ -28,7 +28,7 @@ func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 			}
 			startTime = pcommon.Timestamp(timestamp)
 		} else {
-			errs = append(errs, fmt.Errorf("rowToMetric: start_ts_column not found"))
+			errs = append(errs, errors.New("rowToMetric: start_ts_column not found"))
 		}
 	}
 	if cfg.TsColumn != "" {
@@ -39,7 +39,7 @@ func rowToMetric(row StringMap, cfg MetricCfg, dest pmetric.Metric, startTime pc
 			}
 			ts = pcommon.Timestamp(timestamp)
 		} else {
-			errs = append(errs, fmt.Errorf("rowToMetric: ts_column not found"))
+			errs = append(errs, errors.New("rowToMetric: ts_column not found"))
 		}
 	}
 	setTimestamp(cfg, dataPoint, startTime, ts, scrapeCfg)

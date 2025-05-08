@@ -14,6 +14,8 @@ var _ xconfmap.Validator = (*Config)(nil)
 type Config struct {
 	Protocol string `mapstructure:"protocol"`
 	Version  string `mapstructure:"version"`
+	// prevent unkeyed literal initialization
+	_ struct{}
 }
 
 func (c *Config) Validate() error {

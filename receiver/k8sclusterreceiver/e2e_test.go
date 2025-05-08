@@ -29,7 +29,6 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/plogtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest/pmetrictest"
 	k8stest "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/xk8stest"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/k8sclusterreceiver/internal/metadata"
 )
 
 const (
@@ -76,6 +75,11 @@ func TestE2EClusterScoped(t *testing.T) {
 			require.NoErrorf(t, k8stest.DeleteObject(k8sClient, obj), "failed to delete object %s", obj.GetName())
 		}
 	})
+
+	// CronJob is scheduled to be executed every minute (on the full minute)
+	// This creates a delay and the resources deployed by CronJob (Job, Pod, Container)
+	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
+	time.Sleep(calculateCronJobExecution())
 
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
@@ -163,6 +167,11 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		}
 	})
 
+	// CronJob is scheduled to be executed every minute (on the full minute)
+	// This creates a delay and the resources deployed by CronJob (Job, Pod, Container)
+	// might be available later and won't make it to the resulting metrics, which may cause the test to fail
+	time.Sleep(calculateCronJobExecution())
+
 	wantEntries := 10 // Minimal number of metrics to wait for.
 	// the commented line below writes the received list of metrics to the expected.yaml
 	// golden.WriteMetrics(t, expectedFileNamespaceScoped, metricsConsumer.AllMetrics()[len(metricsConsumer.AllMetrics())-1])
@@ -211,6 +220,18 @@ func TestE2ENamespaceScoped(t *testing.T) {
 		),
 		)
 	}, 3*time.Minute, 1*time.Second)
+}
+
+func calculateCronJobExecution() time.Duration {
+	// extract the number of second from the current timestamp
+	seconds := time.Now().Second()
+	// calculate the time until the full minute
+	secondsToWait := 60 - seconds
+	if secondsToWait <= 1 {
+		secondsToWait = 60
+	}
+
+	return time.Duration(secondsToWait) * time.Second
 }
 
 func shortenNames(value string) string {
@@ -266,9 +287,9 @@ func startUpSink(t *testing.T, consumer any) func() {
 
 	switch c := consumer.(type) {
 	case *consumertest.MetricsSink:
-		rcvr, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, c)
+		rcvr, err = f.CreateMetrics(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, c)
 	case *consumertest.LogsSink:
-		rcvr, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, c)
+		rcvr, err = f.CreateLogs(context.Background(), receivertest.NewNopSettings(f.Type()), cfg, c)
 	default:
 		t.Fatalf("unsupported consumer type: %T", c)
 	}

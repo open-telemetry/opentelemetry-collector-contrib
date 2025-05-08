@@ -72,7 +72,7 @@ func GetFamilyAndVersion(schemaURL string) (family string, version *Version, err
 	return u.String(), version, err
 }
 
-func joinSchemaFamilyAndVersion(family string, version *Version) string { //nolint: unparam
+func joinSchemaFamilyAndVersion(family string, version *Version) string {
 	u, err := url.Parse(family)
 	if err != nil {
 		return ""

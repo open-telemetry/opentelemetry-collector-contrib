@@ -67,6 +67,7 @@ func TestSyslogComplementaryRFC5424(t *testing.T) {
 }
 
 func TestSyslogComplementaryRFC3164(t *testing.T) {
+	t.Skip("https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/38238")
 	expectedData := []expectedDataType{
 		{
 			message:        "<34>Oct 11 2023 22:14:15 mymachine su: 'su root' failed for lonvick on /dev/pts/8",
@@ -138,7 +139,7 @@ service:
         - syslog/client`
 
 	collector := testbed.NewInProcessCollector(componentFactories(t))
-	_, err := collector.PrepareConfig(fmt.Sprintf(config, rfc, inputPort, rfc, port))
+	_, err := collector.PrepareConfig(t, fmt.Sprintf(config, rfc, inputPort, rfc, port))
 
 	require.NoError(t, err)
 	err = collector.Start(testbed.StartParams{

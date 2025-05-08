@@ -5,13 +5,13 @@
 SHELL = /bin/bash
 .SHELLFLAGS = -o pipefail -c
 
-SHELL_CASE_EXP = case "$$(uname -s)" in CYGWIN*|MINGW*|MSYS*) echo "true";; esac;
-UNIX_SHELL_ON_WINDOWS := $(shell $(SHELL_CASE_EXP))
-
 # SRC_ROOT is the top of the source tree.
 SRC_ROOT := $(shell git rev-parse --show-toplevel)
 # SRC_PARENT_DIR is the absolute path of source tree's parent directory
 SRC_PARENT_DIR := $(shell dirname $(SRC_ROOT))
+
+COVER_DIR?=coverage
+COVER_DIR_ABS?=$(SRC_ROOT)/$(COVER_DIR)
 
 # build tags required by any component should be defined as an independent variables and later added to GO_BUILD_TAGS below
 GO_BUILD_TAGS=""
@@ -19,9 +19,11 @@ GO_BUILD_TAGS=""
 GO_BUILD_LDFLAGS="-s -w"
 GOTEST_TIMEOUT?= 600s
 GOTEST_OPT?= -race -timeout $(GOTEST_TIMEOUT) -parallel 4 --tags=$(GO_BUILD_TAGS)
-GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4
-GOTEST_OPT_WITH_COVERAGE = $(GOTEST_OPT) -coverprofile=coverage.txt -covermode=atomic
+GOTEST_INTEGRATION_OPT?= -race -timeout 360s -parallel 4 -skip Sudo
+GOTEST_INTEGRATION_OPT_SUDO?= -race -timeout 360s -parallel 4 -exec sudo -run Sudo
+COVER_OPT :=-cover -covermode=atomic -test.gocoverdir="$(COVER_DIR_ABS)"
 GOTEST_OPT_WITH_INTEGRATION=$(GOTEST_INTEGRATION_OPT) -tags=integration,$(GO_BUILD_TAGS)
+GOTEST_OPT_WITH_INTEGRATION_SUDO=$(GOTEST_INTEGRATION_OPT_SUDO) -tags=integration,$(GO_BUILD_TAGS)
 GOTEST_OPT_WITH_INTEGRATION_COVERAGE=$(GOTEST_OPT_WITH_INTEGRATION) -coverprofile=integration-coverage.txt -covermode=atomic
 GOCMD?= go
 GOOS=$(shell $(GOCMD) env GOOS)
@@ -64,6 +66,7 @@ LINT                := $(TOOLS_BIN_DIR)/golangci-lint
 MULTIMOD            := $(TOOLS_BIN_DIR)/multimod
 CHLOGGEN            := $(TOOLS_BIN_DIR)/chloggen
 GITHUBGEN           := $(TOOLS_BIN_DIR)/githubgen
+CODECOVGEN          := $(TOOLS_BIN_DIR)/codecovgen
 GOIMPORTS           := $(TOOLS_BIN_DIR)/goimports
 PORTO               := $(TOOLS_BIN_DIR)/porto
 CHECKFILE           := $(TOOLS_BIN_DIR)/checkfile
@@ -74,20 +77,20 @@ GOFUMPT             := $(TOOLS_BIN_DIR)/gofumpt
 GOVULNCHECK         := $(TOOLS_BIN_DIR)/govulncheck
 GCI                 := $(TOOLS_BIN_DIR)/gci
 GOTESTSUM           := $(TOOLS_BIN_DIR)/gotestsum
-TESTIFYLINT         := $(TOOLS_BIN_DIR)/testifylint
 CHECKAPI            := $(TOOLS_BIN_DIR)/checkapi
 
 GOTESTSUM_OPT?= --rerun-fails=1
-TESTIFYLINT_OPT?= --enable-all --disable=float-compare,require-error,suite-subtest-run,encoded-compare
 
 # BUILD_TYPE should be one of (dev, release).
 BUILD_TYPE?=release
 
 # All source code and documents. Used in spell check.
-ALL_SRC_AND_DOC_CMD := find . -name "*.md" -o -name "*.go" -o -name "*.yaml" -not -path '*/third_party/*' -type f | sort
-
+ALL_SRC_AND_DOC_CMD := find . -type f \( \( -name "*.md" -o -name "*.go" -o -name "*.yaml" \) -and \( -not -path '*/third_party/*' \) \) | sort
 
 ADDLICENSE_CMD := $(ADDLICENSE) -s=only -y "" -c "The OpenTelemetry Authors"
+
+# All source code and .sh files (evaluated when used)
+ALL_SRC_AND_SHELL_CMD := find . -type f \( \( -name "*.go" -o -name "*.sh" \) -and \( -not -path '*/third_party/*' \) \) | sort
 
 pwd:
 	@pwd
@@ -109,7 +112,7 @@ test-with-cover: $(GOTESTSUM)
 .PHONY: do-unit-tests-with-cover
 do-unit-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) unit test ./... + coverage in `pwd`"
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT_WITH_COVERAGE)
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." -- $(GOTEST_OPT) ./... $(COVER_OPT)
 	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
 
 .PHONY: test-with-junit
@@ -119,9 +122,9 @@ test-with-junit: $(GOTESTSUM)
 
 .PHONY: test-with-junit-and-cover
 test-with-junit-and-cover: $(GOTESTSUM)
+	mkdir -p $(COVER_DIR_ABS)
 	mkdir -p $(JUNIT_OUT_DIR)
-	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT_WITH_COVERAGE) ./...
-	$(GOCMD) tool cover -html=coverage.txt -o coverage.html
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --packages="./..." --junitfile $(JUNIT_OUT_DIR)/$(CURR_MOD)-junit.xml -- $(GOTEST_OPT) ./... $(COVER_OPT)
 
 .PHONY: buildtest
 buildtest:
@@ -143,6 +146,11 @@ mod-integration-test: $(GOTESTSUM)
 		$(GOCMD) tool cover -html=integration-coverage.txt -o integration-coverage.html; \
 	fi
 
+.PHONY: mod-integration-sudo-test
+mod-integration-sudo-test: $(GOTESTSUM)
+	@echo "running $(GOCMD) integration sudo (root/privileged) test ./... in `pwd`"
+	$(GOTESTSUM) $(GOTESTSUM_OPT) --format standard-verbose --packages="./..." -- $(GOTEST_OPT_WITH_INTEGRATION_SUDO)
+
 .PHONY: do-integration-tests-with-cover
 do-integration-tests-with-cover: $(GOTESTSUM)
 	@echo "running $(GOCMD) integration test ./... + coverage in `pwd`"
@@ -157,8 +165,7 @@ benchmark: $(GOTESTSUM)
 
 .PHONY: addlicense
 addlicense: $(ADDLICENSE)
-	ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
-	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
+	@ADDLICENSEOUT=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
 		`$(ADDLICENSE_CMD) "$$f" 2>&1`; \
 	done); \
 	if [ "$$ADDLICENSEOUT" ]; then \
@@ -171,10 +178,13 @@ addlicense: $(ADDLICENSE)
 
 .PHONY: checklicense
 checklicense: $(ADDLICENSE)
-  ALL_SRC_AND_SHELL := find . -type f \( -iname '*.go' -o -iname "*.sh" \) ! -path '**/third_party/*' | sort
-	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL)); do \
-		awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; \
-		awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; \
+	@licRes=$$(for f in $$($(ALL_SRC_AND_SHELL_CMD)); do \
+		if awk '/Copyright The OpenTelemetry Authors|generated|GENERATED/ && NR<=3 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+			continue; \
+		fi; \
+		if awk '/SPDX-License-Identifier: Apache-2.0|generated|GENERATED/ && NR<=4 { found=1; next } END { if (!found) print FILENAME }' $$f; then \
+			continue; \
+		fi; \
 		$(ADDLICENSE_CMD) -check "$$f" 2>&1 || echo "$$f"; \
 		done); \
 	if [ -n "$${licRes}" ]; then \
@@ -203,7 +213,7 @@ fmt: $(GOFUMPT) $(GOIMPORTS)
 
 .PHONY: lint
 lint: $(LINT) checklicense misspell
-	$(LINT) run --allow-parallel-runners --build-tags integration --timeout=30m --path-prefix $(shell basename "$(CURDIR)")
+	$(LINT) run
 
 .PHONY: govulncheck
 govulncheck: $(GOVULNCHECK)
@@ -219,39 +229,17 @@ toolchain:
 	$(GOCMD) get toolchain@none
 
 .PHONY: misspell
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-misspell: $(TOOLS_BIN_DIR)/misspell
-	@echo "running $(MISSPELL)"
-	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL)
-else
 misspell: $(TOOLS_BIN_DIR)/misspell
 	@echo "running $(MISSPELL)"
 	@$(MISSPELL) $$($(ALL_SRC_AND_DOC_CMD))
-endif
 
 .PHONY: misspell-correction
-ifeq ($(UNIX_SHELL_ON_WINDOWS),true)
-misspell-correction: $(TOOLS_BIN_DIR)/misspell
-	# Windows has a low limit, 8192 chars, to create a process. Workaround it by breaking it in smaller commands.
-	@$$(ALL_SRC_AND_DOC_CMD) | xargs -n 20 $(MISSPELL_CORRECTION)
-else
 misspell-correction: $(TOOLS_BIN_DIR)/misspell
 	@$(MISSPELL_CORRECTION) $$($(ALL_SRC_AND_DOC_CMD))
-endif
 
 .PHONY: moddownload
 moddownload:
 	$(GOCMD) mod download
-
-.PHONY: testifylint
-testifylint: $(TESTIFYLINT)
-	@echo "running $(TESTIFYLINT)"
-	$(TESTIFYLINT) $(TESTIFYLINT_OPT) ./...
-
-.PHONY: testifylint-fix
-testifylint-fix:
-	@$(MAKE) testifylint TESTIFYLINT_OPT="${TESTIFYLINT_OPT} --fix"
 
 .PHONY: gci
 gci: $(TOOLS_BIN_DIR)/gci

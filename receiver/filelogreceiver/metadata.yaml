@@ -6,7 +6,7 @@ status:
     beta: [logs]
   distributions: [contrib, k8s]
   codeowners:
-    active: [djaglowski]
+    active: [djaglowski, andrzej-stencel]
 
 tests:
   config:

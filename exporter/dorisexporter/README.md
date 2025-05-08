@@ -5,6 +5,7 @@
 | Stability     | [alpha]: traces, metrics, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Fdoris%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Fdoris) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Fdoris%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Fdoris) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_doris)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_doris&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@atoulme](https://www.github.com/atoulme), [@joker-star-l](https://www.github.com/joker-star-l) |
 
 [alpha]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#alpha
@@ -30,7 +31,11 @@ The following configuration options are supported:
 * `history_days` (default = 0) Data older than these days will be deleted; ignored if `create_schema` is false. If set to 0, historical data will not be deleted.
 * `create_history_days` (default = 0) The number of days in the history partition that was created when the table was created; ignored if `create_schema` is false. If `history_days` is not 0, `create_history_days` needs to be less than or equal to `history_days`.
 * `replication_num` (default = 1) The number of replicas of the table; ignored if `create_schema` is false.
-* `timezone` (default is UTC) The time zone of doris.
+* `timezone` (default is the time zone of the opentelemetry collector if IANA Time Zone Database is found, else is UTC) The time zone of doris, e.g. Asia/Shanghai.
+* `log_response` (default = false) Whether to log the response of doris stream load.
+* `label_prefix` (default = open_telemetry) the prefix of the label in doris stream load. The final generated label is {label_prefix}{db}{table}{yyyyMMddHHmmss}{uuid}.
+* `headers` (default is empty map) The headers of doris stream load. Details: [header parameters](https://doris.apache.org/docs/data-operate/import/import-way/stream-load-manual#load-configuration-parameters) and [group commit](https://doris.apache.org/docs/data-operate/import/group-commit-manual#stream-load).
+* `log_progress_interval` (default = 10) The interval, in seconds, between statistical logs. When it is less than or equal to 0, the statistical log is not printed.
 * `sending_queue`  [details here](https://github.com/open-telemetry/opentelemetry-collector/tree/main/exporter/exporterhelper#configuration)
   * `enabled` (default = true)
   * `num_consumers` (default = 10) Number of consumers that dequeue batches; ignored if `enabled` is false.

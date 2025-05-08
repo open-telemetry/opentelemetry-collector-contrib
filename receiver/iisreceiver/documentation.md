@@ -126,6 +126,32 @@ The amount of time the server has been up.
 | ---- | ----------- | ---------- |
 | s | Gauge | Int |
 
+## Optional Metrics
+
+The following metrics are not emitted by default. Each of them can be enabled by applying the following configuration:
+
+```yaml
+metrics:
+  <metric_name>:
+    enabled: true
+```
+
+### iis.application_pool.state
+
+The current state of the application pool. (0 - Starting, 1 - Started, 2 - Stopping, 3 - Stopped, 4 - Unknown)
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {state} | Gauge | Int |
+
+### iis.application_pool.uptime
+
+The application pools uptime period since the last restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {ms} | Gauge | Int |
+
 ## Resource Attributes
 
 | Name | Description | Values | Enabled |

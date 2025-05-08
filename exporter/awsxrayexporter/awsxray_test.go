@@ -23,7 +23,6 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsxrayexporter/internal/metadata"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/xray/telemetry/telemetrytest"
 )
@@ -78,7 +77,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	require.Equal(t, sink, sender)
 	cfg := generateConfig(t)
 	cfg.TelemetryConfig.Enabled = true
-	traceExporter, err := newTracesExporter(cfg, set, new(awsutil.Conn), registry)
+	traceExporter, err := newTracesExporter(context.Background(), cfg, set, registry)
 	assert.NoError(t, err)
 	ctx := context.Background()
 	assert.NoError(t, traceExporter.Start(ctx, componenttest.NewNopHost()))
@@ -91,7 +90,7 @@ func TestTelemetryEnabled(t *testing.T) {
 	assert.EqualValues(t, 1, sink.StopCount.Load())
 	assert.True(t, sink.HasRecording())
 	got := sink.Rotate()
-	assert.EqualValues(t, 1, *got.BackendConnectionErrors.HTTPCode4XXCount)
+	assert.EqualValues(t, 0, *got.BackendConnectionErrors.HTTPCode4XXCount)
 }
 
 func BenchmarkForTracesExporter(b *testing.B) {
@@ -108,8 +107,7 @@ func BenchmarkForTracesExporter(b *testing.B) {
 
 func initializeTracesExporter(tb testing.TB, exporterConfig *Config, registry telemetry.Registry) exporter.Traces {
 	tb.Helper()
-	mconn := new(awsutil.Conn)
-	traceExporter, err := newTracesExporter(exporterConfig, exportertest.NewNopSettings(metadata.Type), mconn, registry)
+	traceExporter, err := newTracesExporter(context.Background(), exporterConfig, exportertest.NewNopSettings(metadata.Type), registry)
 	if err != nil {
 		panic(err)
 	}

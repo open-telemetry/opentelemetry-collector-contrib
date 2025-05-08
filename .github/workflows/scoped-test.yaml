@@ -6,28 +6,51 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
 
+permissions: read-all
+
 jobs:
   changedfiles:
     runs-on: ubuntu-latest
     if: ${{ github.actor != 'dependabot[bot]' }}
+    env:
+      PR_HEAD: ${{ github.event.pull_request.head.sha }}
     outputs:
-      go_sources: ${{ steps.changed-files.outputs.sources_all_changed_files }}
-      go_tests: ${{ steps.changed-files.outputs.tests_all_changed_files }}
+      go_sources: ${{ steps.changes.outputs.go_sources }}
+      go_tests: ${{ steps.changes.outputs.go_tests }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           fetch-depth: 0
 
-      - name: Get changed go files
-        id: changed-files
-        uses: tj-actions/changed-files@v45
-        with:
-          files_yaml: |
-            sources:
-              - '**/*.go'
-              - '!**/*_test.go'
-            tests:
-              - '**/*_test.go'
+      - name: Get changes
+        shell: bash
+        id: changes
+        run: |
+          changed_files=$(git diff --name-only --diff-filter=ACMRTUXB $(git merge-base origin/main $PR_HEAD) $PR_HEAD)
+          echo changed_files
+          echo $changed_files
+
+          go_sources=$(echo "$changed_files" | tr ' ' '\n' | grep -E '\.go$' | grep -v -E '.*_test\.go$' || true)
+          echo go_sources
+          echo $go_sources
+          if [[ -n "$go_sources" ]]; then
+            {
+              echo 'go_sources<<EOF'
+              echo $go_sources
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          fi
+
+          go_tests=$(echo "$changed_files" | tr ' ' '\n' | grep -E '.*_test\.go$' || true)
+          echo go_tests
+          echo $go_tests
+          if [[ -n "$go_tests" ]]; then
+            {
+              echo 'go_tests<<EOF'
+              echo $go_tests
+              echo EOF
+            } >> $GITHUB_OUTPUT
+          fi
 
   scoped-tests:
     needs: changedfiles
@@ -43,16 +66,16 @@ jobs:
         run: |
           echo "go_sources: ${{ needs.changedfiles.outputs.go_sources }}"
           echo "go_tests: ${{ needs.changedfiles.outputs.go_tests }}"
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+      - uses: actions/setup-go@f111f3307d8850f501ac008e886eec1fd1932a34 # v5
         with:
-          go-version: "1.23.6"
+          go-version: "1.23.8"
           cache: false
 
       - name: Try to restore go-cache
         id: go-cache
         timeout-minutes: 25
-        uses: actions/cache/restore@v4
+        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: |
             ~/go/bin
@@ -80,4 +103,4 @@ jobs:
         env:
           CHANGED_GOLANG_SOURCES: ${{ needs.changedfiles.outputs.go_sources }}
         run: |
-          make for-affected-components CMD="make test"
+          make for-affected-components CMD="make"

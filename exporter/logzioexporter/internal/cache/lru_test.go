@@ -10,8 +10,8 @@ import (
 	"testing"
 	"time"
 
-	"github.com/jaegertracing/jaeger/pkg/testutils"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/goleak"
 )
 
 func TestLRU(t *testing.T) {
@@ -233,5 +233,5 @@ func (c *simulatedClock) Elapse(d time.Duration) time.Time {
 }
 
 func TestMain(m *testing.M) {
-	testutils.VerifyGoLeaks(m)
+	goleak.VerifyTestMain(m)
 }

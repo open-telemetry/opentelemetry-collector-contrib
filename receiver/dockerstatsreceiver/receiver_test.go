@@ -16,7 +16,7 @@ import (
 	"testing"
 	"time"
 
-	"github.com/docker/docker/api/types"
+	ctypes "github.com/docker/docker/api/types/container"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/component/componenttest"
@@ -119,6 +119,44 @@ var (
 		ContainerRuntime:     resourceAttributeEnabled,
 	}
 )
+
+func TestClientOptions(t *testing.T) {
+	tests := []struct {
+		name        string
+		endpoint    string
+		expectEnv   bool
+		description string
+	}{
+		{
+			name:        "Empty endpoint, DOCKER_HOST set",
+			endpoint:    "",
+			expectEnv:   true,
+			description: "Should append WithHostFromEnv() when Endpoint is empty.",
+		},
+		{
+			name:        "Config endpoint set, DOCKER_HOST ignored",
+			endpoint:    "tcp://config:1234",
+			expectEnv:   false,
+			description: "Should not append WithHostFromEnv() when Endpoint is set.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			config := &Config{
+				Config: docker.Config{
+					Endpoint: tt.endpoint,
+				},
+			}
+
+			receiver := &metricsReceiver{config: config}
+			opts := receiver.clientOptions()
+
+			// If expectEnv is true, opts should not be empty
+			assert.Equal(t, tt.expectEnv, len(opts) > 0, tt.description)
+		})
+	}
+}
 
 func TestNewReceiver(t *testing.T) {
 	cfg := &Config{
@@ -331,7 +369,7 @@ func TestScrapeV2(t *testing.T) {
 
 func TestRecordBaseMetrics(t *testing.T) {
 	cfg := createDefaultConfig().(*Config)
-	cfg.MetricsBuilderConfig.Metrics = metadata.MetricsConfig{
+	cfg.Metrics = metadata.MetricsConfig{
 		ContainerUptime: metricEnabled,
 	}
 	r := newMetricsReceiver(receivertest.NewNopSettings(metadata.Type), cfg)
@@ -341,8 +379,8 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("ok", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
-			&types.ContainerJSONBase{
-				State: &types.ContainerState{
+			&ctypes.ContainerJSONBase{
+				State: &ctypes.State{
 					StartedAt: started,
 				},
 			},
@@ -358,8 +396,8 @@ func TestRecordBaseMetrics(t *testing.T) {
 	t.Run("error", func(t *testing.T) {
 		err := r.recordBaseMetrics(
 			pcommon.NewTimestampFromTime(now),
-			&types.ContainerJSONBase{
-				State: &types.ContainerState{
+			&ctypes.ContainerJSONBase{
+				State: &ctypes.State{
 					StartedAt: "bad date",
 				},
 			},
@@ -409,12 +447,12 @@ func (cb *testConfigBuilder) withEndpoint(endpoint string) *testConfigBuilder {
 }
 
 func (cb *testConfigBuilder) withMetrics(ms metadata.MetricsConfig) *testConfigBuilder {
-	cb.config.MetricsBuilderConfig.Metrics = ms
+	cb.config.Metrics = ms
 	return cb
 }
 
 func (cb *testConfigBuilder) withResourceAttributes(ras metadata.ResourceAttributesConfig) *testConfigBuilder {
-	cb.config.MetricsBuilderConfig.ResourceAttributes = ras
+	cb.config.ResourceAttributes = ras
 	return cb
 }
 

@@ -1,0 +1,29 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: service.version
+          value:
+            stringValue: abcdefg
+        - key: deployment.environment
+          value:
+            stringValue: production
+        - key: service.namespace
+          value:
+            stringValue: testnamespace
+        - key: app_bundle_id
+          value:
+            stringValue: testBundleId
+        - key: service.name
+          value:
+            stringValue: testapp
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: kind
+                value:
+                  stringValue: event
+            body:
+              stringValue: timestamp=2023-11-16T10:00:55.995Z kind=event event_name=faro.performanceEntry event_domain=browser event_data_name=https://cdn.jsdelivr.net/npm/bootstrap@4.5.3/dist/css/bootstrap.min.css.map sdk_name=grafana-frontend-agent sdk_version=1.3.5 app_name=testapp app_namespace=testnamespace app_release=0.8.2 app_version=abcdefg app_environment=production browser_name=chrome browser_version=88.12.1 browser_os=linux browser_mobile=false browser_userAgent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/88.12.1 Safari/537.36" browser_language=en-US browser_viewportWidth=1920 browser_viewportHeight=1080 browser_brands="Chromium;Google Inc.;"
+            spanId: ""
+            traceId: ""
+        scope: {}

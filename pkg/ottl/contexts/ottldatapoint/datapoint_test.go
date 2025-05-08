@@ -15,6 +15,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/ctxdatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/internal/pathtest"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottltest"
 )
@@ -65,14 +66,17 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxdatapoint.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
@@ -89,27 +93,9 @@ func Test_newPathGetSetter_Cache(t *testing.T) {
 			exCache := pcommon.NewMap()
 			tt.modified(exCache)
 
-			assert.Equal(t, exCache, ctx.getCache())
+			assert.Equal(t, exCache, testCache)
 		})
 	}
-}
-
-func Test_newPathGetSetter_WithCache(t *testing.T) {
-	cacheValue := pcommon.NewMap()
-	cacheValue.PutStr("test", "pass")
-
-	ctx := NewTransformContext(
-		pmetric.NewNumberDataPoint(),
-		pmetric.NewMetric(),
-		pmetric.NewMetricSlice(),
-		pcommon.NewInstrumentationScope(),
-		pcommon.NewResource(),
-		pmetric.NewScopeMetrics(),
-		pmetric.NewResourceMetrics(),
-		WithCache(&cacheValue),
-	)
-
-	assert.Equal(t, cacheValue, ctx.getCache())
 }
 
 func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
@@ -511,14 +497,17 @@ func Test_newPathGetSetter_NumberDataPoint(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxdatapoint.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			numberDataPoint := createNumberDataPointTelemetry(tt.valueType)
@@ -955,14 +944,17 @@ func Test_newPathGetSetter_HistogramDataPoint(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxdatapoint.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			histogramDataPoint := createHistogramDataPointTelemetry()
@@ -1483,14 +1475,17 @@ func Test_newPathGetSetter_ExpoHistogramDataPoint(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxdatapoint.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			expoHistogramDataPoint := createExpoHistogramDataPointTelemetry()
@@ -1912,14 +1907,17 @@ func Test_newPathGetSetter_SummaryDataPoint(t *testing.T) {
 		testWithContext := tt
 		testWithContext.name = "with_path_context:" + tt.name
 		pathWithContext := *tt.path.(*pathtest.Path[TransformContext])
-		pathWithContext.C = ContextName
+		pathWithContext.C = ctxdatapoint.Name
 		testWithContext.path = ottl.Path[TransformContext](&pathWithContext)
 		tests = append(tests, testWithContext)
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			testCache := pcommon.NewMap()
+			cacheGetter := func(_ TransformContext) pcommon.Map {
+				return testCache
+			}
+			accessor, err := pathExpressionParser(cacheGetter)(tt.path)
 			assert.NoError(t, err)
 
 			summaryDataPoint := createSummaryDataPointTelemetry()
@@ -2100,8 +2098,7 @@ func Test_newPathGetSetter_Metric(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			pep := pathExpressionParser{}
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			assert.NoError(t, err)
 
 			metric := createMetricTelemetry()
@@ -2292,10 +2289,9 @@ func Test_newPathGetSetter_higherContextPath(t *testing.T) {
 		},
 	}
 
-	pep := pathExpressionParser{}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			accessor, err := pep.parsePath(tt.path)
+			accessor, err := pathExpressionParser(getCache)(tt.path)
 			require.NoError(t, err)
 
 			got, err := accessor.Get(context.Background(), ctx)

@@ -5,8 +5,9 @@
 | Stability     | [beta]  |
 | Distributions | [contrib], [k8s] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aextension%2Fbearertokenauth%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aextension%2Fbearertokenauth) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aextension%2Fbearertokenauth%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aextension%2Fbearertokenauth) |
-| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@jpkrohling](https://www.github.com/jpkrohling), [@frzifus](https://www.github.com/frzifus) |
-| Emeritus      | [@pavankrish123](https://www.github.com/pavankrish123) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=extension_bearertokenauth)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=extension_bearertokenauth&displayType=list) |
+| [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@frzifus](https://www.github.com/frzifus) \| Seeking more code owners! |
+| Emeritus      | [@jpkrohling](https://www.github.com/jpkrohling), [@pavankrish123](https://www.github.com/pavankrish123) |
 
 [beta]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#beta
 [contrib]: https://github.com/open-telemetry/opentelemetry-collector-releases/tree/main/distributions/otelcol-contrib
@@ -21,9 +22,13 @@ The authenticator type has to be set to `bearertokenauth`.
 
 ## Configuration
 
+- `header`: Specifies the auth header name. Defaults to "Authorization". Optional.
+
 - `scheme`: Specifies the auth scheme name. Defaults to "Bearer". Optional.
 
 - `token`: Static authorization token that needs to be sent on every gRPC client call as metadata.
+
+- `tokens`: A list of static authorization tokens, one of which needs to be sent on every gRPC client call as metadata.
 
 - `filename`: Name of file that contains a authorization token that needs to be sent in every client call.
 
@@ -40,6 +45,11 @@ extensions:
   bearertokenauth/withscheme:
     scheme: "Bearer"
     token: "randomtoken"
+  bearertokenauth/multipletokens:
+    scheme: "Bearer"
+    tokens:
+      - "randomtoken"
+      - "thistokenalsoworks"
 
 receivers:
   hostmetrics:

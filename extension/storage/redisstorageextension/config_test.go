@@ -39,6 +39,7 @@ func TestLoadConfig(t *testing.T) {
 				Password:   "passwd",
 				DB:         1,
 				Expiration: 3 * time.Hour,
+				Prefix:     "test_",
 			},
 		},
 	}

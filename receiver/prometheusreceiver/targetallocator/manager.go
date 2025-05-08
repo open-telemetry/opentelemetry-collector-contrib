@@ -24,7 +24,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/receiver"
 	"go.uber.org/zap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 )
 
 type Manager struct {
@@ -61,7 +61,7 @@ func (m *Manager) Start(ctx context.Context, host component.Host, sm *scrape.Man
 		// the target allocator is disabled
 		return nil
 	}
-	httpClient, err := m.cfg.ClientConfig.ToClient(ctx, host, m.settings.TelemetrySettings)
+	httpClient, err := m.cfg.ToClient(ctx, host, m.settings.TelemetrySettings)
 	if err != nil {
 		m.settings.Logger.Error("Failed to create http client", zap.Error(err))
 		return err

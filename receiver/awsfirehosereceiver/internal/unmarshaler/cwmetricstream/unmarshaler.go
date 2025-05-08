@@ -7,14 +7,18 @@ import (
 	"bufio"
 	"bytes"
 	"errors"
+	"strconv"
 	"strings"
 	"time"
 
 	jsoniter "github.com/json-iterator/go"
+	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/awsfirehosereceiver/internal/metadata"
 )
 
 const (
@@ -33,13 +37,15 @@ var errInvalidRecords = errors.New("record format invalid")
 // https://docs.aws.amazon.com/AmazonCloudWatch/latest/monitoring/CloudWatch-metric-streams-formats-json.html
 type Unmarshaler struct {
 	logger *zap.Logger
+
+	buildInfo component.BuildInfo
 }
 
 var _ pmetric.Unmarshaler = (*Unmarshaler)(nil)
 
 // NewUnmarshaler creates a new instance of the Unmarshaler.
-func NewUnmarshaler(logger *zap.Logger) *Unmarshaler {
-	return &Unmarshaler{logger}
+func NewUnmarshaler(logger *zap.Logger, buildInfo component.BuildInfo) *Unmarshaler {
+	return &Unmarshaler{logger, buildInfo}
 }
 
 // UnmarshalMetrics deserializes the record in CloudWatch Metric Stream JSON
@@ -108,6 +114,33 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		maxQ := dp.QuantileValues().AppendEmpty()
 		maxQ.SetQuantile(1)
 		maxQ.SetValue(cwMetric.Value.Max)
+
+		for key, value := range cwMetric.Value.Percentiles {
+			// Only process percentile fields (those starting with 'p')
+			if len(key) < 2 || key[0] != 'p' {
+				continue
+			}
+
+			// Extract the percentile value from the field name (e.g., "p95" -> 0.95)
+			percentileStr := key[1:]
+			percentileInt, err := strconv.ParseFloat(percentileStr, 64)
+			if err != nil {
+				// Skip if we can't parse the percentile value
+				u.logger.Debug(
+					"Unable to parse percentile",
+					zap.String("percentile", percentileStr),
+					zap.Error(err),
+				)
+				continue
+			}
+
+			// Calculate the quantile value (divide by 100 to get a value between 0 and 1)
+			quantile := percentileInt / 100.0
+
+			q := dp.QuantileValues().AppendEmpty()
+			q.SetQuantile(quantile)
+			q.SetValue(value)
+		}
 	}
 	if err := scanner.Err(); err != nil {
 		// Treat this as a non-fatal error, and handle the data below.
@@ -122,6 +155,8 @@ func (u Unmarshaler) UnmarshalMetrics(record []byte) (pmetric.Metrics, error) {
 		rm := metrics.ResourceMetrics().AppendEmpty()
 		setResourceAttributes(resourceKey, rm.Resource())
 		scopeMetrics := rm.ScopeMetrics().AppendEmpty()
+		scopeMetrics.Scope().SetName(metadata.ScopeName)
+		scopeMetrics.Scope().SetVersion(u.buildInfo.Version)
 		for _, metric := range metricsMap {
 			metric.MoveTo(scopeMetrics.Metrics().AppendEmpty())
 		}

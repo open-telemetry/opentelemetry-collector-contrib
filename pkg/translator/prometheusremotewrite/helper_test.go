@@ -236,7 +236,7 @@ func Test_timeSeriesSignature(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			exp := calcSig(tt.lbs)
 			sig := timeSeriesSignature(tt.lbs)
-			assert.EqualValues(t, exp, sig)
+			assert.Equal(t, exp, sig)
 		})
 	}
 }
@@ -862,9 +862,7 @@ func TestPrometheusConverter_AddSummaryDataPoints(t *testing.T) {
 			converter.addSummaryDataPoints(
 				metric.Summary().DataPoints(),
 				pcommon.NewResource(),
-				Settings{
-					ExportCreatedMetric: true,
-				},
+				Settings{},
 				metric.Name(),
 			)
 
@@ -1004,9 +1002,7 @@ func TestPrometheusConverter_AddHistogramDataPoints(t *testing.T) {
 			converter.addHistogramDataPoints(
 				metric.Histogram().DataPoints(),
 				pcommon.NewResource(),
-				Settings{
-					ExportCreatedMetric: true,
-				},
+				Settings{},
 				metric.Name(),
 			)
 

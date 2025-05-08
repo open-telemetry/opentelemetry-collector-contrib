@@ -7,6 +7,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"net"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -132,4 +133,24 @@ func TestNotifyConfig(t *testing.T) {
 	body, err := io.ReadAll(resp.Body)
 	require.NoError(t, err)
 	assert.JSONEq(t, string(confJSON), string(body))
+}
+
+func TestShutdown(t *testing.T) {
+	t.Run("error in http server start", func(t *testing.T) {
+		// Want to get error in http server start
+		endpoint := testutil.GetAvailableLocalAddress(t)
+		l, err := net.Listen("tcp", endpoint)
+		require.NoError(t, err)
+		t.Cleanup(func() { require.NoError(t, l.Close()) })
+
+		cfg := createDefaultConfig().(*Config)
+		cfg.UseV2 = true
+		cfg.HTTPConfig.Endpoint = endpoint
+
+		ext := newExtension(context.Background(), *cfg, extensiontest.NewNopSettings(extensiontest.NopType))
+		// Get address already in use here
+		require.Error(t, ext.Start(context.Background(), componenttest.NewNopHost()))
+
+		require.NoError(t, ext.Shutdown(context.Background()))
+	})
 }

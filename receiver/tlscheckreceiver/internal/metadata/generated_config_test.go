@@ -9,6 +9,8 @@ import (
 	"github.com/google/go-cmp/cmp"
 	"github.com/google/go-cmp/cmp/cmpopts"
 	"github.com/stretchr/testify/require"
+
+	"go.opentelemetry.io/collector/confmap"
 	"go.opentelemetry.io/collector/confmap/confmaptest"
 )
 
@@ -28,7 +30,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: true},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckURL: ResourceAttributeConfig{Enabled: true},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 				},
 			},
 		},
@@ -39,7 +41,7 @@ func TestMetricsBuilderConfig(t *testing.T) {
 					TlscheckTimeLeft: MetricConfig{Enabled: false},
 				},
 				ResourceAttributes: ResourceAttributesConfig{
-					TlscheckURL: ResourceAttributeConfig{Enabled: false},
+					TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 				},
 			},
 		},
@@ -59,7 +61,7 @@ func loadMetricsBuilderConfig(t *testing.T, name string) MetricsBuilderConfig {
 	sub, err := cm.Sub(name)
 	require.NoError(t, err)
 	cfg := DefaultMetricsBuilderConfig()
-	require.NoError(t, sub.Unmarshal(&cfg))
+	require.NoError(t, sub.Unmarshal(&cfg, confmap.WithIgnoreUnused()))
 	return cfg
 }
 
@@ -75,13 +77,13 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				TlscheckURL: ResourceAttributeConfig{Enabled: true},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				TlscheckURL: ResourceAttributeConfig{Enabled: false},
+				TlscheckTarget: ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}

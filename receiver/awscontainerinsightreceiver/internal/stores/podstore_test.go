@@ -382,8 +382,8 @@ func TestGetJobNamePrefix(t *testing.T) {
 	assert.Equal(t, "abcd", getJobNamePrefix("abcd.-efg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg"))
 	assert.Equal(t, "abcdefg", getJobNamePrefix("abcdefg-"))
-	assert.Equal(t, "", getJobNamePrefix(".abcd-efg"))
-	assert.Equal(t, "", getJobNamePrefix(""))
+	assert.Empty(t, getJobNamePrefix(".abcd-efg"))
+	assert.Empty(t, getJobNamePrefix(""))
 }
 
 type mockReplicaSetInfo1 struct{}
@@ -496,7 +496,7 @@ func TestPodStore_addPodOwnersAndPodName(t *testing.T) {
 	expectedOwner["pod_owners"] = []any{map[string]string{"owner_kind": ci.ReplicationController, "owner_name": rcName}}
 	expectedOwnerName = rcName
 	assert.Equal(t, expectedOwnerName, metric.GetTag(ci.PodNameKey))
-	assert.Equal(t, "", metric.GetTag(ci.FullPodNameKey))
+	assert.Empty(t, metric.GetTag(ci.FullPodNameKey))
 	assert.Equal(t, expectedOwner, kubernetesBlob)
 
 	// Test Job

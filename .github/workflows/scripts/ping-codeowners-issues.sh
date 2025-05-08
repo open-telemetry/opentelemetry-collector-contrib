@@ -13,6 +13,12 @@ if [[ -z "${COMPONENT:-}" || -z "${ISSUE:-}" ]]; then
 fi
 
 CUR_DIRECTORY=$(dirname "$0")
+COMPONENT=$(COMPONENT="${COMPONENT}" "${CUR_DIRECTORY}/get-label-from-component.sh" || true)
+# Some labels are unrelated to components. These labels do not have code owners,
+# e.g "os:windows", "priority:p1", and "chore"
+if [[ -z "${COMPONENT}" ]]; then
+    exit 0
+fi
 
 OWNERS=$(COMPONENT="${COMPONENT}" bash "${CUR_DIRECTORY}/get-codeowners.sh")
 

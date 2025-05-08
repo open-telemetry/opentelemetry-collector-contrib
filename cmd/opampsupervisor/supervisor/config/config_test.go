@@ -227,32 +227,6 @@ func TestValidate(t *testing.T) {
 			expectedError: "agent::orphan_detection_interval must be positive",
 		},
 		{
-			name: "Invalid health check port number",
-			config: Supervisor{
-				Server: OpAMPServer{
-					Endpoint: "wss://localhost:9090/opamp",
-					Headers: http.Header{
-						"Header1": []string{"HeaderValue"},
-					},
-					TLSSetting: tlsConfig,
-				},
-				Agent: Agent{
-					Executable:              "${file_path}",
-					OrphanDetectionInterval: 5 * time.Second,
-					HealthCheckPort:         65536,
-					ConfigApplyTimeout:      2 * time.Second,
-					BootstrapTimeout:        5 * time.Second,
-				},
-				Capabilities: Capabilities{
-					AcceptsRemoteConfig: true,
-				},
-				Storage: Storage{
-					Directory: "/etc/opamp-supervisor/storage",
-				},
-			},
-			expectedError: "agent::health_check_port must be a valid port number",
-		},
-		{
 			name: "Zero value health check port number",
 			config: Supervisor{
 				Server: OpAMPServer{
@@ -265,7 +239,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
-					HealthCheckPort:         0,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
@@ -290,7 +263,6 @@ func TestValidate(t *testing.T) {
 				Agent: Agent{
 					Executable:              "${file_path}",
 					OrphanDetectionInterval: 5 * time.Second,
-					HealthCheckPort:         29848,
 					ConfigApplyTimeout:      2 * time.Second,
 					BootstrapTimeout:        5 * time.Second,
 				},
@@ -458,17 +430,23 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 				AcceptsOpAMPConnectionSettings: true,
 				ReportsEffectiveConfig:         true,
 				ReportsOwnMetrics:              true,
+				ReportsOwnLogs:                 true,
+				ReportsOwnTraces:               true,
 				ReportsHealth:                  true,
 				ReportsRemoteConfig:            true,
+				ReportsAvailableComponents:     true,
 			},
 			expectedAgentCapabilities: protobufs.AgentCapabilities_AgentCapabilities_ReportsStatus |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsEffectiveConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsHealth |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnMetrics |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnLogs |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsOwnTraces |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_ReportsRemoteConfig |
 				protobufs.AgentCapabilities_AgentCapabilities_AcceptsRestartCommand |
-				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings,
+				protobufs.AgentCapabilities_AgentCapabilities_AcceptsOpAMPConnectionSettings |
+				protobufs.AgentCapabilities_AgentCapabilities_ReportsAvailableComponents,
 		},
 	}
 
@@ -480,8 +458,7 @@ func TestCapabilities_SupportedCapabilities(t *testing.T) {
 }
 
 func TestLoad(t *testing.T) {
-	tmpDir, err := os.MkdirTemp(os.TempDir(), "*")
-	require.NoError(t, err)
+	tmpDir := t.TempDir()
 
 	t.Cleanup(func() {
 		require.NoError(t, os.Chmod(tmpDir, 0o700))
@@ -489,7 +466,7 @@ func TestLoad(t *testing.T) {
 	})
 
 	executablePath := filepath.Join(tmpDir, "binary")
-	err = os.WriteFile(executablePath, []byte{}, 0o600)
+	err := os.WriteFile(executablePath, []byte{}, 0o600)
 	require.NoError(t, err)
 
 	testCases := []struct {
@@ -558,7 +535,6 @@ agent:
   orphan_detection_interval: 10s
   config_apply_timeout: 8s
   bootstrap_timeout: 8s
-  health_check_port: 8089
   opamp_server_port: 8090
   passthrough_logs: true
 
@@ -579,6 +555,8 @@ telemetry:
 					Capabilities: Capabilities{
 						ReportsEffectiveConfig:         false,
 						ReportsOwnMetrics:              false,
+						ReportsOwnLogs:                 false,
+						ReportsOwnTraces:               false,
 						ReportsHealth:                  false,
 						AcceptsRemoteConfig:            true,
 						ReportsRemoteConfig:            true,
@@ -601,7 +579,6 @@ telemetry:
 						OrphanDetectionInterval: 10 * time.Second,
 						ConfigApplyTimeout:      8 * time.Second,
 						BootstrapTimeout:        8 * time.Second,
-						HealthCheckPort:         8089,
 						OpAMPServerPort:         8090,
 						PassthroughLogs:         true,
 					},
@@ -696,10 +673,8 @@ agent:
 func setupSupervisorConfigFile(t *testing.T, tmpDir, configString string) string {
 	t.Helper()
 
-	testDir, err := os.MkdirTemp(tmpDir, "*")
-	require.NoError(t, err)
-	cfgPath := filepath.Join(testDir, "config.yaml")
-	err = os.WriteFile(cfgPath, []byte(configString), 0o600)
+	cfgPath := filepath.Join(tmpDir, "config.yaml")
+	err := os.WriteFile(cfgPath, []byte(configString), 0o600)
 	require.NoError(t, err)
 	return cfgPath
 }
