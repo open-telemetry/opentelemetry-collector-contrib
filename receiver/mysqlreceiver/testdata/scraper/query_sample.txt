@@ -1,0 +1,1 @@
+performance_schema	boop	a724a21545b602d4ae826ae58bbf526427a94f1e68ebec539ec3c53bfaa88281	SELECT @@SESSION . `transaction_isolation`	60	164867.71064137403	167387	164867.710813499	0.000172125	0	0	1	1	0	0	0	0	0	0	0	0	0	0	0	root	192.168.65.1	performance_schema
