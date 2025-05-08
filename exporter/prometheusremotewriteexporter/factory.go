@@ -37,7 +37,7 @@ var enableMultipleWorkersFeatureGate = featuregate.GlobalRegistry().MustRegister
 var enableSendingRW2FeatureGate = featuregate.GlobalRegistry().MustRegister(
 	"exporter.prometheusremotewritexporter.enableSendingRW2",
 	featuregate.StageAlpha,
-	featuregate.WithRegisterFromVersion("v0.113.0"),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
 	featuregate.WithRegisterDescription("When enabled, the Prometheus remote write exporter will support sending rw2. Extra configuration is still required besides enabling this feature gate."),
 )
 
