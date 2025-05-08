@@ -1,0 +1,9 @@
+default:
+all_set:
+  metrics:
+    raid.blocks:
+      enabled: true
+none_set:
+  metrics:
+    raid.blocks:
+      enabled: false

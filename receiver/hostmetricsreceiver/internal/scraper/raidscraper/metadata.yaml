@@ -1,0 +1,25 @@
+type: raid
+
+status:
+  class: scraper
+  stability:
+    beta: [metrics]
+  distributions: [core, contrib, k8s]
+  codeowners:
+    active: [dmitryax, braydonk]
+
+sem_conv_version: 1.9.0
+
+attributes:
+  device:
+    description: Name of the disk.
+    type: string
+
+metrics:
+  raid.blocks:
+    enabled: true
+    description: Number of blocks on device
+    unit: blocks
+    gauge:
+      value_type: int
+    attributes: [device]
