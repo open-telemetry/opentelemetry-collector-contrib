@@ -265,6 +265,7 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 
 	cLen := len(cfgs)
 	policies := make([]*policy, 0, cLen)
+	dropPolicies := make([]*policy, 0, cLen)
 	policyNames := make(map[string]struct{}, cLen)
 
 	for _, cfg := range cfgs {
@@ -287,14 +288,20 @@ func (tsp *tailSamplingSpanProcessor) loadSamplingPolicy(cfgs []PolicyCfg) error
 			uniquePolicyName = fmt.Sprintf("%s.%s", componentID, cfg.Name)
 		}
 
-		policies = append(policies, &policy{
+		p := &policy{
 			name:      cfg.Name,
 			evaluator: eval,
 			attribute: metric.WithAttributes(attribute.String("policy", uniquePolicyName)),
-		})
-	}
+		}
 
-	tsp.policies = policies
+		if cfg.Type == Drop {
+			dropPolicies = append(dropPolicies, p)
+		} else {
+			policies = append(policies, p)
+		}
+	}
+	// Dropped decision takes precedence over all others, therefore we evaluate them first.
+	tsp.policies = append(dropPolicies, policies...)
 
 	tsp.logger.Debug("Loaded sampling policy", zap.Int("policies.len", len(policies)))
 
