@@ -4,6 +4,7 @@
 package prometheusreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
@@ -15,7 +16,7 @@ import (
 	"github.com/prometheus/prometheus/discovery/kubernetes"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/confmap"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver/targetallocator"
 )
@@ -148,7 +149,9 @@ func unmarshalYAML(in map[string]any, out any) error {
 		return fmt.Errorf("prometheus receiver: failed to marshal config to yaml: %w", err)
 	}
 
-	err = yaml.UnmarshalStrict(yamlOut, out)
+	decoder := yaml.NewDecoder(bytes.NewReader(yamlOut))
+	decoder.KnownFields(true)
+	err = decoder.Decode(out)
 	if err != nil {
 		return fmt.Errorf("prometheus receiver: failed to unmarshal yaml to prometheus config object: %w", err)
 	}
