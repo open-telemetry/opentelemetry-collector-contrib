@@ -1,4 +1,4 @@
-package pdatautil
+package pdatautil // import "github.com/open-telemetry/opentelemetry-collector-contrib/internal/pdatautil"
 
 import (
 	"github.com/lightstep/go-expohisto/structure"
