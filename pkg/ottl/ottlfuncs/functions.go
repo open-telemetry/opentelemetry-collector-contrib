@@ -7,6 +7,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )
 
+// StandardFuncs is a helper function to provide quick access to all functions (editors and converters) in this package
 func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	f := []ottl.Factory[K]{
 		// Editors
@@ -29,6 +30,7 @@ func StandardFuncs[K any]() map[string]ottl.Factory[K] {
 	return ottl.CreateFactoryMap(f...)
 }
 
+// StandardConverters is a helper function to provide quick access to all converters in this package
 func StandardConverters[K any]() map[string]ottl.Factory[K] {
 	return ottl.CreateFactoryMap(converters[K]()...)
 }
