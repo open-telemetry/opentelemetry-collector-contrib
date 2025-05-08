@@ -966,9 +966,15 @@ func TestEncodings(t *testing.T) {
 			[][]byte{{0xc5, '\n'}},
 		},
 		{
-			"InvalidUTFWithoutReplacement",
+			"InvalidUTFReplacement",
 			[]byte{0xc5, '\n'},
 			"utf8",
+			[][]byte{{0xef, 0xbf, 0xbd}},
+		},
+		{
+			"InvalidUTFWithoutReplacement",
+			[]byte{0xc5, '\n'},
+			"utf8-raw",
 			[][]byte{{0xc5}},
 		},
 		{

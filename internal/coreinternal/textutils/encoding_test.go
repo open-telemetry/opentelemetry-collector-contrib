@@ -11,6 +11,7 @@ import (
 	"golang.org/x/text/encoding/japanese"
 	"golang.org/x/text/encoding/korean"
 	"golang.org/x/text/encoding/simplifiedchinese"
+	"golang.org/x/text/encoding/unicode"
 	"golang.org/x/text/transform"
 )
 
@@ -22,8 +23,13 @@ func TestUTF8Encoding(t *testing.T) {
 	}{
 		{
 			name:         "UTF8 encoding",
-			encoding:     utf8,
+			encoding:     unicode.UTF8,
 			encodingName: "utf8",
+		},
+		{
+			name:         "UTF8-raw encoding",
+			encoding:     UTF8Raw,
+			encodingName: "utf8-raw",
 		},
 		{
 			name:         "GBK encoding",

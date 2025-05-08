@@ -7,7 +7,7 @@ change_type: bug_fix
 component: filelogreceiver
 
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
-note: Do not replace invalid UTF-8 bytes with \uFFFD when reading UTF-8 input.
+note: Introduce `utf8-raw` encoding to avoid replacing invalid bytes with \uFFFD when reading UTF-8 input.
 
 # Mandatory: One or more tracking issues related to the change. You can use the PR number here if no issue exists.
 issues: [39653]
