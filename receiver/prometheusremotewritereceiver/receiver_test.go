@@ -684,14 +684,12 @@ func TestCacheCleanup(t *testing.T) {
 
 	_, exists2 = cache.get(2)
 	assert.False(t, exists2)
-
 }
 
 func TestCacheConcurrentAccess(t *testing.T) {
-	cache := newCache(1 * time.Second)
+	cache := newCache(100 * time.Second)
 	defer cache.Stop()
 
-	// Test concurrent access
 	done := make(chan struct{}, 2)
 	go func() {
 		for i := 0; i < 100; i++ {
@@ -710,4 +708,6 @@ func TestCacheConcurrentAccess(t *testing.T) {
 	// Wait for both goroutines to complete
 	<-done
 	<-done
+
+	assert.Len(t, cache.data, 100)
 }
