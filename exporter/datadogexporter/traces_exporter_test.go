@@ -444,10 +444,24 @@ func testPushTraceDataNewEnvConvention(t *testing.T, enableReceiveResourceSpansV
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
 }
 
-func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
-	err := featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", true)
-	if err != nil {
-		t.Fatal(err)
+func TestPushTraceDataOperationAndResourceName(t *testing.T) {
+	t.Run("OperationAndResourceNameV1", func(t *testing.T) {
+		subtestPushTraceDataOperationAndResourceName(t, false)
+	})
+
+	t.Run("OperationAndResourceNameV2", func(t *testing.T) {
+		subtestPushTraceDataOperationAndResourceName(t, true)
+	})
+}
+
+func subtestPushTraceDataOperationAndResourceName(t *testing.T, enableOperationAndResourceNameV2 bool) {
+	t.Helper()
+	if !enableOperationAndResourceNameV2 {
+		prevVal := pkgdatadog.OperationAndResourceNameV2FeatureGate.IsEnabled()
+		require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", false))
+		defer func() {
+			require.NoError(t, featuregate.GlobalRegistry().Set("datadog.EnableOperationAndResourceNameV2", prevVal))
+		}()
 	}
 	tracesRec := &testutil.HTTPRequestRecorderWithChan{Pattern: testutil.TraceEndpoint, ReqChan: make(chan []byte)}
 	server := testutil.DatadogServerMock(tracesRec.HandlerFunc)
@@ -486,7 +500,11 @@ func TestPushTraceData_OperationAndResourceNameV2(t *testing.T) {
 	require.NoError(t, proto.Unmarshal(slurp, &traces))
 	assert.Len(t, traces.TracerPayloads, 1)
 	assert.Equal(t, "new_env", traces.TracerPayloads[0].GetEnv())
-	assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	if enableOperationAndResourceNameV2 {
+		assert.Equal(t, "server.request", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	} else {
+		assert.Equal(t, "opentelemetry.server", traces.TracerPayloads[0].Chunks[0].Spans[0].Name)
+	}
 }
 
 func TestResRelatedAttributesInSpanAttributes_ReceiveResourceSpansV2Enabled(t *testing.T) {

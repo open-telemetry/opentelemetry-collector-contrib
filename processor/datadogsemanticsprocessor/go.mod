@@ -6,17 +6,17 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.3
 	github.com/DataDog/opentelemetry-mapping-go/pkg/otlp/attributes v0.27.0
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/consumer v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/processor v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/processor/processorhelper v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/processor/processortest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/component v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/consumer v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/processor v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/processor/processorhelper v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/processor/processortest v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/semconv v0.125.1-0.20250508034258-ac520a5c14cc
 )
 
 require (
@@ -68,13 +68,13 @@ require (
 	github.com/tklauser/numcpus v0.8.0 // indirect
 	github.com/yusufpapurcu/wmi v1.2.4 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
-	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/pdata/testdata v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/processor/xprocessor v0.125.1-0.20250505155216-829157cef7bb // indirect
+	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/pdata/testdata v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/processor/xprocessor v0.125.1-0.20250508034258-ac520a5c14cc // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect

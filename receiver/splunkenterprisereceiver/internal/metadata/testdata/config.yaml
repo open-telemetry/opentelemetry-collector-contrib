@@ -29,6 +29,8 @@ all_set:
       enabled: true
     splunk.indexer.raw.write.time:
       enabled: true
+    splunk.indexer.rollingrestart.status:
+      enabled: true
     splunk.indexer.throughput:
       enabled: true
     splunk.indexes.avg.size:
@@ -120,6 +122,8 @@ none_set:
     splunk.indexer.queue.ratio:
       enabled: false
     splunk.indexer.raw.write.time:
+      enabled: false
+    splunk.indexer.rollingrestart.status:
       enabled: false
     splunk.indexer.throughput:
       enabled: false

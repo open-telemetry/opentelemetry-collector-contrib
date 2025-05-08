@@ -32,6 +32,10 @@ component_management:
     name: confmap_provider_aesprovider
     paths:
     - confmap/provider/aesprovider/**
+  - component_id: confmap_provider_googlesecretmanagerprovider
+    name: confmap_provider_googlesecretmanagerprovider
+    paths:
+    - confmap/provider/googlesecretmanagerprovider/**
   - component_id: confmap_provider_s3provider
     name: confmap_provider_s3provider
     paths:

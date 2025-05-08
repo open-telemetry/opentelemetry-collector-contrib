@@ -1,0 +1,103 @@
+resourceLogs:
+  - resource:
+      attributes:
+        - key: cloud.provider
+          value:
+            stringValue: azure
+        - key: cloud.resource_id
+          value:
+            stringValue: /SUBSCRIPTIONS/123CA/RESOURCEGROUPS/OPENTELEMETRY/PROVIDERS/MICROSOFT.CDN/PROFILES/OPENTELEMETRY-CDN-PROFILE
+        - key: event.name
+          value:
+            stringValue: az.resource.log
+    scopeLogs:
+      - logRecords:
+          - attributes:
+              - key: http.request.size
+                value:
+                  intValue: "1572"
+              - key: http.response.size
+                value:
+                  intValue: "1572"
+              - key: client.port
+                value:
+                  intValue: "37908"
+              - key: http.response.status_code
+                value:
+                  intValue: "404"
+              - key: azure.time_to_first_byte
+                value:
+                  intValue: "154"
+              - key: duration
+                value:
+                  intValue: "154"
+              - key: url.original
+                value:
+                  stringValue: https://opentelemetry-cdn-endpoint.azureedge.net:443/favicon.ico
+              - key: url.port
+                value:
+                  intValue: "443"
+              - key: url.scheme
+                value:
+                  stringValue: https
+              - key: url.path
+                value:
+                  stringValue: /favicon.ico
+              - key: tls.protocol.name
+                value:
+                  stringValue: TLS
+              - key: tls.protocol.version
+                value:
+                  stringValue: "1.3"
+              - key: destination.address
+                value:
+                  stringValue: example.com
+              - key: destination.port
+                value:
+                  intValue: "443"
+              - key: network.peer.address
+                value:
+                  stringValue: opentelemetry-cdn-endpoint.azureedge.net
+              - key: azure.ref
+                value:
+                  stringValue: 20250423T091717Z-r1b8867f7999cdtwhP1CO1urpg00000000mg000000001s5s
+              - key: http.request.method
+                value:
+                  stringValue: GET
+              - key: network.protocol.version
+                value:
+                  stringValue: 1.1.0.0
+              - key: network.protocol.name
+                value:
+                  stringValue: HTTPS
+              - key: user_agent.original
+                value:
+                  stringValue: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/131.0.0.0 Safari/537.36
+              - key: client.address
+                value:
+                  stringValue: 13.83.128.90
+              - key: source.address
+                value:
+                  stringValue: 147.243.241.243
+              - key: azure.pop
+                value:
+                  stringValue: CO
+              - key: azure.cache_status
+                value:
+                  stringValue: MISS
+              - key: network.io.direction
+                value:
+                  stringValue: transmit
+              - key: azure.category
+                value:
+                  stringValue: AzureCdnAccessLog
+              - key: azure.operation.name
+                value:
+                  stringValue: Microsoft.Cdn/Profiles/AccessLog/Write
+            body: {}
+            spanId: ""
+            timeUnixNano: "1745399837000000000"
+            traceId: ""
+        scope:
+          name: otelcol/azureresourcelogs
+          version: 1.2.3
