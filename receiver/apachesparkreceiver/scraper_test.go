@@ -78,7 +78,7 @@ func TestScraper(t *testing.T) {
 			expectedErr: errNoMatchingAllowedApps,
 		},
 		{
-			desc: "No Matching Allowed Apps by ApplicationIds",
+			desc: "No Matching Allowed Apps by ApplicationIDs",
 			setupMockClient: func(*testing.T) client {
 				mockClient := mocks.MockClient{}
 				mockClient.On("Applications").Return([]models.Application{}, nil)
@@ -91,7 +91,7 @@ func TestScraper(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: defaultCollectionInterval,
 				},
-				ApplicationIds:       []string{"app-123", "app-987"},
+				ApplicationIDs:       []string{"app-123", "app-987"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},
@@ -244,7 +244,7 @@ func TestScraper(t *testing.T) {
 			expectedErr: nil,
 		},
 		{
-			desc: "Successfully allowing apps by ApplicationIds",
+			desc: "Successfully allowing apps by ApplicationIDs",
 			setupMockClient: func(t *testing.T) client {
 				mockClient := mocks.MockClient{}
 				data := loadAPIResponseData(t, clusterStatsResponseFile)
@@ -288,7 +288,7 @@ func TestScraper(t *testing.T) {
 				ControllerConfig: scraperhelper.ControllerConfig{
 					CollectionInterval: defaultCollectionInterval,
 				},
-				ApplicationIds:       []string{"app-123"},
+				ApplicationIDs:       []string{"app-123"},
 				ClientConfig:         clientConfig,
 				MetricsBuilderConfig: metadata.DefaultMetricsBuilderConfig(),
 			},

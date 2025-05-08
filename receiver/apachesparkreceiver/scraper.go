@@ -66,7 +66,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 
 	// If no app names/ids specified, allow all apps
 	switch {
-	case len(s.config.ApplicationNames) == 0 && len(s.config.ApplicationIds) == 0:
+	case len(s.config.ApplicationNames) == 0 && len(s.config.ApplicationIDs) == 0:
 		allowedApps = apps
 	default:
 		// Some allowed app names specified, compare to app names from applications endpoint
@@ -86,7 +86,7 @@ func (s *sparkScraper) scrape(_ context.Context) (pmetric.Metrics, error) {
 		}
 
 		// Add apps matching IDs
-		for _, id := range s.config.ApplicationIds {
+		for _, id := range s.config.ApplicationIDs {
 			if apps, ok := idMap[id]; ok {
 				allowedApps = append(allowedApps, apps...)
 			}
