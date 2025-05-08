@@ -1375,11 +1375,24 @@ func (s *Supervisor) runAgentProcess() {
 				continue
 			}
 
-			s.telemetrySettings.Logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", s.commander.ExitCode()))
+			exitCode := s.commander.ExitCode()
+			s.telemetrySettings.Logger.Debug("Agent process exited unexpectedly. Will restart in a bit...", zap.Int("pid", s.commander.Pid()), zap.Int("exit_code", exitCode))
 			errMsg := fmt.Sprintf(
 				"Agent process PID=%d exited unexpectedly, exit code=%d. Will restart in a bit...",
-				s.commander.Pid(), s.commander.ExitCode(),
+				s.commander.Pid(), exitCode,
 			)
+
+			if exitCode == 1 {
+				// get last log line from the agent logs
+				lastError := s.commander.LastErr()
+				if lastError != "" {
+					s.telemetrySettings.Logger.Debug("Last error from the agent", zap.String("last_agent_error", lastError))
+					errMsg = fmt.Sprintf("%s: \n%s", errMsg, lastError)
+				} else {
+					s.telemetrySettings.Logger.Debug("No error from the agent")
+				}
+			}
+
 			err := s.opampClient.SetHealth(&protobufs.ComponentHealth{Healthy: false, LastError: errMsg})
 			if err != nil {
 				s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
@@ -1408,7 +1421,11 @@ func (s *Supervisor) runAgentProcess() {
 		case <-configApplyTimeoutTimer.C:
 			lastHealth := s.lastHealthFromClient.Load()
 			if lastHealth == nil || !lastHealth.Healthy {
-				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, "Config apply timeout exceeded")
+				errMsg := "Config apply timeout exceeded"
+				if s.commander.LastErr() != "" {
+					errMsg = fmt.Sprintf("%s: \n%s", errMsg, s.commander.LastErr())
+				}
+				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, errMsg)
 			} else {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 			}
