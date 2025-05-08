@@ -119,6 +119,7 @@ exporter/googlecloudpubsubexporter
 exporter/googlemanagedprometheusexporter
 exporter/honeycombmarkerexporter
 exporter/influxdbexporter
+pkg/kafka/configkafka
 internal/kafka
 pkg/batchpersignal
 pkg/kafka/topic

@@ -6,6 +6,7 @@ require (
 	github.com/IBM/sarama v1.45.1
 	github.com/google/go-cmp v0.7.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka v0.126.0
+	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka v0.126.0
 	github.com/stretchr/testify v1.10.0
 	go.opentelemetry.io/collector/component v1.32.1-0.20250515040533-97a6accbc082
 	go.opentelemetry.io/collector/component/componenttest v0.126.1-0.20250515040533-97a6accbc082
@@ -108,6 +109,8 @@ require (
 )
 
 replace github.com/open-telemetry/opentelemetry-collector-contrib/internal/kafka => ../../internal/kafka
+
+replace github.com/open-telemetry/opentelemetry-collector-contrib/pkg/kafka/configkafka => ../../pkg/kafka/configkafka
 
 // see https://github.com/distribution/distribution/issues/3590
 exclude github.com/docker/distribution v2.8.0+incompatible
