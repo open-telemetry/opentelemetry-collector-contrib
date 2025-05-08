@@ -158,6 +158,34 @@ func TestPathGetSetter(t *testing.T) {
 			},
 			val: "val",
 		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("akey"),
+				},
+				&pathtest.Key[*profileContext]{
+					S: ottltest.Strp("bkey"),
+				},
+			},
+			val: "val",
+		},
+		{
+			path: "attributes",
+			keys: []ottl.Key[*profileContext]{
+				&pathtest.Key[*profileContext]{
+					G: &ottl.StandardGetSetter[*profileContext]{
+						Getter: func(context.Context, *profileContext) (any, error) {
+							return "", nil
+						},
+						Setter: func(context.Context, *profileContext, any) error {
+							return nil
+						},
+					},
+				},
+			},
+			val: "val",
+		},
 	}
 
 	for _, tt := range tests {
