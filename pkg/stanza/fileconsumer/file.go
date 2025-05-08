@@ -254,7 +254,9 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 		if md != nil {
 			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
 		} else {
-			m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			if m.tracker.Name() != tracker.NoStateTracker {
+		    m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+	    }
 			reader, err = m.readerFactory.NewReader(file, fp)
 		}
 
@@ -299,6 +301,7 @@ func (m *Manager) newReader(ctx context.Context, file *os.File, fp *fingerprint.
 
 	// If no previously known files are matched, readers will be created after matching against the archive.
 	return nil, nil
+
 }
 
 func (m *Manager) instantiateTracker(ctx context.Context, persister operator.Persister) {
