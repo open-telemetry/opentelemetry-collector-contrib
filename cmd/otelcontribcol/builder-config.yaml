@@ -269,7 +269,7 @@ providers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/aesprovider v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/s3provider v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/secretsmanagerprovider v0.125.0
-
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/confmap/provider/googlesecretmanagerprovider v0.125.0
 # When using `make genotelcontribcol`, the `replaces` content is appended to this
 # file before passing it to OCB, to ensure that local versions are used for all
 # Contrib modules.
