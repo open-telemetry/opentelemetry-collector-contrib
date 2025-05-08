@@ -647,6 +647,9 @@ func removeUnnecessaryPodData(pod *api_v1.Pod, rules ExtractionRules) *api_v1.Po
 			}
 			if rules.ContainerCPURequest {
 				if _, ok := c.Resources.Requests["cpu"]; ok {
+					if transformedContainer.Resources.Requests == nil {
+						transformedContainer.Resources.Requests = api_v1.ResourceList{}
+					}
 					transformedContainer.Resources.Requests["cpu"] = c.Resources.Requests["cpu"]
 				}
 			}

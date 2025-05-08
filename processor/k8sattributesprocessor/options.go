@@ -31,8 +31,8 @@ const (
 	//   replace containerRepoDigests with conventions.AttributeContainerImageRepoDigests
 	clusterUID                = "k8s.cluster.uid"
 	containerImageRepoDigests = "container.image.repo_digests"
-	containerPorts            = "container.ports"
-	containerCPURequest       = "container.resources.requests.cpu"
+	containerPorts            = "k8s.container.ports"
+	containerCPURequest       = "k8s.container.cpu.request"
 )
 
 // option represents a configuration option that can be passes.
