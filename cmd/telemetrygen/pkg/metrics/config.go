@@ -47,7 +47,7 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
 	fs.BoolVar(&c.EnforceUniqueTimeseries, "unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
-	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation")
+	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-duration", c.UniqueTimelimit, "Time limit for unique timeseries generation, timeseries generated within this time will be unique")
 }
 
 // SetDefaults sets the default values for the configuration
