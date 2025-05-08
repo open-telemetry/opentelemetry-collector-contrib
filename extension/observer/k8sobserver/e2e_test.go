@@ -24,7 +24,6 @@ import (
 const (
 	testKubeConfig                = "/tmp/kube-config-otelcol-e2e-testing"
 	namespacedCollectorObjectsDir = "./testdata/e2e/namespaced/collector/"
-	namespacedExpectedDir         = "./testdata/e2e/namespaced/expected/"
 )
 
 func TestE2ENamespaced(t *testing.T) {
@@ -57,7 +56,17 @@ func TestE2ENamespaced(t *testing.T) {
 
 	// verify that we eventually receive metrics by the receiver created via the receiver creator receiving the endpoint information from the k8sobserver
 	require.Eventuallyf(t, func() bool {
-		return len(metricsConsumer.AllMetrics()) > 0
+		for _, metric := range metricsConsumer.AllMetrics() {
+			for i := 0; i < metric.ResourceMetrics().Len(); i++ {
+				res := metric.ResourceMetrics().At(i)
+				for j := 0; j < res.ScopeMetrics().Len(); j++ {
+					if res.ScopeMetrics().At(j).Scope().Name() == "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver" {
+						return true
+					}
+				}
+			}
+		}
+		return false
 	}, 1*time.Minute, 1*time.Second,
 		"Timeout: failed to receive metrics in 1 minute")
 
