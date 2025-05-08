@@ -1,7 +1,7 @@
 // Copyright The OpenTelemetry Authors
 // SPDX-License-Identifier: Apache-2.0
 
-package fluentforwardreceiver // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver"
+package internal // import "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/fluentforwardreceiver/internal"
 
 import "github.com/tinylib/msgp/msgp"
 

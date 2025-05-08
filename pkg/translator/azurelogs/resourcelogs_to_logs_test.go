@@ -107,16 +107,26 @@ func TestExtractRawAttributes(t *testing.T) {
 
 	identity := any("someone")
 
-	properties := any(map[string]any{
-		"a": uint64(1),
+	properties := map[string]any{
+		"a": float64(1),
 		"b": true,
 		"c": 1.23,
 		"d": "ok",
-	})
+	}
+	propertiesRaw, err := json.Marshal(properties)
+	require.NoError(t, err)
 
-	stringProperties := any("str")
-	intProperties := any(1)
-	jsonProperties := any("{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}")
+	stringProperties := "str"
+	stringPropertiesRaw, err := json.Marshal(stringProperties)
+	require.NoError(t, err)
+
+	intProperties := 1
+	intPropertiesRaw, err := json.Marshal(intProperties)
+	require.NoError(t, err)
+
+	jsonProperties := "{\"a\": 1, \"b\": true, \"c\": 1.23, \"d\": \"ok\"}"
+	jsonPropertiesRaw, err := json.Marshal(jsonProperties)
+	require.NoError(t, err)
 
 	tests := []struct {
 		name     string
@@ -169,7 +179,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				Identity:          &identity,
 				Level:             &level,
 				Location:          &location,
-				Properties:        &properties,
+				Properties:        propertiesRaw,
 			},
 			expected: map[string]any{
 				azureTenantID:                           "tenant.id",
@@ -210,7 +220,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				OperationName: "operation.name",
 				Category:      "category",
 				DurationMs:    &badDuration,
-				Properties:    &stringProperties,
+				Properties:    stringPropertiesRaw,
 			},
 			expected: map[string]any{
 				azureOperationName: "operation.name",
@@ -226,12 +236,12 @@ func TestExtractRawAttributes(t *testing.T) {
 				OperationName: "operation.name",
 				Category:      "category",
 				DurationMs:    &badDuration,
-				Properties:    &intProperties,
+				Properties:    intPropertiesRaw,
 			},
 			expected: map[string]any{
 				azureOperationName: "operation.name",
 				azureCategory:      "category",
-				azureProperties:    1,
+				azureProperties:    float64(1),
 			},
 		},
 		{
@@ -242,7 +252,7 @@ func TestExtractRawAttributes(t *testing.T) {
 				OperationName: "operation.name",
 				Category:      "category",
 				DurationMs:    &badDuration,
-				Properties:    &jsonProperties,
+				Properties:    jsonPropertiesRaw,
 			},
 			expected: map[string]any{
 				azureOperationName: "operation.name",
@@ -259,7 +269,60 @@ func TestExtractRawAttributes(t *testing.T) {
 	}
 }
 
+func TestUnmarshalLogs_AzureCdnAccessLog(t *testing.T) {
+	t.Parallel()
+
+	dir := "testdata/azurecdnaccesslog"
+	tests := map[string]struct {
+		logFilename      string
+		expectedFilename string
+		expectsErr       string
+	}{
+		"valid_1": {
+			logFilename:      "valid_1.json",
+			expectedFilename: "valid_1_expected.yaml",
+		},
+		"valid_2": {
+			logFilename:      "valid_2.json",
+			expectedFilename: "valid_2_expected.yaml",
+		},
+		"valid_3": {
+			logFilename:      "valid_3.json",
+			expectedFilename: "valid_3_expected.yaml",
+		},
+	}
+
+	u := &ResourceLogsUnmarshaler{
+		Version: testBuildInfo.Version,
+		Logger:  zap.NewNop(),
+	}
+
+	for name, test := range tests {
+		t.Run(name, func(t *testing.T) {
+			data, err := os.ReadFile(filepath.Join(dir, test.logFilename))
+			require.NoError(t, err)
+
+			logs, err := u.UnmarshalLogs(data)
+
+			if test.expectsErr != "" {
+				require.ErrorContains(t, err, test.expectsErr)
+				return
+			}
+
+			require.NoError(t, err)
+
+			expectedLogs, err := golden.ReadLogs(filepath.Join(dir, test.expectedFilename))
+			require.NoError(t, err)
+			require.NoError(t, plogtest.CompareLogs(expectedLogs, logs, plogtest.IgnoreResourceLogsOrder()))
+		})
+	}
+}
+
 func TestUnmarshalLogs_Files(t *testing.T) {
+	// TODO @constanca-m Eventually this test function will be fully
+	// replaced with TestUnmarshalLogs_<category>, once all the currently supported
+	// categories are handled in category_logs.log
+
 	t.Parallel()
 
 	logsDir := "testdata"
@@ -291,10 +354,6 @@ func TestUnmarshalLogs_Files(t *testing.T) {
 		"platform_logs": {
 			logFilename:      "log-appserviceplatformlogs.json",
 			expectedFilename: "platform-logs-expected.yaml",
-		},
-		"access_logs": {
-			logFilename:      "log-azurecdnaccesslog.json",
-			expectedFilename: "access-log-expected.yaml",
 		},
 		"front_door_access_logs": {
 			logFilename:      "log-frontdooraccesslog.json",
