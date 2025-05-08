@@ -1,4 +1,4 @@
-type: googlesecretmanagerprovider
+type: googlesecretmanager
 
 status:
   class: provider

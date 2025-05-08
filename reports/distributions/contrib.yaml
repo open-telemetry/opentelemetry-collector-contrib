@@ -118,7 +118,7 @@ components:
         - transform
     provider:
         - aes
-        - googlesecretmanagerprovider
+        - googlesecretmanager
         - s3
         - secretsmanager
     receiver:
