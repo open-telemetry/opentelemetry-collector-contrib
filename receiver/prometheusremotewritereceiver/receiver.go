@@ -107,8 +107,6 @@ type rmCache struct {
 	mutex sync.RWMutex
 	// stopChan works as signal to stop the cleanup goroutine if something happens in the receiver server
 	stopChan chan struct{}
-	// wg is used to wait for the cleanup goroutine to finish
-	wg sync.WaitGroup
 }
 
 func newCache(cleanupInterval time.Duration) *rmCache {
@@ -118,7 +116,6 @@ func newCache(cleanupInterval time.Duration) *rmCache {
 		stopChan:        make(chan struct{}),
 	}
 
-	c.wg.Add(1)
 	go c.startCleanup()
 
 	return c
@@ -127,27 +124,24 @@ func newCache(cleanupInterval time.Duration) *rmCache {
 func (c *rmCache) startCleanup() {
 	ticker := time.NewTicker(c.CleanupInterval)
 	defer ticker.Stop()
-	defer c.wg.Done()
 
 	for {
 		select {
 		case <-ticker.C:
 			c.cleanupAll()
 		case <-c.stopChan:
-			c.wg.Done()
 			return
 		}
 	}
 }
 
 func (c *rmCache) Stop() {
-	c.wg.Wait()
 	close(c.stopChan)
 }
 
 func (c *rmCache) cleanupAll() {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.data = make(map[uint64]pmetric.ResourceMetrics)
 }
 
@@ -159,8 +153,8 @@ func (c *rmCache) get(key uint64) (pmetric.ResourceMetrics, bool) {
 }
 
 func (c *rmCache) set(key uint64, rm pmetric.ResourceMetrics) {
-	c.mutex.RLock()
-	defer c.mutex.RUnlock()
+	c.mutex.Lock()
+	defer c.mutex.Unlock()
 	c.data[key] = rm
 }
 

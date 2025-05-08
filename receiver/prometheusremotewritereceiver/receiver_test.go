@@ -63,8 +63,9 @@ func setupMetricsReceiver(t *testing.T) *prometheusRemoteWriteReceiver {
 	prwReceiver, err := factory.CreateMetrics(context.Background(), receivertest.NewNopSettings(metadata.Type), cfg, consumertest.NewNop())
 	assert.NoError(t, err)
 	assert.NotNil(t, prwReceiver, "metrics receiver creation failed")
-
-	return prwReceiver.(*prometheusRemoteWriteReceiver)
+	writeReceiver := prwReceiver.(*prometheusRemoteWriteReceiver)
+	defer writeReceiver.rmCache.Stop()
+	return writeReceiver
 }
 
 func TestHandlePRWContentTypeNegotiation(t *testing.T) {
@@ -628,7 +629,6 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 
 			ts := httptest.NewServer(http.HandlerFunc(prwReceiver.handlePRW))
 			defer ts.Close()
-			defer prwReceiver.rmCache.Stop()
 
 			for _, req := range tt.requests {
 				pBuf := proto.NewBuffer(nil)
@@ -654,4 +654,60 @@ func TestTargetInfoWithMultipleRequests(t *testing.T) {
 			assert.NoError(t, pmetrictest.CompareMetrics(expectedMetrics, mockConsumer.metrics[0]))
 		})
 	}
+}
+
+func TestCacheCleanup(t *testing.T) {
+	cleanupInterval := 300 * time.Millisecond
+	cache := newCache(cleanupInterval)
+
+	defer cache.Stop()
+
+	rm1 := pmetric.NewResourceMetrics()
+	rm2 := pmetric.NewResourceMetrics()
+	cache.set(1, rm1)
+	cache.set(2, rm2)
+
+	got1, exists1 := cache.get(1)
+	assert.True(t, exists1)
+	assert.Equal(t, rm1, got1)
+
+	got2, exists2 := cache.get(2)
+	assert.True(t, exists2)
+	assert.Equal(t, rm2, got2)
+
+	// Wait the set operations and the cleaup interval.
+	// After this, the cache must be empty and the items must be removed.
+	<-time.After(cleanupInterval + 100*time.Millisecond)
+
+	_, exists1 = cache.get(1)
+	assert.False(t, exists1)
+
+	_, exists2 = cache.get(2)
+	assert.False(t, exists2)
+
+}
+
+func TestCacheConcurrentAccess(t *testing.T) {
+	cache := newCache(1 * time.Second)
+	defer cache.Stop()
+
+	// Test concurrent access
+	done := make(chan struct{}, 2)
+	go func() {
+		for i := 0; i < 100; i++ {
+			cache.set(uint64(i), pmetric.NewResourceMetrics())
+		}
+		done <- struct{}{}
+	}()
+
+	go func() {
+		for i := 0; i < 100; i++ {
+			cache.get(uint64(i))
+		}
+		done <- struct{}{}
+	}()
+
+	// Wait for both goroutines to complete
+	<-done
+	<-done
 }
