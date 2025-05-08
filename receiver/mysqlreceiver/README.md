@@ -53,16 +53,35 @@ The following settings are optional:
   - `time_limit` - maximum time from since the statements have been observed last time (default=`24h`)
   - `limit` - limit of records, which is maximum number of generated metrics (default=`250`)
 
-- metrics that will be emitted as both metrics and logs with query qnd plan text are:
-  - mysql.query.time.lock
-  - mysql.query.time.cpu
-  - mysql.query.rows.total
-  - mysql.query.rows.returned
-  - mysql.query.time.total
-  - mysql.query.calls
 - `top_query_collection` : 
-  - `enabled` (default = `false`): Enables the collection and reporting of top queries.
-  - `top_query_count` (default = 200): The maximum number of top queries to be collected.  The value must be a positive integer. If set to 0, no top queries will be collected.
+  - `enabled` (default = `false`): Enables the collection and reporting of top queries. If this is set to `true`, the receiver will collect and report the top queries based on their execution time as Logs (to include query and plan text, which otherwise exceeds Metrics limits), including the following attributes:
+    - `mysql.current_schema`: The current schema.
+    - `mysql.query_hash`: The hash of the query.
+    - `mysql.query_hash_text`: The normalized text of the query.
+    - `mysql.end_event_id`: The event ID of the end event.
+    - `mysql.uptime`: The uptime of the MySQL server.
+    - `mysql.timer_start`: The start time of the event.
+    - `mysql.timer_end`: The end time of the event.
+    - `mysql.timer_wait`: The wait time of the event.
+    - `mysql.lock_time`: The lock time of the event.
+    - `mysql.rows_affected`: The number of rows affected by the event.
+    - `mysql.rows_sent`: The number of rows sent by the event.
+    - `mysql.rows_examined`: The number of rows examined by the event.
+    - `mysql.select_full_join`: The number of full joins performed by the event.
+    - `mysql.select_full_range_join`: The number of full range joins performed by the event.
+    - `mysql.select_range`: The number of range selections performed by the event.
+    - `mysql.select_range_check`: The number of range checks performed by the event.
+    - `mysql.select_scan`: The number of scans performed by the event.
+    - `mysql.sort_merge_passes`: The number of sort merge passes performed by the event.
+    - `mysql.sort_range`: The number of range sorts performed by the event.
+    - `mysql.sort_rows`: The number of rows sorted by the event.
+    - `mysql.sort_scan`: The number of scans performed by the event.
+    - `mysql.no_good_index_used`: The number of times a good index was not used by the event.
+    - `mysql.no_index_used`: The number of times an index was not used by the event.
+    - `mysql.process_list_user`: The user who executed the query.
+    - `mysql.process_list_host`: The host from which the query was executed.
+    - `mysql.process_list_db`: The database from which the query was executed.
+  - `top_query_count` (default = 200): The maximum number of top queries to be collected and emitted with the above attributes.  The value must be a positive integer. If set to 0, no top queries will be collected.
 ### Example Configuration
 
 ```yaml
