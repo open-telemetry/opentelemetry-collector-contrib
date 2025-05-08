@@ -454,7 +454,7 @@ func accessAttributesKey[K Context](key []ottl.Key[K]) ottl.StandardGetSetter[K]
 			return ctxutil.GetMapValue[K](ctx, tCtx, pprofile.FromAttributeIndices(tCtx.GetProfile().AttributeTable(), tCtx.GetProfile()), key)
 		},
 		Setter: func(ctx context.Context, tCtx K, val any) error {
-			newKey, err := key[0].String(ctx, tCtx)
+			newKey, err := ctxutil.GetMapKeyName(ctx, tCtx, key)
 			if err != nil {
 				return err
 			}
