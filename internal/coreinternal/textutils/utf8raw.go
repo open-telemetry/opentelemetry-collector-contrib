@@ -17,6 +17,7 @@ type utf8raw struct{}
 func (utf8raw) NewDecoder() *encoding.Decoder {
 	return &encoding.Decoder{Transformer: transform.Nop}
 }
+
 func (utf8raw) NewEncoder() *encoding.Encoder {
 	return &encoding.Encoder{Transformer: transform.Nop}
 }
