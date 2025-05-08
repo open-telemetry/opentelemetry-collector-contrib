@@ -389,3 +389,60 @@ func Test_GetMap(t *testing.T) {
 		})
 	}
 }
+
+func Test_GetMapKeyName(t *testing.T) {
+	getSetter := &ottl.StandardGetSetter[any]{
+		Getter: func(_ context.Context, _ any) (any, error) {
+			return nil, nil
+		},
+	}
+	tests := []struct {
+		name string
+		keys []ottl.Key[any]
+		err  error
+		key  string
+	}{
+		{
+			name: "empty keys",
+			keys: []ottl.Key[any]{},
+			err:  errors.New("empty keys"),
+		},
+		{
+			name: "first key not a string",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{
+					I: ottltest.Intp(0),
+					G: getSetter,
+				},
+			},
+			err: errors.New("unable to resolve a string index in map: could not resolve key for map/slice, expecting 'string' but got '<nil>'"),
+		},
+		{
+			name: "first key not initialized",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{},
+			},
+			err: errors.New("unable to resolve a string index in map: invalid key type"),
+		},
+		{
+			name: "valid",
+			keys: []ottl.Key[any]{
+				&pathtest.Key[any]{
+					S: ottltest.Strp("string"),
+				},
+			},
+			key: "string",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resolvedKey, err := ctxutil.GetMapKeyName[any](context.Background(), nil, tt.keys)
+			if tt.err != nil {
+				assert.Equal(t, tt.err.Error(), err.Error())
+				return
+			}
+			assert.Equal(t, tt.key, *resolvedKey)
+		})
+	}
+}
