@@ -16,19 +16,19 @@ require (
 	github.com/stretchr/testify v1.10.0
 	github.com/testcontainers/testcontainers-go v0.37.0
 	github.com/tj/assert v0.0.3
-	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/component v1.31.1-0.20250508034258-ac520a5c14cc
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/config/confignet v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/config/confignet v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/config/configopaque v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/config/configtls v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250508034258-ac520a5c14cc
 	go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/consumer v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/consumer v1.31.1-0.20250508034258-ac520a5c14cc
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250508034258-ac520a5c14cc
 	go.opentelemetry.io/collector/filter v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250508034258-ac520a5c14cc
 	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/scraper v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/scraper/scraperhelper v0.125.1-0.20250505155216-829157cef7bb
