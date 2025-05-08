@@ -52,6 +52,17 @@ func TestComponentStatus(t *testing.T) {
 		require.Fail(t, "LogRoundTrip with an http error code should report a recoverable error status")
 	}
 
+	// Pass in a 409 (duplicate document) and make sure it doesn't report a new status
+	_ = esLogger.LogRoundTrip(
+		&http.Request{URL: &url.URL{}},
+		&http.Response{StatusCode: http.StatusConflict, Status: "409 duplicate"},
+		nil, time.Now(), 0)
+	select {
+	case <-statusChan:
+		assert.Fail(t, "LogRoundTrip with a 409 should not change the component status")
+	default:
+	}
+
 	// Pass in an http success status and make sure the component status returns to OK
 	_ = esLogger.LogRoundTrip(
 		&http.Request{URL: &url.URL{}},
