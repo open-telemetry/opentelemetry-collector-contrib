@@ -9,6 +9,8 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.cluster.cluster_enabled:
+      enabled: true
     redis.cmd.calls:
       enabled: true
     redis.cmd.latency:
@@ -93,6 +95,8 @@ none_set:
     redis.clients.max_input_buffer:
       enabled: false
     redis.clients.max_output_buffer:
+      enabled: false
+    redis.cluster.cluster_enabled:
       enabled: false
     redis.cmd.calls:
       enabled: false

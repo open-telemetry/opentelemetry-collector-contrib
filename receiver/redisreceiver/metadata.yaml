@@ -373,6 +373,13 @@ metrics:
     gauge:
       value_type: int
 
+  redis.cluster.cluster_enabled:
+    enabled: false
+    description: "Indicate Redis cluster is enabled"
+    unit: "1"
+    gauge:
+      value_type: int
+
 tests:
   config:
     endpoint: localhost:6379

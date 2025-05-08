@@ -278,6 +278,14 @@ metrics:
     enabled: true
 ```
 
+### redis.cluster.cluster_enabled
+
+Indicate Redis cluster is enabled
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| 1 | Gauge | Int |
+
 ### redis.cmd.calls
 
 Total number of calls for a command
