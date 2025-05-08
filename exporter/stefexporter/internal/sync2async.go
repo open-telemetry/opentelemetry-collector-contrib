@@ -84,7 +84,7 @@ func NewSync2Async(logger *zap.Logger, concurrency int, async Async) *Sync2Async
 // concurrently executing DoSync() calls exceeds concurrency limit, the number of Async calls
 // will never exceed the concurrency limit.
 //
-// Cancelling the ctx will cause the async operation to be abandoned and error
+// Canceling the ctx will cause the async operation to be abandoned and error
 // to be returned. The ctx is also passed to the Async function.
 // If ctx is cancelled before the async operation is started (e.g. due to being
 // blocked on concurrency limit) then an error will be returned as well.

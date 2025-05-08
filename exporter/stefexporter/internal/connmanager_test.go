@@ -20,7 +20,7 @@ type mockConnCreator struct {
 	connsMux sync.Mutex
 }
 
-func (m *mockConnCreator) Create(_ context.Context) (Conn, error) {
+func (m *mockConnCreator) Create(context.Context) (Conn, error) {
 	conn := &mockConn{}
 	m.connsMux.Lock()
 	m.conns = append(m.conns, conn)
@@ -34,7 +34,7 @@ type mockConn struct {
 	mux     sync.RWMutex
 }
 
-func (m *mockConn) Close(ctx context.Context) error {
+func (m *mockConn) Close(context.Context) error {
 	m.mux.Lock()
 	m.closed = true
 	m.mux.Unlock()
@@ -109,7 +109,7 @@ func doTest(t *testing.T, test testDef) {
 }
 
 func TestConnManagerStartStop(t *testing.T) {
-	doTest(t, testDef{test: func(cm *ConnManager) {}})
+	doTest(t, testDef{test: func(*ConnManager) {}})
 }
 
 func TestConnManagerAcquireRelease(t *testing.T) {
@@ -141,7 +141,7 @@ func TestConnManagerAcquireReleaseMany(t *testing.T) {
 					cm.Release(conn)
 				}
 			},
-			afterStopFunc: func(creator *mockConnCreator, connCount uint) {
+			afterStopFunc: func(_ *mockConnCreator, _ uint) {
 				// Verify that Stop() flushes all connections.
 				for _, conn := range conns {
 					require.True(t, conn.conn.(*mockConn).flushed)
@@ -179,7 +179,7 @@ func TestConnManagerAcquireDiscardAcquire(t *testing.T) {
 			},
 			afterStopFunc: func(creator *mockConnCreator, connCount uint) {
 				// Make sure one more connection is created because we discarded one.
-				require.EqualValues(t, connCount+1, len(creator.conns))
+				require.Len(t, creator.conns, int(connCount+1))
 			},
 		},
 	)
@@ -237,7 +237,7 @@ func TestConnManagerAcquireDiscardConcurrent(t *testing.T) {
 				}
 				wg.Wait()
 			},
-			afterStopFunc: func(creator *mockConnCreator, connCount uint) {
+			afterStopFunc: func(creator *mockConnCreator, _ uint) {
 				// Verify that Stop() did not flush any connections since we used DiscardAndClose().
 				for _, conn := range creator.conns {
 					require.False(t, conn.flushed)

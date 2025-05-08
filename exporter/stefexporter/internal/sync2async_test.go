@@ -16,7 +16,7 @@ import (
 func TestSync2Async(t *testing.T) {
 	logger, _ := zap.NewDevelopment()
 
-	var globalID DataID = 0
+	var globalID DataID
 	jobs := make(
 		chan struct {
 			data       any
@@ -28,7 +28,7 @@ func TestSync2Async(t *testing.T) {
 	var asyncMux sync.Mutex
 
 	async := func(
-		ctx context.Context,
+		_ context.Context,
 		data any,
 		resultChan ResultChan,
 	) (DataID, error) {
@@ -69,6 +69,10 @@ func TestSync2Async(t *testing.T) {
 	var wg sync.WaitGroup
 	const countPerProducer = 100
 	const totalCount = syncProducers * countPerProducer
+
+	expectedErr := false
+	var unexpectedErr error
+
 	for i := 0; i < syncProducers; i++ {
 		wg.Add(1)
 		go func() {
@@ -79,12 +83,14 @@ func TestSync2Async(t *testing.T) {
 				if data%10 == 0 {
 					// Must be an error.
 					if err == nil {
-						require.Error(t, err)
+						expectedErr = true
+						return
 					}
 				} else {
 					// Must not be an error.
 					if err != nil {
-						require.NoError(t, err)
+						unexpectedErr = err
+						return
 					}
 				}
 			}
@@ -92,6 +98,11 @@ func TestSync2Async(t *testing.T) {
 	}
 	wg.Wait()
 	close(jobs)
+
+	if expectedErr {
+		t.Fatal("Expected error but got nil")
+	}
+	require.NoError(t, unexpectedErr)
 
 	require.EqualValues(t, totalCount, globalID)
 }

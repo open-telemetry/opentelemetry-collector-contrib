@@ -318,7 +318,7 @@ func TestStartServerAfterClient(t *testing.T) {
 	}
 
 	set := exportertest.NewNopSettings(metadata.Type)
-	set.TelemetrySettings.Logger = logger
+	set.Logger = logger
 
 	exp := newStefExporter(set.TelemetrySettings, cfg)
 	require.NotNil(t, exp)

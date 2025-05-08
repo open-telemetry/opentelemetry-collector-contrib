@@ -8,13 +8,12 @@ import (
 	"fmt"
 	"sync"
 
-	"go.uber.org/zap"
-	"google.golang.org/grpc"
-
 	stefgrpc "github.com/splunk/stef/go/grpc"
 	"github.com/splunk/stef/go/grpc/stef_proto"
 	"github.com/splunk/stef/go/otel/oteltef"
 	"github.com/splunk/stef/go/pkg"
+	"go.uber.org/zap"
+	"google.golang.org/grpc"
 )
 
 // StefConnCreator implements ConnCreator interface for STEF/gRPC connections.
@@ -146,10 +145,10 @@ func (s *StefConn) OnAck(ackID uint64, ackCh chan<- AsyncResult) {
 func (s *StefConn) onGrpcAck(ackID uint64) error {
 	s.mux.Lock()
 	// Notify all pending acks that have ackID smaller or equal to the received ackID.
-	for pendingAckId, ch := range s.pendingAcks {
-		if uint64(pendingAckId) <= ackID {
-			delete(s.pendingAcks, pendingAckId)
-			ch <- AsyncResult{DataID: pendingAckId}
+	for pendingAckID, ch := range s.pendingAcks {
+		if uint64(pendingAckID) <= ackID {
+			delete(s.pendingAcks, pendingAckID)
+			ch <- AsyncResult{DataID: pendingAckID}
 		}
 	}
 	s.mux.Unlock()
@@ -157,14 +156,14 @@ func (s *StefConn) onGrpcAck(ackID uint64) error {
 }
 
 // Close the connection.
-func (c *StefConn) Close(ctx context.Context) error {
-	c.cancel()
-	return c.client.Disconnect(ctx)
+func (s *StefConn) Close(ctx context.Context) error {
+	s.cancel()
+	return s.client.Disconnect(ctx)
 }
 
 // Flush any pending data over the connection.
-func (c *StefConn) Flush() error {
-	return c.writer.Flush()
+func (s *StefConn) Flush() error {
+	return s.writer.Flush()
 }
 
 type loggerWrapper struct {
