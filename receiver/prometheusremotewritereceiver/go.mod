@@ -10,16 +10,17 @@ require (
 	github.com/open-telemetry/opentelemetry-collector-contrib/pkg/pdatatest v0.125.0
 	github.com/prometheus/prometheus v0.300.1
 	github.com/stretchr/testify v1.10.0
-	go.opentelemetry.io/collector/component v1.31.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/consumer v1.31.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/receiver v1.31.1-0.20250508034258-ac520a5c14cc
-	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/component v1.31.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/config/confighttp v0.125.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/consumer v1.31.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
+	go.opentelemetry.io/collector/receiver v1.31.1-0.20250501194116-727ae96d6214
+	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.0
+	go.opentelemetry.io/collector/receiver/receivertest v0.125.1-0.20250501194116-727ae96d6214
 	go.uber.org/goleak v1.3.0
 	go.uber.org/zap v1.27.0
 )
@@ -43,7 +44,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/go-viper/mapstructure/v2 v2.2.1 // indirect
-	github.com/gobwas/glob v0.2.3 // indirect
 	github.com/golang-jwt/jwt/v5 v5.2.2 // indirect
 	github.com/golang/groupcache v0.0.0-20210331224755-41bb18bfe9da // indirect
 	github.com/google/go-tpm v0.9.4 // indirect
