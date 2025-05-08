@@ -349,9 +349,8 @@ func (prw *prometheusRemoteWriteReceiver) translateV2(_ context.Context, req *wr
 		case writev2.Metadata_METRIC_TYPE_COUNTER:
 			addNumberDatapoints(metric.Sum().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_HISTOGRAM:
-			// Native histograms are converted to exponential histograms
-			// More: https://opentelemetry.io/blog/2023/exponential-histograms/#opentelemetry-and-prometheus
-			addHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
+			// TODO: Validate if we need to deal with classic and native histograms here. Reference: https://github.com/open-telemetry/opentelemetry-collector-contrib/pull/39864#discussion_r2077232035
+			addExponentialHistogramDatapoints(metric.ExponentialHistogram().DataPoints(), ls, ts)
 		case writev2.Metadata_METRIC_TYPE_SUMMARY:
 			addSummaryDatapoints(metric.Summary().DataPoints(), ls, ts)
 		default:
@@ -398,7 +397,7 @@ func addSummaryDatapoints(_ pmetric.SummaryDataPointSlice, _ labels.Labels, _ wr
 	// TODO: Implement this function
 }
 
-func addHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
+func addExponentialHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlice, ls labels.Labels, ts writev2.TimeSeries) {
 	for _, histogram := range ts.Histograms {
 		dp := datapoints.AppendEmpty()
 		dp.SetStartTimestamp(pcommon.Timestamp(ts.CreatedTimestamp * int64(time.Millisecond)))
@@ -409,6 +408,8 @@ func addHistogramDatapoints(datapoints pmetric.ExponentialHistogramDataPointSlic
 		// OTEL exponential histograms reference https://opentelemetry.io/docs/specs/otel/compatibility/prometheus_and_openmetrics/#exponential-histograms
 		// - Positive and Negative Buckets
 		// - Positive and Negative Spans
+		// - Scale
+		// - Exemplars
 
 		switch v := histogram.GetCount().(type) {
 		case *writev2.Histogram_CountInt:
