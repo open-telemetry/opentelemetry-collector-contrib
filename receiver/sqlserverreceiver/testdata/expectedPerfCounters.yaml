@@ -39,7 +39,7 @@ resourceMetrics:
           - description: Number of execution errors.
             gauge:
               dataPoints:
-                - asInt: 1048
+                - asInt: 18256656
                   startTimeUnixNano: "1000000"
                   timeUnixNano: "2000000"
             name: sqlserver.database.execution.errors
@@ -900,7 +900,7 @@ resourceMetrics:
             sum:
               aggregationTemporality: 2
               dataPoints:
-                - asInt: 61824
+                - asInt: 18256656
                   attributes:
                     - key: tempdb.state
                       value:
