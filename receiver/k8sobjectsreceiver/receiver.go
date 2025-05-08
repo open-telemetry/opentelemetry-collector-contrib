@@ -130,16 +130,16 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 			return fmt.Errorf("unknown k8s leader elector %q", kr.config.K8sLeaderElector)
 		}
 
-		kr.setting.Logger.Debug("trying to become the leader")
+		kr.setting.Logger.Info("trying to become the leader")
 		elector, ok := k8sLeaderElector.(k8sleaderelector.LeaderElection)
 		if !ok {
 			return fmt.Errorf("the extension %T is not implement k8sleaderelector.LeaderElection", k8sLeaderElector)
 		}
 
 		elector.SetCallBackFuncs(
-			func(_ context.Context) {
+			func(ctx context.Context) {
 				for _, object := range validConfigs {
-					kr.start(cctx, object)
+					kr.start(ctx, object)
 				}
 				kr.setting.Logger.Info("Object Receiver started as leader")
 			},
@@ -150,15 +150,12 @@ func (kr *k8sobjectsreceiver) Start(ctx context.Context, host component.Host) er
 					kr.setting.Logger.Error("shutdown receiver error:", zap.Error(err))
 				}
 			})
-
-		return nil
+	} else {
+		for _, object := range validConfigs {
+			kr.start(cctx, object)
+		}
 	}
 
-	for _, object := range validConfigs {
-		kr.start(cctx, object)
-	}
-
-	kr.setting.Logger.Info("Object Receiver started")
 	return nil
 }
 
