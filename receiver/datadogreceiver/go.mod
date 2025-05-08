@@ -9,6 +9,7 @@ require (
 	github.com/DataDog/datadog-agent/pkg/trace v0.64.3
 	github.com/DataDog/datadog-api-client-go/v2 v2.37.1
 	github.com/DataDog/sketches-go v1.4.7
+	github.com/hashicorp/golang-lru/v2 v2.0.7
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/exp/metrics v0.125.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/sharedcomponent v0.125.0
@@ -23,6 +24,7 @@ require (
 	go.opentelemetry.io/collector/consumer v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250505155216-829157cef7bb
 	go.opentelemetry.io/collector/consumer/consumertest v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/receiver v1.31.1-0.20250505152726-56c7da210783
 	go.opentelemetry.io/collector/receiver/receiverhelper v0.125.1-0.20250505155216-829157cef7bb
@@ -101,7 +103,6 @@ require (
 	go.opentelemetry.io/collector/consumer/xconsumer v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/extension/extensionauth v1.31.1-0.20250505152726-56c7da210783 // indirect
 	go.opentelemetry.io/collector/extension/extensionmiddleware v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783 // indirect
 	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/pdata/pprofile v0.125.1-0.20250505155216-829157cef7bb // indirect
 	go.opentelemetry.io/collector/pipeline v0.125.1-0.20250505155216-829157cef7bb // indirect

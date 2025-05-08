@@ -126,6 +126,7 @@ processors:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/logdedupprocessor v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricsgenerationprocessor v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstarttimeprocessor v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/metricstransformprocessor v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/probabilisticsamplerprocessor v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/processor/redactionprocessor v0.125.0
@@ -168,6 +169,7 @@ receivers:
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/elasticsearchreceiver v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/envoyalsreceiver v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/expvarreceiver v0.125.0
+  - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/faroreceiver v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filelogreceiver v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/filestatsreceiver v0.125.0
   - gomod: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/flinkmetricsreceiver v0.125.0
