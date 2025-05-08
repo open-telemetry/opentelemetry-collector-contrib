@@ -60,7 +60,7 @@ func run(c *Config, expF exporterFunc, logger *zap.Logger) error {
 	wg := sync.WaitGroup{}
 	res := resource.NewWithAttributes(semconv.SchemaURL, c.GetAttributes()...)
 
-	tb := newTimeBox(c.EnforceUniqueTimeseries)
+	tb := newTimeBox(c.EnforceUniqueTimeseries, c.UniqueTimelimit)
 	defer tb.shutdown()
 
 	running := &atomic.Bool{}

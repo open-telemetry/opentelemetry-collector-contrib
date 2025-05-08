@@ -5,6 +5,7 @@ package metrics
 
 import (
 	"errors"
+	"time"
 
 	"github.com/spf13/pflag"
 	"go.opentelemetry.io/otel/sdk/metric/metricdata"
@@ -19,9 +20,10 @@ type Config struct {
 	MetricName              string
 	MetricType              MetricType
 	AggregationTemporality  AggregationTemporality
-	EnforceUniqueTimeseries bool
 	SpanID                  string
 	TraceID                 string
+	EnforceUniqueTimeseries bool
+	UniqueTimelimit         time.Duration
 }
 
 // NewConfig creates a new Config with default values.
@@ -44,7 +46,8 @@ func (c *Config) Flags(fs *pflag.FlagSet) {
 
 	fs.Var(&c.MetricType, "metric-type", "Metric type enum. must be one of 'Gauge' or 'Sum'")
 	fs.Var(&c.AggregationTemporality, "aggregation-temporality", "aggregation-temporality for metrics. Must be one of 'delta' or 'cumulative'")
-	fs.BoolVar(&c.EnforceUniqueTimeseries, "enforce-unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within a second, performance impacting")
+	fs.BoolVar(&c.EnforceUniqueTimeseries, "enforce-unique-timeseries", c.EnforceUniqueTimeseries, "Enforce unique timeseries within unique-timeseries-timelimit, performance impacting")
+	fs.DurationVar(&c.UniqueTimelimit, "unique-timeseries-timelimit", c.UniqueTimelimit, "Time limit for unique timeseries generation")
 }
 
 // SetDefaults sets the default values for the configuration
@@ -62,6 +65,7 @@ func (c *Config) SetDefaults() {
 	c.AggregationTemporality = AggregationTemporality(metricdata.CumulativeTemporality)
 
 	c.EnforceUniqueTimeseries = false
+	c.UniqueTimelimit = time.Second
 
 	c.TraceID = ""
 	c.SpanID = ""

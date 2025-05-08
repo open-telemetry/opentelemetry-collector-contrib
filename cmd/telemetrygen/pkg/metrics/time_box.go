@@ -31,7 +31,7 @@ type timeBox struct {
 
 const timeBoxAttributeName = "timebox"
 
-func newTimeBox(enforceUnique bool) *timeBox {
+func newTimeBox(enforceUnique bool, uniqueTimeLimit time.Duration) *timeBox {
 	tb := &timeBox{
 		offset:        0,
 		enforceUnique: enforceUnique,
@@ -39,7 +39,7 @@ func newTimeBox(enforceUnique bool) *timeBox {
 		stop:          make(chan struct{}),
 	}
 
-	go tb.resetTimerLoop(time.NewTimer(time.Second))
+	go tb.resetTimerLoop(time.NewTimer(uniqueTimeLimit))
 	return tb
 }
 
