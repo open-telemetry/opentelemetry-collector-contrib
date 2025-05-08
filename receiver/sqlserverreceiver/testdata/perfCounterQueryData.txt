@@ -28,7 +28,7 @@
       "object":"SQLServer:Access Methods",
       "sql_instance":"8cac97ac9b8f",
       "computer_name":"abcde",
-      "value":"1048"
+      "value":"1.8256656e+07"
    },
    {
       "counter":"Index Searches/sec",
@@ -2708,7 +2708,7 @@
       "object":"SQLServer:Transactions",
       "sql_instance":"8cac97ac9b8f",
       "computer_name":"abcde",
-      "value":"61824"
+      "value":"1.8256656e+07"
    },
    {
       "counter":"Version Store Size (KB)",
