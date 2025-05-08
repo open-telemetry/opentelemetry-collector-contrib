@@ -1,5 +1,0 @@
-change_type: enhancement
-component: redisreceiver
-note: "Add metrics that are present in telegraf"
-issues:
-  - 39859
