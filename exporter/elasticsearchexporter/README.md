@@ -7,6 +7,7 @@
 |               | [beta]: traces, logs   |
 | Distributions | [contrib] |
 | Issues        | [![Open issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aopen%20label%3Aexporter%2Felasticsearch%20&label=open&color=orange&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aopen+is%3Aissue+label%3Aexporter%2Felasticsearch) [![Closed issues](https://img.shields.io/github/issues-search/open-telemetry/opentelemetry-collector-contrib?query=is%3Aissue%20is%3Aclosed%20label%3Aexporter%2Felasticsearch%20&label=closed&color=blue&logo=opentelemetry)](https://github.com/open-telemetry/opentelemetry-collector-contrib/issues?q=is%3Aclosed+is%3Aissue+label%3Aexporter%2Felasticsearch) |
+| Code coverage | [![codecov](https://codecov.io/github/open-telemetry/opentelemetry-collector-contrib/graph/main/badge.svg?component=exporter_elasticsearch)](https://app.codecov.io/gh/open-telemetry/opentelemetry-collector-contrib/tree/main/?components%5B0%5D=exporter_elasticsearch&displayType=list) |
 | [Code Owners](https://github.com/open-telemetry/opentelemetry-collector-contrib/blob/main/CONTRIBUTING.md#becoming-a-code-owner)    | [@JaredTan95](https://www.github.com/JaredTan95), [@carsonip](https://www.github.com/carsonip), [@lahsivjar](https://www.github.com/lahsivjar) |
 
 [development]: https://github.com/open-telemetry/opentelemetry-collector/blob/main/docs/component-stability.md#development
@@ -189,8 +190,12 @@ The mapping mode can also be controlled via the client metadata key `X-Elastic-M
 e.g. via HTTP headers, gRPC metadata. This will override the configured `mapping::mode`.
 It is possible to restrict which mapping modes may be requested by configuring
 `mapping::allowed_modes`, which defaults to all mapping modes. Keep in mind that not all
-processors or exporter configurations will maintain client
-metadata.
+processors or exporter configurations will maintain client metadata.
+
+Finally, the mapping mode can be controlled via the scope attribute `elastic.mapping.mode`.
+If specified, this takes precedence over the `X-Elastic-Mapping-Mode` client metadata.
+If any scope has an invalid mapping mode, the exporter will reject the entire batch.
+The attribute will be excluded from the final document.
 
 See below for a description of each mapping mode.
 
@@ -315,6 +320,16 @@ The behaviour of this bulk indexing can be configured with the following setting
 
 > [!NOTE]
 > The `flush::interval` config will be ignored when `batcher::enabled` config is explicitly set to `true` or `false`.
+
+#### Bulk indexing error response
+
+With Elasticsearch 8.18+, a new [query parameter `include_source_on_error`](https://www.elastic.co/docs/api/doc/elasticsearch/operation/operation-bulk#operation-bulk-include_source_on_error) is supported.
+This configuration allows users to receive the source document in the error response, if there were any parsing errors in the bulk request.
+
+In this exporter, the equivalent configuration is also named `include_source_on_error`. The valid values are:
+- `true`: Enables bulk index responses to include source document on error. Requires Elasticsearch 8.18+. WARNING: the exporter may log error responses containing request payload, causing potential sensitive data to be exposed in logs.
+- `false`: Disables including source document on bulk index error responses.  Requires Elasticsearch 8.18+.
+- `null` (default): Backward-compatible option for older Elasticsearch versions. By default, the error reason is discarded from bulk index responses entirely, i.e. only error type is returned.
 
 ### Elasticsearch node discovery
 
@@ -513,8 +528,11 @@ The dimensions are mostly made up of resource attributes, scope attributes, scop
 
 The exporter can only group metrics with the same dimensions into the same document if they arrive in the same batch.
 To ensure metrics are not dropped even if they arrive in different batches in the exporter, the exporter adds a fingerprint of the metric names to the document in the `otel` mapping mode.
-Note that you'll need to be on a minimum version of Elasticsearch in order for this to take effect 8.16.5, 8.17.3, 8.19.0, 9.0.0.
-If you are on an earlier version, either update your Elasticsearch cluster or install this custom component template:
+Note that this functionality requires both
+- minimum Elasticsearch Exporter version 0.121.0
+- minimum Elasticsearch version 8.17.6, 8.18.1, 8.19.0, 9.0.1, or 9.1.0
+
+If you are on an earlier version of Elasticsearch, either update your cluster or install this custom component template:
 
 ```shell
 PUT _component_template/metrics-otel@custom
@@ -531,6 +549,8 @@ PUT _component_template/metrics-otel@custom
   }
 }
 ```
+
+After installing this component template, if you've previously ingested data, you'll need to wait until the old index of the time series data stream reaches its `end_time`. This can take up to 30 minutes by default. See [time series index look-ahead time](https://www.elastic.co/docs/reference/elasticsearch/index-settings/time-series) for more information.
 
 While in most situations, this error is just a sign that Elasticsearch's duplicate detection is working as intended, the data may be classified as a duplicate while it was not.
 This implies data is lost.

@@ -49,10 +49,9 @@ type Config struct {
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
 // adding support to structured and flat configuration styles.
-// When the flat configuration style is used, each statement becomes a new common.ContextStatements
+// When the flat configuration style is used, all statements are grouped into a common.ContextStatements
 // object, with empty [common.ContextStatements.Context] value.
 // On the other hand, structured configurations are parsed following the mapstructure Config format.
-// Mixed configuration styles are also supported.
 //
 // Example of flat configuration:
 //

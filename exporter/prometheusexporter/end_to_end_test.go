@@ -21,7 +21,7 @@ import (
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	"gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v3"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/prometheusexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/receiver/prometheusreceiver"
@@ -144,7 +144,7 @@ func TestEndToEndSummarySupport(t *testing.T) {
 		`test_up.instance="127.0.0.1:.*",job="otel-collector". 1 .*`,
 		`. HELP test_target_info Target metadata`,
 		`. TYPE test_target_info gauge`,
-		`test_target_info.http_scheme=\"http\",instance="127.0.0.1:.*",job="otel-collector",net_host_port=".*,server_port=".*",url_scheme="http". 1`,
+		`test_target_info.instance="127.0.0.1:.*",job="otel-collector",server_port=".*",url_scheme="http". 1`,
 	}
 
 	// 5.5: Perform a complete line by line prefix verification to ensure we extract back the inputs

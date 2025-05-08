@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlprofile"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
@@ -42,12 +43,13 @@ type Config struct {
 	Spans      []MetricInfo `mapstructure:"spans"`
 	Datapoints []MetricInfo `mapstructure:"datapoints"`
 	Logs       []MetricInfo `mapstructure:"logs"`
+	Profiles   []MetricInfo `mapstructure:"profiles"`
 	// prevent unkeyed literal initialization
 	_ struct{}
 }
 
 func (c *Config) Validate() error {
-	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 {
+	if len(c.Spans) == 0 && len(c.Datapoints) == 0 && len(c.Logs) == 0 && len(c.Profiles) == 0 {
 		return errors.New("no configuration provided, at least one should be specified")
 	}
 	var multiError error // collect all errors at once
@@ -93,6 +95,20 @@ func (c *Config) Validate() error {
 			}
 		}
 	}
+	if len(c.Profiles) > 0 {
+		parser, err := ottlprofile.NewParser(
+			customottl.ProfileFuncs(),
+			component.TelemetrySettings{Logger: zap.NewNop()},
+		)
+		if err != nil {
+			return fmt.Errorf("failed to create parser for OTTL profiles: %w", err)
+		}
+		for _, profile := range c.Profiles {
+			if err := validateMetricInfo(profile, parser); err != nil {
+				multiError = errors.Join(multiError, fmt.Errorf("failed to validate profiles configuration: %w", err))
+			}
+		}
+	}
 	return multiError
 }
 
@@ -117,6 +133,10 @@ func (c *Config) Unmarshal(collectorCfg *confmap.Conf) error {
 	for i, info := range c.Logs {
 		info.ensureDefaults()
 		c.Logs[i] = info
+	}
+	for i, info := range c.Profiles {
+		info.ensureDefaults()
+		c.Profiles[i] = info
 	}
 	return nil
 }
