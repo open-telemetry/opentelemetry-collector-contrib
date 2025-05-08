@@ -349,7 +349,6 @@ func (prweWAL *prweWAL) persistToWAL(requests []*prompb.WriteRequest) error {
 	prweWAL.mu.Lock()
 	defer prweWAL.mu.Unlock()
 
-	prweWAL.telemetry.recordWALWrites(context.Background())
 	// Write all the requests to the WAL in a batch.
 	batch := new(wal.Batch)
 	for _, req := range requests {
