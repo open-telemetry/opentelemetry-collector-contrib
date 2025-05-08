@@ -1,0 +1,7 @@
+type: codecovgen
+
+status:
+  disable_codecov_badge: true
+  class: cmd
+  codeowners:
+    active: [mx-psi]

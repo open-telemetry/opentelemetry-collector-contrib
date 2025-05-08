@@ -1,6 +1,8 @@
+cmd/codecovgen
 pkg/pdatautil
 pkg/golden
 pkg/pdatatest
+cmd/golden
 internal/coreinternal
 pkg/ottl
 connector/routingconnector
@@ -48,6 +50,7 @@ cmd/opampsupervisor
 cmd/telemetrygen
 cmd/telemetrygen/internal/e2etest
 confmap/provider/aesprovider
+confmap/provider/googlesecretmanagerprovider
 confmap/provider/s3provider
 confmap/provider/secretsmanagerprovider
 internal/filter

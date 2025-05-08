@@ -10,44 +10,45 @@ import (
 	"testing"
 	"time"
 
-	awsmock "github.com/aws/aws-sdk-go/awstesting/mock"
-	"github.com/aws/aws-sdk-go/service/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/service/xray"
 	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/mock"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zaptest/observer"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 )
 
-type mockClient struct {
-	mock.Mock
-	count *atomic.Int64
+type mockXRayClient struct {
+	putTraceSegments    func(ctx context.Context, params *xray.PutTraceSegmentsInput, optFns ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error)
+	putTelemetryRecords func(ctx context.Context, params *xray.PutTelemetryRecordsInput, optFns ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error)
 }
 
-func (m *mockClient) PutTraceSegments(input *xray.PutTraceSegmentsInput) (*xray.PutTraceSegmentsOutput, error) {
-	args := m.Called(input)
-	return args.Get(0).(*xray.PutTraceSegmentsOutput), args.Error(1)
+func (m mockXRayClient) PutTraceSegments(ctx context.Context, params *xray.PutTraceSegmentsInput, optFns ...func(*xray.Options)) (*xray.PutTraceSegmentsOutput, error) {
+	return m.putTraceSegments(ctx, params, optFns...)
 }
 
-func (m *mockClient) PutTelemetryRecords(input *xray.PutTelemetryRecordsInput) (*xray.PutTelemetryRecordsOutput, error) {
-	args := m.Called(input)
-	m.count.Add(1)
-	if args.Get(0) == nil {
-		return nil, args.Error(1)
-	}
-	return args.Get(0).(*xray.PutTelemetryRecordsOutput), args.Error(1)
+func (m mockXRayClient) PutTelemetryRecords(ctx context.Context, params *xray.PutTelemetryRecordsInput, optFns ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error) {
+	return m.putTelemetryRecords(ctx, params, optFns...)
 }
 
 func TestRotateRace(t *testing.T) {
-	client := &mockClient{count: &atomic.Int64{}}
-	client.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
-	client.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("error"))
+	var count atomic.Int64
+	count.Store(0)
+	client := &mockXRayClient{
+		putTelemetryRecords: func(_ context.Context, _ *xray.PutTelemetryRecordsInput, _ ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error) {
+			count.Add(1)
+			if count.Load() >= 2 {
+				return nil, errors.New("error")
+			}
+			return nil, nil
+		},
+	}
 	sender := newSender(client, WithInterval(100*time.Millisecond))
-	sender.Start()
-	defer sender.Stop()
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
+	sender.Start(ctx)
+	defer sender.Stop()
 	go func() {
 		ticker := time.NewTicker(time.Millisecond)
 		for {
@@ -62,44 +63,52 @@ func TestRotateRace(t *testing.T) {
 		}
 	}()
 	assert.Eventually(t, func() bool {
-		return client.count.Load() >= 2
+		return count.Load() >= 1
 	}, time.Second, 5*time.Millisecond)
 }
 
 func TestIncludeMetadata(t *testing.T) {
 	cfg := Config{IncludeMetadata: false}
-	sess := awsmock.Session
+	awsConfig := aws.Config{}
 	set := &awsutil.AWSSessionSettings{ResourceARN: "session_arn"}
-	opts := ToOptions(cfg, sess, set)
+	opts := ToOptions(context.Background(), cfg, awsConfig, set)
 	assert.Empty(t, opts)
 	cfg.IncludeMetadata = true
-	opts = ToOptions(cfg, sess, set)
-	sender := newSender(&mockClient{}, opts...)
+	opts = ToOptions(context.Background(), cfg, awsConfig, set)
+	sender := newSender(&mockXRayClient{}, opts...)
 	assert.Empty(t, sender.hostname)
 	assert.Empty(t, sender.instanceID)
 	assert.Equal(t, "session_arn", sender.resourceARN)
 	t.Setenv(envAWSHostname, "env_hostname")
 	t.Setenv(envAWSInstanceID, "env_instance_id")
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	sender = newSender(&mockClient{}, opts...)
+	opts = ToOptions(context.Background(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
+	sender = newSender(&mockXRayClient{}, opts...)
 	assert.Equal(t, "env_hostname", sender.hostname)
 	assert.Equal(t, "env_instance_id", sender.instanceID)
 	assert.Empty(t, sender.resourceARN)
 	cfg.Hostname = "cfg_hostname"
 	cfg.InstanceID = "cfg_instance_id"
 	cfg.ResourceARN = "cfg_arn"
-	opts = ToOptions(cfg, sess, &awsutil.AWSSessionSettings{})
-	sender = newSender(&mockClient{}, opts...)
+	opts = ToOptions(context.Background(), cfg, awsConfig, &awsutil.AWSSessionSettings{})
+	sender = newSender(&mockXRayClient{}, opts...)
 	assert.Equal(t, "cfg_hostname", sender.hostname)
 	assert.Equal(t, "cfg_instance_id", sender.instanceID)
 	assert.Equal(t, "cfg_arn", sender.resourceARN)
 }
 
 func TestQueueOverflow(t *testing.T) {
+	var count atomic.Int64
+	count.Store(0)
 	obs, logs := observer.New(zap.DebugLevel)
-	client := &mockClient{count: &atomic.Int64{}}
-	client.On("PutTelemetryRecords", mock.Anything).Return(nil, nil).Once()
-	client.On("PutTelemetryRecords", mock.Anything).Return(nil, errors.New("test"))
+	client := &mockXRayClient{
+		putTelemetryRecords: func(_ context.Context, _ *xray.PutTelemetryRecordsInput, _ ...func(*xray.Options)) (*xray.PutTelemetryRecordsOutput, error) {
+			count.Add(1)
+			if count.Load() >= 2 {
+				return nil, errors.New("error")
+			}
+			return nil, nil
+		},
+	}
 	sender := newSender(
 		client,
 		WithLogger(zap.New(obs)),
@@ -114,12 +123,12 @@ func TestQueueOverflow(t *testing.T) {
 	// number of dropped records
 	assert.Equal(t, 5, logs.Len())
 	assert.Len(t, sender.queue, 20)
-	sender.send()
+	sender.send(context.Background())
 	// only one batch succeeded
 	assert.Len(t, sender.queue, 15)
 	// verify that sent back of queue
 	for _, record := range sender.queue {
-		assert.Greater(t, *record.SegmentsSentCount, int64(5))
-		assert.LessOrEqual(t, *record.SegmentsSentCount, int64(20))
+		assert.Greater(t, *record.SegmentsSentCount, int32(5))
+		assert.LessOrEqual(t, *record.SegmentsSentCount, int32(20))
 	}
 }

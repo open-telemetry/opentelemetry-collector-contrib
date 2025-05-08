@@ -137,6 +137,27 @@ resourceMetrics:
                   timeUnixNano: "2000000"
             name: splunk.data.indexes.extended.total.size
             unit: By
+          - description: The status of a rolling restart.
+            gauge:
+              dataPoints:
+                - asInt: "0"
+                  attributes:
+                    - key: splunk.rollingorrestart
+                      value:
+                        boolValue: false
+                    - key: splunk.searchable.restart
+                      value:
+                        boolValue: false
+                    - key: splunk.splunkd.build
+                      value:
+                        stringValue: ""
+                    - key: splunk.splunkd.version
+                      value:
+                        stringValue: ""
+                  startTimeUnixNano: "1000000"
+                  timeUnixNano: "2000000"
+            name: splunk.indexer.rollingrestart.status
+            unit: '{status}'
           - description: Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
             gauge:
               dataPoints:
