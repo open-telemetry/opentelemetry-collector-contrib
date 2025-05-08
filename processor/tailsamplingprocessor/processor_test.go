@@ -669,6 +669,39 @@ func TestDecisionPolicyMetrics(t *testing.T) {
 	assert.EqualValues(t, 0, metrics.evaluateErrorCount)
 }
 
+func TestDropPolicyIsFirstInPolicyList(t *testing.T) {
+	idb := newSyncIDBatcher()
+	msp := new(consumertest.TracesSink)
+
+	cfg := Config{
+		DecisionWait: defaultTestDecisionWait,
+		NumTraces:    defaultNumTraces,
+		PolicyCfgs: []PolicyCfg{
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "regular-policy",
+					Type: AlwaysSample,
+				},
+			},
+			{
+				sharedPolicyCfg: sharedPolicyCfg{
+					Name: "drop-policy",
+					Type: Drop,
+				},
+			},
+		},
+		Options: []Option{
+			withDecisionBatcher(idb),
+		},
+	}
+	p, err := newTracesProcessor(context.Background(), processortest.NewNopSettings(metadata.Type), msp, cfg)
+	require.NoError(t, err)
+
+	tsp := p.(*tailSamplingSpanProcessor)
+	require.GreaterOrEqual(t, len(tsp.policies), 2)
+	assert.Equal(t, "drop-policy", tsp.policies[0].name)
+}
+
 func collectSpanIDs(trace ptrace.Traces) []pcommon.SpanID {
 	var spanIDs []pcommon.SpanID
 
