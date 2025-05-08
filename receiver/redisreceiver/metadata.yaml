@@ -109,6 +109,13 @@ metrics:
     gauge:
       value_type: int
 
+  redis.cluster.cluster_enabled:
+    enabled: false
+    description: "Indicate Redis cluster is enabled"
+    unit: "1"
+    gauge:
+      value_type: int
+
   redis.cluster.known_nodes:
     enabled: false
     description: "Number of known nodes in the cluster"

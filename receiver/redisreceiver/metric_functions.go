@@ -16,6 +16,7 @@ func (rs *redisScraper) dataPointRecorders() map[string]any {
 		"blocked_clients":                   rs.mb.RecordRedisClientsBlockedDataPoint,
 		"client_recent_max_input_buffer":    rs.mb.RecordRedisClientsMaxInputBufferDataPoint,
 		"client_recent_max_output_buffer":   rs.mb.RecordRedisClientsMaxOutputBufferDataPoint,
+		"cluster_enabled":                   rs.mb.RecordRedisClusterClusterEnabledDataPoint,
 		"connected_clients":                 rs.mb.RecordRedisClientsConnectedDataPoint,
 		"connected_slaves":                  rs.mb.RecordRedisSlavesConnectedDataPoint,
 		"evicted_keys":                      rs.mb.RecordRedisKeysEvictedDataPoint,

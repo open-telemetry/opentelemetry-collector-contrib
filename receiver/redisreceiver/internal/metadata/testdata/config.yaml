@@ -9,6 +9,8 @@ all_set:
       enabled: true
     redis.clients.max_output_buffer:
       enabled: true
+    redis.cluster.cluster_enabled:
+      enabled: true
     redis.cluster.known_nodes:
       enabled: true
     redis.cluster.links_buffer_limit_exceeded.count:
@@ -117,6 +119,8 @@ none_set:
     redis.clients.max_input_buffer:
       enabled: false
     redis.clients.max_output_buffer:
+      enabled: false
+    redis.cluster.cluster_enabled:
       enabled: false
     redis.cluster.known_nodes:
       enabled: false
