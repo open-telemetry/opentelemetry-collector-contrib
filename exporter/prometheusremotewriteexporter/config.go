@@ -122,5 +122,14 @@ func (cfg *Config) Validate() error {
 		return errors.New("compression type must be snappy")
 	}
 
-	return cfg.RemoteWriteProtoMsg.Validate()
+	err := cfg.RemoteWriteProtoMsg.Validate()
+	if err != nil {
+		return err
+	}
+
+	if !enableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
+		return errors.New("remote write v2 is not supported, please enable the feature gate")
+	}
+
+	return nil
 }
