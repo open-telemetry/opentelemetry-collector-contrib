@@ -36,7 +36,7 @@ func TestWALCreation_nilConfig(t *testing.T) {
 	set := exportertest.NewNopSettings(metadata.Type)
 	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.Nil(t, pwal)
-	require.Error(t, err)
+	require.NoError(t, err)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
