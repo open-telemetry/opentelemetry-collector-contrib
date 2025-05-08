@@ -128,7 +128,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if !enableSendingRW2FeatureGate.IsEnabled() && cfg.RemoteWriteProtoMsg == config.RemoteWriteProtoMsgV2 {
-		return errors.New("remote write v2 is not supported, please enable the feature gate")
+		return fmt.Errorf("remote write v2 is only supported with the feature gate %s", enableSendingRW2FeatureGate.ID())
 	}
 
 	return nil
