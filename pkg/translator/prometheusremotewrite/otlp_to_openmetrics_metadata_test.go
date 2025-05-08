@@ -225,7 +225,7 @@ func TestOtelMetricsToMetadata(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			metaData := OtelMetricsToMetadata(tt.metrics, false)
+			metaData := OtelMetricsToMetadata(tt.metrics, false, "")
 
 			for i := 0; i < len(metaData); i++ {
 				assert.Equal(t, tt.want[i].Type, metaData[i].Type)
