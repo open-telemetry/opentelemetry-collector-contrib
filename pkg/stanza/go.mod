@@ -37,7 +37,6 @@ require (
 	golang.org/x/sys v0.33.0
 	golang.org/x/text v0.25.0
 	gonum.org/v1/gonum v0.16.0
-	gopkg.in/yaml.v2 v2.4.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
