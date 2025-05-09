@@ -209,7 +209,7 @@ func extractRawAttributes(log azureLogRecord) map[string]any {
 	setIf(attrs, azureTenantID, log.TenantID)
 
 	setIf(attrs, string(conventions.CloudRegionKey), log.Location)
-	attrs[string(conventions.CloudProviderKey)] = string(conventions.CloudProviderAzureKey)
+	attrs[string(conventions.CloudProviderKey)] = conventions.CloudProviderAzure.Value.AsString()
 
 	setIf(attrs, string(conventions.NetSockPeerAddrKey), log.CallerIPAddress)
 	return attrs

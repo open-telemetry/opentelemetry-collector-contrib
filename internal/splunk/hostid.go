@@ -22,7 +22,7 @@ const (
 	// HostIDKeyAzure Azure HostIDKey.
 	HostIDKeyAzure HostIDKey = "azure_resource_id"
 	// HostIDKeyHost Host HostIDKey.
-	HostIDKeyHost HostIDKey = string(conventions.HostNameKey)
+	HostIDKeyHost HostIDKey = "host.name"
 )
 
 // HostID is a unique key and value (usually used as a dimension) to uniquely identify a host
@@ -58,7 +58,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 	}
 
 	switch provider {
-	case string(conventions.CloudProviderAWSKey):
+	case conventions.CloudProviderAWS.Value.AsString():
 		var region string
 		if attr, ok := attrs.Get(string(conventions.CloudRegionKey)); ok {
 			region = attr.Str()
@@ -70,7 +70,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 			Key: HostIDKeyAWS,
 			ID:  fmt.Sprintf("%s_%s_%s", hostID, region, cloudAccount),
 		}, true
-	case string(conventions.CloudProviderGCPKey):
+	case conventions.CloudProviderGCP.Value.AsString():
 		if cloudAccount == "" || hostID == "" {
 			break
 		}
@@ -78,7 +78,7 @@ func ResourceToHostID(res pcommon.Resource) (HostID, bool) {
 			Key: HostIDKeyGCP,
 			ID:  fmt.Sprintf("%s_%s", cloudAccount, hostID),
 		}, true
-	case string(conventions.CloudProviderAzureKey):
+	case conventions.CloudProviderAzure.Value.AsString():
 		if cloudAccount == "" {
 			break
 		}

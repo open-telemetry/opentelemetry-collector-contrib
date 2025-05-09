@@ -147,7 +147,7 @@ func (r ResourceLogsUnmarshaler) UnmarshalLogs(buf []byte) (plog.Logs, error) {
 	l := plog.NewLogs()
 	for resourceID, scopeLogs := range allResourceScopeLogs {
 		rl := l.ResourceLogs().AppendEmpty()
-		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAzureKey))
+		rl.Resource().Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 		rl.Resource().Attributes().PutStr(string(conventions.CloudResourceIDKey), resourceID)
 		rl.Resource().Attributes().PutStr(string(conventions.EventNameKey), "az.resource.log")
 		scopeLogs.MoveTo(rl.ScopeLogs().AppendEmpty())

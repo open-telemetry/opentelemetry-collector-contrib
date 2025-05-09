@@ -20,7 +20,7 @@ func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
 	mappings[1] = string(conventions.TelemetrySDKLanguageCPPKey)
 	mappings[2] = string(conventions.TelemetrySDKLanguageDotnetKey)
 	mappings[3] = string(conventions.TelemetrySDKLanguageErlangKey)
-	mappings[4] = string(conventions.TelemetrySDKLanguageGoKey)
+	mappings[4] = conventions.TelemetrySDKLanguageGo.Value.AsString()
 	mappings[5] = string(conventions.TelemetrySDKLanguageJavaKey)
 	mappings[6] = string(conventions.TelemetrySDKLanguageNodejsKey)
 	mappings[7] = string(conventions.TelemetrySDKLanguagePHPKey)

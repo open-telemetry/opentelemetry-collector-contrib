@@ -39,7 +39,7 @@ func appendOnpremVMAttributes(attrMap pcommon.Map) {
 	subMap.PutStr("public", "tc-prod9.internal.example.com")
 	subMap.PutStr("internal", "172.18.36.18")
 	attrMap.PutStr(string(conventions.HostImageIDKey), "661ADFA6-E293-4870-9EFA-1AA052C49F18")
-	attrMap.PutStr(string(conventions.TelemetrySDKLanguageKey), string(conventions.TelemetrySDKLanguageJavaKey))
+	attrMap.PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageJava.Value.AsString())
 	attrMap.PutStr(string(conventions.TelemetrySDKNameKey), "opentelemetry")
 	attrMap.PutStr(string(conventions.TelemetrySDKVersionKey), "0.3.0")
 }
@@ -49,7 +49,7 @@ func appendCloudVMAttributes(attrMap pcommon.Map) {
 	attrMap.PutStr(string(conventions.ServiceNameKey), "customers")
 	attrMap.PutStr(string(conventions.ServiceNamespaceKey), "production")
 	attrMap.PutStr(string(conventions.ServiceVersionKey), "semver:0.7.3")
-	attrMap.PutStr(string(conventions.TelemetrySDKLanguageKey), string(conventions.TelemetrySDKLanguageJavaKey))
+	attrMap.PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageJava.Value.AsString())
 	attrMap.PutStr(string(conventions.TelemetrySDKNameKey), "opentelemetry")
 	attrMap.PutStr(string(conventions.TelemetrySDKVersionKey), "0.3.0")
 	attrMap.PutStr(string(conventions.HostIDKey), "57e8add1f79a454bae9fb1f7756a009a")

@@ -184,7 +184,7 @@ type resourceKey struct {
 // setResourceAttributes sets attributes on a pcommon.Resource from a cwMetric.
 func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 	attributes := resource.Attributes()
-	attributes.PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAWSKey))
+	attributes.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	attributes.PutStr(string(conventions.CloudAccountIDKey), key.accountID)
 	attributes.PutStr(string(conventions.CloudRegionKey), key.region)
 	serviceNamespace, serviceName := toServiceAttributes(key.namespace)
@@ -200,7 +200,7 @@ func setResourceAttributes(key resourceKey, resource pcommon.Resource) {
 // service name with an empty service namespace
 func toServiceAttributes(namespace string) (serviceNamespace, serviceName string) {
 	index := strings.Index(namespace, namespaceDelimiter)
-	if index != -1 && strings.EqualFold(namespace[:index], string(conventions.CloudProviderAWSKey)) {
+	if index != -1 && strings.EqualFold(namespace[:index], conventions.CloudProviderAWS.Value.AsString()) {
 		return namespace[:index], namespace[index+1:]
 	}
 	return "", namespace

@@ -21,7 +21,7 @@ func addAWSToResource(aws *awsxray.AWSData, attrs pcommon.Map) {
 		return
 	}
 
-	attrs.PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAWSKey))
+	attrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	addString(aws.AccountID, string(conventions.CloudAccountIDKey), attrs)
 
 	// based on https://docs.aws.amazon.com/xray/latest/devguide/xray-api-segmentdocuments.html#api-segmentdocuments-aws

@@ -109,7 +109,7 @@ func (f *subscriptionFilterUnmarshaler) createLogs(
 	logs := plog.NewLogs()
 	rl := logs.ResourceLogs().AppendEmpty()
 	resourceAttrs := rl.Resource().Attributes()
-	resourceAttrs.PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAWSKey))
+	resourceAttrs.PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAWS.Value.AsString())
 	resourceAttrs.PutStr(string(conventions.CloudAccountIDKey), cwLog.Owner)
 	resourceAttrs.PutEmptySlice(string(conventions.AWSLogGroupNamesKey)).AppendEmpty().SetStr(cwLog.LogGroup)
 	resourceAttrs.PutEmptySlice(string(conventions.AWSLogStreamNamesKey)).AppendEmpty().SetStr(cwLog.LogStream)

@@ -218,7 +218,7 @@ func appendDatabaseNoSQLAttributes(attrMap pcommon.Map) {
 }
 
 func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSTriggerKey), string(conventions.FaaSTriggerDatasourceKey))
+	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerDatasource.Value.AsString())
 	attrMap.PutStr(string(conventions.FaaSExecutionKey), "DB85AF51-5E13-473D-8454-1E2D59415EAB")
 	attrMap.PutStr(string(conventions.FaaSDocumentCollectionKey), "faa-flight-delay-information-incoming")
 	attrMap.PutStr(string(conventions.FaaSDocumentOperationKey), "insert")
@@ -228,7 +228,7 @@ func appendFaaSDatasourceAttributes(attrMap pcommon.Map) {
 }
 
 func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSTriggerKey), string(conventions.FaaSTriggerHTTPKey))
+	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerHTTP.Value.AsString())
 	attrMap.PutStr(string(conventions.HTTPMethodKey), http.MethodPost)
 	attrMap.PutStr(string(conventions.HTTPSchemeKey), "https")
 	attrMap.PutStr(string(conventions.HTTPHostKey), "api.opentelemetry.io")
@@ -243,7 +243,7 @@ func appendFaaSHTTPAttributes(includeStatus bool, attrMap pcommon.Map) {
 }
 
 func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSTriggerKey), string(conventions.FaaSTriggerPubsubKey))
+	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerPubsub.Value.AsString())
 	attrMap.PutStr(string(conventions.MessagingSystemKey), "sqs")
 	attrMap.PutStr(string(conventions.MessagingDestinationKey), "video-views-au")
 	attrMap.PutStr(string(conventions.MessagingOperationKey), "process")
@@ -251,7 +251,7 @@ func appendFaaSPubSubAttributes(attrMap pcommon.Map) {
 }
 
 func appendFaaSTimerAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSTriggerKey), string(conventions.FaaSTriggerTimerKey))
+	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerTimer.Value.AsString())
 	attrMap.PutStr(string(conventions.FaaSExecutionKey), "73103A4C-E22F-4493-BDE8-EAE5CAB37B50")
 	attrMap.PutStr(string(conventions.FaaSTimeKey), "2020-05-09T20:00:08Z")
 	attrMap.PutStr(string(conventions.FaaSCronKey), "0/15 * * * *")
@@ -259,7 +259,7 @@ func appendFaaSTimerAttributes(attrMap pcommon.Map) {
 }
 
 func appendFaaSOtherAttributes(attrMap pcommon.Map) {
-	attrMap.PutStr(string(conventions.FaaSTriggerKey), string(conventions.FaaSTriggerOtherKey))
+	attrMap.PutStr(string(conventions.FaaSTriggerKey), conventions.FaaSTriggerOther.Value.AsString())
 	attrMap.PutInt("processed.count", 256)
 	attrMap.PutDouble("processed.data", 14.46)
 	attrMap.PutBool("processed.errors", false)

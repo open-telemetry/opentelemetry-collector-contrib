@@ -55,7 +55,7 @@ func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings[string(conventions.TelemetrySDKLanguageCPPKey)] = 1
 	mappings[string(conventions.TelemetrySDKLanguageDotnetKey)] = 2
 	mappings[string(conventions.TelemetrySDKLanguageErlangKey)] = 3
-	mappings[string(conventions.TelemetrySDKLanguageGoKey)] = 4
+	mappings[conventions.TelemetrySDKLanguageGo.Value.AsString()] = 4
 	mappings[string(conventions.TelemetrySDKLanguageJavaKey)] = 5
 	mappings[string(conventions.TelemetrySDKLanguageNodejsKey)] = 6
 	mappings[string(conventions.TelemetrySDKLanguagePHPKey)] = 7

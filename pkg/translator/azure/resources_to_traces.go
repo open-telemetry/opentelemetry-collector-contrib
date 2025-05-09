@@ -80,9 +80,9 @@ func (r TracesUnmarshaler) UnmarshalTraces(buf []byte) (ptrace.Traces, error) {
 	resourceTraces := t.ResourceSpans().AppendEmpty()
 	resource := resourceTraces.Resource()
 	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), scopeName)
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), string(conventions.TelemetrySDKLanguageGoKey))
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
 	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.Version)
-	resource.Attributes().PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAzureKey))
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeSpans := resourceTraces.ScopeSpans().AppendEmpty()
 

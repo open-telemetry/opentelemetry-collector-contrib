@@ -75,9 +75,9 @@ func (r azureResourceMetricsUnmarshaler) UnmarshalMetrics(event *eventhub.Event)
 	resourceMetrics := md.ResourceMetrics().AppendEmpty()
 	resource := resourceMetrics.Resource()
 	resource.Attributes().PutStr(string(conventions.TelemetrySDKNameKey), metadata.ScopeName)
-	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), string(conventions.TelemetrySDKLanguageGoKey))
+	resource.Attributes().PutStr(string(conventions.TelemetrySDKLanguageKey), conventions.TelemetrySDKLanguageGo.Value.AsString())
 	resource.Attributes().PutStr(string(conventions.TelemetrySDKVersionKey), r.buildInfo.Version)
-	resource.Attributes().PutStr(string(conventions.CloudProviderKey), string(conventions.CloudProviderAzureKey))
+	resource.Attributes().PutStr(string(conventions.CloudProviderKey), conventions.CloudProviderAzure.Value.AsString())
 
 	scopeMetrics := resourceMetrics.ScopeMetrics().AppendEmpty()
 
