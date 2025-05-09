@@ -8,7 +8,12 @@ exporters:
   file:
     path: ${OUT_FILE}
 
+extensions:
+  health_check/e2e:
+    endpoint: "localhost:${HEALTHCHECK_PORT}"
+
 service:
+  extensions: [health_check/e2e]
   pipelines:
     logs:
       receivers: [filelog]

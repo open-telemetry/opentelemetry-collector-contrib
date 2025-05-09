@@ -11,6 +11,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"sync/atomic"
 	"time"
 
@@ -72,12 +73,9 @@ func (c *Commander) Start(ctx context.Context) error {
 	}
 	c.logger.Debug("Starting agent", zap.String("agent", c.cfg.Executable))
 
-	if err := c.buildConfigs(); err != nil {
-		return err
-	}
-	c.args = append(c.args, c.cfg.Arguments...)
+	args := slices.Concat(c.args, c.cfg.Arguments)
 
-	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, c.args...) // #nosec G204
+	c.cmd = exec.CommandContext(ctx, c.cfg.Executable, args...) // #nosec G204
 	c.cmd.Env = common.EnvVarMapToEnvMapSlice(c.cfg.Env)
 	c.cmd.SysProcAttr = sysProcAttrs()
 
@@ -86,19 +84,6 @@ func (c *Commander) Start(ctx context.Context) error {
 		return c.startWithPassthroughLogging()
 	}
 	return c.startNormal()
-}
-
-func (c *Commander) buildConfigs() error {
-	for _, conf := range c.cfg.ConfigFiles {
-		fileName := filepath.Base(conf)
-		newPath := filepath.Join(c.logsDir, fileName)
-		if err := common.CopyFile(conf, newPath); err != nil {
-			return fmt.Errorf("cannot copy config file '%s' to storage directory: %s", conf, err.Error())
-		}
-		c.args = append(c.args, "--config")
-		c.args = append(c.args, newPath)
-	}
-	return nil
 }
 
 func (c *Commander) Restart(ctx context.Context) error {

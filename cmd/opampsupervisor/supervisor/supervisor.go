@@ -53,7 +53,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
 var (
@@ -116,8 +115,6 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthChecker *healthchecker.HTTPHealthChecker
-
 	// Supervisor's own config.
 	config config.Supervisor
 
@@ -139,10 +136,6 @@ type Supervisor struct {
 	// config correctly.
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21078
 	agentConfigOwnMetricsSection *atomic.Value
-
-	// agentHealthCheckEndpoint is the endpoint the Collector's health check extension
-	// will listen on for health check requests from the Supervisor.
-	agentHealthCheckEndpoint string
 
 	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
@@ -322,16 +315,6 @@ func (s *Supervisor) Start() error {
 	if err = s.getBootstrapInfo(); err != nil {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
-
-	healthCheckPort := s.config.Agent.HealthCheckPort
-	if healthCheckPort == 0 {
-		healthCheckPort, err = s.findRandomPort()
-		if err != nil {
-			return fmt.Errorf("could not find port for health check: %w", err)
-		}
-	}
-
-	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
 
 	s.telemetrySettings.Logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
@@ -992,7 +975,6 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
 	tplVars := map[string]any{
-		"Healthcheck":        s.agentHealthCheckEndpoint,
 		"ResourceAttributes": resourceAttrs,
 		"SupervisorPort":     s.opampServerPort,
 	}
@@ -1323,7 +1305,6 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	s.agentStartHealthCheckAttempts = 0
 	s.startedAt = time.Now()
 
-	s.healthChecker = healthchecker.NewHTTPHealthChecker(fmt.Sprintf("http://%s", s.agentHealthCheckEndpoint))
 	return agentStarting, nil
 }
 
