@@ -12,7 +12,7 @@ import (
 	"github.com/gogo/protobuf/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
 )
@@ -59,7 +59,7 @@ func logDataToLogService(ld plog.Logs) []*sls.Log {
 func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 	logContents := make([]*sls.LogContent, 3)
 	attrs := resource.Attributes()
-	if hostName, ok := attrs.Get(conventions.AttributeHostName); ok {
+	if hostName, ok := attrs.Get(string(conventions.HostNameKey)); ok {
 		logContents[0] = &sls.LogContent{
 			Key:   proto.String(slsLogHost),
 			Value: proto.String(hostName.AsString()),
@@ -71,7 +71,7 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 		}
 	}
 
-	if serviceName, ok := attrs.Get(conventions.AttributeServiceName); ok {
+	if serviceName, ok := attrs.Get(string(conventions.ServiceNameKey)); ok {
 		logContents[1] = &sls.LogContent{
 			Key:   proto.String(slsLogService),
 			Value: proto.String(serviceName.AsString()),
@@ -85,7 +85,7 @@ func resourceToLogContents(resource pcommon.Resource) []*sls.LogContent {
 
 	fields := map[string]any{}
 	for k, v := range attrs.All() {
-		if k == conventions.AttributeServiceName || k == conventions.AttributeHostName {
+		if k == string(conventions.ServiceNameKey) || k == string(conventions.HostNameKey) {
 			continue
 		}
 		fields[k] = v.AsString()
