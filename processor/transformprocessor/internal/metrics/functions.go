@@ -34,7 +34,7 @@ func DataPointFunctions() map[string]ottl.Factory[ottldatapoint.TransformContext
 	return functions
 }
 
-func MetricFunctions(additionalMetricFuncs []ottl.Factory[ottlmetric.TransformContext]) map[string]ottl.Factory[ottlmetric.TransformContext] {
+func MetricFunctions(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) map[string]ottl.Factory[ottlmetric.TransformContext] {
 	functions := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
 
 	metricFunctions := ottl.CreateFactoryMap(
