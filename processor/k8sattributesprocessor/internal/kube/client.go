@@ -31,11 +31,19 @@ import (
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
 type WatchClient struct {
-	m                             sync.RWMutex
-	deleteMut                     sync.Mutex
-	logger                        *zap.Logger
-	kc                            kubernetes.Interface
-	informer                      cache.SharedInformer
+	m         sync.RWMutex
+	deleteMut sync.Mutex
+	logger    *zap.Logger
+	kc        kubernetes.Interface
+
+	// informer providers
+	podInformerProvider        InformerProvider
+	namespaceInformerProvider  InformerProviderNamespace
+	replicasetInformerProvider InformerProviderReplicaSet
+	nodeInformerProvider       InformerProviderNode
+
+	// informer event handler registrations
+	podInformer                   cache.SharedInformer
 	podHandlerRegistration        cache.ResourceEventHandlerRegistration
 	namespaceInformer             cache.SharedInformer
 	namespaceHandlerRegistration  cache.ResourceEventHandlerRegistration
@@ -43,12 +51,18 @@ type WatchClient struct {
 	nodeHandlerRegistration       cache.ResourceEventHandlerRegistration
 	replicasetInformer            cache.SharedInformer
 	replicasetHandlerRegistration cache.ResourceEventHandlerRegistration
-	replicasetRegex               *regexp.Regexp
-	cronJobRegex                  *regexp.Regexp
-	deleteQueue                   []deleteRequest
-	stopCh                        chan struct{}
-	waitForMetadata               bool
-	waitForMetadataTimeout        time.Duration
+
+	// selectors and filters
+	labelSelector   labels.Selector
+	fieldSelector   fields.Selector
+	replicasetRegex *regexp.Regexp
+	cronJobRegex    *regexp.Regexp
+
+	// internal state
+	deleteQueue            []deleteRequest
+	stopCh                 chan struct{}
+	waitForMetadata        bool
+	waitForMetadataTimeout time.Duration
 
 	// A map containing Pod related data, used to associate them with resources.
 	// Key can be either an IP address or Pod UID
@@ -130,25 +144,20 @@ func New(
 	}
 	c.kc = kc
 
-	labelSelector, fieldSelector, err := selectorsFromFilters(c.Filters)
+	c.labelSelector, c.fieldSelector, err = selectorsFromFilters(c.Filters)
 	if err != nil {
 		return nil, err
 	}
 	set.Logger.Info(
 		"k8s filtering",
-		zap.String("labelSelector", labelSelector.String()),
-		zap.String("fieldSelector", fieldSelector.String()),
+		zap.String("labelSelector", c.labelSelector.String()),
+		zap.String("fieldSelector", c.fieldSelector.String()),
 	)
+
 	if newInformer == nil {
 		newInformer = newSharedInformer
 	}
-
-	// if we return an error, we need to signal any informers we created to stop
-	defer func() {
-		if err != nil {
-			close(c.stopCh)
-		}
-	}()
+	c.podInformerProvider = newInformer
 
 	if newNamespaceInformer == nil {
 		switch {
@@ -164,9 +173,43 @@ func New(
 			newNamespaceInformer = NewNoOpInformer
 		}
 	}
+	c.namespaceInformerProvider = newNamespaceInformer
 
-	c.informer = newInformer(c.kc, c.Filters.Namespace, labelSelector, fieldSelector, c.stopCh)
-	err = c.informer.SetTransform(
+	if rules.DeploymentName || rules.DeploymentUID {
+		if newReplicaSetInformer == nil {
+			newReplicaSetInformer = newReplicaSetSharedInformer
+		}
+		c.replicasetInformerProvider = newReplicaSetInformer
+	}
+
+	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
+		if newNodeInformer == nil {
+			newNodeInformer = newNodeSharedInformer
+		}
+		c.nodeInformerProvider = newNodeInformer
+	}
+
+	return c, err
+}
+
+// Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
+func (c *WatchClient) Start() error {
+	var err error
+	c.m.Lock()
+	defer c.m.Unlock()
+
+	// if we return an error, we need to signal any informers we created to stop
+	defer func() {
+		if err != nil {
+			close(c.stopCh)
+		}
+	}()
+
+	synced := make([]cache.InformerSynced, 0)
+
+	// set up the pod informer
+	c.podInformer = c.podInformerProvider(c.kc, c.Filters.Namespace, c.labelSelector, c.fieldSelector, c.stopCh)
+	err = c.podInformer.SetTransform(
 		func(object any) (any, error) {
 			originalPod, success := object.(*api_v1.Pod)
 			if !success { // means this is a cache.DeletedFinalStateUnknown, in which case we do nothing
@@ -177,16 +220,26 @@ func New(
 		},
 	)
 	if err != nil {
-		return nil, err
+		return err
 	}
 
-	c.namespaceInformer = newNamespaceInformer(c.kc, c.stopCh)
+	// Set up handlers for other informers before the Pod informer, as Pod metadata depends on them.
 
-	if rules.DeploymentName || rules.DeploymentUID {
-		if newReplicaSetInformer == nil {
-			newReplicaSetInformer = newReplicaSetSharedInformer
-		}
-		c.replicasetInformer = newReplicaSetInformer(c.kc, c.Filters.Namespace, c.stopCh)
+	// set up the namespace informer
+	c.namespaceInformer = c.namespaceInformerProvider(c.kc, c.stopCh)
+	c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+		AddFunc:    c.handleNamespaceAdd,
+		UpdateFunc: c.handleNamespaceUpdate,
+		DeleteFunc: c.handleNamespaceDelete,
+	})
+	if err != nil {
+		return err
+	}
+	synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
+
+	// set up the replicaset informer if needed
+	if c.replicasetInformerProvider != nil {
+		c.replicasetInformer = c.replicasetInformerProvider(c.kc, c.Filters.Namespace, c.stopCh)
 		err = c.replicasetInformer.SetTransform(
 			func(object any) (any, error) {
 				originalReplicaset, success := object.(*apps_v1.ReplicaSet)
@@ -198,29 +251,8 @@ func New(
 			},
 		)
 		if err != nil {
-			return nil, err
+			return err
 		}
-	}
-
-	if c.extractNodeLabelsAnnotations() || c.extractNodeUID() {
-		if newNodeInformer == nil {
-			newNodeInformer = newNodeSharedInformer
-		}
-		c.nodeInformer = newNodeInformer(c.kc, c.Filters.Node, 5*time.Minute, c.stopCh)
-	}
-
-	return c, err
-}
-
-// Start registers pod event handlers and starts watching the kubernetes cluster for pod changes.
-func (c *WatchClient) Start() error {
-	var err error
-	c.m.Lock()
-	defer c.m.Unlock()
-	synced := make([]cache.InformerSynced, 0)
-	// start the replicaSet informer first, as the replica sets need to be
-	// present at the time the pods are handled, to correctly establish the connection between pods and deployments
-	if c.replicasetInformer != nil {
 		c.replicasetHandlerRegistration, err = c.replicasetInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleReplicaSetAdd,
 			UpdateFunc: c.handleReplicaSetUpdate,
@@ -232,17 +264,9 @@ func (c *WatchClient) Start() error {
 		synced = append(synced, c.replicasetHandlerRegistration.HasSynced)
 	}
 
-	c.namespaceHandlerRegistration, err = c.namespaceInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
-		AddFunc:    c.handleNamespaceAdd,
-		UpdateFunc: c.handleNamespaceUpdate,
-		DeleteFunc: c.handleNamespaceDelete,
-	})
-	if err != nil {
-		return err
-	}
-	synced = append(synced, c.namespaceHandlerRegistration.HasSynced)
-
-	if c.nodeInformer != nil {
+	// set up the node informer if needed
+	if c.nodeInformerProvider != nil {
+		c.nodeInformer = c.nodeInformerProvider(c.kc, c.Filters.Node, 5*time.Minute, c.stopCh)
 		c.nodeHandlerRegistration, err = c.nodeInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 			AddFunc:    c.handleNodeAdd,
 			UpdateFunc: c.handleNodeUpdate,
@@ -261,7 +285,7 @@ func (c *WatchClient) Start() error {
 		c.logger.Warn("timed out waiting for caches to sync, proceeding anyway")
 	}
 
-	c.podHandlerRegistration, err = c.informer.AddEventHandler(cache.ResourceEventHandlerFuncs{
+	c.podHandlerRegistration, err = c.podInformer.AddEventHandler(cache.ResourceEventHandlerFuncs{
 		AddFunc:    c.handlePodAdd,
 		UpdateFunc: c.handlePodUpdate,
 		DeleteFunc: c.handlePodDelete,
@@ -286,7 +310,7 @@ func (c *WatchClient) Stop() {
 	defer c.m.Unlock()
 	var eventHandlerRemovalErrors []error
 	if c.podHandlerRegistration != nil {
-		if err := c.informer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
+		if err := c.podInformer.RemoveEventHandler(c.podHandlerRegistration); err != nil {
 			eventHandlerRemovalErrors = append(eventHandlerRemovalErrors, err)
 		}
 		c.podHandlerRegistration = nil

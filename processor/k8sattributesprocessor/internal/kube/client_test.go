@@ -204,7 +204,8 @@ func TestBadFilters(t *testing.T) {
 
 func TestClientStartStop(t *testing.T) {
 	c, _ := newTestClient(t)
-	ctr := c.informer.GetController()
+	require.NoError(t, c.Start())
+	ctr := c.podInformer.GetController()
 	require.IsType(t, &FakeController{}, ctr)
 	fctr := ctr.(*FakeController)
 	require.NotNil(t, fctr)
@@ -1448,7 +1449,9 @@ func TestFilters(t *testing.T) {
 	for _, tc := range testCases {
 		t.Run(tc.name, func(t *testing.T) {
 			c, _ := newTestClientWithRulesAndFilters(t, tc.filters)
-			inf := c.informer.(*FakeInformer)
+			require.NoError(t, c.Start())
+			defer c.Stop()
+			inf := c.podInformer.(*FakeInformer)
 			assert.Equal(t, tc.filters.Namespace, inf.namespace)
 			assert.Equal(t, tc.labels, inf.labelSelector.String())
 			assert.Equal(t, tc.fields, inf.fieldSelector.String())
