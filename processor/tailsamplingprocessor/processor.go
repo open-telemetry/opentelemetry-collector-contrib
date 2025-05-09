@@ -441,7 +441,6 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		}
 		// If sampleOnFirstMatch is enabled, make decision as soon as a policy matches
 		if tsp.sampleOnFirstMatch && decision == sampling.Sampled {
-			finalDecision = decision
 			break
 		}
 	}
