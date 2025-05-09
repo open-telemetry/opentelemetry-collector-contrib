@@ -23,6 +23,7 @@ import (
 	"path"
 	"path/filepath"
 	"runtime"
+	"strconv"
 	"strings"
 	"sync/atomic"
 	"testing"
@@ -334,21 +335,17 @@ func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *tes
 		},
 	})
 
-	healthcheckPort, err := findRandomPort()
-	require.NoError(t, err)
-
 	s := newSupervisor(t, "healthcheck_port", map[string]string{
-		"url":              server.addr,
-		"storage_dir":      storageDir,
-		"healthcheck_port": fmt.Sprintf("%d", healthcheckPort),
-		"local_config":     filepath.Join("testdata", "collector", "nop_config.yaml"),
+		"url":          server.addr,
+		"storage_dir":  storageDir,
+		"local_config": filepath.Join("testdata", "collector", "healthcheck_config.yaml"),
 	})
 	t.Cleanup(s.Shutdown)
 	require.Nil(t, s.Start())
 
 	// Verify the collector runs eventually by pinging the healthcheck extension
 	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
+		resp, err := http.DefaultClient.Get("http://localhost:13133")
 		if err != nil {
 			t.Logf("Failed healthcheck: %s", err)
 			return false
@@ -474,12 +471,16 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 	require.NoError(t, err)
 	t.Cleanup(func() { outputFile.Close() })
 
+	secondHealthcheckPort, err := findRandomPort()
+	require.NoError(t, err)
+
 	// fill env variables passed via parameters which are used in the collector config passed via config_files param
 	s := newSupervisor(t, "exec_config", map[string]string{
-		"url":           server.addr,
-		"storage_dir":   storageDir,
-		"inputLogFile":  inputFile.Name(),
-		"outputLogFile": outputFile.Name(),
+		"url":             server.addr,
+		"storage_dir":     storageDir,
+		"inputLogFile":    inputFile.Name(),
+		"outputLogFile":   outputFile.Name(),
+		"healthcheckPort": strconv.Itoa(secondHealthcheckPort),
 	})
 
 	require.Nil(t, s.Start())
@@ -487,20 +488,21 @@ func TestSupervisorStartsCollectorWithRemoteConfigAndExecParams(t *testing.T) {
 
 	waitForSupervisorConnection(server.supervisorConnected, true)
 
-	// check health
-	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", healthcheckPort))
-		if err != nil {
-			t.Logf("Failed healthcheck: %s", err)
-			return false
-		}
-		require.NoError(t, resp.Body.Close())
-		if resp.StatusCode >= 300 || resp.StatusCode < 200 {
-			t.Logf("Got non-2xx status code: %d", resp.StatusCode)
-			return false
-		}
-		return true
-	}, 3*time.Second, 100*time.Millisecond)
+	for _, port := range []int{healthcheckPort, secondHealthcheckPort} {
+		require.Eventually(t, func() bool {
+			resp, err := http.DefaultClient.Get(fmt.Sprintf("http://localhost:%d", port))
+			if err != nil {
+				t.Logf("Failed healthcheck: %s", err)
+				return false
+			}
+			require.NoError(t, resp.Body.Close())
+			if resp.StatusCode >= 300 || resp.StatusCode < 200 {
+				t.Logf("Got non-2xx status code: %d", resp.StatusCode)
+				return false
+			}
+			return true
+		}, 3*time.Second, 100*time.Millisecond)
+	}
 
 	// check that collector uses filelog receiver and file exporter from config passed via config_files param
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
@@ -1155,20 +1157,16 @@ func createHealthCheckCollectorConf(t *testing.T) (cfg *bytes.Buffer, hash []byt
 	templ, err := template.New("").Parse(string(colCfgTpl))
 	require.NoError(t, err)
 
-	port, err := findRandomPort()
-
 	var confmapBuf bytes.Buffer
 	err = templ.Execute(
 		&confmapBuf,
-		map[string]string{
-			"HealthCheckEndpoint": fmt.Sprintf("localhost:%d", port),
-		},
+		map[string]string{},
 	)
 	require.NoError(t, err)
 
 	h := sha256.Sum256(confmapBuf.Bytes())
 
-	return &confmapBuf, h[:], port
+	return &confmapBuf, h[:], 13133
 }
 
 // Wait for the Supervisor to connect to or disconnect from the OpAMP server
@@ -1630,8 +1628,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 		})
 
 	s := newSupervisor(t, "healthcheck_port", map[string]string{
-		"url":              server.addr,
-		"healthcheck_port": "12345",
+		"url": server.addr,
 	})
 
 	require.Nil(t, s.Start())
@@ -1660,7 +1657,7 @@ func TestSupervisorStopsAgentProcessWithEmptyConfigMap(t *testing.T) {
 
 	// Use health check endpoint to determine if the collector is actually running
 	require.Eventually(t, func() bool {
-		resp, err := http.DefaultClient.Get("http://localhost:12345")
+		resp, err := http.DefaultClient.Get("http://localhost:13133")
 		if err != nil {
 			t.Logf("Failed agent healthcheck request: %s", err)
 			return false
