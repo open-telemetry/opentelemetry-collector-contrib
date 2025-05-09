@@ -9,67 +9,8 @@ import (
 	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 )
 
-const (
-	categoryAzureCdnAccessLog                  = "AzureCdnAccessLog"
-	categoryFrontDoorAccessLog                 = "FrontDoorAccessLog"
-	categoryFrontDoorHealthProbeLog            = "FrontDoorHealthProbeLog"
-	categoryFrontdoorWebApplicationFirewallLog = "FrontdoorWebApplicationFirewallLog"
-	categoryAppServiceAppLogs                  = "AppServiceAppLogs"
-	categoryAppServiceAuditLogs                = "AppServiceAuditLogs"
-	// TODO Add log and expected file to the unit tests for authentication logs
-	categoryAppServiceAuthenticationLogs = "AppServiceAuthenticationLogs"
-	categoryAppServiceConsoleLogs        = "AppServiceConsoleLogs"
-	categoryAppServiceHTTPLogs           = "AppServiceHTTPLogs"
-	categoryAppServiceIPSecAuditLogs     = "AppServiceIPSecAuditLogs"
-	categoryAppServicePlatformLogs       = "AppServicePlatformLogs"
-)
-
-func handleAzureCDNAccessLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
-	switch field {
-	case "BackendHostname":
-		attrs[conventions.AttributeDestinationAddress] = value
-	case "ClientIp":
-		attrs["client.address"] = value
-	case "ClientPort":
-		// TODO Should be a port
-		attrs["client.port"] = value
-	case "HttpMethod":
-		attrs[conventions.AttributeHTTPRequestMethod] = value
-	case "HttpStatusCode":
-		attrs[conventions.AttributeHTTPResponseStatusCode] = toInt(value)
-	case "HttpVersion":
-		attrs[conventions.AttributeNetworkProtocolVersion] = value
-	case "RequestBytes":
-		attrs[conventions.AttributeHTTPRequestSize] = toInt(value)
-	case "RequestUri":
-		attrs[conventions.AttributeURLFull] = value
-	case "ResponseBytes":
-		attrs[conventions.AttributeHTTPResponseSize] = toInt(value)
-	case "TrackingReference":
-		attrs[conventions.AttributeAzServiceRequestID] = value
-	case "UserAgent":
-		attrs[conventions.AttributeUserAgentOriginal] = value
-	case "ErrorInfo":
-		attrs[conventions.AttributeErrorType] = value
-	case "SecurityProtocol":
-		str, ok := value.(string)
-		if !ok {
-			return
-		}
-		name, remaining, _ := strings.Cut(str, " ")
-		if name == "" || remaining == "" {
-			return
-		}
-		version, remaining, _ := strings.Cut(remaining, " ")
-		if version == "" || remaining != "" {
-			return
-		}
-		attrs[conventions.AttributeTLSProtocolName] = strings.ToLower(name)
-		attrs[conventions.AttributeTLSProtocolVersion] = version
-	default:
-		attrsProps[field] = value
-	}
-}
+// TODO @constanca-m remove this file once the logic for the remaining categories
+// is added to category_logs.go
 
 func handleFrontDoorAccessLog(field string, value any, attrs map[string]any, attrsProps map[string]any) {
 	switch field {

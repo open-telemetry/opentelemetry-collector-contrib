@@ -6,7 +6,7 @@ require (
 	github.com/Khan/genqlient v0.8.0
 	github.com/client9/misspell v0.3.4
 	github.com/daixiang0/gci v0.13.6
-	github.com/golangci/golangci-lint/v2 v2.1.5
+	github.com/golangci/golangci-lint/v2 v2.1.6
 	github.com/google/addlicense v1.1.1
 	github.com/jcchavezs/porto v0.6.0
 	github.com/jstemmer/go-junit-report v1.0.0
@@ -18,12 +18,12 @@ require (
 	go.opentelemetry.io/build-tools/githubgen v0.23.1
 	go.opentelemetry.io/build-tools/issuegenerator v0.23.1
 	go.opentelemetry.io/build-tools/multimod v0.23.1
-	go.opentelemetry.io/collector/cmd/builder v0.125.1-0.20250505155216-829157cef7bb
-	go.opentelemetry.io/collector/cmd/mdatagen v0.125.1-0.20250505155216-829157cef7bb
+	go.opentelemetry.io/collector/cmd/builder v0.125.1-0.20250508034258-ac520a5c14cc
+	go.opentelemetry.io/collector/cmd/mdatagen v0.125.1-0.20250508034258-ac520a5c14cc
 	go.uber.org/goleak v1.3.0
 	golang.org/x/tools v0.33.0
 	golang.org/x/vuln v1.1.4
-	gotest.tools/gotestsum v1.12.1
+	gotest.tools/gotestsum v1.12.2
 	mvdan.cc/gofumpt v0.8.0
 )
 
@@ -44,7 +44,7 @@ require (
 	github.com/OpenPeeDeeP/depguard/v2 v2.2.1 // indirect
 	github.com/ProtonMail/go-crypto v1.2.0 // indirect
 	github.com/agnivade/levenshtein v1.1.1 // indirect
-	github.com/alecthomas/chroma/v2 v2.16.0 // indirect
+	github.com/alecthomas/chroma/v2 v2.17.2 // indirect
 	github.com/alecthomas/go-check-sumtype v0.3.1 // indirect
 	github.com/alexflint/go-arg v1.5.0 // indirect
 	github.com/alexflint/go-scalar v1.2.0 // indirect
@@ -227,7 +227,7 @@ require (
 	github.com/stretchr/testify v1.10.0 // indirect
 	github.com/subosito/gotenv v1.6.0 // indirect
 	github.com/tdakkota/asciicheck v0.4.1 // indirect
-	github.com/tetafro/godot v1.5.0 // indirect
+	github.com/tetafro/godot v1.5.1 // indirect
 	github.com/timakin/bodyclose v0.0.0-20241222091800-1db5c5ca4d67 // indirect
 	github.com/timonwong/loggercheck v0.11.0 // indirect
 	github.com/tomarrell/wrapcheck/v2 v2.11.0 // indirect
@@ -244,18 +244,18 @@ require (
 	github.com/yeya24/promlinter v0.3.0 // indirect
 	github.com/ykadowak/zerologlint v0.1.5 // indirect
 	gitlab.com/bosi/decorder v0.4.2 // indirect
-	go-simpler.org/musttag v0.13.0 // indirect
+	go-simpler.org/musttag v0.13.1 // indirect
 	go-simpler.org/sloglint v0.11.0 // indirect
 	go.augendre.info/fatcontext v0.8.0 // indirect
 	go.opentelemetry.io/auto/sdk v1.1.0 // indirect
 	go.opentelemetry.io/build-tools v0.23.1 // indirect
-	go.opentelemetry.io/collector/component v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/confmap v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250505152726-56c7da210783 // indirect
-	go.opentelemetry.io/collector/filter v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250505155216-829157cef7bb // indirect
-	go.opentelemetry.io/collector/pdata v1.31.1-0.20250505152726-56c7da210783 // indirect
+	go.opentelemetry.io/collector/component v1.31.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/confmap v1.31.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.31.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/featuregate v1.31.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/filter v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/internal/telemetry v0.125.1-0.20250508034258-ac520a5c14cc // indirect
+	go.opentelemetry.io/collector/pdata v1.31.1-0.20250508034258-ac520a5c14cc // indirect
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0 // indirect
 	go.opentelemetry.io/otel v1.35.0 // indirect
 	go.opentelemetry.io/otel/log v0.11.0 // indirect
