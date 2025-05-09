@@ -111,6 +111,14 @@ resource_attributes:
     description: Container image tag. Defaults to "latest" if not provided (unless digest also in image path) Requires container.id or k8s.container.name.
     type: string
     enabled: true
+  container.ports:
+    description: List of ports to be exposed from the container.
+    type: slice
+    enabled: false
+  k8s.container.cpu.request:
+    description: CPU Request describes the minimum amount of CPU compute resources required.
+    type: string
+    enabled: false    
 
 tests:
   config:

@@ -130,9 +130,11 @@ type PodContainers struct {
 
 // Container stores resource attributes for a specific container defined by k8s pod spec.
 type Container struct {
-	Name      string
-	ImageName string
-	ImageTag  string
+	Name       string
+	ImageName  string
+	ImageTag   string
+	Ports      []int32
+	CPURequest string
 
 	// Statuses is a map of container k8s.container.restart_count attribute to ContainerStatus struct.
 	Statuses map[int]ContainerStatus
@@ -237,10 +239,11 @@ type ExtractionRules struct {
 	ContainerImageName        bool
 	ContainerImageRepoDigests bool
 	ContainerImageTag         bool
+	ContainerPorts            bool
+	ContainerCPURequest       bool
 	ClusterUID                bool
-
-	Annotations []FieldExtractionRule
-	Labels      []FieldExtractionRule
+	Annotations               []FieldExtractionRule
+	Labels                    []FieldExtractionRule
 }
 
 // IncludesOwnerMetadata determines whether the ExtractionRules include metadata about Pod Owners
