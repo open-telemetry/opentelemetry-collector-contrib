@@ -32,14 +32,18 @@ func doNothingExportSink(_ context.Context, reqL []*prompb.WriteRequest) error {
 
 func TestWALCreation_nilConfig(t *testing.T) {
 	config := (*WALConfig)(nil)
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.Nil(t, pwal)
+	require.NoError(t, err)
 }
 
 func TestWALCreation_nonNilConfig(t *testing.T) {
 	config := &WALConfig{Directory: t.TempDir()}
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 	assert.NoError(t, pwal.stop())
 }
 
@@ -89,8 +93,10 @@ func TestWALStopManyTimes(t *testing.T) {
 		TruncateFrequency: 60 * time.Microsecond,
 		BufferSize:        1,
 	}
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 
 	// Ensure that invoking .stop() multiple times doesn't cause a panic, but actually
 	// First close should NOT return an error.
@@ -104,9 +110,10 @@ func TestWALStopManyTimes(t *testing.T) {
 func TestWAL_persist(t *testing.T) {
 	// Unit tests that requests written to the WAL persist.
 	config := &WALConfig{Directory: t.TempDir()}
-
-	pwal := newWAL(config, doNothingExportSink)
+	set := exportertest.NewNopSettings(metadata.Type)
+	pwal, err := newWAL(config, set, doNothingExportSink)
 	require.NotNil(t, pwal)
+	require.NoError(t, err)
 
 	// 1. Write out all the entries.
 	reqL := []*prompb.WriteRequest{
