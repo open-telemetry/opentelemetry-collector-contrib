@@ -25,6 +25,7 @@ body:
       - cmd/oteltestbedcol
       - cmd/telemetrygen
       - confmap/provider/aesprovider
+      - confmap/provider/googlesecretmanagerprovider
       - confmap/provider/s3provider
       - confmap/provider/secretsmanagerprovider
       - connector/count
