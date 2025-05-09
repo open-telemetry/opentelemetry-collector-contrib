@@ -62,10 +62,10 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 	resAttr["example"] = 8
 
 	cases := []struct {
-		Desc                string
-		Trace               *TraceData
-		Decision            Decision
-		DisableInvertSample bool
+		Desc                  string
+		Trace                 *TraceData
+		Decision              Decision
+		DisableInvertDecision bool
 	}{
 		{
 			Desc:     "non-matching span attribute",
@@ -83,26 +83,26 @@ func TestBooleanTagFilterInverted(t *testing.T) {
 			Decision: InvertNotSampled,
 		},
 		{
-			Desc:                "span attribute with non matching boolean value with DisableInvertSample",
-			Trace:               newTraceBoolAttrs(empty, "example", false),
-			Decision:            Sampled,
-			DisableInvertSample: true,
+			Desc:                  "span attribute with non matching boolean value with DisableInvertDecision",
+			Trace:                 newTraceBoolAttrs(empty, "example", false),
+			Decision:              Sampled,
+			DisableInvertDecision: true,
 		},
 		{
-			Desc:                "span attribute with matching boolean value with DisableInvertSample",
-			Trace:               newTraceBoolAttrs(empty, "example", true),
-			Decision:            NotSampled,
-			DisableInvertSample: true,
+			Desc:                  "span attribute with matching boolean value with DisableInvertDecision",
+			Trace:                 newTraceBoolAttrs(empty, "example", true),
+			Decision:              NotSampled,
+			DisableInvertDecision: true,
 		},
 	}
 
 	for _, c := range cases {
 		t.Run(c.Desc, func(t *testing.T) {
-			if c.DisableInvertSample {
-				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", true)
+			if c.DisableInvertDecision {
+				err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", true)
 				assert.NoError(t, err)
 				defer func() {
-					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertsample", false)
+					err := featuregate.GlobalRegistry().Set("processor.tailsamplingprocessor.disableinvertdecisions", false)
 					assert.NoError(t, err)
 				}()
 			}

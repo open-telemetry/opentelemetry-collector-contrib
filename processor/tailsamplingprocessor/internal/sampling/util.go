@@ -37,7 +37,7 @@ func invertHasResourceOrSpanWithCondition(
 	shouldSampleResource func(resource pcommon.Resource) bool,
 	shouldSampleSpan func(span ptrace.Span) bool,
 ) Decision {
-	isd := IsInvertSampleDisabled()
+	isd := IsInvertDecisionsDisabled()
 
 	for i := 0; i < td.ResourceSpans().Len(); i++ {
 		rs := td.ResourceSpans().At(i)
