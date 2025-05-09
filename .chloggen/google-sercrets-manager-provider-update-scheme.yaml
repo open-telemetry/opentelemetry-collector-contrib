@@ -7,7 +7,7 @@ component: confmap/googlesecretmanager
 # A brief description of the change.  Surround your text with quotes ("") if it needs to start with a backtick (`).
 note: Update scheme to use googlesecretsmanager instead of googlesecretmanagerprovider.
 # One or more tracking issues related to the change
-issues: [39665]
+issues: [39971]
 
 # (Optional) One or more lines of additional information to render under the primary note.
 # These lines will be padded with 2 spaces and then inserted directly into the document.
