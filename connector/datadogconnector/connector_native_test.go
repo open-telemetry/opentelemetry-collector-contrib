@@ -304,7 +304,7 @@ func TestObfuscate(t *testing.T) {
 	s.SetKind(ptrace.SpanKindClient)
 	s.SetTraceID(testTraceID)
 	s.SetSpanID(testSpanID1)
-	s.Attributes().PutStr(string(semconv.DBSystemKey), string(semconv.DBSystemMySQL.Key))
+	s.Attributes().PutStr(string(semconv.DBSystemKey), semconv.DBSystemMySQL.Value.AsString())
 	s.Attributes().PutStr(string(semconv.DBOperationNameKey), "SELECT")
 	s.Attributes().PutStr(string(semconv.DBQueryTextKey), "SELECT username FROM users WHERE id = 123") // id value 123 should be obfuscated
 
