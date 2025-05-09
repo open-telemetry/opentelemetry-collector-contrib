@@ -471,6 +471,73 @@ func TestTranslateV2(t *testing.T) {
 				return metrics
 			}(),
 		},
+		{
+			name: "histogram",
+			request: &writev2.Request{
+				Symbols: []string{
+					"",
+					"__name__", "test_metric", // 1, 2
+					"job", "service-x/test", // 3, 4
+					"instance", "107cn001", // 5, 6
+					"otel_scope_name", "scope1", // 7, 8
+					"otel_scope_version", "v1", // 9, 10
+					"attr1", "attr1", // 11, 12
+				},
+				Timeseries: []writev2.TimeSeries{
+					{
+						CreatedTimestamp: 1,
+						Metadata: writev2.Metadata{
+							Type: writev2.Metadata_METRIC_TYPE_HISTOGRAM,
+						},
+						// Timeseries must not include both samples and histograms.
+						// Reference: https://prometheus.io/docs/specs/prw/remote_write_spec_2_0/#:~:text=At%20least%20one%20element%20in,TimeSeries%20message%20MUST%20be%20used
+						Histograms: []writev2.Histogram{
+							{
+								// TODO(@perebaj) missing a unit test to validate the Histogram_CountFloat
+								Count: &writev2.Histogram_CountInt{
+									CountInt: 20,
+								},
+								Sum:           30,
+								Timestamp:     1,
+								ZeroThreshold: 1,
+								// TODO(@perebaj) missing a unit test to validate the Histogram_ZeroCountFloat
+								ZeroCount: &writev2.Histogram_ZeroCountInt{
+									ZeroCountInt: 2,
+								},
+							},
+						},
+						LabelsRefs: []uint32{1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12},
+					},
+				},
+			},
+			expectedMetrics: func() pmetric.Metrics {
+				metrics := pmetric.NewMetrics()
+				rm := metrics.ResourceMetrics().AppendEmpty()
+				attrs := rm.Resource().Attributes()
+				attrs.PutStr("service.namespace", "service-x")
+				attrs.PutStr("service.name", "test")
+				attrs.PutStr("service.instance.id", "107cn001")
+
+				sm := rm.ScopeMetrics().AppendEmpty()
+				sm.Scope().SetName("scope1")
+				sm.Scope().SetVersion("v1")
+
+				m := sm.Metrics().AppendEmpty()
+				m.SetName("test_metric")
+				m.SetUnit("")
+				m.SetDescription("")
+
+				dp := m.SetEmptyExponentialHistogram().DataPoints().AppendEmpty()
+				dp.SetTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetStartTimestamp(pcommon.Timestamp(1 * int64(time.Millisecond)))
+				dp.SetSum(30)
+				dp.SetCount(20)
+				dp.SetZeroCount(2)
+				dp.SetZeroThreshold(1)
+				dp.Attributes().PutStr("attr1", "attr1")
+				return metrics
+			}(),
+		},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			// since we are using the rmCache to store values across requests, we need to clear it after each test, otherwise it will affect the next test
