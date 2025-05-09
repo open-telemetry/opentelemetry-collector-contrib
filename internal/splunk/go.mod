@@ -7,7 +7,6 @@ require (
 	go.opentelemetry.io/collector/consumer/consumererror v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/exporter v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/otel v1.35.0
 	go.uber.org/goleak v1.3.0
 )

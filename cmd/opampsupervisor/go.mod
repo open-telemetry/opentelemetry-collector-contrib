@@ -20,7 +20,6 @@ require (
 	go.opentelemetry.io/collector/confmap/provider/envprovider v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/confmap/provider/fileprovider v1.31.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/pdata v1.31.1-0.20250509190408-4ca0f1829e0a
-	go.opentelemetry.io/collector/semconv v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/collector/service v0.125.1-0.20250509190408-4ca0f1829e0a
 	go.opentelemetry.io/contrib/bridges/otelzap v0.10.0
 	go.opentelemetry.io/contrib/otelconf v0.15.0
