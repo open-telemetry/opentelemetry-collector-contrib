@@ -28,6 +28,13 @@ func (rb *ResourceBuilder) SetCloudAccountID(val string) {
 	}
 }
 
+// SetCloudAvailabilityZone sets provided value as "cloud.availability_zone" attribute.
+func (rb *ResourceBuilder) SetCloudAvailabilityZone(val string) {
+	if rb.config.CloudAvailabilityZone.Enabled {
+		rb.res.Attributes().PutStr("cloud.availability_zone", val)
+	}
+}
+
 // SetCloudPlatform sets provided value as "cloud.platform" attribute.
 func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 	if rb.config.CloudPlatform.Enabled {
@@ -39,6 +46,20 @@ func (rb *ResourceBuilder) SetCloudPlatform(val string) {
 func (rb *ResourceBuilder) SetCloudProvider(val string) {
 	if rb.config.CloudProvider.Enabled {
 		rb.res.Attributes().PutStr("cloud.provider", val)
+	}
+}
+
+// SetCloudRegion sets provided value as "cloud.region" attribute.
+func (rb *ResourceBuilder) SetCloudRegion(val string) {
+	if rb.config.CloudRegion.Enabled {
+		rb.res.Attributes().PutStr("cloud.region", val)
+	}
+}
+
+// SetHostID sets provided value as "host.id" attribute.
+func (rb *ResourceBuilder) SetHostID(val string) {
+	if rb.config.HostID.Enabled {
+		rb.res.Attributes().PutStr("host.id", val)
 	}
 }
 

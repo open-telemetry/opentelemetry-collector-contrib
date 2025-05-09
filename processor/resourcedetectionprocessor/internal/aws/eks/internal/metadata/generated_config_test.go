@@ -25,19 +25,25 @@ func TestResourceAttributesConfig(t *testing.T) {
 		{
 			name: "all_set",
 			want: ResourceAttributesConfig{
-				CloudAccountID: ResourceAttributeConfig{Enabled: true},
-				CloudPlatform:  ResourceAttributeConfig{Enabled: true},
-				CloudProvider:  ResourceAttributeConfig{Enabled: true},
-				K8sClusterName: ResourceAttributeConfig{Enabled: true},
+				CloudAccountID:        ResourceAttributeConfig{Enabled: true},
+				CloudAvailabilityZone: ResourceAttributeConfig{Enabled: true},
+				CloudPlatform:         ResourceAttributeConfig{Enabled: true},
+				CloudProvider:         ResourceAttributeConfig{Enabled: true},
+				CloudRegion:           ResourceAttributeConfig{Enabled: true},
+				HostID:                ResourceAttributeConfig{Enabled: true},
+				K8sClusterName:        ResourceAttributeConfig{Enabled: true},
 			},
 		},
 		{
 			name: "none_set",
 			want: ResourceAttributesConfig{
-				CloudAccountID: ResourceAttributeConfig{Enabled: false},
-				CloudPlatform:  ResourceAttributeConfig{Enabled: false},
-				CloudProvider:  ResourceAttributeConfig{Enabled: false},
-				K8sClusterName: ResourceAttributeConfig{Enabled: false},
+				CloudAccountID:        ResourceAttributeConfig{Enabled: false},
+				CloudAvailabilityZone: ResourceAttributeConfig{Enabled: false},
+				CloudPlatform:         ResourceAttributeConfig{Enabled: false},
+				CloudProvider:         ResourceAttributeConfig{Enabled: false},
+				CloudRegion:           ResourceAttributeConfig{Enabled: false},
+				HostID:                ResourceAttributeConfig{Enabled: false},
+				K8sClusterName:        ResourceAttributeConfig{Enabled: false},
 			},
 		},
 	}
