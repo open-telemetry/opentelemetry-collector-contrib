@@ -329,13 +329,13 @@ func getTagFromStatusCode(statusCode ptrace.StatusCode) (model.KeyValue, bool) {
 	switch statusCode {
 	case ptrace.StatusCodeError:
 		return model.KeyValue{
-			Key:   conventions.OtelStatusCode,
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusError,
 		}, true
 	case ptrace.StatusCodeOk:
 		return model.KeyValue{
-			Key:   conventions.OtelStatusCode,
+			Key:   string(conventions.OtelStatusCodeKey),
 			VType: model.ValueType_STRING,
 			VStr:  statusOk,
 		}, true
@@ -359,7 +359,7 @@ func getTagFromStatusMsg(statusMsg string) (model.KeyValue, bool) {
 		return model.KeyValue{}, false
 	}
 	return model.KeyValue{
-		Key:   conventions.OtelStatusDescription,
+		Key:   string(conventions.OtelStatusDescriptionKey),
 		VStr:  statusMsg,
 		VType: model.ValueType_STRING,
 	}, true
@@ -411,7 +411,7 @@ func refTypeFromLink(link ptrace.SpanLink) model.SpanRefType {
 }
 
 func strToJRefType(attr string) model.SpanRefType {
-	if attr == string(conventions.OpentracingRefTypeChildOfKey) {
+	if attr == conventions.OpentracingRefTypeChildOf.Value.AsString() {
 		return model.ChildOf
 	}
 	// There are only 2 types of SpanRefType we assume that everything

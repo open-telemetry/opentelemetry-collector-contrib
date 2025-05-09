@@ -84,10 +84,10 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
 	attrs[conventions.OtelLibraryName] = struct{}{}
 	attrs[conventions.OtelLibraryVersion] = struct{}{}
-	attrs[ocstring(conventions.ProcessStartTimeKey)] = struct{}{}
-	attrs[ocstring(conventions.ExporterVersionKey)] = struct{}{}
+	attrs[occonventions.ProcessStartTimeKey)] = struct{}{}
+	attrs[occonventions.ExporterVersionKey)] = struct{}{}
 	attrs[string(conventions.ProcessPIDKey)] = struct{}{}
-	attrs[ocstring(conventions.ResourceTypeKey)] = struct{}{}
+	attrs[occonventions.ResourceTypeKey)] = struct{}{}
 	return attrs
 }()
 

@@ -12,9 +12,10 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -166,9 +167,9 @@ func ocStatusToInternal(ocStatus *octrace.Status, ocAttrs *octrace.Span_Attribut
 	if ocAttrs != nil {
 		// If conventions.OtelStatusCode is set, it must override the status code value.
 		// See the reverse translation in traces_to_oc.go:statusToOC().
-		if attr, ok := ocAttrs.AttributeMap[conventions.OtelStatusCode]; ok {
+		if attr, ok := ocAttrs.AttributeMap[string(conventions.OtelStatusCodeKey)]; ok {
 			code = ptrace.StatusCode(attr.GetIntValue())
-			delete(ocAttrs.AttributeMap, conventions.OtelStatusCode)
+			delete(ocAttrs.AttributeMap, string(conventions.OtelStatusCodeKey))
 		}
 	}
 
@@ -350,5 +351,5 @@ func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest ptrac
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().PutBool(ocstring(conventions.SameProcessAsParentSpanKey), spaps.Value)
+	dest.Attributes().PutBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
 }

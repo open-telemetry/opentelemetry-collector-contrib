@@ -11,22 +11,24 @@ import (
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 var ocLangCodeToLangMap = getOCLangCodeToLangMap()
 
 func getOCLangCodeToLangMap() map[occommon.LibraryInfo_Language]string {
 	mappings := make(map[occommon.LibraryInfo_Language]string)
-	mappings[1] = string(conventions.TelemetrySDKLanguageCPPKey)
-	mappings[2] = string(conventions.TelemetrySDKLanguageDotnetKey)
-	mappings[3] = string(conventions.TelemetrySDKLanguageErlangKey)
+	mappings[1] = conventions.TelemetrySDKLanguageCPP.Value.AsString()
+	mappings[2] = conventions.TelemetrySDKLanguageDotnet.Value.AsString()
+	mappings[3] = conventions.TelemetrySDKLanguageErlang.Value.AsString()
 	mappings[4] = conventions.TelemetrySDKLanguageGo.Value.AsString()
-	mappings[5] = string(conventions.TelemetrySDKLanguageJavaKey)
-	mappings[6] = string(conventions.TelemetrySDKLanguageNodejsKey)
-	mappings[7] = string(conventions.TelemetrySDKLanguagePHPKey)
-	mappings[8] = string(conventions.TelemetrySDKLanguagePythonKey)
-	mappings[9] = string(conventions.TelemetrySDKLanguageRubyKey)
-	mappings[10] = string(conventions.TelemetrySDKLanguageWebjsKey)
+	mappings[5] = conventions.TelemetrySDKLanguageJava.Value.AsString()
+	mappings[6] = conventions.TelemetrySDKLanguageNodejs.Value.AsString()
+	mappings[7] = conventions.TelemetrySDKLanguagePHP.Value.AsString()
+	mappings[8] = conventions.TelemetrySDKLanguagePython.Value.AsString()
+	mappings[9] = conventions.TelemetrySDKLanguageRuby.Value.AsString()
+	mappings[10] = conventions.TelemetrySDKLanguageWebjs.Value.AsString()
 	return mappings
 }
 
@@ -92,7 +94,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 		}
 		if ocNode.Identifier != nil {
 			if ocNode.Identifier.StartTimestamp != nil {
-				attrs.PutStr(ocstring(conventions.ProcessStartTimeKey), ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
+				attrs.PutStr(occonventions.AttributeProcessStartTime, ocNode.Identifier.StartTimestamp.AsTime().Format(time.RFC3339Nano))
 			}
 			if ocNode.Identifier.HostName != "" {
 				attrs.PutStr(string(conventions.HostNameKey), ocNode.Identifier.HostName)
@@ -106,7 +108,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 				attrs.PutStr(string(conventions.TelemetrySDKVersionKey), ocNode.LibraryInfo.CoreLibraryVersion)
 			}
 			if ocNode.LibraryInfo.ExporterVersion != "" {
-				attrs.PutStr(ocstring(conventions.ExporterVersionKey), ocNode.LibraryInfo.ExporterVersion)
+				attrs.PutStr(occonventions.AttributeExporterVersion, ocNode.LibraryInfo.ExporterVersion)
 			}
 			if ocNode.LibraryInfo.Language != occommon.LibraryInfo_LANGUAGE_UNSPECIFIED {
 				if str, ok := ocLangCodeToLangMap[ocNode.LibraryInfo.Language]; ok {
@@ -117,7 +119,7 @@ func ocNodeResourceToInternal(ocNode *occommon.Node, ocResource *ocresource.Reso
 	}
 	if ocResource != nil {
 		if ocResource.Type != "" {
-			attrs.PutStr(ocstring(conventions.ResourceTypeKey), ocResource.Type)
+			attrs.PutStr(occonventions.AttributeResourceType, ocResource.Type)
 		}
 	}
 }

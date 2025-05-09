@@ -206,7 +206,7 @@ func microsecondsToUnixNano(ms int64) pcommon.Timestamp {
 
 func jThriftRefTypeToAttribute(ref jaeger.SpanRefType) string {
 	if ref == jaeger.SpanRefType_CHILD_OF {
-		return string(conventions.OpentracingRefTypeChildOfKey)
+		return conventions.OpentracingRefTypeChildOf.Value.AsString()
 	}
-	return string(conventions.OpentracingRefTypeFollowsFromKey)
+	return conventions.OpentracingRefTypeFollowsFrom.Value.AsString()
 }

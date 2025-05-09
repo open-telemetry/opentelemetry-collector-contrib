@@ -13,9 +13,10 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -63,7 +64,7 @@ func spanToOC(span ptrace.Span) *octrace.Span {
 				DroppedAttributesCount: 0,
 			}
 		}
-		attributes.AttributeMap[conventions.OtelStatusCode] = statusAttr
+		attributes.AttributeMap[string(conventions.OtelStatusCodeKey)] = statusAttr
 	}
 
 	return &octrace.Span{
@@ -176,7 +177,7 @@ func stringAttributeValue(val string) *octrace.AttributeValue {
 }
 
 func attributesMapToOCSameProcessAsParentSpan(attr pcommon.Map) *wrapperspb.BoolValue {
-	val, ok := attr.Get(ocstring(conventions.SameProcessAsParentSpanKey))
+	val, ok := attr.Get(occonventions.AttributeSameProcessAsParentSpan)
 	if !ok || val.Type() != pcommon.ValueTypeBool {
 		return nil
 	}

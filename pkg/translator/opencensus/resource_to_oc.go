@@ -13,6 +13,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
+
+	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 type ocInferredResourceType struct {
@@ -52,16 +54,16 @@ var langToOCLangCodeMap = getSDKLangToOCLangCodeMap()
 
 func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings := make(map[string]int32)
-	mappings[string(conventions.TelemetrySDKLanguageCPPKey)] = 1
-	mappings[string(conventions.TelemetrySDKLanguageDotnetKey)] = 2
-	mappings[string(conventions.TelemetrySDKLanguageErlangKey)] = 3
+	mappings[conventions.TelemetrySDKLanguageCPP.Value.AsString()] = 1
+	mappings[conventions.TelemetrySDKLanguageDotnet.Value.AsString()] = 2
+	mappings[conventions.TelemetrySDKLanguageErlang.Value.AsString()] = 3
 	mappings[conventions.TelemetrySDKLanguageGo.Value.AsString()] = 4
-	mappings[string(conventions.TelemetrySDKLanguageJavaKey)] = 5
-	mappings[string(conventions.TelemetrySDKLanguageNodejsKey)] = 6
-	mappings[string(conventions.TelemetrySDKLanguagePHPKey)] = 7
-	mappings[string(conventions.TelemetrySDKLanguagePythonKey)] = 8
-	mappings[string(conventions.TelemetrySDKLanguageRubyKey)] = 9
-	mappings[string(conventions.TelemetrySDKLanguageWebjsKey)] = 10
+	mappings[conventions.TelemetrySDKLanguageJava.Value.AsString()] = 5
+	mappings[conventions.TelemetrySDKLanguageNodejs.Value.AsString()] = 6
+	mappings[conventions.TelemetrySDKLanguagePHP.Value.AsString()] = 7
+	mappings[conventions.TelemetrySDKLanguagePython.Value.AsString()] = 8
+	mappings[conventions.TelemetrySDKLanguageRuby.Value.AsString()] = 9
+	mappings[conventions.TelemetrySDKLanguageWebjs.Value.AsString()] = 10
 	return mappings
 }
 
@@ -80,11 +82,11 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 		switch k {
 		case string(conventions.CloudAvailabilityZoneKey):
 			labels[resourcekeys.CloudKeyZone] = val
-		case ocstring(conventions.ResourceTypeKey):
+		case occonventions.AttributeResourceType:
 			ocResource.Type = val
 		case string(conventions.ServiceNameKey):
 			getServiceInfo(ocNode).Name = val
-		case ocstring(conventions.ProcessStartTimeKey):
+		case occonventions.AttributeProcessStartTime:
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
 				continue
@@ -100,7 +102,7 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 			}
 		case string(conventions.TelemetrySDKVersionKey):
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
-		case ocstring(conventions.ExporterVersionKey):
+		case occonventions.AttributeExporterVersion:
 			getLibraryInfo(ocNode).ExporterVersion = val
 		case string(conventions.TelemetrySDKLanguageKey):
 			if code, ok := langToOCLangCodeMap[val]; ok {
