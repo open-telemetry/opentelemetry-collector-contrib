@@ -48,12 +48,6 @@ type Config struct {
 
 	FlattenData bool `mapstructure:"flatten_data"`
 	logger      *zap.Logger
-
-	// Additional*Funcs config properties will add additional custom OTTL funcs to the resulting transform processor.
-	// This properties can only be set programatically and can't be set throug a configuration file.
-	AdditionalLogFuncs    []ottl.Factory[ottllog.TransformContext]    `mapstructure:"-"`
-	AdditionalSpanFuncs   []ottl.Factory[ottlspan.TransformContext]   `mapstructure:"-"`
-	AdditionalMetricFuncs []ottl.Factory[ottlmetric.TransformContext] `mapstructure:"-"`
 }
 
 // Unmarshal is used internally by mapstructure to parse the transformprocessor configuration (Config),
@@ -138,45 +132,72 @@ func (c *Config) Unmarshal(conf *confmap.Conf) error {
 
 var _ component.Config = (*Config)(nil)
 
+func (c *Config) ValidateTraceStatements(additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext]) error {
+	var errors error
+	pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(additionalSpanFuncs)), common.WithSpanEventParser(traces.SpanEventFunctions()))
+	if err != nil {
+		return err
+	}
+	for _, cs := range c.TraceStatements {
+		_, err = pc.ParseContextStatements(cs)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+	return errors
+}
+
+func (c *Config) ValidateLogStatements(additionalLogFuncs ...ottl.Factory[ottllog.TransformContext]) error {
+	var errors error
+	pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(additionalLogFuncs...)))
+	if err != nil {
+		return err
+	}
+	for _, cs := range c.LogStatements {
+		_, err = pc.ParseContextStatements(cs)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+	return errors
+}
+
+func (c *Config) ValidateMetricStatements(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) error {
+	var errors error
+	pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(additionalMetricFuncs...)), common.WithDataPointParser(metrics.DataPointFunctions()))
+	if err != nil {
+		return err
+	}
+	for _, cs := range c.MetricStatements {
+		_, err := pc.ParseContextStatements(cs)
+		if err != nil {
+			errors = multierr.Append(errors, err)
+		}
+	}
+	return errors
+}
+
 func (c *Config) Validate() error {
 	var errors error
 
 	if len(c.TraceStatements) > 0 {
-		pc, err := common.NewTraceParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithSpanParser(traces.SpanFunctions(c.AdditionalSpanFuncs)), common.WithSpanEventParser(traces.SpanEventFunctions()))
+		err := c.ValidateTraceStatements()
 		if err != nil {
-			return err
-		}
-		for _, cs := range c.TraceStatements {
-			_, err = pc.ParseContextStatements(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
+			errors = multierr.Append(errors, err)
 		}
 	}
 
 	if len(c.MetricStatements) > 0 {
-		pc, err := common.NewMetricParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithMetricParser(metrics.MetricFunctions(c.AdditionalMetricFuncs)), common.WithDataPointParser(metrics.DataPointFunctions()))
+		err := c.ValidateMetricStatements()
 		if err != nil {
-			return err
-		}
-		for _, cs := range c.MetricStatements {
-			_, err := pc.ParseContextStatements(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
+			errors = multierr.Append(errors, err)
 		}
 	}
 
 	if len(c.LogStatements) > 0 {
-		pc, err := common.NewLogParserCollection(component.TelemetrySettings{Logger: zap.NewNop()}, common.WithLogParser(logs.LogFunctions(c.AdditionalLogFuncs)))
+		err := c.ValidateLogStatements()
 		if err != nil {
-			return err
-		}
-		for _, cs := range c.LogStatements {
-			_, err = pc.ParseContextStatements(cs)
-			if err != nil {
-				errors = multierr.Append(errors, err)
-			}
+			errors = multierr.Append(errors, err)
 		}
 	}
 
