@@ -75,10 +75,9 @@ func TestSync2Async(t *testing.T) {
 
 	for i := 0; i < syncProducers; i++ {
 		wg.Add(1)
-		go func() {
+		go func(data int) {
 			defer wg.Done()
-			data := i
-			for i := 0; i < countPerProducer; i++ {
+			for j := 0; j < countPerProducer; j++ {
 				err := s2a.DoSync(ctx, data)
 				if data%10 == 0 {
 					// Must be an error.
@@ -94,7 +93,7 @@ func TestSync2Async(t *testing.T) {
 					}
 				}
 			}
-		}()
+		}(i)
 	}
 	wg.Wait()
 	close(jobs)
