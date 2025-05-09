@@ -61,6 +61,13 @@ func StandardResourceFuncs() map[string]ottl.Factory[ottlresource.TransformConte
 	return ottlfuncs.StandardConverters[ottlresource.TransformContext]()
 }
 
+func MergeAdditionalFuncs[T any](m map[string]ottl.Factory[T], additionalFuncs []ottl.Factory[T]) map[string]ottl.Factory[T] {
+	for _, f := range additionalFuncs {
+		m[f.Name()] = f
+	}
+	return m
+}
+
 type hasAttributeOnDatapointArguments struct {
 	Key         string
 	ExpectedVal string

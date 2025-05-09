@@ -18,6 +18,9 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterset/regexp"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 )
 
 // Config defines configuration for Resource processor.
@@ -264,6 +267,24 @@ func (lmp LogSeverityNumberMatchProperties) validate() error {
 
 var _ component.Config = (*Config)(nil)
 
+func (cfg *Config) ValidateSpanConditions(additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext]) error {
+	spanFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardSpanFuncs(), additionalSpanFuncs)
+	_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, spanFuncs, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+	return err
+}
+
+func (cfg *Config) ValidateMetricConditions(additionalMetricFuncs ...ottl.Factory[ottlmetric.TransformContext]) error {
+	metricFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardMetricFuncs(), additionalMetricFuncs)
+	_, err := filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, metricFuncs, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+	return err
+}
+
+func (cfg *Config) ValidateLogConditions(additionalLogFuncs ...ottl.Factory[ottllog.TransformContext]) error {
+	logFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardLogFuncs(), additionalLogFuncs)
+	_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, logFuncs, ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+	return err
+}
+
 // Validate checks if the processor configuration is valid
 func (cfg *Config) Validate() error {
 	if (cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil) && (cfg.Spans.Include != nil || cfg.Spans.Exclude != nil) {
@@ -279,7 +300,7 @@ func (cfg *Config) Validate() error {
 	var errors error
 
 	if cfg.Traces.SpanConditions != nil {
-		_, err := filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		err := cfg.ValidateSpanConditions()
 		errors = multierr.Append(errors, err)
 	}
 
@@ -289,7 +310,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Metrics.MetricConditions != nil {
-		_, err := filterottl.NewBoolExprForMetric(cfg.Metrics.MetricConditions, filterottl.StandardMetricFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		err := cfg.ValidateMetricConditions()
 		errors = multierr.Append(errors, err)
 	}
 
@@ -299,7 +320,7 @@ func (cfg *Config) Validate() error {
 	}
 
 	if cfg.Logs.LogConditions != nil {
-		_, err := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), ottl.PropagateError, component.TelemetrySettings{Logger: zap.NewNop()})
+		err := cfg.ValidateLogConditions()
 		errors = multierr.Append(errors, err)
 	}
 

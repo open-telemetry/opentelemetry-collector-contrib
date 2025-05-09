@@ -17,6 +17,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/expr"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterspan"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspan"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlspanevent"
 )
@@ -28,7 +29,7 @@ type filterSpanProcessor struct {
 	logger            *zap.Logger
 }
 
-func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanProcessor, error) {
+func newFilterSpansProcessor(set processor.Settings, cfg *Config, additionalSpanFuncs ...ottl.Factory[ottlspan.TransformContext]) (*filterSpanProcessor, error) {
 	var err error
 	fsp := &filterSpanProcessor{
 		logger: set.Logger,
@@ -42,7 +43,8 @@ func newFilterSpansProcessor(set processor.Settings, cfg *Config) (*filterSpanPr
 
 	if cfg.Traces.SpanConditions != nil || cfg.Traces.SpanEventConditions != nil {
 		if cfg.Traces.SpanConditions != nil {
-			fsp.skipSpanExpr, err = filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, filterottl.StandardSpanFuncs(), cfg.ErrorMode, set.TelemetrySettings)
+			spanFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardSpanFuncs(), additionalSpanFuncs)
+			fsp.skipSpanExpr, err = filterottl.NewBoolExprForSpan(cfg.Traces.SpanConditions, spanFuncs, cfg.ErrorMode, set.TelemetrySettings)
 			if err != nil {
 				return nil, err
 			}
