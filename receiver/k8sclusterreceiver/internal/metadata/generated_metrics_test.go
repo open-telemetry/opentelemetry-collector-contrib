@@ -511,7 +511,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.hpa.current_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Current number of pod replicas managed by this autoscaler.", ms.At(i).Description())
+					assert.Equal(t, "Current number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -523,7 +523,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.hpa.desired_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Desired number of pod replicas managed by this autoscaler.", ms.At(i).Description())
+					assert.Equal(t, "Desired number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -535,7 +535,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.hpa.max_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Maximum number of replicas to which the autoscaler can scale up.", ms.At(i).Description())
+					assert.Equal(t, "Maximum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())
@@ -547,7 +547,7 @@ func TestMetricsBuilder(t *testing.T) {
 					validatedMetrics["k8s.hpa.min_replicas"] = true
 					assert.Equal(t, pmetric.MetricTypeGauge, ms.At(i).Type())
 					assert.Equal(t, 1, ms.At(i).Gauge().DataPoints().Len())
-					assert.Equal(t, "Minimum number of replicas to which the autoscaler can scale up.", ms.At(i).Description())
+					assert.Equal(t, "Minimum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.", ms.At(i).Description())
 					assert.Equal(t, "{pod}", ms.At(i).Unit())
 					dp := ms.At(i).Gauge().DataPoints().At(0)
 					assert.Equal(t, start, dp.StartTimestamp())

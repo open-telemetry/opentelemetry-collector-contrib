@@ -150,7 +150,7 @@ Number of desired pods in this deployment
 
 ### k8s.hpa.current_replicas
 
-Current number of pod replicas managed by this autoscaler.
+Current number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -158,7 +158,7 @@ Current number of pod replicas managed by this autoscaler.
 
 ### k8s.hpa.desired_replicas
 
-Desired number of pod replicas managed by this autoscaler.
+Desired number of pod replicas managed by this autoscaler. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerstatus-v1-autoscaling for details.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -166,7 +166,7 @@ Desired number of pod replicas managed by this autoscaler.
 
 ### k8s.hpa.max_replicas
 
-Maximum number of replicas to which the autoscaler can scale up.
+Maximum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
@@ -174,7 +174,7 @@ Maximum number of replicas to which the autoscaler can scale up.
 
 ### k8s.hpa.min_replicas
 
-Minimum number of replicas to which the autoscaler can scale up.
+Minimum number of replicas to which the autoscaler can scale up. See https://kubernetes.io/docs/reference/generated/kubernetes-api/v1.33/#horizontalpodautoscalerspec-v1-autoscaling for details.
 
 | Unit | Metric Type | Value Type |
 | ---- | ----------- | ---------- |
