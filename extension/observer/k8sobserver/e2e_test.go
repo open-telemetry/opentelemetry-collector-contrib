@@ -69,5 +69,4 @@ func TestE2ENamespaced(t *testing.T) {
 		return false
 	}, 1*time.Minute, 1*time.Second,
 		"Timeout: failed to receive metrics in 1 minute")
-
 }
