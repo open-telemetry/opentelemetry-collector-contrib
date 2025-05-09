@@ -8,7 +8,7 @@ import (
 	"sync"
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 )
 
 // See:
@@ -16,11 +16,11 @@ import (
 // https://github.com/DataDog/opentelemetry-mapping-go/blob/main/pkg/otlp/attributes/attributes.go
 var datadogKnownResourceAttributes = map[string]string{
 	"env":     semconv.AttributeDeploymentEnvironment,
-	"service": semconv.AttributeServiceName,
+	"service": string(semconv.ServiceNameKey),
 	"version": semconv.AttributeServiceVersion,
 
 	// Container-related attributes
-	"container_id":   semconv.AttributeContainerID,
+	"container_id":   string(semconv.ContainerIDKey),
 	"container_name": semconv.AttributeContainerName,
 	"image_name":     semconv.AttributeContainerImageName,
 	"image_tag":      semconv.AttributeContainerImageTag,

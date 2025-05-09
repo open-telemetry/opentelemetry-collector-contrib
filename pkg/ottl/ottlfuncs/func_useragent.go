@@ -7,7 +7,7 @@ import (
 	"errors"
 
 	"github.com/ua-parser/uap-go/uaparser"
-	semconv "go.opentelemetry.io/collector/semconv/v1.25.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.25.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 )

@@ -20,7 +20,7 @@ import (
 	"github.com/hashicorp/golang-lru/v2/simplelru"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 	oteltrace "go.opentelemetry.io/otel/trace"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
@@ -95,7 +95,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 	}
 	sharedAttributes := pcommon.NewMap()
 	for k, v := range map[string]string{
-		semconv.AttributeContainerID:           payload.ContainerID,
+		string(semconv.ContainerIDKey):         payload.ContainerID,
 		semconv.AttributeTelemetrySDKLanguage:  payload.LanguageName,
 		semconv.AttributeProcessRuntimeVersion: payload.LanguageVersion,
 		semconv.AttributeDeploymentEnvironment: payload.Env,
@@ -201,7 +201,7 @@ func ToTraces(logger *zap.Logger, payload *pb.TracerPayload, req *http.Request, 
 		rs := results.ResourceSpans().AppendEmpty()
 		rs.SetSchemaUrl(semconv.SchemaURL)
 		sharedAttributes.CopyTo(rs.Resource().Attributes())
-		rs.Resource().Attributes().PutStr(semconv.AttributeServiceName, service)
+		rs.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), service)
 
 		in := rs.ScopeSpans().AppendEmpty()
 		in.Scope().SetName("Datadog")

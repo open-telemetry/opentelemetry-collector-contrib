@@ -13,7 +13,7 @@ import (
 
 	gojson "github.com/goccy/go-json"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (
@@ -173,18 +173,18 @@ func addRequestURIProperties(uri string, record plog.LogRecord) error {
 	if errURL != nil {
 		return fmt.Errorf("failed to parse request URI %q: %w", uri, errURL)
 	}
-	record.Attributes().PutStr(conventions.AttributeURLOriginal, uri)
+	record.Attributes().PutStr(string(conventions.URLOriginalKey), uri)
 
 	if port := u.Port(); port != "" {
-		if err := putInt(conventions.AttributeURLPort, u.Port(), record); err != nil {
+		if err := putInt(string(conventions.URLPortKey), u.Port(), record); err != nil {
 			return fmt.Errorf("failed to get port number from value %q: %w", port, err)
 		}
 	}
 
-	putStr(conventions.AttributeURLScheme, u.Scheme, record)
-	putStr(conventions.AttributeURLPath, u.Path, record)
-	putStr(conventions.AttributeURLQuery, u.RawQuery, record)
-	putStr(conventions.AttributeURLFragment, u.Fragment, record)
+	putStr(string(conventions.URLSchemeKey), u.Scheme, record)
+	putStr(string(conventions.URLPathKey), u.Path, record)
+	putStr(string(conventions.URLQueryKey), u.RawQuery, record)
+	putStr(string(conventions.URLFragmentKey), u.Fragment, record)
 
 	return nil
 }
@@ -203,8 +203,8 @@ func addSecurityProtocolProperties(securityProtocol string, record plog.LogRecor
 		return fmt.Errorf(`security protocol %q has invalid format, expects "<name> <version>"`, securityProtocol)
 	}
 
-	record.Attributes().PutStr(conventions.AttributeTLSProtocolName, name)
-	record.Attributes().PutStr(conventions.AttributeTLSProtocolVersion, version)
+	record.Attributes().PutStr(string(conventions.TLSProtocolNameKey), name)
+	record.Attributes().PutStr(string(conventions.TLSProtocolVersionKey), version)
 
 	return nil
 }
@@ -215,7 +215,7 @@ func addErrorInfoProperties(errorInfo string, record plog.LogRecord) {
 	if errorInfo == noError {
 		return
 	}
-	record.Attributes().PutStr(conventions.AttributeExceptionType, errorInfo)
+	record.Attributes().PutStr(string(conventions.ExceptionTypeKey), errorInfo)
 }
 
 // handleDestination puts the value for the backend host name and endpoint
@@ -248,18 +248,18 @@ func handleDestination(backendHostname string, endpoint string, record plog.LogR
 		if endpoint == "" {
 			return nil
 		}
-		err := addFields(endpoint, conventions.AttributeDestinationAddress, conventions.AttributeDestinationPort)
+		err := addFields(endpoint, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey))
 		if err != nil {
 			return fmt.Errorf("failed to parse endpoint %q: %w", endpoint, err)
 		}
 	} else {
-		err := addFields(backendHostname, conventions.AttributeDestinationAddress, conventions.AttributeDestinationPort)
+		err := addFields(backendHostname, string(conventions.DestinationAddressKey), string(conventions.DestinationPortKey))
 		if err != nil {
 			return fmt.Errorf("failed to parse backend hostname %q: %w", backendHostname, err)
 		}
 
 		if endpoint != backendHostname && endpoint != "" {
-			err = addFields(endpoint, conventions.AttributeNetworkPeerAddress, conventions.AttributeNetworkPeerPort)
+			err = addFields(endpoint, string(conventions.NetworkPeerAddressKey), string(conventions.NetworkPeerPortKey))
 			if err != nil {
 				return fmt.Errorf("failed to parse endpoint %q: %w", endpoint, err)
 			}
@@ -277,16 +277,16 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 		return fmt.Errorf("failed to parse AzureCdnAccessLog properties: %w", err)
 	}
 
-	if err := putInt(conventions.AttributeHTTPRequestSize, properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPRequestSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeHTTPResponseSize, properties.RequestBytes, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseSizeKey), properties.RequestBytes, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeClientPort, properties.ClientPort, record); err != nil {
+	if err := putInt(string(conventions.ClientPortKey), properties.ClientPort, record); err != nil {
 		return err
 	}
-	if err := putInt(conventions.AttributeHTTPResponseStatusCode, properties.HTTPStatusCode, record); err != nil {
+	if err := putInt(string(conventions.HTTPResponseStatusCodeKey), properties.HTTPStatusCode, record); err != nil {
 		return err
 	}
 
@@ -317,21 +317,21 @@ func addAzureCdnAccessLogProperties(data []byte, record plog.LogRecord) error {
 	}
 
 	putStr(attributeAzureRef, properties.TrackingReference, record)
-	putStr(conventions.AttributeHTTPRequestMethod, properties.HTTPMethod, record)
-	putStr(conventions.AttributeNetworkProtocolVersion, properties.HTTPVersion, record)
-	putStr(conventions.AttributeNetworkProtocolName, properties.RequestProtocol, record)
+	putStr(string(conventions.HTTPRequestMethodKey), properties.HTTPMethod, record)
+	putStr(string(conventions.NetworkProtocolVersionKey), properties.HTTPVersion, record)
+	putStr(string(conventions.NetworkProtocolNameKey), properties.RequestProtocol, record)
 	putStr(attributeTLSServerName, properties.SNI, record)
-	putStr(conventions.AttributeUserAgentOriginal, properties.UserAgent, record)
-	putStr(conventions.AttributeClientAddress, properties.ClientIP, record)
-	putStr(conventions.AttributeSourceAddress, properties.SocketIP, record)
+	putStr(string(conventions.UserAgentOriginalKey), properties.UserAgent, record)
+	putStr(string(conventions.ClientAddressKey), properties.ClientIP, record)
+	putStr(string(conventions.SourceAddressKey), properties.SocketIP, record)
 
 	putStr(attributeAzurePop, properties.Pop, record)
 	putStr(attributeCacheStatus, properties.CacheStatus, record)
 
 	if properties.IsReceivedFromClient {
-		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "receive")
+		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "receive")
 	} else {
-		record.Attributes().PutStr(conventions.AttributeNetworkIoDirection, "transmit")
+		record.Attributes().PutStr(string(conventions.NetworkIoDirectionKey), "transmit")
 	}
 
 	return nil

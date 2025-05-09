@@ -10,7 +10,7 @@ import (
 
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
@@ -105,7 +105,7 @@ func (m *statusMapper) fromAttribute(key string, attrib pcommon.Value) bool {
 		m.fromStatus.message = attrib.Str()
 		return true
 
-	case conventions.AttributeHTTPStatusCode:
+	case string(conventions.HTTPStatusCodeKey):
 		httpCode, err := attribToStatusCode(attrib)
 		if err == nil {
 			code := statusCodeFromHTTP(httpCode)

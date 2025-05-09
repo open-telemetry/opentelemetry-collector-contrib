@@ -9,7 +9,7 @@ import (
 
 	"github.com/google/go-github/v71/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 // model.go contains specific attributes from the 1.28 and 1.29 releases of
@@ -145,7 +145,7 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(semconv.AttributeServiceName, svc)
+	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())
@@ -218,7 +218,7 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 		err = errors.New("failed to get service.name")
 	}
 
-	attrs.PutStr(semconv.AttributeServiceName, svc)
+	attrs.PutStr(string(semconv.ServiceNameKey), svc)
 
 	// VCS Attributes
 	attrs.PutStr(AttributeVCSRepositoryName, e.GetRepo().GetName())

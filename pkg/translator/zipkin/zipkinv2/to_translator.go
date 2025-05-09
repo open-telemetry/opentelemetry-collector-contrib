@@ -17,9 +17,8 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/translator/zipkin/internal/zipkin"
@@ -85,10 +84,10 @@ var nonSpanAttributes = func() map[string]struct{} {
 	attrs[zipkin.TagServiceNameSource] = struct{}{}
 	attrs[conventions.OtelLibraryName] = struct{}{}
 	attrs[conventions.OtelLibraryVersion] = struct{}{}
-	attrs[occonventions.AttributeProcessStartTime] = struct{}{}
-	attrs[occonventions.AttributeExporterVersion] = struct{}{}
-	attrs[conventions.AttributeProcessPID] = struct{}{}
-	attrs[occonventions.AttributeResourceType] = struct{}{}
+	attrs[ocstring(conventions.ProcessStartTimeKey)] = struct{}{}
+	attrs[ocstring(conventions.ExporterVersionKey)] = struct{}{}
+	attrs[string(conventions.ProcessPIDKey)] = struct{}{}
+	attrs[ocstring(conventions.ResourceTypeKey)] = struct{}{}
 	return attrs
 }()
 
@@ -299,27 +298,27 @@ func zTagsToInternalAttrs(zspan *zipkinmodel.SpanModel, tags map[string]string, 
 	parseErr := tagsToAttributeMap(tags, dest, parseStringTags)
 	if zspan.LocalEndpoint != nil {
 		if zspan.LocalEndpoint.IPv4 != nil {
-			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv4.String())
+			dest.PutStr(string(conventions.NetHostIPKey), zspan.LocalEndpoint.IPv4.String())
 		}
 		if zspan.LocalEndpoint.IPv6 != nil {
-			dest.PutStr(conventions.AttributeNetHostIP, zspan.LocalEndpoint.IPv6.String())
+			dest.PutStr(string(conventions.NetHostIPKey), zspan.LocalEndpoint.IPv6.String())
 		}
 		if zspan.LocalEndpoint.Port > 0 {
-			dest.PutInt(conventions.AttributeNetHostPort, int64(zspan.LocalEndpoint.Port))
+			dest.PutInt(string(conventions.NetHostPortKey), int64(zspan.LocalEndpoint.Port))
 		}
 	}
 	if zspan.RemoteEndpoint != nil {
 		if zspan.RemoteEndpoint.ServiceName != "" {
-			dest.PutStr(conventions.AttributePeerService, zspan.RemoteEndpoint.ServiceName)
+			dest.PutStr(string(conventions.PeerServiceKey), zspan.RemoteEndpoint.ServiceName)
 		}
 		if zspan.RemoteEndpoint.IPv4 != nil {
-			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv4.String())
+			dest.PutStr(string(conventions.NetPeerIPKey), zspan.RemoteEndpoint.IPv4.String())
 		}
 		if zspan.RemoteEndpoint.IPv6 != nil {
-			dest.PutStr(conventions.AttributeNetPeerIP, zspan.RemoteEndpoint.IPv6.String())
+			dest.PutStr(string(conventions.NetPeerIPKey), zspan.RemoteEndpoint.IPv6.String())
 		}
 		if zspan.RemoteEndpoint.Port > 0 {
-			dest.PutInt(conventions.AttributeNetPeerPort, int64(zspan.RemoteEndpoint.Port))
+			dest.PutInt(string(conventions.NetPeerPortKey), int64(zspan.RemoteEndpoint.Port))
 		}
 	}
 	return parseErr
@@ -359,13 +358,13 @@ func populateResourceFromZipkinSpan(tags map[string]string, localServiceName str
 	}
 
 	if len(tags) == 0 {
-		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), localServiceName)
 		return
 	}
 
 	snSource := tags[zipkin.TagServiceNameSource]
 	if snSource == "" {
-		resource.Attributes().PutStr(conventions.AttributeServiceName, localServiceName)
+		resource.Attributes().PutStr(string(conventions.ServiceNameKey), localServiceName)
 	} else {
 		resource.Attributes().PutStr(snSource, localServiceName)
 	}

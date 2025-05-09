@@ -14,9 +14,8 @@ import (
 	"github.com/jaegertracing/jaeger-idl/model/v1"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.16.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.16.0"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	idutils "github.com/open-telemetry/opentelemetry-collector-contrib/pkg/core/xidutils"
 )
@@ -140,7 +139,7 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 	attrs := dest.Attributes()
 	if serviceName != "" {
 		attrs.EnsureCapacity(len(tags) + 1)
-		attrs.PutStr(conventions.AttributeServiceName, serviceName)
+		attrs.PutStr(string(conventions.ServiceNameKey), serviceName)
 	} else {
 		attrs.EnsureCapacity(len(tags))
 	}
@@ -154,9 +153,9 @@ func jProcessToInternalResource(process *model.Process, dest pcommon.Resource) {
 // translateHostnameAttr translates "hostname" atttribute
 func translateHostnameAttr(attrs pcommon.Map) {
 	hostname, hostnameFound := attrs.Get("hostname")
-	_, convHostNameFound := attrs.Get(conventions.AttributeHostName)
+	_, convHostNameFound := attrs.Get(string(conventions.HostNameKey))
 	if hostnameFound && !convHostNameFound {
-		hostname.CopyTo(attrs.PutEmpty(conventions.AttributeHostName))
+		hostname.CopyTo(attrs.PutEmpty(string(conventions.HostNameKey)))
 		attrs.Remove("hostname")
 	}
 }
@@ -164,9 +163,9 @@ func translateHostnameAttr(attrs pcommon.Map) {
 // translateHostnameAttr translates "jaeger.version" atttribute
 func translateJaegerVersionAttr(attrs pcommon.Map) {
 	jaegerVersion, jaegerVersionFound := attrs.Get("jaeger.version")
-	_, exporterVersionFound := attrs.Get(occonventions.AttributeExporterVersion)
+	_, exporterVersionFound := attrs.Get(ocstring(conventions.ExporterVersionKey))
 	if jaegerVersionFound && !exporterVersionFound {
-		attrs.PutStr(occonventions.AttributeExporterVersion, "Jaeger-"+jaegerVersion.Str())
+		attrs.PutStr(ocstring(conventions.ExporterVersionKey), "Jaeger-"+jaegerVersion.Str())
 		attrs.Remove("jaeger.version")
 	}
 }
@@ -287,7 +286,7 @@ func setInternalSpanStatus(attrs pcommon.Map, span ptrace.Span) {
 		// otel.status_message tag will have already been removed if
 		// statusExists is true.
 		attrs.Remove(conventions.OtelStatusCode)
-	} else if httpCodeAttr, ok := attrs.Get(conventions.AttributeHTTPStatusCode); !statusExists && ok {
+	} else if httpCodeAttr, ok := attrs.Get(string(conventions.HTTPStatusCodeKey)); !statusExists && ok {
 		// Fallback to introspecting if this span represents a failed HTTP
 		// request or response, but again, only do so if the `error` tag was
 		// not set to true and no explicit status was sent.
@@ -425,7 +424,7 @@ func jReferencesToSpanLinks(refs []model.SpanRef, excludeParentID model.SpanID, 
 		link := dest.AppendEmpty()
 		link.SetTraceID(idutils.UInt64ToTraceID(ref.TraceID.High, ref.TraceID.Low))
 		link.SetSpanID(idutils.UInt64ToSpanID(uint64(ref.SpanID)))
-		link.Attributes().PutStr(conventions.AttributeOpentracingRefType, jRefTypeToAttribute(ref.RefType))
+		link.Attributes().PutStr(string(conventions.OpentracingRefTypeKey), jRefTypeToAttribute(ref.RefType))
 	}
 }
 
@@ -441,9 +440,9 @@ func getTraceStateFromAttrs(attrs pcommon.Map) string {
 
 func getScope(span *model.Span) scope {
 	il := scope{}
-	if libraryName, ok := getAndDeleteTag(span, conventions.AttributeOtelScopeName); ok {
+	if libraryName, ok := getAndDeleteTag(span, string(conventions.OtelScopeNameKey)); ok {
 		il.name = libraryName
-		if libraryVersion, ok := getAndDeleteTag(span, conventions.AttributeOtelScopeVersion); ok {
+		if libraryVersion, ok := getAndDeleteTag(span, string(conventions.OtelScopeVersionKey)); ok {
 			il.version = libraryVersion
 		}
 	}
@@ -463,7 +462,7 @@ func getAndDeleteTag(span *model.Span, key string) (string, bool) {
 
 func jRefTypeToAttribute(ref model.SpanRefType) string {
 	if ref == model.ChildOf {
-		return conventions.AttributeOpentracingRefTypeChildOf
+		return string(conventions.OpentracingRefTypeChildOfKey)
 	}
-	return conventions.AttributeOpentracingRefTypeFollowsFrom
+	return string(conventions.OpentracingRefTypeFollowsFromKey)
 }

@@ -11,10 +11,8 @@ import (
 	ocresource "github.com/census-instrumentation/opencensus-proto/gen-go/resource/v1"
 	"go.opencensus.io/resource/resourcekeys"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"google.golang.org/protobuf/types/known/timestamppb"
-
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 )
 
 type ocInferredResourceType struct {
@@ -29,23 +27,23 @@ type ocInferredResourceType struct {
 var labelPresenceToResourceType = []ocInferredResourceType{
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/container.md
-		labelKeyPresent: conventions.AttributeContainerName,
+		labelKeyPresent: string(conventions.ContainerNameKey),
 		resourceType:    resourcekeys.ContainerType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/k8s.md#pod
-		labelKeyPresent: conventions.AttributeK8SPodName,
+		labelKeyPresent: string(conventions.K8SPodNameKey),
 		// NOTE: OpenCensus is using "k8s" rather than "k8s.pod" for Pod
 		resourceType: resourcekeys.K8SType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/host.md
-		labelKeyPresent: conventions.AttributeHostName,
+		labelKeyPresent: string(conventions.HostNameKey),
 		resourceType:    resourcekeys.HostType,
 	},
 	{
 		// See https://github.com/open-telemetry/opentelemetry-specification/blob/main/specification/resource/semantic_conventions/cloud.md
-		labelKeyPresent: conventions.AttributeCloudProvider,
+		labelKeyPresent: string(conventions.CloudProviderKey),
 		resourceType:    resourcekeys.CloudType,
 	},
 }
@@ -54,16 +52,16 @@ var langToOCLangCodeMap = getSDKLangToOCLangCodeMap()
 
 func getSDKLangToOCLangCodeMap() map[string]int32 {
 	mappings := make(map[string]int32)
-	mappings[conventions.AttributeTelemetrySDKLanguageCPP] = 1
-	mappings[conventions.AttributeTelemetrySDKLanguageDotnet] = 2
-	mappings[conventions.AttributeTelemetrySDKLanguageErlang] = 3
-	mappings[conventions.AttributeTelemetrySDKLanguageGo] = 4
-	mappings[conventions.AttributeTelemetrySDKLanguageJava] = 5
-	mappings[conventions.AttributeTelemetrySDKLanguageNodejs] = 6
-	mappings[conventions.AttributeTelemetrySDKLanguagePHP] = 7
-	mappings[conventions.AttributeTelemetrySDKLanguagePython] = 8
-	mappings[conventions.AttributeTelemetrySDKLanguageRuby] = 9
-	mappings[conventions.AttributeTelemetrySDKLanguageWebjs] = 10
+	mappings[string(conventions.TelemetrySDKLanguageCPPKey)] = 1
+	mappings[string(conventions.TelemetrySDKLanguageDotnetKey)] = 2
+	mappings[string(conventions.TelemetrySDKLanguageErlangKey)] = 3
+	mappings[string(conventions.TelemetrySDKLanguageGoKey)] = 4
+	mappings[string(conventions.TelemetrySDKLanguageJavaKey)] = 5
+	mappings[string(conventions.TelemetrySDKLanguageNodejsKey)] = 6
+	mappings[string(conventions.TelemetrySDKLanguagePHPKey)] = 7
+	mappings[string(conventions.TelemetrySDKLanguagePythonKey)] = 8
+	mappings[string(conventions.TelemetrySDKLanguageRubyKey)] = 9
+	mappings[string(conventions.TelemetrySDKLanguageWebjsKey)] = 10
 	return mappings
 }
 
@@ -80,31 +78,31 @@ func internalResourceToOC(resource pcommon.Resource) (*occommon.Node, *ocresourc
 		val := v.AsString()
 
 		switch k {
-		case conventions.AttributeCloudAvailabilityZone:
+		case string(conventions.CloudAvailabilityZoneKey):
 			labels[resourcekeys.CloudKeyZone] = val
-		case occonventions.AttributeResourceType:
+		case ocstring(conventions.ResourceTypeKey):
 			ocResource.Type = val
-		case conventions.AttributeServiceName:
+		case string(conventions.ServiceNameKey):
 			getServiceInfo(ocNode).Name = val
-		case occonventions.AttributeProcessStartTime:
+		case ocstring(conventions.ProcessStartTimeKey):
 			t, err := time.Parse(time.RFC3339Nano, val)
 			if err != nil {
 				continue
 			}
 			ts := timestamppb.New(t)
 			getProcessIdentifier(ocNode).StartTimestamp = ts
-		case conventions.AttributeHostName:
+		case string(conventions.HostNameKey):
 			getProcessIdentifier(ocNode).HostName = val
-		case conventions.AttributeProcessPID:
+		case string(conventions.ProcessPIDKey):
 			pid, err := strconv.ParseUint(val, 10, 32)
 			if err == nil {
 				getProcessIdentifier(ocNode).Pid = uint32(pid)
 			}
-		case conventions.AttributeTelemetrySDKVersion:
+		case string(conventions.TelemetrySDKVersionKey):
 			getLibraryInfo(ocNode).CoreLibraryVersion = val
-		case occonventions.AttributeExporterVersion:
+		case ocstring(conventions.ExporterVersionKey):
 			getLibraryInfo(ocNode).ExporterVersion = val
-		case conventions.AttributeTelemetrySDKLanguage:
+		case string(conventions.TelemetrySDKLanguageKey):
 			if code, ok := langToOCLangCodeMap[val]; ok {
 				getLibraryInfo(ocNode).Language = occommon.LibraryInfo_Language(code)
 			}

@@ -14,7 +14,7 @@ import (
 	"go.opentelemetry.io/collector/pdata/plog"
 	"go.opentelemetry.io/collector/pdata/pprofile"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.22.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.22.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/datapoints"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/elasticsearchexporter/internal/elasticsearch"
@@ -31,7 +31,7 @@ import (
 // neither convert the SemConv key to the equivalent ECS name nor pass-through the
 // SemConv key as-is to become the ECS name.
 var resourceAttrsConversionMap = map[string]string{
-	semconv.AttributeServiceInstanceID:      "service.node.name",
+	string(semconv.ServiceInstanceIDKey):    "service.node.name",
 	semconv.AttributeDeploymentEnvironment:  "service.environment",
 	semconv.AttributeTelemetrySDKName:       "",
 	semconv.AttributeTelemetrySDKLanguage:   "",

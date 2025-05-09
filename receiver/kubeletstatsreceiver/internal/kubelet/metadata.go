@@ -9,7 +9,7 @@ import (
 	"regexp"
 	"strings"
 
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	v1 "k8s.io/api/core/v1"
 	"k8s.io/apimachinery/pkg/types"
 	stats "k8s.io/kubelet/pkg/apis/stats/v1alpha1"
@@ -21,7 +21,7 @@ type MetadataLabel string
 
 // Values for MetadataLabel enum.
 const (
-	MetadataLabelContainerID MetadataLabel = conventions.AttributeContainerID
+	MetadataLabelContainerID MetadataLabel = string(conventions.ContainerIDKey)
 	MetadataLabelVolumeType  MetadataLabel = labelVolumeType
 )
 

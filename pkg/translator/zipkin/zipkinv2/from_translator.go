@@ -14,7 +14,7 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -271,21 +271,21 @@ func resourceToZipkinEndpointServiceNameAndAttributeMap(
 
 func extractZipkinServiceName(zTags map[string]string) string {
 	var serviceName string
-	if sn, ok := zTags[conventions.AttributeServiceName]; ok {
+	if sn, ok := zTags[string(conventions.ServiceNameKey)]; ok {
 		serviceName = sn
-		delete(zTags, conventions.AttributeServiceName)
-	} else if fn, ok := zTags[conventions.AttributeFaaSName]; ok {
+		delete(zTags, string(conventions.ServiceNameKey))
+	} else if fn, ok := zTags[string(conventions.FaaSNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeFaaSName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeFaaSName
-	} else if fn, ok := zTags[conventions.AttributeK8SDeploymentName]; ok {
+		delete(zTags, string(conventions.FaaSNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.FaaSNameKey)
+	} else if fn, ok := zTags[string(conventions.K8SDeploymentNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeK8SDeploymentName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeK8SDeploymentName
-	} else if fn, ok := zTags[conventions.AttributeProcessExecutableName]; ok {
+		delete(zTags, string(conventions.K8SDeploymentNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.K8SDeploymentNameKey)
+	} else if fn, ok := zTags[string(conventions.ProcessExecutableNameKey)]; ok {
 		serviceName = fn
-		delete(zTags, conventions.AttributeProcessExecutableName)
-		zTags[zipkin.TagServiceNameSource] = conventions.AttributeProcessExecutableName
+		delete(zTags, string(conventions.ProcessExecutableNameKey))
+		zTags[zipkin.TagServiceNameSource] = string(conventions.ProcessExecutableNameKey)
 	} else {
 		serviceName = tracetranslator.ResourceNoServiceName
 	}
@@ -314,16 +314,16 @@ func zipkinEndpointFromTags(
 	redundantKeys map[string]bool,
 ) (endpoint *zipkinmodel.Endpoint) {
 	serviceName := localServiceName
-	if peerSvc, ok := zTags[conventions.AttributePeerService]; ok && remoteEndpoint {
+	if peerSvc, ok := zTags[string(conventions.PeerServiceKey)]; ok && remoteEndpoint {
 		serviceName = peerSvc
-		redundantKeys[conventions.AttributePeerService] = true
+		redundantKeys[string(conventions.PeerServiceKey)] = true
 	}
 
 	var ipKey, portKey string
 	if remoteEndpoint {
-		ipKey, portKey = conventions.AttributeNetPeerIP, conventions.AttributeNetPeerPort
+		ipKey, portKey = string(conventions.NetPeerIPKey), string(conventions.NetPeerPortKey)
 	} else {
-		ipKey, portKey = conventions.AttributeNetHostIP, conventions.AttributeNetHostPort
+		ipKey, portKey = string(conventions.NetHostIPKey), string(conventions.NetHostPortKey)
 	}
 
 	var ip net.IP

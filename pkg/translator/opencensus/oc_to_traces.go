@@ -12,10 +12,9 @@ import (
 	"go.opencensus.io/trace"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.12.0"
 	"google.golang.org/protobuf/types/known/wrapperspb"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/occonventions"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 )
 
@@ -342,14 +341,14 @@ func ocMessageEventToInternalAttrs(msgEvent *octrace.Span_TimeEvent_MessageEvent
 	}
 
 	dest.PutStr("message.type", msgEvent.Type.String())
-	dest.PutInt(conventions.AttributeMessagingMessageID, int64(msgEvent.Id))
-	dest.PutInt(conventions.AttributeMessagingMessagePayloadSizeBytes, int64(msgEvent.UncompressedSize))
-	dest.PutInt(conventions.AttributeMessagingMessagePayloadCompressedSizeBytes, int64(msgEvent.CompressedSize))
+	dest.PutInt(string(conventions.MessagingMessageIDKey), int64(msgEvent.Id))
+	dest.PutInt(string(conventions.MessagingMessagePayloadSizeBytesKey), int64(msgEvent.UncompressedSize))
+	dest.PutInt(string(conventions.MessagingMessagePayloadCompressedSizeBytesKey), int64(msgEvent.CompressedSize))
 }
 
 func ocSameProcessAsParentSpanToInternal(spaps *wrapperspb.BoolValue, dest ptrace.Span) {
 	if spaps == nil {
 		return
 	}
-	dest.Attributes().PutBool(occonventions.AttributeSameProcessAsParentSpan, spaps.Value)
+	dest.Attributes().PutBool(ocstring(conventions.SameProcessAsParentSpanKey), spaps.Value)
 }

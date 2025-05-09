@@ -13,7 +13,7 @@ import (
 	"github.com/google/go-github/v71/github"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/multierr"
 	"go.uber.org/zap"
 )

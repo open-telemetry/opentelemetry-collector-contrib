@@ -4,7 +4,7 @@
 package s3accesslog // import "github.com/open-telemetry/opentelemetry-collector-contrib/extension/encoding/awslogsencodingextension/internal/unmarshaler/s3-access-log"
 
 import (
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const (

@@ -12,7 +12,7 @@ import (
 	protoproducer "github.com/netsampler/goflow2/v2/producer/proto"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 var (
