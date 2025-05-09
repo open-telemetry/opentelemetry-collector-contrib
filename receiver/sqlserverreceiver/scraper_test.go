@@ -68,6 +68,7 @@ func configureAllScraperMetrics(cfg *Config, enabled bool) {
 	cfg.Metrics.SqlserverDatabaseTempdbVersionStoreSize.Enabled = enabled
 	cfg.Metrics.SqlserverDatabaseBackupOrRestoreRate.Enabled = enabled
 	cfg.Metrics.SqlserverMemoryUsage.Enabled = enabled
+	cfg.Metrics.SqlserverOsWaitDuration.Enabled = enabled
 
 	cfg.TopQueryCollection.Enabled = enabled
 	cfg.QuerySample.Enabled = enabled
@@ -130,6 +131,8 @@ func TestSuccessfulScrape(t *testing.T) {
 			expectedFile = filepath.Join("testdata", "expectedPerfCounters.yaml")
 		case getSQLServerPropertiesQuery(scraper.config.InstanceName):
 			expectedFile = filepath.Join("testdata", "expectedProperties.yaml")
+		case getSQLServerWaitStatsQuery(scraper.config.InstanceName):
+			expectedFile = filepath.Join("testdata", "expectedWaitStats.yaml")
 		}
 
 		// Uncomment line below to re-generate expected metrics.
@@ -296,6 +299,8 @@ func (mc mockClient) QueryRows(context.Context, ...any) ([]sqlquery.StringMap, e
 		queryResults, err = readFile("perfCounterQueryData.txt")
 	case getSQLServerPropertiesQuery(mc.instanceName):
 		queryResults, err = readFile("propertyQueryData.txt")
+	case getSQLServerWaitStatsQuery(mc.instanceName):
+		queryResults, err = readFile("waitStatsQueryData.txt")
 	case getSQLServerQueryTextAndPlanQuery():
 		queryResults, err = readFile("queryTextAndPlanQueryData.txt")
 	case getSQLServerQuerySamplesQuery():
