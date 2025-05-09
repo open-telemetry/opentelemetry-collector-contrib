@@ -69,11 +69,11 @@ func addCloudNamespaceAttribute(attributes pcommon.Map) {
 	}
 
 	switch cloudPlatformAttributeValue.Str() {
-	case string(conventions.CloudPlatformAWSEC2Key):
+	case conventions.CloudPlatformAWSEC2.Value.AsString():
 		attributes.PutStr(cloudNamespaceAttributeName, cloudNamespaceAwsEc2)
-	case string(conventions.CloudPlatformAWSECSKey):
+	case conventions.CloudPlatformAWSECS.Value.AsString():
 		attributes.PutStr(cloudNamespaceAttributeName, cloudNamespaceAwsEcs)
-	case string(conventions.CloudPlatformAWSElasticBeanstalkKey):
+	case conventions.CloudPlatformAWSElasticBeanstalk.Value.AsString():
 		attributes.PutStr(cloudNamespaceAttributeName, cloudNamespaceAwsBeanstalk)
 	}
 }

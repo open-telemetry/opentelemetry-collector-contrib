@@ -53,7 +53,7 @@ func CreateResource(job, instance string, serviceDiscoveryLabels labels.Labels) 
 	attrs.PutStr(string(conventions.ServiceNameKey), job)
 	if isDiscernibleHost(host) {
 		if !removeOldSemconvFeatureGate.IsEnabled() {
-			attrs.PutStr(oldstring(conventions.NetHostNameKey), host)
+			attrs.PutStr(string(conventions.NetHostNameKey), host)
 		}
 		attrs.PutStr(string(conventions.ServerAddressKey), host)
 	}

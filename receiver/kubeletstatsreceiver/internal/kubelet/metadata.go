@@ -20,15 +20,15 @@ import (
 type MetadataLabel string
 
 // Values for MetadataLabel enum.
-const (
-	MetadataLabelContainerID MetadataLabel = string(conventions.ContainerIDKey)
-	MetadataLabelVolumeType  MetadataLabel = labelVolumeType
-)
+const MetadataLabelVolumeType MetadataLabel = labelVolumeType
 
-var supportedLabels = map[MetadataLabel]bool{
-	MetadataLabelContainerID: true,
-	MetadataLabelVolumeType:  true,
-}
+var (
+	MetadataLabelContainerID MetadataLabel = MetadataLabel(conventions.ContainerIDKey)
+	supportedLabels                        = map[MetadataLabel]bool{
+		MetadataLabelContainerID: true,
+		MetadataLabelVolumeType:  true,
+	}
+)
 
 // ValidateMetadataLabelsConfig validates that provided list of metadata labels is supported
 func ValidateMetadataLabelsConfig(labels []MetadataLabel) error {
