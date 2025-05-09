@@ -238,7 +238,7 @@ func initTelemetrySettings(logger *zap.Logger, cfg config.Telemetry) (telemetryS
 		pcommonRes.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instanceID)
 	}
 
-	// TODO currently we do not have the build info containing the version available to set semconv.AttributeServiceVersion
+	// TODO currently we do not have the build info containing the version available to set semconv.ServiceVersionKey
 
 	var attrs []telemetryconfig.AttributeNameValue
 	for k, v := range pcommonRes.Attributes().All() {

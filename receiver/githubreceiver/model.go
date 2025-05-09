@@ -157,10 +157,10 @@ func (gtr *githubTracesReceiver) getWorkflowRunAttrs(resource pcommon.Resource, 
 	attrs.PutStr(AttributeVCSRefHeadRevisionAuthorEmail, e.GetWorkflowRun().GetHeadCommit().GetCommitter().GetEmail())
 
 	// CICD Attributes
-	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowRun().GetName())
+	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowRun().GetName())
 	attrs.PutStr(AttributeCICDPipelineRunSenderLogin, e.GetSender().GetLogin())
 	attrs.PutStr(AttributeCICDPipelineRunURLFull, e.GetWorkflowRun().GetHTMLURL())
-	attrs.PutInt(semconv.AttributeCicdPipelineRunID, e.GetWorkflowRun().GetID())
+	attrs.PutInt(string(semconv.CICDPipelineRunIDKey), e.GetWorkflowRun().GetID())
 	switch status := strings.ToLower(e.GetWorkflowRun().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineRunStatus, AttributeCICDPipelineRunStatusSuccess)
@@ -244,10 +244,10 @@ func (gtr *githubTracesReceiver) getWorkflowJobAttrs(resource pcommon.Resource, 
 	}
 
 	// CICD Attributes
-	attrs.PutStr(semconv.AttributeCicdPipelineName, e.GetWorkflowJob().GetName())
+	attrs.PutStr(string(semconv.CICDPipelineNameKey), e.GetWorkflowJob().GetName())
 	attrs.PutStr(AttributeCICDPipelineTaskRunSenderLogin, e.GetSender().GetLogin())
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskRunURLFull, e.GetWorkflowJob().GetHTMLURL())
-	attrs.PutInt(semconv.AttributeCicdPipelineTaskRunID, e.GetWorkflowJob().GetID())
+	attrs.PutStr(string(semconv.CICDPipelineTaskRunURLFullKey), e.GetWorkflowJob().GetHTMLURL())
+	attrs.PutInt(string(semconv.CICDPipelineTaskRunIDKey), e.GetWorkflowJob().GetID())
 	switch status := strings.ToLower(e.GetWorkflowJob().GetConclusion()); status {
 	case "success":
 		attrs.PutStr(AttributeCICDPipelineTaskRunStatus, AttributeCICDPipelineTaskRunStatusSuccess)

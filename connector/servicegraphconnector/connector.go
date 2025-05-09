@@ -45,10 +45,10 @@ var (
 	}
 
 	defaultPeerAttributes = []string{
-		semconv.AttributePeerService, semconv.AttributeDBName, semconv.AttributeDBSystem,
+		string(semconv.PeerServiceKey), string(semconv.DBNameKey), string(semconv.DBSystemKey),
 	}
 
-	defaultDatabaseNameAttributes = []string{semconv.AttributeDBName}
+	defaultDatabaseNameAttributes = []string{string(semconv.DBNameKey)}
 
 	defaultMetricsFlushInterval = 60 * time.Second // 1 DPM
 )

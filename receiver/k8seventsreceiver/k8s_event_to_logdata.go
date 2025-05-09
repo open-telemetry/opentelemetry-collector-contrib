@@ -38,7 +38,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	resourceAttrs := rl.Resource().Attributes()
 	resourceAttrs.EnsureCapacity(totalResourceAttributes)
 
-	resourceAttrs.PutStr(semconv.AttributeK8SNodeName, ev.Source.Host)
+	resourceAttrs.PutStr(string(semconv.K8SNodeNameKey), ev.Source.Host)
 
 	// Attributes related to the object causing the event.
 	resourceAttrs.PutStr("k8s.object.kind", ev.InvolvedObject.Kind)
@@ -71,7 +71,7 @@ func k8sEventToLogData(logger *zap.Logger, ev *corev1.Event) plog.Logs {
 	attrs.PutStr("k8s.event.start_time", ev.CreationTimestamp.String())
 	attrs.PutStr("k8s.event.name", ev.Name)
 	attrs.PutStr("k8s.event.uid", string(ev.UID))
-	attrs.PutStr(semconv.AttributeK8SNamespaceName, ev.InvolvedObject.Namespace)
+	attrs.PutStr(string(semconv.K8SNamespaceNameKey), ev.InvolvedObject.Namespace)
 
 	// "Count" field of k8s event will be '0' in case it is
 	// not present in the collected event from k8s.

@@ -56,7 +56,7 @@ func unstructuredListToLogData(event *unstructured.UnstructuredList, observedAt 
 			rl := resourceLogs.AppendEmpty()
 			resourceAttrs := rl.Resource().Attributes()
 			if namespace := getNamespace(e); namespace != "" {
-				resourceAttrs.PutStr(semconv.AttributeK8SNamespaceName, namespace)
+				resourceAttrs.PutStr(string(semconv.K8SNamespaceNameKey), namespace)
 			}
 			sl := rl.ScopeLogs().AppendEmpty()
 			logSlice = sl.LogRecords()

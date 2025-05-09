@@ -96,7 +96,7 @@ var (
 	// for the agent description's identifying attributes.
 	identifyingAttributes = map[string]struct{}{
 		string(semconv.ServiceNameKey):       {},
-		semconv.AttributeServiceVersion:      {},
+		string(semconv.ServiceVersionKey):    {},
 		string(semconv.ServiceInstanceIDKey): {},
 	}
 )
@@ -289,7 +289,7 @@ func newOpampAgent(cfg *Config, set extension.Settings) (*opampAgent, error) {
 
 	agentVersion := set.BuildInfo.Version
 
-	sv, ok := set.Resource.Attributes().Get(semconv.AttributeServiceVersion)
+	sv, ok := set.Resource.Attributes().Get(string(semconv.ServiceVersionKey))
 	if ok {
 		agentVersion = sv.AsString()
 	}
@@ -377,16 +377,16 @@ func (o *opampAgent) createAgentDescription() error {
 	ident := []*protobufs.KeyValue{
 		stringKeyValue(string(semconv.ServiceInstanceIDKey), o.instanceID.String()),
 		stringKeyValue(string(semconv.ServiceNameKey), o.agentType),
-		stringKeyValue(semconv.AttributeServiceVersion, o.agentVersion),
+		stringKeyValue(string(semconv.ServiceVersionKey), o.agentVersion),
 	}
 
 	// Initially construct using a map to properly deduplicate any keys that
 	// are both automatically determined and defined in the config
 	nonIdentifyingAttributeMap := map[string]string{}
-	nonIdentifyingAttributeMap[semconv.AttributeOSType] = runtime.GOOS
-	nonIdentifyingAttributeMap[semconv.AttributeHostArch] = runtime.GOARCH
-	nonIdentifyingAttributeMap[semconv.AttributeHostName] = hostname
-	nonIdentifyingAttributeMap[semconv.AttributeOSDescription] = description
+	nonIdentifyingAttributeMap[string(semconv.OSTypeKey)] = runtime.GOOS
+	nonIdentifyingAttributeMap[string(semconv.HostArchKey)] = runtime.GOARCH
+	nonIdentifyingAttributeMap[string(semconv.HostNameKey)] = hostname
+	nonIdentifyingAttributeMap[string(semconv.OSDescriptionKey)] = description
 
 	for k, v := range o.cfg.AgentDescription.NonIdentifyingAttributes {
 		nonIdentifyingAttributeMap[k] = v

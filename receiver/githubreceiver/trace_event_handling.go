@@ -315,7 +315,7 @@ func (gtr *githubTracesReceiver) createStepSpan(
 	span.SetSpanID(spanID)
 
 	attrs := span.Attributes()
-	attrs.PutStr(semconv.AttributeCicdPipelineTaskName, name)
+	attrs.PutStr(string(semconv.CICDPipelineTaskNameKey), name)
 	attrs.PutStr(AttributeCICDPipelineTaskRunStatus, step.GetStatus())
 	span.SetStartTimestamp(pcommon.NewTimestampFromTime(step.GetStartedAt().Time))
 	span.SetEndTimestamp(pcommon.NewTimestampFromTime(step.GetCompletedAt().Time))
