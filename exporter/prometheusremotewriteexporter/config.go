@@ -5,6 +5,7 @@ package prometheusremotewriteexporter // import "github.com/open-telemetry/opent
 
 import (
 	"errors"
+	"fmt"
 
 	"github.com/prometheus/prometheus/config"
 	"go.opentelemetry.io/collector/component"
