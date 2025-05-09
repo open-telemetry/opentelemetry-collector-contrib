@@ -190,6 +190,7 @@ extension/sigv4authextension
 extension/solarwindsapmsettingsextension
 extension/storage/dbstorage
 extension/storage/redisstorageextension
+extension/targetallocatorextension
 extension/tpmextension
 .
 internal/aws/containerinsight
