@@ -727,7 +727,7 @@ resourceMetrics:
             stringValue: 8cac97ac9b8f
     scopeMetrics:
       - metrics:
-          - description: The rate of operations issued on the resource pool.
+          - description: The rate of operations issued.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -779,7 +779,7 @@ resourceMetrics:
             stringValue: 8cac97ac9b8f
     scopeMetrics:
       - metrics:
-          - description: The rate of operations issued on the resource pool.
+          - description: The rate of operations issued.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -807,7 +807,7 @@ resourceMetrics:
             stringValue: 8cac97ac9b8f
     scopeMetrics:
       - metrics:
-          - description: The rate of operations issued on the resource pool.
+          - description: The rate of operations issued.
             gauge:
               dataPoints:
                 - asDouble: 0
@@ -859,7 +859,7 @@ resourceMetrics:
             stringValue: 8cac97ac9b8f
     scopeMetrics:
       - metrics:
-          - description: The rate of operations issued on the resource pool.
+          - description: The rate of operations issued.
             gauge:
               dataPoints:
                 - asDouble: 0
