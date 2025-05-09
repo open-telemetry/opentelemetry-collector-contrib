@@ -28,13 +28,11 @@ type ConnManager struct {
 	// Outside of tests it is a real clock.
 	clock clockwork.Clock
 
-	// Number of connections desirable to maintain.
 	targetConnCount uint
 
 	// Number of current connections, collectively in all pools or acquired.
 	curConnCount atomic.Int64
 
-	// ConnCreator is used to create new connections.
 	connCreator ConnCreator
 
 	// Connection pools. curConnCount connections are either in one
@@ -43,13 +41,7 @@ type ConnManager struct {
 	idleConns     chan *ManagedConn // Ready to be acquired.
 	recreateConns chan *ManagedConn // Pending to be recreated.
 
-	// Approximate period to wait before flushing connections after
-	// the connection is released by the user. Setting this value to >0 avoids
-	// unnecessary flushes when the connection is acquired and released frequently.
-	flushPeriod time.Duration
-
-	// Period to reconnect connections. Each connection is periodically
-	// reconnected approximately every reconnectPeriod.
+	flushPeriod     time.Duration
 	reconnectPeriod time.Duration
 
 	// Flags to indicate if the goroutines are stopped.
@@ -104,28 +96,59 @@ type Conn interface {
 	// Flush the connection. This is typically to send any buffered data.
 	// Will be called periodically (see ConnManager flushPeriod) and
 	// before ConnManager.Stop returns.
-	Flush() error
+	Flush(context.Context) error
 }
 
-func NewConnManager(
-	logger *zap.Logger,
-	creator ConnCreator,
-	targetConnCount uint,
-	flushPeriod time.Duration,
-	reconnectPeriod time.Duration,
-) *ConnManager {
+type ConnManagerSettings struct {
+	Logger *zap.Logger
+
+	// Creator helps create new connections.
+	Creator ConnCreator
+
+	// TargetConnCount is the number of connections desirable to maintain.
+	// Must be >0.
+	TargetConnCount uint
+
+	// FlushPeriod is the approximate period to wait before flushing connections after
+	// the user releases the connection. Setting this value to >0 avoids
+	// unnecessary flushes when the connection is acquired and released frequently.
+	// Setting this to 0 ensures flushing is done after every connection release.
+	FlushPeriod time.Duration
+
+	// ReconnectPeriod is the interval to reconnect connections. Each connection is
+	// periodically reconnected approximately every reconnectPeriod.
+	ReconnectPeriod time.Duration
+}
+
+func NewConnManager(set ConnManagerSettings) (*ConnManager, error) {
+	if set.Logger == nil {
+		set.Logger = zap.NewNop()
+	}
+
+	if set.TargetConnCount == 0 {
+		return nil, errors.New("TargetConnCount must be >0")
+	}
+
+	if set.FlushPeriod <= 0 {
+		return nil, errors.New("FlushPeriod must be >=0")
+	}
+
+	if set.ReconnectPeriod <= 0 {
+		return nil, errors.New("ReconnectPeriod must be >0")
+	}
+
 	return &ConnManager{
-		logger:          logger,
+		logger:          set.Logger,
 		clock:           clockwork.NewRealClock(),
-		connCreator:     creator,
-		targetConnCount: targetConnCount,
-		idleConns:       make(chan *ManagedConn, targetConnCount),
-		recreateConns:   make(chan *ManagedConn, targetConnCount),
-		flushPeriod:     flushPeriod,
-		reconnectPeriod: reconnectPeriod,
+		connCreator:     set.Creator,
+		targetConnCount: set.TargetConnCount,
+		idleConns:       make(chan *ManagedConn, set.TargetConnCount),
+		recreateConns:   make(chan *ManagedConn, set.TargetConnCount),
+		flushPeriod:     set.FlushPeriod,
+		reconnectPeriod: set.ReconnectPeriod,
 		stoppedCond:     NewCancellableCond(),
 		stopSignal:      make(chan struct{}),
-	}
+	}, nil
 }
 
 // Start starts the connection manager. It will immediately start
@@ -194,7 +217,7 @@ func (c *ConnManager) closeAll(ctx context.Context) error {
 		if conn.conn != nil {
 			// Flush if needs a flush and is not discarded.
 			if !discarded && conn.needsFlush {
-				if err := conn.conn.Flush(); err != nil {
+				if err := conn.conn.Flush(ctx); err != nil {
 					c.logger.Debug("Failed to flush connection", zap.Error(err))
 					errs = append(errs, err)
 					continue
@@ -240,14 +263,14 @@ func (c *ConnManager) Acquire(ctx context.Context) (*ManagedConn, error) {
 // If the connection was last flushed more than flushPeriod ago, it will
 // be flushed otherwise it will be marked as needing to be flushed at the
 // next opportunity.
-func (c *ConnManager) Release(conn *ManagedConn) {
+func (c *ConnManager) Release(ctx context.Context, conn *ManagedConn) {
 	if !conn.isAcquired {
 		panic("connection is not acquired")
 	}
 	conn.isAcquired = false
-	if c.clock.Since(conn.lastFlush) >= c.flushPeriod {
+	if c.clock.Since(conn.lastFlush) >= c.flushPeriod || c.flushPeriod == 0 {
 		// Time to flush the connection.
-		if err := conn.conn.Flush(); err != nil {
+		if err := conn.conn.Flush(ctx); err != nil {
 			c.logger.Error("Failed to flush connection. Closing connection.", zap.Error(err))
 			// Something went wrong, we need to recreate the connection since it
 			// may no longer be usable.
@@ -282,11 +305,23 @@ func (c *ConnManager) flusher() {
 		c.stoppedCond.Cond.Broadcast()
 	}()
 
+	if c.flushPeriod == 0 {
+		// flusher is not needed, we will always flush immediately in Release().
+		return
+	}
+
 	ticker := c.clock.NewTicker(c.flushPeriod)
+
+	// Context that cancels on stopSignal.
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer cancel()
+		<-c.stopSignal
+	}()
 
 	for {
 		select {
-		case <-c.stopSignal:
+		case <-ctx.Done():
 			return
 		case <-ticker.Chan():
 		loop:
@@ -297,7 +332,7 @@ func (c *ConnManager) flusher() {
 				case conn := <-c.idleConns:
 					if conn.needsFlush {
 						conn.needsFlush = false
-						if err := conn.conn.Flush(); err != nil {
+						if err := conn.conn.Flush(ctx); err != nil {
 							c.logger.Error("Failed to flush connection. Closing connection.", zap.Error(err))
 							// Something went wrong, we need to recreate the connection since it
 							// may no longer be usable.
@@ -329,19 +364,26 @@ func (c *ConnManager) durationLimiter() {
 		c.stoppedCond.Cond.Broadcast()
 	}()
 
+	// Context that cancels on stopSignal.
+	ctx, cancel := context.WithCancel(context.Background())
+	go func() {
+		defer cancel()
+		<-c.stopSignal
+	}()
+
 	// Each connection will be reconnected at approximately reconnectPeriod interval.
 	// We reconnect one per tick.
 	ticker := c.clock.NewTicker(c.reconnectPeriod / time.Duration(c.targetConnCount))
 	defer ticker.Stop()
 	for {
 		select {
-		case <-c.stopSignal:
+		case <-ctx.Done():
 			return
 		case <-ticker.Chan():
 			// Find an idle connection
 			var conn *ManagedConn
 			select {
-			case <-c.stopSignal:
+			case <-ctx.Done():
 				return
 			case conn = <-c.idleConns:
 			}
@@ -351,7 +393,7 @@ func (c *ConnManager) durationLimiter() {
 				if conn.needsFlush {
 					conn.needsFlush = false
 					// Flush it first.
-					if err := conn.conn.Flush(); err != nil {
+					if err := conn.conn.Flush(ctx); err != nil {
 						c.logger.Error("Failed to flush connection. Closing connection.", zap.Error(err))
 					}
 				}

@@ -37,6 +37,9 @@ type StefConn struct {
 	pendingAcks map[DataID]chan<- AsyncResult
 	// mux protects the pendingAcks.
 	mux sync.RWMutex
+
+	flushReqCh chan struct{}
+	flushResCh chan error
 }
 
 func NewStefConnCreator(logger *zap.Logger, grpcConn *grpc.ClientConn, compression pkg.Compression) *StefConnCreator {
@@ -61,6 +64,8 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 
 	conn := &StefConn{
 		pendingAcks: map[DataID]chan<- AsyncResult{},
+		flushReqCh:  make(chan struct{}, 1),
+		flushResCh:  make(chan error, 1),
 	}
 
 	settings := stefgrpc.ClientSettings{
@@ -121,6 +126,9 @@ func (s *StefConnCreator) Create(ctx context.Context) (Conn, error) {
 	// leak the Context we just created. This will be done in disconnect().
 	conn.cancel = connCancel
 
+	// Run flusher in a separate goroutine.
+	go conn.flusher()
+
 	s.logger.Debug("Connected to destination", zap.String("target", s.grpcConn.CanonicalTarget()))
 
 	return conn, nil
@@ -158,12 +166,35 @@ func (s *StefConn) onGrpcAck(ackID uint64) error {
 // Close the connection.
 func (s *StefConn) Close(ctx context.Context) error {
 	s.cancel()
+
+	// Stop flusher goroutine
+	close(s.flushReqCh)
+
 	return s.client.Disconnect(ctx)
 }
 
+func (s *StefConn) flusher() {
+	for range s.flushReqCh {
+		s.flushResCh <- s.writer.Flush()
+	}
+}
+
 // Flush any pending data over the connection.
-func (s *StefConn) Flush() error {
-	return s.writer.Flush()
+func (s *StefConn) Flush(ctx context.Context) error {
+	// Request a flush.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case s.flushReqCh <- struct{}{}:
+	}
+
+	// Wait until flushed.
+	select {
+	case <-ctx.Done():
+		return ctx.Err()
+	case err := <-s.flushResCh:
+		return err
+	}
 }
 
 type loggerWrapper struct {

@@ -73,7 +73,18 @@ func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 
 	// Create a connection creator and manager to take care of the connections.
 	connCreator := internal.NewStefConnCreator(s.set.Logger, s.grpcConn, s.compression)
-	s.connMan = internal.NewConnManager(s.set.Logger, connCreator, connCount, flushPeriod, reconnectPeriod)
+	set := internal.ConnManagerSettings{
+		Logger:          s.set.Logger,
+		Creator:         connCreator,
+		TargetConnCount: connCount,
+		FlushPeriod:     flushPeriod,
+		ReconnectPeriod: reconnectPeriod,
+	}
+	s.connMan, err = internal.NewConnManager(set)
+	if err != nil {
+		return err
+	}
+
 	s.connMan.Start()
 
 	// Wrap async implementation of sendMetricsAsync into a sync-callable API.
@@ -90,7 +101,7 @@ func (s *stefExporter) Start(ctx context.Context, host component.Host) error {
 			return
 		}
 		// Connection is established. Return it, this is all we needed for now.
-		s.connMan.Release(conn)
+		s.connMan.Release(ctx, conn)
 	}()
 
 	s.started = true
@@ -174,7 +185,7 @@ func (s *stefExporter) sendMetricsAsync(
 	stefConn.OnAck(expectedAckID, resultChan)
 
 	// We are done with the connection.
-	s.connMan.Release(conn)
+	s.connMan.Release(ctx, conn)
 
 	return internal.DataID(expectedAckID), nil
 }
