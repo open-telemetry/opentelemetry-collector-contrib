@@ -21,8 +21,8 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 	"go.uber.org/zap"
 
-	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/appsignals"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/metadata"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/awsemfexporter/internal/useragent"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/awsutil"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/aws/cwlogs"
 )
@@ -52,6 +52,7 @@ type emfExporter struct {
 	collectorID   string
 
 	processResourceLabels func(map[string]string)
+	processMetrics        func(pmetric.Metrics)
 }
 
 // newEmfExporter creates a new exporter using exporterhelper
@@ -75,11 +76,7 @@ func newEmfExporter(config *Config, set exporter.Settings) (*emfExporter, error)
 		collectorID:           collectorIdentifier.String(),
 		pusherMap:             map[cwlogs.StreamKey]cwlogs.Pusher{},
 		processResourceLabels: func(map[string]string) {},
-	}
-
-	if config.IsAppSignalsEnabled() {
-		userAgent := appsignals.NewUserAgent()
-		emfExporter.processResourceLabels = userAgent.Process
+		processMetrics:        func(pmetric.Metrics) {},
 	}
 
 	config.logger.Warn("the default value for DimensionRollupOption will be changing to NoDimensionRollup" +
@@ -104,6 +101,7 @@ func (emf *emfExporter) pushMetricsData(_ context.Context, md pmetric.Metrics) e
 	}
 	emf.config.logger.Debug("Start processing resource metrics", zap.Any("labels", labels))
 	emf.processResourceLabels(labels)
+	emf.processMetrics(md)
 
 	groupedMetrics := make(map[any]*groupedMetric)
 	defaultLogStream := fmt.Sprintf("otel-stream-%s", emf.collectorID)
@@ -230,6 +228,21 @@ func (emf *emfExporter) start(_ context.Context, host component.Host) error {
 	// Optionally configure middleware
 	if emf.config.MiddlewareID != nil {
 		awsmiddleware.TryConfigure(emf.config.logger, host, *emf.config.MiddlewareID, awsmiddleware.SDKv1(svcStructuredLog.Handlers()))
+	}
+
+	// Below are optimizatons to minimize amoount of
+	// metrics processing. We have two scearios
+	// 1. AppSignal - Only run Process function for AppSignal related useragent
+	// 2. Enhanced Container Insights - Only run ProcessMetrics function for CI EBS related useragent
+	if emf.config.IsAppSignalsEnabled() || emf.config.IsEnhancedContainerInsights() {
+		userAgent := useragent.NewUserAgent()
+		emf.svcStructuredLog.Handlers().Build.PushFrontNamed(userAgent.Handler())
+		if emf.config.IsAppSignalsEnabled() {
+			emf.processResourceLabels = userAgent.Process
+		}
+		if emf.config.IsEnhancedContainerInsights() {
+			emf.processMetrics = userAgent.ProcessMetrics
+		}
 	}
 
 	return nil
