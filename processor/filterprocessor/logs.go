@@ -18,6 +18,7 @@ import (
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterlog"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottllog"
 )
 
@@ -27,7 +28,7 @@ type filterLogProcessor struct {
 	logger    *zap.Logger
 }
 
-func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProcessor, error) {
+func newFilterLogsProcessor(set processor.Settings, cfg *Config, additionalLogFuncs ...ottl.Factory[ottllog.TransformContext]) (*filterLogProcessor, error) {
 	flp := &filterLogProcessor{
 		logger: set.Logger,
 	}
@@ -39,7 +40,8 @@ func newFilterLogsProcessor(set processor.Settings, cfg *Config) (*filterLogProc
 	flp.telemetry = fpt
 
 	if cfg.Logs.LogConditions != nil {
-		skipExpr, errBoolExpr := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, filterottl.StandardLogFuncs(), cfg.ErrorMode, set.TelemetrySettings)
+		logFuncs := filterottl.MergeAdditionalFuncs(filterottl.StandardLogFuncs(), additionalLogFuncs)
+		skipExpr, errBoolExpr := filterottl.NewBoolExprForLog(cfg.Logs.LogConditions, logFuncs, cfg.ErrorMode, set.TelemetrySettings)
 		if errBoolExpr != nil {
 			return nil, errBoolExpr
 		}
