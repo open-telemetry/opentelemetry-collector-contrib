@@ -18,6 +18,7 @@ require (
 	github.com/tidwall/gjson v1.18.0
 	go.opentelemetry.io/collector/client v1.31.1-0.20250509035855-4d929a9d6a7e
 	go.opentelemetry.io/collector/component v1.31.1-0.20250509035855-4d929a9d6a7e
+	go.opentelemetry.io/collector/component/componentstatus v0.125.1-0.20250509035855-4d929a9d6a7e
 	go.opentelemetry.io/collector/component/componenttest v0.125.1-0.20250509035855-4d929a9d6a7e
 	go.opentelemetry.io/collector/config/configauth v0.125.1-0.20250509035855-4d929a9d6a7e
 	go.opentelemetry.io/collector/config/configcompression v1.31.1-0.20250509035855-4d929a9d6a7e
