@@ -344,7 +344,7 @@ func withPodUID(uid string) generateResourceFunc {
 
 func withContainerName(containerName string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.KKey)8SContainerName, containerName)
+		res.Attributes().PutStr(string(conventions.K8SContainerNameKey), containerName)
 	}
 }
 
@@ -356,7 +356,7 @@ func withContainerID(id string) generateResourceFunc {
 
 func withContainerRunID(containerRunID string) generateResourceFunc {
 	return func(res pcommon.Resource) {
-		res.Attributes().PutStr(string(conventions.KKey)8SContainerRestartCount, containerRunID)
+		res.Attributes().PutStr(string(conventions.K8SContainerRestartCountKey), containerRunID)
 	}
 }
 
@@ -429,7 +429,7 @@ func TestProcessorNoAttrs(t *testing.T) {
 		t,
 		NewFactory().CreateDefaultConfig(),
 		nil,
-		withExtractMetadata(string(conventions.KKey)8SPodName),
+		withExtractMetadata(string(conventions.K8SPodNameKey)),
 	)
 
 	ctx := client.NewContext(context.Background(), client.Info{
@@ -1048,8 +1048,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.KKey)8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.KKey)8SContainerName:   "app",
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
 			},
@@ -1085,9 +1085,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerID("767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.KKey)8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 				string(conventions.ContainerIDKey):        "767dc30d4fece77038e8ec2585a33471944d0b754659af7aa7e101181418f0dd",
-				string(conventions.KKey)8SContainerName:   "app",
+				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
 			},
@@ -1122,8 +1122,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.KKey)8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.KKey)8SContainerName:   "app",
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
 			},
@@ -1151,9 +1151,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                           "1.1.1.1",
-				string(conventions.KKey)8SContainerName:         "app",
-				string(conventions.KKey)8SContainerRestartCount: "1",
+				kube.K8sIPLabelName:                             "1.1.1.1",
+				string(conventions.K8SContainerNameKey):         "app",
+				string(conventions.K8SContainerRestartCountKey): "1",
 				string(conventions.ContainerIDKey):              "6a7f1a598b5dafec9c193f8f8d63f6e5839b8b0acd2fe780f94285e26c05580e",
 			},
 		},
@@ -1179,8 +1179,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                   "1.1.1.1",
-				string(conventions.KKey)8SContainerName: "app",
+				kube.K8sIPLabelName:                     "1.1.1.1",
+				string(conventions.K8SContainerNameKey): "app",
 				string(conventions.ContainerIDKey):      "5ba4e0e5a5eb1f37bc6e7fc76495914400a3ee309d8828d16407e4b3d5410848",
 			},
 		},
@@ -1204,9 +1204,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerName("app"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                   "1.1.1.1",
-				string(conventions.KKey)8SContainerName: "app",
-				containerImageRepoDigests:             []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
+				kube.K8sIPLabelName:                     "1.1.1.1",
+				string(conventions.K8SContainerNameKey): "app",
+				containerImageRepoDigests:               []string{"docker.io/otel/collector:1.2.3@sha256:deadbeef02"},
 			},
 		},
 		{
@@ -1232,9 +1232,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("0"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                           "1.1.1.1",
-				string(conventions.KKey)8SContainerName:         "new-app",
-				string(conventions.KKey)8SContainerRestartCount: "0",
+				kube.K8sIPLabelName:                             "1.1.1.1",
+				string(conventions.K8SContainerNameKey):         "new-app",
+				string(conventions.K8SContainerRestartCountKey): "0",
 			},
 		},
 		{
@@ -1259,9 +1259,9 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withContainerRunID("1"),
 			},
 			wantAttrs: map[string]any{
-				kube.K8sIPLabelName:                           "1.1.1.1",
-				string(conventions.KKey)8SContainerName:         "app",
-				string(conventions.KKey)8SContainerRestartCount: "1",
+				kube.K8sIPLabelName:                             "1.1.1.1",
+				string(conventions.K8SContainerNameKey):         "app",
+				string(conventions.K8SContainerRestartCountKey): "1",
 				string(conventions.ContainerImageNameKey):       "test/app",
 			},
 		},
@@ -1295,8 +1295,8 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.KKey)8SPodUID:          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
-				string(conventions.KKey)8SContainerName:   "app",
+				string(conventions.K8SPodUIDKey):          "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.K8SContainerNameKey):   "app",
 				string(conventions.ContainerImageNameKey): "test/app",
 				string(conventions.ContainerImageTagKey):  "1.0.1",
 			},
@@ -1336,7 +1336,7 @@ func TestProcessorAddContainerAttributes(t *testing.T) {
 				withPodUID("19f651bc-73e4-410f-b3e9-f0241679d3b8"),
 			},
 			wantAttrs: map[string]any{
-				string(conventions.KKey)8SPodUID: "19f651bc-73e4-410f-b3e9-f0241679d3b8",
+				string(conventions.K8SPodUIDKey): "19f651bc-73e4-410f-b3e9-f0241679d3b8",
 			},
 		},
 	}
@@ -1426,7 +1426,7 @@ func TestMetricsProcessorHostname(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		withExtractMetadata(string(conventions.KKey)8SPodName),
+		withExtractMetadata(string(conventions.K8SPodNameKey)),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -1468,8 +1468,8 @@ func TestMetricsProcessorHostname(t *testing.T) {
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
 				string(conventions.HostNameKey): "3.3.3.3",
-				kube.K8sIPLabelName:           "3.3.3.3",
-				"kk":                          "vv",
+				kube.K8sIPLabelName:             "3.3.3.3",
+				"kk":                            "vv",
 			},
 		},
 	}
@@ -1497,7 +1497,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 	p, err := newMetricsProcessor(
 		NewFactory().CreateDefaultConfig(),
 		next,
-		withExtractMetadata(string(conventions.KKey)8SPodName),
+		withExtractMetadata(string(conventions.K8SPodNameKey)),
 		withExtractKubernetesProcessorInto(&kp),
 	)
 	require.NoError(t, err)
@@ -1541,9 +1541,9 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			hostname: "invalid-ip",
 			expectedAttrs: map[string]string{
 				string(conventions.HostNameKey): "invalid-ip",
-				"k":                           "v",
-				"1":                           "2",
-				"aa":                          "b",
+				"k":                             "v",
+				"1":                             "2",
+				"aa":                            "b",
 			},
 		},
 		{
@@ -1551,7 +1551,7 @@ func TestMetricsProcessorHostnameWithPodAssociation(t *testing.T) {
 			hostname: "3.3.3.3",
 			expectedAttrs: map[string]string{
 				string(conventions.HostNameKey): "3.3.3.3",
-				"kk":                          "vv",
+				"kk":                            "vv",
 			},
 		},
 	}

@@ -101,8 +101,8 @@ func TestCreateAgentDescription(t *testing.T) {
 			name: "Extra attributes specified",
 			cfg: func(c *Config) {
 				c.AgentDescription.NonIdentifyingAttributes = map[string]string{
-					"env":                       "prod",
-					string(semconv.KKey)8SPodName: "my-very-cool-pod",
+					"env":                         "prod",
+					string(semconv.K8SPodNameKey): "my-very-cool-pod",
 				}
 			},
 			expected: &protobufs.AgentDescription{
@@ -115,7 +115,7 @@ func TestCreateAgentDescription(t *testing.T) {
 					stringKeyValue("env", "prod"),
 					stringKeyValue(string(semconv.HostArchKey), runtime.GOARCH),
 					stringKeyValue(string(semconv.HostNameKey), hostname),
-					stringKeyValue(string(semconv.KKey)8SPodName, "my-very-cool-pod"),
+					stringKeyValue(string(semconv.K8SPodNameKey), "my-very-cool-pod"),
 					stringKeyValue(string(semconv.OSDescriptionKey), description),
 					stringKeyValue(string(semconv.OSTypeKey), runtime.GOOS),
 				},

@@ -73,8 +73,8 @@ func TestResourceToOC(t *testing.T) {
 func TestContainerResourceToOC(t *testing.T) {
 	resource := pcommon.NewResource()
 	resource.Attributes().PutStr(string(conventions.K8SClusterNameKey), "cluster1")
-	resource.Attributes().PutStr(string(conventions.KKey)8SPodName, "pod1")
-	resource.Attributes().PutStr(string(conventions.KKey)8SNamespaceName, "namespace1")
+	resource.Attributes().PutStr(string(conventions.K8SPodNameKey), "pod1")
+	resource.Attributes().PutStr(string(conventions.K8SNamespaceNameKey), "namespace1")
 	resource.Attributes().PutStr(string(conventions.ContainerNameKey), "container-name1")
 	resource.Attributes().PutStr(string(conventions.CloudAccountIDKey), "proj1")
 	resource.Attributes().PutStr(string(conventions.CloudAvailabilityZoneKey), "zone1")
@@ -122,8 +122,8 @@ func TestInferResourceType(t *testing.T) {
 			name: "container",
 			labels: map[string]string{
 				string(conventions.K8SClusterNameKey):        "cluster1",
-				string(conventions.KKey)8SPodName:            "pod1",
-				string(conventions.KKey)8SNamespaceName:      "namespace1",
+				string(conventions.K8SPodNameKey):            "pod1",
+				string(conventions.K8SNamespaceNameKey):      "namespace1",
 				string(conventions.ContainerNameKey):         "container-name1",
 				string(conventions.CloudAccountIDKey):        "proj1",
 				string(conventions.CloudAvailabilityZoneKey): "zone1",
@@ -135,8 +135,8 @@ func TestInferResourceType(t *testing.T) {
 			name: "pod",
 			labels: map[string]string{
 				string(conventions.K8SClusterNameKey):        "cluster1",
-				string(conventions.KKey)8SPodName:            "pod1",
-				string(conventions.KKey)8SNamespaceName:      "namespace1",
+				string(conventions.K8SPodNameKey):            "pod1",
+				string(conventions.K8SNamespaceNameKey):      "namespace1",
 				string(conventions.CloudAvailabilityZoneKey): "zone1",
 			},
 			wantResourceType: resourcekeys.K8SType,

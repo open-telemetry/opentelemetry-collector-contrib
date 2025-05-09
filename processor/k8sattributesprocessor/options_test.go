@@ -58,12 +58,12 @@ func TestWithPassthrough(t *testing.T) {
 func TestEnabledAttributes(t *testing.T) {
 	// This list needs to be updated when the defaults in metadata.yaml are updated.
 	expected := []string{
-		conventions.AttributeK8SNamespaceName,
-		string(conventions.KKey)8SPodName,
-		string(conventions.KKey)8SPodUID,
+		string(conventions.K8SNamespaceNameKey),
+		string(conventions.K8SPodNameKey),
+		string(conventions.K8SPodUIDKey),
 		metadataPodStartTime,
-		string(conventions.KKey)8SDeploymentName,
-		string(conventions.KKey)8SNodeName,
+		string(conventions.K8SDeploymentNameKey),
+		string(conventions.K8SNodeNameKey),
 		string(conventions.ContainerImageNameKey),
 		string(conventions.ContainerImageTagKey),
 	}
@@ -355,7 +355,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata(string(conventions.KKey)8SNamespaceName, string(conventions.KKey)8SPodName, string(conventions.KKey)8SPodUID)(p))
+	assert.NoError(t, withExtractMetadata(string(conventions.K8SNamespaceNameKey), string(conventions.K8SPodNameKey), string(conventions.K8SPodUIDKey))(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
