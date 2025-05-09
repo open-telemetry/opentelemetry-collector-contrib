@@ -433,7 +433,7 @@ Throughput rate of replica data.
 
 ### sqlserver.resource_pool.disk.operations
 
-The rate of operations issued on the resource pool.
+The rate of operations issued.
 
 This metric is only available when the receiver is configured to directly connect to SQL Server.
 

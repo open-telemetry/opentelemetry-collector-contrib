@@ -306,6 +306,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, diskReadIOSec)
+				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(now, val.(float64), metadata.AttributeDirectionRead)
 			}
@@ -315,6 +316,7 @@ func (s *sqlServerScraperHelper) recordDatabasePerfCounterMetrics(ctx context.Co
 			val, err := retrieveFloat(row, valueKey)
 			if err != nil {
 				err = fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, diskWriteIOSec)
+				errs = append(errs, err)
 			} else {
 				s.mb.RecordSqlserverResourcePoolDiskOperationsDataPoint(now, val.(float64), metadata.AttributeDirectionWrite)
 			}

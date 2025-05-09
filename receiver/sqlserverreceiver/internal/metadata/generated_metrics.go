@@ -1969,7 +1969,7 @@ type metricSqlserverResourcePoolDiskOperations struct {
 // init fills sqlserver.resource_pool.disk.operations metric with initial data.
 func (m *metricSqlserverResourcePoolDiskOperations) init() {
 	m.data.SetName("sqlserver.resource_pool.disk.operations")
-	m.data.SetDescription("The rate of operations issued on the resource pool.")
+	m.data.SetDescription("The rate of operations issued.")
 	m.data.SetUnit("{operations}/s")
 	m.data.SetEmptyGauge()
 	m.data.Gauge().DataPoints().EnsureCapacity(m.capacity)
