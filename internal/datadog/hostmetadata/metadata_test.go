@@ -139,7 +139,7 @@ func TestMetadataFromAttributes(t *testing.T) {
 		{
 			name: "Azure",
 			attrs: testutil.NewAttributeMap(map[string]string{
-				string(conventions.CloudProviderKey):  string(conventions.CloudProviderAzureKey),
+				string(conventions.CloudProviderKey):  conventions.CloudProviderAzure.Value.AsString(),
 				string(conventions.HostNameKey):       "azure-host-name",
 				string(conventions.CloudRegionKey):    "location",
 				string(conventions.HostIDKey):         "azure-vm-id",
