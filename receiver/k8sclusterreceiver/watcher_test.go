@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/consumer/consumertest"
 	"go.opentelemetry.io/collector/receiver/receivertest"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"go.uber.org/zap"
 	"go.uber.org/zap/zapcore"
 	"go.uber.org/zap/zaptest/observer"
@@ -271,7 +271,7 @@ func TestSyncMetadataAndEmitEntityEvents(t *testing.T) {
 		"otel.entity.interval":   int64(7200000), // 2h in milliseconds
 		"otel.entity.type":       "k8s.pod",
 		"otel.entity.id":         map[string]any{"k8s.pod.uid": "pod0"},
-		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", conventions.AttributeK8SNodeName: "test-node"},
+		"otel.entity.attributes": map[string]any{"pod.creation_timestamp": "0001-01-01T00:00:00Z", "k8s.pod.phase": "Unknown", "k8s.namespace.name": "test", "k8s.pod.name": "0", string(conventions.K8SNodeNameKey): "test-node"},
 	}
 	assert.Equal(t, expected, lr.Attributes().AsRaw())
 	assert.WithinRange(t, lr.Timestamp().AsTime(), step1, step2)
@@ -325,7 +325,7 @@ func TestObjMetadata(t *testing.T) {
 					EntityType:    "k8s.pod",
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
-					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", conventions.AttributeK8SNodeName: "test-node"}),
+					Metadata:      allPodMetadata(map[string]string{"k8s.pod.phase": "Succeeded", "k8s.pod.name": "test-pod-0", "k8s.namespace.name": "test-namespace", string(conventions.K8SNodeNameKey): "test-node"}),
 				},
 				experimentalmetricmetadata.ResourceID("container-id"): {
 					EntityType:    "container",
@@ -361,15 +361,15 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.workload.kind":              "StatefulSet",
-						"k8s.workload.name":              "test-statefulset-0",
-						"k8s.statefulset.name":           "test-statefulset-0",
-						"k8s.statefulset.uid":            "test-statefulset-0-uid",
-						"k8s.pod.phase":                  "Failed",
-						"k8s.pod.status_reason":          "Evicted",
-						"k8s.pod.name":                   "test-pod-0",
-						"k8s.namespace.name":             "test-namespace",
-						conventions.AttributeK8SNodeName: "test-node",
+						"k8s.workload.kind":                "StatefulSet",
+						"k8s.workload.name":                "test-statefulset-0",
+						"k8s.statefulset.name":             "test-statefulset-0",
+						"k8s.statefulset.uid":              "test-statefulset-0-uid",
+						"k8s.pod.phase":                    "Failed",
+						"k8s.pod.status_reason":            "Evicted",
+						"k8s.pod.name":                     "test-pod-0",
+						"k8s.namespace.name":               "test-namespace",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},
@@ -406,12 +406,12 @@ func TestObjMetadata(t *testing.T) {
 					ResourceIDKey: "k8s.pod.uid",
 					ResourceID:    "test-pod-0-uid",
 					Metadata: allPodMetadata(map[string]string{
-						"k8s.service.test-service":       "",
-						"k8s-app":                        "my-app",
-						"k8s.pod.phase":                  "Running",
-						"k8s.namespace.name":             "test-namespace",
-						"k8s.pod.name":                   "test-pod-0",
-						conventions.AttributeK8SNodeName: "test-node",
+						"k8s.service.test-service":         "",
+						"k8s-app":                          "my-app",
+						"k8s.pod.phase":                    "Running",
+						"k8s.namespace.name":               "test-namespace",
+						"k8s.pod.name":                     "test-pod-0",
+						string(conventions.K8SNodeNameKey): "test-node",
 					}),
 				},
 			},

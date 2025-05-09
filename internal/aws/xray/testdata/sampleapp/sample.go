@@ -6,14 +6,13 @@ package main
 import (
 	"context"
 
-	"github.com/aws/aws-sdk-go/aws"
-	"github.com/aws/aws-sdk-go/aws/session"
-	"github.com/aws/aws-sdk-go/service/dynamodb"
-	"github.com/aws/aws-sdk-go/service/dynamodb/dynamodbattribute"
-	"github.com/aws/aws-xray-sdk-go/xray"
+	"github.com/aws/aws-sdk-go-v2/aws"
+	"github.com/aws/aws-sdk-go-v2/config"
+	"github.com/aws/aws-sdk-go-v2/feature/dynamodb/attributevalue"
+	"github.com/aws/aws-sdk-go-v2/service/dynamodb"
+	"github.com/aws/aws-xray-sdk-go/v2/instrumentation/awsv2"
+	"github.com/aws/aws-xray-sdk-go/v2/xray"
 )
-
-var dynamo *dynamodb.DynamoDB
 
 const (
 	existingTableName    = "xray_sample_table"
@@ -26,20 +25,21 @@ type Record struct {
 }
 
 func main() {
-	dynamo = dynamodb.New(session.Must(session.NewSession(
-		&aws.Config{
-			Region: aws.String("us-west-2"),
-		},
-	)))
-	xray.AWS(dynamo.Client)
+	cfg, err := config.LoadDefaultConfig(context.Background(), config.WithRegion("us-west-2"))
+	if err != nil {
+		panic(err)
+	}
+	awsv2.AWSV2Instrumentor(&cfg.APIOptions)
+
+	client := dynamodb.NewFromConfig(cfg)
 
 	ctx, seg := xray.BeginSegment(context.Background(), "DDB")
 	seg.User = "xraysegmentdump"
-	err := ddbExpectedFailure(ctx)
+	err = ddbExpectedFailure(ctx, client)
 	seg.Close(err)
 }
 
-func ddbExpectedFailure(ctx context.Context) error {
+func ddbExpectedFailure(ctx context.Context, client *dynamodb.Client) error {
 	err := xray.Capture(ctx, "DDB.DescribeExistingTableAndPutToMissingTable", func(ctx1 context.Context) error {
 		err := xray.AddAnnotation(ctx1, "DDB.DescribeExistingTableAndPutToMissingTable.Annotation", "anno")
 		if err != nil {
@@ -50,7 +50,7 @@ func ddbExpectedFailure(ctx context.Context) error {
 			return err
 		}
 
-		_, err = dynamo.DescribeTableWithContext(ctx1, &dynamodb.DescribeTableInput{
+		_, err = client.DescribeTable(ctx1, &dynamodb.DescribeTableInput{
 			TableName: aws.String(existingTableName),
 		})
 		if err != nil {
@@ -62,12 +62,12 @@ func ddbExpectedFailure(ctx context.Context) error {
 			URL: "https://example.com/first/link",
 		}
 
-		item, err := dynamodbattribute.MarshalMap(&r)
+		item, err := attributevalue.MarshalMap(&r)
 		if err != nil {
 			return err
 		}
 
-		_, err = dynamo.PutItemWithContext(ctx1, &dynamodb.PutItemInput{
+		_, err = client.PutItem(ctx1, &dynamodb.PutItemInput{
 			TableName: aws.String(nonExistingTableName),
 			Item:      item,
 		})
