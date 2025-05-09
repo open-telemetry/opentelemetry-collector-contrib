@@ -21,5 +21,5 @@ type Config struct {
 	SpanEventsEnabled     bool                            `mapstructure:"spaneventsenabled"`
 	ShutdownTimeout       time.Duration                   `mapstructure:"shutdown_timeout"`
 	CustomEventsEnabled   bool                            `mapstructure:"custom_events_enabled"`
-	ExceptionEventEnabled bool                            `mapstructure:"exception_event_enabled"`
+	ExceptionEventEnabled bool                            `mapstructure:"exception_events_enabled"`
 }
