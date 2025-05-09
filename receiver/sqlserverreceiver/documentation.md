@@ -431,6 +431,22 @@ Throughput rate of replica data.
 | ---- | ----------- | ------ |
 | replica.direction | The direction of flow of bytes for replica. | Str: ``transmit``, ``receive`` |
 
+### sqlserver.resource_pool.disk.operations
+
+The rate of operations issued.
+
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {operations}/s | Gauge | Double |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| direction | The direction of flow of bytes or operations. | Str: ``read``, ``write`` |
+
 ### sqlserver.resource_pool.disk.throttled.read.rate
 
 The number of read operations that were throttled in the last second

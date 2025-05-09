@@ -278,6 +278,7 @@ func isPerfCounterQueryEnabled(metrics *metadata.MetricsConfig) bool {
 		metrics.SqlserverProcessesBlocked.Enabled ||
 		metrics.SqlserverReplicaDataRate.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledReadRate.Enabled ||
+		metrics.SqlserverResourcePoolDiskOperations.Enabled ||
 		metrics.SqlserverResourcePoolDiskThrottledWriteRate.Enabled ||
 		metrics.SqlserverTableCount.Enabled ||
 		metrics.SqlserverTransactionDelay.Enabled ||

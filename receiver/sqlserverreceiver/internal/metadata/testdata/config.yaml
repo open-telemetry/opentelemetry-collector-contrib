@@ -63,6 +63,8 @@ all_set:
       enabled: true
     sqlserver.replica.data.rate:
       enabled: true
+    sqlserver.resource_pool.disk.operations:
+      enabled: true
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: true
     sqlserver.resource_pool.disk.throttled.write.rate:
@@ -165,6 +167,8 @@ none_set:
     sqlserver.processes.blocked:
       enabled: false
     sqlserver.replica.data.rate:
+      enabled: false
+    sqlserver.resource_pool.disk.operations:
       enabled: false
     sqlserver.resource_pool.disk.throttled.read.rate:
       enabled: false
