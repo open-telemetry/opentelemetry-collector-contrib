@@ -9,6 +9,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
+	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -85,11 +86,43 @@ func (packer *logPacker) LogRecordToEnvelope(logRecord plog.LogRecord, resource 
 
 	if packer.config.CustomEventsEnabled && isEventData(attributes) {
 		packer.handleEventData(envelope, data, logRecord)
+	} else if packer.config.ExceptionEventEnabled && isExceptionData(attributes) {
+		packer.handleExceptionData(envelope, data, logRecord, resource, instrumentationScope)
 	} else {
 		packer.handleMessageData(envelope, data, logRecord, resource, instrumentationScope)
 	}
 
 	return envelope
+}
+
+func (packer *logPacker) handleExceptionData(envelope *contracts.Envelope, data *contracts.Data, logRecord plog.LogRecord, resource pcommon.Resource, instrumentationScope pcommon.InstrumentationScope) {
+	logAttributeMap := logRecord.Attributes()
+	exceptionData := contracts.NewExceptionData()
+	exceptionData.Properties = make(map[string]string)
+	exceptionData.SeverityLevel = packer.toAiSeverityLevel(logRecord.SeverityNumber())
+	exceptionData.ProblemId = logRecord.SeverityText()
+
+	exceptionDetails := mapIncomingAttributeMapExceptionDetail(logAttributeMap)
+	exceptionData.Exceptions = append(exceptionData.Exceptions, exceptionDetails)
+
+	envelope.Name = exceptionData.EnvelopeName("")
+
+	data.BaseData = exceptionData
+	data.BaseType = exceptionData.BaseType()
+	envelope.Data = data
+
+	envelope.Tags[contracts.OperationId] = traceutil.TraceIDToHexOrEmptyString(logRecord.TraceID())
+	envelope.Tags[contracts.OperationParentId] = traceutil.SpanIDToHexOrEmptyString(logRecord.SpanID())
+
+	resourceAttributes := resource.Attributes()
+	applyResourcesToDataProperties(exceptionData.Properties, resourceAttributes)
+	applyInstrumentationScopeValueToDataProperties(exceptionData.Properties, instrumentationScope)
+	applyCloudTagsToEnvelope(envelope, resourceAttributes)
+	applyInternalSdkVersionTagToEnvelope(envelope)
+
+	setAttributesAsProperties(logAttributeMap, exceptionData.Properties)
+
+	packer.sanitizeAll(envelope, exceptionData)
 }
 
 func (packer *logPacker) sanitize(sanitizeFunc func() []string) {
@@ -147,4 +180,23 @@ func hasOneOfKeys(attrMap pcommon.Map, keys ...string) bool {
 
 func isEventData(attrMap pcommon.Map) bool {
 	return hasOneOfKeys(attrMap, attributeMicrosoftCustomEventName, attributeApplicationInsightsEventMarkerAttribute)
+}
+
+func isExceptionData(attributes pcommon.Map) bool {
+	return hasOneOfKeys(attributes, conventions.AttributeExceptionType, conventions.AttributeExceptionMessage)
+}
+
+func mapIncomingAttributeMapExceptionDetail(attributemap pcommon.Map) *contracts.ExceptionDetails {
+	exceptionDetails := contracts.NewExceptionDetails()
+	if message, exists := attributemap.Get(conventions.AttributeExceptionMessage); exists {
+		exceptionDetails.Message = message.Str()
+	}
+	if typeName, exists := attributemap.Get(conventions.AttributeExceptionType); exists {
+		exceptionDetails.TypeName = typeName.Str()
+	}
+	if stackTrace, exists := attributemap.Get(conventions.AttributeExceptionStacktrace); exists {
+		exceptionDetails.HasFullStack = true
+		exceptionDetails.Stack = stackTrace.Str()
+	}
+	return exceptionDetails
 }
