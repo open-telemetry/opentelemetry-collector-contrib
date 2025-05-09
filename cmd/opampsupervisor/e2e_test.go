@@ -289,7 +289,7 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 		},
 	})
 
-	cfg, _, _, _ := createSimplePipelineCollectorConf(t)
+	cfg, _, inputFile, outputFile := createSimplePipelineCollectorConf(t)
 
 	collectorConfigDir := t.TempDir()
 	cfgFile, err := os.CreateTemp(collectorConfigDir, "config_*.yaml")
@@ -315,6 +315,17 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 	require.EventuallyWithTf(t, func(c *assert.CollectT) {
 		require.NotContains(c, getAgentLogs(t, storageDir), "error")
 	}, 10*time.Second, 500*time.Millisecond, "Collector logs has errors")
+
+	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
+	require.NotZero(t, n, "Could not write to input file")
+	require.NoError(t, err)
+
+	require.Eventually(t, func() bool {
+		logRecord := make([]byte, 1024)
+		n, _ := outputFile.Read(logRecord)
+
+		return n != 0
+	}, 10*time.Second, 500*time.Millisecond, "Log never appeared in output")
 }
 
 func TestSupervisorStartsCollectorWithNoOpAMPServerWithNoLastRemoteConfig(t *testing.T) {
