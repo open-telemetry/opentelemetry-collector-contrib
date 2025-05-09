@@ -313,8 +313,8 @@ func TestSupervisorStartsCollectorWithLocalConfigOnly(t *testing.T) {
 	require.True(t, connected.Load(), "Supervisor failed to connect")
 
 	require.EventuallyWithTf(t, func(c *assert.CollectT) {
-		require.NotContains(c, getAgentLogs(t, storageDir), "error")
-	}, 10*time.Second, 500*time.Millisecond, "Collector logs has errors")
+		require.Contains(c, getAgentLogs(t, storageDir), "Connected to the OpAMP server")
+	}, 10*time.Second, 500*time.Millisecond, "Collector did not connected to the OpAMP server")
 
 	n, err := inputFile.WriteString("{\"body\":\"hello, world\"}\n")
 	require.NotZero(t, n, "Could not write to input file")
