@@ -251,6 +251,23 @@ Gauge tracking the number of raw write seconds per instance
 | splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
 | splunk.splunkd.version | The splunkd version number | Any Str |
 
+### splunk.indexer.rollingrestart.status
+
+The status of a rolling restart.
+
+| Unit | Metric Type | Value Type |
+| ---- | ----------- | ---------- |
+| {status} | Gauge | Int |
+
+#### Attributes
+
+| Name | Description | Values |
+| ---- | ----------- | ------ |
+| splunk.searchable.restart | Boolean that indicates if a searchable rolling restart/upgrade in progress.t | Any Bool |
+| splunk.rollingorrestart | Boolean that indicates if there is a rolling restart or rolling upgrade in progress. | Any Bool |
+| splunk.splunkd.build | The build number for this Splunk instance version | Any Str |
+| splunk.splunkd.version | The splunkd version number | Any Str |
+
 ### splunk.indexer.throughput
 
 Gauge tracking average bytes per second throughput of indexer. *Note:** Must be pointed at specific indexer `endpoint` and gathers metrics from only that indexer.
