@@ -16,6 +16,7 @@ import (
 	"net/url"
 	"os"
 	"path/filepath"
+	"slices"
 	"sort"
 	"strings"
 	"sync"
@@ -23,7 +24,6 @@ import (
 	"text/template"
 	"time"
 
-	"github.com/cenkalti/backoff/v4"
 	"github.com/google/uuid"
 	"github.com/knadh/koanf/maps"
 	"github.com/knadh/koanf/parsers/yaml"
@@ -53,7 +53,6 @@ import (
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/commander"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/config"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/cmd/opampsupervisor/supervisor/healthchecker"
 )
 
 var (
@@ -116,10 +115,6 @@ type Supervisor struct {
 
 	startedAt time.Time
 
-	healthCheckTicker  *backoff.Ticker
-	healthChecker      *healthchecker.HTTPHealthChecker
-	lastHealthCheckErr error
-
 	// Supervisor's own config.
 	config config.Supervisor
 
@@ -142,11 +137,7 @@ type Supervisor struct {
 	// https://github.com/open-telemetry/opentelemetry-collector-contrib/issues/21078
 	agentConfigOwnMetricsSection *atomic.Value
 
-	// agentHealthCheckEndpoint is the endpoint the Collector's health check extension
-	// will listen on for health check requests from the Supervisor.
-	agentHealthCheckEndpoint string
-
-	// Internal config state for agent use. See the configState struct for more details.
+	// Internal config state for agent use. See the [configState] struct for more details.
 	cfgState *atomic.Value
 
 	// Final effective config of the Collector.
@@ -162,8 +153,6 @@ type Supervisor struct {
 	configApplyTimeout time.Duration
 	// lastHealthFromClient is the last health status of the agent received from the client.
 	lastHealthFromClient *protobufs.ComponentHealth
-	// lastHealth is the last health status of the agent.
-	lastHealth *protobufs.ComponentHealth
 
 	// The OpAMP client to connect to the OpAMP Server.
 	opampClient client.OpAMPClient
@@ -327,16 +316,6 @@ func (s *Supervisor) Start() error {
 		return fmt.Errorf("could not get bootstrap info from the Collector: %w", err)
 	}
 
-	healthCheckPort := s.config.Agent.HealthCheckPort
-	if healthCheckPort == 0 {
-		healthCheckPort, err = s.findRandomPort()
-		if err != nil {
-			return fmt.Errorf("could not find port for health check: %w", err)
-		}
-	}
-
-	s.agentHealthCheckEndpoint = fmt.Sprintf("localhost:%d", healthCheckPort)
-
 	s.telemetrySettings.Logger.Info("Supervisor starting",
 		zap.String("id", s.persistentState.InstanceID.String()))
 
@@ -358,8 +337,6 @@ func (s *Supervisor) Start() error {
 	if err != nil {
 		return err
 	}
-
-	s.startHealthCheckTicker()
 
 	s.agentWG.Add(1)
 	go func() {
@@ -795,6 +772,10 @@ func (s *Supervisor) handleAgentOpAMPMessage(conn serverTypes.Connection, messag
 	if message.Health != nil {
 		s.telemetrySettings.Logger.Debug("Received health status from agent", zap.Bool("healthy", message.Health.Healthy))
 		s.lastHealthFromClient = message.Health
+		err := s.opampClient.SetHealth(message.Health)
+		if err != nil {
+			s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err))
+		}
 	}
 
 	return &protobufs.ServerToAgent{}
@@ -994,7 +975,6 @@ func (s *Supervisor) composeExtraLocalConfig() []byte {
 		resourceAttrs[attr.Key] = attr.Value.GetStringValue()
 	}
 	tplVars := map[string]any{
-		"Healthcheck":        s.agentHealthCheckEndpoint,
 		"ResourceAttributes": resourceAttrs,
 		"SupervisorPort":     s.opampServerPort,
 	}
@@ -1190,13 +1170,13 @@ func (s *Supervisor) setupOwnTelemetry(_ context.Context, settings *protobufs.Co
 // 1) the remote config from OpAMP Server
 // 2) the own metrics config section
 // 3) the local override config that is hard-coded in the Supervisor.
-func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
+func (s *Supervisor) composeMergedConfig(incomingConfig *protobufs.AgentRemoteConfig) (configChanged bool, err error) {
 	k := koanf.New("::")
 
-	configMapIsEmpty := len(config.GetConfig().GetConfigMap()) == 0
+	hasIncomingConfigMap := len(incomingConfig.GetConfig().GetConfigMap()) != 0
 
-	if !configMapIsEmpty {
-		c := config.GetConfig()
+	if hasIncomingConfigMap {
+		c := incomingConfig.GetConfig()
 
 		// Sort to make sure the order of merging is stable.
 		var names []string
@@ -1273,7 +1253,7 @@ func (s *Supervisor) composeMergedConfig(config *protobufs.AgentRemoteConfig) (c
 
 	newConfigState := &configState{
 		mergedConfig:     string(newMergedConfigBytes),
-		configMapIsEmpty: configMapIsEmpty,
+		configMapIsEmpty: (incomingConfig != nil && !hasIncomingConfigMap),
 	}
 
 	configChanged = false
@@ -1324,70 +1304,8 @@ func (s *Supervisor) startAgent() (agentStartStatus, error) {
 	s.agentHasStarted = false
 	s.agentStartHealthCheckAttempts = 0
 	s.startedAt = time.Now()
-	s.startHealthCheckTicker()
 
-	s.healthChecker = healthchecker.NewHTTPHealthChecker(fmt.Sprintf("http://%s", s.agentHealthCheckEndpoint))
 	return agentStarting, nil
-}
-
-func (s *Supervisor) startHealthCheckTicker() {
-	// Prepare health checker
-	healthCheckBackoff := backoff.NewExponentialBackOff()
-	healthCheckBackoff.MaxInterval = 60 * time.Second
-	healthCheckBackoff.MaxElapsedTime = 0 // Never stop
-	if s.healthCheckTicker != nil {
-		s.healthCheckTicker.Stop()
-	}
-	s.healthCheckTicker = backoff.NewTicker(healthCheckBackoff)
-}
-
-func (s *Supervisor) healthCheck() {
-	if !s.commander.IsRunning() {
-		return
-	}
-
-	ctx, cancel := context.WithTimeout(context.Background(), time.Second*10)
-
-	err := s.healthChecker.Check(ctx)
-	cancel()
-
-	// Prepare OpAMP health report.
-	health := &protobufs.ComponentHealth{
-		StartTimeUnixNano: uint64(s.startedAt.UnixNano()),
-	}
-
-	if err != nil {
-		health.Healthy = false
-		if !s.agentHasStarted && s.agentStartHealthCheckAttempts < 10 {
-			health.LastError = "Agent is starting"
-			s.agentStartHealthCheckAttempts++
-			// if we have a last health status, use it
-			if s.lastHealth != nil && s.lastHealth.Healthy {
-				health.Healthy = s.lastHealth.Healthy
-			}
-		} else {
-			health.LastError = err.Error()
-			s.telemetrySettings.Logger.Error("Agent is not healthy", zap.Error(err))
-		}
-	} else {
-		s.agentHasStarted = true
-		health.Healthy = true
-		s.telemetrySettings.Logger.Debug("Agent is healthy.")
-	}
-	s.lastHealth = health
-
-	if err != nil && errors.Is(err, s.lastHealthCheckErr) {
-		// No difference from last check. Nothing new to report.
-		return
-	}
-
-	// Report via OpAMP.
-	if err2 := s.opampClient.SetHealth(health); err2 != nil {
-		s.telemetrySettings.Logger.Error("Could not report health to OpAMP server", zap.Error(err2))
-		return
-	}
-
-	s.lastHealthCheckErr = err
 }
 
 func (s *Supervisor) runAgentProcess() {
@@ -1477,9 +1395,6 @@ func (s *Supervisor) runAgentProcess() {
 				s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLIED, "")
 			}
 
-		case <-s.healthCheckTicker.C:
-			s.healthCheck()
-
 		case <-s.doneChan:
 			err := s.commander.Stop(context.Background())
 			if err != nil {
@@ -1542,10 +1457,6 @@ func (s *Supervisor) Shutdown() {
 
 	if err := s.shutdownTelemetry(); err != nil {
 		s.telemetrySettings.Logger.Error("Could not shut down self telemetry", zap.Error(err))
-	}
-
-	if s.healthCheckTicker != nil {
-		s.healthCheckTicker.Stop()
 	}
 }
 
@@ -1689,7 +1600,9 @@ func (s *Supervisor) processRemoteConfigMessage(msg *protobufs.AgentRemoteConfig
 	if err != nil {
 		s.telemetrySettings.Logger.Error("Error composing merged config. Reporting failed remote config status.", zap.Error(err))
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_FAILED, err.Error())
-	} else {
+	}
+	if configChanged {
+		// only report applying if the config has changed and will run agent with new config
 		s.reportConfigStatus(protobufs.RemoteConfigStatuses_RemoteConfigStatuses_APPLYING, "")
 	}
 
@@ -1803,7 +1716,21 @@ func configMergeFunc(src, dest map[string]any) error {
 	if destExt, ok := destExtensions.([]any); ok {
 		if srcExt, ok := srcExtensions.([]any); ok {
 			if service, ok := dest["service"].(map[string]any); ok {
-				service["extensions"] = append(destExt, srcExt...)
+				allExt := slices.Concat(destExt, srcExt)
+				// This is a small hack to ensure that the order is consitent and
+				// follows this simple rule: extensions from [src], then from [dest],
+				// in the order that they appear.
+				// We cannot use other simpler methods, like [sort.Strings], because
+				// we work with a `[]any` that cannot be cast to `[]string`.
+				seenExt := make(map[any]struct{}, len(allExt))
+				var uniqueExts []any
+				for _, ext := range allExt {
+					if _, ok := seenExt[ext]; !ok {
+						seenExt[ext] = struct{}{}
+						uniqueExts = append(uniqueExts, ext)
+					}
+				}
+				service["extensions"] = uniqueExts
 			}
 		}
 	}

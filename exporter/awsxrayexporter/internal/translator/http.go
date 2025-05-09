@@ -7,7 +7,7 @@ import (
 	"net"
 	"strconv"
 
-	"github.com/aws/aws-sdk-go/aws"
+	"github.com/aws/aws-sdk-go-v2/aws"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
 	conventionsv112 "go.opentelemetry.io/collector/semconv/v1.12.0"
