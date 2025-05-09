@@ -139,6 +139,8 @@ func GetMetadata(pod *corev1.Pod, mc *metadata.Store, logger *zap.Logger) map[ex
 		meta[podStatusReason] = reason
 	}
 
+	meta[conventions.AttributeK8SNodeName] = pod.Spec.NodeName
+
 	for _, or := range pod.OwnerReferences {
 		kind := strings.ToLower(or.Kind)
 		meta[metadata.GetOTelNameFromKind(kind)] = or.Name
