@@ -1,3 +1,6 @@
+// Copyright The OpenTelemetry Authors
+// SPDX-License-Identifier: Apache-2.0
+
 package pdatautil
 
 import (
@@ -5,7 +8,6 @@ import (
 
 	"github.com/lightstep/go-expohisto/structure"
 	"github.com/stretchr/testify/assert"
-
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
