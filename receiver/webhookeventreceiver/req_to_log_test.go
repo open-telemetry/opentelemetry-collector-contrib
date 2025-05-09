@@ -304,6 +304,77 @@ func TestReqToLog(t *testing.T) {
 				require.Equal(t, 3, reqLen)
 			},
 		},
+		{
+			desc: "single multi-line JSON with JSON boundary splitting enabled",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte(`{
+				  "name": "francis",
+				  "address": {
+				    "city": "newyork",
+				    "zip": "10001",
+				    "country": "USA"
+				  },
+				  "tags": ["developer", "opentelemetry"]
+				}`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                    defaultPath,
+				HealthPath:              defaultHealthPath,
+				ReadTimeout:             defaultReadTimeout,
+				WriteTimeout:            defaultWriteTimeout,
+				RequiredHeader:          RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				HeaderAttributeRegex:    "",
+				SplitLogsAtNewLine:      false,
+				SplitLogsAtJSONBoundary: true,
+			},
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+				// Should be a single log entry since it's one valid JSON object
+				require.Equal(t, 1, reqLen)
+
+				// Verify the log content
+				processLogRecords(reqLog, func(lr plog.LogRecord) {
+					bodyField := lr.Body()
+					body := bodyField.Str()
+					require.Contains(t, body, "francis")
+					require.Contains(t, body, "newyork")
+					require.Contains(t, body, "developer")
+				})
+			},
+		},
+		{
+			desc: "non-JSON data with JSON boundary splitting enabled",
+			sc: func() *bufio.Scanner {
+				reader := io.NopCloser(bytes.NewReader([]byte(`This is plain text
+				that spans multiple lines
+				and has no valid JSON structure.
+				It should be treated as a single log entry
+				despite having newlines and JSON boundary splitting enabled.`)))
+				return bufio.NewScanner(reader)
+			}(),
+			config: &Config{
+				Path:                    defaultPath,
+				HealthPath:              defaultHealthPath,
+				ReadTimeout:             defaultReadTimeout,
+				WriteTimeout:            defaultWriteTimeout,
+				RequiredHeader:          RequiredHeader{Key: "X-Required-Header", Value: "password"},
+				HeaderAttributeRegex:    "",
+				SplitLogsAtNewLine:      false,
+				SplitLogsAtJSONBoundary: true,
+			},
+			tt: func(t *testing.T, reqLog plog.Logs, reqLen int, _ receiver.Settings) {
+				// Should be a single log entry since there are no JSON boundaries
+				require.Equal(t, 1, reqLen)
+
+				// Verify the log content
+				processLogRecords(reqLog, func(lr plog.LogRecord) {
+					bodyField := lr.Body()
+					body := bodyField.Str()
+					require.Contains(t, body, "plain text")
+					require.Contains(t, body, "splitting enabled")
+				})
+			},
+		},
 	}
 
 	for _, test := range tests {
