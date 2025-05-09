@@ -536,7 +536,11 @@ func (s *sqlServerScraperHelper) recordDatabaseStatusMetrics(ctx context.Context
 
 func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) error {
 	// Constants are the columns for metrics from query
-	const waitTimeMs = "wait_time_ms"
+	const (
+		waitCategory = "wait_category"
+		waitTimeMs   = "wait_time_ms"
+		waitType     = "wait_type"
+	)
 
 	rows, err := s.client.QueryRows(ctx)
 	if err != nil {
@@ -560,8 +564,8 @@ func (s *sqlServerScraperHelper) recordDatabaseWaitMetrics(ctx context.Context) 
 		if err != nil {
 			errs = append(errs, fmt.Errorf("failed to parse valueKey for row %d: %w in %s", i, err, waitTimeMs))
 		} else {
-			// Value is stored in SQL Server in ms, need to convert to s
-			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row["wait_category"], row["wait_type"])
+			// The value is divided here because it's stored in SQL Server in ms, need to convert to s
+			s.mb.RecordSqlserverOsWaitDurationDataPoint(now, val.(float64)/1e3, row[waitCategory], row[waitType])
 		}
 
 		s.mb.EmitForResource(metadata.WithResource(rb.Emit()))

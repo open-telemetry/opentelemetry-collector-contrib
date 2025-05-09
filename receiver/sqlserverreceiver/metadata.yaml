@@ -448,7 +448,7 @@ metrics:
       monotonic: true
       value_type: double
     attributes: [wait.category, wait.type]
-
+    extended_documentation: This metric is only available when the receiver is configured to directly connect to SQL Server.
 
 tests:
   config:

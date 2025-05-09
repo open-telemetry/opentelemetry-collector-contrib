@@ -405,6 +405,8 @@ Total memory in use.
 
 Total wait time for this wait type
 
+This metric is only available when the receiver is configured to directly connect to SQL Server.
+
 | Unit | Metric Type | Value Type | Aggregation Temporality | Monotonic |
 | ---- | ----------- | ---------- | ----------------------- | --------- |
 | s | Sum | Double | Cumulative | true |
