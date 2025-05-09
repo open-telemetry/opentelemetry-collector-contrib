@@ -22,7 +22,7 @@ type Processor struct {
 }
 
 func NewProcessor(contextStatements []common.ContextStatements, errorMode ottl.ErrorMode, settings component.TelemetrySettings, additionalMetricFuncs []ottl.Factory[ottlmetric.TransformContext]) (*Processor, error) {
-	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(MetricFunctions(additionalMetricFuncs)), common.WithDataPointParser(DataPointFunctions()), common.WithMetricErrorMode(errorMode))
+	pc, err := common.NewMetricParserCollection(settings, common.WithMetricParser(MetricFunctions(additionalMetricFuncs...)), common.WithDataPointParser(DataPointFunctions()), common.WithMetricErrorMode(errorMode))
 	if err != nil {
 		return nil, err
 	}
