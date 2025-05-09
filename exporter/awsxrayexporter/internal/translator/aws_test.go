@@ -62,7 +62,7 @@ func TestAwsFromEcsResource(t *testing.T) {
 	resource := pcommon.NewResource()
 	attrs := pcommon.NewMap()
 	attrs.PutStr(string(conventionsv112.CloudProviderKey), conventionsv112.CloudProviderAWS.Value.AsString())
-	attrs.PutStr(string(conventionsv112.CloudPlatformKey), conventionsv112.CloudPlatformAWSEC2.Value.AsString())
+	attrs.PutStr(string(conventionsv112.CloudPlatformKey), conventionsv112.CloudPlatformAWSECS.Value.AsString())
 	attrs.PutStr(string(conventionsv112.CloudAccountIDKey), "123456789")
 	attrs.PutStr(string(conventionsv112.CloudAvailabilityZoneKey), az)
 	attrs.PutStr(string(conventionsv112.ContainerImageNameKey), "otel/signupaggregator")
