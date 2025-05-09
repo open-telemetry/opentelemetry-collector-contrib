@@ -77,6 +77,13 @@ func (rb *ResourceBuilder) SetHostID(val string) {
 	}
 }
 
+// SetHostInterface sets provided value as "host.interface" attribute.
+func (rb *ResourceBuilder) SetHostInterface(val []any) {
+	if rb.config.HostInterface.Enabled {
+		rb.res.Attributes().PutEmptySlice("host.interface").FromRaw(val)
+	}
+}
+
 // SetHostIP sets provided value as "host.ip" attribute.
 func (rb *ResourceBuilder) SetHostIP(val []any) {
 	if rb.config.HostIP.Enabled {
