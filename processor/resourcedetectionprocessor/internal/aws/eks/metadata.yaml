@@ -3,6 +3,18 @@ type: resourcedetectionprocessor/eks
 parent: resourcedetection
 
 resource_attributes:
+  host.id:
+    description: The host.id
+    type: string
+    enabled: false
+  cloud.region:
+    description: The cloud region
+    type: string
+    enabled: false
+  cloud.availability_zone:
+    description: The cloud availability zone
+    type: string
+    enabled: false
   cloud.provider:
     description: The cloud.provider
     type: string
