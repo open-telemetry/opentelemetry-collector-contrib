@@ -3,6 +3,8 @@ module github.com/open-telemetry/opentelemetry-collector-contrib/exporter/stefex
 go 1.23.0
 
 require (
+	github.com/cenkalti/backoff/v5 v5.0.2
+	github.com/jonboulle/clockwork v0.5.0
 	github.com/open-telemetry/opentelemetry-collector-contrib/internal/common v0.125.0
 	github.com/splunk/stef/go/grpc v0.0.5
 	github.com/splunk/stef/go/otel v0.0.5
@@ -27,7 +29,6 @@ require (
 )
 
 require (
-	github.com/cenkalti/backoff/v5 v5.0.2 // indirect
 	github.com/davecgh/go-spew v1.1.1 // indirect
 	github.com/foxboron/go-tpm-keyfiles v0.0.0-20250323135004-b31fac66206e // indirect
 	github.com/fsnotify/fsnotify v1.9.0 // indirect
