@@ -9,7 +9,7 @@ import (
 	"github.com/prometheus/prometheus/model/labels"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
 )
@@ -26,34 +26,34 @@ func makeK8sResource(jobInstance *jobInstanceDefinition, def *k8sResourceDefinit
 	resource := makeResourceWithJobInstanceScheme(jobInstance, true)
 	attrs := resource.Attributes()
 	if def.podName != "" {
-		attrs.PutStr(conventions.AttributeK8SPodName, def.podName)
+		attrs.PutStr(string(conventions.KKey)8SPodName, def.podName)
 	}
 	if def.podUID != "" {
-		attrs.PutStr(conventions.AttributeK8SPodUID, def.podUID)
+		attrs.PutStr(string(conventions.KKey)8SPodUID, def.podUID)
 	}
 	if def.container != "" {
-		attrs.PutStr(conventions.AttributeK8SContainerName, def.container)
+		attrs.PutStr(string(conventions.KKey)8SContainerName, def.container)
 	}
 	if def.node != "" {
-		attrs.PutStr(conventions.AttributeK8SNodeName, def.node)
+		attrs.PutStr(string(conventions.KKey)8SNodeName, def.node)
 	}
 	if def.rs != "" {
-		attrs.PutStr(conventions.AttributeK8SReplicaSetName, def.rs)
+		attrs.PutStr(string(conventions.KKey)8SReplicaSetName, def.rs)
 	}
 	if def.ds != "" {
-		attrs.PutStr(conventions.AttributeK8SDaemonSetName, def.ds)
+		attrs.PutStr(string(conventions.KKey)8SDaemonSetName, def.ds)
 	}
 	if def.ss != "" {
-		attrs.PutStr(conventions.AttributeK8SStatefulSetName, def.ss)
+		attrs.PutStr(string(conventions.KKey)8SStatefulSetName, def.ss)
 	}
 	if def.job != "" {
-		attrs.PutStr(conventions.AttributeK8SJobName, def.job)
+		attrs.PutStr(string(conventions.KKey)8SJobName, def.job)
 	}
 	if def.cronjob != "" {
-		attrs.PutStr(conventions.AttributeK8SCronJobName, def.cronjob)
+		attrs.PutStr(string(conventions.KKey)8SCronJobName, def.cronjob)
 	}
 	if def.ns != "" {
-		attrs.PutStr(conventions.AttributeK8SNamespaceName, def.ns)
+		attrs.PutStr(string(conventions.KKey)8SNamespaceName, def.ns)
 	}
 	return resource
 }

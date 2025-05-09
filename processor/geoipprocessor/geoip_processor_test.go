@@ -219,17 +219,17 @@ func TestProcessor(t *testing.T) {
 	baseProviderMock.LocationF = func(_ context.Context, sourceIP net.IP) (attribute.Set, error) {
 		if sourceIP.Equal(net.IPv4(1, 2, 3, 4)) {
 			return attribute.NewSet([]attribute.KeyValue{
-				attribute.String(conventions.AttributeGeoCityName, "Boxford"),
-				attribute.String(conventions.AttributeGeoContinentCode, "EU"),
-				attribute.String(conventions.AttributeGeoContinentName, "Europe"),
-				attribute.String(conventions.AttributeGeoCountryIsoCode, "GB"),
-				attribute.String(conventions.AttributeGeoCountryName, "United Kingdom"),
-				attribute.String(conventions.AttributeGeoTimezone, "Europe/London"),
-				attribute.String(conventions.AttributeGeoRegionIsoCode, "WBK"),
-				attribute.String(conventions.AttributeGeoRegionName, "West Berkshire"),
-				attribute.String(conventions.AttributeGeoPostalCode, "OX1"),
-				attribute.Float64(conventions.AttributeGeoLocationLat, 1234),
-				attribute.Float64(conventions.AttributeGeoLocationLon, 5678),
+				attribute.String(string(conventions.GeoCityNameKey), "Boxford"),
+				attribute.String(string(conventions.GeoContinentCodeKey), "EU"),
+				attribute.String(string(conventions.GeoContinentNameKey), "Europe"),
+				attribute.String(string(conventions.GeoCountryIsoCodeKey), "GB"),
+				attribute.String(string(conventions.GeoCountryNameKey), "United Kingdom"),
+				attribute.String(string(conventions.GeoTimezoneKey), "Europe/London"),
+				attribute.String(string(conventions.GeoRegionIsoCodeKey), "WBK"),
+				attribute.String(string(conventions.GeoRegionNameKey), "West Berkshire"),
+				attribute.String(string(conventions.GeoPostalCodeKey), "OX1"),
+				attribute.Float64(string(conventions.GeoLocationLatKey), 1234),
+				attribute.Float64(string(conventions.GeoLocationLonKey), 5678),
 			}...), nil
 		}
 		return attribute.Set{}, provider.ErrNoMetadataFound

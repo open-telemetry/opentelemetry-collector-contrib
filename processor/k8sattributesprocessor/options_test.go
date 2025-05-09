@@ -9,7 +9,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
-	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
 	"k8s.io/apimachinery/pkg/selection"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
@@ -59,13 +59,13 @@ func TestEnabledAttributes(t *testing.T) {
 	// This list needs to be updated when the defaults in metadata.yaml are updated.
 	expected := []string{
 		conventions.AttributeK8SNamespaceName,
-		conventions.AttributeK8SPodName,
-		conventions.AttributeK8SPodUID,
+		string(conventions.KKey)8SPodName,
+		string(conventions.KKey)8SPodUID,
 		metadataPodStartTime,
-		conventions.AttributeK8SDeploymentName,
-		conventions.AttributeK8SNodeName,
-		conventions.AttributeContainerImageName,
-		conventions.AttributeContainerImageTag,
+		string(conventions.KKey)8SDeploymentName,
+		string(conventions.KKey)8SNodeName,
+		string(conventions.ContainerImageNameKey),
+		string(conventions.ContainerImageTagKey),
 	}
 	assert.ElementsMatch(t, expected, enabledAttributes())
 }
@@ -355,7 +355,7 @@ func TestWithExtractMetadata(t *testing.T) {
 	assert.True(t, p.rules.Node)
 
 	p = &kubernetesprocessor{}
-	assert.NoError(t, withExtractMetadata(conventions.AttributeK8SNamespaceName, conventions.AttributeK8SPodName, conventions.AttributeK8SPodUID)(p))
+	assert.NoError(t, withExtractMetadata(string(conventions.KKey)8SNamespaceName, string(conventions.KKey)8SPodName, string(conventions.KKey)8SPodUID)(p))
 	assert.True(t, p.rules.Namespace)
 	assert.True(t, p.rules.PodName)
 	assert.True(t, p.rules.PodUID)
