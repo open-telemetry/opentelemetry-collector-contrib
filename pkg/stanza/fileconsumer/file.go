@@ -255,8 +255,8 @@ func (m *Manager) handleUnmatchedFiles(ctx context.Context) {
 			reader, err = m.readerFactory.NewReaderFromMetadata(file, md)
 		} else {
 			if m.tracker.Name() != tracker.NoStateTracker {
-		    m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
-	    }
+				m.set.Logger.Info("Started watching file", zap.String("path", file.Name()))
+			}
 			reader, err = m.readerFactory.NewReader(file, fp)
 		}
 
