@@ -65,12 +65,12 @@ The following configuration options can also be modified:
 Each policy will result in a decision, and the processor will evaluate them to make a final decision:
 
 - When there's a "drop" decision, the trace is not sampled;
-- When there's an "inverted not sample" decision, the trace is not sampled;
+- When there's an "inverted not sample" decision, the trace is not sampled; *Deprecated*
 - When there's a "sample" decision, the trace is sampled;
-- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled;
+- When there's a "inverted sample" decision and no "not sample" decisions, the trace is sampled; *Deprecated*
 - In all other cases, the trace is NOT sampled
 
-An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy.
+An "inverted" decision is the one made based on the "invert_match" attribute, such as the one from the string, numeric or boolean tag policy. There is an exception to this if the policy is within an and or composite policy, the resulting decision will be either sampled or not sampled. The "inverted" decision has been deprecated, please make use of drop policy to explicitly not sample select traces.
 
 Examples:
 
