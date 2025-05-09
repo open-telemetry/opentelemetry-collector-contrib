@@ -14,7 +14,8 @@ import (
 	zipkinmodel "github.com/openzipkin/zipkin-go/model"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/otel/semconv/v1.6.1"
+	conventions "go.opentelemetry.io/otel/semconv/v1.15.0"
+	conventions161 "go.opentelemetry.io/otel/semconv/v1.6.1"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/tracetranslator"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -84,10 +85,10 @@ func resourceSpansToZipkinSpans(rs ptrace.ResourceSpans, estSpanCount int) ([]*z
 
 func extractScopeTags(il pcommon.InstrumentationScope, zTags map[string]string) {
 	if ilName := il.Name(); ilName != "" {
-		zTags[conventions.OtelLibraryName] = ilName
+		zTags[string(conventions.OtelLibraryNameKey)] = ilName
 	}
 	if ilVer := il.Version(); ilVer != "" {
-		zTags[conventions.OtelLibraryVersion] = ilVer
+		zTags[string(conventions.OtelLibraryVersionKey)] = ilVer
 	}
 }
 
@@ -176,9 +177,9 @@ func populateStatus(status ptrace.Status, zs *zipkinmodel.SpanModel, tags map[st
 		return
 	}
 
-	tags[conventions.OtelStatusCode] = traceutil.StatusCodeStr(status.Code())
+	tags[string(conventions.OtelStatusCodeKey)] = traceutil.StatusCodeStr(status.Code())
 	if status.Message() != "" {
-		tags[conventions.OtelStatusDescription] = status.Message()
+		tags[string(conventions.OtelStatusDescriptionKey)] = status.Message()
 		zs.Err = fmt.Errorf("%s", status.Message())
 	}
 }
@@ -321,9 +322,9 @@ func zipkinEndpointFromTags(
 
 	var ipKey, portKey string
 	if remoteEndpoint {
-		ipKey, portKey = string(conventions.NetPeerIPKey), string(conventions.NetPeerPortKey)
+		ipKey, portKey = string(conventions161.NetPeerIPKey), string(conventions.NetPeerPortKey)
 	} else {
-		ipKey, portKey = string(conventions.NetHostIPKey), string(conventions.NetHostPortKey)
+		ipKey, portKey = string(conventions161.NetHostIPKey), string(conventions.NetHostPortKey)
 	}
 
 	var ip net.IP
