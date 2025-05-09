@@ -4,11 +4,13 @@
 package metrics
 
 import (
+	"context"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 
+	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottldatapoint"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/contexts/ottlmetric"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/pkg/ottl/ottlfuncs"
@@ -60,7 +62,42 @@ func Test_MetricFunctions(t *testing.T) {
 	expected["scale_metric"] = newScaleMetricFactory()
 	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
 
-	actual := MetricFunctions()
+	actual := MetricFunctions([]ottl.Factory[ottlmetric.TransformContext]{})
+	require.Len(t, actual, len(expected))
+	for k := range actual {
+		assert.Contains(t, expected, k)
+	}
+}
+
+type TestMetricFuncArguments[K any] struct{}
+
+func NewTestMetricFuncFactory[K any]() ottl.Factory[K] {
+	return ottl.NewFactory("TestMetricFunc", &TestMetricFuncArguments[K]{}, createTestMetricFunc[K])
+}
+
+func createTestMetricFunc[K any](_ ottl.FunctionContext, _ ottl.Arguments) (ottl.ExprFunc[K], error) {
+	return func(_ context.Context, _ K) (any, error) {
+		return nil, nil
+	}, nil
+}
+
+func Test_MetricFunctions_AdditionalMetricFuncs(t *testing.T) {
+	testMetricFuncFactory := NewTestMetricFuncFactory[ottlmetric.TransformContext]()
+	expected := ottlfuncs.StandardFuncs[ottlmetric.TransformContext]()
+	expected[testMetricFuncFactory.Name()] = testMetricFuncFactory
+	expected["convert_sum_to_gauge"] = newConvertSumToGaugeFactory()
+	expected["convert_gauge_to_sum"] = newConvertGaugeToSumFactory()
+	expected["aggregate_on_attributes"] = newAggregateOnAttributesFactory()
+	expected["aggregate_on_attribute_value"] = newAggregateOnAttributeValueFactory()
+	expected["extract_sum_metric"] = newExtractSumMetricFactory()
+	expected["extract_count_metric"] = newExtractCountMetricFactory()
+	expected["copy_metric"] = newCopyMetricFactory()
+	expected["scale_metric"] = newScaleMetricFactory()
+	expected["convert_exponential_histogram_to_histogram"] = newconvertExponentialHistToExplicitHistFactory()
+
+	additionalMetricFuncs := []ottl.Factory[ottlmetric.TransformContext]{testMetricFuncFactory}
+	actual := MetricFunctions(additionalMetricFuncs)
+
 	require.Len(t, actual, len(expected))
 	for k := range actual {
 		assert.Contains(t, expected, k)
