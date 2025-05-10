@@ -42,14 +42,18 @@ const (
 )
 
 type K8sObjectsConfig struct {
-	Name             string               `mapstructure:"name"`
-	Group            string               `mapstructure:"group"`
+	Name            string        `mapstructure:"name"`
+	Group           string        `mapstructure:"group"`
+	Mode            mode          `mapstructure:"mode"`
+	LabelSelector   string        `mapstructure:"label_selector"`
+	FieldSelector   string        `mapstructure:"field_selector"`
+	Interval        time.Duration `mapstructure:"interval"`
+	ResourceVersion string        `mapstructure:"resource_version"`
+	K8sObjectTarget `mapstructure:",squash"`
+}
+
+type K8sObjectTarget struct {
 	Namespaces       []string             `mapstructure:"namespaces"`
-	Mode             mode                 `mapstructure:"mode"`
-	LabelSelector    string               `mapstructure:"label_selector"`
-	FieldSelector    string               `mapstructure:"field_selector"`
-	Interval         time.Duration        `mapstructure:"interval"`
-	ResourceVersion  string               `mapstructure:"resource_version"`
 	ExcludeWatchType []apiWatch.EventType `mapstructure:"exclude_watch_type"`
 	exclude          map[apiWatch.EventType]bool
 	gvr              *schema.GroupVersionResource
@@ -143,4 +147,41 @@ func (c *Config) getValidObjects() (map[string][]*schema.GroupVersionResource, e
 		}
 	}
 	return validObjects, nil
+}
+
+func (k *K8sObjectsConfig) DeepCopy() *K8sObjectsConfig {
+	copied := &K8sObjectsConfig{
+		Name:            k.Name,
+		Group:           k.Group,
+		Mode:            k.Mode,
+		LabelSelector:   k.LabelSelector,
+		FieldSelector:   k.FieldSelector,
+		Interval:        k.Interval,
+		ResourceVersion: k.ResourceVersion,
+	}
+
+	copied.Namespaces = make([]string, len(k.Namespaces))
+	if k.Namespaces != nil {
+		copy(copied.Namespaces, k.Namespaces)
+	}
+
+	copied.ExcludeWatchType = make([]apiWatch.EventType, len(k.ExcludeWatchType))
+	if k.ExcludeWatchType != nil {
+		copy(copied.ExcludeWatchType, k.ExcludeWatchType)
+	}
+
+	copied.exclude = make(map[apiWatch.EventType]bool)
+	for key, val := range k.exclude {
+		copied.exclude[key] = val
+	}
+
+	if k.gvr != nil {
+		copied.gvr = &schema.GroupVersionResource{
+			Group:    k.gvr.Group,
+			Version:  k.gvr.Version,
+			Resource: k.gvr.Resource,
+		}
+	}
+
+	return copied
 }
