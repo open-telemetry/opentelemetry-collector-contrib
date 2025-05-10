@@ -301,6 +301,7 @@ func TestMetricsBuilder(t *testing.T) {
 			rb.SetContainerID("container.id-val")
 			rb.SetContainerImageID("container.image.id-val")
 			rb.SetContainerImageName("container.image.name-val")
+			rb.SetContainerLabels(map[string]any{"key1": "container.labels-val1", "key2": "container.labels-val2"})
 			rb.SetContainerName("container.name-val")
 			rb.SetContainerRuntime("container.runtime-val")
 			res := rb.Emit()
