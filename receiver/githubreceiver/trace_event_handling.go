@@ -386,25 +386,25 @@ func (gtr *githubTracesReceiver) createJobQueueSpan(
 
 	span.SetSpanID(spanID)
 
+	created := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time)
+	started := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time)
+	duration := event.WorkflowJob.GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
+
+	span.SetStartTimestamp(created)
+	span.SetEndTimestamp(started)
+
 	// GitHub sometimes reports the createdAt value as being a second after the
 	// startedAt value which results in unreal times in duration. To work around
 	// this we set the duration to 0 and the start/end spans to the started
 	// time in that event. Otherwise we calculate the time properly and set the
 	// span start time as the created time.
-	created := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetCreatedAt().Time)
-	started := pcommon.NewTimestampFromTime(event.GetWorkflowJob().GetStartedAt().Time)
-	time := time.Duration(0)
-
-	span.SetStartTimestamp(started)
-	span.SetEndTimestamp(started)
-
-	if !created.AsTime().After(started.AsTime()) {
-		time = event.GetWorkflowJob().GetStartedAt().Sub(event.GetWorkflowJob().GetCreatedAt().Time)
-		span.SetStartTimestamp(created)
+	if created.AsTime().After(started.AsTime()) {
+		duration = time.Duration(0)
+		span.SetStartTimestamp(started)
 	}
 
 	attrs := span.Attributes()
-	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(time.Nanoseconds()))
+	attrs.PutDouble(AttributeCICDPipelineRunQueueDuration, float64(duration.Nanoseconds()))
 
 	return spanID, nil
 }
