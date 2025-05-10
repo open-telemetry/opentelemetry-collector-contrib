@@ -28,6 +28,8 @@ require (
 	go.uber.org/zap v1.27.0
 )
 
+require go.opentelemetry.io/collector/confmap/xconfmap v0.125.1-0.20250508034258-ac520a5c14cc
+
 require (
 	github.com/Azure/azure-sdk-for-go/sdk/internal v1.11.1 // indirect
 	github.com/AzureAD/microsoft-authentication-library-for-go v1.4.2 // indirect
