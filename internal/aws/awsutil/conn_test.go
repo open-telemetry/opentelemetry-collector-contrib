@@ -158,3 +158,19 @@ func TestGetSTSCreds(t *testing.T) {
 	_, err = getSTSCreds(logger, region, roleArn, externalID)
 	assert.Error(t, err)
 }
+
+func TestGetProxyAddressFromEnv(t *testing.T) {
+	t.Run("exclude proxy from https proxy", func(t *testing.T) {
+		t.Setenv("HTTPS_PROXY", "https://fake.com,https://bar.com,https://foo.com")
+		t.Setenv("NO_PROXY", "https://fake.com")
+		assert.Equal(t, "https://bar.com,https://foo.com", getProxyAddress(""))
+	})
+
+	t.Run("normal proxy", func(t *testing.T) {
+		assert.Equal(t, "normal_proxy", getProxyAddress("normal_proxy"))
+	})
+
+	t.Run("https proxy", func(t *testing.T) {
+		assert.Equal(t, "https://normal_proxy", getProxyAddress("https://normal_proxy"))
+	})
+}
