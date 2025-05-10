@@ -12,7 +12,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 const targetExternalLabels = `
@@ -628,9 +628,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	expectedResourceAttributes.PutStr("service.name", "honor_labels_test")
 	expectedResourceAttributes.PutStr("service.instance.id", "hostname:8080")
 	expectedResourceAttributes.PutStr("server.port", "8080")
-	expectedResourceAttributes.PutStr("net.host.port", "8080")
 	expectedResourceAttributes.PutStr("server.address", "hostname")
-	expectedResourceAttributes.PutStr("net.host.name", "hostname")
 
 	expectedScrapeConfigAttributes := td.attributes
 
@@ -639,7 +637,7 @@ func verifyHonorLabelsTrue(t *testing.T, td *testData, rms []pmetric.ResourceMet
 	var scrapeConfigResourceMetrics pmetric.ResourceMetrics
 	gotScrapeConfigMetrics, gotResourceMetrics := false, false
 	for _, rm := range rms {
-		serviceInstance, ok := rm.Resource().Attributes().Get(semconv.AttributeServiceInstanceID)
+		serviceInstance, ok := rm.Resource().Attributes().Get(string(semconv.ServiceInstanceIDKey))
 		require.True(t, ok)
 		if serviceInstance.AsString() == "hostname:8080" {
 			resourceMetric = rm
@@ -748,9 +746,7 @@ func verifyRelabelJobInstance(t *testing.T, td *testData, rms []pmetric.Resource
 	wantAttributes.PutStr("service.name", "not-target1")
 	wantAttributes.PutStr("service.instance.id", "relabeled-instance")
 	wantAttributes.PutStr("server.port", "")
-	wantAttributes.PutStr("net.host.port", "")
 	wantAttributes.PutStr("server.address", "relabeled-instance")
-	wantAttributes.PutStr("net.host.name", "relabeled-instance")
 
 	metrics1 := rms[0].ScopeMetrics().At(0).Metrics()
 	ts1 := metrics1.At(0).Gauge().DataPoints().At(0).Timestamp()

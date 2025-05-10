@@ -15,11 +15,19 @@ import (
 	"testing"
 	"time"
 
+	_ "github.com/SAP/go-hdb/driver" // register Db driver
 	"github.com/docker/go-connections/nat"
+	_ "github.com/go-sql-driver/mysql"                      // register Db driver
+	_ "github.com/lib/pq"                                   // register Db driver
+	_ "github.com/microsoft/go-mssqldb"                     // register Db driver
+	_ "github.com/microsoft/go-mssqldb/integratedauth/krb5" // register Db driver
+	_ "github.com/sijms/go-ora/v2"                          // register Db driver
+	_ "github.com/snowflakedb/gosnowflake"                  // register Db driver
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/testcontainers/testcontainers-go"
 	"github.com/testcontainers/testcontainers-go/wait"
+	_ "github.com/thda/tds" // register Db driver
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/consumer/consumertest"

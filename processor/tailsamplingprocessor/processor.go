@@ -82,6 +82,7 @@ var (
 		sampling.NotSampled:       attrSampledFalse,
 		sampling.InvertNotSampled: attrSampledFalse,
 		sampling.InvertSampled:    attrSampledTrue,
+		sampling.Dropped:          attrSampledFalse,
 	}
 )
 
@@ -201,6 +202,8 @@ func getPolicyEvaluator(settings component.TelemetrySettings, cfg *PolicyCfg) (s
 		return getNewCompositePolicy(settings, &cfg.CompositeCfg)
 	case And:
 		return getNewAndPolicy(settings, &cfg.AndCfg)
+	case Drop:
+		return getNewDropPolicy(settings, &cfg.DropCfg)
 	default:
 		return getSharedPolicyEvaluator(settings, &cfg.sharedPolicyCfg)
 	}
@@ -352,7 +355,6 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 
 		decision := tsp.makeDecision(id, trace, &metrics)
 
-		tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
 		tsp.telemetry.ProcessorTailSamplingGlobalCountTracesSampled.Add(tsp.ctx, 1, decisionToAttribute[decision])
 
 		// Sampled or not, remove the batches
@@ -370,6 +372,7 @@ func (tsp *tailSamplingSpanProcessor) samplingPolicyOnTick() {
 		}
 	}
 
+	tsp.telemetry.ProcessorTailSamplingSamplingDecisionTimerLatency.Record(tsp.ctx, int64(time.Since(startTime)/time.Millisecond))
 	tsp.telemetry.ProcessorTailSamplingSamplingTracesOnMemory.Record(tsp.ctx, int64(tsp.numTracesOnMap.Load()))
 	tsp.telemetry.ProcessorTailSamplingSamplingTraceDroppedTooEarly.Add(tsp.ctx, metrics.idNotFoundOnMapCount)
 	tsp.telemetry.ProcessorTailSamplingSamplingPolicyEvaluationError.Add(tsp.ctx, metrics.evaluateErrorCount)
@@ -391,6 +394,7 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		sampling.NotSampled:       nil,
 		sampling.InvertSampled:    nil,
 		sampling.InvertNotSampled: nil,
+		sampling.Dropped:          nil,
 	}
 
 	ctx := context.Background()
@@ -421,13 +425,19 @@ func (tsp *tailSamplingSpanProcessor) makeDecision(id pcommon.TraceID, trace *sa
 		if samplingDecisions[decision] == nil {
 			samplingDecisions[decision] = p
 		}
+
+		// Break early if dropped. This can drastically reduce tick/decision latency.
+		if decision == sampling.Dropped {
+			break
+		}
 	}
 
 	var sampledPolicy *policy
 
-	// InvertNotSampled takes precedence over any other decision
 	switch {
-	case samplingDecisions[sampling.InvertNotSampled] != nil:
+	case samplingDecisions[sampling.Dropped] != nil: // Dropped takes precedence
+		finalDecision = sampling.NotSampled
+	case samplingDecisions[sampling.InvertNotSampled] != nil: // Then InvertNotSampled
 		finalDecision = sampling.NotSampled
 	case samplingDecisions[sampling.Sampled] != nil:
 		finalDecision = sampling.Sampled

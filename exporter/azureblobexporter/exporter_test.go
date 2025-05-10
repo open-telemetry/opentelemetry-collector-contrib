@@ -163,6 +163,43 @@ func TestGenerateBlobName(t *testing.T) {
 	assert.True(t, strings.HasPrefix(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat)))
 }
 
+func TestGenerateBlobNameSerialNumBefore(t *testing.T) {
+	t.Parallel()
+
+	c := &Config{
+		BlobNameFormat: &BlobNameFormat{
+			MetricsFormat:            "2006/01/02/metrics_15_04_05.json",
+			LogsFormat:               "2006/01/02/logs_15_04_05.json",
+			TracesFormat:             "2006/01/02/traces_15_04_05", // no extension
+			SerialNumRange:           10000,
+			SerialNumBeforeExtension: true,
+			Params:                   map[string]string{},
+		},
+	}
+
+	ae := newAzureBlobExporter(c, zaptest.NewLogger(t), pipeline.SignalMetrics)
+
+	assertFormat := func(blobName string, format string) {
+		ext := filepath.Ext(format)
+		formatWithoutExt := strings.TrimSuffix(format, ext)
+		assert.True(t, strings.HasPrefix(blobName, formatWithoutExt))
+		assert.True(t, strings.HasSuffix(blobName, ext))
+	}
+
+	now := time.Now()
+	metricsBlobName, err := ae.generateBlobName(pipeline.SignalMetrics)
+	assert.NoError(t, err)
+	assertFormat(metricsBlobName, now.Format(c.BlobNameFormat.MetricsFormat))
+
+	logsBlobName, err := ae.generateBlobName(pipeline.SignalLogs)
+	assert.NoError(t, err)
+	assertFormat(logsBlobName, now.Format(c.BlobNameFormat.LogsFormat))
+
+	tracesBlobName, err := ae.generateBlobName(pipeline.SignalTraces)
+	assert.NoError(t, err)
+	assertFormat(tracesBlobName, now.Format(c.BlobNameFormat.TracesFormat))
+}
+
 func getMockAzBlobClient() *mockAzBlobClient {
 	mockAzBlobClient := &mockAzBlobClient{
 		url: "https://fakeaccount.blob.core.windows.net/",
