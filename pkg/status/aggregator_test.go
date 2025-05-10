@@ -451,6 +451,69 @@ func TestUnsubscribe(t *testing.T) {
 	assertNoEventsRecvd(t, traceEvents, allEvents)
 }
 
+func TestFindNotOk(t *testing.T) {
+	t.Run("pipeline statuses all successful", func(t *testing.T) {
+		agg := status.NewAggregator(status.PriorityPermanent)
+		t.Cleanup(agg.Close)
+
+		_, ok := agg.AggregateStatus(status.ScopeAll, status.Verbose)
+		require.True(t, ok)
+
+		notOkay := agg.FindNotOk(status.Verbose)
+		assert.Empty(t, notOkay)
+	})
+
+	t.Run("pipeline with exporter error", func(t *testing.T) {
+		agg := status.NewAggregator(status.PriorityPermanent)
+		t.Cleanup(agg.Close)
+
+		tracesMetadata := testhelpers.NewPipelineMetadata("traces")
+
+		// Seed aggregator with successful statuses for pipeline.
+		testhelpers.SeedAggregator(agg, tracesMetadata.InstanceIDs(), componentstatus.StatusOK)
+
+		// Record an error in the traces exporter
+		agg.RecordStatus(
+			tracesMetadata.ExporterID,
+			componentstatus.NewRecoverableErrorEvent(assert.AnError),
+		)
+
+		notOkay := agg.FindNotOk(status.Verbose)
+		assert.NotEmpty(t, notOkay)
+
+		tracesKey := toPipelineKey(tracesMetadata.PipelineID)
+
+		// Component statuses match
+		collectedStatuses := collectStatuses(
+			notOkay[tracesKey],
+			tracesMetadata.ExporterID,
+		)
+		assertEventsMatch(t,
+			componentstatus.StatusRecoverableError,
+			collectedStatuses...,
+		)
+	})
+
+	t.Run("pipeline with components without status", func(t *testing.T) {
+		agg := status.NewAggregator(status.PriorityPermanent)
+		t.Cleanup(agg.Close)
+
+		tracesMetadata := testhelpers.NewPipelineMetadata("traces")
+
+		// Seed aggregator with successful statuses for pipeline.
+		testhelpers.SeedAggregator(agg, tracesMetadata.InstanceIDs(), componentstatus.StatusOK)
+
+		// Record an error in the traces exporter
+		agg.RecordStatus(
+			tracesMetadata.ExporterID,
+			componentstatus.NewEvent(componentstatus.StatusNone),
+		)
+
+		notOkay := agg.FindNotOk(status.Verbose)
+		assert.Empty(t, notOkay)
+	})
+}
+
 // assertEventMatches ensures one or more events share the expected status and are
 // otherwise equal, ignoring timestamp.
 func assertEventsMatch(
