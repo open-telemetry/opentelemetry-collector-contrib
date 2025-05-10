@@ -1,8 +1,9 @@
-type: googlesecretmanagerprovider
+type: googlesecretmanager
 
 status:
   class: provider
   stability:
-    development: [provider]
+    alpha: [provider]
+  distributions: [contrib]
   codeowners:
     active: [aabmass, dashpole, jsuereth, psx95, braydonk,ridwanmsharif]
