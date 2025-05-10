@@ -6,7 +6,6 @@ package apachesparkreceiver // import "github.com/open-telemetry/opentelemetry-c
 import (
 	"testing"
 
-	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/config/confighttp"
 	"go.opentelemetry.io/collector/scraper/scraperhelper"
