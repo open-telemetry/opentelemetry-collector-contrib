@@ -4,6 +4,7 @@ status:
   class: receiver
   stability:
     beta: [metrics]
+    development: [logs]
   distributions: [contrib]
   codeowners:
     active: [antonblock]
@@ -15,7 +16,6 @@ resource_attributes:
     description: Endpoint of the MySQL instance.
     enabled: true
     type: string
-
 attributes:
   buffer_pool_pages:
     name_override: kind

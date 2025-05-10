@@ -5,7 +5,10 @@ resourceMetrics:
           value:
             stringValue: localhost:3306
     scopeMetrics:
-      - metrics:
+        - scope:
+            name: "github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver"
+            version: "latest"
+          metrics:
           - description: The number of data pages in the InnoDB buffer pool.
             name: mysql.buffer_pool.data_pages
             sum:
@@ -1756,6 +1759,3 @@ resourceMetrics:
                   timeUnixNano: "2000000"
               isMonotonic: true
             unit: s
-        scope:
-          name: github.com/open-telemetry/opentelemetry-collector-contrib/receiver/mysqlreceiver
-          version: latest
