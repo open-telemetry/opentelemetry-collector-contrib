@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/component"
 	"go.opentelemetry.io/collector/component/componenttest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.26.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func TestCollectorInstanceInfo(t *testing.T) {
@@ -30,13 +30,13 @@ func TestCollectorInstanceInfo(t *testing.T) {
 			name: "with_service_instance_id",
 			input: func() component.TelemetrySettings {
 				ts := componenttest.NewNopTelemetrySettings()
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
+				ts.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
 				return ts
 			}(),
 			expected: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceInstanceID,
+					"signaltometrics."+string(semconv.ServiceInstanceIDKey),
 					"627cc493-f310-47de-96bd-71410b7dec09",
 				)
 				return m
@@ -46,23 +46,23 @@ func TestCollectorInstanceInfo(t *testing.T) {
 			name: "with_all_values",
 			input: func() component.TelemetrySettings {
 				ts := componenttest.NewNopTelemetrySettings()
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceInstanceID, "627cc493-f310-47de-96bd-71410b7dec09")
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceName, "signaltometrics")
-				ts.Resource.Attributes().PutStr(semconv.AttributeServiceNamespace, "test")
+				ts.Resource.Attributes().PutStr(string(semconv.ServiceInstanceIDKey), "627cc493-f310-47de-96bd-71410b7dec09")
+				ts.Resource.Attributes().PutStr(string(semconv.ServiceNameKey), "signaltometrics")
+				ts.Resource.Attributes().PutStr(string(semconv.ServiceNamespaceKey), "test")
 				return ts
 			}(),
 			expected: func() pcommon.Map {
 				m := pcommon.NewMap()
 				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceInstanceID,
+					"signaltometrics."+string(semconv.ServiceInstanceIDKey),
 					"627cc493-f310-47de-96bd-71410b7dec09",
 				)
 				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceName,
+					"signaltometrics."+string(semconv.ServiceNameKey),
 					"signaltometrics",
 				)
 				m.PutStr(
-					"signaltometrics."+semconv.AttributeServiceNamespace,
+					"signaltometrics."+string(semconv.ServiceNamespaceKey),
 					"test",
 				)
 				return m

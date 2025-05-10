@@ -6,7 +6,7 @@ package internal
 import (
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	semconv "go.opentelemetry.io/collector/semconv/v1.27.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.27.0"
 )
 
 type kv struct {
@@ -35,8 +35,8 @@ func metricsFromResourceMetrics(metrics ...pmetric.ResourceMetrics) pmetric.Metr
 
 func resourceMetrics(job, instance string, metrics ...pmetric.Metric) pmetric.ResourceMetrics {
 	mr := pmetric.NewResourceMetrics()
-	mr.Resource().Attributes().PutStr(semconv.AttributeServiceName, job)
-	mr.Resource().Attributes().PutStr(semconv.AttributeServiceInstanceID, instance)
+	mr.Resource().Attributes().PutStr(string(semconv.ServiceNameKey), job)
+	mr.Resource().Attributes().PutStr(string(semconv.ServiceInstanceIDKey), instance)
 	ms := mr.ScopeMetrics().AppendEmpty().Metrics()
 
 	for _, metric := range metrics {

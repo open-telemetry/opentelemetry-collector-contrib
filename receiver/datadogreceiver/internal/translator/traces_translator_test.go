@@ -17,7 +17,7 @@ import (
 	"github.com/stretchr/testify/require"
 	vmsgp "github.com/vmihailenco/msgpack/v5"
 	"go.opentelemetry.io/collector/pdata/pcommon"
-	semconv "go.opentelemetry.io/collector/semconv/v1.16.0"
+	semconv "go.opentelemetry.io/otel/semconv/v1.16.0"
 	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 
@@ -210,7 +210,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req1.Header.Set(header.TracerVersion, "1.2.3")
 	attrs1 := pcommon.NewMap()
 	upsertHeadersAttributes(req1, attrs1)
-	val, ok := attrs1.Get(semconv.AttributeTelemetrySDKVersion)
+	val, ok := attrs1.Get(string(semconv.TelemetrySDKVersionKey))
 	assert.True(t, ok)
 	assert.Equal(t, "Datadog-1.2.3", val.Str())
 
@@ -219,7 +219,7 @@ func TestUpsertHeadersAttributes(t *testing.T) {
 	req2.Header.Set(header.Lang, ".NET")
 	attrs2 := pcommon.NewMap()
 	upsertHeadersAttributes(req2, attrs2)
-	val, ok = attrs2.Get(semconv.AttributeTelemetrySDKLanguage)
+	val, ok = attrs2.Get(string(semconv.TelemetrySDKLanguageKey))
 	assert.True(t, ok)
 	assert.Equal(t, "dotnet", val.Str())
 }

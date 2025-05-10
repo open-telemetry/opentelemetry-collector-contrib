@@ -22,7 +22,7 @@ import (
 	"go.opentelemetry.io/collector/exporter/exportertest"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/ptrace"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/exporter/alertmanagerexporter/internal/metadata"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/testutil"
@@ -37,7 +37,7 @@ func createTracesAndSpan() (ptrace.Traces, ptrace.Span) {
 	attrs := resource.Attributes()
 	attrs.Clear()
 	attrs.EnsureCapacity(4) // service name + 3 attributes
-	attrs.PutStr(conventions.AttributeServiceName, "unittest-resource")
+	attrs.PutStr(string(conventions.ServiceNameKey), "unittest-resource")
 	attrs.PutStr("attr1", "unittest-foo")
 	attrs.PutInt("attr2", 40)
 	attrs.PutDouble("attr3", 3.14)

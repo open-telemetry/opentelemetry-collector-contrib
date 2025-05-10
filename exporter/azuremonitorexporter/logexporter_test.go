@@ -18,7 +18,7 @@ import (
 	"github.com/stretchr/testify/require"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -175,9 +175,9 @@ func TestLogRecordToEnvelopeCloudTags(t *testing.T) {
 	envelope := logPacker.LogRecordToEnvelope(logRecord, resource, scope)
 
 	resourceAttributes := resource.Attributes().AsRaw()
-	expectedCloudRole := resourceAttributes[conventions.AttributeServiceNamespace].(string) + "." + resourceAttributes[conventions.AttributeServiceName].(string)
+	expectedCloudRole := resourceAttributes[string(conventions.ServiceNamespaceKey)].(string) + "." + resourceAttributes[string(conventions.ServiceNameKey)].(string)
 	require.Equal(t, expectedCloudRole, envelope.Tags[aiCloudRoleConvention])
-	expectedCloudRoleInstance := resourceAttributes[conventions.AttributeServiceInstanceID]
+	expectedCloudRoleInstance := resourceAttributes[string(conventions.ServiceInstanceIDKey)]
 	require.Equal(t, expectedCloudRoleInstance, envelope.Tags[aiCloudRoleInstanceConvention])
 }
 
@@ -200,9 +200,9 @@ func getTestLogs() plog.Logs {
 	// add the resource
 	resourceLogs := logs.ResourceLogs().AppendEmpty()
 	resource := resourceLogs.Resource()
-	resource.Attributes().PutStr(conventions.AttributeServiceName, defaultServiceName)
-	resource.Attributes().PutStr(conventions.AttributeServiceNamespace, defaultServiceNamespace)
-	resource.Attributes().PutStr(conventions.AttributeServiceInstanceID, defaultServiceInstance)
+	resource.Attributes().PutStr(string(conventions.ServiceNameKey), defaultServiceName)
+	resource.Attributes().PutStr(string(conventions.ServiceNamespaceKey), defaultServiceNamespace)
+	resource.Attributes().PutStr(string(conventions.ServiceInstanceIDKey), defaultServiceInstance)
 
 	// add the scope
 	scopeLogs := resourceLogs.ScopeLogs().AppendEmpty()

@@ -12,7 +12,7 @@ import (
 	"go.opentelemetry.io/collector/featuregate"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/filter/filterottl"
@@ -1300,7 +1300,7 @@ func Test_NewSkipExpr_With_Bridge(t *testing.T) {
 			log.SetSeverityNumber(tt.logSeverity)
 
 			resource := pcommon.NewResource()
-			resource.Attributes().PutStr(conventions.AttributeServiceName, "svcA")
+			resource.Attributes().PutStr(string(conventions.ServiceNameKey), "svcA")
 
 			scope := pcommon.NewInstrumentationScope()
 

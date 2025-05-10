@@ -8,7 +8,7 @@ import (
 
 	"github.com/stretchr/testify/assert"
 	"go.opentelemetry.io/collector/pdata/pmetric"
-	conventions "go.opentelemetry.io/collector/semconv/v1.27.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 )
 
@@ -110,7 +110,7 @@ func generateMockMetrics(dpCreator func(metric pmetric.Metric) pmetric.NumberDat
 	metric.SetDescription("This is a test metric")
 	metric.SetUnit("s")
 	dp := dpCreator(metric)
-	dp.Attributes().PutStr(conventions.AttributeHostName, "test-hostname")
+	dp.Attributes().PutStr(string(conventions.HostNameKey), "test-hostname")
 	dp.Attributes().PutStr("entityName", "test-entity")
 	dp.Attributes().PutStr("entityTypeId", "test-entity-type-id")
 	dp.Attributes().PutStr("instanceName", "test-entity-Name")
