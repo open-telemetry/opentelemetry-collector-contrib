@@ -67,6 +67,7 @@ processor/transformprocessor
 internal/docker
 receiver/dockerstatsreceiver
 receiver/filelogreceiver
+pkg/winperfcounters
 receiver/hostmetricsreceiver
 internal/datadog
 pkg/datadog
@@ -201,7 +202,6 @@ internal/sqlquery
 internal/tools
 pkg/translator/azure
 pkg/translator/azurelogs
-pkg/winperfcounters
 processor/attributesprocessor
 processor/coralogixprocessor
 processor/cumulativetodeltaprocessor
