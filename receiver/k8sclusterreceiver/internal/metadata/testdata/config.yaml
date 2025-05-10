@@ -55,6 +55,8 @@ all_set:
       enabled: true
     k8s.namespace.phase:
       enabled: true
+    k8s.node.allocatable:
+      enabled: true
     k8s.node.condition:
       enabled: true
     k8s.pod.phase:
@@ -219,6 +221,8 @@ none_set:
     k8s.job.successful_pods:
       enabled: false
     k8s.namespace.phase:
+      enabled: false
+    k8s.node.allocatable:
       enabled: false
     k8s.node.condition:
       enabled: false
