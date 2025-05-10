@@ -370,8 +370,8 @@ func TestHandleExceptionDataWithDetails(t *testing.T) {
 			exceptionMessage: "Cannot read property 'undefined'",
 			stackTrace:       "at Object.method (/path/file.js:10)\nat Object.method2 (/path/file2.js:20)",
 			resourceAttrs: map[string]any{
-				conventions.AttributeServiceName: "testService",
-				"custom.attr":                    "value",
+				string(conventions.ServiceNameKey): "testService",
+				"custom.attr":                      "value",
 			},
 		},
 		{
@@ -395,10 +395,10 @@ func TestHandleExceptionDataWithDetails(t *testing.T) {
 			logRecord.SetSeverityText(tt.severityText)
 
 			attrs := logRecord.Attributes()
-			attrs.PutStr(conventions.AttributeExceptionType, tt.exceptionType)
-			attrs.PutStr(conventions.AttributeExceptionMessage, tt.exceptionMessage)
+			attrs.PutStr(string(conventions.ExceptionTypeKey), tt.exceptionType)
+			attrs.PutStr(string(conventions.ExceptionMessageKey), tt.exceptionMessage)
 			if tt.stackTrace != "" {
-				attrs.PutStr(conventions.AttributeExceptionStacktrace, tt.stackTrace)
+				attrs.PutStr(string(conventions.ExceptionStacktraceKey), tt.stackTrace)
 			}
 
 			resource := pcommon.NewResource()

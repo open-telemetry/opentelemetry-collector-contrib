@@ -9,7 +9,7 @@ import (
 	"github.com/microsoft/ApplicationInsights-Go/appinsights/contracts"
 	"go.opentelemetry.io/collector/pdata/pcommon"
 	"go.opentelemetry.io/collector/pdata/plog"
-	conventions "go.opentelemetry.io/collector/semconv/v1.12.0"
+	conventions "go.opentelemetry.io/otel/semconv/v1.27.0"
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/coreinternal/traceutil"
@@ -184,18 +184,18 @@ func isEventData(attrMap pcommon.Map) bool {
 }
 
 func isExceptionData(attributes pcommon.Map) bool {
-	return hasOneOfKeys(attributes, conventions.AttributeExceptionType, conventions.AttributeExceptionMessage)
+	return hasOneOfKeys(attributes, string(conventions.ExceptionTypeKey), string(conventions.ExceptionMessageKey))
 }
 
 func mapIncomingAttributeMapExceptionDetail(attributemap pcommon.Map) *contracts.ExceptionDetails {
 	exceptionDetails := contracts.NewExceptionDetails()
-	if message, exists := attributemap.Get(conventions.AttributeExceptionMessage); exists {
+	if message, exists := attributemap.Get(string(conventions.ExceptionMessageKey)); exists {
 		exceptionDetails.Message = message.Str()
 	}
-	if typeName, exists := attributemap.Get(conventions.AttributeExceptionType); exists {
+	if typeName, exists := attributemap.Get(string(conventions.ExceptionTypeKey)); exists {
 		exceptionDetails.TypeName = typeName.Str()
 	}
-	if stackTrace, exists := attributemap.Get(conventions.AttributeExceptionStacktrace); exists {
+	if stackTrace, exists := attributemap.Get(string(conventions.ExceptionStacktraceKey)); exists {
 		exceptionDetails.HasFullStack = true
 		exceptionDetails.Stack = stackTrace.Str()
 	}
