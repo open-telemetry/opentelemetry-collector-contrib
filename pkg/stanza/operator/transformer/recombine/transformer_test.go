@@ -283,6 +283,52 @@ func TestTransformer(t *testing.T) {
 			},
 		},
 		{
+			"CombineSplitUnicode",
+			func() *Config {
+				cfg := NewConfig()
+				cfg.CombineField = entry.NewBodyField("message")
+				cfg.CombineWith = ""
+				cfg.IsLastEntry = "body.logtag == 'F'"
+				cfg.OverwriteWith = "newest"
+				cfg.OutputIDs = []string{"fake"}
+				return cfg
+			}(),
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{
+					"message":   "Single entry log 1",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:09.669794202Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "\xe5\xbe",
+					"logtag":    "P",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "\x90",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+			},
+			[]*entry.Entry{
+				entryWithBody(t1, map[string]any{
+					"message":   "Single entry log 1",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:09.669794202Z",
+				}),
+				entryWithBody(t1, map[string]any{
+					"message":   "徐",
+					"logtag":    "F",
+					"stream":    "stdout",
+					"timestamp": "2016-10-06T00:17:10.113242941Z",
+				}),
+			},
+		},
+		{
 			"CombineOtherThanCondition",
 			func() *Config {
 				cfg := NewConfig()
