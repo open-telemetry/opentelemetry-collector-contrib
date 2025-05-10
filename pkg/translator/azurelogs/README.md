@@ -45,7 +45,7 @@ The mapping for this category is as follows:
 | `clientPort`          | `client.port`                                                                                                                         |
 | `socketIP`            | `source.address`                                                                                                                      |
 | `requestUri`          | `url.orginal`<br>Also parses it to get fields:<br>1.`url.scheme`<br>2.`url.fragment`<br>3.`url.query`<br>4.`url.path`<br>5.`url.port` |
-| `ruleName`            | `azure.frontdoor.waf.rule`                                                                                                            |
+| `ruleName`            | `azure.frontdoor.waf.rule.name`                                                                                                       |
 | `policy`              | `azure.frontdoor.waf.policy.name`                                                                                                     |
 | `action`              | `azure.frontdoor.waf.action`                                                                                                          |
 | `host`                | `http.request.header.host`                                                                                                            |
