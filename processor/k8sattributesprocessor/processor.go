@@ -19,8 +19,8 @@ import (
 	"go.uber.org/zap"
 
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
+	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/cache"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/kube"
-	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/lru"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/moid"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/redis"
 )
@@ -74,14 +74,19 @@ func (kp *kubernetesprocessor) Start(_ context.Context, _ component.Host) error 
 		zap.Any("redisPort", kp.redisConfig.RedisPort),
 		zap.Any("redisPass", kp.redisConfig.RedisPass))
 
-	cache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
-
-	if cache == nil {
-		kp.logger.Error("Failed to initilize the cache with GetInstance()")
+	//primaryCache := lru.GetInstance(kp.redisConfig.LruCacheSize, kp.redisConfig.LruExpirationTime)
+	primaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.PrimaryCacheEvictionTime)
+	if primaryCache == nil {
+		kp.logger.Error("Failed to initilize the primary cache")
 		return nil
 	}
 
-	kp.redisClient = redis.NewClient(kp.logger, cache, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
+	secondaryCache := cache.NewSyncMapWithExpiry(kp.redisConfig.SecondaryCacheEvictionTime)
+	if secondaryCache == nil {
+		kp.logger.Error("Failed to initilize the secondary cache")
+		return nil
+	}
+	kp.redisClient = redis.NewClient(kp.logger, primaryCache, secondaryCache, kp.redisConfig.PrimaryCacheEvictionTime, kp.redisConfig.SecondaryCacheEvictionTime, kp.redisConfig.RedisHost, kp.redisConfig.RedisPort, kp.redisConfig.RedisPass)
 
 	// This might have been set by an option already
 	if kp.kc == nil {
