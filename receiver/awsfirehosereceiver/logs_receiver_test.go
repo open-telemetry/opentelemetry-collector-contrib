@@ -58,6 +58,10 @@ func TestLogsReceiver_Start(t *testing.T) {
 			encoding:            "otlp_logs",
 			wantUnmarshalerType: plogUnmarshalerExtension{},
 		},
+		"WithExtensionEncodingNamed": {
+			encoding:            "otlp_logs/name",
+			wantUnmarshalerType: plogUnmarshalerExtension{},
+		},
 		"WithDeprecatedRecordType": {
 			recordType:          "otlp_logs",
 			wantUnmarshalerType: plogUnmarshalerExtension{},
@@ -90,8 +94,9 @@ func TestLogsReceiver_Start(t *testing.T) {
 
 			host := hostWithExtensions{
 				extensions: map[component.ID]component.Component{
-					component.MustNewID("otlp_logs"):    plogUnmarshalerExtension{},
-					component.MustNewID("otlp_metrics"): pmetricUnmarshalerExtension{},
+					component.MustNewID("otlp_logs"):                 plogUnmarshalerExtension{},
+					component.MustNewIDWithName("otlp_logs", "name"): plogUnmarshalerExtension{},
+					component.MustNewID("otlp_metrics"):              pmetricUnmarshalerExtension{},
 				},
 			}
 
