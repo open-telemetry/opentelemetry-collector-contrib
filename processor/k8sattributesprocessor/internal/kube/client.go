@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"go.opentelemetry.io/collector/component"
+	"go.opentelemetry.io/collector/featuregate"
 	conventions "go.opentelemetry.io/collector/semconv/v1.6.1"
 	"go.uber.org/zap"
 	apps_v1 "k8s.io/api/apps/v1"
@@ -27,6 +28,20 @@ import (
 	dcommon "github.com/open-telemetry/opentelemetry-collector-contrib/internal/common/docker"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/internal/k8sconfig"
 	"github.com/open-telemetry/opentelemetry-collector-contrib/processor/k8sattributesprocessor/internal/metadata"
+)
+
+var allowLabelsAnnotationsSingular = featuregate.GlobalRegistry().MustRegister(
+	"k8sattr.labelsAnnotationsSingular.allow",
+	featuregate.StageAlpha,
+	featuregate.WithRegisterDescription("When enabled, default k8s label and annotation resource attribute keys will be singular, instead of plural"),
+	featuregate.WithRegisterFromVersion("v0.125.0"),
+)
+
+const (
+	K8sPodLabelsKey      = "k8s.pod.labels.%s"
+	K8sPodLabelKey       = "k8s.pod.label.%s"
+	K8sPodAnnotationsKey = "k8s.pod.annotations.%s"
+	K8sPodAnnotationKey  = "k8s.pod.annotation.%s"
 )
 
 // WatchClient is the main interface provided by this package to a kubernetes cluster.
@@ -554,12 +569,22 @@ func (c *WatchClient) extractPodAttributes(pod *api_v1.Pod) map[string]string {
 		}
 	}
 
+	formatterLabel := K8sPodLabelsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = K8sPodLabelKey
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromPodMetadata(pod.Labels, tags, "k8s.pod.labels.%s")
+		r.extractFromPodMetadata(pod.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := K8sPodAnnotationsKey
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = K8sPodAnnotationKey
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromPodMetadata(pod.Annotations, tags, "k8s.pod.annotations.%s")
+		r.extractFromPodMetadata(pod.Annotations, tags, formatterAnnotation)
 	}
 	return tags
 }
@@ -722,12 +747,22 @@ func (c *WatchClient) extractPodContainersAttributes(pod *api_v1.Pod) PodContain
 func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := "k8s.namespace.labels.%s"
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = "k8s.namespace.label.%s"
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNamespaceMetadata(namespace.Labels, tags, "k8s.namespace.labels.%s")
+		r.extractFromNamespaceMetadata(namespace.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := "k8s.namespace.annotations.%s"
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = "k8s.namespace.annotation.%s"
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNamespaceMetadata(namespace.Annotations, tags, "k8s.namespace.annotations.%s")
+		r.extractFromNamespaceMetadata(namespace.Annotations, tags, formatterAnnotation)
 	}
 
 	return tags
@@ -736,12 +771,22 @@ func (c *WatchClient) extractNamespaceAttributes(namespace *api_v1.Namespace) ma
 func (c *WatchClient) extractNodeAttributes(node *api_v1.Node) map[string]string {
 	tags := map[string]string{}
 
+	formatterLabel := "k8s.node.labels.%s"
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterLabel = "k8s.node.label.%s"
+	}
+
 	for _, r := range c.Rules.Labels {
-		r.extractFromNodeMetadata(node.Labels, tags, "k8s.node.labels.%s")
+		r.extractFromNodeMetadata(node.Labels, tags, formatterLabel)
+	}
+
+	formatterAnnotation := "k8s.node.annotations.%s"
+	if allowLabelsAnnotationsSingular.IsEnabled() {
+		formatterAnnotation = "k8s.node.annotation.%s"
 	}
 
 	for _, r := range c.Rules.Annotations {
-		r.extractFromNodeMetadata(node.Annotations, tags, "k8s.node.annotations.%s")
+		r.extractFromNodeMetadata(node.Annotations, tags, formatterAnnotation)
 	}
 
 	return tags
