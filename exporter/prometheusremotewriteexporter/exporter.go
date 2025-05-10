@@ -64,6 +64,12 @@ func (p *prwTelemetryOtel) recordTranslatedTimeSeries(ctx context.Context, numTS
 	p.telemetryBuilder.ExporterPrometheusremotewriteTranslatedTimeSeries.Add(ctx, int64(numTS), metric.WithAttributes(p.otelAttrs...))
 }
 
+var converterPool = sync.Pool{
+	New: func() any {
+		return prometheusremotewrite.NewPrometheusConverter()
+	},
+}
+
 type buffer struct {
 	protobuf *proto.Buffer
 	snappy   []byte
@@ -211,9 +217,14 @@ func (prwe *prwExporter) Shutdown(context.Context) error {
 }
 
 func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) error {
-	tsMap, err := prometheusremotewrite.FromMetrics(md, prwe.exporterSettings)
+	converter := converterPool.Get().(*prometheusremotewrite.PrometheusConverter)
+	converter.Reset()
+	defer converterPool.Put(converter)
 
-	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tsMap))
+	err := converter.Convert(md, prwe.exporterSettings)
+	tss := converter.TimeSeries()
+
+	prwe.telemetry.recordTranslatedTimeSeries(ctx, len(tss))
 
 	var m []*prompb.MetricMetadata
 	if prwe.exporterSettings.SendMetadata {
@@ -221,10 +232,11 @@ func (prwe *prwExporter) pushMetricsV1(ctx context.Context, md pmetric.Metrics) 
 	}
 	if err != nil {
 		prwe.telemetry.recordTranslationFailure(ctx)
-		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tsMap)))
+		prwe.settings.Logger.Debug("failed to translate metrics, exporting remaining metrics", zap.Error(err), zap.Int("translated", len(tss)))
 	}
+
 	// Call export even if a conversion error, since there may be points that were successfully converted.
-	return prwe.handleExport(ctx, tsMap, m)
+	return prwe.handleExport(ctx, tss, m)
 }
 
 // PushMetrics converts metrics to Prometheus remote write TimeSeries and send to remote endpoint. It maintain a map of
@@ -269,16 +281,16 @@ func validateAndSanitizeExternalLabels(cfg *Config) (map[string]string, error) {
 	return sanitizedLabels, nil
 }
 
-func (prwe *prwExporter) handleExport(ctx context.Context, tsMap map[string]*prompb.TimeSeries, m []*prompb.MetricMetadata) error {
+func (prwe *prwExporter) handleExport(ctx context.Context, tss []prompb.TimeSeries, m []*prompb.MetricMetadata) error {
 	// There are no metrics to export, so return.
-	if len(tsMap) == 0 {
+	if len(tss) == 0 {
 		return nil
 	}
 
 	state := prwe.batchStatePool.Get().(*batchTimeSeriesState)
 	defer prwe.batchStatePool.Put(state)
 	// Calls the helper function to convert and batch the TsMap to the desired format
-	requests, err := batchTimeSeries(tsMap, prwe.maxBatchSizeBytes, m, state)
+	requests, err := batchTimeSeries(tss, prwe.maxBatchSizeBytes, m, state)
 	if err != nil {
 		return err
 	}

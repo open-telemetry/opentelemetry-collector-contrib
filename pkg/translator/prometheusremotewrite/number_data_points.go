@@ -13,12 +13,12 @@ import (
 	"go.opentelemetry.io/collector/pdata/pmetric"
 )
 
-func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+func (c *PrometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, settings Settings, name string,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		labels := createAttributes(
+		labels := c.createAttributes(
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
@@ -44,12 +44,12 @@ func (c *prometheusConverter) addGaugeNumberDataPoints(dataPoints pmetric.Number
 	}
 }
 
-func (c *prometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
+func (c *PrometheusConverter) addSumNumberDataPoints(dataPoints pmetric.NumberDataPointSlice,
 	resource pcommon.Resource, _ pmetric.Metric, settings Settings, name string,
 ) {
 	for x := 0; x < dataPoints.Len(); x++ {
 		pt := dataPoints.At(x)
-		lbls := createAttributes(
+		lbls := c.createAttributes(
 			resource,
 			pt.Attributes(),
 			settings.ExternalLabels,
